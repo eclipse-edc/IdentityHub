@@ -1,0 +1,30 @@
+openapi: 3.0.1
+info:
+  title: Eclipse Dataspace Connector Identity Hub
+  version: 0.0.1
+paths:
+  /featuredetection:
+    get:
+      tags:
+      - FeatureDetection
+      operationId: featureDetection
+      responses:
+        default:
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureDetection'
+components:
+  schemas:
+    FeatureDetection:
+      type: object
+      properties:
+        interfaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebNodeInterface'
+        type:
+          type: string
+    WebNodeInterface:
+      type: object
