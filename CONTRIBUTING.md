@@ -19,9 +19,6 @@ the [Eclipse Dataspace Connector](https://projects.eclipse.org/projects/technolo
     - [Stale issues and PRs](#stale-issues-and-prs)
     - [Add Documentation](#add-documentation)
     - [Report on Flaky Tests](#report-on-flaky-tests)
-  - [Project and Milestone Planning](#project-and-milestone-planning)
-    - [Milestones](#milestones)
-      - [Issues](#issues)
       - [Pull Requests](#pull-requests)
     - [Projects](#projects)
     - [Contact Us](#contact-us)
@@ -52,26 +49,26 @@ to GitHub.
 
 If you want to share an idea to further enhance
 the project or discuss potential use cases, please feel free to create a discussion at the
-[GitHub Discussions page](https://github.com/eclipse-dataspaceconnector/DataSpaceConnector/discussions).
+[GitHub Discussions page](https://github.com/eclipse-dataspaceconnector/IdentityHub/discussions).
 If you feel there is a bug or an issue, contribute to the discussions in
-[existing issues](https://github.com/eclipse-dataspaceconnector/DataSpaceConnector/issues?q=is%3Aissue+is%3Aopen),
+[existing issues](https://github.com/eclipse-dataspaceconnector/IdentityHub/issues?q=is%3Aissue+is%3Aopen),
 otherwise [create a new issue](#create-an-issue). 
 
 ### Create an Issue
 
 If you have identified a bug or want to formulate a working item that you want to concentrate on, 
 feel free to create a new issue at our project's corresponding
-[GitHub Issues page](https://github.com/eclipse-dataspaceconnector/DataSpaceConnector/issues/new).
+[GitHub Issues page](https://github.com/eclipse-dataspaceconnector/IdentityHub/issues/new).
 
 Before doing so, please consider searching for potentially suitable
-[existing issues](https://github.com/eclipse-dataspaceconnector/DataSpaceConnector/issues?q=is%3Aissue+is%3Aopen).
+[existing issues](https://github.com/eclipse-dataspaceconnector/IdentityHub/issues?q=is%3Aissue+is%3Aopen).
 
 We also use [GitHub's default label set](https://docs.github.com/en/issues/using-labels-and-milestones-to-track-work/managing-labels)
 extended by custom ones to classify issues and improve findability.
 
 If an issue appears to cover changes that will have a (huge) impact on the code base and needs to 
 first be discussed, or if you just have a question regarding the usage of the software, please 
-create a [discussion](https://github.com/eclipse-dataspaceconnector/DataSpaceConnector/discussions) 
+create a [discussion](https://github.com/eclipse-dataspaceconnector/IdentityHub/discussions) 
 before raising an issue.
 
 Please note that if an issue covers a topic or the response to a question that may be interesting 
@@ -137,7 +134,7 @@ we would appreciate if your pull request applies to the following points:
 
 * If a new module has been added or a significant part of the code has been changed and you should 
   or want to be seen as the contact person for any further changes, please add appropriate 
-  information to the [CODEOWNERS](https://github.com/eclipse-dataspaceconnector/DataSpaceConnector/blob/main/CODEOWNERS) 
+  information to the [CODEOWNERS](https://github.com/eclipse-dataspaceconnector/IdentityHub/blob/main/CODEOWNERS) 
   file. You can find instructions on how to do this at <https://help.github.com/articles/about-codeowners/>.
   Please note that this file does not represent all contributions to the code. What persons and organizations
   actually contributed to each file can be seen on GitHub and is documented in the license headers.
@@ -193,28 +190,6 @@ git commit --allow-empty -m "trigger CI" && git push
 If an issue labeled with `Bug` and `FlakyTest` is assigned to you, please prioritize addressing this issue as other people will be affected.
 We are taking the quality of our code very serious and reporting on flaky tests is an important step toward improvement
 in that area.
-
-## Project and Milestone Planning
-
-We use milestones to set a common focus for a period of 6 to 8 weeks. 
-The group of committers chooses issues based on customer needs and contributions we expect.
-
-### Milestones
-
-Milestones are organized at the [GitHub Milestones page](https://github.com/eclipse-dataspaceconnector/DataSpaceConnector/milestones).
-They are numbered in ascending order. There, contributors, users, and adopters can track the progress.
-
-Please note that the due date of a milestone does not imply any guarantee that all linked issued will 
-be resolved by then. 
-
-When closing the current milestone, issues that were not resolved within a milestone phase will be 
-reviewed to evaluate their relevance and priority, before being assigned to the next milestone.
-
-#### Issues
-
-Every issue that should be addressed during a milestone phase is assigned to it by using the 
-`Milestone` feature for linking both items. This way, the issues can easily be filtered by 
-milestones.
 
 #### Pull Requests
 
