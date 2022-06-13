@@ -14,21 +14,3 @@ and contain all relevant files, at least a filled-out template named `README.md`
 
 As of now, every merged decision record is in state `accepted`. Please make sure to add a comment to
 a decision record that replaces a previous one with adding a hint: `superseded by [...]`.
-
-## Extensions
-
-[Link](extension.md) to template.
-
-Every module located [in the extensions folder](../../extensions) has to provide documentation regarding its 
-functionality, implementation, or architectural details.
-The filled-out template has to be added as `README.md` to each module. Any additional files can be placed 
-in a dedicated `docs` directory. As defined by the template, this markdown file can point to submodules 
-that provide the same documentation scope themselves.
-
-## Launchers
-
-[Link](launcher.md) to template.
-
-Every module located [in the launchers folder](../../launchers) has to provide documentation regarding its purpose and usage.
-The filled template has to be added as `README.md` to each module. Any additional files can be placed 
-in a dedicated `docs` directory.
