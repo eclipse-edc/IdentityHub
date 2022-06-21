@@ -12,14 +12,11 @@
  *
  */
 
-package org.eclipse.dataspaceconnector.dtos;
+package org.eclipse.dataspaceconnector.identityhub.models;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Feature Detection object produced by a compliant decentralized Web Node.
@@ -27,20 +24,19 @@ import java.util.List;
  */
 @JsonDeserialize(builder = FeatureDetection.Builder.class)
 public class FeatureDetection {
-    private static final String TYPE = "FeatureDetection";
 
-    private List<WebNodeInterface> interfaces;
+    private static final String TYPE = "FeatureDetection";
+    private WebNodeInterfaces interfaces;
 
     public String getType() {
         return TYPE;
     }
 
-    public List<WebNodeInterface> getInterfaces() {
-        return Collections.unmodifiableList(interfaces);
+    public WebNodeInterfaces getInterfaces() {
+        return interfaces;
     }
 
     private FeatureDetection() {
-        interfaces = new ArrayList<>();
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -51,12 +47,13 @@ public class FeatureDetection {
             featureDetection = new FeatureDetection();
         }
 
+        @JsonCreator()
         public static FeatureDetection.Builder newInstance() {
             return new FeatureDetection.Builder();
         }
 
-        public FeatureDetection.Builder interfaces(List<WebNodeInterface> interfaces) {
-            featureDetection.interfaces.addAll(interfaces);
+        public FeatureDetection.Builder interfaces(WebNodeInterfaces interfaces) {
+            featureDetection.interfaces = interfaces;
             return this;
         }
 
