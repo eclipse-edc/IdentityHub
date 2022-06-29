@@ -49,8 +49,8 @@ public class CollectionsWriteProcessorTest {
     @Test
     void writeCredentials() throws Exception {
         // Arrange
-        var CREDENTIAL_ID = FAKER.internet().uuid();
-        var verifiableCredentialMap = Map.of("id", CREDENTIAL_ID);
+        var credentialId = FAKER.internet().uuid();
+        var verifiableCredentialMap = Map.of("id", credentialId);
         var data = OBJECT_MAPPER.writeValueAsString(verifiableCredentialMap).getBytes(StandardCharsets.UTF_8);
 
         // Act
@@ -58,7 +58,7 @@ public class CollectionsWriteProcessorTest {
 
         // Assert
         var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
-        var expectedVerifiableCredential = VerifiableCredential.Builder.newInstance().id(CREDENTIAL_ID).build();
+        var expectedVerifiableCredential = VerifiableCredential.Builder.newInstance().id(credentialId).build();
         assertThat(result).usingRecursiveComparison().isEqualTo(expectedResult);
         assertThat(identityHubStore.getAll()).usingRecursiveFieldByFieldElementComparator().containsExactly(expectedVerifiableCredential);
     }
