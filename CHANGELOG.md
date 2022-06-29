@@ -14,6 +14,7 @@ in the detailed section referring to by linking pull requests or issues.
 ### Detailed Changes
 
 #### Added
+Identity hub client (#4)
 
 #### Changed
 
