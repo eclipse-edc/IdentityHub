@@ -8,31 +8,33 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Microsoft Corporation - initial implementation
+ *       Microsoft Corporation - initial API and implementation
  *
  */
 
 plugins {
-    `java-library`
-    id("io.swagger.core.v3.swagger-gradle-plugin")
+    java
+    id("org.openapi.generator") version "5.4.0"
 }
-val assertj: String by project
+
+val jacksonVersion: String by project
+val okHttpVersion: String by project
 val edcVersion: String by project
 val edcGroup: String by project
 val jupiterVersion: String by project
-val restAssured: String by project
 val faker: String by project
+val assertj: String by project
 
 dependencies {
-    api(project(":spi:identity-hub-spi"))
+    implementation(project(":extensions:identity-hub"))
     implementation(project(":spi:identity-hub-store-spi"))
-    implementation("${edcGroup}:http:${edcVersion}")
+    implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
+    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
 
     testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
     testImplementation("${edcGroup}:junit-extension:${edcVersion}:test-fixtures")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
-    testImplementation("io.rest-assured:rest-assured:${restAssured}")
     testImplementation("com.github.javafaker:javafaker:${faker}")
 }

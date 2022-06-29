@@ -39,8 +39,8 @@ public class FeatureDetectionReadProcessor implements MessageProcessor {
                         FeatureDetection.Builder.newInstance().interfaces(
                                 WebNodeInterfaces.Builder.newInstance()
                                         .supportedCollection(COLLECTIONS_QUERY.getName())
-                                        .supportedCollection(COLLECTIONS_WRITE.getName())
-                                        .build()
+                                    .supportedCollection(COLLECTIONS_WRITE.getName())
+                                    .build()
                         ).build()
                 ))
                 .build();

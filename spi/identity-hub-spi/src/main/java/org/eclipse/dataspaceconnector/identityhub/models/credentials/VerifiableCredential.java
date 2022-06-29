@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataspaceconnector.identityhub.api;
+package org.eclipse.dataspaceconnector.identityhub.models.credentials;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -22,10 +22,10 @@ import java.util.Objects;
 
 /**
  * <p>
- * Represents a VerifiableCredential that can be stored in the Identity Hub. The model follows the  <a href="https://www.w3.org/TR/vc-data-model/">W3C Verifiable Credential</a> specification.
+ *   Represents a VerifiableCredential that can be stored in the Identity Hub. The model follows the  <a href="https://www.w3.org/TR/vc-data-model/">W3C Verifiable Credential</a> specification.
  * </p>
  * <p>
- * The MIME type "application/vc+ldp" should be used to identify the correct format when passing Verifiable Credentials as data to the Identity Hub.
+ *   The MIME type "application/vc+ldp" should be used to identify the correct format when passing Verifiable Credentials as data to the Identity Hub.
  * </p>
  */
 // TODO: implement Verifiable Credential model

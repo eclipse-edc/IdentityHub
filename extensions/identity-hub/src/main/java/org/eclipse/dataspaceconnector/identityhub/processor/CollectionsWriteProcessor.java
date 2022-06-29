@@ -17,6 +17,7 @@ package org.eclipse.dataspaceconnector.identityhub.processor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataspaceconnector.identityhub.models.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.models.MessageStatus;
+import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
 
 import java.io.IOException;
@@ -40,7 +41,7 @@ public class CollectionsWriteProcessor implements MessageProcessor {
     public MessageResponseObject process(byte[] data) {
         Object hubObject;
         try {
-            hubObject = objectMapper.readValue(data, Object.class);
+            hubObject = objectMapper.readValue(data, VerifiableCredential.class);
         } catch (IllegalArgumentException | IOException e) {
             return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
         }

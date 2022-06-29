@@ -14,10 +14,16 @@
 
 package org.eclipse.dataspaceconnector.identityhub.models;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+
+import java.util.Objects;
+
 /**
  * See <a href="https://identity.foundation/decentralized-web-node/spec/#response-objects">response objects documentation</a>
  * and <a href="https://identity.foundation/decentralized-web-node/spec/#message-level-status-coding">status doc</a>.
  */
+@JsonDeserialize(builder = MessageStatus.Builder.class)
 public class MessageStatus extends Status {
     public static final MessageStatus OK = new MessageStatus(200, "The message was successfully processed");
     public static final MessageStatus MALFORMED_MESSAGE = new MessageStatus(400, "The message was malformed or improperly constructed");
@@ -25,5 +31,34 @@ public class MessageStatus extends Status {
 
     private MessageStatus(int code, String detail) {
         super(code, detail);
+    }
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static final class Builder {
+        private Integer code;
+        private String detail;
+
+        private Builder() {
+        }
+
+        public static Builder newInstance() {
+            return new Builder();
+        }
+
+        public Builder code(int code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder detail(String detail) {
+            this.detail = detail;
+            return this;
+        }
+
+        public MessageStatus build() {
+            Objects.requireNonNull(code, "MessageStatus must contain code property.");
+            Objects.requireNonNull(detail, "MessageStatus must contain detail property.");
+            return new MessageStatus(code, detail);
+        }
     }
 }
