@@ -22,6 +22,7 @@ import java.util.Collection;
 /**
  * IdentityHub Client
  * This client is used to call the IdentityHub endpoints in order query and write VerifiableCredentials.
+ * Eventually, this may be expanded to handle other types of objects and operations.
  */
 public interface IdentityHubClient {
 
