@@ -65,7 +65,7 @@ public class IdentityHubControllerTest {
                 .build();
 
         collectionsWrite(verifiableCredential);
-        List<VerifiableCredential> credentials = collectionsQuery();
+        var credentials = collectionsQuery();
 
         assertThat(credentials).usingRecursiveFieldByFieldElementComparator().containsExactly(verifiableCredential);
     }

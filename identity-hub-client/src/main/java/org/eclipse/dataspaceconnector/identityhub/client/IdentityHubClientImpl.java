@@ -50,7 +50,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     @Override
     public Collection<VerifiableCredential> getVerifiableCredentials(String hubBaseUrl) throws ApiException, IOException {
         ResponseObject responseObject;
-        try (Response response = httpClient.newCall(
+        try (var response = httpClient.newCall(
                         new Request.Builder()
                                 .url(hubBaseUrl)
                                 .post(buildRequestBody(COLLECTIONS_QUERY.getName()))
@@ -97,7 +97,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     private RequestBody buildRequestBody(String method, byte[] data) throws JsonProcessingException {
         var requestId = UUID.randomUUID().toString();
         var nonce = UUID.randomUUID().toString();
-        RequestObject requestObject = RequestObject.Builder.newInstance()
+        var requestObject = RequestObject.Builder.newInstance()
                 .requestId(requestId)
                 .target("target")
                 .messages(List.of(MessageRequestObject.Builder.newInstance()
