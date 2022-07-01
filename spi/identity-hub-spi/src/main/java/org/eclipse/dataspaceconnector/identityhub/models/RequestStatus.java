@@ -15,10 +15,6 @@
 package org.eclipse.dataspaceconnector.identityhub.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-
-import java.util.Objects;
 
 /**
  * See <a href="https://identity.foundation/decentralized-web-node/spec/#response-objects">response objects documentation</a>
