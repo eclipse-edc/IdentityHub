@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataspaceconnector.identityhub.models;
+package org.eclipse.dataspaceconnector.identityhub.dtos;
 
 import org.jetbrains.annotations.NotNull;
 

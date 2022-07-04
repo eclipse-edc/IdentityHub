@@ -20,11 +20,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import org.eclipse.dataspaceconnector.identityhub.models.Descriptor;
-import org.eclipse.dataspaceconnector.identityhub.models.MessageRequestObject;
-import org.eclipse.dataspaceconnector.identityhub.models.RequestObject;
-import org.eclipse.dataspaceconnector.identityhub.models.ResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.dtos.Descriptor;
+import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
+import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
+import org.eclipse.dataspaceconnector.identityhub.dtos.ResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -33,8 +33,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.eclipse.dataspaceconnector.identityhub.models.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
-import static org.eclipse.dataspaceconnector.identityhub.models.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
+import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
+import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 
 public class IdentityHubClientImpl implements IdentityHubClient {
 

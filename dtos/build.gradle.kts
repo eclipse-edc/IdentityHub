@@ -3,9 +3,9 @@ plugins {
 }
 
 val jetBrainsAnnotationsVersion: String by project
-val jacksonVersion: String by project
+val swagger: String by project
 
 dependencies {
     api("org.jetbrains:annotations:${jetBrainsAnnotationsVersion}")
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    implementation("io.swagger.core.v3:swagger-jaxrs2-jakarta:${swagger}")
 }

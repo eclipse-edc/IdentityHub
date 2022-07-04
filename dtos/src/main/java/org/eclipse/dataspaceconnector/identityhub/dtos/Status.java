@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataspaceconnector.identityhub.models;
+package org.eclipse.dataspaceconnector.identityhub.dtos;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

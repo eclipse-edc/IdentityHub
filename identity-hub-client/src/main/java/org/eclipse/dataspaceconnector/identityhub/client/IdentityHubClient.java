@@ -14,7 +14,7 @@
 
 package org.eclipse.dataspaceconnector.identityhub.client;
 
-import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
 
 import java.io.IOException;
 import java.util.Collection;

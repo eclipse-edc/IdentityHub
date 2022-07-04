@@ -25,6 +25,7 @@ val faker: String by project
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
+    api(project(":dtos"))
     implementation(project(":spi:identity-hub-store-spi"))
     implementation("${edcGroup}:http:${edcVersion}")
 
