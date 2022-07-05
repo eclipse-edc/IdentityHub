@@ -59,7 +59,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 .execute()) {
 
             if (response.code() != 200) {
-                return StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: %s, response body: %s", response.code(), response.headers(), response.body()));
+                return StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: %s, response body: %s", response.code(), response.headers(), response.body().string()));
             }
 
             responseObject = objectMapper.readValue(response.body().byteStream(), ResponseObject.class);
@@ -74,7 +74,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     }
 
     @Override
-    public void addVerifiableCredential(String hubBaseUrl, VerifiableCredential verifiableCredential) throws ApiException, IOException {
+    public StatusResult<Void> addVerifiableCredential(String hubBaseUrl, VerifiableCredential verifiableCredential) throws IOException {
         var payload = objectMapper.writeValueAsString(verifiableCredential);
         try (var response = httpClient.newCall(new Request.Builder()
                         .url(hubBaseUrl)
@@ -82,9 +82,10 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                         .build())
                 .execute()) {
             if (response.code() != 200) {
-                throw new ApiException("IdentityHub error", response.code(), response.headers(), response.body());
+                return StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: %s, response body: %s", response.code(), response.headers(), response.body().string()));
             }
         }
+        return StatusResult.success();
     }
 
     private RequestBody buildRequestBody(String method) {
