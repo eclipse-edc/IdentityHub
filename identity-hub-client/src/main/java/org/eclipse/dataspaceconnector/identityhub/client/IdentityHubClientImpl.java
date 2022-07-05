@@ -65,8 +65,10 @@ public class IdentityHubClientImpl implements IdentityHubClient {
             responseObject = objectMapper.readValue(response.body().byteStream(), ResponseObject.class);
         }
 
-        var verifiableCredentials = responseObject.getReplies()
-                .stream().flatMap(x -> x.getEntries().stream())
+        var verifiableCredentials = responseObject
+                .getReplies()
+                .stream()
+                .flatMap(r -> r.getEntries().stream())
                 .map(e -> objectMapper.convertValue(e, VerifiableCredential.class))
                 .collect(Collectors.toList());
 
