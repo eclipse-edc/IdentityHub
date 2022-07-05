@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":spi:identity-hub-store-spi"))
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    implementation("${edcGroup}:core-spi:${edcVersion}")
 
     testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
     testImplementation("${edcGroup}:junit-extension:${edcVersion}:test-fixtures")

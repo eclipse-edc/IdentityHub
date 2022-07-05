@@ -45,8 +45,9 @@ public class IdentityHubClientImplIntegrationTest {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
 
         client.addVerifiableCredential(API_URL, credential);
-        var verifiableCredentials = client.getVerifiableCredentials(API_URL);
+        var statusResult = client.getVerifiableCredentials(API_URL);
 
-        assertThat(verifiableCredentials).usingRecursiveFieldByFieldElementComparator().containsExactly(credential);
+        assertThat(statusResult.succeeded());
+        assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().contains(credential);
     }
 }

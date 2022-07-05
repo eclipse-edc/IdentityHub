@@ -25,6 +25,8 @@ import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.ResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
+import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -47,7 +49,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     }
 
     @Override
-    public Collection<VerifiableCredential> getVerifiableCredentials(String hubBaseUrl) throws ApiException, IOException {
+    public StatusResult<Collection<VerifiableCredential>> getVerifiableCredentials(String hubBaseUrl) throws IOException {
         ResponseObject responseObject;
         try (var response = httpClient.newCall(
                         new Request.Builder()
@@ -57,18 +59,18 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 .execute()) {
 
             if (response.code() != 200) {
-                throw new ApiException("IdentityHub error", response.code(), response.headers(), response.body());
+                return StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: %s, response body: %s", response.code(), response.headers(), response.body()));
             }
 
             responseObject = objectMapper.readValue(response.body().byteStream(), ResponseObject.class);
         }
 
-        return responseObject.getReplies().stream()
-                .findFirst()
-                .orElseThrow(() -> new ApiException("Invalid response, no replies provided by IdentityHub."))
-                .getEntries().stream()
+        var verifiableCredentials = responseObject.getReplies()
+                .stream().flatMap(x -> x.getEntries().stream())
                 .map(e -> objectMapper.convertValue(e, VerifiableCredential.class))
                 .collect(Collectors.toList());
+
+        return StatusResult.success(verifiableCredentials);
     }
 
     @Override

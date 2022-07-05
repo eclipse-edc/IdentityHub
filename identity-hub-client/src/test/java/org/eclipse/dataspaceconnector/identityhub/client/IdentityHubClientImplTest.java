@@ -68,8 +68,9 @@ public class IdentityHubClientImplTest {
         };
 
         var client = createClient(interceptor);
-        var credentials = client.getVerifiableCredentials(HUB_URL);
-        assertThat(credentials).usingRecursiveFieldByFieldElementComparator().containsExactly(credential);
+        var statusResult = client.getVerifiableCredentials(HUB_URL);
+        assertThat(statusResult.succeeded());
+        assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(credential);
     }
 
     @Test
