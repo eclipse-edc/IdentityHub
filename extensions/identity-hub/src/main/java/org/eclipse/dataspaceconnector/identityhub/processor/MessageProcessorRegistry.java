@@ -14,7 +14,7 @@
 
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
-import org.eclipse.dataspaceconnector.identityhub.models.WebNodeInterfaceMethod;
+import org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod;
 
 import java.util.HashMap;
 import java.util.Map;

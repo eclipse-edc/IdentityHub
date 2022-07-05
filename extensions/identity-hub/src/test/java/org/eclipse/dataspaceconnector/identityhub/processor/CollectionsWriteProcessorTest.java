@@ -14,22 +14,22 @@
 
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
-import org.bouncycastle.util.encoders.Base64;
-import org.eclipse.dataspaceconnector.identityhub.models.MessageResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.models.MessageStatus;
+import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
+import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubInMemoryStore;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.dataspaceconnector.identityhub.models.MessageResponseObject.MESSAGE_ID_VALUE;
+import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
 
 
 public class CollectionsWriteProcessorTest {
@@ -47,25 +47,27 @@ public class CollectionsWriteProcessorTest {
     }
 
     @Test
-    void writeCredentials() throws JsonProcessingException {
+    void writeCredentials() throws Exception {
         // Arrange
-        var freeFormJsonMap = Map.of("id", FAKER.internet().uuid(), "number", FAKER.number().digits(10));
-        byte[] data = OBJECT_MAPPER.writeValueAsString(freeFormJsonMap).getBytes(StandardCharsets.UTF_8);
+        var credentialId = FAKER.internet().uuid();
+        var verifiableCredentialMap = Map.of("id", credentialId);
+        var data = OBJECT_MAPPER.writeValueAsString(verifiableCredentialMap).getBytes(StandardCharsets.UTF_8);
 
         // Act
         var result = writeProcessor.process(data);
 
         // Assert
         var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
+        var expectedVerifiableCredential = VerifiableCredential.Builder.newInstance().id(credentialId).build();
         assertThat(result).usingRecursiveComparison().isEqualTo(expectedResult);
-        assertThat(identityHubStore.getAll()).usingRecursiveFieldByFieldElementComparator().containsExactly(freeFormJsonMap);
+        assertThat(identityHubStore.getAll()).usingRecursiveFieldByFieldElementComparator().containsExactly(expectedVerifiableCredential);
     }
 
     @Test
     void writeCredentialsWithWrongJsonFormat() {
         // Arrange
         var malformedJson = "{";
-        byte[] data = Base64.encode(malformedJson.getBytes(StandardCharsets.UTF_8));
+        byte[] data = Base64.getEncoder().encode(malformedJson.getBytes(StandardCharsets.UTF_8));
         var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
 
         // Act
@@ -80,6 +82,20 @@ public class CollectionsWriteProcessorTest {
     void writeCredentialsWithInvalidBase64() {
         // Arrange
         byte[] data = "invalid base64".getBytes(StandardCharsets.UTF_8);
+        var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
+
+        // Act
+        var result = writeProcessor.process(data);
+
+        // Assert
+        assertThat(result).usingRecursiveComparison().isEqualTo(expectedResult);
+        assertThat(identityHubStore.getAll()).isEmpty();
+    }
+
+    @Test
+    void writeNonSupportedCredential() {
+        // Arrange
+        byte[] data = "{ \"invalid\": \"cred\"}".getBytes(StandardCharsets.UTF_8);
         var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
 
         // Act

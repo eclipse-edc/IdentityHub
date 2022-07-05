@@ -17,9 +17,10 @@ package org.eclipse.dataspaceconnector.identityhub.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import io.restassured.specification.RequestSpecification;
-import org.eclipse.dataspaceconnector.identityhub.models.Descriptor;
-import org.eclipse.dataspaceconnector.identityhub.models.MessageRequestObject;
-import org.eclipse.dataspaceconnector.identityhub.models.RequestObject;
+import org.eclipse.dataspaceconnector.identityhub.dtos.Descriptor;
+import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
+import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
+import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.junit.launcher.EdcExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,9 +35,9 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.common.testfixtures.TestUtils.getFreePort;
-import static org.eclipse.dataspaceconnector.identityhub.models.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
-import static org.eclipse.dataspaceconnector.identityhub.models.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
-import static org.eclipse.dataspaceconnector.identityhub.models.WebNodeInterfaceMethod.FEATURE_DETECTION_READ;
+import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
+import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
+import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.FEATURE_DETECTION_READ;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -47,7 +48,6 @@ public class IdentityHubControllerTest {
     private static final int PORT = getFreePort();
     private static final String API_URL = String.format("http://localhost:%s/api", PORT);
     private static final Faker FAKER = new Faker();
-    private static final String VERIFIABLE_CREDENTIAL_ID = FAKER.internet().uuid();
     private static final String NONCE = FAKER.lorem().characters(32);
     private static final String TARGET = FAKER.internet().url();
     private static final String REQUEST_ID = FAKER.internet().uuid();
@@ -59,13 +59,15 @@ public class IdentityHubControllerTest {
     }
 
     @Test
-    void pushAndQueryVerifiableCredentials() throws IOException {
-        VerifiableCredential credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
+    void writeAndQueryObject() throws Exception {
+        var verifiableCredential = VerifiableCredential.Builder.newInstance()
+                .id(FAKER.internet().uuid())
+                .build();
 
-        pushVerifiableCredential(credential);
-        List<VerifiableCredential> verifiableCredentials = queryVerifiableCredentials();
+        collectionsWrite(verifiableCredential);
+        var credentials = collectionsQuery();
 
-        assertThat(verifiableCredentials).usingRecursiveFieldByFieldElementComparator().containsExactly(credential);
+        assertThat(credentials).usingRecursiveFieldByFieldElementComparator().containsExactly(verifiableCredential);
     }
 
     @Test
@@ -136,8 +138,8 @@ public class IdentityHubControllerTest {
                 .build();
     }
 
-    private void pushVerifiableCredential(VerifiableCredential credential) throws IOException {
-        byte[] data = OBJECT_MAPPER.writeValueAsString(credential).getBytes(StandardCharsets.UTF_8);
+    private void collectionsWrite(VerifiableCredential verifiableCredential) throws IOException {
+        byte[] data = OBJECT_MAPPER.writeValueAsString(verifiableCredential).getBytes(StandardCharsets.UTF_8);
         baseRequest()
                 .body(createRequestObject(COLLECTIONS_WRITE.getName(), data))
                 .post()
@@ -149,7 +151,7 @@ public class IdentityHubControllerTest {
                 .body("replies[0].status.detail", equalTo("The message was successfully processed"));
     }
 
-    private List<VerifiableCredential> queryVerifiableCredentials() {
+    private List<VerifiableCredential> collectionsQuery() {
         return baseRequest()
                 .body(createRequestObject(COLLECTIONS_QUERY.getName()))
                 .post()
