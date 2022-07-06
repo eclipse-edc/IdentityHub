@@ -26,8 +26,8 @@ The VerifiableCredentials contain [claims](https://www.w3.org/TR/vc-data-model/#
 
 Let's focus on the `Get claims` box.
 `Participant B` wants to get the claims of `Participant A`, to apply access policy.
-For example, Participant A could have the policy that Participant B should be claimed as a `participantOf`
-`dataspaceA` by the issuer "gaia-x.com".
+For example, `Participant B` could have the policy that `Participant A` should be claimed as a `participantOf`
+`Dataspace C` by the issuer "gaia-x.com".
 
 5. Participant B extracts the IdentityHub URL of participant A from a DID Document obtained in previous steps.
 6. Participant B gets VerifiableCredentials from IdentityHub A.
