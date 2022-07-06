@@ -27,6 +27,7 @@ group authorize request
   B -> B: Verify signature
   B -> B: Extract claims
   end
+  end
   B -> B: Apply access policies
 end
 return response
