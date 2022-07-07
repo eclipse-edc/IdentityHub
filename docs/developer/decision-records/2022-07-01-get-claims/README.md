@@ -8,10 +8,39 @@ When an EDC participant receives an IDS request, it must verify the caller's ide
 To apply policies, it needs to get the claims of the participant.
 This document explains the mechanism to get the claims from IdentityHub.
 
-## What is a claim
+## Claim
 
 A claim is a statement about a subject. For example, a claim could be `ParticipantA` is in `region` `eu`.
 See [this documentation](https://www.w3.org/TR/vc-data-model/#claims) for more details.
+
+For example, a policy could require that `Government A` certifies that `Participant A` has `region` `eu`.
+In this example, `Government A` is the credential issuer, and the claim is: `Participant A` has `region` `eu`.
+
+Another example would be a policy requiring that `Organization A` certifies that `Participant A` has `certification` `ISO 9001`.
+In this example, `Organization A` is the credential issuer, and the claim is: `Participant A` has `certification` `ISO 9001`.
+
+## Credential issuer
+
+A credential issuer is an entity providing claims about a subject and signing it.
+Signing the claim is valuable to make sure the claim is delivered by a trusted entity.
+
+## Examples of policy
+
+In order to apply policy we need to get the claims and verify the issuer of the claim.
+
+### Example 1:
+
+Policy requiring that `Government A` certifies that `Participant A` has `region` `eu`.
+In this example, `Government A` is the credential issuer, and the claim is: `Participant A` has `region` `eu`.
+
+### Example 2:
+
+Policy requiring that `Organization A` certifies that `Participant A` has `certification` `ISO 9001`.
+In this example, `Organization A` is the credential issuer, and the claim would be `Participant A` has `certification` `ISO 9001`.
+
+## Verifiable Credentials
+
+IdentityHub provides [claims](https://www.w3.org/TR/vc-data-model/#claims) as JWS, signed by a credential issuer, effectively making them verifiable credentials.  
 
 ## Get claims
 
