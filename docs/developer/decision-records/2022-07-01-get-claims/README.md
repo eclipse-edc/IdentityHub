@@ -31,7 +31,7 @@ For example, `Participant B` could have the policy that `Participant A` should b
 
 5. Participant B extracts the IdentityHub URL of participant A from a DID Document obtained in previous steps.
 6. Participant B gets VerifiableCredentials from IdentityHub A.
-7. Participant B gets a list of JWS. Each JWS contains a [Verifiable credential](https://www.w3.org/TR/vc-data-model/) in its payload, (see [example Verifiable Credential (as JWT)](https://www.w3.org/TR/vc-data-model/#example-usage-of-the-credentialsubject-property)).  
+7. Participant B gets a list of [claims](https://www.w3.org/TR/vc-data-model/#claims) as JWS, signed by a third party, effectively making them [VerifiableCredentials](https://www.w3.org/TR/vc-data-model).  
 For each JWS:  
    8. Participant B parses the JWS, extracts the issuer DID URL from the JWS payload.  
    9. Participant B retrieves the issuer DID Document.  
