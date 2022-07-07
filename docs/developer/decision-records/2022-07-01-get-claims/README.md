@@ -13,12 +13,6 @@ This document explains the mechanism to get the claims from IdentityHub.
 A claim is a statement about a subject. For example, a claim could be `ParticipantA` is in `region` `eu`.
 See [this documentation](https://www.w3.org/TR/vc-data-model/#claims) for more details.
 
-For example, a policy could require that `Government A` certifies that `Participant A` has `region` `eu`.
-In this example, `Government A` is the credential issuer, and the claim is: `Participant A` has `region` `eu`.
-
-Another example would be a policy requiring that `Organization A` certifies that `Participant A` has `certification` `ISO 9001`.
-In this example, `Organization A` is the credential issuer, and the claim is: `Participant A` has `certification` `ISO 9001`.
-
 ## Credential issuer
 
 A credential issuer is an entity providing claims about a subject and signing it.
