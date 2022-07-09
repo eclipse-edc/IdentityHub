@@ -1,0 +1,36 @@
+@startuml
+autonumber "<b>0'.'"
+box "Participant A" #LightPink
+Participant "Participant A\nClient" as ParticipantA
+Participant "Participant A\nDID Document" as DID
+Participant "Participant A\nIdentityHub" as IDHUB
+end box
+box "Participant B" #LightGreen
+Participant "Participant B\nAPI" as B
+end box
+box "Credential issuer" #LightBlue
+Participant "Credential issuer DID" as ISSUER
+end box
+ParticipantA -> B ++: Request:\n - DID JWS
+activate ParticipantA
+group authorize request
+  B -> DID ++: Get DID Document (contains IdentityHub URL)
+  return DID Document
+  B -> B: Verify JWS
+  group Get Claims
+  B -> B: Extract IdentityHub URL
+  B -> IDHUB ++: Get Verifiable Credentials
+  return List of JWS (containing claims)
+  loop for each JWS
+  B -> B: Extract issuer DID URL
+  B -> ISSUER: Get issuer DID Document
+  B -> B: Verify signature
+  B -> B: Extract claims
+  end
+  end
+  B -> B: Apply access policies
+end
+return response
+deactivate ParticipantA
+
+@enduml
