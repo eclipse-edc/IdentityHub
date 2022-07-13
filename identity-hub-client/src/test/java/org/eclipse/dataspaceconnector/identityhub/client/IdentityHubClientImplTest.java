@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.client;
 
-import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import okhttp3.Interceptor;
@@ -27,15 +26,16 @@ import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.dtos.RequestStatus;
 import org.eclipse.dataspaceconnector.identityhub.dtos.ResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.eclipse.dataspaceconnector.identityhub.client.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
 
 public class IdentityHubClientImplTest {
@@ -47,11 +47,12 @@ public class IdentityHubClientImplTest {
     @Test
     void getVerifiableCredentials() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
+        var jws = buildSignedJwt(credential, FAKER.internet().url()).serialize().getBytes(StandardCharsets.UTF_8);
 
         Interceptor interceptor = chain -> {
             var request = chain.request();
             var replies = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE)
-                    .status(MessageStatus.OK).entries(List.of(credential)).build();
+                    .status(MessageStatus.OK).entries(List.of(jws)).build();
             var responseObject = ResponseObject.Builder.newInstance()
                     .requestId(FAKER.internet().uuid())
                     .status(RequestStatus.OK)
@@ -70,13 +71,13 @@ public class IdentityHubClientImplTest {
 
         var client = createClient(interceptor);
         var statusResult = client.getVerifiableCredentials(HUB_URL);
-
         assertThat(statusResult.succeeded());
-        assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(credential);
+        var jwts = statusResult.getContent().stream().map(jwt -> jwt.serialize().getBytes(StandardCharsets.UTF_8));
+        assertThat(jwts).containsExactly(jws);
     }
 
     @Test
-    void getVerifiableCredentialsServerError() throws Exception {
+    void getVerifiableCredentialsServerError() {
 
         var errorMessage = FAKER.lorem().sentence();
         var body = "{}";
@@ -116,12 +117,14 @@ public class IdentityHubClientImplTest {
         };
 
         var client = createClient(interceptor);
-        assertThatThrownBy(() -> client.getVerifiableCredentials(HUB_URL)).isInstanceOf(DatabindException.class);
+        var statusResult = client.getVerifiableCredentials(HUB_URL);
+        assertThat(statusResult.fatalError());
     }
 
     @Test
     void addVerifiableCredentialsServerError() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
+        var jws = buildSignedJwt(credential, FAKER.internet().url());
         var errorMessage = FAKER.lorem().sentence();
         var body = "{}";
         int code = 500;
@@ -138,7 +141,7 @@ public class IdentityHubClientImplTest {
         };
 
         var client = createClient(interceptor);
-        var statusResult = client.addVerifiableCredential(HUB_URL, credential);
+        var statusResult = client.addVerifiableCredential(HUB_URL, jws);
 
         var expectedResult = StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: , response body: %s", code, body));
         assertThat(statusResult).usingRecursiveComparison().isEqualTo(expectedResult);

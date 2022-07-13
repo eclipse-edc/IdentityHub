@@ -15,12 +15,12 @@
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
-import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
 
-import java.io.IOException;
+import java.text.ParseException;
 
 import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
 
@@ -39,13 +39,16 @@ public class CollectionsWriteProcessor implements MessageProcessor {
 
     @Override
     public MessageResponseObject process(byte[] data) {
-        Object hubObject;
         try {
-            hubObject = objectMapper.readValue(data, VerifiableCredential.class);
-        } catch (IllegalArgumentException | IOException e) {
+            var jwt = SignedJWT.parse(new String(data));
+            if (jwt.getJWTClaimsSet().getClaim("vc") == null) {
+                return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
+            }
+        } catch (ParseException e) {
             return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
         }
-        identityHubStore.add(hubObject);
+
+        identityHubStore.add(data);
         return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
     }
 }

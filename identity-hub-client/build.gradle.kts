@@ -24,6 +24,7 @@ val edcGroup: String by project
 val jupiterVersion: String by project
 val faker: String by project
 val assertj: String by project
+val nimbusVersion: String by project
 
 dependencies {
     implementation(project(":extensions:identity-hub"))
@@ -31,8 +32,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("${edcGroup}:core-spi:${edcVersion}")
+    implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
 
-    testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
+    testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation("${edcGroup}:junit-extension:${edcVersion}:test-fixtures")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")

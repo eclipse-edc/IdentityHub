@@ -17,6 +17,7 @@ package org.eclipse.dataspaceconnector.identityhub.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jwt.SignedJWT;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -24,11 +25,13 @@ import org.eclipse.dataspaceconnector.identityhub.dtos.Descriptor;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.ResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
+import org.eclipse.dataspaceconnector.spi.result.AbstractResult;
+import org.eclipse.dataspaceconnector.spi.result.Result;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -49,7 +52,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     }
 
     @Override
-    public StatusResult<Collection<VerifiableCredential>> getVerifiableCredentials(String hubBaseUrl) throws IOException {
+    public StatusResult<Collection<SignedJWT>> getVerifiableCredentials(String hubBaseUrl) {
         ResponseObject responseObject;
         try (var response = httpClient.newCall(
                         new Request.Builder()
@@ -63,31 +66,46 @@ public class IdentityHubClientImpl implements IdentityHubClient {
             }
 
             responseObject = objectMapper.readValue(response.body().byteStream(), ResponseObject.class);
+        } catch (IOException e) {
+            return StatusResult.failure(ResponseStatus.FATAL_ERROR, e.getMessage());
         }
 
         var verifiableCredentials = responseObject
                 .getReplies()
                 .stream()
                 .flatMap(r -> r.getEntries().stream())
-                .map(e -> objectMapper.convertValue(e, VerifiableCredential.class))
+                .map(this::parse)
+                .filter(AbstractResult::succeeded)
+                .map(AbstractResult::getContent)
                 .collect(Collectors.toList());
 
         return StatusResult.success(verifiableCredentials);
     }
 
     @Override
-    public StatusResult<Void> addVerifiableCredential(String hubBaseUrl, VerifiableCredential verifiableCredential) throws IOException {
-        var payload = objectMapper.writeValueAsString(verifiableCredential);
+    public StatusResult<Void> addVerifiableCredential(String hubBaseUrl, SignedJWT verifiableCredential) {
+        var payload = verifiableCredential.serialize().getBytes(UTF_8);
         try (var response = httpClient.newCall(new Request.Builder()
                         .url(hubBaseUrl)
-                        .post(buildRequestBody(COLLECTIONS_WRITE.getName(), payload.getBytes(UTF_8)))
+                        .post(buildRequestBody(COLLECTIONS_WRITE.getName(), payload))
                         .build())
                 .execute()) {
             if (response.code() != 200) {
                 return StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: %s, response body: %s", response.code(), response.headers(), response.body().string()));
             }
+        } catch (IOException e) {
+            return StatusResult.failure(ResponseStatus.FATAL_ERROR, e.getMessage());
         }
         return StatusResult.success();
+    }
+
+    private Result<SignedJWT> parse(Object entry) {
+        try {
+            var jwt = new String(objectMapper.convertValue(entry, byte[].class));
+            return Result.success(SignedJWT.parse(jwt));
+        } catch (ParseException e) {
+            return Result.failure(e.getMessage());
+        }
     }
 
     private RequestBody buildRequestBody(String method) {

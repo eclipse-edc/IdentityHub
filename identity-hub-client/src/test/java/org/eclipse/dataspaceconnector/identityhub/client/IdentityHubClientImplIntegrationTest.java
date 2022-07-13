@@ -16,14 +16,17 @@ package org.eclipse.dataspaceconnector.identityhub.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
-import org.eclipse.dataspaceconnector.common.testfixtures.TestUtils;
-import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.junit.launcher.EdcExtension;
+import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.dataspaceconnector.identityhub.client.VerifiableCredentialTestUtil.buildSignedJwt;
 
 @ExtendWith(EdcExtension.class)
 public class IdentityHubClientImplIntegrationTest {
@@ -43,11 +46,12 @@ public class IdentityHubClientImplIntegrationTest {
     @Test
     void addAndQueryVerifiableCredentials() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
+        SignedJWT jws = buildSignedJwt(credential, FAKER.internet().url());
 
-        client.addVerifiableCredential(API_URL, credential);
+        client.addVerifiableCredential(API_URL, jws);
         var statusResult = client.getVerifiableCredentials(API_URL);
 
         assertThat(statusResult.succeeded());
-        assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().contains(credential);
+        assertThat(statusResult.getContent().stream().map(JWSObject::serialize)).contains(jws.serialize());
     }
 }

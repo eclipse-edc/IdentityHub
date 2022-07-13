@@ -14,7 +14,7 @@
 
 package org.eclipse.dataspaceconnector.identityhub.client;
 
-import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
+import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 
 import java.io.IOException;
@@ -35,7 +35,7 @@ public interface IdentityHubClient {
      * @throws IOException Signaling that an I/O exception has occurred. For example during JSON serialization or when
      *     reaching out to the Identity Hub server.
      */
-    StatusResult<Collection<VerifiableCredential>> getVerifiableCredentials(String hubBaseUrl) throws IOException;
+    StatusResult<Collection<SignedJWT>> getVerifiableCredentials(String hubBaseUrl);
 
     /**
      * Write a VerifiableCredential.
@@ -46,6 +46,6 @@ public interface IdentityHubClient {
      * @throws IOException Signaling that an I/O exception has occurred. For example during JSON serialization or when
      *     reaching out to the Identity Hub server.
      */
-    StatusResult<Void> addVerifiableCredential(String hubBaseUrl, VerifiableCredential verifiableCredential) throws IOException;
+    StatusResult<Void> addVerifiableCredential(String hubBaseUrl, SignedJWT verifiableCredential);
 
 }
