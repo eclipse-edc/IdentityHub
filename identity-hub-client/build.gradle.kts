@@ -15,6 +15,7 @@
 plugins {
     java
     id("org.openapi.generator") version "5.4.0"
+    `maven-publish`
 }
 
 val jacksonVersion: String by project
@@ -38,4 +39,13 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("com.github.javafaker:javafaker:${faker}")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("identity-hub-client") {
+            artifactId = "identity-hub-client"
+            from(components["java"])
+        }
+    }
 }
