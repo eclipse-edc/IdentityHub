@@ -31,7 +31,7 @@ dependencies {
     implementation("${edcGroup}:http:${edcVersion}")
 
     testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
-    testImplementation("${edcGroup}:junit-extension:${edcVersion}:test-fixtures")
+    testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")

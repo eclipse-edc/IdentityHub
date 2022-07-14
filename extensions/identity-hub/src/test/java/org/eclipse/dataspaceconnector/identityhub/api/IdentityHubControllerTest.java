@@ -21,7 +21,8 @@ import org.eclipse.dataspaceconnector.identityhub.dtos.Descriptor;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
-import org.eclipse.dataspaceconnector.junit.launcher.EdcExtension;
+import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
+import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +35,6 @@ import java.util.Map;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.dataspaceconnector.common.testfixtures.TestUtils.getFreePort;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.FEATURE_DETECTION_READ;
@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(EdcExtension.class)
 public class IdentityHubControllerTest {
 
-    private static final int PORT = getFreePort();
+    private static final int PORT = TestUtils.getFreePort();
     private static final String API_URL = String.format("http://localhost:%s/api", PORT);
     private static final Faker FAKER = new Faker();
     private static final String NONCE = FAKER.lorem().characters(32);

@@ -27,17 +27,14 @@ val faker: String by project
 val assertj: String by project
 
 dependencies {
-    api(project(":spi:identity-hub-spi")) {
-        exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
-    }
-    api(project(":identity-hub-dtos")) {
-        exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
-    }
+    api(project(":spi:identity-hub-spi"))
+    api(project(":identity-hub-dtos"))
     implementation("${edcGroup}:http:${edcVersion}")
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("${edcGroup}:core-spi:${edcVersion}")
 
+    testImplementation(project(":extensions:identity-hub"))
     testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
     testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")

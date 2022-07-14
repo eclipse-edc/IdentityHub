@@ -8,7 +8,9 @@ val swagger: String by project
 
 dependencies {
     api("org.jetbrains:annotations:${jetBrainsAnnotationsVersion}")
-    implementation("io.swagger.core.v3:swagger-jaxrs2-jakarta:${swagger}")
+    implementation("io.swagger.core.v3:swagger-jaxrs2-jakarta:${swagger}") {
+        exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
+    }
 }
 
 publishing {
