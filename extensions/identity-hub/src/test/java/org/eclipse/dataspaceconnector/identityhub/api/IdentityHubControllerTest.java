@@ -16,28 +16,32 @@ package org.eclipse.dataspaceconnector.identityhub.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
+import com.nimbusds.jwt.SignedJWT;
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.dataspaceconnector.identityhub.dtos.Descriptor;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.junit.launcher.EdcExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.dataspaceconnector.common.testfixtures.TestUtils.getFreePort;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.FEATURE_DETECTION_READ;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils.getFreePort;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -60,14 +64,17 @@ public class IdentityHubControllerTest {
 
     @Test
     void writeAndQueryObject() throws Exception {
-        var verifiableCredential = VerifiableCredential.Builder.newInstance()
+        var issuer = FAKER.internet().url();
+        var credential = VerifiableCredential.Builder.newInstance()
                 .id(FAKER.internet().uuid())
                 .build();
+        var jwt = buildSignedJwt(credential, issuer);
 
-        collectionsWrite(verifiableCredential);
+        collectionsWrite(jwt);
         var credentials = collectionsQuery();
 
-        assertThat(credentials).usingRecursiveFieldByFieldElementComparator().containsExactly(verifiableCredential);
+        assertThat(credentials).usingRecursiveFieldByFieldElementComparator().containsExactly(jwt.serialize().getBytes(UTF_8));
+        System.out.println();
     }
 
     @Test
@@ -99,7 +106,7 @@ public class IdentityHubControllerTest {
 
     @Test
     void writeMalformedMessage() {
-        byte[] data = "invalid base64".getBytes(StandardCharsets.UTF_8);
+        byte[] data = "invalid base64".getBytes(UTF_8);
         baseRequest()
                 .body(createRequestObject(COLLECTIONS_WRITE.getName(), data))
                 .post()
@@ -138,8 +145,8 @@ public class IdentityHubControllerTest {
                 .build();
     }
 
-    private void collectionsWrite(VerifiableCredential verifiableCredential) throws IOException {
-        byte[] data = OBJECT_MAPPER.writeValueAsString(verifiableCredential).getBytes(StandardCharsets.UTF_8);
+    private void collectionsWrite(SignedJWT verifiableCredential) {
+        byte[] data = verifiableCredential.serialize().getBytes(UTF_8);
         baseRequest()
                 .body(createRequestObject(COLLECTIONS_WRITE.getName(), data))
                 .post()
@@ -151,7 +158,7 @@ public class IdentityHubControllerTest {
                 .body("replies[0].status.detail", equalTo("The message was successfully processed"));
     }
 
-    private List<VerifiableCredential> collectionsQuery() {
+    private List<byte[]> collectionsQuery() {
         return baseRequest()
                 .body(createRequestObject(COLLECTIONS_QUERY.getName()))
                 .post()
@@ -161,6 +168,8 @@ public class IdentityHubControllerTest {
                 .body("replies", hasSize(1))
                 .body("replies[0].status.code", equalTo(200))
                 .body("replies[0].status.detail", equalTo("The message was successfully processed"))
-                .extract().body().jsonPath().getList("replies[0].entries", VerifiableCredential.class);
+                .extract().body().jsonPath().getList("replies[0].entries", String.class)
+                .stream().map(s -> Base64.getDecoder().decode(s))
+                .collect(Collectors.toList());
     }
 }

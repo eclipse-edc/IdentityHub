@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
-import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubInMemoryStore;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +30,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 
 
 public class CollectionsWriteProcessorTest {
@@ -50,17 +51,20 @@ public class CollectionsWriteProcessorTest {
     void writeCredentials() throws Exception {
         // Arrange
         var credentialId = FAKER.internet().uuid();
-        var verifiableCredentialMap = Map.of("id", credentialId);
-        var data = OBJECT_MAPPER.writeValueAsString(verifiableCredentialMap).getBytes(StandardCharsets.UTF_8);
+        var issuer = FAKER.internet().url();
+        var verifiableCredential = VerifiableCredential.Builder.newInstance()
+                .id(credentialId)
+                .credentialSubject(Map.of("region", "eu")).build();
+        var data = buildSignedJwt(verifiableCredential, issuer).serialize().getBytes(StandardCharsets.UTF_8);
 
         // Act
         var result = writeProcessor.process(data);
 
         // Assert
         var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
-        var expectedVerifiableCredential = VerifiableCredential.Builder.newInstance().id(credentialId).build();
+
         assertThat(result).usingRecursiveComparison().isEqualTo(expectedResult);
-        assertThat(identityHubStore.getAll()).usingRecursiveFieldByFieldElementComparator().containsExactly(expectedVerifiableCredential);
+        assertThat(identityHubStore.getAll()).usingRecursiveFieldByFieldElementComparator().containsExactly(data);
     }
 
     @Test

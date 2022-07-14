@@ -35,6 +35,7 @@ dependencies {
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
 
     testImplementation("${edcGroup}:junit:${edcVersion}")
+    testImplementation(project(":identity-hub-junit"))
     testImplementation("${edcGroup}:junit-extension:${edcVersion}:test-fixtures")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
