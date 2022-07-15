@@ -1,4 +1,3 @@
-package org.eclipse.dataspaceconnector.identityhub.did;
 /*
  *  Copyright (c) 2022 Microsoft Corporation
  *
@@ -12,6 +11,8 @@ package org.eclipse.dataspaceconnector.identityhub.did;
  *       Microsoft Corporation - initial API and implementation
  *
  */
+
+package org.eclipse.dataspaceconnector.identityhub.did;
 
 import org.junit.jupiter.api.Test;
 
