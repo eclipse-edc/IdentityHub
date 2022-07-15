@@ -69,7 +69,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
     private Result<Map.Entry<String, Object>> getClaims(SignedJWT jwt) {
         try {
-            Map<String, Object> jwtClaims = jwt.getJWTClaimsSet().getClaims();
+            var jwtClaims = jwt.getJWTClaimsSet().getClaims();
             var vc = (HashMap<String, Object>) jwt.getPayload().toJSONObject().get("vc");
             vc.putAll(jwtClaims);
             var credentialId = vc.get("id").toString();
