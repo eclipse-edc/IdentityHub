@@ -13,10 +13,6 @@ package org.eclipse.dataspaceconnector.identityhub.did;
  *
  */
 
-import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
-import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
-import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.junit.jupiter.api.Test;
 
 public class IdentityHubCredentialsVerifierTest {

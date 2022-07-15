@@ -48,7 +48,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     }
 
     @Override
-    public Result<Map<String, Object>> getVerifiedClaims(DidDocument didDocument) {
+    public Result<Map<String, Object>> verifyCredentials(DidDocument didDocument) {
         var hubBaseUrl = getIdentityHubBaseUrl(didDocument);
         if (hubBaseUrl.failed()) return Result.failure(hubBaseUrl.getFailureMessages());
 

@@ -62,7 +62,7 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
         var jwt = buildSignedJwt(credential,  credentialIssuer, jwk);
 
         identityHubClient.addVerifiableCredential(API_URL, jwt);
-        var claims = identityHubCredentialVerifier.getVerifiedClaims(didDocument);
+        var claims = identityHubCredentialVerifier.verifyCredentials(didDocument);
         assertThat(claims.succeeded());
         assertThat(claims.getContent().size()).isEqualTo(1);
     }
