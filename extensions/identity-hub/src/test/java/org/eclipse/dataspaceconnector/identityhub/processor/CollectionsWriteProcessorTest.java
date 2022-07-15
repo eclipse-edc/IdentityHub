@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
-import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubInMemoryStore;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
 import org.junit.jupiter.api.BeforeEach;

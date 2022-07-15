@@ -21,7 +21,7 @@ import io.restassured.specification.RequestSpecification;
 import org.eclipse.dataspaceconnector.identityhub.dtos.Descriptor;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
-import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

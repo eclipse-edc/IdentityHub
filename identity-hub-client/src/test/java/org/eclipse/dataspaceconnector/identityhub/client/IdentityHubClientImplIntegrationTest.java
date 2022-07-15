@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
 import org.junit.jupiter.api.BeforeEach;

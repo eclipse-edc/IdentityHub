@@ -23,7 +23,7 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 
 import java.sql.Date;
 import java.time.Duration;

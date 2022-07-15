@@ -26,7 +26,7 @@ import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.dtos.RequestStatus;
 import org.eclipse.dataspaceconnector.identityhub.dtos.ResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 import org.junit.jupiter.api.Test;

@@ -25,7 +25,7 @@ import org.eclipse.dataspaceconnector.iam.did.spi.document.EllipticCurvePublicKe
 import org.eclipse.dataspaceconnector.iam.did.spi.document.Service;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
-import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;

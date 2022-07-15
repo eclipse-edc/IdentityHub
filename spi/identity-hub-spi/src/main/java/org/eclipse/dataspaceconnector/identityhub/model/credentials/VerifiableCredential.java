@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataspaceconnector.identityhub.models.credentials;
+package org.eclipse.dataspaceconnector.identityhub.model.credentials;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
