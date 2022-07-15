@@ -58,8 +58,7 @@ public class IdentityHubDidExtension implements ServiceExtension {
         }
 
         var client = new IdentityHubClientImpl(httpClient, new ObjectMapper());
-        var credentialsVerifier = new IdentityHubCredentialsVerifier(client, monitor, didPublicKeyResolver, typeManager.getMapper());
-        // TODO: Change to CredentialsVerifier when contract changed.
+        var credentialsVerifier = new IdentityHubCredentialsVerifier(client, monitor, didPublicKeyResolver);
         context.registerService(IdentityHubCredentialsVerifier.class, credentialsVerifier);
 
         monitor.info("Initialized Identity Hub DID extension");

@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.did;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.iam.did.crypto.credentials.VerifiableCredentialFactory;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
@@ -36,18 +35,16 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     private final IdentityHubClient identityHubClient;
     private final Monitor monitor;
     private final DidPublicKeyResolver didPublicKeyResolver;
-    private final ObjectMapper objectMapper;
 
     /**
      * Create a new credential verifier that uses an Identity Hub
      *
      * @param identityHubClient IdentityHubClient.
      */
-    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, DidPublicKeyResolver didPublicKeyResolver, ObjectMapper objectMapper) {
+    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, DidPublicKeyResolver didPublicKeyResolver) {
         this.identityHubClient = identityHubClient;
         this.monitor = monitor;
         this.didPublicKeyResolver = didPublicKeyResolver;
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -56,11 +53,13 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         if (hubBaseUrl.failed()) return Result.failure(hubBaseUrl.getFailureMessages());
 
         var jwts = identityHubClient.getVerifiableCredentials(hubBaseUrl.getContent());
-        if (jwts.failed()) return Result.failure(jwts.getFailureMessages());
-        var claims = jwts.getContent()
+        if (jwts.failed()) {
+            return Result.failure(jwts.getFailureMessages());
+        }
+        var verifiedClaims = jwts.getContent()
                 .stream()
-                .filter(this::verify)
-                .map(this::getClaims)
+                .filter(this::verify);
+        var claims = verifiedClaims.map(this::getClaims)
                 .filter(AbstractResult::succeeded)
                 .map(AbstractResult::getContent)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -82,9 +81,14 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
     private boolean verify(SignedJWT jwt) {
         var issuer = getIssuer(jwt);
-        if (issuer.failed()) return false;
+        if (issuer.failed()) {
+            return false;
+        }
         var issuerPublicKey = didPublicKeyResolver.resolvePublicKey(issuer.getContent());
-        var verificationResult = VerifiableCredentialFactory.verify(jwt, issuerPublicKey.getContent(), "verifiable-credential");
+        if (issuerPublicKey.failed()) {
+            return false;
+        }
+        var verificationResult = VerifiableCredentialFactory.verify(jwt, issuerPublicKey.getContent(), "identity-hub");
         return verificationResult.succeeded();
     }
 
