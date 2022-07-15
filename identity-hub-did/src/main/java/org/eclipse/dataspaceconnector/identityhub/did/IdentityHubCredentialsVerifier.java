@@ -30,6 +30,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Obtains and verifies credentials associated with a DID.
+ * The DID document contains an IdentityHub service, the IdentityHubCredentialsVerifier gets credentials from the
+ * IdentityHub instance and verifies the credentials.
+ */
 public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
     private final IdentityHubClient identityHubClient;
@@ -47,6 +52,13 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         this.didPublicKeyResolver = didPublicKeyResolver;
     }
 
+    /**
+     * Get credentials from the IdentityHub of participant, verifies the credentials, and returns the successfully verified credentials.
+     * To be successfully verified, credentials needs to be signed by the specified issuer in the JWT.
+     *
+     * @param didDocument of a participant. The Did Document should contain an IdentityHub service.
+     * @return VerifiableCredentials.
+     */
     @Override
     public Result<Map<String, Object>> verifyCredentials(DidDocument didDocument) {
         var hubBaseUrl = getIdentityHubBaseUrl(didDocument);
