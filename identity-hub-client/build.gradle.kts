@@ -36,7 +36,7 @@ dependencies {
 
     testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation(project(":identity-hub-junit"))
-    testImplementation("${edcGroup}:junit-extension:${edcVersion}:test-fixtures")
+    testImplementation("${edcGroup}:junit-extension:${edcVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")

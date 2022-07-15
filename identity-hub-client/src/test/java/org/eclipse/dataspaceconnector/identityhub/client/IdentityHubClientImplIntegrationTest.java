@@ -19,7 +19,7 @@ import com.github.javafaker.Faker;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.models.credentials.VerifiableCredential;
-import org.eclipse.dataspaceconnector.junit.launcher.EdcExtension;
+import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
