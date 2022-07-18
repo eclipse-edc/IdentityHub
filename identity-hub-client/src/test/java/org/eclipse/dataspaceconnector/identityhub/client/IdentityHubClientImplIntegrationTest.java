@@ -16,12 +16,14 @@ package org.eclipse.dataspaceconnector.identityhub.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
-import org.eclipse.dataspaceconnector.common.testfixtures.TestUtils;
 import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
-import org.eclipse.dataspaceconnector.junit.launcher.EdcExtension;
+import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
+import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,11 +45,18 @@ public class IdentityHubClientImplIntegrationTest {
     @Test
     void addAndQueryVerifiableCredentials() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
+        addVerifiableCredential(credential);
+        getVerifiableCredential(credential);
+    }
 
-        client.addVerifiableCredential(API_URL, credential);
+    private void addVerifiableCredential(VerifiableCredential credential) throws IOException {
+        var statusResult = client.addVerifiableCredential(API_URL, credential);
+        assertThat(statusResult.succeeded()).isTrue();
+    }
+
+    private void getVerifiableCredential(VerifiableCredential credential) throws IOException {
         var statusResult = client.getVerifiableCredentials(API_URL);
-
-        assertThat(statusResult.succeeded());
+        assertThat(statusResult.succeeded()).isTrue();
         assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().contains(credential);
     }
 }
