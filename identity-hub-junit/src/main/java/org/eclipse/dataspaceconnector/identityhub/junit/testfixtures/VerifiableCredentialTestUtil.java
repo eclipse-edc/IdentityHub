@@ -14,6 +14,8 @@
 
 package org.eclipse.dataspaceconnector.identityhub.junit.testfixtures;
 
+import com.github.javafaker.Faker;
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -21,16 +23,43 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jose.jwk.gen.JWKGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.iam.did.crypto.key.KeyConverter;
+import org.eclipse.dataspaceconnector.iam.did.spi.document.EllipticCurvePublicKey;
+import org.eclipse.dataspaceconnector.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 
 public class VerifiableCredentialTestUtil {
     public static final Date EXP = Date.from(Instant.now().plus(Duration.ofDays(1)));
+
+    private static final Faker FAKER = new Faker();
+    private static final ECKeyGenerator EC_KEY_GENERATOR = new ECKeyGenerator(Curve.P_256);
+
+    public static VerifiableCredential generateVerifiableCredential() {
+        var credentialId = FAKER.internet().uuid();
+        return VerifiableCredential.Builder.newInstance()
+                .id(credentialId)
+                .credentialSubject(Map.of(
+                        FAKER.lorem().word(), FAKER.lorem().word(),
+                        FAKER.lorem().word(), FAKER.lorem().word()))
+                .build();
+    }
+
+    public static ECKey generateEcKey() throws Exception {
+        return EC_KEY_GENERATOR.keyUse(KeyUse.SIGNATURE).generate();
+    }
+
+    public static PublicKeyWrapper toPublicKeyWrapper(ECKey jwk) {
+        var publicKey = new EllipticCurvePublicKey(jwk.getCurve().getName(), jwk.getKeyType().getValue(), jwk.getX().toString(), jwk.getY().toString());
+        return KeyConverter.toPublicKeyWrapper(publicKey, "ec");
+    }
 
     public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer) throws Exception {
         var jwk = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
@@ -46,6 +75,7 @@ public class VerifiableCredentialTestUtil {
                 .expirationTime(EXP)
                 .subject("verifiable-credential")
                 .build();
+
         var jws = new SignedJWT(jwsHeader, claims);
 
         var jwsSigner = new ECDSASigner(jwk.toECPrivateKey());

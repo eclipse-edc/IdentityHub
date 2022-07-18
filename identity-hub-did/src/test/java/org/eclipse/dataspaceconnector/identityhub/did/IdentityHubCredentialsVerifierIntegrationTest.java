@@ -16,17 +16,11 @@ package org.eclipse.dataspaceconnector.identityhub.did;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
-import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
-import org.eclipse.dataspaceconnector.iam.did.crypto.key.KeyConverter;
 import org.eclipse.dataspaceconnector.iam.did.resolution.DidPublicKeyResolverImpl;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
-import org.eclipse.dataspaceconnector.iam.did.spi.document.EllipticCurvePublicKey;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.Service;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
-import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
@@ -41,6 +35,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.EXP;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toPublicKeyWrapper;
 import static org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils.getFreePort;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -65,18 +62,12 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
         var id = FAKER.internet().uuid();
         var credentialIssuer = FAKER.internet().url();
         var publicKeyResolver = mock(DidPublicKeyResolverImpl.class);
-        var jwk = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
-        var publicKey = new EllipticCurvePublicKey(jwk.getCurve().getName(), jwk.getKeyType().getValue(), jwk.getX().toString(), jwk.getY().toString());
-        var keyWrapper = KeyConverter.toPublicKeyWrapper(publicKey, "ec");
-
-        when(publicKeyResolver.resolvePublicKey(credentialIssuer)).thenReturn(Result.success(keyWrapper));
-
+        var jwk = generateEcKey();
+        when(publicKeyResolver.resolvePublicKey(credentialIssuer))
+                .thenReturn(Result.success(toPublicKeyWrapper(jwk)));
         var identityHubCredentialVerifier = new IdentityHubCredentialsVerifier(identityHubClient, new ConsoleMonitor(), publicKeyResolver);
         var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", API_URL))).build();
-        var credential = VerifiableCredential.Builder.newInstance()
-                .id(id)
-                .credentialSubject(Map.of("region", "eu"))
-                .build();
+        var credential = generateVerifiableCredential();
         var jwt = buildSignedJwt(credential,  credentialIssuer, jwk);
 
         identityHubClient.addVerifiableCredential(API_URL, jwt);
