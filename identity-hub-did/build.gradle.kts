@@ -9,6 +9,7 @@ val nimbusVersion: String by project
 val okHttpVersion: String by project
 val mockitoVersion: String by project
 val assertj: String by project
+val faker: String by project
 
 dependencies {
     implementation(project(":extensions:identity-hub"))
@@ -20,6 +21,7 @@ dependencies {
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
 
+    testImplementation("com.github.javafaker:javafaker:${faker}")
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation(project(":identity-hub-junit"))

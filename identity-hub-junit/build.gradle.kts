@@ -10,6 +10,7 @@ repositories {
 }
 
 val nimbusVersion: String by project
+val faker: String by project
 
 dependencies {
     implementation(project(":spi:identity-hub-spi"))

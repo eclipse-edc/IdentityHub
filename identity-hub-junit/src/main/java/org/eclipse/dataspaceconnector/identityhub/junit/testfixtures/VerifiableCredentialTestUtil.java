@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.Date;
 
 public class VerifiableCredentialTestUtil {
+    public static final Date EXP = Date.from(Instant.now().plus(Duration.ofDays(1)));
 
     public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer) throws Exception {
         var jwk = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
@@ -42,7 +43,7 @@ public class VerifiableCredentialTestUtil {
                 .claim("vc", credential)
                 .issuer(issuer)
                 .audience("identity-hub")
-                .expirationTime(Date.from(Instant.now().plus(Duration.ofDays(1))))
+                .expirationTime(EXP)
                 .subject("verifiable-credential")
                 .build();
         var jws = new SignedJWT(jwsHeader, claims);
