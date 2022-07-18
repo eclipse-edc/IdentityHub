@@ -25,9 +25,9 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 
-import java.sql.Date;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
 
 public class VerifiableCredentialTestUtil {
 
