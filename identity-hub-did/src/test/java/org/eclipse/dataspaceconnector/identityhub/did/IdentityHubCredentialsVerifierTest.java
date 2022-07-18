@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toMap;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toPublicKeyWrapper;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,7 +39,6 @@ import static org.mockito.Mockito.when;
 public class IdentityHubCredentialsVerifierTest {
 
     private static final Faker FAKER = new Faker();
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Test
     public void getVerifiedClaims_getValidClaims() throws Exception {
@@ -60,9 +60,13 @@ public class IdentityHubCredentialsVerifierTest {
 
         when(didPublicKeyResolver.resolvePublicKey(issuer))
                 .thenReturn(Result.success(toPublicKeyWrapper(jwk)));
+        var credentials = credentialsVerifier.verifyCredentials(didDocument);
 
-
-        assertThat(credentialsVerifier.verifyCredentials(didDocument))
+        assertThat(credentials.succeeded());
+        assertThat(credentials.getContent())
+                .usingRecursiveComparison()
+                .ignoringFields(String.format("%s.exp", credential.getId()))
+                .isEqualTo(toMap(credential, issuer));
     }
 
     @Test

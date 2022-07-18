@@ -37,6 +37,7 @@ import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.Veri
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toMap;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toPublicKeyWrapper;
 import static org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils.getFreePort;
 import static org.mockito.Mockito.mock;
@@ -72,16 +73,8 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
 
         identityHubClient.addVerifiableCredential(API_URL, jwt);
         var credentials = identityHubCredentialVerifier.verifyCredentials(didDocument);
-        var expectedCredentials = buildMapCredential(id, credential.getCredentialSubject(), credentialIssuer);
+        var expectedCredentials = toMap(credential, credentialIssuer);
         assertThat(credentials.succeeded());
         assertThat(credentials.getContent()).usingRecursiveComparison().ignoringFields(String.format("%s.exp", id)).isEqualTo(expectedCredentials);
-    }
-
-    private Map<String, Object> buildMapCredential(String id, Map<String, Object> credentialSubject, String issuer) {
-        return Map.of(id, Map.of("vc", Map.of("credentialSubject", credentialSubject, "id", id),
-                "aud", List.of("identity-hub"),
-                "sub", "verifiable-credential",
-                "iss", issuer,
-                "exp", EXP));
     }
 }

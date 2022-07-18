@@ -34,6 +34,7 @@ import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCr
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 public class VerifiableCredentialTestUtil {
@@ -82,5 +83,15 @@ public class VerifiableCredentialTestUtil {
         jws.sign(jwsSigner);
 
         return SignedJWT.parse(jws.serialize());
+    }
+
+    public static Map<String, Object> toMap(VerifiableCredential verifiableCredential, String issuer) {
+        return Map.of(verifiableCredential.getId(),
+                Map.of("vc", Map.of("credentialSubject", verifiableCredential.getCredentialSubject(),
+                                "id", verifiableCredential.getId()),
+                "aud", List.of("identity-hub"),
+                "sub", "verifiable-credential",
+                "iss", issuer,
+                "exp", EXP));
     }
 }
