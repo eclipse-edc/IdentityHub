@@ -73,7 +73,6 @@ public class IdentityHubControllerTest {
         var credentials = collectionsQuery();
 
         assertThat(credentials).usingRecursiveFieldByFieldElementComparator().containsExactly(jwt.serialize().getBytes(UTF_8));
-        System.out.println();
     }
 
     @Test
