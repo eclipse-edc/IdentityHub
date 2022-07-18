@@ -44,7 +44,7 @@ public class CollectionsWriteProcessorTest {
     @BeforeEach
     void setUp() {
         identityHubStore = new IdentityHubInMemoryStore();
-        writeProcessor = new CollectionsWriteProcessor(identityHubStore, OBJECT_MAPPER);
+        writeProcessor = new CollectionsWriteProcessor(identityHubStore);
     }
 
     @Test

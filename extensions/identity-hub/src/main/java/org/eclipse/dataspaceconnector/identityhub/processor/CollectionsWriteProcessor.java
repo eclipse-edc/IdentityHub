@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
@@ -30,11 +29,9 @@ import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObj
 public class CollectionsWriteProcessor implements MessageProcessor {
 
     private final IdentityHubStore identityHubStore;
-    private final ObjectMapper objectMapper;
 
-    public CollectionsWriteProcessor(IdentityHubStore identityHubStore, ObjectMapper objectMapper) {
+    public CollectionsWriteProcessor(IdentityHubStore identityHubStore) {
         this.identityHubStore = identityHubStore;
-        this.objectMapper = objectMapper;
     }
 
     @Override
