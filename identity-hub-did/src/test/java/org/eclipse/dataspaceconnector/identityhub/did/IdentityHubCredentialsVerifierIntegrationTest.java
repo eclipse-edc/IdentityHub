@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.EXP;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
@@ -60,7 +59,6 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
 
     @Test
     public void getVerifiedClaims_getValidClaims() throws Exception {
-        var id = FAKER.internet().uuid();
         var credentialIssuer = FAKER.internet().url();
         var publicKeyResolver = mock(DidPublicKeyResolverImpl.class);
         var jwk = generateEcKey();
@@ -75,6 +73,6 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
         var credentials = identityHubCredentialVerifier.verifyCredentials(didDocument);
         var expectedCredentials = toMap(credential, credentialIssuer);
         assertThat(credentials.succeeded());
-        assertThat(credentials.getContent()).usingRecursiveComparison().ignoringFields(String.format("%s.exp", id)).isEqualTo(expectedCredentials);
+        assertThat(credentials.getContent()).usingRecursiveComparison().ignoringFields(String.format("%s.exp", credential.getId())).isEqualTo(expectedCredentials);
     }
 }
