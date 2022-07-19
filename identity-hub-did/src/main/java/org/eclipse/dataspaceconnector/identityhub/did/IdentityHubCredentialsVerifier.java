@@ -15,7 +15,6 @@
 package org.eclipse.dataspaceconnector.identityhub.did;
 
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspaceconnector.iam.did.crypto.credentials.VerifiableCredentialFactory;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
@@ -39,17 +38,17 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
     private final IdentityHubClient identityHubClient;
     private final Monitor monitor;
-    private final DidPublicKeyResolver didPublicKeyResolver;
+    private final SignatureVerifier signatureVerifier;
 
     /**
      * Create a new credential verifier that uses an Identity Hub
      *
      * @param identityHubClient IdentityHubClient.
      */
-    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, DidPublicKeyResolver didPublicKeyResolver) {
+    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, SignatureVerifier signatureVerifier) {
         this.identityHubClient = identityHubClient;
         this.monitor = monitor;
-        this.didPublicKeyResolver = didPublicKeyResolver;
+        this.signatureVerifier = signatureVerifier;
     }
 
     /**
@@ -70,7 +69,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         }
         var verifiedClaims = jwts.getContent()
                 .stream()
-                .filter(this::verify);
+                .filter(signatureVerifier::verify);
         var claims = verifiedClaims.map(this::extractCredential)
                 .filter(AbstractResult::succeeded)
                 .map(AbstractResult::getContent)
@@ -89,28 +88,6 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
             return Result.success(new AbstractMap.SimpleEntry<>(credentialId, payload));
         } catch (ParseException | RuntimeException e) {
-            return Result.failure(e.getMessage());
-        }
-    }
-
-    private boolean verify(SignedJWT jwt) {
-        var issuer = getIssuer(jwt);
-        if (issuer.failed()) {
-            return false;
-        }
-        var issuerPublicKey = didPublicKeyResolver.resolvePublicKey(issuer.getContent());
-        if (issuerPublicKey.failed()) {
-            return false;
-        }
-        var verificationResult = VerifiableCredentialFactory.verify(jwt, issuerPublicKey.getContent(), "identity-hub");
-        return verificationResult.succeeded();
-    }
-
-    private Result<String> getIssuer(SignedJWT jwt) {
-        try {
-            return Result.success(jwt.getJWTClaimsSet().getIssuer());
-        } catch (ParseException e) {
-            monitor.info("Error parsing issuer from JWT", e);
             return Result.failure(e.getMessage());
         }
     }

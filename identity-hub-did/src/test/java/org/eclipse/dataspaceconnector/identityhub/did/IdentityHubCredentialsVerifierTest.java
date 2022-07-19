@@ -50,7 +50,8 @@ public class IdentityHubCredentialsVerifierTest {
         var identityHubClient = mock(IdentityHubClient.class);
         var monitor = new ConsoleMonitor();
         var didPublicKeyResolver = mock(DidPublicKeyResolver.class);
-        var credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, monitor, didPublicKeyResolver);
+        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, monitor);
+        var credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, monitor, signatureVerifier);
         var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
         var credential = generateVerifiableCredential();
 
@@ -79,7 +80,8 @@ public class IdentityHubCredentialsVerifierTest {
         var identityHubClient = mock(IdentityHubClient.class);
         var monitor = new ConsoleMonitor();
         var didPublicKeyResolver = mock(DidPublicKeyResolver.class);
-        var credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, monitor, didPublicKeyResolver);
+        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, monitor);
+        var credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, monitor, signatureVerifier);
         var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
         var credential = generateVerifiableCredential();
 
@@ -98,7 +100,7 @@ public class IdentityHubCredentialsVerifierTest {
 
     @Test
     public void getVerifiedClaims_hubUrlNotResolved() throws Exception {
-        var credentialsVerifier = new IdentityHubCredentialsVerifier(mock(IdentityHubClient.class), new ConsoleMonitor(), mock(DidPublicKeyResolver.class));
+        var credentialsVerifier = new IdentityHubCredentialsVerifier(mock(IdentityHubClient.class), new ConsoleMonitor(), mock(SignatureVerifier.class));
         var didDocument = DidDocument.Builder.newInstance().build();
 
         var credentials = credentialsVerifier.verifyCredentials(didDocument);
@@ -111,8 +113,7 @@ public class IdentityHubCredentialsVerifierTest {
         var hubBaseUrl = "https://" + FAKER.internet().url();
         var identityHubClient = mock(IdentityHubClient.class);
         var monitor = new ConsoleMonitor();
-        var didPublicKeyResolver = mock(DidPublicKeyResolver.class);
-        var credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, monitor, didPublicKeyResolver);
+        var credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, monitor, mock(SignatureVerifier.class));
         var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
 
         when(identityHubClient.getVerifiableCredentials(hubBaseUrl))

@@ -64,7 +64,8 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
         var jwk = generateEcKey();
         when(publicKeyResolver.resolvePublicKey(credentialIssuer))
                 .thenReturn(Result.success(toPublicKeyWrapper(jwk)));
-        var identityHubCredentialVerifier = new IdentityHubCredentialsVerifier(identityHubClient, new ConsoleMonitor(), publicKeyResolver);
+        var signatureVerifier = new SignatureVerifier(publicKeyResolver, new ConsoleMonitor());
+        var identityHubCredentialVerifier = new IdentityHubCredentialsVerifier(identityHubClient, new ConsoleMonitor(), signatureVerifier);
         var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", API_URL))).build();
         var credential = generateVerifiableCredential();
         var jwt = buildSignedJwt(credential,  credentialIssuer, jwk);
