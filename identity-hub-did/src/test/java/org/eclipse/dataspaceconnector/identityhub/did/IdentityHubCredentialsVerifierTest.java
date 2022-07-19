@@ -14,13 +14,13 @@
 
 package org.eclipse.dataspaceconnector.identityhub.did;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.Service;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
+import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 import org.junit.jupiter.api.Test;
@@ -70,12 +70,55 @@ public class IdentityHubCredentialsVerifierTest {
     }
 
     @Test
-    public void getVerifiedClaims_filtersSignedByWrongIssuer() {
+    public void getVerifiedClaims_filtersSignedByWrongIssuer() throws Exception {
 
+        var hubBaseUrl = "https://" + FAKER.internet().url();
+        var issuer = FAKER.internet().url();
+        var jwk = generateEcKey();
+
+        var identityHubClient = mock(IdentityHubClient.class);
+        var monitor = new ConsoleMonitor();
+        var didPublicKeyResolver = mock(DidPublicKeyResolver.class);
+        var credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, monitor, didPublicKeyResolver);
+        var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
+        var credential = generateVerifiableCredential();
+
+        // Sign jwt using a different key.
+        var jws = buildSignedJwt(credential, issuer);
+        when(identityHubClient.getVerifiableCredentials(hubBaseUrl))
+                .thenReturn(StatusResult.success(List.of(jws)));
+
+        when(didPublicKeyResolver.resolvePublicKey(issuer))
+                .thenReturn(Result.success(toPublicKeyWrapper(jwk)));
+        var credentials = credentialsVerifier.verifyCredentials(didDocument);
+
+        assertThat(credentials.succeeded());
+        assertThat(credentials.getContent().size()).isEqualTo(0);
     }
 
     @Test
-    public void getVerifiedClaims_filtersClaimsWithWrongFormat() {
+    public void getVerifiedClaims_hubUrlNotResolved() throws Exception {
+        var credentialsVerifier = new IdentityHubCredentialsVerifier(mock(IdentityHubClient.class), new ConsoleMonitor(), mock(DidPublicKeyResolver.class));
+        var didDocument = DidDocument.Builder.newInstance().build();
 
+        var credentials = credentialsVerifier.verifyCredentials(didDocument);
+        assertThat(credentials.failed());
+    }
+
+    @Test
+    public void getVerifiedClaims_idHubCallFails() throws Exception {
+
+        var hubBaseUrl = "https://" + FAKER.internet().url();
+        var identityHubClient = mock(IdentityHubClient.class);
+        var monitor = new ConsoleMonitor();
+        var didPublicKeyResolver = mock(DidPublicKeyResolver.class);
+        var credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, monitor, didPublicKeyResolver);
+        var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
+
+        when(identityHubClient.getVerifiableCredentials(hubBaseUrl))
+                .thenReturn(StatusResult.failure(ResponseStatus.FATAL_ERROR));
+
+        var credentials = credentialsVerifier.verifyCredentials(didDocument);
+        assertThat(credentials.failed());
     }
 }
