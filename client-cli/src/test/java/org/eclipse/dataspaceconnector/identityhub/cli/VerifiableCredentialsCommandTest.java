@@ -87,7 +87,6 @@ class VerifiableCredentialsCommandTest {
 
         var json = MAPPER.writeValueAsString(VC1);
 
-        System.out.println("Working Directory = " + System.getProperty("user.dir"));
         var exitCode = cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-p", "src/test/resources/test-key.pem");
 
         assertThat(exitCode).isEqualTo(0);
