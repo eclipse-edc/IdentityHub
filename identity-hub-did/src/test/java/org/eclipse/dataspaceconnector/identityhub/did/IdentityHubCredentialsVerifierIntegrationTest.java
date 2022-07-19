@@ -71,7 +71,7 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
         var jwt = buildSignedJwt(credential,  credentialIssuer, jwk);
 
         identityHubClient.addVerifiableCredential(API_URL, jwt);
-        var credentials = identityHubCredentialVerifier.verifyCredentials(didDocument);
+        var credentials = identityHubCredentialVerifier.getVerifiedCredentials(didDocument);
         var expectedCredentials = toMap(credential, credentialIssuer);
         assertThat(credentials.succeeded());
         assertThat(credentials.getContent()).usingRecursiveComparison().ignoringFields(String.format("%s.exp", credential.getId())).isEqualTo(expectedCredentials);

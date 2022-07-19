@@ -60,7 +60,7 @@ public class IdentityHubCredentialsVerifierTest {
         when(signatureVerifier.isSignedByIssuer(jws)).thenReturn(true);
 
         // Act
-        var credentials = credentialsVerifier.verifyCredentials(didDocument);
+        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
         assertThat(credentials.succeeded());
@@ -88,7 +88,7 @@ public class IdentityHubCredentialsVerifierTest {
         when(signatureVerifier.isSignedByIssuer(jws)).thenReturn(false);
 
         // Act
-        var credentials = credentialsVerifier.verifyCredentials(didDocument);
+        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
         assertThat(credentials.succeeded());
@@ -102,7 +102,7 @@ public class IdentityHubCredentialsVerifierTest {
         var didDocument = DidDocument.Builder.newInstance().build();
 
         // Act
-        var credentials = credentialsVerifier.verifyCredentials(didDocument);
+        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
         assertThat(credentials.failed());
@@ -120,7 +120,7 @@ public class IdentityHubCredentialsVerifierTest {
         when(identityHubClient.getVerifiableCredentials(hubBaseUrl)).thenReturn(StatusResult.failure(ResponseStatus.FATAL_ERROR));
 
         // Act
-        var credentials = credentialsVerifier.verifyCredentials(didDocument);
+        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
         assertThat(credentials.failed());
@@ -141,7 +141,7 @@ public class IdentityHubCredentialsVerifierTest {
         when(signatureVerifier.isSignedByIssuer(jws)).thenReturn(true);
 
         // Act
-        var credentials = credentialsVerifier.verifyCredentials(didDocument);
+        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
         assertThat(credentials.succeeded());
