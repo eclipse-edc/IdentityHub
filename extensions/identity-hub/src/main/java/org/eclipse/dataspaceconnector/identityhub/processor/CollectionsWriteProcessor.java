@@ -28,6 +28,7 @@ import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObj
  */
 public class CollectionsWriteProcessor implements MessageProcessor {
 
+    private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private final IdentityHubStore identityHubStore;
 
     public CollectionsWriteProcessor(IdentityHubStore identityHubStore) {
@@ -38,7 +39,7 @@ public class CollectionsWriteProcessor implements MessageProcessor {
     public MessageResponseObject process(byte[] data) {
         try {
             var jwt = SignedJWT.parse(new String(data));
-            if (jwt.getJWTClaimsSet().getClaim("vc") == null) {
+            if (jwt.getJWTClaimsSet().getClaim(VERIFIABLE_CREDENTIALS_KEY) == null) {
                 return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
             }
         } catch (ParseException e) {
