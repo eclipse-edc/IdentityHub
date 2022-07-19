@@ -21,7 +21,6 @@ import io.restassured.specification.RequestSpecification;
 import org.eclipse.dataspaceconnector.identityhub.dtos.Descriptor;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
-import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +39,7 @@ import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMe
 import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.FEATURE_DETECTION_READ;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
 import static org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils.getFreePort;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -64,9 +64,7 @@ public class IdentityHubControllerTest {
     @Test
     void writeAndQueryObject() throws Exception {
         var issuer = FAKER.internet().url();
-        var credential = VerifiableCredential.Builder.newInstance()
-                .id(FAKER.internet().uuid())
-                .build();
+        var credential = generateVerifiableCredential();
         var jwt = buildSignedJwt(credential, issuer);
 
         collectionsWrite(jwt);
