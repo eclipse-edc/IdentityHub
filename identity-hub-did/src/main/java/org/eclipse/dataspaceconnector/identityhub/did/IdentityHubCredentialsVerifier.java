@@ -17,7 +17,6 @@ package org.eclipse.dataspaceconnector.identityhub.did;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
-import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.result.AbstractResult;
@@ -69,7 +68,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         }
         var verifiedClaims = jwts.getContent()
                 .stream()
-                .filter(signatureVerifier::verify);
+                .filter(signatureVerifier::isSignedByIssuer);
         var claims = verifiedClaims.map(this::extractCredential)
                 .filter(AbstractResult::succeeded)
                 .map(AbstractResult::getContent)
@@ -88,7 +87,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
             return Result.success(new AbstractMap.SimpleEntry<>(credentialId, payload));
         } catch (ParseException | RuntimeException e) {
-            return Result.failure(e.getMessage());
+            return Result.failure(e.getMessage() == null ? e.getClass().toString() : e.getMessage());
         }
     }
 

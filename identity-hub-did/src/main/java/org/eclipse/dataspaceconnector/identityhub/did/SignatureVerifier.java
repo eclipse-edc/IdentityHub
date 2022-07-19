@@ -22,7 +22,7 @@ class SignatureVerifier {
         this.monitor = monitor;
     }
 
-    protected boolean verify(SignedJWT jwt) {
+    protected boolean isSignedByIssuer(SignedJWT jwt) {
         var issuer = getIssuer(jwt);
         if (issuer.failed()) {
             return false;
@@ -37,7 +37,8 @@ class SignatureVerifier {
 
     private Result<String> getIssuer(SignedJWT jwt) {
         try {
-            return Result.success(jwt.getJWTClaimsSet().getIssuer());
+            var issuer = jwt.getJWTClaimsSet().getIssuer();
+            return issuer == null ? Result.failure("Issuer missing from JWT") : Result.success(issuer);
         } catch (ParseException e) {
             monitor.info("Error parsing issuer from JWT", e);
             return Result.failure(e.getMessage());
