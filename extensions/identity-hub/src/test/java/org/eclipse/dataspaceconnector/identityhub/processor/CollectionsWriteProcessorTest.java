@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
 
 
 public class CollectionsWriteProcessorTest {
@@ -56,11 +57,8 @@ public class CollectionsWriteProcessorTest {
     @Test
     void writeCredentials() throws Exception {
         // Arrange
-        var credentialId = FAKER.internet().uuid();
         var issuer = FAKER.internet().url();
-        var verifiableCredential = VerifiableCredential.Builder.newInstance()
-                .id(credentialId)
-                .credentialSubject(Map.of("region", "eu")).build();
+        var verifiableCredential = generateVerifiableCredential();
         var data = buildSignedJwt(verifiableCredential, issuer).serialize().getBytes(StandardCharsets.UTF_8);
 
         // Act
