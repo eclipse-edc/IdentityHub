@@ -16,6 +16,11 @@ package org.eclipse.dataspaceconnector.identityhub.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
@@ -31,6 +36,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 
 
 public class CollectionsWriteProcessorTest {
@@ -108,5 +114,20 @@ public class CollectionsWriteProcessorTest {
         // Assert
         assertThat(result).usingRecursiveComparison().isEqualTo(expectedResult);
         assertThat(identityHubStore.getAll()).isEmpty();
+    }
+
+    @Test
+    void writeCredentialsWithMissingMandatoryVcField() throws Exception {
+        // Arrange
+        var jws = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).build(), new JWTClaimsSet.Builder().build());
+        jws.sign(new ECDSASigner(generateEcKey().toECPrivateKey()));
+        var data = jws.serialize().getBytes(StandardCharsets.UTF_8);
+
+        // Act
+        var result = writeProcessor.process(data);
+
+        // Assert
+        var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
+        assertThat(result).usingRecursiveComparison().isEqualTo(expectedResult);
     }
 }
