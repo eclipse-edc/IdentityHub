@@ -63,13 +63,16 @@ public class IdentityHubControllerTest {
 
     @Test
     void writeAndQueryObject() throws Exception {
+        // Arrange
         var issuer = FAKER.internet().url();
         var credential = generateVerifiableCredential();
         var jwt = buildSignedJwt(credential, issuer);
 
+        // Act
         collectionsWrite(jwt);
         var credentials = collectionsQuery();
 
+        // Assert
         assertThat(credentials).usingRecursiveFieldByFieldElementComparator().containsExactly(jwt.serialize().getBytes(UTF_8));
     }
 
