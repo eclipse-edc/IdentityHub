@@ -14,7 +14,8 @@ in the detailed section referring to by linking pull requests or issues.
 ### Detailed Changes
 
 #### Added
-Identity hub client (#4)
+- Identity Hub client (#4)
+- Maven artefact publication (#21) 
 
 #### Changed
 
