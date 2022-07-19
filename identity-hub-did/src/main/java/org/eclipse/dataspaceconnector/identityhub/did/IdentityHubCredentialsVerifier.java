@@ -71,7 +71,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         var verifiedClaims = jwts.getContent()
                 .stream()
                 .filter(this::verify);
-        var claims = verifiedClaims.map(this::getClaims)
+        var claims = verifiedClaims.map(this::extractCredential)
                 .filter(AbstractResult::succeeded)
                 .map(AbstractResult::getContent)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -79,7 +79,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         return Result.success(claims);
     }
 
-    private Result<Map.Entry<String, Object>> getClaims(SignedJWT jwt) {
+    private Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
         try {
             var jwtClaims = jwt.getJWTClaimsSet().getClaims();
             var payload = (HashMap<String, Object>) jwt.getPayload().toJSONObject();
