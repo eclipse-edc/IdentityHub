@@ -23,8 +23,7 @@ import org.eclipse.dataspaceconnector.spi.result.Result;
 import java.text.ParseException;
 
 /**
- * Class responsible to resolve the public key of an issuer and verifies that JWT is signed by the issuer.
- *
+ * Class responsible for verifying JWT signatures.
  */
 class SignatureVerifier {
 
@@ -36,6 +35,12 @@ class SignatureVerifier {
         this.monitor = monitor;
     }
 
+    /**
+     * Verifies if a JWT is really signed by the claimed issuer (iss field).
+     *
+     * @param jwt to be verified.
+     * @return if the JWT is signed by the claimed issuer.
+     */
     protected boolean isSignedByIssuer(SignedJWT jwt) {
         var issuer = getIssuer(jwt);
         if (issuer.failed()) {

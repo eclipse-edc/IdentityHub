@@ -35,6 +35,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Util class to manipulate VerifiableCredentials in tests.
+ */
 public class VerifiableCredentialTestUtil {
     public static final Date EXP = Date.from(Instant.now().plus(Duration.ofDays(1)));
 

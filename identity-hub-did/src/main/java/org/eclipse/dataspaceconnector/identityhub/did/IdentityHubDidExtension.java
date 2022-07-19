@@ -31,7 +31,9 @@ import org.eclipse.dataspaceconnector.spi.types.TypeManager;
 import static java.lang.String.format;
 import static org.eclipse.dataspaceconnector.iam.did.spi.document.DidConstants.DID_URL_SETTING;
 
-
+/**
+ * Extension that should be used to provide verification of IdentityHub Verifiable Credentials.
+ */
 @Requires({OkHttpClient.class})
 @Provides(CredentialsVerifier.class)
 public class IdentityHubDidExtension implements ServiceExtension {
