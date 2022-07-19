@@ -31,6 +31,7 @@ import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -144,6 +145,23 @@ public class IdentityHubClientImplTest {
         var statusResult = client.addVerifiableCredential(HUB_URL, jws);
 
         var expectedResult = StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: , response body: %s", code, body));
+        assertThat(statusResult).usingRecursiveComparison().isEqualTo(expectedResult);
+    }
+
+    @Test
+    void addVerifiableCredentialsIoException() throws Exception {
+        var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
+        var jws = buildSignedJwt(credential, FAKER.internet().url());
+        var exceptionMessage = "Can't resolve address";
+        Interceptor interceptor = chain -> {
+            var request = chain.request();
+            throw new IOException(exceptionMessage);
+        };
+
+        var client = createClient(interceptor);
+        var statusResult = client.addVerifiableCredential(HUB_URL, jws);
+
+        var expectedResult = StatusResult.failure(ResponseStatus.FATAL_ERROR, exceptionMessage);
         assertThat(statusResult).usingRecursiveComparison().isEqualTo(expectedResult);
     }
 
