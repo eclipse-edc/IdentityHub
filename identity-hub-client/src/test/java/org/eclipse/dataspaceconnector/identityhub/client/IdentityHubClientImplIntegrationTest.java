@@ -21,6 +21,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
+import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +43,7 @@ public class IdentityHubClientImplIntegrationTest {
     @BeforeEach
     void setUp() {
         var okHttpClient = TestUtils.testOkHttpClient();
-        client = new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER);
+        client = new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, new ConsoleMonitor());
     }
 
     @Test

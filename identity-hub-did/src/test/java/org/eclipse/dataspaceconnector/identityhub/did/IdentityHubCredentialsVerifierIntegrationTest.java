@@ -57,7 +57,7 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
     @BeforeEach
     void setUp(EdcExtension extension) {
         var okHttpClient = TestUtils.testOkHttpClient();
-        identityHubClient = new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER);
+        identityHubClient = new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, MONITOR);
         publicKeyResolver = mock(DidPublicKeyResolverImpl.class);
         extension.setConfiguration(Map.of("web.http.port", String.valueOf(PORT), "edc.identity.hub.url", API_URL));
     }

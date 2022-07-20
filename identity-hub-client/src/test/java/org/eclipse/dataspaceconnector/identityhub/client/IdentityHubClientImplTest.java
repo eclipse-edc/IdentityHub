@@ -27,6 +27,7 @@ import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.dtos.RequestStatus;
 import org.eclipse.dataspaceconnector.identityhub.dtos.ResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 import org.junit.jupiter.api.Test;
@@ -170,6 +171,6 @@ public class IdentityHubClientImplTest {
                 .addInterceptor(interceptor)
                 .build();
 
-        return new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER);
+        return new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, new ConsoleMonitor());
     }
 }

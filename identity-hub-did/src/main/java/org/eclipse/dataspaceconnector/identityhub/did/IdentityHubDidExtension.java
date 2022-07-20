@@ -58,7 +58,7 @@ public class IdentityHubDidExtension implements ServiceExtension {
             throw new EdcException(format("Mandatory setting '(%s)' missing", HUB_URL_SETTING));
         }
 
-        var client = new IdentityHubClientImpl(httpClient, new ObjectMapper());
+        var client = new IdentityHubClientImpl(httpClient, new ObjectMapper(), monitor);
         var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, monitor);
         var credentialsVerifier = new IdentityHubCredentialsVerifier(client, monitor, signatureVerifier::isSignedByIssuer);
         context.registerService(CredentialsVerifier.class, credentialsVerifier);

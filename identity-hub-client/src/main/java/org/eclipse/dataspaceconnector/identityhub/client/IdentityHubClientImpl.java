@@ -25,6 +25,7 @@ import org.eclipse.dataspaceconnector.identityhub.dtos.Descriptor;
 import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
 import org.eclipse.dataspaceconnector.identityhub.dtos.ResponseObject;
+import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 import org.eclipse.dataspaceconnector.spi.result.AbstractResult;
@@ -46,9 +47,12 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public IdentityHubClientImpl(OkHttpClient httpClient, ObjectMapper objectMapper) {
+    private final Monitor monitor;
+
+    public IdentityHubClientImpl(OkHttpClient httpClient, ObjectMapper objectMapper, Monitor monitor) {
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
+        this.monitor = monitor;
     }
 
     @Override
@@ -104,6 +108,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
             var jwt = new String(objectMapper.convertValue(entry, byte[].class));
             return Result.success(SignedJWT.parse(jwt));
         } catch (ParseException e) {
+            monitor.warning("Could not parse JWT", e);
             return Result.failure(e.getMessage());
         }
     }
