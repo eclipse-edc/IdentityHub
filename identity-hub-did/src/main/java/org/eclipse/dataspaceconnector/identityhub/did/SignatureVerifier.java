@@ -27,8 +27,10 @@ import java.text.ParseException;
  */
 class SignatureVerifier {
 
-    DidPublicKeyResolver didPublicKeyResolver;
-    Monitor monitor;
+    private DidPublicKeyResolver didPublicKeyResolver;
+    private Monitor monitor;
+
+    private static final String VC_AUDIENCE = "identity-hub";
 
     SignatureVerifier(DidPublicKeyResolver didPublicKeyResolver, Monitor monitor) {
         this.didPublicKeyResolver = didPublicKeyResolver;
@@ -50,7 +52,7 @@ class SignatureVerifier {
         if (issuerPublicKey.failed()) {
             return false;
         }
-        var verificationResult = VerifiableCredentialFactory.verify(jwt, issuerPublicKey.getContent(), "identity-hub");
+        var verificationResult = VerifiableCredentialFactory.verify(jwt, issuerPublicKey.getContent(), VC_AUDIENCE);
         return verificationResult.succeeded();
     }
 

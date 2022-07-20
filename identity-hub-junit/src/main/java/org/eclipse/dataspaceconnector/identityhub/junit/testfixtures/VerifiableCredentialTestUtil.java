@@ -39,6 +39,8 @@ import java.util.Map;
  * Util class to manipulate VerifiableCredentials in tests.
  */
 public class VerifiableCredentialTestUtil {
+
+    public static final String VC_AUDIENCE = "identity-hub";
     public static final Date EXP = Date.from(Instant.now().plus(Duration.ofDays(1)));
 
     private static final Faker FAKER = new Faker();
@@ -73,7 +75,7 @@ public class VerifiableCredentialTestUtil {
         var claims = new JWTClaimsSet.Builder()
                 .claim("vc", credential)
                 .issuer(issuer)
-                .audience("identity-hub")
+                .audience(VC_AUDIENCE)
                 .expirationTime(EXP)
                 .subject("verifiable-credential")
                 .build();
@@ -90,7 +92,7 @@ public class VerifiableCredentialTestUtil {
         return Map.of(verifiableCredential.getId(),
                 Map.of("vc", Map.of("credentialSubject", verifiableCredential.getCredentialSubject(),
                                 "id", verifiableCredential.getId()),
-                "aud", List.of("identity-hub"),
+                "aud", List.of(VC_AUDIENCE),
                 "sub", "verifiable-credential",
                 "iss", issuer,
                 "exp", EXP));
