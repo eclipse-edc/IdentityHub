@@ -21,6 +21,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
+import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 import org.junit.jupiter.api.Test;
 
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.when;
 public class SignatureVerifierTest {
 
     private static final Faker FAKER = new Faker();
+    private static final Monitor MONITOR = new ConsoleMonitor();
 
     @Test
     public void isSignedByIssuer_jwtSignedByIssuer() throws Exception {
@@ -49,7 +51,7 @@ public class SignatureVerifierTest {
         when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.success(toPublicKeyWrapper(jwk)));
 
         // Act
-        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, new ConsoleMonitor());
+        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, MONITOR);
 
         // Assert
         assertThat(signatureVerifier.isSignedByIssuer(jwt)).isTrue();
@@ -66,7 +68,7 @@ public class SignatureVerifierTest {
         when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.success(toPublicKeyWrapper(jwk)));
 
         // Act
-        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, new ConsoleMonitor());
+        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, MONITOR);
 
         // Assert
         assertThat(signatureVerifier.isSignedByIssuer(jwt)).isFalse();
@@ -83,7 +85,7 @@ public class SignatureVerifierTest {
         when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.failure("Failed resolving public key"));
 
         // Act
-        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, new ConsoleMonitor());
+        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, MONITOR);
 
         // Assert
         assertThat(signatureVerifier.isSignedByIssuer(jwt)).isFalse();
@@ -98,7 +100,7 @@ public class SignatureVerifierTest {
         var jws = new SignedJWT(jwsHeader, claims);
 
         // Act
-        var signatureVerifier = new SignatureVerifier(mock(DidPublicKeyResolver.class), new ConsoleMonitor());
+        var signatureVerifier = new SignatureVerifier(mock(DidPublicKeyResolver.class), MONITOR);
 
         // Assert
         assertThat(signatureVerifier.isSignedByIssuer(jws)).isFalse();
@@ -112,7 +114,7 @@ public class SignatureVerifierTest {
         when(jws.getJWTClaimsSet()).thenThrow(new ParseException("Failed parsing JWT payload", 0));
 
         // Act
-        var signatureVerifier = new SignatureVerifier(mock(DidPublicKeyResolver.class), new ConsoleMonitor());
+        var signatureVerifier = new SignatureVerifier(mock(DidPublicKeyResolver.class), MONITOR);
 
         // Assert
         assertThat(signatureVerifier.isSignedByIssuer(jws)).isFalse();

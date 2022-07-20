@@ -49,9 +49,8 @@ public class IdentityHubCredentialsVerifierTest {
         var hubBaseUrl = "https://" + FAKER.internet().url();
         var issuer = FAKER.internet().url();
         var identityHubClient = mock(IdentityHubClient.class);
-        var monitor = new ConsoleMonitor();
         var signatureVerifier = mock(SignatureVerifier.class);
-        var credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, monitor, signatureVerifier);
+        var credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, signatureVerifier);
         var didDocument = DidDocument.Builder.newInstance()
                 .service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
         var credential = generateVerifiableCredential();
