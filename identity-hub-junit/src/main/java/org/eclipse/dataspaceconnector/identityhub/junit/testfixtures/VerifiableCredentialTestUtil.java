@@ -47,9 +47,8 @@ public class VerifiableCredentialTestUtil {
     private static final ECKeyGenerator EC_KEY_GENERATOR = new ECKeyGenerator(Curve.P_256);
 
     public static VerifiableCredential generateVerifiableCredential() {
-        var credentialId = FAKER.internet().uuid();
         return VerifiableCredential.Builder.newInstance()
-                .id(credentialId)
+                .id(FAKER.internet().uuid())
                 .credentialSubject(Map.of(
                         FAKER.lorem().word(), FAKER.lorem().word(),
                         FAKER.lorem().word(), FAKER.lorem().word()))
