@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
@@ -143,4 +144,31 @@ public class IdentityHubCredentialsVerifierTest {
         assertThat(credentials.succeeded());
         assertThat(credentials.getContent().isEmpty());
     }
+
+    @Test
+    public void getVerifiedClaims_verifiableCredentialsWithMissingId() {
+
+        // Arrange
+        var didDocument = DidDocument.Builder.newInstance()
+                .service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
+        var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
+        var jwtClaims = new JWTClaimsSet.Builder()
+                .claim("vc", Map.of(FAKER.lorem().word(), FAKER.lorem().word()))
+                .issuer(FAKER.lorem().word())
+                .audience("identity-hub")
+                .subject("verifiable-credential")
+                .build();
+        var jws = new SignedJWT(jwsHeader, jwtClaims);
+
+        when(identityHubClient.getVerifiableCredentials(hubBaseUrl)).thenReturn(StatusResult.success(List.of(jws)));
+        when(signatureVerifier.isSignedByIssuer(jws)).thenReturn(true);
+
+        // Act
+        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
+
+        // Assert
+        assertThat(credentials.succeeded());
+        assertThat(credentials.getContent().isEmpty());
+    }
+
 }

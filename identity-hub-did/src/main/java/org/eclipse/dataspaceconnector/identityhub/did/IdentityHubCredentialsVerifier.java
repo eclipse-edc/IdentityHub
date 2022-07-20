@@ -81,11 +81,14 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         try {
             var jwtClaims = jwt.getJWTClaimsSet().getClaims();
             var payload = (HashMap<String, Object>) jwt.getPayload().toJSONObject();
-            var vc = (HashMap<String, Object>) payload.get("vc");
-            var credentialId = vc.get("id").toString();
+            var vc = (Map<String, Object>) payload.get("vc");
+            var credentialId = vc.get("id");
+            if (credentialId == null) {
+                return Result.failure("Credential id is missing");
+            }
             payload.putAll(jwtClaims);
 
-            return Result.success(new AbstractMap.SimpleEntry<>(credentialId, payload));
+            return Result.success(new AbstractMap.SimpleEntry<>(credentialId.toString(), payload));
         } catch (ParseException | RuntimeException e) {
             return Result.failure(e.getMessage() == null ? e.getClass().toString() : e.getMessage());
         }
