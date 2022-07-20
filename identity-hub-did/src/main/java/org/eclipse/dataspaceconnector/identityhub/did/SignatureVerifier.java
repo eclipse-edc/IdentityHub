@@ -46,6 +46,7 @@ class SignatureVerifier {
     boolean isSignedByIssuer(SignedJWT jwt) {
         var issuer = getIssuer(jwt);
         if (issuer.failed()) {
+            monitor.warning("");
             return false;
         }
         var issuerPublicKey = didPublicKeyResolver.resolvePublicKey(issuer.getContent());
@@ -61,7 +62,7 @@ class SignatureVerifier {
             var issuer = jwt.getJWTClaimsSet().getIssuer();
             return issuer == null ? Result.failure("Issuer missing from JWT") : Result.success(issuer);
         } catch (ParseException e) {
-            monitor.info("Error parsing issuer from JWT", e);
+            monitor.warning("Error parsing issuer from JWT", e);
             return Result.failure(e.getMessage());
         }
     }

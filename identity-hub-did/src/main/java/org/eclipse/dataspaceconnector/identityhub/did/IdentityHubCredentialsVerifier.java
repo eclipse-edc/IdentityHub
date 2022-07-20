@@ -22,7 +22,6 @@ import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.result.AbstractResult;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 
-import java.text.ParseException;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -79,17 +78,15 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
     private Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
         try {
-            var jwtClaims = jwt.getJWTClaimsSet().getClaims();
             var payload = (HashMap<String, Object>) jwt.getPayload().toJSONObject();
             var vc = (Map<String, Object>) payload.get("vc");
             var credentialId = vc.get("id");
             if (credentialId == null) {
                 return Result.failure("Credential id is missing");
             }
-            payload.putAll(jwtClaims);
 
             return Result.success(new AbstractMap.SimpleEntry<>(credentialId.toString(), payload));
-        } catch (ParseException | RuntimeException e) {
+        } catch (RuntimeException e) {
             return Result.failure(e.getMessage() == null ? e.getClass().toString() : e.getMessage());
         }
     }

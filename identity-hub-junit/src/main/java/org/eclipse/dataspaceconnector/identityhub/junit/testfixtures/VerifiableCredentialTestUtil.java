@@ -92,7 +92,7 @@ public class VerifiableCredentialTestUtil {
         return Map.of(verifiableCredential.getId(),
                 Map.of("vc", Map.of("credentialSubject", verifiableCredential.getCredentialSubject(),
                                 "id", verifiableCredential.getId()),
-                "aud", List.of(VC_AUDIENCE),
+                "aud", VC_AUDIENCE,
                 "sub", "verifiable-credential",
                 "iss", issuer,
                 "exp", EXP));
