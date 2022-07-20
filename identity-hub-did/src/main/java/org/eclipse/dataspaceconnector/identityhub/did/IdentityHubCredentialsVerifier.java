@@ -81,7 +81,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
     private Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
         try {
-            var payload = (HashMap<String, Object>) jwt.getPayload().toJSONObject();
+            var payload = (Map<String, Object>) jwt.getPayload().toJSONObject();
             if (!payload.containsKey(VERIFIABLE_CREDENTIALS_KEY)) {
                 return Result.failure(String.format("No %s field found", VERIFIABLE_CREDENTIALS_KEY));
             }
