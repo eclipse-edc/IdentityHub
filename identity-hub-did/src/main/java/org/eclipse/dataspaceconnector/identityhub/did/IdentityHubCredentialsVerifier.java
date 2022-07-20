@@ -15,6 +15,7 @@
 package org.eclipse.dataspaceconnector.identityhub.did;
 
 import com.nimbusds.jwt.SignedJWT;
+import net.minidev.json.JSONObject;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
@@ -23,7 +24,6 @@ import org.eclipse.dataspaceconnector.spi.result.AbstractResult;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 
 import java.util.AbstractMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -81,20 +81,25 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
     private Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
         try {
-            var payload = (Map<String, Object>) jwt.getPayload().toJSONObject();
-            if (!payload.containsKey(VERIFIABLE_CREDENTIALS_KEY)) {
-                return Result.failure(String.format("No %s field found", VERIFIABLE_CREDENTIALS_KEY));
-            }
-            var vc = (Map<String, Object>) payload.get(VERIFIABLE_CREDENTIALS_KEY);
-            var credentialId = vc.get(CREDENTIALS_ID_KEY);
-            if (credentialId == null) {
-                return Result.failure("Credential id is missing");
-            }
+            var payload = jwt.getPayload().toJSONObject();
+            var credentialId = extractVcId(payload);
+            if (credentialId.failed()) return Result.failure(credentialId.getFailureMessages());
 
-            return Result.success(new AbstractMap.SimpleEntry<>(credentialId.toString(), payload));
+            return Result.success(new AbstractMap.SimpleEntry<>(credentialId.getContent(), payload));
         } catch (RuntimeException e) {
             return Result.failure(e.getMessage() == null ? e.getClass().toString() : e.getMessage());
         }
+    }
+
+    private Result<String> extractVcId(JSONObject jsonPayload) {
+        var payload = (Map<String, Object>) jsonPayload;
+
+        if (!payload.containsKey(VERIFIABLE_CREDENTIALS_KEY)) {
+            return Result.failure(String.format("No %s field found", VERIFIABLE_CREDENTIALS_KEY));
+        }
+        var vc = (Map<String, Object>) payload.get(VERIFIABLE_CREDENTIALS_KEY);
+        var vcId = vc.get(CREDENTIALS_ID_KEY);
+        return vcId == null ? Result.failure("vc id not found") : Result.success(vcId.toString());
     }
 
     private Result<String> getIdentityHubBaseUrl(DidDocument didDocument) {
