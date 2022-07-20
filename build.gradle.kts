@@ -39,8 +39,8 @@ val edcScmUrl: String by project
 
 val defaultVersion: String by project
 
-// makes the project version overridable using the "-Pversion=..." flag. Useful for CI builds
-val projectVersion: String = (project.findProperty("version") ?: defaultVersion) as String
+// makes the project version overridable using the "-PidentityHubVersion..." flag. Useful for CI builds
+val projectVersion: String = (project.findProperty("identityHubVersion") ?: defaultVersion) as String
 
 var deployUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
 
@@ -93,6 +93,9 @@ allprojects {
         mavenLocal()
         maven {
             url = uri("https://maven.iais.fraunhofer.de/artifactory/eis-ids-public/")
+        }
+        maven{
+            url= uri("https://oss.sonatype.org/content/repositories/snapshots/")
         }
     }
 
