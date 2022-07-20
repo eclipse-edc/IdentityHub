@@ -27,8 +27,8 @@ import java.text.ParseException;
  */
 class SignatureVerifier {
 
-    private DidPublicKeyResolver didPublicKeyResolver;
-    private Monitor monitor;
+    private final DidPublicKeyResolver didPublicKeyResolver;
+    private final Monitor monitor;
 
     private static final String VC_AUDIENCE = "identity-hub";
 
