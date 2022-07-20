@@ -13,7 +13,8 @@
  */
 
 plugins {
-    java
+    `java-library`
+    `maven-publish`
     id("org.openapi.generator") version "5.4.0"
 }
 
@@ -27,17 +28,29 @@ val assertj: String by project
 val nimbusVersion: String by project
 
 dependencies {
-    implementation(project(":extensions:identity-hub"))
-    implementation(project(":spi:identity-hub-store-spi"))
+    api(project(":spi:identity-hub-spi"))
+    api(project(":identity-hub-dtos"))
+    implementation("${edcGroup}:http:${edcVersion}")
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("${edcGroup}:core-spi:${edcVersion}")
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
 
+    testImplementation(project(":extensions:identity-hub"))
+    testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
     testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation(project(":identity-hub-junit"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("com.github.javafaker:javafaker:${faker}")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("identity-hub-client") {
+            artifactId = "identity-hub-client"
+            from(components["java"])
+        }
+    }
 }
