@@ -18,7 +18,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.nimbusds.jwt.SignedJWT;
-import net.minidev.json.JSONObject;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +28,8 @@ import picocli.CommandLine;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.createVerifiableCredential;
@@ -74,8 +75,12 @@ class VerifiableCredentialsCommandTest {
         assertThat(hubUrl).isEqualTo(app.hubUrl);
 
         String content = sw.toString();
-        var parsedResult = MAPPER.readValue(content, new TypeReference<List<VerifiableCredential>>() {});
-        assertThat(parsedResult)
+        var claims = MAPPER.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
+        var vcs = claims.stream()
+                .map(c -> MAPPER.convertValue(c.get("vc"), VerifiableCredential.class))
+                .collect(Collectors.toList());
+
+        assertThat(vcs)
                 .usingRecursiveFieldByFieldElementComparator()
                 .isEqualTo(List.of(VC1, VC2));
     }
@@ -87,7 +92,7 @@ class VerifiableCredentialsCommandTest {
 
         var json = MAPPER.writeValueAsString(VC1);
 
-        var exitCode = cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-p", "src/test/resources/test-key.pem");
+        var exitCode = cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-k", "src/test/resources/test-key.pem");
 
         assertThat(exitCode).isEqualTo(0);
         assertThat(hubUrl).isEqualTo(app.hubUrl);

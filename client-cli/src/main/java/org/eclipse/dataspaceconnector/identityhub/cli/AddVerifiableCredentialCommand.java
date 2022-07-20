@@ -35,7 +35,7 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
     @CommandLine.Option(names = { "-c", "--verifiable-credential"}, required = true, description = "Verifiable Credential as JSON")
     private String requestJson;
 
-    @CommandLine.Option(names = { "-p", "--private-key" }, required = true, description = "PEM file with private key for signing Verifiable Credentials")
+    @CommandLine.Option(names = { "-k", "--private-key" }, required = true, description = "PEM file with private key for signing Verifiable Credentials")
     private String privateKeyPemFile;
 
     @Override
