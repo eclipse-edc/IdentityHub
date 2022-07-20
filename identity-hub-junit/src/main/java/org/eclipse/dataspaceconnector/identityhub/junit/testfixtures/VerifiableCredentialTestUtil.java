@@ -50,8 +50,8 @@ public class VerifiableCredentialTestUtil {
         return VerifiableCredential.Builder.newInstance()
                 .id(FAKER.internet().uuid())
                 .credentialSubject(Map.of(
-                        FAKER.lorem().word(), FAKER.lorem().word(),
-                        FAKER.lorem().word(), FAKER.lorem().word()))
+                        FAKER.internet().uuid(), FAKER.lorem().word(),
+                        FAKER.internet().uuid(), FAKER.lorem().word()))
                 .build();
     }
 
