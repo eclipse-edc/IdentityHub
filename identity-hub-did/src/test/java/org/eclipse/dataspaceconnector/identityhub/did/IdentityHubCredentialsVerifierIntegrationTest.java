@@ -24,6 +24,7 @@ import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
+import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,7 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Faker FAKER = new Faker();
     private IdentityHubClient identityHubClient;
+    private static final Monitor MONITOR = new ConsoleMonitor();
 
     @BeforeEach
     void setUp(EdcExtension extension) {
@@ -64,8 +66,8 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
         var jwk = generateEcKey();
         when(publicKeyResolver.resolvePublicKey(credentialIssuer))
                 .thenReturn(Result.success(toPublicKeyWrapper(jwk)));
-        var signatureVerifier = new SignatureVerifier(publicKeyResolver, new ConsoleMonitor());
-        var identityHubCredentialVerifier = new IdentityHubCredentialsVerifier(identityHubClient, new ConsoleMonitor(), signatureVerifier);
+        var signatureVerifier = new SignatureVerifier(publicKeyResolver, MONITOR);
+        var identityHubCredentialVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, signatureVerifier);
         var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", API_URL))).build();
         var credential = generateVerifiableCredential();
         var jwt = buildSignedJwt(credential,  credentialIssuer, jwk);
