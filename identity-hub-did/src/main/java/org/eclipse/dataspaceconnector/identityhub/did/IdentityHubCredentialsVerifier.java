@@ -35,6 +35,8 @@ import java.util.stream.Collectors;
 public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
     private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
+    private static final String CREDENTIALS_ID_KEY = "id";
+    private static final String IDENTITY_HUB_SERVICE_TYPE = "IdentityHub";
     private final IdentityHubClient identityHubClient;
     private final Monitor monitor;
     private final SignatureVerifier signatureVerifier;
@@ -81,7 +83,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         try {
             var payload = (HashMap<String, Object>) jwt.getPayload().toJSONObject();
             var vc = (Map<String, Object>) payload.get(VERIFIABLE_CREDENTIALS_KEY);
-            var credentialId = vc.get("id");
+            var credentialId = vc.get(CREDENTIALS_ID_KEY);
             if (credentialId == null) {
                 return Result.failure("Credential id is missing");
             }
@@ -96,7 +98,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         var hubBaseUrl = didDocument
                 .getService()
                 .stream()
-                .filter(s -> s.getType().equals("IdentityHub"))
+                .filter(s -> s.getType().equals(IDENTITY_HUB_SERVICE_TYPE))
                 .findFirst();
 
         if (hubBaseUrl.isEmpty()) return Result.failure("Failed getting identityHub URL");
