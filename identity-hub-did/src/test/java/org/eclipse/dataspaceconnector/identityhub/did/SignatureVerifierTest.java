@@ -56,7 +56,24 @@ public class SignatureVerifierTest {
     }
 
     @Test
-    public void isSignedByIssuer_JwtSignedByWrongIssuer() throws Exception {
+    public void isSignedByIssuer_jwtSignedByWrongIssuer() throws Exception {
+
+        // Arrange
+        var jwk = generateEcKey();
+        var issuer = FAKER.internet().url();
+        var jwt = buildSignedJwt(generateVerifiableCredential(), issuer);
+        var didPublicKeyResolver = mock(DidPublicKeyResolver.class);
+        when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.success(toPublicKeyWrapper(jwk)));
+
+        // Act
+        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, new ConsoleMonitor());
+
+        // Assert
+        assertThat(signatureVerifier.isSignedByIssuer(jwt)).isFalse();
+    }
+
+    @Test
+    public void isSignedByIssuer_PublicKeyCantBeResolved() throws Exception {
 
         // Arrange
         var jwk = generateEcKey();
