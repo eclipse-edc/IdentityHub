@@ -41,7 +41,7 @@ class SignatureVerifier {
      * @param jwt to be verified.
      * @return if the JWT is signed by the claimed issuer.
      */
-    public boolean isSignedByIssuer(SignedJWT jwt) {
+    boolean isSignedByIssuer(SignedJWT jwt) {
         var issuer = getIssuer(jwt);
         if (issuer.failed()) {
             return false;
