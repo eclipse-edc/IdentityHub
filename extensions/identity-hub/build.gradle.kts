@@ -15,6 +15,7 @@
 plugins {
     `java-library`
     id("io.swagger.core.v3.swagger-gradle-plugin")
+    `maven-publish`
 }
 val assertj: String by project
 val edcVersion: String by project
@@ -30,10 +31,19 @@ dependencies {
     implementation("${edcGroup}:http:${edcVersion}")
 
     testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
-    testImplementation("${edcGroup}:junit-extension:${edcVersion}:test-fixtures")
+    testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("io.rest-assured:rest-assured:${restAssured}")
     testImplementation("com.github.javafaker:javafaker:${faker}")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("identity-hub") {
+            artifactId = "identity-hub"
+            from(components["java"])
+        }
+    }
 }

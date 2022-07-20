@@ -17,10 +17,15 @@ plugins {
     `java-library`
 }
 
+val projectVersion: String by project
+val projectGroup: String by project
 val swagger: String by project
 val rsApi : String by project
 
 allprojects {
+    version = projectVersion
+    group = projectGroup
+
     repositories {
         mavenCentral()
         mavenLocal()
