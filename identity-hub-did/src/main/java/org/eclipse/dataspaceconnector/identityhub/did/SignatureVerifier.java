@@ -46,11 +46,12 @@ class SignatureVerifier {
     boolean isSignedByIssuer(SignedJWT jwt) {
         var issuer = getIssuer(jwt);
         if (issuer.failed()) {
-            monitor.warning("");
+            monitor.warning("Failed finding JWT issuer");
             return false;
         }
         var issuerPublicKey = didPublicKeyResolver.resolvePublicKey(issuer.getContent());
         if (issuerPublicKey.failed()) {
+            monitor.warning(String.format("Failed finding publicKey of issuer: %s", issuer.getContent()));
             return false;
         }
         var verificationResult = VerifiableCredentialFactory.verify(jwt, issuerPublicKey.getContent(), VC_AUDIENCE);
