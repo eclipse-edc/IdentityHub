@@ -33,22 +33,25 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
     private VerifiableCredentialsCommand command;
 
     @CommandLine.Option(names = { "-c", "--verifiable-credential"}, required = true, description = "Verifiable Credential as JSON")
-    private String requestJson;
+    private String verifiableCredentialJson;
+
+    @CommandLine.Option(names = { "-i", "--issuer"}, required = true, description = "DID of the Verifiable Credential issuer")
+    private String issuer;
 
     @CommandLine.Option(names = { "-k", "--private-key" }, required = true, description = "PEM file with private key for signing Verifiable Credentials")
     private String privateKeyPemFile;
 
     @Override
     public Integer call() throws Exception {
-        VerifiableCredential vc = null;
+        VerifiableCredential vc;
         try {
-            vc = MAPPER.readValue(requestJson, VerifiableCredential.class);
+            vc = MAPPER.readValue(verifiableCredentialJson, VerifiableCredential.class);
         } catch (JsonProcessingException e) {
             throw new CliException("Error while processing request json.");
         }
 
         var ecPrivateKey = JWTUtils.readECPrivateKey(new File(privateKeyPemFile));
-        var signedJWT = JWTUtils.buildSignedJwt(vc, "identity-hub-cli", ecPrivateKey);
+        var signedJWT = JWTUtils.buildSignedJwt(vc, issuer, ecPrivateKey);
 
         command.cli.identityHubClient.addVerifiableCredential(command.cli.hubUrl, signedJWT);
 

@@ -92,7 +92,7 @@ class VerifiableCredentialsCommandTest {
 
         var json = MAPPER.writeValueAsString(VC1);
 
-        var exitCode = cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-k", "src/test/resources/test-key.pem");
+        var exitCode = cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-tests", "-k", "src/test/resources/test-key.pem");
 
         assertThat(exitCode).isEqualTo(0);
         assertThat(hubUrl).isEqualTo(app.hubUrl);
@@ -107,9 +107,9 @@ class VerifiableCredentialsCommandTest {
 
     @Test
     void invalidRequest_Add_Failure() {
-        var request = "Invalid json";
+        var json = "Invalid json";
 
-        var exitCode = cmd.execute("-s", hubUrl, "vc", "add", "--request", request);
+        var exitCode = cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-tests", "-k", "src/test/resources/test-key.pem");
 
         assertThat(exitCode).isNotEqualTo(0);
         assertThat(hubUrl).isEqualTo(app.hubUrl);

@@ -17,7 +17,7 @@ For example, to get verifiable credentials:
 ```
 java -jar client-cli/build/libs/identity-hub-cli.jar \
   -s=http://localhost:8181/api \
-  vc get
+  vc list
 ```
 
 The client can also be run from a local Maven repository:
