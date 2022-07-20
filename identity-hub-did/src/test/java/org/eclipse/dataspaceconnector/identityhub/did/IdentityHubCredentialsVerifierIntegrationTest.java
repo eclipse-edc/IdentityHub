@@ -19,6 +19,7 @@ import com.github.javafaker.Faker;
 import org.eclipse.dataspaceconnector.iam.did.resolution.DidPublicKeyResolverImpl;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.Service;
+import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
@@ -49,20 +50,23 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
     private static final String API_URL = String.format("http://localhost:%d/api/identity-hub", PORT);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Faker FAKER = new Faker();
-    private IdentityHubClient identityHubClient;
     private static final Monitor MONITOR = new ConsoleMonitor();
+    private IdentityHubClient identityHubClient;
+    private DidPublicKeyResolver publicKeyResolver;
 
     @BeforeEach
     void setUp(EdcExtension extension) {
         var okHttpClient = TestUtils.testOkHttpClient();
         identityHubClient = new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER);
+        publicKeyResolver = mock(DidPublicKeyResolverImpl.class);
         extension.setConfiguration(Map.of("web.http.port", String.valueOf(PORT), "edc.identity.hub.url", API_URL));
     }
 
     @Test
     public void getVerifiedClaims_getValidClaims() throws Exception {
+
+        // Arrange
         var credentialIssuer = FAKER.internet().url();
-        var publicKeyResolver = mock(DidPublicKeyResolverImpl.class);
         var jwk = generateEcKey();
         when(publicKeyResolver.resolvePublicKey(credentialIssuer))
                 .thenReturn(Result.success(toPublicKeyWrapper(jwk)));
@@ -72,9 +76,12 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
         var credential = generateVerifiableCredential();
         var jwt = buildSignedJwt(credential,  credentialIssuer, jwk);
 
+        // Act
         identityHubClient.addVerifiableCredential(API_URL, jwt);
         var credentials = identityHubCredentialVerifier.getVerifiedCredentials(didDocument);
         var expectedCredentials = toMap(credential, credentialIssuer);
+
+        // Assert
         assertThat(credentials.succeeded());
         assertThat(credentials.getContent()).usingRecursiveComparison().ignoringFields(String.format("%s.exp", credential.getId())).isEqualTo(expectedCredentials);
     }
