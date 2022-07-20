@@ -32,6 +32,9 @@ allprojects {
         maven {
             url = uri("https://maven.iais.fraunhofer.de/artifactory/eis-ids-public/")
         }
+        maven{
+            url= uri("https://oss.sonatype.org/content/repositories/snapshots/")
+        }
     }
 
     pluginManager.withPlugin("io.swagger.core.v3.swagger-gradle-plugin") {
