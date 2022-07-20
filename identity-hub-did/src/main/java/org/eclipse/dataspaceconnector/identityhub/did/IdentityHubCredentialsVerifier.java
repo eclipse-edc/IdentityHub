@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
  */
 public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
+    private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private final IdentityHubClient identityHubClient;
     private final Monitor monitor;
     private final SignatureVerifier signatureVerifier;
@@ -79,7 +80,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     private Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
         try {
             var payload = (HashMap<String, Object>) jwt.getPayload().toJSONObject();
-            var vc = (Map<String, Object>) payload.get("vc");
+            var vc = (Map<String, Object>) payload.get(VERIFIABLE_CREDENTIALS_KEY);
             var credentialId = vc.get("id");
             if (credentialId == null) {
                 return Result.failure("Credential id is missing");
