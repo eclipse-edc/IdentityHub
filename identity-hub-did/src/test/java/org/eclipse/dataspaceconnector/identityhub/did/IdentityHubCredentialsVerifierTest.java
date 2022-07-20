@@ -46,15 +46,12 @@ public class IdentityHubCredentialsVerifierTest {
     private static final Faker FAKER = new Faker();
     private static final Monitor MONITOR = new ConsoleMonitor();
     private static IdentityHubClient identityHubClient;
-    private static SignatureVerifier signatureVerifier;
     private static CredentialsVerifier credentialsVerifier;
     private static String hubBaseUrl;
 
     @BeforeEach
     void setUp() {
         identityHubClient = mock(IdentityHubClient.class);
-        signatureVerifier = mock(SignatureVerifier.class);
-        credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, signatureVerifier);
         hubBaseUrl = "https://" + FAKER.internet().url();
     }
 
@@ -68,7 +65,7 @@ public class IdentityHubCredentialsVerifierTest {
         var credential = generateVerifiableCredential();
         var jws = buildSignedJwt(credential, issuer);
         when(identityHubClient.getVerifiableCredentials(hubBaseUrl)).thenReturn(StatusResult.success(List.of(jws)));
-        when(signatureVerifier.isSignedByIssuer(jws)).thenReturn(true);
+        credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, jwt -> true);
 
         // Act
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
@@ -92,7 +89,7 @@ public class IdentityHubCredentialsVerifierTest {
         var jws = buildSignedJwt(credential, issuer);
         when(identityHubClient.getVerifiableCredentials(hubBaseUrl))
                 .thenReturn(StatusResult.success(List.of(jws)));
-        when(signatureVerifier.isSignedByIssuer(jws)).thenReturn(false);
+        credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, jwt -> false);
 
         // Act
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
@@ -106,6 +103,7 @@ public class IdentityHubCredentialsVerifierTest {
     public void getVerifiedClaims_hubUrlNotResolved() {
         // Arrange
         var didDocument = DidDocument.Builder.newInstance().build();
+        credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, jwt -> true);
 
         // Act
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
@@ -120,6 +118,7 @@ public class IdentityHubCredentialsVerifierTest {
         // Arrange
         var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
         when(identityHubClient.getVerifiableCredentials(hubBaseUrl)).thenReturn(StatusResult.failure(ResponseStatus.FATAL_ERROR));
+        credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, jwt -> true);
 
         // Act
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
@@ -136,7 +135,7 @@ public class IdentityHubCredentialsVerifierTest {
                 .service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
         var jws = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).build(), new JWTClaimsSet.Builder().build());
         when(identityHubClient.getVerifiableCredentials(hubBaseUrl)).thenReturn(StatusResult.success(List.of(jws)));
-        when(signatureVerifier.isSignedByIssuer(jws)).thenReturn(true);
+        credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, jwt -> true);
 
         // Act
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
@@ -162,7 +161,7 @@ public class IdentityHubCredentialsVerifierTest {
         var jws = new SignedJWT(jwsHeader, jwtClaims);
 
         when(identityHubClient.getVerifiableCredentials(hubBaseUrl)).thenReturn(StatusResult.success(List.of(jws)));
-        when(signatureVerifier.isSignedByIssuer(jws)).thenReturn(true);
+        credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, jwt -> true);
 
         // Act
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);

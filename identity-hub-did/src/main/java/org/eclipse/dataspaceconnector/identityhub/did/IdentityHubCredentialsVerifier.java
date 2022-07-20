@@ -25,6 +25,7 @@ import org.eclipse.dataspaceconnector.spi.result.Result;
 
 import java.util.AbstractMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -39,14 +40,14 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     private static final String IDENTITY_HUB_SERVICE_TYPE = "IdentityHub";
     private final IdentityHubClient identityHubClient;
     private final Monitor monitor;
-    private final SignatureVerifier signatureVerifier;
+    private final Function<SignedJWT, Boolean> signatureVerifier;
 
     /**
      * Create a new credential verifier that uses an Identity Hub
      *
      * @param identityHubClient IdentityHubClient.
      */
-    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, SignatureVerifier signatureVerifier) {
+    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, Function<SignedJWT, Boolean> signatureVerifier) {
         this.identityHubClient = identityHubClient;
         this.monitor = monitor;
         this.signatureVerifier = signatureVerifier;
@@ -70,7 +71,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         }
         var verifiedClaims = jwts.getContent()
                 .stream()
-                .filter(signatureVerifier::isSignedByIssuer);
+                .filter(signatureVerifier::apply);
         var claims = verifiedClaims.map(this::extractCredential)
                 .filter(AbstractResult::succeeded)
                 .map(AbstractResult::getContent)
