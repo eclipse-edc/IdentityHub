@@ -29,7 +29,6 @@ import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
 import org.eclipse.dataspaceconnector.spi.types.TypeManager;
 
 import static java.lang.String.format;
-import static org.eclipse.dataspaceconnector.iam.did.spi.document.DidConstants.DID_URL_SETTING;
 
 /**
  * Extension that should be used to provide verification of IdentityHub Verifiable Credentials.
@@ -56,7 +55,7 @@ public class IdentityHubDidExtension implements ServiceExtension {
 
         var hubUrl = context.getSetting(HUB_URL_SETTING, null);
         if (hubUrl == null) {
-            throw new EdcException(format("Mandatory setting '(%s)' missing", DID_URL_SETTING));
+            throw new EdcException(format("Mandatory setting '(%s)' missing", HUB_URL_SETTING));
         }
 
         var client = new IdentityHubClientImpl(httpClient, new ObjectMapper());
