@@ -56,8 +56,9 @@ public class CollectionsWriteProcessorTest {
     void writeCredentials() throws Exception {
         // Arrange
         var issuer = FAKER.internet().url();
+        var subject = FAKER.internet().url();
         var verifiableCredential = generateVerifiableCredential();
-        var data = buildSignedJwt(verifiableCredential, issuer).serialize().getBytes(StandardCharsets.UTF_8);
+        var data = buildSignedJwt(verifiableCredential, issuer, subject).serialize().getBytes(StandardCharsets.UTF_8);
 
         // Act
         var result = writeProcessor.process(data);

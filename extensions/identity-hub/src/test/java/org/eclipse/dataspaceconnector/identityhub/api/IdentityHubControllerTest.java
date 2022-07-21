@@ -65,8 +65,9 @@ public class IdentityHubControllerTest {
     void writeAndQueryObject() throws Exception {
         // Arrange
         var issuer = FAKER.internet().url();
+        var subject = FAKER.internet().url();
         var credential = generateVerifiableCredential();
-        var jwt = buildSignedJwt(credential, issuer);
+        var jwt = buildSignedJwt(credential, issuer, subject);
 
         // Act
         collectionsWrite(jwt);

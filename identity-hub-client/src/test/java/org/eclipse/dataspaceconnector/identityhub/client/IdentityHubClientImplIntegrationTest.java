@@ -49,7 +49,7 @@ public class IdentityHubClientImplIntegrationTest {
     @Test
     void addAndQueryVerifiableCredentials() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
-        SignedJWT jws = buildSignedJwt(credential, FAKER.internet().url());
+        SignedJWT jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url());
 
         addVerifiableCredential(jws);
 

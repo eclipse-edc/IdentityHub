@@ -49,7 +49,7 @@ public class IdentityHubClientImplTest {
     @Test
     void getVerifiableCredentials() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
-        var jws = buildSignedJwt(credential, FAKER.internet().url()).serialize().getBytes(StandardCharsets.UTF_8);
+        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url()).serialize().getBytes(StandardCharsets.UTF_8);
 
         Interceptor interceptor = chain -> {
             var request = chain.request();
@@ -126,7 +126,7 @@ public class IdentityHubClientImplTest {
     @Test
     void addVerifiableCredentialsServerError() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
-        var jws = buildSignedJwt(credential, FAKER.internet().url());
+        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url());
         var errorMessage = FAKER.lorem().sentence();
         var body = "{}";
         int code = 500;
@@ -152,7 +152,7 @@ public class IdentityHubClientImplTest {
     @Test
     void addVerifiableCredentialsIoException() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
-        var jws = buildSignedJwt(credential, FAKER.internet().url());
+        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url());
         var exceptionMessage = "Can't resolve address";
         Interceptor interceptor = chain -> {
             var request = chain.request();
