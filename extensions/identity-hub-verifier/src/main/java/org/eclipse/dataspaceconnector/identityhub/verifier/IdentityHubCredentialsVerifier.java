@@ -14,8 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.verifier;
 
-import com.nimbusds.jwt.SignedJWT;
-import net.minidev.json.JSONObject;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
@@ -23,9 +21,7 @@ import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.result.AbstractResult;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 
-import java.util.AbstractMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -35,8 +31,6 @@ import java.util.stream.Collectors;
  */
 public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
-    private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
-    private static final String CREDENTIALS_ID_KEY = "id";
     private static final String IDENTITY_HUB_SERVICE_TYPE = "IdentityHub";
     private final IdentityHubClient identityHubClient;
     private final Monitor monitor;
@@ -73,39 +67,12 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
                 .stream()
                 .filter(jwt -> jwtCredentialsVerifier.verifyClaims(jwt, didDocument.getId()))
                 .filter(jwt -> jwtCredentialsVerifier.isSignedByIssuer(jwt));
-        var claims = verifiedClaims.map(this::extractCredential)
+        var claims = verifiedClaims.map(VerifiableCredentialUtil::extractCredential)
                 .filter(AbstractResult::succeeded)
                 .map(AbstractResult::getContent)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         return Result.success(claims);
-    }
-
-    private Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
-        try {
-            var payload = jwt.getPayload().toJSONObject();
-            var credentialId = extractVcId(payload);
-            if (credentialId.failed()) {
-                monitor.warning(String.format("Failed getting credentialId: %s", String.join(",", credentialId.getFailureMessages())));
-                return Result.failure(credentialId.getFailureMessages());
-            }
-
-            return Result.success(new AbstractMap.SimpleEntry<>(credentialId.getContent(), payload));
-        } catch (RuntimeException e) {
-            monitor.warning("Failed extracting credential", e);
-            return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.getClass().toString()));
-        }
-    }
-
-    private Result<String> extractVcId(JSONObject jsonPayload) {
-        var payload = (Map<String, Object>) jsonPayload;
-
-        if (!payload.containsKey(VERIFIABLE_CREDENTIALS_KEY)) {
-            return Result.failure(String.format("No %s field found", VERIFIABLE_CREDENTIALS_KEY));
-        }
-        var vc = (Map<String, Object>) payload.get(VERIFIABLE_CREDENTIALS_KEY);
-        var vcId = vc.get(CREDENTIALS_ID_KEY);
-        return vcId == null ? Result.failure("vc id not found") : Result.success(vcId.toString());
     }
 
     private Result<String> getIdentityHubBaseUrl(DidDocument didDocument) {
