@@ -37,9 +37,9 @@ dependencies {
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
 
     testImplementation(project(":extensions:identity-hub"))
+    testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
     testImplementation("${edcGroup}:junit:${edcVersion}")
-    testImplementation(project(":identity-hub-junit"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")

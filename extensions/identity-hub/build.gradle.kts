@@ -34,12 +34,12 @@ dependencies {
 
     testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
     testImplementation("${edcGroup}:junit:${edcVersion}")
-    testImplementation(project(":identity-hub-junit"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("io.rest-assured:rest-assured:${restAssured}")
     testImplementation("com.github.javafaker:javafaker:${faker}")
+    testImplementation(testFixtures(project(":spi:identity-hub-spi")))
 }
 
 publishing {
