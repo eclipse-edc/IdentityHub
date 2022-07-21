@@ -14,6 +14,7 @@
 
 package org.eclipse.dataspaceconnector.identityhub.verifier;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -23,6 +24,7 @@ import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifie
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.Service;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialExtractor;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
@@ -45,9 +47,12 @@ public class IdentityHubCredentialsVerifierTest {
 
     private static final Faker FAKER = new Faker();
     private static final Monitor MONITOR = new ConsoleMonitor();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private IdentityHubClient identityHubClient = mock(IdentityHubClient.class);
     private JwtCredentialsVerifier jwtCredentialsVerifier = mock(JwtCredentialsVerifier.class);
-    private CredentialsVerifier credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, jwtCredentialsVerifier);
+
+    private VerifiableCredentialExtractor verifiableCredentialExtractor = new VerifiableCredentialExtractor(OBJECT_MAPPER);
+    private CredentialsVerifier credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, jwtCredentialsVerifier, verifiableCredentialExtractor);
     private String hubBaseUrl = "https://" + FAKER.internet().url();
     DidDocument didDocument = DidDocument.Builder.newInstance()
             .service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();

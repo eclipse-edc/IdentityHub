@@ -28,12 +28,13 @@ val edcVersion: String by project
 dependencies {
     api("org.jetbrains:annotations:${jetBrainsAnnotationsVersion}")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
+    implementation("${edcGroup}:identity-did-spi:${edcVersion}")
 
     testFixturesImplementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
     testFixturesImplementation("com.github.javafaker:javafaker:${faker}")
     testFixturesImplementation("${edcGroup}:identity-did-spi:${edcVersion}")
     testFixturesImplementation("${edcGroup}:identity-did-crypto:${edcVersion}")
-    testFixturesImplementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
 }
 
 publishing {

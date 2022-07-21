@@ -26,7 +26,7 @@ import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.model.RequestStatus;
 import org.eclipse.dataspaceconnector.identityhub.model.ResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;

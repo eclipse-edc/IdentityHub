@@ -15,7 +15,7 @@
 package org.eclipse.dataspaceconnector.identityhub.store;
 
 import com.github.javafaker.Faker;
-import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.junit.jupiter.api.Test;
 
 import java.util.stream.Collectors;

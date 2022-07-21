@@ -28,7 +28,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.iam.did.crypto.key.KeyConverter;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.EllipticCurvePublicKey;
 import org.eclipse.dataspaceconnector.iam.did.spi.key.PublicKeyWrapper;
-import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 
 import java.time.Duration;
 import java.time.Instant;
