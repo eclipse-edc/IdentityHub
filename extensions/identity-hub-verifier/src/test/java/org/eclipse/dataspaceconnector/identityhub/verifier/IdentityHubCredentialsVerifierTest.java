@@ -49,6 +49,8 @@ public class IdentityHubCredentialsVerifierTest {
     private JwtCredentialsVerifier jwtCredentialsVerifier = mock(JwtCredentialsVerifier.class);
     private CredentialsVerifier credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, jwtCredentialsVerifier);
     private String hubBaseUrl = "https://" + FAKER.internet().url();
+    DidDocument didDocument = DidDocument.Builder.newInstance()
+            .service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
     String issuer = FAKER.internet().url();
     String subject = FAKER.internet().url();
 
@@ -56,8 +58,6 @@ public class IdentityHubCredentialsVerifierTest {
     public void getVerifiedClaims_getValidClaims() throws Exception {
 
         // Arrange
-        var didDocument = DidDocument.Builder.newInstance()
-                .service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
         var credential = generateVerifiableCredential();
         var jws = buildSignedJwt(credential, issuer, subject);
         setUpMocks(jws, true, true);
@@ -83,8 +83,6 @@ public class IdentityHubCredentialsVerifierTest {
     public void getVerifiedClaims_filtersSignedByWrongIssuer() throws Exception {
 
         // Arrange
-        var didDocument = DidDocument.Builder.newInstance()
-                .service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
         var credential = generateVerifiableCredential();
         var jws = buildSignedJwt(credential, issuer, subject);
         setUpMocks(jws, true, false);
@@ -113,7 +111,6 @@ public class IdentityHubCredentialsVerifierTest {
     public void getVerifiedClaims_idHubCallFails() {
 
         // Arrange
-        var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
         when(identityHubClient.getVerifiableCredentials(hubBaseUrl)).thenReturn(StatusResult.failure(ResponseStatus.FATAL_ERROR));
 
         // Act
@@ -127,8 +124,6 @@ public class IdentityHubCredentialsVerifierTest {
     public void getVerifiedClaims_verifiableCredentialsWithWrongFormat() {
 
         // Arrange
-        var didDocument = DidDocument.Builder.newInstance()
-                .service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
         var jws = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).build(), new JWTClaimsSet.Builder().build());
         setUpMocks(jws, true, true);
 
@@ -144,8 +139,6 @@ public class IdentityHubCredentialsVerifierTest {
     public void getVerifiedClaims_verifiableCredentialsWithMissingId() {
 
         // Arrange
-        var didDocument = DidDocument.Builder.newInstance()
-                .service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
         var jwtClaims = new JWTClaimsSet.Builder()
                 .claim("vc", Map.of(FAKER.lorem().word(), FAKER.lorem().word()))
@@ -162,5 +155,4 @@ public class IdentityHubCredentialsVerifierTest {
         assertThat(credentials.succeeded());
         assertThat(credentials.getContent().isEmpty());
     }
-
 }
