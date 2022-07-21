@@ -85,10 +85,14 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         try {
             var payload = jwt.getPayload().toJSONObject();
             var credentialId = extractVcId(payload);
-            if (credentialId.failed()) return Result.failure(credentialId.getFailureMessages());
+            if (credentialId.failed()) {
+                monitor.warning(String.format("Failed getting credentialId: %s", String.join(",", credentialId.getFailureMessages())));
+                return Result.failure(credentialId.getFailureMessages());
+            }
 
             return Result.success(new AbstractMap.SimpleEntry<>(credentialId.getContent(), payload));
         } catch (RuntimeException e) {
+            monitor.warning("Failed extracting credential", e);
             return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.getClass().toString()));
         }
     }
