@@ -23,8 +23,6 @@ import org.eclipse.dataspaceconnector.spi.EdcSetting;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.system.Inject;
 import org.eclipse.dataspaceconnector.spi.system.Provider;
-import org.eclipse.dataspaceconnector.spi.system.Provides;
-import org.eclipse.dataspaceconnector.spi.system.Requires;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
 import org.eclipse.dataspaceconnector.spi.types.TypeManager;
@@ -34,9 +32,7 @@ import static java.lang.String.format;
 /**
  * Extension that should be used to provide verification of IdentityHub Verifiable Credentials.
  */
-@Requires({OkHttpClient.class})
-@Provides(CredentialsVerifier.class)
-public class IdentityHubDidExtension implements ServiceExtension {
+public class CredentialsVerifierExtension implements ServiceExtension {
 
     @EdcSetting
     private static final String HUB_URL_SETTING = "edc.identity.hub.url";
@@ -70,10 +66,5 @@ public class IdentityHubDidExtension implements ServiceExtension {
 
         var client = new IdentityHubClientImpl(httpClient, typeManager.getMapper(), monitor);
         return new IdentityHubCredentialsVerifier(client, monitor, jwtCredentialsVerifier);
-    }
-
-    @Provider(isDefault = true)
-    public JwtCredentialsVerifier createJwtVerifier() {
-        return new DidJwtCredentialsVerifier(didPublicKeyResolver, monitor);
     }
 }
