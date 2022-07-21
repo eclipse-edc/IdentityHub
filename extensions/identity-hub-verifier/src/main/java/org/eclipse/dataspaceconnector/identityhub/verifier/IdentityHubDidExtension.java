@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.verifier;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
@@ -59,18 +58,18 @@ public class IdentityHubDidExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var monitor = context.getMonitor();
+        monitor.info("Initialized Identity Hub DID extension");
+    }
 
+    @Provider
+    public CredentialsVerifier createCredentialsVerifier(ServiceExtensionContext context) {
         var hubUrl = context.getSetting(HUB_URL_SETTING, null);
         if (hubUrl == null) {
             throw new EdcException(format("Mandatory setting '(%s)' missing", HUB_URL_SETTING));
         }
 
-        var client = new IdentityHubClientImpl(httpClient, new ObjectMapper(), monitor);
-        var credentialsVerifier = new IdentityHubCredentialsVerifier(client, monitor, jwtCredentialsVerifier);
-        context.registerService(CredentialsVerifier.class, credentialsVerifier);
-
-        monitor.info("Initialized Identity Hub DID extension");
+        var client = new IdentityHubClientImpl(httpClient, typeManager.getMapper(), monitor);
+        return new IdentityHubCredentialsVerifier(client, monitor, jwtCredentialsVerifier);
     }
 
     @Provider(isDefault = true)
