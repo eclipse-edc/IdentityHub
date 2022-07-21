@@ -16,7 +16,7 @@ package org.eclipse.dataspaceconnector.identityhub.cli;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;

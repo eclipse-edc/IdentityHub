@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
+import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -50,6 +51,7 @@ public class IdentityHubCli {
     private void init() {
         var okHttpClient = new OkHttpClient.Builder().build();
         var objectMapper = new ObjectMapper();
-        this.identityHubClient = new IdentityHubClientImpl(okHttpClient, objectMapper);
+        var monitor = new ConsoleMonitor();
+        this.identityHubClient = new IdentityHubClientImpl(okHttpClient, objectMapper, monitor);
     }
 }

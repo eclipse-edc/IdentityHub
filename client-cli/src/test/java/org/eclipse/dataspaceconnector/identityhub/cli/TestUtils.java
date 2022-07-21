@@ -19,7 +19,7 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 
 import java.util.Map;
 

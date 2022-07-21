@@ -7,7 +7,7 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 
 import java.io.File;
 import java.nio.file.Files;

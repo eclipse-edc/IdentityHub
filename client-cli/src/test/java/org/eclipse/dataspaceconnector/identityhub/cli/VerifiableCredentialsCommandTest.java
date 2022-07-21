@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
-import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -67,10 +67,14 @@ class VerifiableCredentialsCommandTest {
     }
 
     @Test
-    void get() throws Exception {
+    void list() throws Exception {
+        // arrange
         when(app.identityHubClient.getVerifiableCredentials(app.hubUrl)).thenReturn(success(List.of(SIGNED_VC1, SIGNED_VC2)));
 
-        var exitCode = cmd.execute("-s", hubUrl, "vc", "list");
+        // act
+        var exitCode = executeList();
+
+        // assert
         assertThat(exitCode).isEqualTo(0);
         assertThat(hubUrl).isEqualTo(app.hubUrl);
 
@@ -87,13 +91,14 @@ class VerifiableCredentialsCommandTest {
 
     @Test
     void add() throws Exception {
+        // arrange
         var vcArgCaptor = ArgumentCaptor.forClass(SignedJWT.class);
         doReturn(success()).when(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), vcArgCaptor.capture());
 
-        var json = MAPPER.writeValueAsString(VC1);
+        // act
+        var exitCode = executeAdd(MAPPER.writeValueAsString(VC1));
 
-        var exitCode = cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-tests", "-k", "src/test/resources/test-key.pem");
-
+        // assert
         assertThat(exitCode).isEqualTo(0);
         assertThat(hubUrl).isEqualTo(app.hubUrl);
         verify(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), isA(SignedJWT.class));
@@ -106,12 +111,23 @@ class VerifiableCredentialsCommandTest {
     }
 
     @Test
-    void invalidRequest_Add_Failure() {
+    void add_invalidJson_fails() {
+        // arrange
         var json = "Invalid json";
 
-        var exitCode = cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-tests", "-k", "src/test/resources/test-key.pem");
+        // act
+        var exitCode = executeAdd(json);
 
+        // assert
         assertThat(exitCode).isNotEqualTo(0);
         assertThat(hubUrl).isEqualTo(app.hubUrl);
+    }
+
+    private int executeList() {
+        return cmd.execute("-s", hubUrl, "vc", "list");
+    }
+
+    private int executeAdd(String json) {
+        return cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-tests", "-k", "src/test/resources/test-key.pem");
     }
 }
