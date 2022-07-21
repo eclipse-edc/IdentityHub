@@ -31,7 +31,6 @@ dependencies {
     implementation(project(":spi:identity-hub-spi"))
     implementation("${edcGroup}:core:${edcVersion}")
     implementation("${edcGroup}:identity-did-spi:${edcVersion}")
-    implementation("${edcGroup}:identity-did-crypto:${edcVersion}")
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
 

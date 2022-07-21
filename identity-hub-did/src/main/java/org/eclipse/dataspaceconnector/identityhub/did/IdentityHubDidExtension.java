@@ -21,7 +21,9 @@ import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolve
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.dataspaceconnector.spi.EdcException;
 import org.eclipse.dataspaceconnector.spi.EdcSetting;
+import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.system.Inject;
+import org.eclipse.dataspaceconnector.spi.system.Provider;
 import org.eclipse.dataspaceconnector.spi.system.Provides;
 import org.eclipse.dataspaceconnector.spi.system.Requires;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
@@ -49,6 +51,12 @@ public class IdentityHubDidExtension implements ServiceExtension {
     @Inject
     private TypeManager typeManager;
 
+    @Inject
+    private Monitor monitor;
+
+    @Inject
+    private JwtCredentialsVerifier jwtCredentialsVerifier;
+
     @Override
     public void initialize(ServiceExtensionContext context) {
         var monitor = context.getMonitor();
@@ -59,10 +67,14 @@ public class IdentityHubDidExtension implements ServiceExtension {
         }
 
         var client = new IdentityHubClientImpl(httpClient, new ObjectMapper(), monitor);
-        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, monitor);
-        var credentialsVerifier = new IdentityHubCredentialsVerifier(client, monitor, signatureVerifier::isSignedByIssuer);
+        var credentialsVerifier = new IdentityHubCredentialsVerifier(client, monitor, jwtCredentialsVerifier);
         context.registerService(CredentialsVerifier.class, credentialsVerifier);
 
         monitor.info("Initialized Identity Hub DID extension");
+    }
+
+    @Provider(isDefault = true)
+    public JwtCredentialsVerifier createJwtVerifier() {
+        return new DidJwtCredentialsVerifier(didPublicKeyResolver, monitor);
     }
 }

@@ -53,6 +53,8 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
     private static final Monitor MONITOR = new ConsoleMonitor();
     private IdentityHubClient identityHubClient;
     private DidPublicKeyResolver publicKeyResolver;
+    String credentialIssuer = FAKER.internet().url();
+    String subject = FAKER.internet().url();
 
     @BeforeEach
     void setUp(EdcExtension extension) {
@@ -66,23 +68,28 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
     public void getVerifiedClaims_getValidClaims() throws Exception {
 
         // Arrange
-        var credentialIssuer = FAKER.internet().url();
         var jwk = generateEcKey();
         when(publicKeyResolver.resolvePublicKey(credentialIssuer))
                 .thenReturn(Result.success(toPublicKeyWrapper(jwk)));
-        var signatureVerifier = new SignatureVerifier(publicKeyResolver, MONITOR);
-        var identityHubCredentialVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, signatureVerifier::isSignedByIssuer);
-        var didDocument = DidDocument.Builder.newInstance().service(List.of(new Service("IdentityHub", "IdentityHub", API_URL))).build();
+        var signatureVerifier = new DidJwtCredentialsVerifier(publicKeyResolver, MONITOR);
+        var identityHubCredentialVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, signatureVerifier);
+        var didDocument = DidDocument.Builder.newInstance()
+                .id(subject)
+                .service(List.of(new Service("IdentityHub", "IdentityHub", API_URL)))
+                .build();
         var credential = generateVerifiableCredential();
-        var jwt = buildSignedJwt(credential,  credentialIssuer, jwk);
+        var jwt = buildSignedJwt(credential, credentialIssuer, subject, jwk);
 
         // Act
         identityHubClient.addVerifiableCredential(API_URL, jwt);
         var credentials = identityHubCredentialVerifier.getVerifiedCredentials(didDocument);
-        var expectedCredentials = toMap(credential, credentialIssuer);
+        var expectedCredentials = toMap(credential, credentialIssuer, subject);
 
         // Assert
         assertThat(credentials.succeeded());
-        assertThat(credentials.getContent()).usingRecursiveComparison().ignoringFields(String.format("%s.exp", credential.getId())).isEqualTo(expectedCredentials);
+        assertThat(credentials.getContent())
+                .usingRecursiveComparison()
+                .ignoringFields(String.format("%s.exp", credential.getId()))
+                .isEqualTo(expectedCredentials);
     }
 }

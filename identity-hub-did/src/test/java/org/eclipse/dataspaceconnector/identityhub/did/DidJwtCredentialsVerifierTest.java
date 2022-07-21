@@ -15,9 +15,7 @@
 package org.eclipse.dataspaceconnector.identityhub.did;
 
 import com.github.javafaker.Faker;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
@@ -35,75 +33,57 @@ import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.Veri
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class SignatureVerifierTest {
+public class DidJwtCredentialsVerifierTest {
 
     private static final Faker FAKER = new Faker();
     private static final Monitor MONITOR = new ConsoleMonitor();
+
+    DidPublicKeyResolver didPublicKeyResolver = mock(DidPublicKeyResolver.class);
+    DidJwtCredentialsVerifier didJwtCredentialsVerifier = new DidJwtCredentialsVerifier(didPublicKeyResolver, MONITOR);
+    ECKey jwk = generateEcKey();
+    ECKey anotherJwk = generateEcKey();
+    String issuer = FAKER.internet().url();
+    String subject = FAKER.internet().url();
+    SignedJWT jwt = buildSignedJwt(generateVerifiableCredential(), issuer, subject, jwk);
 
     @Test
     public void isSignedByIssuer_jwtSignedByIssuer() throws Exception {
 
         // Arrange
-        var jwk = generateEcKey();
-        var issuer = FAKER.internet().url();
-        var jwt = buildSignedJwt(generateVerifiableCredential(), issuer, jwk);
-        var didPublicKeyResolver = mock(DidPublicKeyResolver.class);
         when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.success(toPublicKeyWrapper(jwk)));
 
-        // Act
-        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, MONITOR);
-
         // Assert
-        assertThat(signatureVerifier.isSignedByIssuer(jwt)).isTrue();
+        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(jwt)).isTrue();
     }
 
     @Test
     public void isSignedByIssuer_jwtSignedByWrongIssuer() throws Exception {
 
         // Arrange
-        var jwk = generateEcKey();
-        var issuer = FAKER.internet().url();
-        var jwt = buildSignedJwt(generateVerifiableCredential(), issuer);
-        var didPublicKeyResolver = mock(DidPublicKeyResolver.class);
-        when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.success(toPublicKeyWrapper(jwk)));
-
-        // Act
-        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, MONITOR);
+        when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.success(toPublicKeyWrapper(anotherJwk)));
 
         // Assert
-        assertThat(signatureVerifier.isSignedByIssuer(jwt)).isFalse();
+        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(jwt)).isFalse();
     }
 
     @Test
     public void isSignedByIssuer_PublicKeyCantBeResolved() throws Exception {
 
         // Arrange
-        var jwk = generateEcKey();
-        var issuer = FAKER.internet().url();
-        var jwt = buildSignedJwt(generateVerifiableCredential(), issuer, jwk);
-        var didPublicKeyResolver = mock(DidPublicKeyResolver.class);
         when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.failure("Failed resolving public key"));
 
-        // Act
-        var signatureVerifier = new SignatureVerifier(didPublicKeyResolver, MONITOR);
-
         // Assert
-        assertThat(signatureVerifier.isSignedByIssuer(jwt)).isFalse();
+        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(jwt)).isFalse();
     }
 
     @Test
-    public void isSignedByIssuer_issuerDidCantBeResolved() throws Exception {
+    public void isSignedByIssuer_issuerDidCantBeResolved() throws ParseException {
 
         // Arrange
-        var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
-        var claims = new JWTClaimsSet.Builder().build();
-        var jws = new SignedJWT(jwsHeader, claims);
-
-        // Act
-        var signatureVerifier = new SignatureVerifier(mock(DidPublicKeyResolver.class), MONITOR);
+        when(didPublicKeyResolver.resolvePublicKey(jwt.getJWTClaimsSet().getIssuer())).thenReturn(Result.failure(FAKER.lorem().sentence()));
 
         // Assert
-        assertThat(signatureVerifier.isSignedByIssuer(jws)).isFalse();
+        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(jwt)).isFalse();
     }
 
     @Test
@@ -113,10 +93,7 @@ public class SignatureVerifierTest {
         var jws = mock(SignedJWT.class);
         when(jws.getJWTClaimsSet()).thenThrow(new ParseException("Failed parsing JWT payload", 0));
 
-        // Act
-        var signatureVerifier = new SignatureVerifier(mock(DidPublicKeyResolver.class), MONITOR);
-
         // Assert
-        assertThat(signatureVerifier.isSignedByIssuer(jws)).isFalse();
+        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(jws)).isFalse();
     }
 }
