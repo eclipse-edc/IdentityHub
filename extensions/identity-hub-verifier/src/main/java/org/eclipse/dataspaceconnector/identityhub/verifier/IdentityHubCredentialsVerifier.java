@@ -66,9 +66,12 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         var verifiedClaims = jwts.getContent()
                 .stream()
                 .filter(jwt -> jwtCredentialsVerifier.verifyClaims(jwt, didDocument.getId()))
-                .filter(jwt -> jwtCredentialsVerifier.isSignedByIssuer(jwt));
-        var claims = verifiedClaims.map(VerifiableCredentialUtil::extractCredential)
-                .filter(AbstractResult::succeeded)
+                .filter(jwtCredentialsVerifier::isSignedByIssuer);
+
+        var credentials = verifiedClaims.map(VerifiableCredentialUtil::extractCredential);
+        credentials.filter(AbstractResult::failed).forEach(result -> monitor.warning(String.join(",", result.getFailureMessages()));
+
+        var claims = credentials.filter(AbstractResult::succeeded)
                 .map(AbstractResult::getContent)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
