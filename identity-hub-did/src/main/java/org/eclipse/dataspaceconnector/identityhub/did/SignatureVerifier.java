@@ -18,6 +18,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.iam.did.crypto.credentials.VerifiableCredentialFactory;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
+import org.eclipse.dataspaceconnector.spi.result.Result;
 
 import java.text.ParseException;
 
@@ -44,25 +45,26 @@ class SignatureVerifier {
      */
     Boolean isSignedByIssuer(SignedJWT jwt) {
         var issuer = getIssuer(jwt);
-        if (issuer == null) {
+        if (issuer.failed()) {
             monitor.warning("Failed finding JWT issuer");
             return false;
         }
-        var issuerPublicKey = didPublicKeyResolver.resolvePublicKey(issuer);
+        var issuerPublicKey = didPublicKeyResolver.resolvePublicKey(issuer.getContent());
         if (issuerPublicKey.failed()) {
-            monitor.warning(String.format("Failed finding publicKey of issuer: %s", issuer));
+            monitor.warning(String.format("Failed finding publicKey of issuer: %s", issuer.getContent()));
             return false;
         }
         var verificationResult = VerifiableCredentialFactory.verify(jwt, issuerPublicKey.getContent(), VC_AUDIENCE);
         return verificationResult.succeeded();
     }
 
-    private String getIssuer(SignedJWT jwt) {
+    private Result<String> getIssuer(SignedJWT jwt) {
         try {
-            return jwt.getJWTClaimsSet().getIssuer();
+            var issuer = jwt.getJWTClaimsSet().getIssuer();
+            return issuer == null ? Result.failure("Issuer missing from JWT") : Result.success(issuer);
         } catch (ParseException e) {
             monitor.warning("Error parsing issuer from JWT", e);
-            return null;
+            return Result.failure(e.getMessage());
         }
     }
 }
