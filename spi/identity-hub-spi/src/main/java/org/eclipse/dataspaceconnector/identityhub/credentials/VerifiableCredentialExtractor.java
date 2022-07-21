@@ -16,6 +16,7 @@ public class VerifiableCredentialExtractor {
     public VerifiableCredentialExtractor(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
+
     public Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
         try {
             var payload = jwt.getPayload().toJSONObject();
