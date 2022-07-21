@@ -25,6 +25,7 @@ import org.eclipse.dataspaceconnector.spi.result.Result;
 
 import java.util.AbstractMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -88,7 +89,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
             return Result.success(new AbstractMap.SimpleEntry<>(credentialId.getContent(), payload));
         } catch (RuntimeException e) {
-            return Result.failure(e.getMessage() == null ? e.getClass().toString() : e.getMessage());
+            return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.getClass().toString()));
         }
     }
 
