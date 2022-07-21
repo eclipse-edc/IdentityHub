@@ -7,9 +7,11 @@ runs:
     - name: Checkout EDC
       uses: actions/checkout@v2
       with:
-        repository: eclipse-dataspaceconnector/DataSpaceConnector
+        # TODO: update to upstream repository once https://github.com/eclipse-dataspaceconnector/DataSpaceConnector/pull/1721 is merged
+        #repository: eclipse-dataspaceconnector/DataSpaceConnector
+        repository: agera-edc/DataSpaceConnector
         path: DataSpaceConnector
-        ref: 492c8a17ef94014ae53d44da476a553f32abaa7e
+        ref: fix/did-extension-provides
 
     # Install Java and cache MVD Gradle build.
     - uses: actions/setup-java@v2

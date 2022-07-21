@@ -17,6 +17,7 @@ package org.eclipse.dataspaceconnector.identityhub.verifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import org.eclipse.dataspaceconnector.iam.did.resolution.DidPublicKeyResolverImpl;
+import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.Service;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
@@ -41,11 +42,12 @@ import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.Veri
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toMap;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toPublicKeyWrapper;
 import static org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils.getFreePort;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(EdcExtension.class)
-public class IdentityHubCredentialsVerifierIntegrationTest {
+public class IdentityHubDidExtensionTest {
     private static final int PORT = getFreePort();
     private static final String API_URL = String.format("http://localhost:%d/api/identity-hub", PORT);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -58,21 +60,19 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
 
     @BeforeEach
     void setUp(EdcExtension extension) {
-        var okHttpClient = TestUtils.testOkHttpClient();
-        identityHubClient = new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, MONITOR);
+        identityHubClient = new IdentityHubClientImpl(TestUtils.testOkHttpClient(), OBJECT_MAPPER, MONITOR);
         publicKeyResolver = mock(DidPublicKeyResolverImpl.class);
+        extension.registerServiceMock(DidPublicKeyResolver.class, publicKeyResolver);
         extension.setConfiguration(Map.of("web.http.port", String.valueOf(PORT), "edc.identity.hub.url", API_URL));
     }
 
+    // Both JwtCredentialsVerifier and CredentialsVerifier need to be injected in this test so that the DI mechanism
+    // replaces DidPublicKeyResolver with a mock correctly
     @Test
-    public void getVerifiedClaims_getValidClaims() throws Exception {
-
+    public void getVerifiedClaims_getValidClaims(JwtCredentialsVerifier jwtCredentialsVerifier, CredentialsVerifier verifier) {
         // Arrange
         var jwk = generateEcKey();
-        when(publicKeyResolver.resolvePublicKey(credentialIssuer))
-                .thenReturn(Result.success(toPublicKeyWrapper(jwk)));
-        var signatureVerifier = new DidJwtCredentialsVerifier(publicKeyResolver, MONITOR);
-        var identityHubCredentialVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, signatureVerifier);
+        when(publicKeyResolver.resolvePublicKey(anyString())).thenReturn(Result.success(toPublicKeyWrapper(jwk)));
         var didDocument = DidDocument.Builder.newInstance()
                 .id(subject)
                 .service(List.of(new Service("IdentityHub", "IdentityHub", API_URL)))
@@ -82,7 +82,7 @@ public class IdentityHubCredentialsVerifierIntegrationTest {
 
         // Act
         identityHubClient.addVerifiableCredential(API_URL, jwt);
-        var credentials = identityHubCredentialVerifier.getVerifiedCredentials(didDocument);
+        var credentials = verifier.getVerifiedCredentials(didDocument);
         var expectedCredentials = toMap(credential, credentialIssuer, subject);
 
         // Assert
