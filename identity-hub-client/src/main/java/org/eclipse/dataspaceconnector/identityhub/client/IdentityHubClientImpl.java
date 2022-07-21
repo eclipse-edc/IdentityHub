@@ -21,10 +21,10 @@ import com.nimbusds.jwt.SignedJWT;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import org.eclipse.dataspaceconnector.identityhub.dtos.Descriptor;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.ResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.model.Descriptor;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageRequestObject;
+import org.eclipse.dataspaceconnector.identityhub.model.RequestObject;
+import org.eclipse.dataspaceconnector.identityhub.model.ResponseObject;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
@@ -39,8 +39,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 
 public class IdentityHubClientImpl implements IdentityHubClient {
 

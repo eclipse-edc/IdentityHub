@@ -22,10 +22,10 @@ import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
-import org.eclipse.dataspaceconnector.identityhub.dtos.RequestStatus;
-import org.eclipse.dataspaceconnector.identityhub.dtos.ResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
+import org.eclipse.dataspaceconnector.identityhub.model.RequestStatus;
+import org.eclipse.dataspaceconnector.identityhub.model.ResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.credentials.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
@@ -37,7 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
+import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject.MESSAGE_ID_VALUE;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 
 public class IdentityHubClientImplTest {

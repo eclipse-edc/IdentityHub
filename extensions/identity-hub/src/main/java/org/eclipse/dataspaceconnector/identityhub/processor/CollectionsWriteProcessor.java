@@ -15,13 +15,13 @@
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
 
 import java.text.ParseException;
 
-import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
+import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject.MESSAGE_ID_VALUE;
 
 /**
  * Processor of "CollectionsWrite" messages, in order to write objects into the {@link IdentityHubStore}.

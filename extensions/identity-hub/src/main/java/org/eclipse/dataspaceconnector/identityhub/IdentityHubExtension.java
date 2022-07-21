@@ -27,9 +27,9 @@ import org.eclipse.dataspaceconnector.spi.system.Provider;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
 
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.FEATURE_DETECTION_READ;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.FEATURE_DETECTION_READ;
 
 /**
  * EDC extension to boot the services used by the Identity Hub

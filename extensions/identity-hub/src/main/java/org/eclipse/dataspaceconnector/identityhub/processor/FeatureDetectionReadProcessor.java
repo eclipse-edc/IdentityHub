@@ -14,16 +14,16 @@
 
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
-import org.eclipse.dataspaceconnector.identityhub.dtos.FeatureDetection;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
-import org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaces;
+import org.eclipse.dataspaceconnector.identityhub.model.FeatureDetection;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
+import org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaces;
 
 import java.util.List;
 
-import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
+import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject.MESSAGE_ID_VALUE;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 
 /**
  * Processor of "FeatureDetectionRead" messages
