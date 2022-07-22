@@ -31,7 +31,7 @@ import org.eclipse.dataspaceconnector.spi.types.TypeManager;
 import static java.lang.String.format;
 
 /**
- * Extension that should be used to provide verification of IdentityHub Verifiable Credentials.
+ * Extension to provide verification of IdentityHub Verifiable Credentials.
  */
 public class CredentialsVerifierExtension implements ServiceExtension {
 

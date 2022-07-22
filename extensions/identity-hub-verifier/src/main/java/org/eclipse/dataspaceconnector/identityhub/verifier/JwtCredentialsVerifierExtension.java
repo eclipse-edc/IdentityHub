@@ -21,7 +21,7 @@ import org.eclipse.dataspaceconnector.spi.system.Provider;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 
 /**
- * Extension that should be used to provide verification of DID JWTs
+ * Extension to provide verification of DID JWTs
  */
 public class JwtCredentialsVerifierExtension implements ServiceExtension {
 
