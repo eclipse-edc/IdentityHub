@@ -23,6 +23,9 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Util class to manipulate VerifiableCredentials with JWTs.
+ */
 public class VerifiableCredentialsJwtUtils {
     private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private ObjectMapper objectMapper;
@@ -31,6 +34,24 @@ public class VerifiableCredentialsJwtUtils {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Extract credentials from a JWT. The credential is represented with the following format
+     * "credentialId" : {
+     *     "vc": {
+     *         "credentialSubject": {
+     *             // some claims about the subject.
+     *         }
+     *     }
+     *     "iss": "issuer-value",
+     *     "sub": "subject-value",
+     *     // other JWT claims
+     * }
+     * The representation is used to support any type of <a href="https://www.w3.org/TR/vc-data-model">verifiable credentials</a> .
+     * When applying policies, the policy engine might need to access the issuer of the claim. That's why the JWT claims are included.
+     *
+     * @param jwt SignedJWT containing a verifiableCredential in its payload.
+     * @return VerifiableCredential represented as Map.Entry<String, Object>.
+     */
     public Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
         try {
             var payload = jwt.getPayload().toJSONObject();
