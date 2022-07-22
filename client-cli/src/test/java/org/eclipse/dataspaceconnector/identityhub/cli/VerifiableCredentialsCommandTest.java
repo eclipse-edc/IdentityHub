@@ -14,6 +14,7 @@
 
 package org.eclipse.dataspaceconnector.identityhub.cli;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
@@ -32,8 +33,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.PRIVATE_KEY_PATH;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.createVerifiableCredential;
-import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.getSignedVerifiableCredential;
+import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.signVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.verifyVerifiableCredentialSignature;
 import static org.eclipse.dataspaceconnector.spi.response.StatusResult.success;
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,24 +49,27 @@ class VerifiableCredentialsCommandTest {
 
     static final Faker FAKER = new Faker();
     static final ObjectMapper MAPPER = new ObjectMapper();
+    static final String VERIFIABLE_CREDENTIAL_CLAIM_KEY = "vc";
 
     static final VerifiableCredential VC1 = createVerifiableCredential();
-    static final SignedJWT SIGNED_VC1 = getSignedVerifiableCredential(VC1);
+    static final SignedJWT SIGNED_VC1 = signVerifiableCredential(VC1);
 
     static final VerifiableCredential VC2 = createVerifiableCredential();
-    static final SignedJWT SIGNED_VC2 = getSignedVerifiableCredential(VC2);
+    static final SignedJWT SIGNED_VC2 = signVerifiableCredential(VC2);
 
     String hubUrl = FAKER.internet().url();
 
     IdentityHubCli app = new IdentityHubCli();
     CommandLine cmd = new CommandLine(app);
-    StringWriter sw = new StringWriter();
+    StringWriter out = new StringWriter();
+    StringWriter err = new StringWriter();
 
     @BeforeEach
     void setUp() {
         app.identityHubClient = mock(IdentityHubClient.class);
         app.hubUrl = hubUrl;
-        cmd.setOut(new PrintWriter(sw));
+        cmd.setOut(new PrintWriter(out));
+        cmd.setErr(new PrintWriter(err));
     }
 
     @Test
@@ -74,15 +79,16 @@ class VerifiableCredentialsCommandTest {
 
         // act
         var exitCode = executeList();
+        var outContent = out.toString();
+        var errContent = err.toString();
 
         // assert
         assertThat(exitCode).isEqualTo(0);
-        assertThat(hubUrl).isEqualTo(app.hubUrl);
+        assertThat(errContent).isEmpty();
 
-        var content = sw.toString();
-        var claims = MAPPER.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
+        var claims = MAPPER.readValue(outContent, new TypeReference<List<Map<String, Object>>>() {});
         var vcs = claims.stream()
-                .map(c -> MAPPER.convertValue(c.get("vc"), VerifiableCredential.class))
+                .map(c -> MAPPER.convertValue(c.get(VERIFIABLE_CREDENTIAL_CLAIM_KEY), VerifiableCredential.class))
                 .collect(Collectors.toList());
 
         assertThat(vcs)
@@ -93,24 +99,28 @@ class VerifiableCredentialsCommandTest {
     @Test
     void add() throws Exception {
         // arrange
+        var json = MAPPER.writeValueAsString(VC1);
         var vcArgCaptor = ArgumentCaptor.forClass(SignedJWT.class);
         doReturn(success()).when(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), vcArgCaptor.capture());
 
         // act
-        var exitCode = executeAdd(MAPPER.writeValueAsString(VC1));
+        var exitCode = executeAdd(json, PRIVATE_KEY_PATH);
+        var outContent = out.toString();
+        var errContent = err.toString();
 
         // assert
         assertThat(exitCode).isEqualTo(0);
-        assertThat(hubUrl).isEqualTo(app.hubUrl);
-        verify(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), isA(SignedJWT.class));
+        assertThat(outContent).isEqualTo("Verifiable Credential added successfully\n");
+        assertThat(errContent).isEmpty();
 
+        verify(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), isA(SignedJWT.class));
         var signedJWT = vcArgCaptor.getValue();
 
         // assert JWT signature
         assertThat(verifyVerifiableCredentialSignature(signedJWT)).isTrue();
 
         // verify verifiable credential claim
-        var vcClaim = signedJWT.getJWTClaimsSet().getJSONObjectClaim("vc").toJSONString();
+        var vcClaim = signedJWT.getJWTClaimsSet().getJSONObjectClaim(VERIFIABLE_CREDENTIAL_CLAIM_KEY).toJSONString();
         var verifiableCredential = MAPPER.readValue(vcClaim, VerifiableCredential.class);
         assertThat(verifiableCredential).usingRecursiveComparison().isEqualTo(VC1);
     }
@@ -121,18 +131,37 @@ class VerifiableCredentialsCommandTest {
         var json = "Invalid json";
 
         // act
-        var exitCode = executeAdd(json);
+        var exitCode = executeAdd(json, PRIVATE_KEY_PATH);
+        var outContent = out.toString();
+        var errContent = err.toString();
 
         // assert
         assertThat(exitCode).isNotEqualTo(0);
-        assertThat(hubUrl).isEqualTo(app.hubUrl);
+        assertThat(outContent).isEmpty();
+        assertThat(errContent).contains("Error while processing request json");
+    }
+
+    @Test
+    void add_invalidPrivateKey_fails() throws JsonProcessingException {
+        // arrange
+        var json = MAPPER.writeValueAsString(VC1);
+
+        // act
+        var exitCode = executeAdd(json, "non-existing-key");
+        var outContent = out.toString();
+        var errContent = err.toString();
+
+        // assert
+        assertThat(exitCode).isNotEqualTo(0);
+        assertThat(outContent).isEmpty();
+        assertThat(errContent).contains("Error while signing Verifiable Credential");
     }
 
     private int executeList() {
         return cmd.execute("-s", hubUrl, "vc", "list");
     }
 
-    private int executeAdd(String json) {
-        return cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-tests", "-k", "src/test/resources/test-private-key.pem");
+    private int executeAdd(String json, String privateKey) {
+        return cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-tests", "-k", privateKey);
     }
 }

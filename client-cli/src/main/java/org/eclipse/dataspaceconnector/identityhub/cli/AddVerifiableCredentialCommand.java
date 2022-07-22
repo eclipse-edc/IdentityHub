@@ -16,6 +16,7 @@ package org.eclipse.dataspaceconnector.identityhub.cli;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -23,6 +24,9 @@ import picocli.CommandLine.ParentCommand;
 
 import java.io.File;
 import java.util.concurrent.Callable;
+
+import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTUtils.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTUtils.readECKey;
 
 @Command(name = "add", description = "Adds a verifiable credential to identity hub")
 class AddVerifiableCredentialCommand implements Callable<Integer> {
@@ -32,17 +36,22 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
     @ParentCommand
     private VerifiableCredentialsCommand command;
 
+    @CommandLine.Spec
+    private CommandLine.Model.CommandSpec spec;
+
     @CommandLine.Option(names = { "-c", "--verifiable-credential"}, required = true, description = "Verifiable Credential as JSON")
     private String verifiableCredentialJson;
 
     @CommandLine.Option(names = { "-i", "--issuer"}, required = true, description = "DID of the Verifiable Credential issuer")
     private String issuer;
 
-    @CommandLine.Option(names = { "-k", "--private-key" }, required = true, description = "PEM file with private key for signing Verifiable Credentials")
+    @CommandLine.Option(names = { "-k", "--private-key" }, required = true, description = "PEM file with EC private key for signing Verifiable Credentials")
     private String privateKeyPemFile;
 
     @Override
     public Integer call() throws Exception {
+        var out = spec.commandLine().getOut();
+
         VerifiableCredential vc;
         try {
             vc = MAPPER.readValue(verifiableCredentialJson, VerifiableCredential.class);
@@ -50,10 +59,17 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
             throw new CliException("Error while processing request json.");
         }
 
-        var ecPrivateKey = JWTUtils.readECKey(new File(privateKeyPemFile)).toECPrivateKey();
-        var signedJWT = JWTUtils.buildSignedJwt(vc, issuer, ecPrivateKey);
+        SignedJWT signedJWT;
+        try {
+            var ecPrivateKey = readECKey(new File(privateKeyPemFile)).toECPrivateKey();
+            signedJWT = buildSignedJwt(vc, issuer, ecPrivateKey);
+        } catch (Exception e) {
+            throw new CliException("Error while signing Verifiable Credential", e);
+        }
 
         command.cli.identityHubClient.addVerifiableCredential(command.cli.hubUrl, signedJWT);
+
+        out.println("Verifiable Credential added successfully");
 
         return 0;
     }

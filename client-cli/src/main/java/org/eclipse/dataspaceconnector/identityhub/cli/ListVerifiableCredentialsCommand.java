@@ -52,9 +52,9 @@ class ListVerifiableCredentialsCommand implements Callable<Integer> {
         return 0;
     }
 
-    private Map<String, Object> getClaims(SignedJWT j) {
+    private Map<String, Object> getClaims(SignedJWT jwt) {
         try {
-            return j.getJWTClaimsSet().getClaims();
+            return jwt.getJWTClaimsSet().getClaims();
         } catch (ParseException e) {
             throw new CliException("Error while reading Verifiable Credentials claims", e);
         }
