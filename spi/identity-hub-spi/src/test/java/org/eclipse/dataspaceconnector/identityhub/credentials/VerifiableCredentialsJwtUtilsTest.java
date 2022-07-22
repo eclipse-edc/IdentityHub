@@ -13,10 +13,10 @@ import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.Veri
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toMap;
 
-public class JwtPayloadParserTest {
+public class VerifiableCredentialsJwtUtilsTest {
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    static final JwtPayloadParser PAYLOAD_PARSER = new JwtPayloadParser(OBJECT_MAPPER);
+    static final VerifiableCredentialsJwtUtils PAYLOAD_PARSER = new VerifiableCredentialsJwtUtils(OBJECT_MAPPER);
     static final Faker FAKER = new Faker();
     static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     static final JWSHeader JWS_HEADER = new JWSHeader.Builder(JWSAlgorithm.ES256).build();

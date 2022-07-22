@@ -24,7 +24,7 @@ import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifie
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.Service;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
-import org.eclipse.dataspaceconnector.identityhub.credentials.JwtPayloadParser;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
@@ -51,7 +51,7 @@ public class IdentityHubCredentialsVerifierTest {
     private IdentityHubClient identityHubClient = mock(IdentityHubClient.class);
     private JwtCredentialsVerifier jwtCredentialsVerifier = mock(JwtCredentialsVerifier.class);
 
-    private JwtPayloadParser jwtPayloadParser = new JwtPayloadParser(OBJECT_MAPPER);
+    private VerifiableCredentialsJwtUtils jwtPayloadParser = new VerifiableCredentialsJwtUtils(OBJECT_MAPPER);
     private CredentialsVerifier credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClient, MONITOR, jwtCredentialsVerifier, jwtPayloadParser);
     private String hubBaseUrl = "https://" + FAKER.internet().url();
     DidDocument didDocument = DidDocument.Builder.newInstance()

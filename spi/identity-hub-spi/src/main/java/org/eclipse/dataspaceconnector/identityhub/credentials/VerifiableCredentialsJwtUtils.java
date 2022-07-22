@@ -9,11 +9,11 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class JwtPayloadParser {
+public class VerifiableCredentialsJwtUtils {
     private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private ObjectMapper objectMapper;
 
-    public JwtPayloadParser(ObjectMapper objectMapper) {
+    public VerifiableCredentialsJwtUtils(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
