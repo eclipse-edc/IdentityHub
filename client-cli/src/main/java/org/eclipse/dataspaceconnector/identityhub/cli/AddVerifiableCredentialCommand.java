@@ -45,6 +45,9 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
     @CommandLine.Option(names = { "-i", "--issuer"}, required = true, description = "DID of the Verifiable Credential issuer")
     private String issuer;
 
+    @CommandLine.Option(names = { "-b", "--subject"}, required = true, description = "DID of the Verifiable Credential subject")
+    private String subject;
+
     @CommandLine.Option(names = { "-k", "--private-key" }, required = true, description = "PEM file with EC private key for signing Verifiable Credentials")
     private String privateKeyPemFile;
 
@@ -61,8 +64,8 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
 
         SignedJWT signedJWT;
         try {
-            var ecPrivateKey = readECKey(new File(privateKeyPemFile)).toECPrivateKey();
-            signedJWT = buildSignedJwt(vc, issuer, ecPrivateKey);
+            var ecKey = readECKey(new File(privateKeyPemFile));
+            signedJWT = buildSignedJwt(vc, issuer, subject, ecKey);
         } catch (Exception e) {
             throw new CliException("Error while signing Verifiable Credential", e);
         }

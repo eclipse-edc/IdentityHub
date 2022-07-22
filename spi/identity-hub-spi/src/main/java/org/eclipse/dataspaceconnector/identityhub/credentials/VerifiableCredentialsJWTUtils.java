@@ -21,19 +21,20 @@ import static java.time.Instant.now;
 
 public class VerifiableCredentialsJWTUtils {
 
-    public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, ECPrivateKey privateKey) throws Exception {
+    public static final String VERIFIABLE_CREDENTIAL_CLAIM_KEY = "vc";
+
+    public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) throws Exception {
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
         var claims = new JWTClaimsSet.Builder()
-                .claim("vc", credential)
+                .claim(VERIFIABLE_CREDENTIAL_CLAIM_KEY, credential)
                 .issuer(issuer)
-                .audience("identity-hub")
                 .expirationTime(Date.from(now().plus(Duration.ofDays(15))))
-                .subject("verifiable-credential")
+                .subject(subject)
                 .build();
 
         var jws = new SignedJWT(jwsHeader, claims);
 
-        jws.sign(new ECDSASigner(privateKey));
+        jws.sign(new ECDSASigner(jwk.toECPrivateKey()));
 
         return SignedJWT.parse(jws.serialize());
     }

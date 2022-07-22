@@ -37,6 +37,7 @@ import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.PRIVATE_K
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.createVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.signVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.verifyVerifiableCredentialSignature;
+import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTUtils.VERIFIABLE_CREDENTIAL_CLAIM_KEY;
 import static org.eclipse.dataspaceconnector.spi.response.StatusResult.success;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -49,7 +50,6 @@ class VerifiableCredentialsCommandTest {
 
     static final Faker FAKER = new Faker();
     static final ObjectMapper MAPPER = new ObjectMapper();
-    static final String VERIFIABLE_CREDENTIAL_CLAIM_KEY = "vc";
 
     static final VerifiableCredential VC1 = createVerifiableCredential();
     static final SignedJWT SIGNED_VC1 = signVerifiableCredential(VC1);
@@ -162,6 +162,6 @@ class VerifiableCredentialsCommandTest {
     }
 
     private int executeAdd(String json, String privateKey) {
-        return cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-tests", "-k", privateKey);
+        return cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-test-issuer", "-b", "identity-hub-test-subject", "-k", privateKey);
     }
 }

@@ -61,8 +61,9 @@ public class TestUtils {
 
             return buildSignedJwt(
                     vc,
-                    "identity-hub-test",
-                    PRIVATE_KEY.toECPrivateKey());
+                    "identity-hub-test-issuer",
+                    "identity-hub-test-subject",
+                    PRIVATE_KEY);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
