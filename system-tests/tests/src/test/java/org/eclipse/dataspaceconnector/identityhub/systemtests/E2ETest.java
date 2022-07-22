@@ -70,7 +70,7 @@ class E2ETest {
     }
 
     @Test
-    void list(CredentialsVerifier verifier, DidResolverRegistry resolverRegistry) throws Exception {
+    void push_and_get_verifiable_credentials(CredentialsVerifier verifier, DidResolverRegistry resolverRegistry) throws Exception {
         int result = cmd.execute("-s", HUB_URL, "vc", "list");
         assertThat(result).isEqualTo(0);
 
