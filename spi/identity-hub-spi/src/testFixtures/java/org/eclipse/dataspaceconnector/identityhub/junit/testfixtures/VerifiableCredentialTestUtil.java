@@ -39,9 +39,7 @@ import java.util.Map;
  * Util class to manipulate VerifiableCredentials in tests.
  */
 public class VerifiableCredentialTestUtil {
-
     public static final Date EXP = Date.from(Instant.now().plus(Duration.ofDays(1)));
-
     private static final Faker FAKER = new Faker();
     private static final ECKeyGenerator EC_KEY_GENERATOR = new ECKeyGenerator(Curve.P_256);
 
