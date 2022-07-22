@@ -1,0 +1,14 @@
+{
+	"id": "did:web:did-server:identity-hub-owner",
+	"@context": [
+		"https://www.w3.org/ns/did/v1",
+		{
+			"@base": "did:web:did-server:identity-hub-owner"
+		}
+	],
+	"service": [{
+		"id": "#identity-hub-url",
+		"type": "IdentityHub",
+		"serviceEndpoint": "http://localhost:8181/api/identity-hub"
+	}]
+}

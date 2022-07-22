@@ -1,0 +1,23 @@
+services:
+
+  # A nginx based HTTP server to serve DIDs.
+  did-server:
+    container_name: did-server
+    image: nginx
+    volumes:
+      - ./resources/webdid:/usr/share/nginx/html
+    ports:
+      - "7070:80"
+
+  # Dataspace registration service authority.
+  identity-hub:
+    container_name: identity-hub
+    build:
+      context: ../launcher
+      args:
+        JVM_ARGS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
+    environment:
+      EDC_API_AUTH_KEY: ApiKeyDefaultValue
+    ports:
+      - "8181:8181"
+      - "5008:5008"
