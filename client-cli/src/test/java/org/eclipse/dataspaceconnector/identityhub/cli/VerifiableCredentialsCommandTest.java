@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.createVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.getSignedVerifiableCredential;
+import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.verifyVerifiableCredentialSignature;
 import static org.eclipse.dataspaceconnector.spi.response.StatusResult.success;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -78,7 +79,7 @@ class VerifiableCredentialsCommandTest {
         assertThat(exitCode).isEqualTo(0);
         assertThat(hubUrl).isEqualTo(app.hubUrl);
 
-        String content = sw.toString();
+        var content = sw.toString();
         var claims = MAPPER.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
         var vcs = claims.stream()
                 .map(c -> MAPPER.convertValue(c.get("vc"), VerifiableCredential.class))
@@ -104,6 +105,10 @@ class VerifiableCredentialsCommandTest {
         verify(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), isA(SignedJWT.class));
 
         var signedJWT = vcArgCaptor.getValue();
+
+        // assert JWT signature
+        assertThat(verifyVerifiableCredentialSignature(signedJWT)).isTrue();
+
         // verify verifiable credential claim
         var vcClaim = signedJWT.getJWTClaimsSet().getJSONObjectClaim("vc").toJSONString();
         var verifiableCredential = MAPPER.readValue(vcClaim, VerifiableCredential.class);
@@ -128,6 +133,6 @@ class VerifiableCredentialsCommandTest {
     }
 
     private int executeAdd(String json) {
-        return cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-tests", "-k", "src/test/resources/test-key.pem");
+        return cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-tests", "-k", "src/test/resources/test-private-key.pem");
     }
 }

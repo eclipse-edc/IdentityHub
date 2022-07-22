@@ -50,7 +50,7 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
             throw new CliException("Error while processing request json.");
         }
 
-        var ecPrivateKey = JWTUtils.readECPrivateKey(new File(privateKeyPemFile));
+        var ecPrivateKey = JWTUtils.readECKey(new File(privateKeyPemFile)).toECPrivateKey();
         var signedJWT = JWTUtils.buildSignedJwt(vc, issuer, ecPrivateKey);
 
         command.cli.identityHubClient.addVerifiableCredential(command.cli.hubUrl, signedJWT);

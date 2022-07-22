@@ -37,9 +37,9 @@ class JWTUtils {
         return SignedJWT.parse(jws.serialize());
     }
 
-    public static ECPrivateKey readECPrivateKey(File file) throws Exception {
+    public static ECKey readECKey(File file) throws Exception {
         String contents = Files.readString(file.toPath());
         JWK jwk = ECKey.parseFromPEMEncodedObjects(contents);
-        return jwk.toECKey().toECPrivateKey();
+        return jwk.toECKey();
     }
 }

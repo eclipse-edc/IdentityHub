@@ -15,16 +15,28 @@
 package org.eclipse.dataspaceconnector.identityhub.cli;
 
 import com.github.javafaker.Faker;
-import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 
+import java.io.File;
 import java.util.Map;
 
 public class TestUtils {
     static final Faker FAKER = new Faker();
+    public static ECKey PUBLIC_KEY;
+    public static ECKey PRIVATE_KEY;
+
+    static {
+        try {
+            PUBLIC_KEY = JWTUtils.readECKey(new File("src/test/resources/test-public-key.pem"));
+            PRIVATE_KEY = JWTUtils.readECKey(new File("src/test/resources/test-private-key.pem"));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private TestUtils() {
     }
@@ -40,12 +52,22 @@ public class TestUtils {
 
     public static SignedJWT getSignedVerifiableCredential(VerifiableCredential vc) {
         try {
+
             return JWTUtils.buildSignedJwt(
                     vc,
                     "identity-hub",
-                    new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate().toECPrivateKey());
+                    PRIVATE_KEY.toECPrivateKey());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
+    public static boolean verifyVerifiableCredentialSignature(SignedJWT jwt) {
+        try {
+            return jwt.verify(new ECDSAVerifier(PUBLIC_KEY.toECPublicKey()));
+        } catch (JOSEException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
