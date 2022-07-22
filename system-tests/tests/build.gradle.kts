@@ -34,6 +34,7 @@ dependencies {
     testImplementation(project(":extensions:identity-hub-verifier"))
     testImplementation(project(":client-cli"))
     testImplementation("${edcGroup}:identity-did-core:${edcVersion}")
+    testImplementation("${edcGroup}:identity-did-web:${edcVersion}")
     testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation("info.picocli:picocli:4.6.3")
     testImplementation("info.picocli:picocli-codegen:4.6.3")

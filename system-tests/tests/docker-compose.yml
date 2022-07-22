@@ -7,7 +7,7 @@ services:
     volumes:
       - ./resources/webdid:/usr/share/nginx/html
     ports:
-      - "7070:80"
+      - "80:80"
 
   # Dataspace registration service authority.
   identity-hub:

@@ -17,6 +17,7 @@ package org.eclipse.dataspaceconnector.identityhub.systemtests;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
+import net.minidev.json.JSONObject;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.dataspaceconnector.identityhub.cli.IdentityHubCli;
@@ -62,7 +63,10 @@ class E2ETest {
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
 
-        extension.setConfiguration(Map.of("web.http.port", "8081", "edc.identity.hub.url", HUB_URL));
+        extension.setConfiguration(Map.of(
+                "web.http.port", "8081",
+                "edc.identity.hub.url", HUB_URL,
+                "edc.iam.did.web.use.https", "false"));
     }
 
     @Test
@@ -71,15 +75,21 @@ class E2ETest {
         assertThat(result).isEqualTo(0);
 
         var claims = MAPPER.readValue(out.toString(), new TypeReference<List<Map<String, Object>>>() {});
-        assertThat(claims).describedAs("Identity Hub already contains Verifiable Credentials").isEmpty();
+        //assertThat(claims).describedAs("Identity Hub already contains Verifiable Credentials").isEmpty();
 
         var json = MAPPER.writeValueAsString(VC1);
-        cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", "did:web:did-server:authority", "-b", "did:web:did-server:identity-hub-owner", "-k", "resources/jwt/authority/private-key.pem");
+        cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", "did:web:localhost:authority", "-b", "did:web:localhost:identity-hub-owner", "-k", "resources/jwt/authority/private-key.pem");
 
-        var didResult = resolverRegistry.resolve("did:web:did-server:identity-hub-owner");
+        var didResult = resolverRegistry.resolve("did:web:localhost:identity-hub-owner");
         assertThat(didResult.succeeded()).isTrue();
 
         Result<Map<String, Object>> verifiedCredentials = verifier.getVerifiedCredentials(didResult.getContent());
-        System.out.println(verifiedCredentials);
+        assertThat(verifiedCredentials.succeeded()).isTrue();
+        Map<String, Object> vcs = verifiedCredentials.getContent();
+        assertThat(vcs).containsKey(VC1.getId());
+
+        Map<String, JSONObject> vc = (Map<String, JSONObject>) vcs.get(VC1.getId());
+        VerifiableCredential vc1 = MAPPER.convertValue(vc.get("vc"), VerifiableCredential.class);
+        assertThat(vc1).usingRecursiveComparison().isEqualTo(VC1);
     }
 }
