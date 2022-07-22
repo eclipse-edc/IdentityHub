@@ -36,7 +36,7 @@ public class VerifiableCredentialsJwtUtilsTest {
     static final JWSHeader JWS_HEADER = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
 
     @Test
-    public void extractCredential_jwtWithValidCredential() throws Exception {
+    public void extractCredential_OnJwtWithValidCredential() throws Exception {
 
         // Arrange
         var verifiableCredential = generateVerifiableCredential();
@@ -56,7 +56,7 @@ public class VerifiableCredentialsJwtUtilsTest {
     }
 
     @Test
-    public void extractCredential_jwtWithMissingVcField() {
+    public void extractCredential_OnJwtWithMissingVcField() {
 
         // Arrange
         var claims = new JWTClaimsSet.Builder().claim(FAKER.lorem().word(), FAKER.lorem().word()).build();
@@ -71,7 +71,7 @@ public class VerifiableCredentialsJwtUtilsTest {
     }
 
     @Test
-    public void extractCredential_jwtWithWrongFormat() {
+    public void extractCredential_OnjJwtWithWrongFormat() {
         // Arrange
         var claims = new JWTClaimsSet.Builder().claim(VERIFIABLE_CREDENTIALS_KEY, FAKER.lorem().word()).build();
         var jws = new SignedJWT(JWS_HEADER, claims);
