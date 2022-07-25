@@ -1,8 +1,13 @@
 ## System tests
 
-Check the correct functioning of the Identity Hub CLI and CredentialVerifier.
+System tests deploy a sample EDC connector with the Identity Hub extension and check the correct functioning of the Identity Hub CLI and CredentialVerifier.
 
-## Setup 
+## Running tests locally 
+
+Build launcher for system tests
+```bash
+./gradlew :system-tests:launcher:build
+```
 
 Run test components with:
 
