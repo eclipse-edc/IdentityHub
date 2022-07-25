@@ -87,7 +87,6 @@ class DidJwtCredentialsVerifier implements JwtCredentialsVerifier {
     }
 
     private Result<Void> verifySignature(SignedJWT jwt, PublicKeyWrapper issuerPublicKey) {
-        // verify JWT signature
         try {
             var verified = jwt.verify(issuerPublicKey.verifier());
             if (!verified) {
