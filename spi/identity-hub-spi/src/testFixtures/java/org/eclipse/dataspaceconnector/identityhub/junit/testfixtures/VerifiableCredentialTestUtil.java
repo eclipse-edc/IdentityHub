@@ -30,7 +30,6 @@ import org.eclipse.dataspaceconnector.iam.did.spi.document.EllipticCurvePublicKe
 import org.eclipse.dataspaceconnector.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 
-import java.util.Date;
 import java.util.Map;
 
 /**
@@ -63,22 +62,18 @@ public class VerifiableCredentialTestUtil {
     }
 
     public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) {
-        return buildSignedJwt(credential, issuer, subject, null, null, jwk);
-    }
-
-    public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, Date expirationTime, Date notBeforeTime, ECKey jwk) {
         var claims = new JWTClaimsSet.Builder()
                 .claim("vc", credential)
                 .issuer(issuer)
                 .subject(subject)
-                .expirationTime(expirationTime)
-                .notBeforeTime(notBeforeTime)
+                .expirationTime(null)
+                .notBeforeTime(null)
                 .build();
 
         return buildSignedJwt(claims, jwk);
     }
 
-    private static SignedJWT buildSignedJwt(JWTClaimsSet claims, ECKey jwk) {
+    public static SignedJWT buildSignedJwt(JWTClaimsSet claims, ECKey jwk) {
         try {
             var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
             var jws = new SignedJWT(jwsHeader, claims);
