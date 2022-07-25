@@ -36,6 +36,7 @@ public class VerifiableCredentialsJWTService {
 
     /**
      * Extract credentials from a JWT. The credential is represented with the following format
+     * <pre>{@code
      * "credentialId" : {
      *     "vc": {
      *         "credentialSubject": {
@@ -46,11 +47,12 @@ public class VerifiableCredentialsJWTService {
      *     "sub": "subject-value",
      *     // other JWT claims
      * }
+     * }</pre>
      * The representation is used to support any type of <a href="https://www.w3.org/TR/vc-data-model">verifiable credentials</a> .
      * When applying policies, the policy engine might need to access the issuer of the claim. That's why the JWT claims are included.
      *
      * @param jwt SignedJWT containing a verifiableCredential in its payload.
-     * @return VerifiableCredential represented as Map.Entry<String, Object>.
+     * @return VerifiableCredential represented as {@code Map.Entry<String, Object>}.
      */
     public Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
         try {
