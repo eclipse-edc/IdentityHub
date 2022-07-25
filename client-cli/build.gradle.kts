@@ -18,7 +18,7 @@ dependencies {
     api("info.picocli:picocli:4.6.3")
     annotationProcessor("info.picocli:picocli-codegen:4.6.3")
 
-    implementation(project(":identity-hub-client"))
+    implementation(project(":identity-hub-core:identity-hub-client"))
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")

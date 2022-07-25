@@ -27,7 +27,7 @@ val nimbusVersion: String by project
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
-    api(project(":identity-hub-model"))
+    api(project(":identity-hub-core:identity-hub-model"))
     implementation(project(":spi:identity-hub-store-spi"))
     implementation("${edcGroup}:http:${edcVersion}")
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")

@@ -1,3 +1,17 @@
+/*
+ *  Copyright (c) 2022 Microsoft Corporation
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Microsoft Corporation - initial API and implementation
+ *
+ */
+
 package org.eclipse.dataspaceconnector.identityhub.credentials;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,14 +23,15 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class VerifiableCredentialExtractor {
+public class VerifiableCredentialsJWTServiceImpl implements VerifiableCredentialsJWTService {
     private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private ObjectMapper objectMapper;
 
-    public VerifiableCredentialExtractor(ObjectMapper objectMapper) {
+    public VerifiableCredentialsJWTServiceImpl(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
+    @Override
     public Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
         try {
             var payload = jwt.getPayload().toJSONObject();
@@ -28,7 +43,7 @@ public class VerifiableCredentialExtractor {
 
             return Result.success(new AbstractMap.SimpleEntry<>(verifiableCredential.getId(), payload));
         } catch (RuntimeException e) {
-            return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.getClass().toString()));
+            return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.toString()));
         }
     }
 }

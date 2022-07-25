@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.client;
 
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
@@ -43,10 +42,8 @@ import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceM
 import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 
 public class IdentityHubClientImpl implements IdentityHubClient {
-
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
-
     private final Monitor monitor;
 
     public IdentityHubClientImpl(OkHttpClient httpClient, ObjectMapper objectMapper, Monitor monitor) {

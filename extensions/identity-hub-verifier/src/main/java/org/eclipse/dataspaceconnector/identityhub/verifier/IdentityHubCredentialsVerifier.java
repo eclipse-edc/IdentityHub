@@ -17,13 +17,15 @@ package org.eclipse.dataspaceconnector.identityhub.verifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
-import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialExtractor;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTService;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.result.AbstractResult;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.partitioningBy;
 
 /**
  * Obtains and verifies credentials associated with a DID.
@@ -36,18 +38,18 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     private final IdentityHubClient identityHubClient;
     private final Monitor monitor;
     private final JwtCredentialsVerifier jwtCredentialsVerifier;
-    private final VerifiableCredentialExtractor verifiableCredentialExtractor;
+    private final VerifiableCredentialsJWTService verifiableCredentialsJWTService;
 
     /**
      * Create a new credential verifier that uses an Identity Hub
      *
      * @param identityHubClient IdentityHubClient.
      */
-    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, JwtCredentialsVerifier jwtCredentialsVerifier, VerifiableCredentialExtractor verifiableCredentialExtractor) {
+    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, JwtCredentialsVerifier jwtCredentialsVerifier, VerifiableCredentialsJWTService verifiableCredentialsJWTService) {
         this.identityHubClient = identityHubClient;
         this.monitor = monitor;
         this.jwtCredentialsVerifier = jwtCredentialsVerifier;
-        this.verifiableCredentialExtractor = verifiableCredentialExtractor;
+        this.verifiableCredentialsJWTService = verifiableCredentialsJWTService;
     }
 
     /**
@@ -60,21 +62,26 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     @Override
     public Result<Map<String, Object>> getVerifiedCredentials(DidDocument didDocument) {
         var hubBaseUrl = getIdentityHubBaseUrl(didDocument);
-        if (hubBaseUrl.failed()) return Result.failure(hubBaseUrl.getFailureMessages());
+        if (hubBaseUrl.failed()) {
+            return Result.failure(hubBaseUrl.getFailureMessages());
+        }
 
         var jwts = identityHubClient.getVerifiableCredentials(hubBaseUrl.getContent());
         if (jwts.failed()) {
             return Result.failure(jwts.getFailureMessages());
         }
-        var verifiedClaims = jwts.getContent()
+        var verifiedJwt = jwts.getContent()
                 .stream()
                 .filter(jwt -> jwtCredentialsVerifier.verifyClaims(jwt, didDocument.getId()))
                 .filter(jwtCredentialsVerifier::isSignedByIssuer);
 
-        var credentials = verifiedClaims.map(verifiableCredentialExtractor::extractCredential).collect(Collectors.toList());
-        credentials.stream().filter(AbstractResult::failed).forEach(result -> monitor.warning(String.join(",", result.getFailureMessages())));
+        var partitionedResult = verifiedJwt.map(verifiableCredentialsJWTService::extractCredential).collect(partitioningBy(AbstractResult::succeeded));
+        var successfulResults = partitionedResult.get(true);
+        var failedResults = partitionedResult.get(false);
 
-        var claims = credentials.stream().filter(AbstractResult::succeeded)
+        failedResults.forEach(result -> monitor.warning(String.join(",", result.getFailureMessages())));
+
+        var claims = successfulResults.stream()
                 .map(AbstractResult::getContent)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
@@ -88,7 +95,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
                 .filter(s -> s.getType().equals(IDENTITY_HUB_SERVICE_TYPE))
                 .findFirst();
 
-        if (hubBaseUrl.isEmpty()) return Result.failure("Failed getting identityHub URL");
-        else return Result.success(hubBaseUrl.get().getServiceEndpoint());
+        return hubBaseUrl.map(u -> Result.success(u.getServiceEndpoint()))
+                .orElse(Result.failure("Failed getting Identity Hub URL"));
     }
 }

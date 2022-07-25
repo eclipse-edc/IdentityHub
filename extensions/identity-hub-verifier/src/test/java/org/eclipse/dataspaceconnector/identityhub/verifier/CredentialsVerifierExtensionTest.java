@@ -81,10 +81,9 @@ public class CredentialsVerifierExtensionTest {
         var expectedCredentials = toMap(credential, CREDENTIAL_ISSUER, SUBJECT);
 
         // Assert
-        assertThat(credentials.succeeded());
+        assertThat(credentials.succeeded()).isTrue();
         assertThat(credentials.getContent())
                 .usingRecursiveComparison()
-                .ignoringFields(String.format("%s.exp", credential.getId()))
                 .isEqualTo(expectedCredentials);
     }
 }

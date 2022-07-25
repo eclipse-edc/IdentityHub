@@ -16,8 +16,10 @@ package org.eclipse.dataspaceconnector.identityhub.verifier;
 
 import com.github.javafaker.Faker;
 import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
+import org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.result.Result;
@@ -25,6 +27,9 @@ import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
 
+import static java.time.Instant.now;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.util.Date.from;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
@@ -128,6 +133,58 @@ public class DidJwtCredentialsVerifierTest {
         when(jwt.getJWTClaimsSet()).thenThrow(new ParseException(message, 0));
 
         // Act
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isFalse();
+    }
+
+    @Test
+    void verifyClaims_OnValidExp() {
+        var claims = new JWTClaimsSet.Builder()
+                .issuer(issuer)
+                .subject(subject)
+                .expirationTime(from(now().plus(1, DAYS)))
+                .build();
+
+        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, jwk);
+
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isTrue();
+    }
+
+    @Test
+    void verifyClaims_OnInvalidExp() {
+        var claims = new JWTClaimsSet.Builder()
+                .issuer(issuer)
+                .subject(subject)
+                .expirationTime(from(now().minus(1, DAYS)))
+                .build();
+
+        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, jwk);
+
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isFalse();
+    }
+
+    @Test
+    void verifyClaims_OnValidNotBefore() {
+        var claims = new JWTClaimsSet.Builder()
+                .issuer(issuer)
+                .subject(subject)
+                .notBeforeTime(from(now().minus(1, DAYS)))
+                .build();
+
+        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, jwk);
+
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isTrue();
+    }
+
+    @Test
+    void verifyClaims_OnInvalidNotBefore() {
+        var claims = new JWTClaimsSet.Builder()
+                .issuer(issuer)
+                .subject(subject)
+                .notBeforeTime(from(now().plus(1, DAYS)))
+                .build();
+
+        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, jwk);
+
         assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isFalse();
     }
 }

@@ -22,11 +22,11 @@ import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.model.RequestStatus;
 import org.eclipse.dataspaceconnector.identityhub.model.ResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
@@ -38,6 +38,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject.MESSAGE_ID_VALUE;
 
 public class IdentityHubClientImplTest {
@@ -49,12 +50,12 @@ public class IdentityHubClientImplTest {
     @Test
     void getVerifiableCredentials() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
-        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url()).serialize().getBytes(StandardCharsets.UTF_8);
+        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
 
         Interceptor interceptor = chain -> {
             var request = chain.request();
             var replies = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE)
-                    .status(MessageStatus.OK).entries(List.of(jws)).build();
+                    .status(MessageStatus.OK).entries(List.of(jws.serialize().getBytes(StandardCharsets.UTF_8))).build();
             var responseObject = ResponseObject.Builder.newInstance()
                     .requestId(FAKER.internet().uuid())
                     .status(RequestStatus.OK)
@@ -73,9 +74,8 @@ public class IdentityHubClientImplTest {
 
         var client = createClient(interceptor);
         var statusResult = client.getVerifiableCredentials(HUB_URL);
-        assertThat(statusResult.succeeded());
-        var jwts = statusResult.getContent().stream().map(jwt -> jwt.serialize().getBytes(StandardCharsets.UTF_8));
-        assertThat(jwts).containsExactly(jws);
+        assertThat(statusResult.succeeded()).isTrue();
+        assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(jws);
     }
 
     @Test
@@ -120,13 +120,13 @@ public class IdentityHubClientImplTest {
 
         var client = createClient(interceptor);
         var statusResult = client.getVerifiableCredentials(HUB_URL);
-        assertThat(statusResult.fatalError());
+        assertThat(statusResult.fatalError()).isTrue();
     }
 
     @Test
     void addVerifiableCredentialsServerError() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
-        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url());
+        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
         var errorMessage = FAKER.lorem().sentence();
         var body = "{}";
         int code = 500;
@@ -152,8 +152,8 @@ public class IdentityHubClientImplTest {
     @Test
     void addVerifiableCredentialsIoException() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
-        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url());
-        var exceptionMessage = "Can't resolve address";
+        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
+        var exceptionMessage = FAKER.lorem().sentence();
         Interceptor interceptor = chain -> {
             var request = chain.request();
             throw new IOException(exceptionMessage);

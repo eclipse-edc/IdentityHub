@@ -15,7 +15,6 @@
 plugins {
     `java-library`
     `maven-publish`
-    id("org.openapi.generator") version "5.4.0"
 }
 
 val jacksonVersion: String by project
@@ -29,7 +28,7 @@ val nimbusVersion: String by project
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
-    api(project(":identity-hub-model"))
+    api(project(":identity-hub-core:identity-hub-model"))
     api("${edcGroup}:core-spi:${edcVersion}")
     implementation("${edcGroup}:http:${edcVersion}")
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")

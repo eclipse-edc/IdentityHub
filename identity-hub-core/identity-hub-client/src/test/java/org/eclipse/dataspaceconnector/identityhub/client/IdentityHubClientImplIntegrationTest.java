@@ -16,7 +16,6 @@ package org.eclipse.dataspaceconnector.identityhub.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
-import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
@@ -30,13 +29,14 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 
 @ExtendWith(EdcExtension.class)
 public class IdentityHubClientImplIntegrationTest {
 
     private static final String API_URL = "http://localhost:8181/api/identity-hub";
     private static final Faker FAKER = new Faker();
-    private static final String VERIFIABLE_CREDENTIAL_ID = FAKER.internet().uuid();
+    public static final VerifiableCredential VERIFIABLE_CREDENTIAL = VerifiableCredential.Builder.newInstance().id(FAKER.internet().uuid()).build();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private IdentityHubClient client;
 
@@ -48,11 +48,9 @@ public class IdentityHubClientImplIntegrationTest {
 
     @Test
     void addAndQueryVerifiableCredentials() throws Exception {
-        var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
-        SignedJWT jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url());
+        var jws = buildSignedJwt(VERIFIABLE_CREDENTIAL, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
 
         addVerifiableCredential(jws);
-
         getVerifiableCredential(jws);
     }
 
@@ -64,6 +62,6 @@ public class IdentityHubClientImplIntegrationTest {
     private void getVerifiableCredential(SignedJWT jws) throws IOException {
         var statusResult = client.getVerifiableCredentials(API_URL);
         assertThat(statusResult.succeeded()).isTrue();
-        assertThat(statusResult.getContent().stream().map(JWSObject::serialize)).contains(jws.serialize());
+        assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().contains(jws);
     }
 }
