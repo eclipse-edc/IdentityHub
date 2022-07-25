@@ -49,7 +49,7 @@ public class VerifiableCredentialsJWTServiceTest {
         var result = VERIFIABLE_CREDENTIALS_JWT_SERVICE.extractCredential(jwt);
 
         // Assert
-        assertThat(result.succeeded());
+        assertThat(result.succeeded()).isTrue();
         assertThat(result.getContent())
                 .usingRecursiveComparison()
                 .isEqualTo(toMap(verifiableCredential, issuer, subject).entrySet().stream().findFirst().get());
@@ -66,7 +66,7 @@ public class VerifiableCredentialsJWTServiceTest {
         var result = VERIFIABLE_CREDENTIALS_JWT_SERVICE.extractCredential(jws);
 
         // Assert
-        assertThat(result.failed());
+        assertThat(result.failed()).isTrue();
         assertThat(result.getFailureMessages()).containsExactly(String.format("No %s field found", VERIFIABLE_CREDENTIALS_KEY));
     }
 
@@ -80,6 +80,6 @@ public class VerifiableCredentialsJWTServiceTest {
         var result = VERIFIABLE_CREDENTIALS_JWT_SERVICE.extractCredential(jws);
 
         // Assert
-        assertThat(result.failed());
+        assertThat(result.failed()).isTrue();
     }
 }

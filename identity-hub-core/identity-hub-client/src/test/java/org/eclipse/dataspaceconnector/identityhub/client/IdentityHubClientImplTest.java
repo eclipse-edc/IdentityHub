@@ -74,7 +74,7 @@ public class IdentityHubClientImplTest {
 
         var client = createClient(interceptor);
         var statusResult = client.getVerifiableCredentials(HUB_URL);
-        assertThat(statusResult.succeeded());
+        assertThat(statusResult.succeeded()).isTrue();
         assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(jws);
     }
 
@@ -120,7 +120,7 @@ public class IdentityHubClientImplTest {
 
         var client = createClient(interceptor);
         var statusResult = client.getVerifiableCredentials(HUB_URL);
-        assertThat(statusResult.fatalError());
+        assertThat(statusResult.fatalError()).isTrue();
     }
 
     @Test

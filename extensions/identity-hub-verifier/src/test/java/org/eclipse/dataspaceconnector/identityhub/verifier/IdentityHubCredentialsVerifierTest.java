@@ -75,7 +75,7 @@ public class IdentityHubCredentialsVerifierTest {
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
-        assertThat(credentials.succeeded());
+        assertThat(credentials.succeeded()).isTrue();
         assertThat(credentials.getContent())
                 .usingRecursiveComparison()
                 .isEqualTo(toMap(credential, issuer, subject));
@@ -100,7 +100,7 @@ public class IdentityHubCredentialsVerifierTest {
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
-        assertThat(credentials.succeeded());
+        assertThat(credentials.succeeded()).isTrue();
         assertThat(credentials.getContent().size()).isEqualTo(0);
     }
 
@@ -113,7 +113,7 @@ public class IdentityHubCredentialsVerifierTest {
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
-        assertThat(credentials.failed());
+        assertThat(credentials.failed()).isTrue();
         assertThat(credentials.getFailureMessages()).containsExactly("Failed getting Identity Hub URL");
     }
 
@@ -127,7 +127,7 @@ public class IdentityHubCredentialsVerifierTest {
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
-        assertThat(credentials.failed());
+        assertThat(credentials.failed()).isTrue();
     }
 
     @Test
@@ -141,7 +141,7 @@ public class IdentityHubCredentialsVerifierTest {
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
-        assertThat(credentials.succeeded());
+        assertThat(credentials.succeeded()).isTrue();
         assertThat(credentials.getContent().isEmpty());
         verify(monitorMock, times(1)).warning(anyString());
 
@@ -164,7 +164,7 @@ public class IdentityHubCredentialsVerifierTest {
         var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
 
         // Assert
-        assertThat(credentials.succeeded());
+        assertThat(credentials.succeeded()).isTrue();
         assertThat(credentials.getContent().isEmpty());
         verify(monitorMock, times(1)).warning(anyString());
     }
