@@ -16,9 +16,13 @@ package org.eclipse.dataspaceconnector.identityhub.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
-import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubInMemoryStore;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,10 +30,12 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
+import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject.MESSAGE_ID_VALUE;
 
 
 public class CollectionsWriteProcessorTest {
@@ -43,24 +49,25 @@ public class CollectionsWriteProcessorTest {
     @BeforeEach
     void setUp() {
         identityHubStore = new IdentityHubInMemoryStore();
-        writeProcessor = new CollectionsWriteProcessor(identityHubStore, OBJECT_MAPPER);
+        writeProcessor = new CollectionsWriteProcessor(identityHubStore);
     }
 
     @Test
     void writeCredentials() throws Exception {
         // Arrange
-        var credentialId = FAKER.internet().uuid();
-        var verifiableCredentialMap = Map.of("id", credentialId);
-        var data = OBJECT_MAPPER.writeValueAsString(verifiableCredentialMap).getBytes(StandardCharsets.UTF_8);
+        var issuer = FAKER.internet().url();
+        var subject = FAKER.internet().url();
+        var verifiableCredential = generateVerifiableCredential();
+        var data = buildSignedJwt(verifiableCredential, issuer, subject, generateEcKey()).serialize().getBytes(StandardCharsets.UTF_8);
 
         // Act
         var result = writeProcessor.process(data);
 
         // Assert
         var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
-        var expectedVerifiableCredential = VerifiableCredential.Builder.newInstance().id(credentialId).build();
+
         assertThat(result).usingRecursiveComparison().isEqualTo(expectedResult);
-        assertThat(identityHubStore.getAll()).usingRecursiveFieldByFieldElementComparator().containsExactly(expectedVerifiableCredential);
+        assertThat(identityHubStore.getAll()).usingRecursiveFieldByFieldElementComparator().containsExactly(data);
     }
 
     @Test
@@ -104,5 +111,20 @@ public class CollectionsWriteProcessorTest {
         // Assert
         assertThat(result).usingRecursiveComparison().isEqualTo(expectedResult);
         assertThat(identityHubStore.getAll()).isEmpty();
+    }
+
+    @Test
+    void writeCredentialsWithMissingMandatoryVcField() throws Exception {
+        // Arrange
+        var jws = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).build(), new JWTClaimsSet.Builder().build());
+        jws.sign(new ECDSASigner(generateEcKey().toECPrivateKey()));
+        var data = jws.serialize().getBytes(StandardCharsets.UTF_8);
+
+        // Act
+        var result = writeProcessor.process(data);
+
+        // Assert
+        var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
+        assertThat(result).usingRecursiveComparison().isEqualTo(expectedResult);
     }
 }

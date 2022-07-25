@@ -16,6 +16,7 @@ in the detailed section referring to by linking pull requests or issues.
 #### Added
 - Identity Hub client (#4)
 - Maven artefact publication (#21) 
+- CredentialsVerifier implementation (#24)
 
 #### Changed
 

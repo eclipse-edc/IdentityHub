@@ -26,11 +26,10 @@ import org.eclipse.dataspaceconnector.spi.system.Inject;
 import org.eclipse.dataspaceconnector.spi.system.Provider;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
-import org.eclipse.dataspaceconnector.spi.types.TypeManager;
 
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.FEATURE_DETECTION_READ;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.FEATURE_DETECTION_READ;
 
 /**
  * EDC extension to boot the services used by the Identity Hub
@@ -42,15 +41,12 @@ public class IdentityHubExtension implements ServiceExtension {
     @Inject
     private IdentityHubStore identityHubStore;
 
-    @Inject
-    private TypeManager typeManager;
-
     @Override
     public void initialize(ServiceExtensionContext context) {
 
         var methodProcessorFactory = new MessageProcessorRegistry();
         methodProcessorFactory.register(COLLECTIONS_QUERY, new CollectionsQueryProcessor(identityHubStore));
-        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, typeManager.getMapper()));
+        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore));
         methodProcessorFactory.register(FEATURE_DETECTION_READ, new FeatureDetectionReadProcessor());
 
         var identityHubController = new IdentityHubController(methodProcessorFactory);
