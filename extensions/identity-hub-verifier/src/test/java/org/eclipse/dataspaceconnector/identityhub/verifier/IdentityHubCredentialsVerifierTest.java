@@ -42,7 +42,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,7 +50,7 @@ public class IdentityHubCredentialsVerifierTest {
 
     private static final Faker FAKER = new Faker();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final Monitor monitorMock = mock(Monitor.class);
+    private Monitor monitorMock = mock(Monitor.class);
     private IdentityHubClient identityHubClientMock = mock(IdentityHubClient.class);
     private JwtCredentialsVerifier jwtCredentialsVerifierMock = mock(JwtCredentialsVerifier.class);
 
@@ -85,7 +84,6 @@ public class IdentityHubCredentialsVerifierTest {
         when(identityHubClientMock.getVerifiableCredentials(hubBaseUrl)).thenReturn(StatusResult.success(List.of(jws)));
         when(jwtCredentialsVerifierMock.isSignedByIssuer(jws)).thenReturn(isSigned);
         when(jwtCredentialsVerifierMock.verifyClaims(eq(jws), any())).thenReturn(claimsValid);
-        reset(monitorMock);
     }
 
     @Test
