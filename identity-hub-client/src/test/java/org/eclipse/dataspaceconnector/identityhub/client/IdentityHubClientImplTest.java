@@ -153,7 +153,7 @@ public class IdentityHubClientImplTest {
     void addVerifiableCredentialsIoException() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
         var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
-        var exceptionMessage = "Can't resolve address";
+        var exceptionMessage = FAKER.lorem().sentence();
         Interceptor interceptor = chain -> {
             var request = chain.request();
             throw new IOException(exceptionMessage);
