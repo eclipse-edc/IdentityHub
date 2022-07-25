@@ -95,7 +95,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
                 .filter(s -> s.getType().equals(IDENTITY_HUB_SERVICE_TYPE))
                 .findFirst();
 
-        if (hubBaseUrl.isEmpty()) return Result.failure("Failed getting identityHub URL");
-        else return Result.success(hubBaseUrl.get().getServiceEndpoint());
+        return hubBaseUrl.map(u -> Result.success(u.getServiceEndpoint()))
+                .orElse(Result.failure("Failed getting Identity Hub URL"));
     }
 }
