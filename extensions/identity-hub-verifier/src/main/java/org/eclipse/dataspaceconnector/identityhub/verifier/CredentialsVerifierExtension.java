@@ -24,6 +24,7 @@ import org.eclipse.dataspaceconnector.spi.EdcSetting;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.system.Inject;
 import org.eclipse.dataspaceconnector.spi.system.Provider;
+import org.eclipse.dataspaceconnector.spi.system.Requires;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
 import org.eclipse.dataspaceconnector.spi.types.TypeManager;
@@ -33,6 +34,7 @@ import static java.lang.String.format;
 /**
  * Extension to provide verification of IdentityHub Verifiable Credentials.
  */
+@Requires({ DidPublicKeyResolver.class })
 public class CredentialsVerifierExtension implements ServiceExtension {
 
     @EdcSetting
