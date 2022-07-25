@@ -52,7 +52,6 @@ public class VerifiableCredentialsJWTServiceTest {
         assertThat(result.succeeded());
         assertThat(result.getContent())
                 .usingRecursiveComparison()
-                .ignoringFields(String.format("value.exp", verifiableCredential.getId()))
                 .isEqualTo(toMap(verifiableCredential, issuer, subject).entrySet().stream().findFirst().get());
     }
 

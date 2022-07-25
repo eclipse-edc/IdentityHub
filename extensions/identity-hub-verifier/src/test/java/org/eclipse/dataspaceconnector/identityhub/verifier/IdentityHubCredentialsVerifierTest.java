@@ -78,7 +78,6 @@ public class IdentityHubCredentialsVerifierTest {
         assertThat(credentials.succeeded());
         assertThat(credentials.getContent())
                 .usingRecursiveComparison()
-                .ignoringFields(String.format("%s.exp", credential.getId()))
                 .isEqualTo(toMap(credential, issuer, subject));
     }
 

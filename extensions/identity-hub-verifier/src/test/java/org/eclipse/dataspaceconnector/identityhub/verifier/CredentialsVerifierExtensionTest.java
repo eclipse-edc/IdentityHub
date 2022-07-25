@@ -84,7 +84,6 @@ public class CredentialsVerifierExtensionTest {
         assertThat(credentials.succeeded());
         assertThat(credentials.getContent())
                 .usingRecursiveComparison()
-                .ignoringFields(String.format("%s.exp", credential.getId()))
                 .isEqualTo(expectedCredentials);
     }
 }
