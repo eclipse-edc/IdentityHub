@@ -30,6 +30,7 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 
 @ExtendWith(EdcExtension.class)
 public class IdentityHubClientImplIntegrationTest {
@@ -49,7 +50,7 @@ public class IdentityHubClientImplIntegrationTest {
     @Test
     void addAndQueryVerifiableCredentials() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
-        SignedJWT jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url());
+        SignedJWT jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
 
         addVerifiableCredential(jws);
 

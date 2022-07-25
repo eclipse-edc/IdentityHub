@@ -29,14 +29,13 @@ import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toMap;
 import static org.mockito.ArgumentMatchers.any;
@@ -69,7 +68,7 @@ public class IdentityHubCredentialsVerifierTest {
 
         // Arrange
         var credential = generateVerifiableCredential();
-        var jws = buildSignedJwt(credential, issuer, subject);
+        var jws = buildSignedJwt(credential, issuer, subject, generateEcKey());
         setUpMocks(jws, true, true);
 
         // Act
@@ -95,7 +94,7 @@ public class IdentityHubCredentialsVerifierTest {
 
         // Arrange
         var credential = generateVerifiableCredential();
-        var jws = buildSignedJwt(credential, issuer, subject);
+        var jws = buildSignedJwt(credential, issuer, subject, generateEcKey());
         setUpMocks(jws, true, false);
 
         // Act

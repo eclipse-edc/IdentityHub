@@ -25,6 +25,9 @@ import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
 
+import static java.time.Instant.now;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.util.Date.from;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
@@ -128,6 +131,34 @@ public class DidJwtCredentialsVerifierTest {
         when(jwt.getJWTClaimsSet()).thenThrow(new ParseException(message, 0));
 
         // Act
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isFalse();
+    }
+
+    @Test
+    void verifyClaims_OnValidExp() {
+        SignedJWT jwt = buildSignedJwt(generateVerifiableCredential(), issuer, subject, from(now().plus(1, DAYS)), null, jwk);
+
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isTrue();
+    }
+
+    @Test
+    void verifyClaims_OnInvalidExp() {
+        SignedJWT jwt = buildSignedJwt(generateVerifiableCredential(), issuer, subject, from(now().minus(1, DAYS)), null, jwk);
+
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isFalse();
+    }
+
+    @Test
+    void verifyClaims_OnValidNotBefore() {
+        SignedJWT jwt = buildSignedJwt(generateVerifiableCredential(), issuer, subject, null, from(now().minus(1, DAYS)), jwk);
+
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isTrue();
+    }
+
+    @Test
+    void verifyClaims_OnInvalidNotBefore() {
+        SignedJWT jwt = buildSignedJwt(generateVerifiableCredential(), issuer, subject, null, from(now().plus(1, DAYS)), jwk);
+
         assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isFalse();
     }
 }

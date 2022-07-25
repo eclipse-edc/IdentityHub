@@ -21,6 +21,7 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubInMemoryStore;
@@ -58,7 +59,7 @@ public class CollectionsWriteProcessorTest {
         var issuer = FAKER.internet().url();
         var subject = FAKER.internet().url();
         var verifiableCredential = generateVerifiableCredential();
-        var data = buildSignedJwt(verifiableCredential, issuer, subject).serialize().getBytes(StandardCharsets.UTF_8);
+        var data = buildSignedJwt(verifiableCredential, issuer, subject, generateEcKey()).serialize().getBytes(StandardCharsets.UTF_8);
 
         // Act
         var result = writeProcessor.process(data);

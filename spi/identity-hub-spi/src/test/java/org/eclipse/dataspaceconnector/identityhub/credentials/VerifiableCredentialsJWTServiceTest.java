@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toMap;
 
@@ -42,7 +43,7 @@ public class VerifiableCredentialsJWTServiceTest {
         var verifiableCredential = generateVerifiableCredential();
         var issuer = FAKER.lorem().word();
         var subject = FAKER.lorem().word();
-        var jwt = buildSignedJwt(verifiableCredential, issuer, subject);
+        var jwt = buildSignedJwt(verifiableCredential, issuer, subject, generateEcKey());
 
         // Act
         var result = VERIFIABLE_CREDENTIALS_JWT_SERVICE.extractCredential(jwt);

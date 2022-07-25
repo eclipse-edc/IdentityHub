@@ -20,6 +20,7 @@ import com.nimbusds.jwt.SignedJWT;
  * Verifies verifiable credentials in JWT format.
  */
 public interface JwtCredentialsVerifier {
+
     /**
      * Verifies if a JWT is really signed by the claimed issuer (iss field).
      *
@@ -29,7 +30,7 @@ public interface JwtCredentialsVerifier {
     boolean isSignedByIssuer(SignedJWT jwt);
 
     /**
-     * Verifies if a JWT targets the given subject.
+     * Verifies if a JWT targets the given subject. The expiration ("exp") and not-before ("nbf") times are verified if present as well.
      *
      * @param jwt             to be verified.
      * @param expectedSubject subject claim to verify.

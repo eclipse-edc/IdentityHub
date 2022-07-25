@@ -30,8 +30,6 @@ import org.eclipse.dataspaceconnector.iam.did.spi.document.EllipticCurvePublicKe
 import org.eclipse.dataspaceconnector.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
@@ -39,7 +37,6 @@ import java.util.Map;
  * Util class to manipulate VerifiableCredentials in tests.
  */
 public class VerifiableCredentialTestUtil {
-    public static final Date EXP = Date.from(Instant.now().plus(Duration.ofDays(1)));
     private static final Faker FAKER = new Faker();
     private static final ECKeyGenerator EC_KEY_GENERATOR = new ECKeyGenerator(Curve.P_256);
 
@@ -65,21 +62,25 @@ public class VerifiableCredentialTestUtil {
         return KeyConverter.toPublicKeyWrapper(publicKey, "ec");
     }
 
-    public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject) throws Exception {
-        var jwk = new ECKeyGenerator(Curve.P_256).keyUse(KeyUse.SIGNATURE).generate();
-        return buildSignedJwt(credential, issuer, subject, jwk);
+    public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) {
+        return buildSignedJwt(credential, issuer, subject, null, null, jwk);
     }
 
-    public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) {
+    public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, Date expirationTime, Date notBeforeTime, ECKey jwk) {
+        var claims = new JWTClaimsSet.Builder()
+                .claim("vc", credential)
+                .issuer(issuer)
+                .subject(subject)
+                .expirationTime(expirationTime)
+                .notBeforeTime(notBeforeTime)
+                .build();
+
+        return buildSignedJwt(claims, jwk);
+    }
+
+    private static SignedJWT buildSignedJwt(JWTClaimsSet claims, ECKey jwk) {
         try {
             var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
-            var claims = new JWTClaimsSet.Builder()
-                    .claim("vc", credential)
-                    .issuer(issuer)
-                    .expirationTime(EXP)
-                    .subject(subject)
-                    .build();
-
             var jws = new SignedJWT(jwsHeader, claims);
 
             var jwsSigner = new ECDSASigner(jwk.toECPrivateKey());
@@ -96,7 +97,6 @@ public class VerifiableCredentialTestUtil {
                 Map.of("vc", Map.of("credentialSubject", verifiableCredential.getCredentialSubject(),
                                 "id", verifiableCredential.getId()),
                 "sub", subject,
-                "iss", issuer,
-                "exp", EXP));
+                "iss", issuer));
     }
 }

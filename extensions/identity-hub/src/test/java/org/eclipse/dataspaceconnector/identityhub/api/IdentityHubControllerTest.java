@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.nimbusds.jwt.SignedJWT;
 import io.restassured.specification.RequestSpecification;
@@ -36,6 +35,7 @@ import static io.restassured.http.ContentType.JSON;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
 import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
@@ -54,7 +54,6 @@ public class IdentityHubControllerTest {
     private static final String NONCE = FAKER.lorem().characters(32);
     private static final String TARGET = FAKER.internet().url();
     private static final String REQUEST_ID = FAKER.internet().uuid();
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @BeforeEach
     void setUp(EdcExtension extension) {
@@ -67,7 +66,7 @@ public class IdentityHubControllerTest {
         var issuer = FAKER.internet().url();
         var subject = FAKER.internet().url();
         var credential = generateVerifiableCredential();
-        var jwt = buildSignedJwt(credential, issuer, subject);
+        var jwt = buildSignedJwt(credential, issuer, subject, generateEcKey());
 
         // Act
         collectionsWrite(jwt);
