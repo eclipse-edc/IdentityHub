@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Service to manipulate VerifiableCredentials with JWTs.
  */
-public interface VerifiableCredentialsJWTService {
+public interface VerifiableCredentialsJwtService {
 
     /**
      * Extract credentials from a JWT. The credential is represented with the following format

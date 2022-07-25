@@ -23,11 +23,11 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class VerifiableCredentialsJWTServiceImpl implements VerifiableCredentialsJWTService {
+public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredentialsJwtService {
     private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private ObjectMapper objectMapper;
 
-    public VerifiableCredentialsJWTServiceImpl(ObjectMapper objectMapper) {
+    public VerifiableCredentialsJwtServiceImpl(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
