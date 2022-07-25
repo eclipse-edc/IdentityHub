@@ -24,13 +24,13 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Util class to manipulate VerifiableCredentials with JWTs.
+ * Service to manipulate VerifiableCredentials with JWTs.
  */
-public class VerifiableCredentialsJwtUtils {
+public class VerifiableCredentialsJWTService {
     private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private ObjectMapper objectMapper;
 
-    public VerifiableCredentialsJwtUtils(ObjectMapper objectMapper) {
+    public VerifiableCredentialsJWTService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 

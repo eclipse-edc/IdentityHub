@@ -17,7 +17,7 @@ package org.eclipse.dataspaceconnector.identityhub.verifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
-import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTService;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.result.AbstractResult;
 import org.eclipse.dataspaceconnector.spi.result.Result;
@@ -36,18 +36,18 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     private final IdentityHubClient identityHubClient;
     private final Monitor monitor;
     private final JwtCredentialsVerifier jwtCredentialsVerifier;
-    private final VerifiableCredentialsJwtUtils jwtPayloadParser;
+    private final VerifiableCredentialsJWTService verifiableCredentialsJWTService;
 
     /**
      * Create a new credential verifier that uses an Identity Hub
      *
      * @param identityHubClient IdentityHubClient.
      */
-    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, JwtCredentialsVerifier jwtCredentialsVerifier, VerifiableCredentialsJwtUtils JWTPayloadParser) {
+    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, JwtCredentialsVerifier jwtCredentialsVerifier, VerifiableCredentialsJWTService verifiableCredentialsJWTService) {
         this.identityHubClient = identityHubClient;
         this.monitor = monitor;
         this.jwtCredentialsVerifier = jwtCredentialsVerifier;
-        this.jwtPayloadParser = JWTPayloadParser;
+        this.verifiableCredentialsJWTService = verifiableCredentialsJWTService;
     }
 
     /**
@@ -71,7 +71,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
                 .filter(jwt -> jwtCredentialsVerifier.verifyClaims(jwt, didDocument.getId()))
                 .filter(jwtCredentialsVerifier::isSignedByIssuer);
 
-        var credentials = verifiedClaims.map(jwtPayloadParser::extractCredential).collect(Collectors.toList());
+        var credentials = verifiedClaims.map(verifiableCredentialsJWTService::extractCredential).collect(Collectors.toList());
         credentials.stream().filter(AbstractResult::failed).forEach(result -> monitor.warning(String.join(",", result.getFailureMessages())));
 
         var claims = credentials.stream().filter(AbstractResult::succeeded)

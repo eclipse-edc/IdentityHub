@@ -17,7 +17,7 @@ package org.eclipse.dataspaceconnector.identityhub.verifier;
 import okhttp3.OkHttpClient;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
-import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTService;
 import org.eclipse.dataspaceconnector.spi.EdcException;
 import org.eclipse.dataspaceconnector.spi.EdcSetting;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
@@ -62,7 +62,7 @@ public class CredentialsVerifierExtension implements ServiceExtension {
         }
 
         var client = new IdentityHubClientImpl(httpClient, typeManager.getMapper(), monitor);
-        var verifiableCredentialsJwtUtils = new VerifiableCredentialsJwtUtils(typeManager.getMapper());
-        return new IdentityHubCredentialsVerifier(client, monitor, jwtCredentialsVerifier, verifiableCredentialsJwtUtils);
+        var verifiableCredentialExtractor = new VerifiableCredentialsJWTService(typeManager.getMapper());
+        return new IdentityHubCredentialsVerifier(client, monitor, jwtCredentialsVerifier, verifiableCredentialExtractor);
     }
 }

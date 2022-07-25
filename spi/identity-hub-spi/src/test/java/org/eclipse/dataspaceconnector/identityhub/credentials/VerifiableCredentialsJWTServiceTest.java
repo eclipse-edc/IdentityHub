@@ -27,10 +27,10 @@ import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.Veri
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toMap;
 
-public class VerifiableCredentialsJwtUtilsTest {
+public class VerifiableCredentialsJWTServiceTest {
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    static final VerifiableCredentialsJwtUtils PAYLOAD_PARSER = new VerifiableCredentialsJwtUtils(OBJECT_MAPPER);
+    static final VerifiableCredentialsJWTService VERIFIABLE_CREDENTIALS_JWT_SERVICE = new VerifiableCredentialsJWTService(OBJECT_MAPPER);
     static final Faker FAKER = new Faker();
     static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     static final JWSHeader JWS_HEADER = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
@@ -45,7 +45,7 @@ public class VerifiableCredentialsJwtUtilsTest {
         var jwt = buildSignedJwt(verifiableCredential, issuer, subject);
 
         // Act
-        var result = PAYLOAD_PARSER.extractCredential(jwt);
+        var result = VERIFIABLE_CREDENTIALS_JWT_SERVICE.extractCredential(jwt);
 
         // Assert
         assertThat(result.succeeded());
@@ -63,7 +63,7 @@ public class VerifiableCredentialsJwtUtilsTest {
         var jws = new SignedJWT(JWS_HEADER, claims);
 
         // Act
-        var result = PAYLOAD_PARSER.extractCredential(jws);
+        var result = VERIFIABLE_CREDENTIALS_JWT_SERVICE.extractCredential(jws);
 
         // Assert
         assertThat(result.failed());
@@ -77,7 +77,7 @@ public class VerifiableCredentialsJwtUtilsTest {
         var jws = new SignedJWT(JWS_HEADER, claims);
 
         // Act
-        var result = PAYLOAD_PARSER.extractCredential(jws);
+        var result = VERIFIABLE_CREDENTIALS_JWT_SERVICE.extractCredential(jws);
 
         // Assert
         assertThat(result.failed());
