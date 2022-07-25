@@ -65,7 +65,7 @@ public class VerifiableCredentialsJWTService {
 
             return Result.success(new AbstractMap.SimpleEntry<>(verifiableCredential.getId(), payload));
         } catch (RuntimeException e) {
-            return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.getClass().toString()));
+            return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.toString()));
         }
     }
 }
