@@ -16,7 +16,6 @@ package org.eclipse.dataspaceconnector.identityhub.verifier;
 
 import okhttp3.OkHttpClient;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
-import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils;
 import org.eclipse.dataspaceconnector.spi.EdcException;
@@ -40,9 +39,6 @@ public class CredentialsVerifierExtension implements ServiceExtension {
 
     @Inject
     private OkHttpClient httpClient;
-
-    @Inject
-    private DidPublicKeyResolver didPublicKeyResolver;
 
     @Inject
     private TypeManager typeManager;
