@@ -60,13 +60,6 @@ class DidJwtCredentialsVerifier implements JwtCredentialsVerifier {
         return signatureResult.succeeded();
     }
 
-    /**
-     * Verifies if a DID JWT targets the given subject.
-     *
-     * @param jwt             to be verified.
-     * @param expectedSubject subject claim to verify.
-     * @return if the JWT is for the given subject and signed by the claimed issuer.
-     */
     public boolean verifyClaims(SignedJWT jwt, String expectedSubject) {
         JWTClaimsSet jwtClaimsSet;
         try {
