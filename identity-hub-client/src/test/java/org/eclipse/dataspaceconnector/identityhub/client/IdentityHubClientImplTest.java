@@ -50,12 +50,12 @@ public class IdentityHubClientImplTest {
     @Test
     void getVerifiableCredentials() throws Exception {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
-        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url(), generateEcKey()).serialize().getBytes(StandardCharsets.UTF_8);
+        var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
 
         Interceptor interceptor = chain -> {
             var request = chain.request();
             var replies = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE)
-                    .status(MessageStatus.OK).entries(List.of(jws)).build();
+                    .status(MessageStatus.OK).entries(List.of(jws.serialize().getBytes(StandardCharsets.UTF_8))).build();
             var responseObject = ResponseObject.Builder.newInstance()
                     .requestId(FAKER.internet().uuid())
                     .status(RequestStatus.OK)
@@ -75,8 +75,7 @@ public class IdentityHubClientImplTest {
         var client = createClient(interceptor);
         var statusResult = client.getVerifiableCredentials(HUB_URL);
         assertThat(statusResult.succeeded());
-        var jwts = statusResult.getContent().stream().map(jwt -> jwt.serialize().getBytes(StandardCharsets.UTF_8));
-        assertThat(jwts).containsExactly(jws);
+        assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(jws);
     }
 
     @Test
