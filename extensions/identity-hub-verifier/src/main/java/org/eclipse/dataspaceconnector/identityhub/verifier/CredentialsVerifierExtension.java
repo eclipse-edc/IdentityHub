@@ -63,7 +63,7 @@ public class CredentialsVerifierExtension implements ServiceExtension {
     public JwtCredentialsVerifier createJwtVerifier(ServiceExtensionContext context) {
         // Lazy instantiation of DidPublicKeyResolver to prevent injection issues. As the same extension is providing and requiring JwtCredentialsVerifier,
         // while resolving the @Inject the provider method gets called, at which point the (if also injected) DidPublicKeyResolver might still be null, because it's not yet resolved.
-        if(didPublicKeyResolver == null){
+        if (didPublicKeyResolver == null) {
             didPublicKeyResolver = context.getService(DidPublicKeyResolver.class);
         }
         return new DidJwtCredentialsVerifier(didPublicKeyResolver, monitor);
