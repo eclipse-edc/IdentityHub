@@ -25,6 +25,8 @@ import org.eclipse.dataspaceconnector.spi.result.Result;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.partitioningBy;
+
 /**
  * Obtains and verifies credentials associated with a DID.
  * The DID document contains an IdentityHub service, the IdentityHubCredentialsVerifier gets credentials from the
@@ -73,10 +75,13 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
                 .filter(jwt -> jwtCredentialsVerifier.verifyClaims(jwt, didDocument.getId()))
                 .filter(jwtCredentialsVerifier::isSignedByIssuer);
 
-        var credentials = verifiedJwt.map(verifiableCredentialsJWTService::extractCredential).collect(Collectors.toList());
-        credentials.stream().filter(AbstractResult::failed).forEach(result -> monitor.warning(String.join(",", result.getFailureMessages())));
+        var partitionedResult = verifiedJwt.map(verifiableCredentialsJWTService::extractCredential).collect(partitioningBy(AbstractResult::succeeded));
+        var successfulResults = partitionedResult.get(true);
+        var failedResults = partitionedResult.get(false);
 
-        var claims = credentials.stream().filter(AbstractResult::succeeded)
+        failedResults.forEach(result -> monitor.warning(String.join(",", result.getFailureMessages())));
+
+        var claims = successfulResults.stream()
                 .map(AbstractResult::getContent)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
