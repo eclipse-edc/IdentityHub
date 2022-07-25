@@ -16,8 +16,6 @@ services:
       context: ../launcher
       args:
         JVM_ARGS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
-    environment:
-      EDC_API_AUTH_KEY: ApiKeyDefaultValue
     ports:
       - "8181:8181"
       - "5008:5008"
