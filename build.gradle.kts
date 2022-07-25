@@ -15,22 +15,87 @@
 plugins {
     java
     `java-library`
+    signing
+    `maven-publish`
+    id("org.gradle.crypto.checksum") version "1.4.0"
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
 }
 
-val projectVersion: String by project
+repositories {
+    mavenCentral()
+}
+
 val projectGroup: String by project
 val swagger: String by project
 val rsApi : String by project
 
+// these values are required for the project POM (for publishing)
+val edcDeveloperId: String by project
+val edcDeveloperName: String by project
+val edcDeveloperEmail: String by project
+val edcScmConnection: String by project
+val edcWebsiteUrl: String by project
+val edcScmUrl: String by project
+
+val defaultVersion: String by project
+
+// makes the project version overridable using the "-PidentityHubVersion..." flag. Useful for CI builds
+val projectVersion: String = (project.findProperty("identityHubVersion") ?: defaultVersion) as String
+
+var deployUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+
+if (projectVersion.contains("SNAPSHOT")) {
+    deployUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+}
+
+subprojects{
+    afterEvaluate {
+        publishing {
+            publications.forEach { i ->
+                val mp = (i as MavenPublication)
+                mp.pom {
+                    name.set(project.name)
+                    description.set("edc :: ${project.name}")
+                    url.set(edcWebsiteUrl)
+
+                    licenses {
+                        license {
+                            name.set("The Apache License, Version 2.0")
+                            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                        }
+                        developers {
+                            developer {
+                                id.set(edcDeveloperId)
+                                name.set(edcDeveloperName)
+                                email.set(edcDeveloperEmail)
+                            }
+                        }
+                        scm {
+                            connection.set(edcScmConnection)
+                            url.set(edcScmUrl)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 allprojects {
+    apply(plugin = "maven-publish")
+
     version = projectVersion
     group = projectGroup
+
 
     repositories {
         mavenCentral()
         mavenLocal()
         maven {
             url = uri("https://maven.iais.fraunhofer.de/artifactory/eis-ids-public/")
+        }
+        maven{
+            url= uri("https://oss.sonatype.org/content/repositories/snapshots/")
         }
     }
 
@@ -58,6 +123,30 @@ allprojects {
         }
     }
 
+    pluginManager.withPlugin("java-library"){
+        if (!project.hasProperty("skip.signing")) {
+
+            apply(plugin = "signing")
+            publishing {
+                repositories {
+                    maven {
+                        name = "OSSRH"
+                        setUrl(deployUrl)
+                        credentials {
+                            username = System.getenv("OSSRH_USER") ?: return@credentials
+                            password = System.getenv("OSSRH_PASSWORD") ?: return@credentials
+                        }
+                    }
+                }
+
+                signing {
+                    useGpgCmd()
+                    sign(publishing.publications)
+                }
+            }
+        }
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
         testLogging {
@@ -76,5 +165,16 @@ allprojects {
 buildscript {
     dependencies {
         classpath("io.swagger.core.v3:swagger-gradle-plugin:2.1.13")
+    }
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl.set(uri("https://oss.sonatype.org/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://oss.sonatype.org/content/repositories/snapshots/"))
+            username.set(System.getenv("OSSRH_USER") ?: return@sonatype)
+            password.set(System.getenv("OSSRH_PASSWORD") ?: return@sonatype)
+        }
     }
 }
