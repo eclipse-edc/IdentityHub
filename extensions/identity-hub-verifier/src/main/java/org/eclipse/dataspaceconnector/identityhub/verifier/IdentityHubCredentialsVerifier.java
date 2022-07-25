@@ -60,18 +60,20 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     @Override
     public Result<Map<String, Object>> getVerifiedCredentials(DidDocument didDocument) {
         var hubBaseUrl = getIdentityHubBaseUrl(didDocument);
-        if (hubBaseUrl.failed()) return Result.failure(hubBaseUrl.getFailureMessages());
+        if (hubBaseUrl.failed()) {
+            return Result.failure(hubBaseUrl.getFailureMessages());
+        }
 
         var jwts = identityHubClient.getVerifiableCredentials(hubBaseUrl.getContent());
         if (jwts.failed()) {
             return Result.failure(jwts.getFailureMessages());
         }
-        var verifiedClaims = jwts.getContent()
+        var verifiedJwt = jwts.getContent()
                 .stream()
                 .filter(jwt -> jwtCredentialsVerifier.verifyClaims(jwt, didDocument.getId()))
                 .filter(jwtCredentialsVerifier::isSignedByIssuer);
 
-        var credentials = verifiedClaims.map(verifiableCredentialsJWTService::extractCredential).collect(Collectors.toList());
+        var credentials = verifiedJwt.map(verifiableCredentialsJWTService::extractCredential).collect(Collectors.toList());
         credentials.stream().filter(AbstractResult::failed).forEach(result -> monitor.warning(String.join(",", result.getFailureMessages())));
 
         var claims = credentials.stream().filter(AbstractResult::succeeded)
