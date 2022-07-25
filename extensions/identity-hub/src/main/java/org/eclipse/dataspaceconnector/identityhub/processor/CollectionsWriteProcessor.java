@@ -14,38 +14,39 @@
 
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageStatus;
-import org.eclipse.dataspaceconnector.identityhub.dtos.credentials.VerifiableCredential;
+import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
 
-import java.io.IOException;
+import java.text.ParseException;
 
-import static org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject.MESSAGE_ID_VALUE;
+import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject.MESSAGE_ID_VALUE;
 
 /**
  * Processor of "CollectionsWrite" messages, in order to write objects into the {@link IdentityHubStore}.
  */
 public class CollectionsWriteProcessor implements MessageProcessor {
 
+    private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private final IdentityHubStore identityHubStore;
-    private final ObjectMapper objectMapper;
 
-    public CollectionsWriteProcessor(IdentityHubStore identityHubStore, ObjectMapper objectMapper) {
+    public CollectionsWriteProcessor(IdentityHubStore identityHubStore) {
         this.identityHubStore = identityHubStore;
-        this.objectMapper = objectMapper;
     }
 
     @Override
     public MessageResponseObject process(byte[] data) {
-        Object hubObject;
         try {
-            hubObject = objectMapper.readValue(data, VerifiableCredential.class);
-        } catch (IllegalArgumentException | IOException e) {
+            var jwt = SignedJWT.parse(new String(data));
+            if (jwt.getJWTClaimsSet().getClaim(VERIFIABLE_CREDENTIALS_KEY) == null) {
+                return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
+            }
+        } catch (ParseException e) {
             return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
         }
-        identityHubStore.add(hubObject);
+
+        identityHubStore.add(data);
         return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
     }
 }

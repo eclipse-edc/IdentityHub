@@ -23,12 +23,14 @@ val edcGroup: String by project
 val jupiterVersion: String by project
 val restAssured: String by project
 val faker: String by project
+val nimbusVersion: String by project
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
-    api(project(":identity-hub-dtos"))
+    api(project(":identity-hub-core:identity-hub-model"))
     implementation(project(":spi:identity-hub-store-spi"))
     implementation("${edcGroup}:http:${edcVersion}")
+    implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
 
     testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
     testImplementation("${edcGroup}:junit:${edcVersion}")
@@ -37,6 +39,7 @@ dependencies {
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("io.rest-assured:rest-assured:${restAssured}")
     testImplementation("com.github.javafaker:javafaker:${faker}")
+    testImplementation(testFixtures(project(":spi:identity-hub-spi")))
 }
 
 publishing {

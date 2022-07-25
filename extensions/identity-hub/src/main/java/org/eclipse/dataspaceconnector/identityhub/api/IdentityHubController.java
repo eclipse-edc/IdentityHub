@@ -20,17 +20,17 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageRequestObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.MessageResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.RequestObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.RequestStatus;
-import org.eclipse.dataspaceconnector.identityhub.dtos.ResponseObject;
-import org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaces;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageRequestObject;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.model.RequestObject;
+import org.eclipse.dataspaceconnector.identityhub.model.RequestStatus;
+import org.eclipse.dataspaceconnector.identityhub.model.ResponseObject;
+import org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaces;
 import org.eclipse.dataspaceconnector.identityhub.processor.MessageProcessorRegistry;
 
 import java.util.stream.Collectors;
 
-import static org.eclipse.dataspaceconnector.identityhub.dtos.WebNodeInterfaceMethod.fromName;
+import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.fromName;
 
 /**
  * Identity Hub controller, exposing a <a href="https://identity.foundation/decentralized-web-node/spec">Decentralized Web Node</a> compatible endpoint.
