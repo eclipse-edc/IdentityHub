@@ -28,7 +28,7 @@ val nimbusVersion: String by project
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
-    api(project(":identity-hub-model"))
+    api(project(":identity-hub-core:identity-hub-model"))
     implementation("${edcGroup}:http:${edcVersion}")
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")

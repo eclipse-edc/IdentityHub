@@ -27,7 +27,7 @@ val faker: String by project
 
 dependencies {
     implementation(project(":extensions:identity-hub"))
-    implementation(project(":identity-hub-client"))
+    implementation(project(":identity-hub-core:identity-hub-client"))
     implementation(project(":spi:identity-hub-spi"))
     implementation("${edcGroup}:core:${edcVersion}")
     implementation("${edcGroup}:identity-did-spi:${edcVersion}")
