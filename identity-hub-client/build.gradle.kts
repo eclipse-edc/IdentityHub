@@ -15,7 +15,6 @@
 plugins {
     `java-library`
     `maven-publish`
-    id("org.openapi.generator") version "5.4.0"
 }
 
 val jacksonVersion: String by project
