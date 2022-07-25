@@ -33,7 +33,7 @@ public interface JwtCredentialsVerifier {
      *
      * @param jwt             to be verified.
      * @param expectedSubject subject claim to verify.
-     * @return if the JWT is for the given subject and signed by the claimed issuer.
+     * @return if the JWT is valid and for the given subject
      */
     boolean verifyClaims(SignedJWT jwt, String expectedSubject);
 }
