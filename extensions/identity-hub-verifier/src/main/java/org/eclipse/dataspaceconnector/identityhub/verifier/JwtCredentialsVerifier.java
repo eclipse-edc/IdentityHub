@@ -30,7 +30,7 @@ public interface JwtCredentialsVerifier {
     boolean isSignedByIssuer(SignedJWT jwt);
 
     /**
-     * Verifies if a JWT targets the given subject. The expiration ("exp") and not-before ("nbf") times are verified if present as well.
+     * Verifies if a JWT targets the given subject, and checks for the presence of the issuer ("iss") claim. The expiration ("exp") and not-before ("nbf") claims are verified if present as well.
      *
      * @param jwt             to be verified.
      * @param expectedSubject subject claim to verify.
