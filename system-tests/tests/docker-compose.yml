@@ -17,5 +17,5 @@ services:
       args:
         JVM_ARGS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
     ports:
-      - "8181:8181"
+      - "8182:8181"
       - "5008:5008"

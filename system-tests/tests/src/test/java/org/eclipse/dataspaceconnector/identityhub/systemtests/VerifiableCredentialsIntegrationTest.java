@@ -42,7 +42,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class VerifiableCredentialsIntegrationTest {
 
     static final Faker FAKER = new Faker();
-    static final String HUB_URL = "http://localhost:8181/api/identity-hub";
+    public static final String WEB_HTTP_PORT = "8182";
+    static final String HUB_URL = String.format("http://localhost:%s/api/identity-hub", WEB_HTTP_PORT);
     static final ObjectMapper MAPPER = new ObjectMapper();
 
     static final VerifiableCredential VC1 = VerifiableCredential.Builder.newInstance()
@@ -65,7 +66,7 @@ class VerifiableCredentialsIntegrationTest {
         cmd.setErr(new PrintWriter(err));
 
         extension.setConfiguration(Map.of(
-                "web.http.port", "8081",
+                "web.http.port", WEB_HTTP_PORT,
                 "edc.identity.hub.url", HUB_URL,
                 "edc.iam.did.web.use.https", "false"));
     }
