@@ -1,3 +1,17 @@
+/*
+ *  Copyright (c) 2022 Microsoft Corporation
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Microsoft Corporation - initial API and implementation
+ *
+ */
+
 package org.eclipse.dataspaceconnector.identityhub.credentials;
 
 import com.nimbusds.jose.JOSEException;
@@ -13,7 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class VerifiableCredentialsJWTUtils {
+public class VerifiableCredentialsJwtUtils {
 
     public static final String VERIFIABLE_CREDENTIAL_CLAIM_KEY = "vc";
 
@@ -32,7 +46,7 @@ public class VerifiableCredentialsJWTUtils {
         return SignedJWT.parse(jws.serialize());
     }
 
-    public static ECKey readECKey(File file) throws IOException, JOSEException {
+    public static ECKey readEcKey(File file) throws IOException, JOSEException {
         var contents = Files.readString(file.toPath());
         var jwk = ECKey.parseFromPEMEncodedObjects(contents);
         return jwk.toECKey();

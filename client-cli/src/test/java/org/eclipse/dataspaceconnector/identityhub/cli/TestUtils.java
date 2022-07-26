@@ -19,26 +19,26 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTUtils;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 
 import java.io.File;
 import java.util.Map;
 
-import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTUtils.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils.buildSignedJwt;
 
 public class TestUtils {
     static final Faker FAKER = new Faker();
     public static final String PUBLIC_KEY_PATH = "src/test/resources/test-public-key.pem";
     public static final String PRIVATE_KEY_PATH = "src/test/resources/test-private-key.pem";
-    public static ECKey PUBLIC_KEY;
-    public static ECKey PRIVATE_KEY;
+    public static final ECKey PUBLIC_KEY;
+    public static final ECKey PRIVATE_KEY;
 
 
     static {
         try {
-            PUBLIC_KEY = VerifiableCredentialsJWTUtils.readECKey(new File(PUBLIC_KEY_PATH));
-            PRIVATE_KEY = VerifiableCredentialsJWTUtils.readECKey(new File(PRIVATE_KEY_PATH));
+            PUBLIC_KEY = VerifiableCredentialsJwtUtils.readEcKey(new File(PUBLIC_KEY_PATH));
+            PRIVATE_KEY = VerifiableCredentialsJwtUtils.readEcKey(new File(PRIVATE_KEY_PATH));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

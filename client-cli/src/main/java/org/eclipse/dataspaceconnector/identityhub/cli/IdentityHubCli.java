@@ -38,6 +38,7 @@ public class IdentityHubCli {
         var exitCode = commandLine.execute(args);
         System.exit(exitCode);
     }
+
     public static CommandLine getCommandLine() {
         var command = new IdentityHubCli();
         return new CommandLine(command).setExecutionStrategy(command::executionStrategy);

@@ -37,7 +37,7 @@ import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.PRIVATE_K
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.createVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.signVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.verifyVerifiableCredentialSignature;
-import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTUtils.VERIFIABLE_CREDENTIAL_CLAIM_KEY;
+import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils.VERIFIABLE_CREDENTIAL_CLAIM_KEY;
 import static org.eclipse.dataspaceconnector.spi.response.StatusResult.success;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -114,13 +114,13 @@ class VerifiableCredentialsCommandTest {
         assertThat(errContent).isEmpty();
 
         verify(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), isA(SignedJWT.class));
-        var signedJWT = vcArgCaptor.getValue();
+        var signedJwt = vcArgCaptor.getValue();
 
         // assert JWT signature
-        assertThat(verifyVerifiableCredentialSignature(signedJWT)).isTrue();
+        assertThat(verifyVerifiableCredentialSignature(signedJwt)).isTrue();
 
         // verify verifiable credential claim
-        var vcClaim = signedJWT.getJWTClaimsSet().getJSONObjectClaim(VERIFIABLE_CREDENTIAL_CLAIM_KEY).toJSONString();
+        var vcClaim = signedJwt.getJWTClaimsSet().getJSONObjectClaim(VERIFIABLE_CREDENTIAL_CLAIM_KEY).toJSONString();
         var verifiableCredential = MAPPER.readValue(vcClaim, VerifiableCredential.class);
         assertThat(verifiableCredential).usingRecursiveComparison().isEqualTo(VC1);
     }

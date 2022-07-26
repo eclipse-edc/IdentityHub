@@ -25,8 +25,8 @@ import picocli.CommandLine.ParentCommand;
 import java.io.File;
 import java.util.concurrent.Callable;
 
-import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTUtils.buildSignedJwt;
-import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTUtils.readECKey;
+import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils.buildSignedJwt;
+import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils.readEcKey;
 
 @Command(name = "add", description = "Adds a verifiable credential to identity hub")
 class AddVerifiableCredentialCommand implements Callable<Integer> {
@@ -62,15 +62,15 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
             throw new CliException("Error while processing request json.");
         }
 
-        SignedJWT signedJWT;
+        SignedJWT signedJwt;
         try {
-            var ecKey = readECKey(new File(privateKeyPemFile));
-            signedJWT = buildSignedJwt(vc, issuer, subject, ecKey);
+            var ecKey = readEcKey(new File(privateKeyPemFile));
+            signedJwt = buildSignedJwt(vc, issuer, subject, ecKey);
         } catch (Exception e) {
             throw new CliException("Error while signing Verifiable Credential", e);
         }
 
-        command.cli.identityHubClient.addVerifiableCredential(command.cli.hubUrl, signedJWT);
+        command.cli.identityHubClient.addVerifiableCredential(command.cli.hubUrl, signedJwt);
 
         out.println("Verifiable Credential added successfully");
 
