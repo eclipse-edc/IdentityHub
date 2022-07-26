@@ -1,15 +1,15 @@
 {
-	"id": "did:web:localhost:identity-hub-owner",
+	"id": "did:web:localhost:participant",
 	"@context": [
 		"https://www.w3.org/ns/did/v1",
 		{
-			"@base": "did:web:localhost:identity-hub-owner"
+			"@base": "did:web:localhost:participant"
 		}
 	],
 	"service": [{
 		"id": "#identity-hub-url",
 		"type": "IdentityHub",
-		"serviceEndpoint": "http://localhost:8181/api/identity-hub"
+		"serviceEndpoint": "http://localhost:8182/api/identity-hub"
 	}],
 	"verificationMethod": [{
 		"id": "#my-key-1",
