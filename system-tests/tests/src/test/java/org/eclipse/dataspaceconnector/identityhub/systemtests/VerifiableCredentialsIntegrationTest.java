@@ -23,7 +23,6 @@ import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifie
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.dataspaceconnector.identityhub.cli.IdentityHubCli;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
-import org.eclipse.dataspaceconnector.identityhub.verifier.IdentityHubCredentialsVerifier;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,9 +54,6 @@ class VerifiableCredentialsIntegrationTest {
                     FAKER.internet().uuid(), FAKER.lorem().word()))
             .build();
 
-    IdentityHubCredentialsVerifier verifier;
-
-    IdentityHubCli app = new IdentityHubCli();
     CommandLine cmd = IdentityHubCli.getCommandLine();
     StringWriter out = new StringWriter();
     StringWriter err = new StringWriter();
