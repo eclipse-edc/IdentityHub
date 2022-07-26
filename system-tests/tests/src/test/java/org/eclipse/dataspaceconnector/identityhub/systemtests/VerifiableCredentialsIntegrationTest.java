@@ -14,6 +14,7 @@
 
 package org.eclipse.dataspaceconnector.identityhub.systemtests;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtService.VERIFIABLE_CREDENTIALS_KEY;
 
 @IntegrationTest
 @ExtendWith(EdcExtension.class)
@@ -45,6 +47,7 @@ class VerifiableCredentialsIntegrationTest {
     static final String HUB_URL = "http://localhost:8182/api/identity-hub";
     static final String AUTHORITY_DID = "did:web:localhost:authority";
     static final String PARTICIPANT_DID = "did:web:localhost:participant";
+    static final String AUTHORITY_PRIVATE_KEY_PATH = "resources/jwt/authority/private-key.pem";
     static final ObjectMapper MAPPER = new ObjectMapper();
     static final VerifiableCredential VC1 = VerifiableCredential.Builder.newInstance()
             .id(FAKER.internet().uuid())
@@ -72,16 +75,26 @@ class VerifiableCredentialsIntegrationTest {
 
     @Test
     void push_and_get_verifiable_credentials(CredentialsVerifier verifier, DidResolverRegistry resolverRegistry) throws Exception {
+        assertIdentityHubIsEmpty();
+        addVerifiableCredential();
+        assertGetVerifiableCredential(verifier, resolverRegistry);
+    }
+
+    private void assertIdentityHubIsEmpty() throws JsonProcessingException {
         int result = cmd.execute("-s", HUB_URL, "vc", "list");
         assertThat(result).isEqualTo(0);
 
         var claims = MAPPER.readValue(out.toString(), new TypeReference<List<Map<String, Object>>>() {});
-        //assertThat(claims).describedAs("Identity Hub already contains Verifiable Credentials").isEmpty();
+        assertThat(claims).describedAs("Identity Hub already contains Verifiable Credentials").isEmpty();
+    }
 
+    private void addVerifiableCredential() throws JsonProcessingException {
         var json = MAPPER.writeValueAsString(VC1);
-        cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", AUTHORITY_DID, "-b", PARTICIPANT_DID, "-k", "resources/jwt/authority/private-key.pem");
+        cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", AUTHORITY_DID, "-b", PARTICIPANT_DID, "-k", AUTHORITY_PRIVATE_KEY_PATH);
+    }
 
-        var didResult = resolverRegistry.resolve("did:web:localhost:participant");
+    private void assertGetVerifiableCredential(CredentialsVerifier verifier, DidResolverRegistry resolverRegistry) {
+        var didResult = resolverRegistry.resolve(PARTICIPANT_DID);
         assertThat(didResult.succeeded()).isTrue();
 
         Result<Map<String, Object>> verifiedCredentials = verifier.getVerifiedCredentials(didResult.getContent());
@@ -90,7 +103,7 @@ class VerifiableCredentialsIntegrationTest {
         assertThat(vcs).containsKey(VC1.getId());
 
         Map<String, JSONObject> vc = (Map<String, JSONObject>) vcs.get(VC1.getId());
-        VerifiableCredential vc1 = MAPPER.convertValue(vc.get("vc"), VerifiableCredential.class);
+        VerifiableCredential vc1 = MAPPER.convertValue(vc.get(VERIFIABLE_CREDENTIALS_KEY), VerifiableCredential.class);
         assertThat(vc1).usingRecursiveComparison().isEqualTo(VC1);
     }
 }
