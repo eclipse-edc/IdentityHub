@@ -55,6 +55,7 @@ public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredential
             return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.toString()));
         }
     }
+
     @Override
     public SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) throws JOSEException, ParseException {
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();

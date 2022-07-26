@@ -53,6 +53,7 @@ public interface VerifiableCredentialsJwtService {
 
     /**
      * Builds a verifiable credential as a signed JWT
+     *
      * @param credential The verifiable credential to sign
      * @param issuer The issuer of the verifiable credential
      * @param subject The subject of the verifiable credential
@@ -65,6 +66,7 @@ public interface VerifiableCredentialsJwtService {
 
     /**
      * Reads an EC key from a PEM file
+     *
      * @param file The PEM file
      * @return The EC Key
      * @throws Exception In case the key can not be read
