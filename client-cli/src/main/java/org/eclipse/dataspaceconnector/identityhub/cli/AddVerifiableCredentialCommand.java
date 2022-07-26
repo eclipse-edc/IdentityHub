@@ -62,7 +62,7 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
 
         SignedJWT signedJwt;
         try {
-            var ecKey =  command.cli.verifiableCredentialsJwtService.readEcKey(new File(privateKeyPemFile));
+            var ecKey = command.cli.verifiableCredentialsJwtService.readEcKey(new File(privateKeyPemFile));
             signedJwt = command.cli.verifiableCredentialsJwtService.buildSignedJwt(vc, issuer, subject, ecKey);
         } catch (Exception e) {
             throw new CliException("Error while signing Verifiable Credential", e);
