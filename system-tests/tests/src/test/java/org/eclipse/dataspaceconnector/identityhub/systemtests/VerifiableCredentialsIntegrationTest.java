@@ -37,8 +37,9 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@IntegrationTest
 @ExtendWith(EdcExtension.class)
-class E2ETest {
+class VerifiableCredentialsIntegrationTest {
 
     static final Faker FAKER = new Faker();
     static final String HUB_URL = "http://localhost:8181/api/identity-hub";

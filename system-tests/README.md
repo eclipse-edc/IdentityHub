@@ -1,6 +1,8 @@
 ## System tests
 
-System tests run a sample EDC connector with the Identity Hub extension and a DID server with sample DID documents for the connector and an external authority using docker. The test checks the correct functioning of the Identity Hub CLI and CredentialsVerifier.
+System tests run a sample EDC connector with the Identity Hub extension and a DID server with sample DID documents for the connector and an external authority using docker. The test checks the correct functioning of the Identity Hub CLI together with the CredentialsVerifier.
+
+An instance of `CredentialsVerifiar` is injected in the test (hence the `@ExtendWith(EdcExtension.class)` annotation), to verify that another EDC connector is able to retrieve credentials from the Identity Hub after these have beed added using the CLI.
 
 #### Local test resources
 
@@ -36,5 +38,5 @@ docker-compose -f system-tests/tests/docker-compose.yml up --build
 Run test with:
 
 ```bash
-./gradlew :system-tests:tests:test
+INTEGRATION_TEST=true ./gradlew :system-tests:tests:test
 ```
