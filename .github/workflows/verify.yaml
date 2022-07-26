@@ -3,7 +3,7 @@ name: Test Code (Style, Tests)
 on:
   push:
   pull_request:
-    branches: [ main ]
+    branches: [ main, feature/25-identity-hub-cli ]
     paths-ignore:
       - '**.md'
       - 'docs/**'
