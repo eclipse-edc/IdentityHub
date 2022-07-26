@@ -18,7 +18,7 @@ import okhttp3.OkHttpClient;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
-import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJWTServiceImpl;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.dataspaceconnector.spi.EdcException;
 import org.eclipse.dataspaceconnector.spi.EdcSetting;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
@@ -63,7 +63,7 @@ public class CredentialsVerifierExtension implements ServiceExtension {
     public JwtCredentialsVerifier createJwtVerifier(ServiceExtensionContext context) {
         // Lazy instantiation of DidPublicKeyResolver to prevent injection issues. As the same extension is providing and requiring JwtCredentialsVerifier,
         // while resolving the @Inject the provider method gets called, at which point the (if also injected) DidPublicKeyResolver might still be null, because it's not yet resolved.
-        if(didPublicKeyResolver == null){
+        if (didPublicKeyResolver == null) {
             didPublicKeyResolver = context.getService(DidPublicKeyResolver.class);
         }
         return new DidJwtCredentialsVerifier(didPublicKeyResolver, monitor);
@@ -77,7 +77,7 @@ public class CredentialsVerifierExtension implements ServiceExtension {
         }
 
         var client = new IdentityHubClientImpl(httpClient, typeManager.getMapper(), monitor);
-        var verifiableCredentialExtractor = new VerifiableCredentialsJWTServiceImpl(typeManager.getMapper());
-        return new IdentityHubCredentialsVerifier(client, monitor, jwtCredentialsVerifier, verifiableCredentialExtractor);
+        var verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(typeManager.getMapper());
+        return new IdentityHubCredentialsVerifier(client, monitor, jwtCredentialsVerifier, verifiableCredentialsJwtService);
     }
 }
