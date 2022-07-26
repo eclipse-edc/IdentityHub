@@ -30,7 +30,7 @@ import picocli.CommandLine.Command;
                 VerifiableCredentialsCommand.class
         })
 public class IdentityHubCli {
-    @CommandLine.Option(names = "-s", required = true, description = "Identity Hub URL", defaultValue = "http://localhost:8181/api/identity-hub")
+    @CommandLine.Option(names = { "-s", "--identity-hub-url" }, required = true, description = "Identity Hub URL", defaultValue = "http://localhost:8181/api/identity-hub")
     String hubUrl;
 
     IdentityHubClient identityHubClient;
