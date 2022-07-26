@@ -14,18 +14,23 @@
 
 package org.eclipse.dataspaceconnector.identityhub.credentials;
 
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 
+import java.io.File;
 import java.util.Map;
 
 /**
- * Service to manipulate VerifiableCredentials with JWTs.
+ * Service with operations for manipulation of VerifiableCredentials in JWT format.
  */
 public interface VerifiableCredentialsJwtService {
 
+    String VERIFIABLE_CREDENTIALS_KEY = "vc";
+
     /**
-     * Extract credentials from a JWT. The credential is represented with the following format
+     * Extract verifiable credentials from a JWT. The credential is represented with the following format
      * <pre>{@code
      * "credentialId" : {
      *     "vc": {
@@ -45,4 +50,24 @@ public interface VerifiableCredentialsJwtService {
      * @return VerifiableCredential represented as {@code Map.Entry<String, Object>}.
      */
     Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt);
+
+    /**
+     * Builds a verifiable credential as a signed JWT
+     * @param credential The verifiable credential to sign
+     * @param issuer The issuer of the verifiable credential
+     * @param subject The subject of the verifiable credential
+     * @param jwk The private key of the issuer, used for signing
+     *
+     * @return The Verifiable Credential as a JWT
+     * @throws Exception In case the credential can not be signed
+     */
+    SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) throws Exception;
+
+    /**
+     * Reads an EC key from a PEM file
+     * @param file The PEM file
+     * @return The EC Key
+     * @throws Exception In case the key can not be read
+     */
+    ECKey readEcKey(File file) throws Exception;
 }

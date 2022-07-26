@@ -14,18 +14,18 @@
 
 package org.eclipse.dataspaceconnector.identityhub.cli;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 
 import java.io.File;
 import java.util.Map;
 
-import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils.buildSignedJwt;
 
 public class TestUtils {
     static final Faker FAKER = new Faker();
@@ -33,12 +33,12 @@ public class TestUtils {
     public static final String PRIVATE_KEY_PATH = "src/test/resources/test-private-key.pem";
     public static final ECKey PUBLIC_KEY;
     public static final ECKey PRIVATE_KEY;
-
+    public static final VerifiableCredentialsJwtServiceImpl VC_JWT_SERVICE = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper());
 
     static {
         try {
-            PUBLIC_KEY = VerifiableCredentialsJwtUtils.readEcKey(new File(PUBLIC_KEY_PATH));
-            PRIVATE_KEY = VerifiableCredentialsJwtUtils.readEcKey(new File(PRIVATE_KEY_PATH));
+            PUBLIC_KEY = VC_JWT_SERVICE.readEcKey(new File(PUBLIC_KEY_PATH));
+            PRIVATE_KEY = VC_JWT_SERVICE.readEcKey(new File(PRIVATE_KEY_PATH));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -59,7 +59,7 @@ public class TestUtils {
     public static SignedJWT signVerifiableCredential(VerifiableCredential vc) {
         try {
 
-            return buildSignedJwt(
+            return VC_JWT_SERVICE.buildSignedJwt(
                     vc,
                     "identity-hub-test-issuer",
                     "identity-hub-test-subject",

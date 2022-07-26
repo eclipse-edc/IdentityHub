@@ -15,16 +15,25 @@
 package org.eclipse.dataspaceconnector.identityhub.credentials;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.text.ParseException;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredentialsJwtService {
-    private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private ObjectMapper objectMapper;
 
     public VerifiableCredentialsJwtServiceImpl(ObjectMapper objectMapper) {
@@ -45,5 +54,27 @@ public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredential
         } catch (RuntimeException e) {
             return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.toString()));
         }
+    }
+    @Override
+    public SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) throws JOSEException, ParseException {
+        var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
+        var claims = new JWTClaimsSet.Builder()
+                .claim(VERIFIABLE_CREDENTIALS_KEY, credential)
+                .issuer(issuer)
+                .subject(subject)
+                .build();
+
+        var jws = new SignedJWT(jwsHeader, claims);
+
+        jws.sign(new ECDSASigner(jwk.toECPrivateKey()));
+
+        return SignedJWT.parse(jws.serialize());
+    }
+
+    @Override
+    public ECKey readEcKey(File file) throws IOException, JOSEException {
+        var contents = Files.readString(file.toPath());
+        var jwk = ECKey.parseFromPEMEncodedObjects(contents);
+        return jwk.toECKey();
     }
 }

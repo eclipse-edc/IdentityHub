@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtService;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -32,6 +34,8 @@ public class IdentityHubCli {
     String hubUrl;
 
     IdentityHubClient identityHubClient;
+
+    VerifiableCredentialsJwtService verifiableCredentialsJwtService;
 
     public static void main(String... args) {
         CommandLine commandLine = getCommandLine();
@@ -54,5 +58,6 @@ public class IdentityHubCli {
         var objectMapper = new ObjectMapper();
         var monitor = new ConsoleMonitor();
         this.identityHubClient = new IdentityHubClientImpl(okHttpClient, objectMapper, monitor);
+        this.verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(objectMapper);
     }
 }

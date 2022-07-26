@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
+import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.PRIVATE_K
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.createVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.signVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.verifyVerifiableCredentialSignature;
-import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtUtils.VERIFIABLE_CREDENTIAL_CLAIM_KEY;
+import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtService.VERIFIABLE_CREDENTIALS_KEY;
 import static org.eclipse.dataspaceconnector.spi.response.StatusResult.success;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -67,6 +68,7 @@ class VerifiableCredentialsCommandTest {
     @BeforeEach
     void setUp() {
         app.identityHubClient = mock(IdentityHubClient.class);
+        app.verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper());
         app.hubUrl = hubUrl;
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
@@ -88,7 +90,7 @@ class VerifiableCredentialsCommandTest {
 
         var claims = MAPPER.readValue(outContent, new TypeReference<List<Map<String, Object>>>() {});
         var vcs = claims.stream()
-                .map(c -> MAPPER.convertValue(c.get(VERIFIABLE_CREDENTIAL_CLAIM_KEY), VerifiableCredential.class))
+                .map(c -> MAPPER.convertValue(c.get(VERIFIABLE_CREDENTIALS_KEY), VerifiableCredential.class))
                 .collect(Collectors.toList());
 
         assertThat(vcs)
@@ -120,7 +122,7 @@ class VerifiableCredentialsCommandTest {
         assertThat(verifyVerifiableCredentialSignature(signedJwt)).isTrue();
 
         // verify verifiable credential claim
-        var vcClaim = signedJwt.getJWTClaimsSet().getJSONObjectClaim(VERIFIABLE_CREDENTIAL_CLAIM_KEY).toJSONString();
+        var vcClaim = signedJwt.getJWTClaimsSet().getJSONObjectClaim(VERIFIABLE_CREDENTIALS_KEY).toJSONString();
         var verifiableCredential = MAPPER.readValue(vcClaim, VerifiableCredential.class);
         assertThat(verifiableCredential).usingRecursiveComparison().isEqualTo(VC1);
     }
