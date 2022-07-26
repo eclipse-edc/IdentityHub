@@ -33,7 +33,7 @@ public class TestUtils {
     public static final String PRIVATE_KEY_PATH = "src/test/resources/test-private-key.pem";
     public static final ECKey PUBLIC_KEY;
     public static final ECKey PRIVATE_KEY;
-    public static final VerifiableCredentialsJwtServiceImpl VC_JWT_SERVICE = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper());
+    private static final VerifiableCredentialsJwtServiceImpl VC_JWT_SERVICE = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper());
 
     static {
         try {
