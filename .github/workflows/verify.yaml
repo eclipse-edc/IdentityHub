@@ -53,7 +53,7 @@ jobs:
           files: "**/test-results/**/*.xml"
 
       - name: 'docker-compose logs'
-        run: docker-compose logs
+        run: docker-compose -f system-tests/tests/docker-compose.yml logs
         if: always()
 
   Checkstyle:
