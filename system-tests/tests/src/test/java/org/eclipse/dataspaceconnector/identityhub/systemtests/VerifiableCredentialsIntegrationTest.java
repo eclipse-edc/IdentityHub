@@ -25,7 +25,6 @@ import org.eclipse.dataspaceconnector.identityhub.cli.IdentityHubCli;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.identityhub.verifier.IdentityHubCredentialsVerifier;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
-import org.eclipse.dataspaceconnector.spi.result.Result;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -97,13 +96,13 @@ class VerifiableCredentialsIntegrationTest {
         var didResult = resolverRegistry.resolve(PARTICIPANT_DID);
         assertThat(didResult.succeeded()).isTrue();
 
-        Result<Map<String, Object>> verifiedCredentials = verifier.getVerifiedCredentials(didResult.getContent());
+        var verifiedCredentials = verifier.getVerifiedCredentials(didResult.getContent());
         assertThat(verifiedCredentials.succeeded()).isTrue();
-        Map<String, Object> vcs = verifiedCredentials.getContent();
+        var vcs = verifiedCredentials.getContent();
         assertThat(vcs).containsKey(VC1.getId());
 
-        Map<String, JSONObject> vc = (Map<String, JSONObject>) vcs.get(VC1.getId());
-        VerifiableCredential vc1 = MAPPER.convertValue(vc.get(VERIFIABLE_CREDENTIALS_KEY), VerifiableCredential.class);
+        var vc = (Map<String, JSONObject>) vcs.get(VC1.getId());
+        var vc1 = MAPPER.convertValue(vc.get(VERIFIABLE_CREDENTIALS_KEY), VerifiableCredential.class);
         assertThat(vc1).usingRecursiveComparison().isEqualTo(VC1);
     }
 }
