@@ -9,9 +9,9 @@ services:
     ports:
       - "80:80"
 
-  # Dataspace registration service authority.
-  identity-hub:
-    container_name: identity-hub
+  # EDC connector with identity-hub
+  identity-hub-owner:
+    container_name: identity-hub-owner
     build:
       context: ../launcher
       args:
