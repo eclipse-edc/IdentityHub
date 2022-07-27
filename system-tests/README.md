@@ -6,7 +6,7 @@ The test checks that verifiable credentials can be added to the Identity Hub of 
 
 #### Local test resources
 
-Following test resources are provided in order to run system tests:
+The following test resources are used to run system tests:
 
 - A set of Private and Public keys for both the external authority and the EDC connector (identity hub owner) e.g. `system-tests/resources/jwt/authority`.
 
