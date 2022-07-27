@@ -26,6 +26,7 @@ val faker: String by project
 val okHttpVersion: String by project
 val nimbusVersion: String by project
 val bouncycastleVersion: String by project
+val picoCliVersion: String by project
 
 dependencies {
     testImplementation(project(":system-tests:launcher"))
@@ -35,9 +36,9 @@ dependencies {
     testImplementation("${edcGroup}:identity-did-core:${edcVersion}")
     testImplementation("${edcGroup}:identity-did-web:${edcVersion}")
     testImplementation("${edcGroup}:junit:${edcVersion}")
-    testImplementation("info.picocli:picocli:4.6.3")
-    testImplementation("info.picocli:picocli-codegen:4.6.3")
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    testImplementation("info.picocli:picocli:${picoCliVersion}")
+    testImplementation("info.picocli:picocli-codegen:${picoCliVersion}")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
     testImplementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
     testImplementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
     testImplementation("org.bouncycastle:bcpkix-jdk15on:${bouncycastleVersion}")

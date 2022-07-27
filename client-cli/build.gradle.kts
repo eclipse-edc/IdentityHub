@@ -13,13 +13,14 @@ val faker: String by project
 val okHttpVersion: String by project
 val nimbusVersion: String by project
 val bouncycastleVersion: String by project
+val picoCliVersion: String by project
 
 dependencies {
-    api("info.picocli:picocli:4.6.3")
-    annotationProcessor("info.picocli:picocli-codegen:4.6.3")
+    api("info.picocli:picocli:${picoCliVersion}")
+    annotationProcessor("info.picocli:picocli-codegen:${picoCliVersion}")
 
     implementation(project(":identity-hub-core:identity-hub-client"))
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
     implementation("org.bouncycastle:bcpkix-jdk15on:${bouncycastleVersion}")
