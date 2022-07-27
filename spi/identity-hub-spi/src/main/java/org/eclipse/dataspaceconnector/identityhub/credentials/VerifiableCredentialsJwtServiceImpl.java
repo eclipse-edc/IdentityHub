@@ -15,16 +15,21 @@
 package org.eclipse.dataspaceconnector.identityhub.credentials;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.iam.did.spi.key.PrivateKeyWrapper;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 
+import java.text.ParseException;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredentialsJwtService {
-    private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private ObjectMapper objectMapper;
 
     public VerifiableCredentialsJwtServiceImpl(ObjectMapper objectMapper) {
@@ -45,5 +50,21 @@ public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredential
         } catch (RuntimeException e) {
             return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.toString()));
         }
+    }
+
+    @Override
+    public SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, PrivateKeyWrapper privateKey) throws JOSEException, ParseException {
+        var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
+        var claims = new JWTClaimsSet.Builder()
+                .claim(VERIFIABLE_CREDENTIALS_KEY, credential)
+                .issuer(issuer)
+                .subject(subject)
+                .build();
+
+        var jws = new SignedJWT(jwsHeader, claims);
+
+        jws.sign(privateKey.signer());
+
+        return SignedJWT.parse(jws.serialize());
     }
 }
