@@ -37,13 +37,13 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
     @CommandLine.Spec
     private CommandLine.Model.CommandSpec spec;
 
-    @CommandLine.Option(names = { "-c", "--verifiable-credential"}, required = true, description = "Verifiable Credential as JSON")
+    @CommandLine.Option(names = { "-c", "--verifiable-credential" }, required = true, description = "Verifiable Credential as JSON")
     private String verifiableCredentialJson;
 
-    @CommandLine.Option(names = { "-i", "--issuer"}, required = true, description = "DID of the Verifiable Credential issuer")
+    @CommandLine.Option(names = { "-i", "--issuer" }, required = true, description = "DID of the Verifiable Credential issuer")
     private String issuer;
 
-    @CommandLine.Option(names = { "-b", "--subject"}, required = true, description = "DID of the Verifiable Credential subject")
+    @CommandLine.Option(names = { "-b", "--subject" }, required = true, description = "DID of the Verifiable Credential subject")
     private String subject;
 
     @CommandLine.Option(names = { "-k", "--private-key" }, required = true, description = "PEM file with EC private key for signing Verifiable Credentials")

@@ -55,10 +55,9 @@ public interface VerifiableCredentialsJwtService {
      * Builds a verifiable credential as a signed JWT
      *
      * @param credential The verifiable credential to sign
-     * @param issuer The issuer of the verifiable credential
-     * @param subject The subject of the verifiable credential
-     * @param jwk The private key of the issuer, used for signing
-     *
+     * @param issuer     The issuer of the verifiable credential
+     * @param subject    The subject of the verifiable credential
+     * @param jwk        The private key of the issuer, used for signing
      * @return The Verifiable Credential as a JWT
      * @throws Exception In case the credential can not be signed
      */
