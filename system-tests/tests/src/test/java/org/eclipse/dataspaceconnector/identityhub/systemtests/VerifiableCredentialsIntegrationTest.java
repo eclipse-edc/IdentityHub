@@ -80,7 +80,7 @@ class VerifiableCredentialsIntegrationTest {
         assertThat(result).isEqualTo(0);
 
         var claims = MAPPER.readValue(out.toString(), new TypeReference<List<Map<String, Object>>>() {});
-        assertThat(claims).describedAs("Identity Hub already contains Verifiable Credentials").isEmpty();
+        assertThat(claims).as("Identity Hub contains no Verifiable Credentials").isEmpty();
     }
 
     private void addVerifiableCredential() throws JsonProcessingException {
