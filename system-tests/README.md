@@ -8,7 +8,7 @@ The test checks that verifiable credentials can be added to the Identity Hub of 
 
 The following test resources are used to run system tests:
 
-- A set of Private and Public keys for both the external authority and the EDC connector (identity hub owner) e.g. `system-tests/resources/jwt/authority`.
+- A set of Private and Public keys for both the external authority and the EDC connector (identity hub owner) at `system-tests/resources/jwt/authority`.
 
     ```bash
     # generate a private key
