@@ -1,8 +1,8 @@
 ## System tests
 
-System tests run a sample EDC connector with the Identity Hub extension and a DID server with sample DID documents for the connector and an external authority using docker. The test checks the correct functioning of the Identity Hub CLI together with the CredentialsVerifier.
+System tests run a sample EDC connector with the Identity Hub extension and a DID server using docker. The DID server provides sample DID documents for the EDC connector and an external authority.
 
-An instance of `CredentialsVerifier` is injected in the test (hence the `@ExtendWith(EdcExtension.class)` annotation), to verify that another EDC connector is able to retrieve credentials from the Identity Hub after these have been added using the CLI.
+The test checks that verifiable credentials can be added to the Identity Hub of the EDC connector using the CLI. In addition, an instance of `CredentialsVerifier` is injected (hence the `@ExtendWith(EdcExtension.class)` annotation) to verify that another EDC connector is able to retrieve and verify the signature of these verifiable credentials.
 
 #### Local test resources
 
