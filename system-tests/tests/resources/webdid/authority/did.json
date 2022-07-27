@@ -13,10 +13,10 @@
 		"type": "EcdsaSecp256k1VerificationKey2019",
 		"publicKeyJwk": {
 			"kty": "EC",
-			"kid": "uIowOgviyWueDwC2SjwEPnqsBVQkhIN3m6B0Ajs6rlU",
+			"kid": "czbdfcccY3TEaeeQj9J-PtzEH-DDzMKgRYHKohvImbU",
 			"crv": "P-256",
-			"x": "T6VaLBE16dj2WcqcCaF6M1ORlaQhrT5bEhY8JUiDwRA",
-			"y": "hcVb4PnEmH2TMYbPk-ctwHx3o15JNIOhIYPBzR3iYf4"
+			"x": "25DvKuU5-gvMdKkyiDDIsx3tcuPXjgVyAjs1JcfFtvg",
+			"y": "vSNBXprqspg07t1lnWJnWiUDCScd6sBCRk1U8XChrRI"
 		}
 	}],
 	"authentication": [
