@@ -42,8 +42,8 @@ class VerifiableCredentialsIntegrationTest {
 
     static final Faker FAKER = new Faker();
     static final String HUB_URL = "http://localhost:8182/api/identity-hub";
-    static final String AUTHORITY_DID = "did:web:localhost:authority";
-    static final String PARTICIPANT_DID = "did:web:localhost:participant";
+    static final String AUTHORITY_DID = "did:web:localhost%3A8080:authority";
+    static final String PARTICIPANT_DID = "did:web:localhost%3A8080:participant";
     static final String AUTHORITY_PRIVATE_KEY_PATH = "resources/jwt/authority/private-key.pem";
     static final ObjectMapper MAPPER = new ObjectMapper();
     static final VerifiableCredential VC1 = VerifiableCredential.Builder.newInstance()

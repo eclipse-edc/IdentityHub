@@ -7,7 +7,7 @@ services:
     volumes:
       - ./resources/webdid:/usr/share/nginx/html
     ports:
-      - "80:80"
+      - "8080:80"
 
   # Dataspace participant with identity-hub
   participant:
@@ -18,4 +18,4 @@ services:
         JVM_ARGS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
     ports:
       - "8182:8181"
-      - "5008:5008"
+      - "5007:5007"

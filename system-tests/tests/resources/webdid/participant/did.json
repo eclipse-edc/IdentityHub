@@ -1,9 +1,9 @@
 {
-	"id": "did:web:localhost:participant",
+	"id": "did:web:localhost%3A8080:participant",
 	"@context": [
 		"https://www.w3.org/ns/did/v1",
 		{
-			"@base": "did:web:localhost:participant"
+			"@base": "did:web:localhost%3A8080:participant"
 		}
 	],
 	"service": [{

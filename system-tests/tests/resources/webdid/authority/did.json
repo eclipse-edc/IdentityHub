@@ -1,9 +1,9 @@
 {
-	"id": "did:web:localhost:authority",
+	"id": "did:web:localhost%3A8080:authority",
 	"@context": [
 		"https://www.w3.org/ns/did/v1",
 		{
-			"@base": "did:web:localhost:authority"
+			"@base": "did:web:localhost%3A8080:authority"
 		}
 	],
 	"service": [],
