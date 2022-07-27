@@ -15,14 +15,16 @@ import static java.nio.file.Files.readString;
 public class CryptoUtils {
 
     public static PublicKeyWrapper readPublicEcKey(String file) throws IOException, JOSEException {
-        var contents = readString(Path.of(file));
-        var jwk = (ECKey) ECKey.parseFromPEMEncodedObjects(contents);
-        return new EcPublicKeyWrapper(jwk);
+        return new EcPublicKeyWrapper(readEcKeyPemFile(file));
     }
 
     public static PrivateKeyWrapper readPrivateEcKey(String file) throws IOException, JOSEException {
+        return new EcPrivateKeyWrapper(readEcKeyPemFile(file));
+    }
+
+    private static ECKey readEcKeyPemFile(String file) throws IOException, JOSEException {
         var contents = readString(Path.of(file));
         var jwk = (ECKey) ECKey.parseFromPEMEncodedObjects(contents);
-        return new EcPrivateKeyWrapper(jwk);
+        return jwk;
     }
 }
