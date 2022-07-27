@@ -18,10 +18,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.iam.did.crypto.key.EcPrivateKeyWrapper;
+import org.eclipse.dataspaceconnector.iam.did.spi.key.PrivateKeyWrapper;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 
@@ -57,7 +58,7 @@ public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredential
     }
 
     @Override
-    public SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) throws JOSEException, ParseException {
+    public SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, PrivateKeyWrapper privateKey) throws JOSEException, ParseException {
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
         var claims = new JWTClaimsSet.Builder()
                 .claim(VERIFIABLE_CREDENTIALS_KEY, credential)
@@ -67,15 +68,8 @@ public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredential
 
         var jws = new SignedJWT(jwsHeader, claims);
 
-        jws.sign(new ECDSASigner(jwk.toECPrivateKey()));
+        jws.sign(privateKey.signer());
 
         return SignedJWT.parse(jws.serialize());
-    }
-
-    @Override
-    public ECKey readEcKey(File file) throws IOException, JOSEException {
-        var contents = Files.readString(file.toPath());
-        var jwk = ECKey.parseFromPEMEncodedObjects(contents);
-        return jwk.toECKey();
     }
 }

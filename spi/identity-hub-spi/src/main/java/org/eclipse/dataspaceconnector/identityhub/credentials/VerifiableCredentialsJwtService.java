@@ -14,8 +14,8 @@
 
 package org.eclipse.dataspaceconnector.identityhub.credentials;
 
-import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.iam.did.spi.key.PrivateKeyWrapper;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 
@@ -57,18 +57,10 @@ public interface VerifiableCredentialsJwtService {
      * @param credential The verifiable credential to sign
      * @param issuer     The issuer of the verifiable credential
      * @param subject    The subject of the verifiable credential
-     * @param jwk        The private key of the issuer, used for signing
+     * @param privateKey The private key of the issuer, used for signing
      * @return The Verifiable Credential as a JWT
      * @throws Exception In case the credential can not be signed
      */
-    SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) throws Exception;
+    SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, PrivateKeyWrapper privateKey) throws Exception;
 
-    /**
-     * Reads an EC key from a PEM file
-     *
-     * @param file The PEM file
-     * @return The EC Key
-     * @throws Exception In case the key can not be read
-     */
-    ECKey readEcKey(File file) throws Exception;
 }

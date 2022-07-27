@@ -5,6 +5,8 @@ plugins {
     `maven-publish`
 }
 
+val edcGroup: String by project
+val edcVersion: String by project
 val jacksonVersion: String by project
 val jupiterVersion: String by project
 val assertj: String by project
@@ -20,6 +22,7 @@ dependencies {
     annotationProcessor("info.picocli:picocli-codegen:${picoCliVersion}")
 
     implementation(project(":identity-hub-core:identity-hub-client"))
+    implementation("${edcGroup}:identity-did-spi:${edcVersion}")
     implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
     implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
