@@ -36,7 +36,7 @@ public class IdentityHubClientImplIntegrationTest {
 
     private static final String API_URL = "http://localhost:8181/api/identity-hub";
     private static final Faker FAKER = new Faker();
-    public static final VerifiableCredential VERIFIABLE_CREDENTIAL = VerifiableCredential.Builder.newInstance().id(FAKER.internet().uuid()).build();
+    private static final VerifiableCredential VERIFIABLE_CREDENTIAL = VerifiableCredential.Builder.newInstance().id(FAKER.internet().uuid()).build();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private IdentityHubClient client;
 

@@ -31,11 +31,11 @@ import static org.eclipse.dataspaceconnector.identityhub.credentials.CryptoUtils
 
 
 public class CliTestUtils {
-    static final Faker FAKER = new Faker();
     public static final String PUBLIC_KEY_PATH = "src/test/resources/test-public-key.pem";
     public static final String PRIVATE_KEY_PATH = "src/test/resources/test-private-key.pem";
     public static final PublicKeyWrapper PUBLIC_KEY;
     public static final PrivateKeyWrapper PRIVATE_KEY;
+    private static final Faker FAKER = new Faker();
     private static final VerifiableCredentialsJwtService VC_JWT_SERVICE = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper());
 
     static {
