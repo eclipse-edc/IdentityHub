@@ -37,9 +37,6 @@ import static java.lang.String.format;
 @Requires({ DidPublicKeyResolver.class })
 public class CredentialsVerifierExtension implements ServiceExtension {
 
-    @EdcSetting
-    private static final String HUB_URL_SETTING = "edc.identity.hub.url";
-
     @Inject
     private OkHttpClient httpClient;
 
@@ -71,11 +68,6 @@ public class CredentialsVerifierExtension implements ServiceExtension {
 
     @Provider
     public CredentialsVerifier createCredentialsVerifier(ServiceExtensionContext context) {
-        var hubUrl = context.getSetting(HUB_URL_SETTING, null);
-        if (hubUrl == null) {
-            throw new EdcException(format("Mandatory setting '(%s)' missing", HUB_URL_SETTING));
-        }
-
         var client = new IdentityHubClientImpl(httpClient, typeManager.getMapper(), monitor);
         var verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(typeManager.getMapper());
         return new IdentityHubCredentialsVerifier(client, monitor, jwtCredentialsVerifier, verifiableCredentialsJwtService);
