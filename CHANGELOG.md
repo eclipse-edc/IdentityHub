@@ -17,7 +17,7 @@ in the detailed section referring to by linking pull requests or issues.
 - Identity Hub client (#4)
 - Maven artefact publication (#21) 
 - CredentialsVerifier implementation (#24)
-- CLI (#25)
+- Identity Hub Command Line Interface (#25)
 
 #### Changed
 
