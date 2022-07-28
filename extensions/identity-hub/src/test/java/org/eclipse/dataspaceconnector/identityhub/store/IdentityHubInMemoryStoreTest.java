@@ -23,8 +23,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class
-IdentityHubInMemoryStoreTest {
+public class IdentityHubInMemoryStoreTest {
     private static final Faker FAKER = new Faker();
 
     @Test
