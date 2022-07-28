@@ -19,8 +19,6 @@ import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifie
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtServiceImpl;
-import org.eclipse.dataspaceconnector.spi.EdcException;
-import org.eclipse.dataspaceconnector.spi.EdcSetting;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.system.Inject;
 import org.eclipse.dataspaceconnector.spi.system.Provider;
@@ -28,8 +26,6 @@ import org.eclipse.dataspaceconnector.spi.system.Requires;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
 import org.eclipse.dataspaceconnector.spi.types.TypeManager;
-
-import static java.lang.String.format;
 
 /**
  * Extension to provide verification of IdentityHub Verifiable Credentials.
