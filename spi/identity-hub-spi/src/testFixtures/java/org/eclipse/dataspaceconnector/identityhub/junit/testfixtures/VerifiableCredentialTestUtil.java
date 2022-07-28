@@ -25,8 +25,7 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspaceconnector.iam.did.crypto.key.KeyConverter;
-import org.eclipse.dataspaceconnector.iam.did.spi.document.EllipticCurvePublicKey;
+import org.eclipse.dataspaceconnector.iam.did.crypto.key.EcPublicKeyWrapper;
 import org.eclipse.dataspaceconnector.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 
@@ -57,8 +56,7 @@ public class VerifiableCredentialTestUtil {
     }
 
     public static PublicKeyWrapper toPublicKeyWrapper(ECKey jwk) {
-        var publicKey = new EllipticCurvePublicKey(jwk.getCurve().getName(), jwk.getKeyType().getValue(), jwk.getX().toString(), jwk.getY().toString());
-        return KeyConverter.toPublicKeyWrapper(publicKey, "ec");
+        return new EcPublicKeyWrapper(jwk);
     }
 
     public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) {

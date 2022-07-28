@@ -32,6 +32,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
     implementation("${edcGroup}:identity-did-spi:${edcVersion}")
+    implementation("${edcGroup}:identity-did-crypto:${edcVersion}")
 
     testFixturesImplementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
     testFixturesImplementation("com.github.javafaker:javafaker:${faker}")

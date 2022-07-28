@@ -15,17 +15,33 @@
 package org.eclipse.dataspaceconnector.identityhub.credentials;
 
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.iam.did.spi.key.PrivateKeyWrapper;
+import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 
 import java.util.Map;
 
 /**
- * Service to manipulate VerifiableCredentials with JWTs.
+ * Service with operations for manipulation of VerifiableCredentials in JWT format.
  */
 public interface VerifiableCredentialsJwtService {
 
+    String VERIFIABLE_CREDENTIALS_KEY = "vc";
+
     /**
-     * Extract credentials from a JWT. The credential is represented with the following format
+     * Builds a verifiable credential as a signed JWT
+     *
+     * @param credential The verifiable credential to sign
+     * @param issuer     The issuer of the verifiable credential
+     * @param subject    The subject of the verifiable credential
+     * @param privateKey The private key of the issuer, used for signing
+     * @return The Verifiable Credential as a JWT
+     * @throws Exception In case the credential can not be signed
+     */
+    SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, PrivateKeyWrapper privateKey) throws Exception;
+
+    /**
+     * Extract verifiable credentials from a JWT. The credential is represented with the following format
      * <pre>{@code
      * "credentialId" : {
      *     "vc": {
@@ -45,4 +61,5 @@ public interface VerifiableCredentialsJwtService {
      * @return VerifiableCredential represented as {@code Map.Entry<String, Object>}.
      */
     Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt);
+
 }
