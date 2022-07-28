@@ -34,10 +34,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.PRIVATE_KEY_PATH;
-import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.createVerifiableCredential;
-import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.signVerifiableCredential;
-import static org.eclipse.dataspaceconnector.identityhub.cli.TestUtils.verifyVerifiableCredentialSignature;
+import static org.eclipse.dataspaceconnector.identityhub.cli.CliTestUtils.PRIVATE_KEY_PATH;
+import static org.eclipse.dataspaceconnector.identityhub.cli.CliTestUtils.createVerifiableCredential;
+import static org.eclipse.dataspaceconnector.identityhub.cli.CliTestUtils.signVerifiableCredential;
+import static org.eclipse.dataspaceconnector.identityhub.cli.CliTestUtils.verifyVerifiableCredentialSignature;
 import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtService.VERIFIABLE_CREDENTIALS_KEY;
 import static org.eclipse.dataspaceconnector.spi.response.StatusResult.success;
 import static org.mockito.ArgumentMatchers.eq;
