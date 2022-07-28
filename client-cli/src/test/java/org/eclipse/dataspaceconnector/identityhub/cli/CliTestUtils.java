@@ -29,8 +29,7 @@ import java.util.Map;
 import static org.eclipse.dataspaceconnector.identityhub.credentials.CryptoUtils.readPrivateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.credentials.CryptoUtils.readPublicEcKey;
 
-
-public class CliTestUtils {
+class CliTestUtils {
     public static final String PUBLIC_KEY_PATH = "src/test/resources/test-public-key.pem";
     public static final String PRIVATE_KEY_PATH = "src/test/resources/test-private-key.pem";
     public static final PublicKeyWrapper PUBLIC_KEY;
