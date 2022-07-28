@@ -37,22 +37,6 @@ public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredential
     }
 
     @Override
-    public Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
-        try {
-            var payload = jwt.getPayload().toJSONObject();
-            var vcObject = payload.get(VERIFIABLE_CREDENTIALS_KEY);
-            if (vcObject == null) {
-                return Result.failure(String.format("No %s field found", VERIFIABLE_CREDENTIALS_KEY));
-            }
-            var verifiableCredential = objectMapper.convertValue(vcObject, VerifiableCredential.class);
-
-            return Result.success(new AbstractMap.SimpleEntry<>(verifiableCredential.getId(), payload));
-        } catch (RuntimeException e) {
-            return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.toString()));
-        }
-    }
-
-    @Override
     public SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, PrivateKeyWrapper privateKey) throws JOSEException, ParseException {
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
         var claims = new JWTClaimsSet.Builder()
@@ -66,5 +50,21 @@ public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredential
         jws.sign(privateKey.signer());
 
         return SignedJWT.parse(jws.serialize());
+    }
+
+    @Override
+    public Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt) {
+        try {
+            var payload = jwt.getPayload().toJSONObject();
+            var vcObject = payload.get(VERIFIABLE_CREDENTIALS_KEY);
+            if (vcObject == null) {
+                return Result.failure(String.format("No %s field found", VERIFIABLE_CREDENTIALS_KEY));
+            }
+            var verifiableCredential = objectMapper.convertValue(vcObject, VerifiableCredential.class);
+
+            return Result.success(new AbstractMap.SimpleEntry<>(verifiableCredential.getId(), payload));
+        } catch (RuntimeException e) {
+            return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), () -> e.toString()));
+        }
     }
 }

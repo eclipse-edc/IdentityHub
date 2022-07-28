@@ -29,6 +29,18 @@ public interface VerifiableCredentialsJwtService {
     String VERIFIABLE_CREDENTIALS_KEY = "vc";
 
     /**
+     * Builds a verifiable credential as a signed JWT
+     *
+     * @param credential The verifiable credential to sign
+     * @param issuer     The issuer of the verifiable credential
+     * @param subject    The subject of the verifiable credential
+     * @param privateKey The private key of the issuer, used for signing
+     * @return The Verifiable Credential as a JWT
+     * @throws Exception In case the credential can not be signed
+     */
+    SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, PrivateKeyWrapper privateKey) throws Exception;
+
+    /**
      * Extract verifiable credentials from a JWT. The credential is represented with the following format
      * <pre>{@code
      * "credentialId" : {
@@ -49,17 +61,5 @@ public interface VerifiableCredentialsJwtService {
      * @return VerifiableCredential represented as {@code Map.Entry<String, Object>}.
      */
     Result<Map.Entry<String, Object>> extractCredential(SignedJWT jwt);
-
-    /**
-     * Builds a verifiable credential as a signed JWT
-     *
-     * @param credential The verifiable credential to sign
-     * @param issuer     The issuer of the verifiable credential
-     * @param subject    The subject of the verifiable credential
-     * @param privateKey The private key of the issuer, used for signing
-     * @return The Verifiable Credential as a JWT
-     * @throws Exception In case the credential can not be signed
-     */
-    SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, PrivateKeyWrapper privateKey) throws Exception;
 
 }
