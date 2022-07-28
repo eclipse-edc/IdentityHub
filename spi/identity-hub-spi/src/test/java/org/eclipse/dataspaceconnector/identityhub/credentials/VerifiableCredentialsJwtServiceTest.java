@@ -57,13 +57,13 @@ public class VerifiableCredentialsJwtServiceTest {
         var subject = FAKER.lorem().word();
 
         // Act
-        var signedJWT = service.buildSignedJwt(VERIFIABLE_CREDENTIAL, issuer, subject, privateKey);
+        var signedJwt = service.buildSignedJwt(VERIFIABLE_CREDENTIAL, issuer, subject, privateKey);
 
         // Assert
-        boolean result = signedJWT.verify(publicKey.verifier());
+        boolean result = signedJwt.verify(publicKey.verifier());
         assertThat(result).isTrue();
 
-        assertThat(signedJWT.getPayload().toJSONObject())
+        assertThat(signedJwt.getPayload().toJSONObject())
                 .containsEntry("iss", issuer)
                 .containsEntry("sub", subject)
                 .extractingByKey(VERIFIABLE_CREDENTIALS_KEY)
