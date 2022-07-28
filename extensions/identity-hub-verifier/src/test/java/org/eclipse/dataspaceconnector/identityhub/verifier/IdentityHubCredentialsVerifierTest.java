@@ -50,38 +50,37 @@ public class IdentityHubCredentialsVerifierTest {
 
     private static final Faker FAKER = new Faker();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final String HUB_BASE_URL = "https://" + FAKER.internet().url();
+    private static final DidDocument DID_DOCUMENT = DidDocument.Builder.newInstance()
+            .service(List.of(new Service("IdentityHub", "IdentityHub", HUB_BASE_URL))).build();
+    private static final String ISSUER = FAKER.internet().url();
+    private static final String SUBJECT = FAKER.internet().url();
     private Monitor monitorMock = mock(Monitor.class);
     private IdentityHubClient identityHubClientMock = mock(IdentityHubClient.class);
     private JwtCredentialsVerifier jwtCredentialsVerifierMock = mock(JwtCredentialsVerifier.class);
-
     private VerifiableCredentialsJwtServiceImpl verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(OBJECT_MAPPER);
     private CredentialsVerifier credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClientMock, monitorMock, jwtCredentialsVerifierMock, verifiableCredentialsJwtService);
-    private String hubBaseUrl = "https://" + FAKER.internet().url();
-    DidDocument didDocument = DidDocument.Builder.newInstance()
-            .service(List.of(new Service("IdentityHub", "IdentityHub", hubBaseUrl))).build();
-    String issuer = FAKER.internet().url();
-    String subject = FAKER.internet().url();
 
     @Test
     public void getVerifiedClaims_getValidClaims() throws Exception {
 
         // Arrange
         var credential = generateVerifiableCredential();
-        var jws = buildSignedJwt(credential, issuer, subject, generateEcKey());
+        var jws = buildSignedJwt(credential, ISSUER, SUBJECT, generateEcKey());
         setUpMocks(jws, true, true);
 
         // Act
-        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
+        var credentials = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         // Assert
         assertThat(credentials.succeeded()).isTrue();
         assertThat(credentials.getContent())
                 .usingRecursiveComparison()
-                .isEqualTo(toMap(credential, issuer, subject));
+                .isEqualTo(toMap(credential, ISSUER, SUBJECT));
     }
 
     private void setUpMocks(SignedJWT jws, boolean isSigned, boolean claimsValid) {
-        when(identityHubClientMock.getVerifiableCredentials(hubBaseUrl)).thenReturn(StatusResult.success(List.of(jws)));
+        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.success(List.of(jws)));
         when(jwtCredentialsVerifierMock.isSignedByIssuer(jws)).thenReturn(isSigned);
         when(jwtCredentialsVerifierMock.verifyClaims(eq(jws), any())).thenReturn(claimsValid);
     }
@@ -91,11 +90,11 @@ public class IdentityHubCredentialsVerifierTest {
 
         // Arrange
         var credential = generateVerifiableCredential();
-        var jws = buildSignedJwt(credential, issuer, subject, generateEcKey());
+        var jws = buildSignedJwt(credential, ISSUER, SUBJECT, generateEcKey());
         setUpMocks(jws, true, false);
 
         // Act
-        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
+        var credentials = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         // Assert
         assertThat(credentials.succeeded()).isTrue();
@@ -119,10 +118,10 @@ public class IdentityHubCredentialsVerifierTest {
     public void getVerifiedClaims_idHubCallFails() {
 
         // Arrange
-        when(identityHubClientMock.getVerifiableCredentials(hubBaseUrl)).thenReturn(StatusResult.failure(ResponseStatus.FATAL_ERROR));
+        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.failure(ResponseStatus.FATAL_ERROR));
 
         // Act
-        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
+        var credentials = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         // Assert
         assertThat(credentials.failed()).isTrue();
@@ -136,7 +135,7 @@ public class IdentityHubCredentialsVerifierTest {
         setUpMocks(jws, true, true);
 
         // Act
-        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
+        var credentials = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         // Assert
         assertThat(credentials.succeeded()).isTrue();
@@ -153,13 +152,13 @@ public class IdentityHubCredentialsVerifierTest {
         var jwtClaims = new JWTClaimsSet.Builder()
                 .claim("vc", Map.of(FAKER.lorem().word(), FAKER.lorem().word()))
                 .issuer(FAKER.lorem().word())
-                .subject(subject)
+                .subject(SUBJECT)
                 .build();
         var jws = new SignedJWT(jwsHeader, jwtClaims);
         setUpMocks(jws, true, true);
 
         // Act
-        var credentials = credentialsVerifier.getVerifiedCredentials(didDocument);
+        var credentials = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         // Assert
         assertThat(credentials.succeeded()).isTrue();

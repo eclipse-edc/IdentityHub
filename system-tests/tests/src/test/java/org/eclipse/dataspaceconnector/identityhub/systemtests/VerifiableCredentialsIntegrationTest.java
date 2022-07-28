@@ -40,22 +40,22 @@ import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableC
 @ExtendWith(EdcExtension.class)
 class VerifiableCredentialsIntegrationTest {
 
-    static final Faker FAKER = new Faker();
-    static final String HUB_URL = "http://localhost:8182/api/identity-hub";
-    static final String AUTHORITY_DID = "did:web:localhost%3A8080:authority";
-    static final String PARTICIPANT_DID = "did:web:localhost%3A8080:participant";
-    static final String AUTHORITY_PRIVATE_KEY_PATH = "resources/jwt/authority/private-key.pem";
-    static final ObjectMapper MAPPER = new ObjectMapper();
-    static final VerifiableCredential VC1 = VerifiableCredential.Builder.newInstance()
+    private static final Faker FAKER = new Faker();
+    private static final String HUB_URL = "http://localhost:8182/api/identity-hub";
+    private static final String AUTHORITY_DID = "did:web:localhost%3A8080:authority";
+    private static final String PARTICIPANT_DID = "did:web:localhost%3A8080:participant";
+    private static final String AUTHORITY_PRIVATE_KEY_PATH = "resources/jwt/authority/private-key.pem";
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final VerifiableCredential VC1 = VerifiableCredential.Builder.newInstance()
             .id(FAKER.internet().uuid())
             .credentialSubject(Map.of(
                     FAKER.internet().uuid(), FAKER.lorem().word(),
                     FAKER.internet().uuid(), FAKER.lorem().word()))
             .build();
 
-    CommandLine cmd = IdentityHubCli.getCommandLine();
-    StringWriter out = new StringWriter();
-    StringWriter err = new StringWriter();
+    private CommandLine cmd = IdentityHubCli.getCommandLine();
+    private StringWriter out = new StringWriter();
+    private StringWriter err = new StringWriter();
 
     @BeforeEach
     void setUp(EdcExtension extension) {

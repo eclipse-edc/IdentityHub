@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -41,7 +40,6 @@ import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseOb
 public class CollectionsWriteProcessorTest {
 
     private static final Faker FAKER = new Faker();
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private IdentityHubStore identityHubStore;
     private CollectionsWriteProcessor writeProcessor;

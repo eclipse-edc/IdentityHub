@@ -42,54 +42,53 @@ public class DidJwtCredentialsVerifierTest {
 
     private static final Faker FAKER = new Faker();
     private static final Monitor MONITOR = new ConsoleMonitor();
-
-    DidPublicKeyResolver didPublicKeyResolver = mock(DidPublicKeyResolver.class);
-    DidJwtCredentialsVerifier didJwtCredentialsVerifier = new DidJwtCredentialsVerifier(didPublicKeyResolver, MONITOR);
-    ECKey jwk = generateEcKey();
-    ECKey anotherJwk = generateEcKey();
-    String issuer = FAKER.internet().url();
-    String subject = FAKER.internet().url();
-    String otherSubject = FAKER.internet().url() + "other";
-    SignedJWT jwt = buildSignedJwt(generateVerifiableCredential(), issuer, subject, jwk);
+    private static final ECKey JWK = generateEcKey();
+    private static final ECKey ANOTHER_JWK = generateEcKey();
+    private static final String ISSUER = FAKER.internet().url();
+    private static final String SUBJECT = FAKER.internet().url();
+    private static final String OTHER_SUBJECT = FAKER.internet().url() + "other";
+    private static final SignedJWT JWT = buildSignedJwt(generateVerifiableCredential(), ISSUER, SUBJECT, JWK);
+    private DidPublicKeyResolver didPublicKeyResolver = mock(DidPublicKeyResolver.class);
+    private DidJwtCredentialsVerifier didJwtCredentialsVerifier = new DidJwtCredentialsVerifier(didPublicKeyResolver, MONITOR);
 
     @Test
     public void isSignedByIssuer_jwtSignedByIssuer() {
 
         // Arrange
-        when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.success(toPublicKeyWrapper(jwk)));
+        when(didPublicKeyResolver.resolvePublicKey(ISSUER)).thenReturn(Result.success(toPublicKeyWrapper(JWK)));
 
         // Assert
-        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(jwt)).isTrue();
+        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(JWT)).isTrue();
     }
 
     @Test
     public void isSignedByIssuer_jwtSignedByWrongIssuer() {
 
         // Arrange
-        when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.success(toPublicKeyWrapper(anotherJwk)));
+        when(didPublicKeyResolver.resolvePublicKey(ISSUER)).thenReturn(Result.success(toPublicKeyWrapper(ANOTHER_JWK)));
 
         // Assert
-        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(jwt)).isFalse();
+        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(JWT)).isFalse();
     }
 
     @Test
     public void isSignedByIssuer_PublicKeyCantBeResolved() {
 
         // Arrange
-        when(didPublicKeyResolver.resolvePublicKey(issuer)).thenReturn(Result.failure("Failed resolving public key"));
+        when(didPublicKeyResolver.resolvePublicKey(ISSUER)).thenReturn(Result.failure("Failed resolving public key"));
 
         // Assert
-        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(jwt)).isFalse();
+        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(JWT)).isFalse();
     }
 
     @Test
     public void isSignedByIssuer_issuerDidCantBeResolved() throws ParseException {
 
         // Arrange
-        when(didPublicKeyResolver.resolvePublicKey(jwt.getJWTClaimsSet().getIssuer())).thenReturn(Result.failure(FAKER.lorem().sentence()));
+        when(didPublicKeyResolver.resolvePublicKey(JWT.getJWTClaimsSet().getIssuer())).thenReturn(Result.failure(FAKER.lorem().sentence()));
 
         // Assert
-        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(jwt)).isFalse();
+        assertThat(didJwtCredentialsVerifier.isSignedByIssuer(JWT)).isFalse();
     }
 
     @Test
@@ -105,24 +104,24 @@ public class DidJwtCredentialsVerifierTest {
 
     @Test
     void verifyClaims_success() {
-        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isTrue();
+        assertThat(didJwtCredentialsVerifier.verifyClaims(JWT, SUBJECT)).isTrue();
     }
 
     @Test
     void verifyClaims_OnInvalidSubject() {
-        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, otherSubject)).isFalse();
+        assertThat(didJwtCredentialsVerifier.verifyClaims(JWT, OTHER_SUBJECT)).isFalse();
     }
 
     @Test
     void verifyClaims_OnEmptySubject() {
-        var jwt = buildSignedJwt(generateVerifiableCredential(), issuer, null, jwk);
-        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, otherSubject)).isFalse();
+        var jwt = buildSignedJwt(generateVerifiableCredential(), ISSUER, null, JWK);
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, OTHER_SUBJECT)).isFalse();
     }
 
     @Test
     void verifyClaims_OnEmptyIssuer() {
-        var jwt = buildSignedJwt(generateVerifiableCredential(), null, subject, jwk);
-        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isFalse();
+        var jwt = buildSignedJwt(generateVerifiableCredential(), null, SUBJECT, JWK);
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, SUBJECT)).isFalse();
     }
 
     @Test
@@ -133,58 +132,58 @@ public class DidJwtCredentialsVerifierTest {
         when(jwt.getJWTClaimsSet()).thenThrow(new ParseException(message, 0));
 
         // Act
-        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isFalse();
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, SUBJECT)).isFalse();
     }
 
     @Test
     void verifyClaims_OnValidExp() {
         var claims = new JWTClaimsSet.Builder()
-                .issuer(issuer)
-                .subject(subject)
+                .issuer(ISSUER)
+                .subject(SUBJECT)
                 .expirationTime(from(now().plus(1, DAYS)))
                 .build();
 
-        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, jwk);
+        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, JWK);
 
-        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isTrue();
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, SUBJECT)).isTrue();
     }
 
     @Test
     void verifyClaims_OnInvalidExp() {
         var claims = new JWTClaimsSet.Builder()
-                .issuer(issuer)
-                .subject(subject)
+                .issuer(ISSUER)
+                .subject(SUBJECT)
                 .expirationTime(from(now().minus(1, DAYS)))
                 .build();
 
-        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, jwk);
+        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, JWK);
 
-        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isFalse();
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, SUBJECT)).isFalse();
     }
 
     @Test
     void verifyClaims_OnValidNotBefore() {
         var claims = new JWTClaimsSet.Builder()
-                .issuer(issuer)
-                .subject(subject)
+                .issuer(ISSUER)
+                .subject(SUBJECT)
                 .notBeforeTime(from(now().minus(1, DAYS)))
                 .build();
 
-        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, jwk);
+        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, JWK);
 
-        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isTrue();
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, SUBJECT)).isTrue();
     }
 
     @Test
     void verifyClaims_OnInvalidNotBefore() {
         var claims = new JWTClaimsSet.Builder()
-                .issuer(issuer)
-                .subject(subject)
+                .issuer(ISSUER)
+                .subject(SUBJECT)
                 .notBeforeTime(from(now().plus(1, DAYS)))
                 .build();
 
-        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, jwk);
+        SignedJWT jwt = VerifiableCredentialTestUtil.buildSignedJwt(claims, JWK);
 
-        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, subject)).isFalse();
+        assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, SUBJECT)).isFalse();
     }
 }

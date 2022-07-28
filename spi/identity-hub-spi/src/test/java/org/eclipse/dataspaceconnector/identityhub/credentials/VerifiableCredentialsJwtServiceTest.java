@@ -34,13 +34,13 @@ import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.Veri
 
 public class VerifiableCredentialsJwtServiceTest {
 
-    static final Faker FAKER = new Faker();
-    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    static final VerifiableCredential VERIFIABLE_CREDENTIAL = generateVerifiableCredential();
-    static final JWSHeader JWS_HEADER = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
-    EcPrivateKeyWrapper privateKey;
-    EcPublicKeyWrapper publicKey;
-    VerifiableCredentialsJwtService service;
+    private static final Faker FAKER = new Faker();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final VerifiableCredential VERIFIABLE_CREDENTIAL = generateVerifiableCredential();
+    private static final JWSHeader JWS_HEADER = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
+    private EcPrivateKeyWrapper privateKey;
+    private EcPublicKeyWrapper publicKey;
+    private VerifiableCredentialsJwtService service;
 
     @BeforeEach
     public void setUp() {

@@ -49,27 +49,24 @@ import static org.mockito.Mockito.when;
 
 class VerifiableCredentialsCommandTest {
 
-    static final Faker FAKER = new Faker();
-    static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final Faker FAKER = new Faker();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final VerifiableCredential VC1 = createVerifiableCredential();
+    private static final SignedJWT SIGNED_VC1 = signVerifiableCredential(VC1);
+    private static final VerifiableCredential VC2 = createVerifiableCredential();
+    private static final SignedJWT SIGNED_VC2 = signVerifiableCredential(VC2);
+    private static final String HUB_URL = FAKER.internet().url();
 
-    static final VerifiableCredential VC1 = createVerifiableCredential();
-    static final SignedJWT SIGNED_VC1 = signVerifiableCredential(VC1);
-
-    static final VerifiableCredential VC2 = createVerifiableCredential();
-    static final SignedJWT SIGNED_VC2 = signVerifiableCredential(VC2);
-
-    String hubUrl = FAKER.internet().url();
-
-    IdentityHubCli app = new IdentityHubCli();
-    CommandLine cmd = new CommandLine(app);
-    StringWriter out = new StringWriter();
-    StringWriter err = new StringWriter();
+    private IdentityHubCli app = new IdentityHubCli();
+    private CommandLine cmd = new CommandLine(app);
+    private StringWriter out = new StringWriter();
+    private StringWriter err = new StringWriter();
 
     @BeforeEach
     void setUp() {
         app.identityHubClient = mock(IdentityHubClient.class);
         app.verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper());
-        app.hubUrl = hubUrl;
+        app.hubUrl = HUB_URL;
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
     }
@@ -160,10 +157,10 @@ class VerifiableCredentialsCommandTest {
     }
 
     private int executeList() {
-        return cmd.execute("-s", hubUrl, "vc", "list");
+        return cmd.execute("-s", HUB_URL, "vc", "list");
     }
 
     private int executeAdd(String json, String privateKey) {
-        return cmd.execute("-s", hubUrl, "vc", "add", "-c", json, "-i", "identity-hub-test-issuer", "-b", "identity-hub-test-subject", "-k", privateKey);
+        return cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", "identity-hub-test-issuer", "-b", "identity-hub-test-subject", "-k", privateKey);
     }
 }
