@@ -30,7 +30,7 @@ import static org.eclipse.dataspaceconnector.identityhub.credentials.CryptoUtils
 import static org.eclipse.dataspaceconnector.identityhub.credentials.CryptoUtils.readPublicEcKey;
 
 
-public class TestUtils {
+public class CliTestUtils {
     static final Faker FAKER = new Faker();
     public static final String PUBLIC_KEY_PATH = "src/test/resources/test-public-key.pem";
     public static final String PRIVATE_KEY_PATH = "src/test/resources/test-private-key.pem";
@@ -47,7 +47,7 @@ public class TestUtils {
         }
     }
 
-    private TestUtils() {
+    private CliTestUtils() {
     }
 
     public static VerifiableCredential createVerifiableCredential() {
