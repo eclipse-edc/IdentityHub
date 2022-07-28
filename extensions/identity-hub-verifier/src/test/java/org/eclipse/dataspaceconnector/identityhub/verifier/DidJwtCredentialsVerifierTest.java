@@ -42,12 +42,12 @@ public class DidJwtCredentialsVerifierTest {
 
     private static final Faker FAKER = new Faker();
     private static final Monitor MONITOR = new ConsoleMonitor();
-    private static ECKey JWK = generateEcKey();
-    private static ECKey ANOTHER_JWK = generateEcKey();
-    private static String ISSUER = FAKER.internet().url();
-    private static String SUBJECT = FAKER.internet().url();
-    private static String OTHER_SUBJECT = FAKER.internet().url() + "other";
-    private static SignedJWT JWT = buildSignedJwt(generateVerifiableCredential(), ISSUER, SUBJECT, JWK);
+    private static final ECKey JWK = generateEcKey();
+    private static final ECKey ANOTHER_JWK = generateEcKey();
+    private static final String ISSUER = FAKER.internet().url();
+    private static final String SUBJECT = FAKER.internet().url();
+    private static final String OTHER_SUBJECT = FAKER.internet().url() + "other";
+    private static final SignedJWT JWT = buildSignedJwt(generateVerifiableCredential(), ISSUER, SUBJECT, JWK);
     private DidPublicKeyResolver didPublicKeyResolver = mock(DidPublicKeyResolver.class);
     private DidJwtCredentialsVerifier didJwtCredentialsVerifier = new DidJwtCredentialsVerifier(didPublicKeyResolver, MONITOR);
 

@@ -50,11 +50,11 @@ public class IdentityHubCredentialsVerifierTest {
 
     private static final Faker FAKER = new Faker();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static String HUB_BASE_URL = "https://" + FAKER.internet().url();
-    private static DidDocument DID_DOCUMENT = DidDocument.Builder.newInstance()
+    private static final String HUB_BASE_URL = "https://" + FAKER.internet().url();
+    private static final DidDocument DID_DOCUMENT = DidDocument.Builder.newInstance()
             .service(List.of(new Service("IdentityHub", "IdentityHub", HUB_BASE_URL))).build();
-    private static String ISSUER = FAKER.internet().url();
-    private static String SUBJECT = FAKER.internet().url();
+    private static final String ISSUER = FAKER.internet().url();
+    private static final String SUBJECT = FAKER.internet().url();
     private Monitor monitorMock = mock(Monitor.class);
     private IdentityHubClient identityHubClientMock = mock(IdentityHubClient.class);
     private JwtCredentialsVerifier jwtCredentialsVerifierMock = mock(JwtCredentialsVerifier.class);

@@ -55,7 +55,7 @@ class VerifiableCredentialsCommandTest {
     private static final SignedJWT SIGNED_VC1 = signVerifiableCredential(VC1);
     private static final VerifiableCredential VC2 = createVerifiableCredential();
     private static final SignedJWT SIGNED_VC2 = signVerifiableCredential(VC2);
-    private static String HUB_URL = FAKER.internet().url();
+    private static final String HUB_URL = FAKER.internet().url();
 
     private IdentityHubCli app = new IdentityHubCli();
     private CommandLine cmd = new CommandLine(app);
