@@ -4,12 +4,12 @@ This document explains how the Self-Description of a dataspace participant will 
 
 ## Context
 
-Gaia-X defines a set of rules that define the minimum baseline to be part of a Gaia-X Ecosystem. This set of rules is the so-called
+Gaia-X defines a set of rules representing the minimum baseline to be part of a Gaia-X Ecosystem. This set of rules is the
 [Gaia-X Trust Framework](https://gaia-x.gitlab.io/policy-rules-committee/trust-framework/), which is centered around the _Self-Description_ document.
 
 Each dataspace participant (consumer, provider, federator) is represented by a Self-Description document.
 
-According to [spec](https://gaia-x.eu/wp-content/uploads/2022/06/Gaia-x-Architecture-Document-22.04-Release.pdf),
+According to [Gaia-X Architecture Document](https://gaia-x.eu/wp-content/uploads/2022/06/Gaia-x-Architecture-Document-22.04-Release.pdf),
 "Self-Descriptions are W3C Verifiable Presentations in the JSON-LD format. Self-Description consist of a list of
 Verifiable Credentials. Verifiable Credentials themselves contain a list of Claims: assertions about Entities
 expressed in the [RDF](https://www.w3.org/RDF/) data model. Both Verifiable Credentials and Verifiable Presentations come with
