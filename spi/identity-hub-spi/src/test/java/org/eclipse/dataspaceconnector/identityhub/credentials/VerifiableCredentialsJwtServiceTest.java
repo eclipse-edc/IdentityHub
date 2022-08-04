@@ -26,6 +26,9 @@ import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCr
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+
+import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.map;
 import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtService.VERIFIABLE_CREDENTIALS_KEY;
@@ -55,6 +58,7 @@ public class VerifiableCredentialsJwtServiceTest {
         // Arrange
         var issuer = FAKER.lorem().word();
         var subject = FAKER.lorem().word();
+        var startTime = Instant.now().truncatedTo(SECONDS);
 
         // Act
         var signedJwt = service.buildSignedJwt(VERIFIABLE_CREDENTIAL, issuer, subject, privateKey);
@@ -63,7 +67,7 @@ public class VerifiableCredentialsJwtServiceTest {
         boolean result = signedJwt.verify(publicKey.verifier());
         assertThat(result).isTrue();
 
-        assertThat(signedJwt.getPayload().toJSONObject())
+        assertThat(signedJwt.getJWTClaimsSet().toJSONObject())
                 .containsEntry("iss", issuer)
                 .containsEntry("sub", subject)
                 .extractingByKey(VERIFIABLE_CREDENTIALS_KEY)
@@ -72,6 +76,7 @@ public class VerifiableCredentialsJwtServiceTest {
                             .usingRecursiveComparison()
                             .isEqualTo(VERIFIABLE_CREDENTIAL);
                 });
+        assertThat(signedJwt.getJWTClaimsSet().getIssueTime()).isBetween(startTime, Instant.now());
     }
 
     @Test
