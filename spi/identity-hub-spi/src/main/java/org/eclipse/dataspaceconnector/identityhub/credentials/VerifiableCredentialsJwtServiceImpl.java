@@ -26,6 +26,7 @@ import org.eclipse.dataspaceconnector.spi.result.Result;
 
 import java.text.ParseException;
 import java.util.AbstractMap;
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 
@@ -42,6 +43,7 @@ public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredential
         var claims = new JWTClaimsSet.Builder()
                 .claim(VERIFIABLE_CREDENTIALS_KEY, credential)
                 .issuer(issuer)
+                .issueTime(new Date())
                 .subject(subject)
                 .build();
 
