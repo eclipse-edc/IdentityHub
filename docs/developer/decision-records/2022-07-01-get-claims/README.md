@@ -61,3 +61,46 @@ For each VerifiableCredential:
    10. From the issuer DID Document, participant B extracts the public key of the issuer and uses it to verify the JWS signature.  
    11. If the signature is successfully verified, it extracts the claims of the participant, each claim needs to be associated with its issuer.  
 12. The list of the claims will be used as input to apply the access policies.
+
+## Claims format
+
+The `IdentityHubCredentialsVerifier` returns a `Map<String, Object>`, which contains verifiable credentials with the following format:
+
+```json
+"<verifiable-credential-id>": {
+  "vc": {
+    "id": "<verifiable-credential-id>",
+    "credentialSubject": "<claims>"
+  }
+  "iss": "<issuer did>, (part of the JWT claims)"
+  "sub": "<subject>, (part of the JWT claims)"
+}
+```
+
+The credentialSubject field can contain claims with various format, see the [Credential Subject documentation](https://www.w3.org/TR/vc-data-model/#credential-subject) for more details.
+
+For example:
+```json
+{
+  "vc_id_1": {
+    "vc": {
+      "id": "vc_id_1",
+      "credentialSubject": {
+        "region": "eu"
+      }, 
+       "iss": "did:web:issuer1",
+       "sub": "did:web:subjectA"
+    }
+  },
+  "vc_id_2": {
+     "vc": {
+        "id": "vc_id_2",
+        "credentialSubject": {
+           "region": "eu"
+        },
+        "iss": "did:web:issuer2",
+        "sub": "did:web:subjectA"
+     }
+  }
+}
+```

@@ -55,6 +55,21 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     /**
      * Get credentials from the IdentityHub of participant, verifies the credentials, and returns the successfully verified credentials.
      * To be successfully verified, credentials needs to be signed by the specified issuer in the JWT.
+     * Here an example of the format returned by this method:
+     * <pre>{@code
+     * {
+     *     "vc_id_1": {
+     *         "vc": {
+     *           "id": "vc_id_1",
+     *           "credentialSubject": {
+     *             "region": "eu"
+     *           },
+     *            "iss": "did:web:issuer1",
+     *            "sub": "did:web:subjectA"
+     *         }
+     *       }
+     *   }
+     *   }</pre>
      *
      * @param didDocument of a participant. The Did Document should contain an IdentityHub service.
      * @return VerifiableCredentials.
