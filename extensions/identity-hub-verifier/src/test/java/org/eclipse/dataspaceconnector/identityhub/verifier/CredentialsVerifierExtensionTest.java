@@ -16,7 +16,6 @@ package org.eclipse.dataspaceconnector.identityhub.verifier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javafaker.Faker;
-import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidDocument;
@@ -95,8 +94,8 @@ public class CredentialsVerifierExtensionTest {
     }
 
     private DidDocument createDidDocument(ECKey jwk) {
-        var ecPK = new EllipticCurvePublicKey(jwk.getCurve().getName(), jwk.getKeyType().toString(), jwk.getX().toString(), jwk.getY().toString());
+        var ecPk = new EllipticCurvePublicKey(jwk.getCurve().getName(), jwk.getKeyType().toString(), jwk.getX().toString(), jwk.getY().toString());
         return DidDocument.Builder.newInstance()
-                .verificationMethod("test-id", "test-type", ecPK).build();
+                .verificationMethod("test-id", "test-type", ecPk).build();
     }
 }
