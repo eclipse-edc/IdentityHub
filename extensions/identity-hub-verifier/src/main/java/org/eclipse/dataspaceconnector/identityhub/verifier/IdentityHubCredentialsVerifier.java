@@ -29,7 +29,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.partitioningBy;
@@ -71,15 +70,15 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         monitor.debug(() -> "Retrieving verified credentials for " + didDocument.getId());
 
         var hubBaseUrl = getIdentityHubBaseUrl(didDocument);
-        if (hubBaseUrl.isEmpty()) {
+        if (hubBaseUrl == null) {
             var errorMessage = "Could not retrieve identity hub URL from DID document";
             monitor.severe(errorMessage);
             return Result.failure(errorMessage);
         }
 
-        monitor.debug(() -> String.format("Using identity hub URL: %s", hubBaseUrl.get()));
+        monitor.debug(() -> String.format("Using identity hub URL: %s", hubBaseUrl));
 
-        var verifiableCredentials = identityHubClient.getVerifiableCredentials(hubBaseUrl.get());
+        var verifiableCredentials = identityHubClient.getVerifiableCredentials(hubBaseUrl);
         if (verifiableCredentials.failed()) {
             monitor.severe("Could not retrieve verifiable credentials from identity hub");
             return Result.failure(verifiableCredentials.getFailureMessages());
@@ -130,12 +129,13 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private Optional<String> getIdentityHubBaseUrl(DidDocument didDocument) {
+    private String getIdentityHubBaseUrl(DidDocument didDocument) {
         return didDocument
                 .getService()
                 .stream()
                 .filter(s -> s.getType().equals(IDENTITY_HUB_SERVICE_TYPE))
                 .findFirst()
-                .map(Service::getServiceEndpoint);
+                .map(Service::getServiceEndpoint)
+                .orElse(null);
     }
 }
