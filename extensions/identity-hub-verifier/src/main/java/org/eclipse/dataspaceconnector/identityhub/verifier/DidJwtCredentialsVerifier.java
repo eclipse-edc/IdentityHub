@@ -76,6 +76,7 @@ class DidJwtCredentialsVerifier implements JwtCredentialsVerifier {
         var requiredClaims = Set.of(ISSUER_CLAIM);
 
         var claimsVerifier = new DefaultJWTClaimsVerifier<>(exactMatchClaims, requiredClaims);
+
         try {
             claimsVerifier.verify(jwtClaimsSet);
         } catch (BadJWTException e) {
@@ -83,6 +84,7 @@ class DidJwtCredentialsVerifier implements JwtCredentialsVerifier {
             return false;
         }
 
+        monitor.debug(() -> "JWT claims verification successful");
         return true;
     }
 
@@ -90,10 +92,12 @@ class DidJwtCredentialsVerifier implements JwtCredentialsVerifier {
         try {
             var verified = jwt.verify(issuerPublicKey.verifier());
             if (!verified) {
-                return Result.failure("Invalid signature");
+                return Result.failure("Invalid JWT signature");
             }
+            monitor.debug(() -> "JWT signature verification successful");
             return Result.success();
         } catch (JOSEException e) {
+            monitor.warning("Unable to verify JWT token", e);
             return Result.failure("Unable to verify JWT token. " + e.getMessage());
         }
     }
