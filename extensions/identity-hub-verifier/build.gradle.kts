@@ -38,7 +38,6 @@ dependencies {
     testImplementation("com.github.javafaker:javafaker:${faker}")
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
-    testImplementation("${edcGroup}:identity-did-core:${edcVersion}")
     testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
