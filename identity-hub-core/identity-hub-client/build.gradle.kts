@@ -25,6 +25,7 @@ val jupiterVersion: String by project
 val faker: String by project
 val assertj: String by project
 val nimbusVersion: String by project
+val mockitoVersion: String by project
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
@@ -44,6 +45,7 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("com.github.javafaker:javafaker:${faker}")
+    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
 }
 
 publishing {
