@@ -23,11 +23,13 @@ import org.eclipse.dataspaceconnector.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtService;
 import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
+import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 
 import java.util.Map;
 
 import static org.eclipse.dataspaceconnector.identityhub.credentials.CryptoUtils.readPrivateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.credentials.CryptoUtils.readPublicEcKey;
+import static org.mockito.Mockito.mock;
 
 class CliTestUtils {
     public static final String PUBLIC_KEY_PATH = "src/test/resources/test-public-key.pem";
@@ -35,7 +37,7 @@ class CliTestUtils {
     public static final PublicKeyWrapper PUBLIC_KEY;
     public static final PrivateKeyWrapper PRIVATE_KEY;
     private static final Faker FAKER = new Faker();
-    private static final VerifiableCredentialsJwtService VC_JWT_SERVICE = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper());
+    private static final VerifiableCredentialsJwtService VC_JWT_SERVICE = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper(), mock(Monitor.class));
 
     static {
         try {

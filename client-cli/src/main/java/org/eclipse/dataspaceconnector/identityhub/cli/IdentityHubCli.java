@@ -58,6 +58,6 @@ public class IdentityHubCli {
         var objectMapper = new ObjectMapper();
         var monitor = new ConsoleMonitor();
         this.identityHubClient = new IdentityHubClientImpl(okHttpClient, objectMapper, monitor);
-        this.verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(objectMapper);
+        this.verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(objectMapper, monitor);
     }
 }

@@ -27,7 +27,6 @@ import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
-import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,13 +51,13 @@ public class CredentialsVerifierExtensionTest {
     private static final Faker FAKER = new Faker();
     private static final int PORT = getFreePort();
     private static final String API_URL = String.format("http://localhost:%d/api/identity-hub", PORT);
-    private static final String CREDENTIAL_ISSUER = "did:web:testdid";
-    private static final String SUBJECT = FAKER.internet().url();
+    private static final String CREDENTIAL_ISSUER = "did:web:" + FAKER.internet().domainName();
+    private static final String SUBJECT = "did:web:" + FAKER.internet().domainName();
     private IdentityHubClient identityHubClient;
 
     @BeforeEach
     void setUp(EdcExtension extension) {
-        identityHubClient = new IdentityHubClientImpl(TestUtils.testOkHttpClient(), new ObjectMapper(), new ConsoleMonitor());
+        identityHubClient = new IdentityHubClientImpl(TestUtils.testOkHttpClient(), new ObjectMapper(), mock(Monitor.class));
         extension.registerServiceMock(Monitor.class, mock(Monitor.class));
         extension.setConfiguration(Map.of("web.http.port", String.valueOf(PORT)));
     }

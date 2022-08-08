@@ -26,6 +26,7 @@ val edcGroup: String by project
 val edcVersion: String by project
 val jupiterVersion: String by project
 val assertj: String by project
+val mockitoVersion: String by project
 
 dependencies {
     api("org.jetbrains:annotations:${jetBrainsAnnotationsVersion}")
@@ -40,6 +41,7 @@ dependencies {
     testFixturesImplementation("${edcGroup}:identity-did-crypto:${edcVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
+    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("com.github.javafaker:javafaker:${faker}")
 }

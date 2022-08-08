@@ -22,6 +22,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
+import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -65,7 +66,7 @@ class VerifiableCredentialsCommandTest {
     @BeforeEach
     void setUp() {
         app.identityHubClient = mock(IdentityHubClient.class);
-        app.verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper());
+        app.verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper(), mock(Monitor.class));
         app.hubUrl = HUB_URL;
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
