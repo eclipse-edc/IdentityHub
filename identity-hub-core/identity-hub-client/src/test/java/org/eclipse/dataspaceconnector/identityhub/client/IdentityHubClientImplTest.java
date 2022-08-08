@@ -27,7 +27,7 @@ import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.model.RequestStatus;
 import org.eclipse.dataspaceconnector.identityhub.model.ResponseObject;
-import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
+import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 import org.junit.jupiter.api.Test;
@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject.MESSAGE_ID_VALUE;
+import static org.mockito.Mockito.mock;
 
 public class IdentityHubClientImplTest {
     private static final Faker FAKER = new Faker();
@@ -171,6 +172,6 @@ public class IdentityHubClientImplTest {
                 .addInterceptor(interceptor)
                 .build();
 
-        return new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, new ConsoleMonitor());
+        return new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, mock(Monitor.class));
     }
 }

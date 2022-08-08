@@ -20,7 +20,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
-import org.eclipse.dataspaceconnector.spi.monitor.ConsoleMonitor;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.result.Result;
 import org.junit.jupiter.api.Test;
@@ -41,7 +40,6 @@ import static org.mockito.Mockito.when;
 public class DidJwtCredentialsVerifierTest {
 
     private static final Faker FAKER = new Faker();
-    private static final Monitor MONITOR = new ConsoleMonitor();
     private static final ECKey JWK = generateEcKey();
     private static final ECKey ANOTHER_JWK = generateEcKey();
     private static final String ISSUER = FAKER.internet().url();
@@ -49,7 +47,7 @@ public class DidJwtCredentialsVerifierTest {
     private static final String OTHER_SUBJECT = FAKER.internet().url() + "other";
     private static final SignedJWT JWT = buildSignedJwt(generateVerifiableCredential(), ISSUER, SUBJECT, JWK);
     private DidPublicKeyResolver didPublicKeyResolver = mock(DidPublicKeyResolver.class);
-    private DidJwtCredentialsVerifier didJwtCredentialsVerifier = new DidJwtCredentialsVerifier(didPublicKeyResolver, MONITOR);
+    private DidJwtCredentialsVerifier didJwtCredentialsVerifier = new DidJwtCredentialsVerifier(didPublicKeyResolver, mock(Monitor.class));
 
     @Test
     public void isSignedByIssuer_jwtSignedByIssuer() {
