@@ -23,6 +23,8 @@ Each participant in the dataspace will have a single [decentralized identifier](
 
 During participant-to-participant communication via IDS REST, the request destination participant queries the Verifiable Presentations of the request originator participant. Access to resources is granted or denied according to the policies in place and the available Verifiable Presentations.
 
+Verifiable Presentations are issued and signed by a trusted authority. Before applying any policies, participants access the public key of that trusted authority from its DID Document, and check that Verifiable Presentations are valid.
+
 ![Authorization](authorization.png)
 
 Note that complex IDS flows, such as negotiating a contract agreement, requires multiple IDS requests flowing back and forth between participants. In that case, participants will alternate in the flow above, and both participants require an Identity Hub.
