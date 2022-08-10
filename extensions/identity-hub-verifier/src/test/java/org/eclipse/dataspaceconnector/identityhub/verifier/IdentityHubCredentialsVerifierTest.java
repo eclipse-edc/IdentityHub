@@ -29,9 +29,11 @@ import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
@@ -39,7 +41,6 @@ import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.Veri
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toMap;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -62,7 +63,7 @@ public class IdentityHubCredentialsVerifierTest {
     private CredentialsVerifier credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClientMock, monitorMock, jwtCredentialsVerifierMock, verifiableCredentialsJwtService);
 
     @Test
-    public void getVerifiedClaims_getValidClaims() throws Exception {
+    public void getVerifiedClaims_getValidClaims() {
 
         // Arrange
         var credential = generateVerifiableCredential();
@@ -86,7 +87,7 @@ public class IdentityHubCredentialsVerifierTest {
     }
 
     @Test
-    public void getVerifiedClaims_filtersSignedByWrongIssuer() throws Exception {
+    public void getVerifiedClaims_filtersSignedByWrongIssuer() {
 
         // Arrange
         var credential = generateVerifiableCredential();
@@ -138,10 +139,8 @@ public class IdentityHubCredentialsVerifierTest {
         var credentials = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         // Assert
-        assertThat(credentials.succeeded()).isTrue();
-        assertThat(credentials.getContent().isEmpty());
-        verify(monitorMock, times(1)).warning(anyString());
-
+        assertThat(credentials.failed()).isTrue();
+        verify(monitorMock, times(1)).severe(ArgumentMatchers.<Supplier<String>>any());
     }
 
     @Test
@@ -161,9 +160,8 @@ public class IdentityHubCredentialsVerifierTest {
         var credentials = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         // Assert
-        assertThat(credentials.succeeded()).isTrue();
-        assertThat(credentials.getContent().isEmpty());
-        verify(monitorMock, times(1)).warning(anyString());
+        assertThat(credentials.failed()).isTrue();
+        verify(monitorMock, times(1)).severe(ArgumentMatchers.<Supplier<String>>any());
     }
 
 }
