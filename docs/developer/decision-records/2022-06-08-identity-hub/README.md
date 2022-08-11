@@ -23,7 +23,7 @@ Each participant in the dataspace will have a single [decentralized identifier](
 
 During participant-to-participant communication via IDS REST, the request destination participant queries the Verifiable Presentations of the request originator participant. Access to resources is granted or denied according to the policies in place and the available Verifiable Presentations.
 
-Verifiable Presentations are issued and signed by a trusted authority. Before applying any policies, participants access the public key of that trusted authority from its DID Document, and check that Verifiable Presentations are valid.
+Verifiable Presentations are issued and signed by a trusted authority. Before applying any policies, participants access the public key of that trusted authority from its DID Document, and check that Verifiable Presentations are valid. Only valid Verifiable Presentations must be taken into account in policy evaluations. Participants are responsible for reacting to the presence of invalid Verifiable Presentations as they see fit.
 
 ![Authorization](authorization.png)
 
