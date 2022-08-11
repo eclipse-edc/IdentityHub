@@ -25,15 +25,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(EdcExtension.class)
-public class IdentityHubClientImplIntegrationTest {
+class IdentityHubClientImplIntegrationTest {
 
     private static final String API_URL = "http://localhost:8181/api/identity-hub";
     private static final Faker FAKER = new Faker();
@@ -48,19 +46,27 @@ public class IdentityHubClientImplIntegrationTest {
     }
 
     @Test
-    void addAndQueryVerifiableCredentials() throws Exception {
+    void getSelfDescription() {
+        var statusResult = client.getSelfDescription(API_URL);
+
+        assertThat(statusResult.succeeded()).isTrue();
+        assertThat(statusResult.getContent().get("selfDescriptionCredential")).isNotNull();
+    }
+
+    @Test
+    void addAndQueryVerifiableCredentials() {
         var jws = buildSignedJwt(VERIFIABLE_CREDENTIAL, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
 
         addVerifiableCredential(jws);
         getVerifiableCredential(jws);
     }
 
-    private void addVerifiableCredential(SignedJWT jws) throws IOException {
+    private void addVerifiableCredential(SignedJWT jws) {
         var statusResult = client.addVerifiableCredential(API_URL, jws);
         assertThat(statusResult.succeeded()).isTrue();
     }
 
-    private void getVerifiableCredential(SignedJWT jws) throws IOException {
+    private void getVerifiableCredential(SignedJWT jws) {
         var statusResult = client.getVerifiableCredentials(API_URL);
         assertThat(statusResult.succeeded()).isTrue();
         assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().contains(jws);

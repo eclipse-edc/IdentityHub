@@ -46,7 +46,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 @ExtendWith(EdcExtension.class)
-public class IdentityHubControllerTest {
+class IdentityHubControllerTest {
 
     private static final int PORT = getFreePort();
     private static final String API_URL = String.format("http://localhost:%s/api", PORT);
@@ -55,13 +55,15 @@ public class IdentityHubControllerTest {
     private static final String TARGET = FAKER.internet().url();
     private static final String REQUEST_ID = FAKER.internet().uuid();
 
+    private static final String BASE_PATH = "/identity-hub";
+
     @BeforeEach
     void setUp(EdcExtension extension) {
         extension.setConfiguration(Map.of("web.http.port", String.valueOf(PORT)));
     }
 
     @Test
-    void writeAndQueryObject() throws Exception {
+    void writeAndQueryObject() {
         // Arrange
         var issuer = FAKER.internet().url();
         var subject = FAKER.internet().url();
@@ -117,10 +119,22 @@ public class IdentityHubControllerTest {
                 .body("replies[0].status.detail", equalTo("The message was malformed or improperly constructed"));
     }
 
+    @Test
+    void getSelfDescription() {
+        given()
+                .baseUri(API_URL)
+                .basePath(BASE_PATH)
+                .get("/self-description")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body("selfDescriptionCredential.credentialSubject.gx-participant:headquarterAddress.gx-participant:country.@value", equalTo("FR"));
+    }
+
     private RequestSpecification baseRequest() {
         return given()
                 .baseUri(API_URL)
-                .basePath("/identity-hub")
+                .basePath(BASE_PATH)
                 .contentType(JSON)
                 .when();
     }

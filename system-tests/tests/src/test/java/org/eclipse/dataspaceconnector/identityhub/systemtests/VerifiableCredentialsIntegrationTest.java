@@ -53,9 +53,9 @@ class VerifiableCredentialsIntegrationTest {
                     FAKER.internet().uuid(), FAKER.lorem().word()))
             .build();
 
-    private CommandLine cmd = IdentityHubCli.getCommandLine();
-    private StringWriter out = new StringWriter();
-    private StringWriter err = new StringWriter();
+    private final CommandLine cmd = IdentityHubCli.getCommandLine();
+    private final StringWriter out = new StringWriter();
+    private final StringWriter err = new StringWriter();
 
     @BeforeEach
     void setUp(EdcExtension extension) {
@@ -73,10 +73,17 @@ class VerifiableCredentialsIntegrationTest {
         assertGetVerifiedCredentials(verifier, resolverRegistry);
     }
 
+    @Test
+    void get_self_description() {
+        int result = cmd.execute("-s", HUB_URL, "sd", "get");
+        assertThat(result).isZero();
+        assertThat(out.toString()).contains("did:web:test.delta-dao.com");
+    }
+
     private void addVerifiableCredentialWithCli() throws JsonProcessingException {
         var json = MAPPER.writeValueAsString(VC1);
         int result = cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", AUTHORITY_DID, "-b", PARTICIPANT_DID, "-k", AUTHORITY_PRIVATE_KEY_PATH);
-        assertThat(result).isEqualTo(0);
+        assertThat(result).isZero();
     }
 
     private void assertGetVerifiedCredentials(CredentialsVerifier verifier, DidResolverRegistry resolverRegistry) {

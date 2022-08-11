@@ -1,0 +1,46 @@
+{
+  "selfDescriptionCredential": {
+    "@context": [
+      "http://www.w3.org/ns/shacl#",
+      "http://www.w3.org/2001/XMLSchema#",
+      "http://w3id.org/gaia-x/participant#"
+    ],
+    "@id": "http://example.org/participant-dp6gtq7i75lmk9p4j2tfg",
+    "@type": [
+      "VerifiableCredential",
+      "LegalPerson"
+    ],
+    "credentialSubject": {
+      "id": "did:web:example.com",
+      "gx-participant:registrationNumber": {
+        "@type": "xsd:string",
+        "@value": "HELLOWORLD"
+      },
+      "gx-participant:headquarterAddress": {
+        "@type": "gx-participant:Address",
+        "gx-participant:country": {
+          "@type": "xsd:string",
+          "@value": "DE"
+        }
+      },
+      "gx-participant:legalAddress": {
+        "@type": "gx-participant:Address",
+        "gx-participant:country": {
+          "@type": "xsd:string",
+          "@value": "DE"
+        }
+      },
+      "gx-participant:note": {
+        "@value": "A random self-description",
+        "@type": "xsd:string"
+      }
+    },
+    "proof": {
+      "type": "JsonWebKey2020",
+      "created": "2022-06-21T11:47:23.802Z",
+      "proofPurpose": "assertionMethod",
+      "verificationMethod": "did:web:test.delta-dao.com",
+      "jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..2bSfloq1nDSLL45R-RTx_dYzwrE7C2XRCelTG78rORNXueTgrI1wchuUAI18R4_dIJgVpYiwMU_xnSAYgPXvfREZAK9-qbQc0lpzpVgDaVwhoI7N_TPIeSPd_3zwDSy4W8LTGAXt9nTAwQJfH-qwsV6kRqN1To0p-VqdnZda2IWf_2Mxdu2cYFm9mGT9RCoACCqwdkBR44PIP3lt-pGM68_pxfj3TNiAAcYj8fWucSkoeA_tSZV7Z5YNxa-Ge6j4DbpNADOBUYgmKeU0zIvPEi4UGYiFgeiM7F9u3-v_0VQ3ODuBcprQYIbgL0_7YN6QwUlZBfpeXXXvG7LmQGbibw"
+    }
+  }
+}

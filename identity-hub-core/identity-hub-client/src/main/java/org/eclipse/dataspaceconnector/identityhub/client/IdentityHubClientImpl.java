@@ -9,21 +9,25 @@
  *
  *  Contributors:
  *       Microsoft Corporation - initial API and implementation
+ *       Amadeus - add client for getting Self-Description
  *
  */
 
 package org.eclipse.dataspaceconnector.identityhub.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.eclipse.dataspaceconnector.identityhub.model.Descriptor;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.model.RequestObject;
 import org.eclipse.dataspaceconnector.identityhub.model.ResponseObject;
+import org.eclipse.dataspaceconnector.spi.EdcException;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.response.ResponseStatus;
 import org.eclipse.dataspaceconnector.spi.response.StatusResult;
@@ -53,6 +57,23 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     }
 
     @Override
+    public StatusResult<JsonNode> getSelfDescription(String hubBaseUrl) {
+        try (var response = httpClient.newCall(
+                        new Request.Builder()
+                                .url(hubBaseUrl + "/self-description")
+                                .get()
+                                .build())
+                .execute()) {
+
+            return (response.code() == 200) ?
+                    StatusResult.success(objectMapper.readTree(response.body().byteStream())) :
+                    identityHubCallError(response);
+        } catch (IOException e) {
+            return StatusResult.failure(ResponseStatus.FATAL_ERROR, e.getMessage());
+        }
+    }
+
+    @Override
     public StatusResult<Collection<SignedJWT>> getVerifiableCredentials(String hubBaseUrl) {
         ResponseObject responseObject;
         try (var response = httpClient.newCall(
@@ -63,7 +84,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 .execute()) {
 
             if (response.code() != 200) {
-                return StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: %s, response body: %s", response.code(), response.headers(), response.body().string()));
+                return identityHubCallError(response);
             }
 
             responseObject = objectMapper.readValue(response.body().byteStream(), ResponseObject.class);
@@ -114,7 +135,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
         try {
             return buildRequestBody(method, null);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e); // Should never happen.
+            throw new EdcException(e); // Should never happen.
         }
     }
 
@@ -135,5 +156,9 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 .build();
         var payload = objectMapper.writeValueAsString(requestObject);
         return RequestBody.create(payload, okhttp3.MediaType.get("application/json"));
+    }
+
+    private static <T> StatusResult<T> identityHubCallError(Response response) throws IOException {
+        return StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: %s, response body: %s", response.code(), response.headers(), response.body().string()));
     }
 }

@@ -3,6 +3,20 @@ info:
   title: Eclipse Dataspace Connector Identity Hub
   version: 0.0.1
 paths:
+  /identity-hub/self-description:
+    get:
+      tags:
+      - IdentityHub
+      description: Serve Self-Description document as defined in Gaia-X Trust Framework
+        (https://gaia-x.gitlab.io/policy-rules-committee/trust-framework/)
+      operationId: getSelfDescription
+      responses:
+        default:
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonNode'
   /identity-hub:
     post:
       tags:
@@ -25,6 +39,8 @@ paths:
                 $ref: '#/components/schemas/ResponseObject'
 components:
   schemas:
+    JsonNode:
+      type: object
     MessageResponseObject:
       type: object
       properties:
