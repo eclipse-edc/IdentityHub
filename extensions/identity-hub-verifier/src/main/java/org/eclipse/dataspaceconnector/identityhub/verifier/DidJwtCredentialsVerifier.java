@@ -43,6 +43,7 @@ class DidJwtCredentialsVerifier implements JwtCredentialsVerifier {
         this.monitor = monitor;
     }
 
+    @Override
     public Result<Void> isSignedByIssuer(SignedJWT jwt) {
         String issuer;
         try {
@@ -61,6 +62,7 @@ class DidJwtCredentialsVerifier implements JwtCredentialsVerifier {
         return verifySignature(jwt, issuerPublicKey.getContent());
     }
 
+    @Override
     public Result<Void> verifyClaims(SignedJWT jwt, String expectedSubject) {
         JWTClaimsSet jwtClaimsSet;
         try {
