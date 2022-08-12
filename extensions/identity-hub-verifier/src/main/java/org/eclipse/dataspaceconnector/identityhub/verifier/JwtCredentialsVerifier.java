@@ -15,6 +15,7 @@
 package org.eclipse.dataspaceconnector.identityhub.verifier;
 
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataspaceconnector.spi.result.Result;
 
 /**
  * Verifies verifiable credentials in JWT format.
@@ -27,7 +28,7 @@ public interface JwtCredentialsVerifier {
      * @param jwt to be verified.
      * @return if the JWT is signed by the claimed issuer.
      */
-    boolean isSignedByIssuer(SignedJWT jwt);
+    Result<Void> isSignedByIssuer(SignedJWT jwt);
 
     /**
      * Verifies if a JWT targets the given subject, and checks for the presence of the issuer ("iss") claim. The expiration ("exp") and not-before ("nbf") claims are verified if present as well.
@@ -36,5 +37,5 @@ public interface JwtCredentialsVerifier {
      * @param expectedSubject subject claim to verify.
      * @return if the JWT is valid and for the given subject
      */
-    boolean verifyClaims(SignedJWT jwt, String expectedSubject);
+    Result<Void> verifyClaims(SignedJWT jwt, String expectedSubject);
 }

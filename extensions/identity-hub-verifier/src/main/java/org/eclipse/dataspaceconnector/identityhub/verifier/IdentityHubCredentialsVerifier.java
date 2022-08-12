@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.partitioningBy;
 
@@ -103,45 +104,93 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
         var verifiedCredentials = verifyCredentials(verifiableCredentials, didDocument);
 
-        monitor.debug(() -> String.format("Verified %s credentials", verifiedCredentials.size()));
+        monitor.debug(() -> String.format("Verified %s credentials", verifiedCredentials.getContent().size()));
 
-        var claims = extractClaimsFromCredential(verifiedCredentials);
+        var claims = extractClaimsFromCredential(verifiedCredentials.getContent());
 
-        return Result.success(claims);
+        var failureMessages = Stream
+                .concat(verifiedCredentials.getFailureMessages().stream(), claims.getFailureMessages().stream())
+                .collect(Collectors.toList());
+
+        var result = new AggregatedResult<>(claims.getContent(), failureMessages);
+
+        // Fail if one verifiable credential is not valid. This is a temporary solution until the CredentialsVerifier
+        // contract is changed to support a result containing both successful results and failures.
+        if (result.failed()) {
+            monitor.severe(() -> String.format("Credentials verification failed: %s", claims.getFailureDetail()));
+            return Result.failure(result.getFailureDetail());
+        } else {
+            return Result.success(result.getContent());
+        }
     }
 
     @NotNull
-    private List<SignedJWT> verifyCredentials(StatusResult<Collection<SignedJWT>> jwts, DidDocument didDocument) {
-        var result = jwts.getContent()
+    private AggregatedResult<List<SignedJWT>> verifyCredentials(StatusResult<Collection<SignedJWT>> jwts, DidDocument didDocument) {
+        // Get valid credentials.
+        var verifiedJwts = jwts.getContent()
                 .stream()
-                .collect(partitioningBy((jwt) -> jwtCredentialsVerifier.verifyClaims(jwt, didDocument.getId()) && jwtCredentialsVerifier.isSignedByIssuer(jwt)));
+                .map(jwt -> verifyJwtClaims(jwt, didDocument))
+                .collect(partitioningBy(AbstractResult::succeeded));
 
-        var successfulResults = result.get(true);
-        var failedResults = result.get(false);
+        var jwtsSignedByIssuer = verifiedJwts.get(true)
+                .stream()
+                .map(jwt -> verifySignature(jwt.getContent()))
+                .collect(partitioningBy(AbstractResult::succeeded));
+
+        var validCredentials = jwtsSignedByIssuer
+                .get(true)
+                .stream()
+                .map(AbstractResult::getContent)
+                .collect(Collectors.toList());
+
+        // Gather failure messages of invalid credentials.
+        var verificationFailures = verifiedJwts
+                .get(false)
+                .stream()
+                .map(AbstractResult::getFailureDetail);
+
+        var signatureVerificationFailures = jwtsSignedByIssuer
+                .get(false)
+                .stream()
+                .map(AbstractResult::getFailureDetail);
+
+        var failedResults = Stream.concat(verificationFailures, signatureVerificationFailures)
+                .collect(Collectors.toList());
 
         if (!failedResults.isEmpty()) {
-            monitor.warning(String.format("Ignoring %s invalid verifiable credentials", failedResults.size()));
+            monitor.warning(String.format("Found %s invalid verifiable credentials", failedResults.size()));
         }
 
-        return successfulResults;
+        return new AggregatedResult<>(validCredentials, failedResults);
     }
 
     @NotNull
-    private Map<String, Object> extractClaimsFromCredential(List<SignedJWT> verifiedCredentials) {
+    private Result<SignedJWT> verifyJwtClaims(SignedJWT jwt, DidDocument didDocument) {
+        var result = jwtCredentialsVerifier.verifyClaims(jwt, didDocument.getId());
+        return result.succeeded() ? Result.success(jwt) : Result.failure(result.getFailureMessages());
+    }
+
+    @NotNull
+    private Result<SignedJWT> verifySignature(SignedJWT jwt) {
+        var result = jwtCredentialsVerifier.isSignedByIssuer(jwt);
+        return result.succeeded() ? Result.success(jwt) : Result.failure(result.getFailureMessages());
+    }
+
+    @NotNull
+    private AggregatedResult<Map<String, Object>> extractClaimsFromCredential(List<SignedJWT> verifiedCredentials) {
         var result = verifiedCredentials.stream()
                 .map(verifiableCredentialsJwtService::extractCredential)
                 .collect(partitioningBy(AbstractResult::succeeded));
 
-        var successfulResults = result.get(true);
-        var failedResults = result.get(false);
-
-        if (!failedResults.isEmpty()) {
-            failedResults.forEach(f -> monitor.warning("Invalid credentials: " + f.getFailureDetail()));
-        }
-
-        return successfulResults.stream()
+        var successfulResults = result.get(true).stream()
                 .map(AbstractResult::getContent)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        var failedResults = result.get(false).stream()
+                .map(AbstractResult::getFailureDetail)
+                .collect(Collectors.toList());
+
+        return new AggregatedResult<>(successfulResults, failedResults);
     }
 
     private String getIdentityHubBaseUrl(DidDocument didDocument) {
