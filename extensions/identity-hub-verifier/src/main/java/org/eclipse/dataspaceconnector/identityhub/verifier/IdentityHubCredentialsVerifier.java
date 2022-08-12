@@ -108,7 +108,9 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
         var claims = extractClaimsFromCredential(verifiedCredentials.getContent());
 
-        var failureMessages = mergeFailureMessages(verifiedCredentials.getFailureMessages(), claims.getFailureMessages());
+        var failureMessages = Stream
+                .concat(verifiedCredentials.getFailureMessages().stream(), claims.getFailureMessages().stream())
+                .collect(Collectors.toList());
 
         var result = new AggregatedResult<>(claims.getContent(), failureMessages);
 
@@ -120,11 +122,6 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         } else {
             return Result.success(result.getContent());
         }
-    }
-
-    @NotNull
-    private List<String> mergeFailureMessages(Collection<String> messages, Collection<String> otherMessages) {
-        return Stream.concat(messages.stream(), otherMessages.stream()).collect(Collectors.toList());
     }
 
     @NotNull
