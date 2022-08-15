@@ -45,12 +45,16 @@ jobs:
         timeout-minutes: 10
         env:
           INTEGRATION_TEST: true
+          JACOCO: "true"
 
       - name: 'Publish Test Results'
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
         with:
           files: "**/test-results/**/*.xml"
+
+      - name: CodeCov
+        uses: codecov/codecov-action@v3
 
       - name: 'docker-compose logs'
         run: docker-compose -f system-tests/tests/docker-compose.yml logs
