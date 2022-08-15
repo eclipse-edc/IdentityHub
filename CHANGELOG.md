@@ -18,6 +18,7 @@ in the detailed section referring to by linking pull requests or issues.
 - Maven artefact publication (#21) 
 - CredentialsVerifier implementation (#24)
 - Identity Hub Command Line Interface (#25)
+- Add checkstyle and CodeQL to CI (#254)
 
 #### Changed
 
