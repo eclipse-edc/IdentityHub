@@ -8,6 +8,10 @@ end box
 box "Participant B" #LightGreen
 Participant "Participant B\nAPI" as B
 end box
+box "Authority" #LightYellow
+Participant "Authority\nDID Document" as DA
+end box
+
 
 ParticipantA -> B ++: Request:\n - DID JWS
 activate ParticipantA
@@ -17,6 +21,9 @@ group authorize request
   B -> B: Verify JWS
   B -> IDHUB ++: Get Verifiable Presentation
   return Verifiable Presentation
+  B -> DA ++: Get issuer DID Document
+  return DID Document (contains public key)
+  B -> B: verify Verifiable Presentation JWS
   B -> B: apply access policy
 end
 return response
