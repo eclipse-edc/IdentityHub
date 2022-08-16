@@ -58,10 +58,10 @@ class VerifiableCredentialsCommandTest {
     private static final SignedJWT SIGNED_VC2 = signVerifiableCredential(VC2);
     private static final String HUB_URL = FAKER.internet().url();
 
-    private IdentityHubCli app = new IdentityHubCli();
-    private CommandLine cmd = new CommandLine(app);
-    private StringWriter out = new StringWriter();
-    private StringWriter err = new StringWriter();
+    private final IdentityHubCli app = new IdentityHubCli();
+    private final CommandLine cmd = new CommandLine(app);
+    private final StringWriter out = new StringWriter();
+    private final StringWriter err = new StringWriter();
 
     @BeforeEach
     void setUp() {
@@ -70,6 +70,25 @@ class VerifiableCredentialsCommandTest {
         app.hubUrl = HUB_URL;
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
+    }
+
+    @Test
+    void getSelfDescription() throws JsonProcessingException {
+        var selfDescription = MAPPER.createObjectNode();
+        selfDescription.put(FAKER.lorem().word(), FAKER.lorem().word());
+        // arrange
+        when(app.identityHubClient.getSelfDescription(app.hubUrl)).thenReturn(success(selfDescription));
+
+        // act
+        var exitCode = executeGetSelfDescription();
+        var outContent = out.toString();
+        var errContent = err.toString();
+
+        // assert
+        assertThat(exitCode).isZero();
+        assertThat(errContent).isEmpty();
+
+        assertThat(MAPPER.readTree(outContent)).usingRecursiveComparison().isEqualTo(selfDescription);
     }
 
     @Test
@@ -83,10 +102,11 @@ class VerifiableCredentialsCommandTest {
         var errContent = err.toString();
 
         // assert
-        assertThat(exitCode).isEqualTo(0);
+        assertThat(exitCode).isZero();
         assertThat(errContent).isEmpty();
 
-        var claims = MAPPER.readValue(outContent, new TypeReference<List<Map<String, Object>>>() {});
+        var claims = MAPPER.readValue(outContent, new TypeReference<List<Map<String, Object>>>() {
+        });
         var vcs = claims.stream()
                 .map(c -> MAPPER.convertValue(c.get(VERIFIABLE_CREDENTIALS_KEY), VerifiableCredential.class))
                 .collect(Collectors.toList());
@@ -109,8 +129,8 @@ class VerifiableCredentialsCommandTest {
         var errContent = err.toString();
 
         // assert
-        assertThat(exitCode).isEqualTo(0);
-        assertThat(outContent).isEqualTo("Verifiable Credential added successfully\n");
+        assertThat(exitCode).isZero();
+        assertThat(outContent).isEqualTo("Verifiable Credential added successfully" + System.lineSeparator());
         assertThat(errContent).isEmpty();
 
         verify(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), isA(SignedJWT.class));
@@ -136,7 +156,7 @@ class VerifiableCredentialsCommandTest {
         var errContent = err.toString();
 
         // assert
-        assertThat(exitCode).isNotEqualTo(0);
+        assertThat(exitCode).isNotZero();
         assertThat(outContent).isEmpty();
         assertThat(errContent).contains("Error while processing request json");
     }
@@ -152,9 +172,13 @@ class VerifiableCredentialsCommandTest {
         var errContent = err.toString();
 
         // assert
-        assertThat(exitCode).isNotEqualTo(0);
+        assertThat(exitCode).isNotZero();
         assertThat(outContent).isEmpty();
         assertThat(errContent).contains("Error while signing Verifiable Credential");
+    }
+
+    private int executeGetSelfDescription() {
+        return cmd.execute("-s", HUB_URL, "sd", "get");
     }
 
     private int executeList() {

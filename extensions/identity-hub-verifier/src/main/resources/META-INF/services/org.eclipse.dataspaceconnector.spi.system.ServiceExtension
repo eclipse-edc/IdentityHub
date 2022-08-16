@@ -1,1 +1,2 @@
 org.eclipse.dataspaceconnector.identityhub.verifier.CredentialsVerifierExtension
+org.eclipse.dataspaceconnector.identityhub.verifier.JwtCredentialsVerifierExtension

@@ -42,14 +42,61 @@ import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.Veri
 import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject.MESSAGE_ID_VALUE;
 import static org.mockito.Mockito.mock;
 
-public class IdentityHubClientImplTest {
+class IdentityHubClientImplTest {
     private static final Faker FAKER = new Faker();
     private static final String HUB_URL = String.format("https://%s", FAKER.internet().url());
     private static final String VERIFIABLE_CREDENTIAL_ID = FAKER.internet().uuid();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Test
-    void getVerifiableCredentials() throws Exception {
+    void getSelfDescription() {
+        var selfDescription = OBJECT_MAPPER.createObjectNode();
+        selfDescription.put(FAKER.lorem().word(), FAKER.lorem().word());
+
+        Interceptor interceptor = chain -> {
+            var request = chain.request();
+            return new Response.Builder()
+                    .body(ResponseBody.create(OBJECT_MAPPER.writeValueAsString(selfDescription), MediaType.get("application/json")))
+                    .request(request)
+                    .protocol(Protocol.HTTP_2)
+                    .code(200)
+                    .message("")
+                    .build();
+        };
+
+        var client = createClient(interceptor);
+        var statusResult = client.getSelfDescription(HUB_URL);
+        assertThat(statusResult.succeeded()).isTrue();
+        assertThat(statusResult.getContent()).isEqualTo(selfDescription);
+    }
+
+    @Test
+    void getSelfDescriptionServerError() {
+
+        var errorMessage = FAKER.lorem().sentence();
+        var body = "{}";
+        var code = 500;
+
+        Interceptor interceptor = chain -> {
+            var request = chain.request();
+            return new Response.Builder()
+                    .body(ResponseBody.create(body, MediaType.get("application/json")))
+                    .request(request)
+                    .protocol(Protocol.HTTP_2)
+                    .code(code)
+                    .message(errorMessage)
+                    .build();
+        };
+
+        var client = createClient(interceptor);
+        var statusResult = client.getSelfDescription(HUB_URL);
+
+        var expectedResult = StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: , response body: %s", code, body));
+        assertThat(statusResult).usingRecursiveComparison().isEqualTo(expectedResult);
+    }
+
+    @Test
+    void getVerifiableCredentials() {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
         var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
 
@@ -125,7 +172,7 @@ public class IdentityHubClientImplTest {
     }
 
     @Test
-    void addVerifiableCredentialsServerError() throws Exception {
+    void addVerifiableCredentialsServerError() {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
         var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
         var errorMessage = FAKER.lorem().sentence();
@@ -151,12 +198,11 @@ public class IdentityHubClientImplTest {
     }
 
     @Test
-    void addVerifiableCredentialsIoException() throws Exception {
+    void addVerifiableCredentialsIoException() {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
         var jws = buildSignedJwt(credential, FAKER.internet().url(), FAKER.internet().url(), generateEcKey());
         var exceptionMessage = FAKER.lorem().sentence();
         Interceptor interceptor = chain -> {
-            var request = chain.request();
             throw new IOException(exceptionMessage);
         };
 

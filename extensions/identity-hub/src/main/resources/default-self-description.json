@@ -1,0 +1,69 @@
+{
+  "selfDescriptionCredential": {
+    "@context": [
+      "http://www.w3.org/ns/shacl#",
+      "http://www.w3.org/2001/XMLSchema#",
+      "http://w3id.org/gaia-x/participant#"
+    ],
+    "@id": "http://example.org/participant-dp6gtq7i75lmk9p4j2tfg",
+    "@type": [
+      "VerifiableCredential",
+      "LegalPerson"
+    ],
+    "credentialSubject": {
+      "id": "did:web:example.com",
+      "gx-participant:registrationNumber": {
+        "@type": "xsd:string",
+        "@value": "DEANY1234NUMBER"
+      },
+      "gx-participant:headquarterAddress": {
+        "@type": "gx-participant:Address",
+        "gx-participant:country": {
+          "@type": "xsd:string",
+          "@value": "FR"
+        }
+      },
+      "gx-participant:legalAddress": {
+        "@type": "gx-participant:Address",
+        "gx-participant:country": {
+          "@type": "xsd:string",
+          "@value": "FR"
+        }
+      },
+      "gx-participant:note": {
+        "@value": "Test Self Description signed by deltaDAO for the Gaia-X Hackathon #4",
+        "@type": "xsd:string"
+      }
+    },
+    "proof": {
+      "type": "JsonWebKey2020",
+      "created": "2022-06-21T11:47:23.802Z",
+      "proofPurpose": "assertionMethod",
+      "verificationMethod": "did:web:test.delta-dao.com",
+      "jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..2bSfloq1nDSLL45R-RTx_dYzwrE7C2XRCelTG78rORNXueTgrI1wchuUAI18R4_dIJgVpYiwMU_xnSAYgPXvfREZAK9-qbQc0lpzpVgDaVwhoI7N_TPIeSPd_3zwDSy4W8LTGAXt9nTAwQJfH-qwsV6kRqN1To0p-VqdnZda2IWf_2Mxdu2cYFm9mGT9RCoACCqwdkBR44PIP3lt-pGM68_pxfj3TNiAAcYj8fWucSkoeA_tSZV7Z5YNxa-Ge6j4DbpNADOBUYgmKeU0zIvPEi4UGYiFgeiM7F9u3-v_0VQ3ODuBcprQYIbgL0_7YN6QwUlZBfpeXXXvG7LmQGbibw"
+    }
+  },
+  "complianceCredential": {
+    "@context": [
+      "https://www.w3.org/2018/credentials/v1"
+    ],
+    "@type": [
+      "VerifiableCredential",
+      "ParticipantCredential"
+    ],
+    "id": "https://catalogue.gaia-x.eu/credentials/ParticipantCredential/1655812045129",
+    "issuer": "did:web:compliance.gaia-x.eu",
+    "issuanceDate": "2022-06-21T11:47:25.129Z",
+    "credentialSubject": {
+      "id": "did:web:example.com",
+      "hash": "f5b874c2091b79b0536aa1afb12b599ee0b0b48c90667e9bf6161846f29eb765"
+    },
+    "proof": {
+      "type": "JsonWebKey2020",
+      "created": "2022-06-21T11:47:25.129Z",
+      "proofPurpose": "assertionMethod",
+      "jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..YQndX4X4oUE2_dU0dkIU1CA36Y9PlIaB5-duDj6QXRCNTa7aZ_sLVmsaHetj7xk4ghHztuiSONaDfg_JV-EYQrf3OFlKxxcrUzUcpaswekIgAAvoWei-eS0DZ2tVbA3aCaDxUS5CGoKRNdv5yive_oWcPtlrPnflpOSHXspBnrry1BKLrkfBzt45LPDvt56E_UGjAcPnMe4ANT8GWbwb5hujLkZcnhFSKnGv8OlcRbFWNLz9QM8nBSXc2PM-Yrbz1odbrJ7DnX_wpOwapW-ZKu6xPLT-OV--gsZU__jscgxSGdrci_qX3TYc8_Ahs2YCI2aFfOEKlDl4nLYcA51BtQ",
+      "verificationMethod": "did:web:compliance.gaia-x.eu"
+    }
+  }
+}
