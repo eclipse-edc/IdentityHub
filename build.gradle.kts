@@ -17,6 +17,7 @@ plugins {
     `java-library`
     signing
     `maven-publish`
+    checkstyle
     id("org.gradle.crypto.checksum") version "1.4.0"
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
     jacoco
@@ -84,12 +85,19 @@ subprojects{
 
 allprojects {
     apply(plugin = "maven-publish")
+    apply(plugin = "checkstyle")
 
     apply(plugin = "java")
 
     version = projectVersion
     group = projectGroup
 
+    checkstyle {
+        toolVersion = "9.0"
+        configFile = rootProject.file("resources/checkstyle-config.xml")
+        configDirectory.set(rootProject.file("resources"))
+        maxErrors = 0 // does not tolerate errors
+    }
 
     repositories {
         mavenCentral()
