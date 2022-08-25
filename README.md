@@ -2,6 +2,10 @@
 
 Temporary repository to get started with the Identity Hub for the MVD.
 
+## Documentation
+
+Developer documentation can be found under [docs/developer](docs/developer/), where the main concepts and decisions are captured as [decision records](docs/developer/decision-records/).
+
 ## Run and develop identity Hub locally
 
 In order to be able to develop and run this project, you need to follow the instructions below:
@@ -25,4 +29,4 @@ If you change the contract of an endpoint or add a new one, you will need to re-
 
 ## Contributing
 
-See [how to contribute](./CONTRIBUTING.md) for details.
+See [how to contribute](https://github.com/eclipse-dataspaceconnector/DataSpaceConnector/blob/main/CONTRIBUTING.md) for details.
