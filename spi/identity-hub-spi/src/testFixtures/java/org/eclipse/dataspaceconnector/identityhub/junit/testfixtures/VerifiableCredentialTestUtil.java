@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.junit.testfixtures;
 
-import com.github.javafaker.Faker;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -30,20 +29,20 @@ import org.eclipse.dataspaceconnector.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Util class to manipulate VerifiableCredentials in tests.
  */
 public class VerifiableCredentialTestUtil {
-    private static final Faker FAKER = new Faker();
     private static final ECKeyGenerator EC_KEY_GENERATOR = new ECKeyGenerator(Curve.P_256);
 
     public static VerifiableCredential generateVerifiableCredential() {
         return VerifiableCredential.Builder.newInstance()
-                .id(FAKER.internet().uuid())
+                .id(UUID.randomUUID().toString())
                 .credentialSubject(Map.of(
-                        FAKER.internet().uuid(), FAKER.lorem().word(),
-                        FAKER.internet().uuid(), FAKER.lorem().word()))
+                        UUID.randomUUID().toString(), "cred1",
+                        UUID.randomUUID().toString(), "cred2"))
                 .build();
     }
 

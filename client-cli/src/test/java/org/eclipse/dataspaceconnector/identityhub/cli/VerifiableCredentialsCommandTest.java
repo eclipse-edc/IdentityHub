@@ -17,7 +17,6 @@ package org.eclipse.dataspaceconnector.identityhub.cli;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javafaker.Faker;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtServiceImpl;
@@ -50,13 +49,12 @@ import static org.mockito.Mockito.when;
 
 class VerifiableCredentialsCommandTest {
 
-    private static final Faker FAKER = new Faker();
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final VerifiableCredential VC1 = createVerifiableCredential();
     private static final SignedJWT SIGNED_VC1 = signVerifiableCredential(VC1);
     private static final VerifiableCredential VC2 = createVerifiableCredential();
     private static final SignedJWT SIGNED_VC2 = signVerifiableCredential(VC2);
-    private static final String HUB_URL = FAKER.internet().url();
+    private static final String HUB_URL = "http://some.test.url";
 
     private final IdentityHubCli app = new IdentityHubCli();
     private final CommandLine cmd = new CommandLine(app);
@@ -75,7 +73,7 @@ class VerifiableCredentialsCommandTest {
     @Test
     void getSelfDescription() throws JsonProcessingException {
         var selfDescription = MAPPER.createObjectNode();
-        selfDescription.put(FAKER.lorem().word(), FAKER.lorem().word());
+        selfDescription.put("key1", "value1");
         // arrange
         when(app.identityHubClient.getSelfDescription(app.hubUrl)).thenReturn(success(selfDescription));
 

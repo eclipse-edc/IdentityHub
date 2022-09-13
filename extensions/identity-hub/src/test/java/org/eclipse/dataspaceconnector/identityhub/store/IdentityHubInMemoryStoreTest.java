@@ -14,25 +14,25 @@
 
 package org.eclipse.dataspaceconnector.identityhub.store;
 
-import com.github.javafaker.Faker;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
 import org.junit.jupiter.api.Test;
 
+import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class IdentityHubInMemoryStoreTest {
-    private static final Faker FAKER = new Faker();
 
     @Test
     void addAndReadVerifiableCredential() {
         // Arrange
         var store = new IdentityHubInMemoryStore();
-        var credentialsCount = FAKER.number().numberBetween(1, 10);
+        var credentialsCount = new Random().nextInt(10);
         var credentials = IntStream.range(0, credentialsCount)
-                .mapToObj(i -> VerifiableCredential.Builder.newInstance().id(FAKER.internet().uuid()).build())
+                .mapToObj(i -> VerifiableCredential.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                 .collect(Collectors.toList());
 
         // Act

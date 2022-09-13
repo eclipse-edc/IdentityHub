@@ -22,7 +22,6 @@ val jacksonVersion: String by project
 val jupiterVersion: String by project
 val assertj: String by project
 val mockitoVersion: String by project
-val faker: String by project
 val okHttpVersion: String by project
 val nimbusVersion: String by project
 val bouncycastleVersion: String by project
@@ -44,7 +43,6 @@ dependencies {
     testImplementation("org.bouncycastle:bcpkix-jdk15on:${bouncycastleVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
-    testImplementation("com.github.javafaker:javafaker:${faker}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
 }

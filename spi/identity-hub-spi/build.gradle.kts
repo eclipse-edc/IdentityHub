@@ -21,7 +21,6 @@ plugins {
 val jetBrainsAnnotationsVersion: String by project
 val jacksonVersion: String by project
 val nimbusVersion: String by project
-val faker: String by project
 val edcGroup: String by project
 val edcVersion: String by project
 val jupiterVersion: String by project
@@ -36,14 +35,12 @@ dependencies {
     implementation("${edcGroup}:identity-did-crypto:${edcVersion}")
 
     testFixturesImplementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
-    testFixturesImplementation("com.github.javafaker:javafaker:${faker}")
     testFixturesImplementation("${edcGroup}:identity-did-spi:${edcVersion}")
     testFixturesImplementation("${edcGroup}:identity-did-crypto:${edcVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
-    testImplementation("com.github.javafaker:javafaker:${faker}")
 }
 
 publishing {

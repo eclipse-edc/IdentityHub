@@ -16,7 +16,6 @@ package org.eclipse.dataspaceconnector.identityhub.systemtests;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javafaker.Faker;
 import net.minidev.json.JSONObject;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidResolverRegistry;
@@ -31,6 +30,7 @@ import picocli.CommandLine;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.map;
@@ -40,17 +40,16 @@ import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableC
 @ExtendWith(EdcExtension.class)
 class VerifiableCredentialsIntegrationTest {
 
-    private static final Faker FAKER = new Faker();
     private static final String HUB_URL = "http://localhost:8182/api/identity-hub";
     private static final String AUTHORITY_DID = "did:web:localhost%3A8080:authority";
     private static final String PARTICIPANT_DID = "did:web:localhost%3A8080:participant";
     private static final String AUTHORITY_PRIVATE_KEY_PATH = "resources/jwt/authority/private-key.pem";
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final VerifiableCredential VC1 = VerifiableCredential.Builder.newInstance()
-            .id(FAKER.internet().uuid())
+            .id(UUID.randomUUID().toString())
             .credentialSubject(Map.of(
-                    FAKER.internet().uuid(), FAKER.lorem().word(),
-                    FAKER.internet().uuid(), FAKER.lorem().word()))
+                    UUID.randomUUID().toString(), "value1",
+                    UUID.randomUUID().toString(), "value2"))
             .build();
 
     private final CommandLine cmd = IdentityHubCli.getCommandLine();
