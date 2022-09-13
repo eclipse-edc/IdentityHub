@@ -15,7 +15,6 @@
 package org.eclipse.dataspaceconnector.identityhub.verifier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javafaker.Faker;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -49,13 +48,12 @@ import static org.mockito.Mockito.when;
 
 class IdentityHubCredentialsVerifierTest {
 
-    private static final Faker FAKER = new Faker();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final String HUB_BASE_URL = "https://" + FAKER.internet().url();
+    private static final String HUB_BASE_URL = "https://" + "http://some.test.url";
     private static final DidDocument DID_DOCUMENT = DidDocument.Builder.newInstance()
             .service(List.of(new Service("IdentityHub", "IdentityHub", HUB_BASE_URL))).build();
-    private static final String ISSUER = FAKER.internet().url();
-    private static final String SUBJECT = FAKER.internet().url();
+    private static final String ISSUER = "http://some.test.url";
+    private static final String SUBJECT = "http://some.test.url";
     private final Monitor monitorMock = mock(Monitor.class);
     private final IdentityHubClient identityHubClientMock = mock(IdentityHubClient.class);
     private final JwtCredentialsVerifier jwtCredentialsVerifierMock = mock(JwtCredentialsVerifier.class);
@@ -78,12 +76,6 @@ class IdentityHubCredentialsVerifierTest {
         assertThat(credentials.getContent())
                 .usingRecursiveComparison()
                 .isEqualTo(toMap(credential, ISSUER, SUBJECT));
-    }
-
-    private void setUpMocks(SignedJWT jws, boolean isSigned, boolean claimsValid) {
-        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.success(List.of(jws)));
-        when(jwtCredentialsVerifierMock.isSignedByIssuer(jws)).thenReturn(isSigned ? Result.success() : Result.failure("JWT not signed"));
-        when(jwtCredentialsVerifierMock.verifyClaims(eq(jws), any())).thenReturn(claimsValid ? Result.success() : Result.failure("VC not valid"));
     }
 
     @Test
@@ -148,8 +140,8 @@ class IdentityHubCredentialsVerifierTest {
         // Arrange
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
         var jwtClaims = new JWTClaimsSet.Builder()
-                .claim("vc", Map.of(FAKER.lorem().word(), FAKER.lorem().word()))
-                .issuer(FAKER.lorem().word())
+                .claim("vc", Map.of("key1", "value1"))
+                .issuer("test issuer")
                 .subject(SUBJECT)
                 .build();
         var jws = new SignedJWT(jwsHeader, jwtClaims);
@@ -161,6 +153,12 @@ class IdentityHubCredentialsVerifierTest {
         // Assert
         assertThat(credentials.failed()).isTrue();
         verify(monitorMock).severe(ArgumentMatchers.<Supplier<String>>any());
+    }
+
+    private void setUpMocks(SignedJWT jws, boolean isSigned, boolean claimsValid) {
+        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.success(List.of(jws)));
+        when(jwtCredentialsVerifierMock.isSignedByIssuer(jws)).thenReturn(isSigned ? Result.success() : Result.failure("JWT not signed"));
+        when(jwtCredentialsVerifierMock.verifyClaims(eq(jws), any())).thenReturn(claimsValid ? Result.success() : Result.failure("VC not valid"));
     }
 
 }

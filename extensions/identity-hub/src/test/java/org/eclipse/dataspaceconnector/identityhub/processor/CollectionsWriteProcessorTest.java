@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
-import com.github.javafaker.Faker;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -39,8 +38,6 @@ import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseOb
 
 public class CollectionsWriteProcessorTest {
 
-    private static final Faker FAKER = new Faker();
-
     private IdentityHubStore identityHubStore;
     private CollectionsWriteProcessor writeProcessor;
 
@@ -53,8 +50,8 @@ public class CollectionsWriteProcessorTest {
     @Test
     void writeCredentials() throws Exception {
         // Arrange
-        var issuer = FAKER.internet().url();
-        var subject = FAKER.internet().url();
+        var issuer = "http://some.test.url";
+        var subject = "http://some.test.url";
         var verifiableCredential = generateVerifiableCredential();
         var data = buildSignedJwt(verifiableCredential, issuer, subject, generateEcKey()).serialize().getBytes(StandardCharsets.UTF_8);
 

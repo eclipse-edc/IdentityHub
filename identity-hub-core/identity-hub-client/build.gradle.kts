@@ -22,7 +22,6 @@ val okHttpVersion: String by project
 val edcVersion: String by project
 val edcGroup: String by project
 val jupiterVersion: String by project
-val faker: String by project
 val assertj: String by project
 val nimbusVersion: String by project
 val mockitoVersion: String by project
@@ -44,7 +43,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
-    testImplementation("com.github.javafaker:javafaker:${faker}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
 }
 

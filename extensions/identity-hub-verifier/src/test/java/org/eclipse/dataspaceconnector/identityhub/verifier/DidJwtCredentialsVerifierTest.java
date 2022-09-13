@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.verifier;
 
-import com.github.javafaker.Faker;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -44,12 +43,11 @@ import static org.mockito.Mockito.when;
 
 class DidJwtCredentialsVerifierTest {
 
-    private static final Faker FAKER = new Faker();
     private static final ECKey JWK = generateEcKey();
     private static final ECKey ANOTHER_JWK = generateEcKey();
-    private static final String ISSUER = FAKER.internet().url();
-    private static final String SUBJECT = FAKER.internet().url();
-    private static final String OTHER_SUBJECT = FAKER.internet().url() + "other";
+    private static final String ISSUER = "http://some.test.url";
+    private static final String SUBJECT = "http://some.test.url";
+    private static final String OTHER_SUBJECT = "http://some.test.url" + "other";
     private static final SignedJWT JWT = buildSignedJwt(generateVerifiableCredential(), ISSUER, SUBJECT, JWK);
     private DidPublicKeyResolver didPublicKeyResolver;
     private DidJwtCredentialsVerifier didJwtCredentialsVerifier;
@@ -95,7 +93,7 @@ class DidJwtCredentialsVerifierTest {
     void isSignedByIssuer_issuerDidCantBeResolved() throws ParseException {
 
         // Arrange
-        when(didPublicKeyResolver.resolvePublicKey(JWT.getJWTClaimsSet().getIssuer())).thenReturn(Result.failure(FAKER.lorem().sentence()));
+        when(didPublicKeyResolver.resolvePublicKey(JWT.getJWTClaimsSet().getIssuer())).thenReturn(Result.failure("test failure"));
 
         // Assert
         assertThat(didJwtCredentialsVerifier.isSignedByIssuer(JWT).failed()).isTrue();
@@ -138,7 +136,7 @@ class DidJwtCredentialsVerifierTest {
     void verifyClaims_OnInvalidJwt() throws Exception {
         // Arrange
         var jwt = mock(SignedJWT.class);
-        var message = FAKER.lorem().sentence();
+        var message = "Test Message";
         when(jwt.getJWTClaimsSet()).thenThrow(new ParseException(message, 0));
 
         // Act

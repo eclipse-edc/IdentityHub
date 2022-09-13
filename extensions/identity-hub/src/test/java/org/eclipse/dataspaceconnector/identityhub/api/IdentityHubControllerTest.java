@@ -14,7 +14,6 @@
 
 package org.eclipse.dataspaceconnector.identityhub.api;
 
-import com.github.javafaker.Faker;
 import com.nimbusds.jwt.SignedJWT;
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.dataspaceconnector.identityhub.model.Descriptor;
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
@@ -50,10 +50,9 @@ class IdentityHubControllerTest {
 
     private static final int PORT = getFreePort();
     private static final String API_URL = String.format("http://localhost:%s/api", PORT);
-    private static final Faker FAKER = new Faker();
-    private static final String NONCE = FAKER.lorem().characters(32);
-    private static final String TARGET = FAKER.internet().url();
-    private static final String REQUEST_ID = FAKER.internet().uuid();
+    private static final String NONCE = UUID.randomUUID().toString();
+    private static final String TARGET = "http://some.test.url";
+    private static final String REQUEST_ID = UUID.randomUUID().toString();
 
     private static final String BASE_PATH = "/identity-hub";
 
@@ -65,8 +64,8 @@ class IdentityHubControllerTest {
     @Test
     void writeAndQueryObject() {
         // Arrange
-        var issuer = FAKER.internet().url();
-        var subject = FAKER.internet().url();
+        var issuer = "http://some.test.url";
+        var subject = "http://some.test.url";
         var credential = generateVerifiableCredential();
         var jwt = buildSignedJwt(credential, issuer, subject, generateEcKey());
 

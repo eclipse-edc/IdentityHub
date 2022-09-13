@@ -15,7 +15,6 @@
 package org.eclipse.dataspaceconnector.identityhub.cli;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javafaker.Faker;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.iam.did.spi.key.PrivateKeyWrapper;
@@ -26,6 +25,7 @@ import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCr
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 
 import java.util.Map;
+import java.util.UUID;
 
 import static org.eclipse.dataspaceconnector.identityhub.credentials.CryptoUtils.readPrivateEcKey;
 import static org.eclipse.dataspaceconnector.identityhub.credentials.CryptoUtils.readPublicEcKey;
@@ -36,7 +36,6 @@ class CliTestUtils {
     public static final String PRIVATE_KEY_PATH = "src/test/resources/test-private-key.pem";
     public static final PublicKeyWrapper PUBLIC_KEY;
     public static final PrivateKeyWrapper PRIVATE_KEY;
-    private static final Faker FAKER = new Faker();
     private static final VerifiableCredentialsJwtService VC_JWT_SERVICE = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper(), mock(Monitor.class));
 
     static {
@@ -53,10 +52,10 @@ class CliTestUtils {
 
     public static VerifiableCredential createVerifiableCredential() {
         return VerifiableCredential.Builder.newInstance()
-                .id(FAKER.internet().uuid())
+                .id(UUID.randomUUID().toString())
                 .credentialSubject(Map.of(
-                        FAKER.internet().uuid(), FAKER.lorem().word(),
-                        FAKER.internet().uuid(), FAKER.lorem().word()))
+                        UUID.randomUUID().toString(), "value1",
+                        UUID.randomUUID().toString(), "value2"))
                 .build();
     }
 

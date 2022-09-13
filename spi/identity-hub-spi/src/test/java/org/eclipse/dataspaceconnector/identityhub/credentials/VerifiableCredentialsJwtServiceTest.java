@@ -15,7 +15,6 @@
 package org.eclipse.dataspaceconnector.identityhub.credentials;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javafaker.Faker;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -39,7 +38,6 @@ import static org.mockito.Mockito.mock;
 
 public class VerifiableCredentialsJwtServiceTest {
 
-    private static final Faker FAKER = new Faker();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final VerifiableCredential VERIFIABLE_CREDENTIAL = generateVerifiableCredential();
     private static final JWSHeader JWS_HEADER = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
@@ -58,8 +56,8 @@ public class VerifiableCredentialsJwtServiceTest {
     @Test
     public void buildSignedJwt_success() throws Exception {
         // Arrange
-        var issuer = FAKER.lorem().word();
-        var subject = FAKER.lorem().word();
+        var issuer = "test-issuer";
+        var subject = "test-subject";
         var startTime = Instant.now().truncatedTo(SECONDS);
 
         // Act
@@ -84,8 +82,8 @@ public class VerifiableCredentialsJwtServiceTest {
     @Test
     public void extractCredential_OnJwtWithValidCredential() throws Exception {
         // Arrange
-        var issuer = FAKER.lorem().word();
-        var subject = FAKER.lorem().word();
+        var issuer = "test-issuer";
+        var subject = "test-subject";
         var jwt = service.buildSignedJwt(VERIFIABLE_CREDENTIAL, issuer, subject, privateKey);
 
         // Act
@@ -109,7 +107,7 @@ public class VerifiableCredentialsJwtServiceTest {
     @Test
     public void extractCredential_OnJwtWithMissingVcField() {
         // Arrange
-        var claims = new JWTClaimsSet.Builder().claim(FAKER.lorem().word(), FAKER.lorem().word()).build();
+        var claims = new JWTClaimsSet.Builder().claim("test-name", "test-value").build();
         var jws = new SignedJWT(JWS_HEADER, claims);
 
         // Act
@@ -123,7 +121,7 @@ public class VerifiableCredentialsJwtServiceTest {
     @Test
     public void extractCredential_OnJwtWithWrongFormat() {
         // Arrange
-        var claims = new JWTClaimsSet.Builder().claim(VERIFIABLE_CREDENTIALS_KEY, FAKER.lorem().word()).build();
+        var claims = new JWTClaimsSet.Builder().claim(VERIFIABLE_CREDENTIALS_KEY, "test-value").build();
         var jws = new SignedJWT(JWS_HEADER, claims);
 
         // Act

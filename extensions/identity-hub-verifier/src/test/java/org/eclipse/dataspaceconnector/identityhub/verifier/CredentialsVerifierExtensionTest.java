@@ -17,7 +17,6 @@ package org.eclipse.dataspaceconnector.identityhub.verifier;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javafaker.Faker;
 import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.document.DidConstants;
@@ -38,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,16 +52,23 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(EdcExtension.class)
 class CredentialsVerifierExtensionTest {
-    private static final Faker FAKER = new Faker();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static final int PORT = getFreePort();
     private static final String API_URL = format("http://localhost:%d/api/identity-hub", PORT);
-    private static final String DID_METHOD = FAKER.lorem().word();
-    private static final String CREDENTIAL_ISSUER = format("did:%s:%s", DID_METHOD, FAKER.internet().url());
-    private static final String SUBJECT = FAKER.internet().url();
+    private static final String DID_METHOD = "test-method";
+    private static final String CREDENTIAL_ISSUER = format("did:%s:%s", DID_METHOD, "http://some.test.url");
+    private static final String SUBJECT = "http://some.test.url";
     private IdentityHubClient identityHubClient;
 
+    private static DidDocument createDidDocument(ECKey jwk) throws JsonProcessingException {
+        var ecKey = OBJECT_MAPPER.readValue(jwk.toJSONObject().toJSONString(), EllipticCurvePublicKey.class);
+        return DidDocument.Builder.newInstance()
+                .id(SUBJECT)
+                .service(List.of(new Service("IdentityHub", "IdentityHub", API_URL)))
+                .verificationMethod(UUID.randomUUID().toString(), DidConstants.ECDSA_SECP_256_K_1_VERIFICATION_KEY_2019, ecKey)
+                .build();
+    }
 
     @BeforeEach
     void setUp(EdcExtension extension) {
@@ -92,14 +99,5 @@ class CredentialsVerifierExtensionTest {
         assertThat(credentials.getContent())
                 .usingRecursiveComparison()
                 .isEqualTo(expectedCredentials);
-    }
-
-    private static DidDocument createDidDocument(ECKey jwk) throws JsonProcessingException {
-        var ecKey = OBJECT_MAPPER.readValue(jwk.toJSONObject().toJSONString(), EllipticCurvePublicKey.class);
-        return DidDocument.Builder.newInstance()
-                .id(SUBJECT)
-                .service(List.of(new Service("IdentityHub", "IdentityHub", API_URL)))
-                .verificationMethod(FAKER.internet().uuid(), DidConstants.ECDSA_SECP_256_K_1_VERIFICATION_KEY_2019, ecKey)
-                .build();
     }
 }
