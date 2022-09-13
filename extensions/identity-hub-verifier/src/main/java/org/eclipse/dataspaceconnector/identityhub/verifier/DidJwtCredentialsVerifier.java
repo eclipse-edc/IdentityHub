@@ -32,11 +32,10 @@ import java.util.Set;
  */
 class DidJwtCredentialsVerifier implements JwtCredentialsVerifier {
 
-    private final DidPublicKeyResolver didPublicKeyResolver;
-    private final Monitor monitor;
-
     // RFC 7519 Registered (standard) claim
     private static final String ISSUER_CLAIM = "iss";
+    private final DidPublicKeyResolver didPublicKeyResolver;
+    private final Monitor monitor;
 
     DidJwtCredentialsVerifier(DidPublicKeyResolver didPublicKeyResolver, Monitor monitor) {
         this.didPublicKeyResolver = didPublicKeyResolver;
@@ -82,7 +81,7 @@ class DidJwtCredentialsVerifier implements JwtCredentialsVerifier {
         var claimsVerifier = new DefaultJWTClaimsVerifier<>(exactMatchClaims, requiredClaims);
 
         try {
-            claimsVerifier.verify(jwtClaimsSet);
+            claimsVerifier.verify(jwtClaimsSet, null);
         } catch (BadJWTException e) {
             var failureMessage = "Failure verifying JWT token";
             monitor.warning(failureMessage, e);

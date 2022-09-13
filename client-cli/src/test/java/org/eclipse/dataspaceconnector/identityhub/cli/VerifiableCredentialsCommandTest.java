@@ -138,8 +138,9 @@ class VerifiableCredentialsCommandTest {
         assertThat(verifyVerifiableCredentialSignature(signedJwt)).isTrue();
 
         // verify verifiable credential claim
-        var vcClaim = signedJwt.getJWTClaimsSet().getJSONObjectClaim(VERIFIABLE_CREDENTIALS_KEY).toJSONString();
-        var verifiableCredential = MAPPER.readValue(vcClaim, VerifiableCredential.class);
+        var vcClaim = signedJwt.getJWTClaimsSet().getJSONObjectClaim(VERIFIABLE_CREDENTIALS_KEY);
+        var vcClaimJson = MAPPER.writeValueAsString(vcClaim);
+        var verifiableCredential = MAPPER.readValue(vcClaimJson, VerifiableCredential.class);
         assertThat(verifiableCredential).usingRecursiveComparison().isEqualTo(VC1);
     }
 
