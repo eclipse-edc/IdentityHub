@@ -16,7 +16,6 @@ package org.eclipse.dataspaceconnector.identityhub.systemtests;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.minidev.json.JSONObject;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.dataspaceconnector.identityhub.cli.IdentityHubCli;
@@ -48,8 +47,8 @@ class VerifiableCredentialsIntegrationTest {
     private static final VerifiableCredential VC1 = VerifiableCredential.Builder.newInstance()
             .id(UUID.randomUUID().toString())
             .credentialSubject(Map.of(
-                    UUID.randomUUID().toString(), "value1",
-                    UUID.randomUUID().toString(), "value2"))
+                    "key1", "value1",
+                    "key2", "value2"))
             .build();
 
     private final CommandLine cmd = IdentityHubCli.getCommandLine();
@@ -95,7 +94,7 @@ class VerifiableCredentialsIntegrationTest {
         var vcs = verifiedCredentials.getContent();
         assertThat(vcs)
                 .extractingByKey(VC1.getId())
-                .asInstanceOf(map(String.class, JSONObject.class))
+                .asInstanceOf(map(String.class, Map.class))
                 .extractingByKey(VERIFIABLE_CREDENTIALS_KEY)
                 .satisfies(c -> {
                     assertThat(MAPPER.convertValue(c, VerifiableCredential.class))

@@ -31,6 +31,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
 }
+repositories {
+    mavenCentral()
+}
 
 application {
     mainClass.set("org.eclipse.dataspaceconnector.identityhub.cli.IdentityHubCli")

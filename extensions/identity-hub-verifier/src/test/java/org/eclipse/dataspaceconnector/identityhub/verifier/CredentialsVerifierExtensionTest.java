@@ -62,7 +62,7 @@ class CredentialsVerifierExtensionTest {
     private IdentityHubClient identityHubClient;
 
     private static DidDocument createDidDocument(ECKey jwk) throws JsonProcessingException {
-        var ecKey = OBJECT_MAPPER.readValue(jwk.toJSONObject().toJSONString(), EllipticCurvePublicKey.class);
+        var ecKey = OBJECT_MAPPER.readValue(jwk.toJSONString(), EllipticCurvePublicKey.class);
         return DidDocument.Builder.newInstance()
                 .id(SUBJECT)
                 .service(List.of(new Service("IdentityHub", "IdentityHub", API_URL)))
