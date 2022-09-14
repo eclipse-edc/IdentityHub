@@ -2,7 +2,7 @@ name: Create IdentityHub Release
 on:
   workflow_dispatch:
     inputs:
-      IDENTITYHUB_VERSION:
+      ih_version:
         description: 'Version string that is used for publishing (e.g. "1.0.0", NOT "v1.0.0"). Appending -SNAPSHOT will create a snapshot release.'
         required: true
         type: string
