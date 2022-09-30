@@ -117,7 +117,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         // Fail if one verifiable credential is not valid. This is a temporary solution until the CredentialsVerifier
         // contract is changed to support a result containing both successful results and failures.
         if (result.failed()) {
-            monitor.severe(() -> String.format("Credentials verification failed: %s", claims.getFailureDetail()));
+            monitor.severe(() -> String.format("Credentials verification failed: %s", result.getFailureDetail()));
             return Result.failure(result.getFailureDetail());
         } else {
             return Result.success(result.getContent());
