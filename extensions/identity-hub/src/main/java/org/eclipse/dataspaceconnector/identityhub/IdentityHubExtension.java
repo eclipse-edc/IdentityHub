@@ -22,10 +22,10 @@ import org.eclipse.dataspaceconnector.identityhub.processor.MessageProcessorRegi
 import org.eclipse.dataspaceconnector.identityhub.selfdescription.SelfDescriptionLoader;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubInMemoryStore;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
-import org.eclipse.dataspaceconnector.spi.EdcSetting;
+import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.EdcSetting;
+import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Inject;
+import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Provider;
 import org.eclipse.dataspaceconnector.spi.WebService;
-import org.eclipse.dataspaceconnector.spi.system.Inject;
-import org.eclipse.dataspaceconnector.spi.system.Provider;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
 
