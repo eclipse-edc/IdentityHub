@@ -15,9 +15,9 @@
 package org.eclipse.dataspaceconnector.identityhub.verifier;
 
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidPublicKeyResolver;
+import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Inject;
+import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Provider;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
-import org.eclipse.dataspaceconnector.spi.system.Inject;
-import org.eclipse.dataspaceconnector.spi.system.Provider;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 
 /**
