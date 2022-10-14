@@ -28,12 +28,11 @@ val bouncycastleVersion: String by project
 val picoCliVersion: String by project
 
 dependencies {
-    testImplementation(project(":system-tests:launcher"))
-    testImplementation(project(":spi:identity-hub-spi"))
-    testImplementation(project(":extensions:identity-hub-verifier"))
+    api(project(":spi:identity-hub-spi"))
+    api("${edcGroup}:identity-did-spi:${edcVersion}")
+    testImplementation(project(":launcher"))
     testImplementation(project(":client-cli"))
-    testImplementation("${edcGroup}:identity-did-core:${edcVersion}")
-    testImplementation("${edcGroup}:identity-did-web:${edcVersion}")
+
     testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation("info.picocli:picocli:${picoCliVersion}")
     testImplementation("info.picocli:picocli-codegen:${picoCliVersion}")
