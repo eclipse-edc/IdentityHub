@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS edc_identityhub
+(
+    item  VARCHAR NOT NULL UNIQUE
+);

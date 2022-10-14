@@ -20,8 +20,8 @@ import org.eclipse.dataspaceconnector.identityhub.processor.CollectionsWriteProc
 import org.eclipse.dataspaceconnector.identityhub.processor.FeatureDetectionReadProcessor;
 import org.eclipse.dataspaceconnector.identityhub.processor.MessageProcessorRegistry;
 import org.eclipse.dataspaceconnector.identityhub.selfdescription.SelfDescriptionLoader;
-import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubInMemoryStore;
-import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
+import org.eclipse.dataspaceconnector.identityhub.store.InMemoryIdentityHubStore;
+import org.eclipse.dataspaceconnector.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.EdcSetting;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Inject;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Provider;
@@ -73,6 +73,6 @@ public class IdentityHubExtension implements ServiceExtension {
 
     @Provider(isDefault = true)
     public IdentityHubStore identityHubStore() {
-        return new IdentityHubInMemoryStore();
+        return new InMemoryIdentityHubStore();
     }
 }

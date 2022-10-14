@@ -29,7 +29,7 @@ repositories {
 
 val projectGroup: String by project
 val swagger: String by project
-val rsApi : String by project
+val rsApi: String by project
 
 // these values are required for the project POM (for publishing)
 val edcDeveloperId: String by project
@@ -50,7 +50,7 @@ if (projectVersion.contains("SNAPSHOT")) {
     deployUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
 }
 
-subprojects{
+subprojects {
     afterEvaluate {
         publishing {
             publications.forEach { i ->
@@ -105,8 +105,8 @@ allprojects {
         maven {
             url = uri("https://maven.iais.fraunhofer.de/artifactory/eis-ids-public/")
         }
-        maven{
-            url= uri("https://oss.sonatype.org/content/repositories/snapshots/")
+        maven {
+            url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
         }
     }
 
@@ -134,7 +134,7 @@ allprojects {
         }
     }
 
-    pluginManager.withPlugin("java-library"){
+    pluginManager.withPlugin("java-library") {
         if (!project.hasProperty("skip.signing")) {
 
             apply(plugin = "signing")
@@ -159,7 +159,25 @@ allprojects {
     }
 
     tasks.test {
-        useJUnitPlatform()
+        // Target all type of test e.g. -DrunAllTests="true"
+        val runAllTests: String = System.getProperty("runAllTests", "false")
+        if (runAllTests == "true") {
+            useJUnitPlatform()
+        } else {
+            // Target specific set of tests by specifying junit tags on command-line e.g. -DincludeTags="tag-name1,tag-name2"
+            val includeTagProperty = System.getProperty("includeTags")
+            val includeTags: Array<String> = includeTagProperty?.split(",")?.toTypedArray() ?: emptyArray()
+
+            if (includeTags.isNotEmpty()) {
+                useJUnitPlatform {
+                    includeTags(*includeTags)
+                }
+            } else {
+                useJUnitPlatform {
+                    excludeTags("IntegrationTest")
+                }
+            }
+        }
         testLogging {
             showStandardStreams = true
         }

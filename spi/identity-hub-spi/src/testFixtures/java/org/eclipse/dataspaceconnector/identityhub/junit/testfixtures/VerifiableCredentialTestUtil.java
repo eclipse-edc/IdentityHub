@@ -37,6 +37,9 @@ import java.util.UUID;
 public class VerifiableCredentialTestUtil {
     private static final ECKeyGenerator EC_KEY_GENERATOR = new ECKeyGenerator(Curve.P_256);
 
+    private VerifiableCredentialTestUtil() {
+    }
+
     public static VerifiableCredential generateVerifiableCredential() {
         return VerifiableCredential.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
@@ -88,7 +91,7 @@ public class VerifiableCredentialTestUtil {
         return Map.of(verifiableCredential.getId(),
                 Map.of("vc", Map.of("credentialSubject", verifiableCredential.getCredentialSubject(),
                                 "id", verifiableCredential.getId()),
-                "sub", subject,
-                "iss", issuer));
+                        "sub", subject,
+                        "iss", issuer));
     }
 }

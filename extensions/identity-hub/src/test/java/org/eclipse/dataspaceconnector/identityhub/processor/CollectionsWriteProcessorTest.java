@@ -21,8 +21,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
-import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubInMemoryStore;
-import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
+import org.eclipse.dataspaceconnector.identityhub.store.InMemoryIdentityHubStore;
+import org.eclipse.dataspaceconnector.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.dataspaceconnector.spi.transaction.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,14 +37,14 @@ import static org.eclipse.dataspaceconnector.identityhub.junit.testfixtures.Veri
 import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject.MESSAGE_ID_VALUE;
 
 
-public class CollectionsWriteProcessorTest {
+class CollectionsWriteProcessorTest {
 
     private IdentityHubStore identityHubStore;
     private CollectionsWriteProcessor writeProcessor;
 
     @BeforeEach
     void setUp() {
-        identityHubStore = new IdentityHubInMemoryStore();
+        identityHubStore = new InMemoryIdentityHubStore();
         writeProcessor = new CollectionsWriteProcessor(identityHubStore, new NoopTransactionContext());
     }
 

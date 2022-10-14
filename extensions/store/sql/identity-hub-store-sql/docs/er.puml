@@ -1,0 +1,6 @@
+@startuml
+entity edc_identityhub {
+  * item: string <<unique>>
+  --
+}
+@enduml

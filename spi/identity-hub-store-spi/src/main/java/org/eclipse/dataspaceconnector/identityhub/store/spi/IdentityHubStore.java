@@ -12,17 +12,16 @@
  *
  */
 
-package org.eclipse.dataspaceconnector.identityhub.store;
+package org.eclipse.dataspaceconnector.identityhub.store.spi;
 
 import java.util.Collection;
 
 /**
  * IdentityHubStore used to store data in an Identity Hub.
- * When used in a dataspace <a href="https://www.w3.org/TR/vc-data-model/">Verifiable Credentials</a> will be stored, but any other kind of data is supported as well.
  */
 public interface IdentityHubStore {
 
-    Collection<Object> getAll();
+    Collection<byte[]> getAll();
 
-    void add(Object hubObject);
+    void add(byte[] hubObject);
 }

@@ -16,7 +16,7 @@ package org.eclipse.dataspaceconnector.identityhub.processor;
 
 import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
-import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
+import org.eclipse.dataspaceconnector.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.dataspaceconnector.spi.transaction.TransactionContext;
 
 import java.util.Collection;
