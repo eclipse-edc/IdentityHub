@@ -8,7 +8,7 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Microsoft Corporation - initial API and implementation
+ *       Amadeus - initial API and implementation
  *
  */
 
@@ -20,13 +20,13 @@ plugins {
 
 val edcVersion: String by project
 val edcGroup: String by project
-val identityHubVersion: String by project
-val identityHubGroup: String by project
 
 dependencies {
-    implementation("${edcGroup}:core-base:${edcVersion}")
-    implementation("${edcGroup}:core-boot:${edcVersion}")
     implementation(project(":extensions:identity-hub"))
+    implementation(project(":extensions:identity-hub-verifier"))
+    implementation("${edcGroup}:observability-api:${edcVersion}")
+    implementation("${edcGroup}:identity-did-core:${edcVersion}")
+    implementation("${edcGroup}:identity-did-web:${edcVersion}")
 }
 
 application {
@@ -34,6 +34,7 @@ application {
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+    exclude("**/pom.properties", "**/pom.xm")
     mergeServiceFiles()
-    archiveFileName.set("app.jar")
+    archiveFileName.set("identity-hub.jar")
 }

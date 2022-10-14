@@ -39,7 +39,7 @@ import static org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableC
 @ExtendWith(EdcExtension.class)
 class VerifiableCredentialsIntegrationTest {
 
-    private static final String HUB_URL = "http://localhost:8182/api/identity-hub";
+    private static final String HUB_URL = "http://localhost:8181/api/identity-hub";
     private static final String AUTHORITY_DID = "did:web:localhost%3A8080:authority";
     private static final String PARTICIPANT_DID = "did:web:localhost%3A8080:participant";
     private static final String AUTHORITY_PRIVATE_KEY_PATH = "resources/jwt/authority/private-key.pem";
@@ -61,7 +61,8 @@ class VerifiableCredentialsIntegrationTest {
         cmd.setErr(new PrintWriter(err));
 
         extension.setConfiguration(Map.of(
-                "edc.identity.hub.url", HUB_URL,
+                "web.http.port", "8181",
+                "web.http.path", "/api",
                 "edc.iam.did.web.use.https", "false"));
     }
 
@@ -96,10 +97,8 @@ class VerifiableCredentialsIntegrationTest {
                 .extractingByKey(VC1.getId())
                 .asInstanceOf(map(String.class, Map.class))
                 .extractingByKey(VERIFIABLE_CREDENTIALS_KEY)
-                .satisfies(c -> {
-                    assertThat(MAPPER.convertValue(c, VerifiableCredential.class))
-                            .usingRecursiveComparison()
-                            .isEqualTo(VC1);
-                });
+                .satisfies(c -> assertThat(MAPPER.convertValue(c, VerifiableCredential.class))
+                        .usingRecursiveComparison()
+                        .isEqualTo(VC1));
     }
 }

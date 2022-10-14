@@ -1,0 +1,10 @@
+services:
+
+  # A nginx based HTTP server to serve DIDs.
+  did-server:
+    container_name: did-server
+    image: nginx
+    volumes:
+      - ./resources/webdid:/usr/share/nginx/html
+    ports:
+      - "8080:80"
