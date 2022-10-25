@@ -31,6 +31,7 @@ dependencies {
     implementation(project(":spi:identity-hub-store-spi"))
     implementation("${edcGroup}:http:${edcVersion}")
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
+    implementation("${edcGroup}:transaction-spi:${edcVersion}")
 
     testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
     testImplementation("${edcGroup}:junit:${edcVersion}")

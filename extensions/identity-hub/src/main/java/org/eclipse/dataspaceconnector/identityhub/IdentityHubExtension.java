@@ -28,6 +28,7 @@ import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Provider;
 import org.eclipse.dataspaceconnector.spi.WebService;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
+import org.eclipse.dataspaceconnector.spi.transaction.TransactionContext;
 
 import java.util.Optional;
 
@@ -50,12 +51,16 @@ public class IdentityHubExtension implements ServiceExtension {
     @Inject
     private IdentityHubStore identityHubStore;
 
+    @Inject
+    private TransactionContext transactionContext;
+
+
     @Override
     public void initialize(ServiceExtensionContext context) {
 
         var methodProcessorFactory = new MessageProcessorRegistry();
-        methodProcessorFactory.register(COLLECTIONS_QUERY, new CollectionsQueryProcessor(identityHubStore));
-        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore));
+        methodProcessorFactory.register(COLLECTIONS_QUERY, new CollectionsQueryProcessor(identityHubStore, transactionContext));
+        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, transactionContext));
         methodProcessorFactory.register(FEATURE_DETECTION_READ, new FeatureDetectionReadProcessor());
 
         var loader = new SelfDescriptionLoader(context.getTypeManager().getMapper());

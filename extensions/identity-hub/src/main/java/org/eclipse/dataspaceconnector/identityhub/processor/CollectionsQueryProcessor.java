@@ -17,6 +17,7 @@ package org.eclipse.dataspaceconnector.identityhub.processor;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
+import org.eclipse.dataspaceconnector.spi.transaction.TransactionContext;
 
 import java.util.Collection;
 
@@ -29,13 +30,16 @@ public class CollectionsQueryProcessor implements MessageProcessor {
 
     private final IdentityHubStore identityHubStore;
 
-    public CollectionsQueryProcessor(IdentityHubStore identityHubStore) {
+    private final TransactionContext transactionContext;
+
+    public CollectionsQueryProcessor(IdentityHubStore identityHubStore, TransactionContext transactionContext) {
         this.identityHubStore = identityHubStore;
+        this.transactionContext = transactionContext;
     }
 
     @Override
     public MessageResponseObject process(byte[] data) {
-        Collection<?> entries = identityHubStore.getAll();
+        Collection<?> entries = transactionContext.execute(identityHubStore::getAll);
         return MessageResponseObject.Builder.newInstance()
                 .messageId(MESSAGE_ID_VALUE)
                 .status(MessageStatus.OK)
