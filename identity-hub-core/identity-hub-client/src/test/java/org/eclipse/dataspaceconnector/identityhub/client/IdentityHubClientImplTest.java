@@ -43,7 +43,7 @@ import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseOb
 import static org.mockito.Mockito.mock;
 
 class IdentityHubClientImplTest {
-    private static final String HUB_URL = String.format("https://%s", "http://some.test.url");
+    private static final String HUB_URL = "http://some.test.url";
     private static final String VERIFIABLE_CREDENTIAL_ID = UUID.randomUUID().toString();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

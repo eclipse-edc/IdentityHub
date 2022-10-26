@@ -14,12 +14,14 @@
 
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
+import org.eclipse.dataspaceconnector.identityhub.model.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
+import org.eclipse.dataspaceconnector.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.dataspaceconnector.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.dataspaceconnector.spi.transaction.TransactionContext;
 
-import java.util.Collection;
+import java.util.stream.Collectors;
 
 import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject.MESSAGE_ID_VALUE;
 
@@ -38,12 +40,14 @@ public class CollectionsQueryProcessor implements MessageProcessor {
     }
 
     @Override
-    public MessageResponseObject process(byte[] data) {
-        Collection<?> entries = transactionContext.execute(identityHubStore::getAll);
-        return MessageResponseObject.Builder.newInstance()
-                .messageId(MESSAGE_ID_VALUE)
-                .status(MessageStatus.OK)
-                .entries(entries)
-                .build();
+    public MessageResponseObject process(MessageRequestObject requestObject) {
+        try (var stream = transactionContext.execute(identityHubStore::getAll)) {
+            var entries = stream.map(IdentityHubRecord::getPayload).collect(Collectors.toList());
+            return MessageResponseObject.Builder.newInstance()
+                    .messageId(MESSAGE_ID_VALUE)
+                    .status(MessageStatus.OK)
+                    .entries(entries)
+                    .build();
+        }
     }
 }

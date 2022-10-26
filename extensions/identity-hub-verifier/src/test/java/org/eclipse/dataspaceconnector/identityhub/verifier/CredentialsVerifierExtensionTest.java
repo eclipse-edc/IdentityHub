@@ -90,7 +90,8 @@ class CredentialsVerifierExtensionTest {
         registry.register(didResolverMock);
 
         // Act
-        identityHubClient.addVerifiableCredential(API_URL, jwt);
+        var addResult = identityHubClient.addVerifiableCredential(API_URL, jwt);
+        assertThat(addResult.succeeded()).isTrue();
         var credentials = verifier.getVerifiedCredentials(didDocument);
         var expectedCredentials = toMap(credential, CREDENTIAL_ISSUER, SUBJECT);
 

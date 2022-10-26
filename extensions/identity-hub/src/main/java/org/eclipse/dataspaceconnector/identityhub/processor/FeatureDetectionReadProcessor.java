@@ -15,6 +15,7 @@
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
 import org.eclipse.dataspaceconnector.identityhub.model.FeatureDetection;
+import org.eclipse.dataspaceconnector.identityhub.model.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaces;
@@ -31,7 +32,7 @@ import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceM
 public class FeatureDetectionReadProcessor implements MessageProcessor {
 
     @Override
-    public MessageResponseObject process(byte[] data) {
+    public MessageResponseObject process(MessageRequestObject requestObject) {
         return MessageResponseObject.Builder.newInstance()
                 .messageId(MESSAGE_ID_VALUE)
                 .status(MessageStatus.OK)

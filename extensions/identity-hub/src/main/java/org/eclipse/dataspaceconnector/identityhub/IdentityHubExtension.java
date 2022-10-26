@@ -57,13 +57,14 @@ public class IdentityHubExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-
+        var mapper = context.getTypeManager().getMapper();
         var methodProcessorFactory = new MessageProcessorRegistry();
+
         methodProcessorFactory.register(COLLECTIONS_QUERY, new CollectionsQueryProcessor(identityHubStore, transactionContext));
-        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, transactionContext));
+        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, mapper, context.getMonitor(), transactionContext));
         methodProcessorFactory.register(FEATURE_DETECTION_READ, new FeatureDetectionReadProcessor());
 
-        var loader = new SelfDescriptionLoader(context.getTypeManager().getMapper());
+        var loader = new SelfDescriptionLoader(mapper);
         var selfDescription = Optional.ofNullable(context.getSetting(SELF_DESCRIPTION_DOCUMENT_PATH_SETTING, null))
                 .map(loader::fromFile)
                 .orElse(loader.fromClasspath(DEFAULT_SELF_DESCRIPTION_FILE_NAME));

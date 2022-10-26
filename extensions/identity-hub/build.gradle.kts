@@ -36,11 +36,13 @@ dependencies {
     testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
     testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("io.rest-assured:rest-assured:${restAssured}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
+    testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
 }
 
 publishing {

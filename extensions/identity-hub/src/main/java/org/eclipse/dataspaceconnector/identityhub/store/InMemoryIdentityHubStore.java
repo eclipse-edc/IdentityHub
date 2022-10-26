@@ -14,28 +14,32 @@
 
 package org.eclipse.dataspaceconnector.identityhub.store;
 
+import org.eclipse.dataspaceconnector.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.dataspaceconnector.identityhub.store.spi.IdentityHubStore;
+import org.eclipse.dataspaceconnector.spi.persistence.EdcPersistenceException;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 /**
  * In memory store of Hub Objects.
  */
 public class InMemoryIdentityHubStore implements IdentityHubStore {
 
-    // Using a Map because concurrent hashset does not exist
-    private final Map<byte[], Boolean> hubObjects = new ConcurrentHashMap<>();
+    private final Map<String, IdentityHubRecord> cache = new ConcurrentHashMap<>();
 
     @Override
-    public Collection<byte[]> getAll() {
-        return new HashSet<>(hubObjects.keySet());
+    public @NotNull Stream<IdentityHubRecord> getAll() {
+        return cache.values().stream();
     }
 
     @Override
-    public void add(byte[] hubObject) {
-        hubObjects.put(hubObject, true);
+    public void add(IdentityHubRecord record) {
+        if (cache.containsKey(record.getId())) {
+            throw new EdcPersistenceException("Identity Hub already contains a record with id: " + record.getId());
+        }
+        cache.put(record.getId(), record);
     }
 }

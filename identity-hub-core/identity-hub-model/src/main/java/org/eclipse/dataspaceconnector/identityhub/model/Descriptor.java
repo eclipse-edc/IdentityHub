@@ -28,6 +28,8 @@ import java.util.Objects;
 public class Descriptor {
     private String method;
     private String nonce;
+    private long dateCreated;
+    private String recordId;
     private String dataCid;
     private String dataFormat;
 
@@ -37,6 +39,16 @@ public class Descriptor {
     @Schema(description = "A string that matches a Decentralized Web Node Interface method")
     public String getMethod() {
         return method;
+    }
+
+    @Schema(description = "Unique identifier of the record")
+    public String getRecordId() {
+        return recordId;
+    }
+
+    @Schema(description = "Unix epoch timestamp interpreted as the time the logical entry was created by the DID owner or another permitted party")
+    public long getDateCreated() {
+        return dateCreated;
     }
 
     @Schema(description = "[UNSUPPORTED] Cryptographically random string that ensures each object is unique")
@@ -57,7 +69,7 @@ public class Descriptor {
     @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
 
-        private Descriptor descriptor;
+        private final Descriptor descriptor;
 
         @JsonCreator()
         public static Builder newInstance() {
@@ -75,6 +87,16 @@ public class Descriptor {
 
         public Builder nonce(String nonce) {
             descriptor.nonce = nonce;
+            return this;
+        }
+
+        public Builder dateCreated(long dateCreated) {
+            descriptor.dateCreated = dateCreated;
+            return this;
+        }
+
+        public Builder recordId(String recordId) {
+            descriptor.recordId = recordId;
             return this;
         }
 

@@ -17,6 +17,7 @@ package org.eclipse.dataspaceconnector.identityhub.store.spi;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
+import org.eclipse.dataspaceconnector.spi.persistence.EdcPersistenceException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -26,22 +27,39 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public abstract class IdentityHubStoreTestBase {
-
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Random RAND = new Random();
 
     @Test
+    void saveSameVerifiableCredentialTwice_shouldThrows() {
+        var record = createIdentityHubRecord();
+
+        getStore().add(record);
+
+        assertThatExceptionOfType(EdcPersistenceException.class).isThrownBy(() -> getStore().add(record));
+    }
+
+    @Test
     void saveAndListVerifiableCredentials() {
         // Arrange
-        var credentials = createVerifiableCredentials();
+        var records = createIdentityHubRecords();
 
         // Act
-        credentials.forEach(a -> getStore().add(a));
+        records.forEach(a -> getStore().add(a));
 
         // Assert
-        assertThat(getStore().getAll()).containsAll(credentials);
+        try (var stream = getStore().getAll()) {
+            var stored = stream.collect(Collectors.toList());
+            assertThat(stored).hasSize(records.size());
+            records.forEach(expected -> assertThat(stored).anySatisfy(r -> {
+                assertThat(r.getId()).isEqualTo(expected.getId());
+                assertThat(r.getPayload()).isEqualTo(expected.getPayload());
+            }));
+        }
+
     }
 
     private static byte[] toByteArray(VerifiableCredential vc) {
@@ -52,12 +70,19 @@ public abstract class IdentityHubStoreTestBase {
         }
     }
 
-    private static List<byte[]> createVerifiableCredentials() {
+    private static List<IdentityHubRecord> createIdentityHubRecords() {
         var credentialsCount = RAND.nextInt(10) + 1;
         return IntStream.range(0, credentialsCount)
-                .mapToObj(i -> VerifiableCredential.Builder.newInstance().id(UUID.randomUUID().toString()).build())
-                .map(IdentityHubStoreTestBase::toByteArray)
+                .mapToObj(i -> createIdentityHubRecord())
                 .collect(Collectors.toList());
+    }
+
+    private static IdentityHubRecord createIdentityHubRecord() {
+        var vc = VerifiableCredential.Builder.newInstance().id(UUID.randomUUID().toString()).build();
+        return IdentityHubRecord.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .payload(toByteArray(vc))
+                .build();
     }
 
     protected abstract IdentityHubStore getStore();

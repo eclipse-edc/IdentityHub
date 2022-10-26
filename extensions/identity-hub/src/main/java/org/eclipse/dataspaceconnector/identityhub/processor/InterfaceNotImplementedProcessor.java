@@ -14,6 +14,7 @@
 
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
+import org.eclipse.dataspaceconnector.identityhub.model.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 
@@ -27,7 +28,7 @@ import static org.eclipse.dataspaceconnector.identityhub.model.MessageResponseOb
 public class InterfaceNotImplementedProcessor implements MessageProcessor {
 
     @Override
-    public MessageResponseObject process(byte[] data) {
+    public MessageResponseObject process(MessageRequestObject requestObject) {
         return MessageResponseObject.Builder.newInstance()
                 .messageId(MESSAGE_ID_VALUE)
                 .status(MessageStatus.INTERFACE_NOT_IMPLEMENTED)

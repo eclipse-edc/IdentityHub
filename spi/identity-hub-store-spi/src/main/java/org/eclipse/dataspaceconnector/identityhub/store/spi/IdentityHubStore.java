@@ -14,14 +14,27 @@
 
 package org.eclipse.dataspaceconnector.identityhub.store.spi;
 
-import java.util.Collection;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.stream.Stream;
 
 /**
  * IdentityHubStore used to store data in an Identity Hub.
  */
 public interface IdentityHubStore {
 
-    Collection<byte[]> getAll();
+    /**
+     * List all {@link IdentityHubRecord}.
+     *
+     * @return Stream of store items.
+     */
+    @NotNull Stream<IdentityHubRecord> getAll();
 
-    void add(byte[] hubObject);
+    /**
+     * Put a new record in the store.
+     *
+     * @param record Record to be put in the store.
+     * @throws org.eclipse.dataspaceconnector.spi.persistence.EdcPersistenceException if a record with the exact same id is already present in the store.
+     */
+    void add(IdentityHubRecord record);
 }

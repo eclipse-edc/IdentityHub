@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.dataspaceconnector.registration.store.sql.SqlParticipantStoreExtension
+org.eclipse.dataspaceconnector.identityhub.store.sql.SqlIdentityHubStoreExtension

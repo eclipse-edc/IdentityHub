@@ -28,12 +28,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.postgresql.ds.PGSimpleDataSource;
 
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
+import javax.sql.DataSource;
 
 import static org.eclipse.dataspaceconnector.sql.SqlQueryExecutor.executeQuery;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -99,7 +99,7 @@ public class PostgresParticipantStoreTest extends IdentityHubStoreTestBase {
     void tearDown() throws Exception {
         transactionContext.execute(() -> {
             var dialect = new BaseSqlIdentityHubStatements();
-            executeQuery(connection, "DROP TABLE " + dialect.getIdentityHubTable());
+            executeQuery(connection, "DROP TABLE " + dialect.getTable());
         });
         doCallRealMethod().when(connection).close();
         connection.close();

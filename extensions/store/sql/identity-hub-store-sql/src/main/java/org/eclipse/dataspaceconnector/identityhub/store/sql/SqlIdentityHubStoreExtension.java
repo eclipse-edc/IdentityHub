@@ -20,7 +20,6 @@ import org.eclipse.dataspaceconnector.identityhub.store.sql.schema.IdentityHubSt
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Extension;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Inject;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Provider;
-import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Provides;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Setting;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
@@ -32,7 +31,6 @@ import java.util.Objects;
 /**
  * Extension that provides a {@link IdentityHubStore} with SQL as backend storage.
  */
-@Provides(IdentityHubStore.class)
 @Extension(value = SqlIdentityHubStoreExtension.NAME)
 public class SqlIdentityHubStoreExtension implements ServiceExtension {
 

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class MessageStatus extends Status {
     public static final MessageStatus OK = new MessageStatus(200, "The message was successfully processed");
     public static final MessageStatus MALFORMED_MESSAGE = new MessageStatus(400, "The message was malformed or improperly constructed");
+    public static final MessageStatus UNHANDLED_ERROR = new MessageStatus(500, "The request could not be processed correctly");
     public static final MessageStatus INTERFACE_NOT_IMPLEMENTED = new MessageStatus(501, "The interface method is not implemented");
 
     private MessageStatus(@JsonProperty("code") int code, @JsonProperty("detail") String detail) {

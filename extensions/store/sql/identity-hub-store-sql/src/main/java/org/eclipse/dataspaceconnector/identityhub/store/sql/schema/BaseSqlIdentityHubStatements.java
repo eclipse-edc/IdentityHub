@@ -23,12 +23,13 @@ import static java.lang.String.format;
 public class BaseSqlIdentityHubStatements implements IdentityHubStatements {
 
     @Override
-    public String getInsertItemTemplate() {
-        return format("INSERT INTO %s (%s) VALUES (?)", getIdentityHubTable(), getItemColumn());
+    public String getInsertTemplate() {
+        return format("INSERT INTO %s (%s, %s, %s) VALUES (?,?,?)",
+                getTable(), getIdColumn(), getPayloadColumn(), getCreatedAtColumn());
     }
 
     @Override
-    public String getSelectAllItemsTemplate() {
-        return format("SELECT * FROM %s", getIdentityHubTable());
+    public String getFindAllTemplate() {
+        return format("SELECT * FROM %s", getTable());
     }
 }

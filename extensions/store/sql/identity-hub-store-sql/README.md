@@ -21,5 +21,5 @@ docker run -p 5432:5432 -e POSTGRES_PASSWORD=password postgres:14.2
 Then test can be executed through:
 
 ```bash
-./gradlew :extensions:store:sql:identity-hub-store-sql:test -DincludeTags="PostgresqlIntegrationTest"
+INTEGRATION_TEST=true ./gradlew test -DincludeTags="PostgresqlIntegrationTest
 ```

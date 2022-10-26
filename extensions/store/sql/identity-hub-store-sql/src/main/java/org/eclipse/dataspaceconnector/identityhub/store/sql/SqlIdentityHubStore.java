@@ -14,19 +14,20 @@
 
 package org.eclipse.dataspaceconnector.identityhub.store.sql;
 
+import org.eclipse.dataspaceconnector.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.dataspaceconnector.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.dataspaceconnector.identityhub.store.sql.schema.IdentityHubStatements;
 import org.eclipse.dataspaceconnector.spi.persistence.EdcPersistenceException;
 import org.eclipse.dataspaceconnector.spi.transaction.TransactionContext;
 import org.eclipse.dataspaceconnector.spi.transaction.datasource.DataSourceRegistry;
+import org.jetbrains.annotations.NotNull;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.sql.DataSource;
 
 import static java.lang.String.format;
 import static org.eclipse.dataspaceconnector.sql.SqlQueryExecutor.executeQuery;
@@ -39,7 +40,7 @@ public class SqlIdentityHubStore implements IdentityHubStore {
     private final DataSourceRegistry dataSourceRegistry;
     private final String dataSourceName;
     private final TransactionContext transactionContext;
-    private final IdentityHubStatements identityHubStatements;
+    private final IdentityHubStatements statements;
 
     public SqlIdentityHubStore(DataSourceRegistry dataSourceRegistry,
                                String dataSourceName,
@@ -48,18 +49,14 @@ public class SqlIdentityHubStore implements IdentityHubStore {
         this.dataSourceRegistry = Objects.requireNonNull(dataSourceRegistry);
         this.dataSourceName = Objects.requireNonNull(dataSourceName);
         this.transactionContext = Objects.requireNonNull(transactionContext);
-        this.identityHubStatements = Objects.requireNonNull(identityHubStatements);
+        this.statements = Objects.requireNonNull(identityHubStatements);
     }
 
     @Override
-    public Collection<byte[]> getAll() {
+    public @NotNull Stream<IdentityHubRecord> getAll() {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                try (var stream = executeQuery(connection, true, this::parse, identityHubStatements.getSelectAllItemsTemplate())) {
-                    return stream.collect(Collectors.toList());
-                }
-            } catch (EdcPersistenceException e) {
-                throw e;
+                return executeQuery(connection, true, this::parse, statements.getFindAllTemplate());
             } catch (Exception e) {
                 throw new EdcPersistenceException(e.getMessage(), e);
             }
@@ -67,20 +64,23 @@ public class SqlIdentityHubStore implements IdentityHubStore {
     }
 
     @Override
-    public void add(byte[] hubObject) {
+    public void add(IdentityHubRecord record) {
         transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                executeQuery(connection, identityHubStatements.getInsertItemTemplate(), new String(hubObject));
-            } catch (EdcPersistenceException e) {
-                throw e;
+                var payload = new String(record.getPayload());
+                executeQuery(connection, statements.getInsertTemplate(), record.getId(), payload, record.getCreatedAt());
             } catch (Exception e) {
                 throw new EdcPersistenceException(e.getMessage(), e);
             }
         });
     }
 
-    private byte[] parse(ResultSet resultSet) throws SQLException {
-        return resultSet.getString(identityHubStatements.getItemColumn()).getBytes();
+    private IdentityHubRecord parse(ResultSet resultSet) throws SQLException {
+        return IdentityHubRecord.Builder.newInstance()
+                .id(resultSet.getString(statements.getIdColumn()))
+                .payload(resultSet.getString(statements.getPayloadColumn()).getBytes())
+                .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
+                .build();
     }
 
     private DataSource getDataSource() {

@@ -19,22 +19,24 @@ package org.eclipse.dataspaceconnector.identityhub.store.sql.schema;
  */
 public interface IdentityHubStatements {
 
-    default String getIdentityHubTable() {
+    default String getTable() {
         return "edc_identityhub";
     }
 
-    default String getItemColumn() {
-        return "item";
+    default String getIdColumn() {
+        return "id";
     }
 
-    /**
-     * INSERT clause for an item to be put in the store.
-     */
-    String getInsertItemTemplate();
+    default String getPayloadColumn() {
+        return "payload";
+    }
 
-    /**
-     * SELECT clause to list all items from the store.
-     */
-    String getSelectAllItemsTemplate();
+    default String getCreatedAtColumn() {
+        return "created_at";
+    }
+
+    String getInsertTemplate();
+
+    String getFindAllTemplate();
 
 }
