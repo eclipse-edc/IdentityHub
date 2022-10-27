@@ -36,11 +36,13 @@ import org.eclipse.dataspaceconnector.spi.result.Result;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
 import static org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
@@ -76,10 +78,11 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     @Override
     public StatusResult<Collection<SignedJWT>> getVerifiableCredentials(String hubBaseUrl) {
         ResponseObject responseObject;
+        var descriptor = defaultDescriptor(COLLECTIONS_QUERY.getName()).build();
         try (var response = httpClient.newCall(
                         new Request.Builder()
                                 .url(hubBaseUrl)
-                                .post(buildRequestBody(COLLECTIONS_QUERY.getName()))
+                                .post(buildRequestBody(descriptor))
                                 .build())
                 .execute()) {
 
@@ -107,13 +110,17 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     @Override
     public StatusResult<Void> addVerifiableCredential(String hubBaseUrl, SignedJWT verifiableCredential) {
         var payload = verifiableCredential.serialize().getBytes(UTF_8);
+        var descriptor = defaultDescriptor(COLLECTIONS_WRITE.getName())
+                .recordId(UUID.randomUUID().toString())
+                .dateCreated(Instant.now().getEpochSecond()) // TODO: this should be passed from input
+                .build();
         try (var response = httpClient.newCall(new Request.Builder()
                         .url(hubBaseUrl)
-                        .post(buildRequestBody(COLLECTIONS_WRITE.getName(), payload))
+                        .post(buildRequestBody(descriptor, payload))
                         .build())
                 .execute()) {
             if (response.code() != 200) {
-                return StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: %s, response body: %s", response.code(), response.headers(), response.body().string()));
+                return identityHubCallError(response);
             }
         } catch (IOException e) {
             return StatusResult.failure(ResponseStatus.FATAL_ERROR, e.getMessage());
@@ -131,25 +138,21 @@ public class IdentityHubClientImpl implements IdentityHubClient {
         }
     }
 
-    private RequestBody buildRequestBody(String method) {
+    private RequestBody buildRequestBody(Descriptor descriptor) {
         try {
-            return buildRequestBody(method, null);
+            return buildRequestBody(descriptor, null);
         } catch (JsonProcessingException e) {
             throw new EdcException(e); // Should never happen.
         }
     }
 
-    private RequestBody buildRequestBody(String method, byte[] data) throws JsonProcessingException {
+    private RequestBody buildRequestBody(Descriptor descriptor, byte[] data) throws JsonProcessingException {
         var requestId = UUID.randomUUID().toString();
-        var nonce = UUID.randomUUID().toString();
         var requestObject = RequestObject.Builder.newInstance()
                 .requestId(requestId)
                 .target("target")
                 .messages(List.of(MessageRequestObject.Builder.newInstance()
-                        .descriptor(Descriptor.Builder.newInstance()
-                                .nonce(nonce)
-                                .method(method)
-                                .build())
+                        .descriptor(descriptor)
                         .data(data)
                         .build())
                 )
@@ -158,7 +161,13 @@ public class IdentityHubClientImpl implements IdentityHubClient {
         return RequestBody.create(payload, okhttp3.MediaType.get("application/json"));
     }
 
+    private static Descriptor.Builder defaultDescriptor(String method) {
+        return Descriptor.Builder.newInstance()
+                .method(method)
+                .nonce(UUID.randomUUID().toString());
+    }
+
     private static <T> StatusResult<T> identityHubCallError(Response response) throws IOException {
-        return StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: %s, response body: %s", response.code(), response.headers(), response.body().string()));
+        return StatusResult.failure(ResponseStatus.FATAL_ERROR, format("IdentityHub error response code: %s, response headers: %s, response body: %s", response.code(), response.headers(), response.body().string()));
     }
 }

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -151,6 +152,8 @@ class IdentityHubControllerTest {
                                 .descriptor(Descriptor.Builder.newInstance()
                                         .method(method)
                                         .nonce(NONCE)
+                                        .recordId(UUID.randomUUID().toString())
+                                        .dateCreated(Instant.now().getEpochSecond())
                                         .build())
                                 .data(data)
                                 .build()))

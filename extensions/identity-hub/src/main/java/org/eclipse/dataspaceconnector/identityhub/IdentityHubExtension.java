@@ -20,8 +20,8 @@ import org.eclipse.dataspaceconnector.identityhub.processor.CollectionsWriteProc
 import org.eclipse.dataspaceconnector.identityhub.processor.FeatureDetectionReadProcessor;
 import org.eclipse.dataspaceconnector.identityhub.processor.MessageProcessorRegistry;
 import org.eclipse.dataspaceconnector.identityhub.selfdescription.SelfDescriptionLoader;
-import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubInMemoryStore;
-import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
+import org.eclipse.dataspaceconnector.identityhub.store.InMemoryIdentityHubStore;
+import org.eclipse.dataspaceconnector.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.EdcSetting;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Inject;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Provider;
@@ -57,13 +57,14 @@ public class IdentityHubExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-
+        var mapper = context.getTypeManager().getMapper();
         var methodProcessorFactory = new MessageProcessorRegistry();
+
         methodProcessorFactory.register(COLLECTIONS_QUERY, new CollectionsQueryProcessor(identityHubStore, transactionContext));
-        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, transactionContext));
+        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, mapper, context.getMonitor(), transactionContext));
         methodProcessorFactory.register(FEATURE_DETECTION_READ, new FeatureDetectionReadProcessor());
 
-        var loader = new SelfDescriptionLoader(context.getTypeManager().getMapper());
+        var loader = new SelfDescriptionLoader(mapper);
         var selfDescription = Optional.ofNullable(context.getSetting(SELF_DESCRIPTION_DOCUMENT_PATH_SETTING, null))
                 .map(loader::fromFile)
                 .orElse(loader.fromClasspath(DEFAULT_SELF_DESCRIPTION_FILE_NAME));
@@ -73,6 +74,6 @@ public class IdentityHubExtension implements ServiceExtension {
 
     @Provider(isDefault = true)
     public IdentityHubStore identityHubStore() {
-        return new IdentityHubInMemoryStore();
+        return new InMemoryIdentityHubStore();
     }
 }

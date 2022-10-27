@@ -57,7 +57,7 @@ public class MessageResponseObject {
 
     @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder {
-        private MessageResponseObject messageResponseObject;
+        private final MessageResponseObject messageResponseObject;
 
         private Builder() {
             messageResponseObject = new MessageResponseObject();

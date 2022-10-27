@@ -54,7 +54,9 @@ jobs:
         timeout-minutes: 10
 
       - name: 'Unit and system tests'
-        run: ./gradlew test
+        uses: ./.github/actions/run-tests
+          with:
+            command: ./gradlew test
         timeout-minutes: 10
         env:
           INTEGRATION_TEST: true
@@ -66,9 +68,44 @@ jobs:
         with:
           files: "**/test-results/**/*.xml"
 
-      - name: CodeCov
-        uses: codecov/codecov-action@v3
-
       - name: 'docker-compose logs'
         run: docker-compose -f system-tests/docker-compose.yml logs
         if: always()
+
+  Postgresql-Integration-Tests:
+    runs-on: ubuntu-latest
+    env:
+      JACOCO: true
+
+    services:
+      postgres:
+        image: postgres:14.2
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: password
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/gradle-setup
+
+      - name: Postgresql Tests
+        uses: ./.github/actions/run-tests
+        with:
+          command: ./gradlew test -DincludeTags="PostgresqlIntegrationTest"
+
+  Upload-Coverage-Report-To-Codecov:
+    needs:
+      - Test
+      - Postgresql-Integration-Tests
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      # Sources are needed for Codecov report
+      - uses: actions/checkout@v3
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - name: CodeCov
+        uses: codecov/codecov-action@v3

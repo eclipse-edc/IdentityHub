@@ -1,0 +1,8 @@
+@startuml
+entity edc_identityhub {
+  * id: string <<PK>>
+  * payload: string
+  * created_at: long
+  --
+}
+@enduml

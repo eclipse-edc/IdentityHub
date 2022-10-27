@@ -14,6 +14,7 @@
 
 package org.eclipse.dataspaceconnector.identityhub.processor;
 
+import org.eclipse.dataspaceconnector.identityhub.model.MessageRequestObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaces;
 
@@ -27,13 +28,14 @@ import org.eclipse.dataspaceconnector.identityhub.model.WebNodeInterfaces;
  * <p>
  * See {@link WebNodeInterfaces} for a list of currently supported interfaces. Currently the only supported interface that accepts data is "CollectionsWrite".
  */
+@FunctionalInterface
 public interface MessageProcessor {
 
     /**
      * Processes a message
      *
-     * @param data Byte array representing the message data or null if no data available
+     * @param requestObject Request object to be processed.
      * @return MessageResponseObject
      */
-    MessageResponseObject process(byte[] data);
+    MessageResponseObject process(MessageRequestObject requestObject);
 }

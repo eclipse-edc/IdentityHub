@@ -32,8 +32,8 @@ import java.util.Map;
 import java.util.Objects;
 
 public class VerifiableCredentialsJwtServiceImpl implements VerifiableCredentialsJwtService {
-    private ObjectMapper objectMapper;
-    private Monitor monitor;
+    private final ObjectMapper objectMapper;
+    private final Monitor monitor;
 
     public VerifiableCredentialsJwtServiceImpl(ObjectMapper objectMapper, Monitor monitor) {
         this.objectMapper = objectMapper;

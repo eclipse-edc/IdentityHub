@@ -79,7 +79,7 @@ public class IdentityHubController {
     private MessageResponseObject processMessage(MessageRequestObject messageRequestObject) {
         var method = fromName(messageRequestObject.getDescriptor().getMethod());
         var processor = messageProcessorRegistry.resolve(method);
-        return processor.process(messageRequestObject.getData());
+        return processor.process(messageRequestObject);
     }
 
 }
