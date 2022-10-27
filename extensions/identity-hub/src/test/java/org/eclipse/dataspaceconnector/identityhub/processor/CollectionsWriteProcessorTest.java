@@ -23,6 +23,7 @@ import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubInMemoryStore;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
+import org.eclipse.dataspaceconnector.spi.transaction.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +45,7 @@ public class CollectionsWriteProcessorTest {
     @BeforeEach
     void setUp() {
         identityHubStore = new IdentityHubInMemoryStore();
-        writeProcessor = new CollectionsWriteProcessor(identityHubStore);
+        writeProcessor = new CollectionsWriteProcessor(identityHubStore, new NoopTransactionContext());
     }
 
     @Test

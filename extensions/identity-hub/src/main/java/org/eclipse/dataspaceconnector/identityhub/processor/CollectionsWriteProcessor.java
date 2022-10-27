@@ -18,6 +18,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageResponseObject;
 import org.eclipse.dataspaceconnector.identityhub.model.MessageStatus;
 import org.eclipse.dataspaceconnector.identityhub.store.IdentityHubStore;
+import org.eclipse.dataspaceconnector.spi.transaction.TransactionContext;
 
 import java.text.ParseException;
 
@@ -31,8 +32,11 @@ public class CollectionsWriteProcessor implements MessageProcessor {
     private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
     private final IdentityHubStore identityHubStore;
 
-    public CollectionsWriteProcessor(IdentityHubStore identityHubStore) {
+    private final TransactionContext transactionContext;
+
+    public CollectionsWriteProcessor(IdentityHubStore identityHubStore, TransactionContext transactionContext) {
         this.identityHubStore = identityHubStore;
+        this.transactionContext = transactionContext;
     }
 
     @Override
@@ -46,7 +50,7 @@ public class CollectionsWriteProcessor implements MessageProcessor {
             return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
         }
 
-        identityHubStore.add(data);
+        transactionContext.execute(() -> identityHubStore.add(data));
         return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
     }
 }
