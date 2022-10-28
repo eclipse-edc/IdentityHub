@@ -55,7 +55,7 @@ jobs:
 
       - name: 'Unit and system tests'
         uses: ./.github/actions/run-tests
-          with:
+        with:
             command: ./gradlew test
         timeout-minutes: 10
         env:
