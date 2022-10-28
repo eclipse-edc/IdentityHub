@@ -59,7 +59,6 @@ public class CollectionsWriteProcessor implements MessageProcessor {
         }
 
         try {
-            identityHubStore.add(record.getContent());
             transactionContext.execute(() -> identityHubStore.add(record.getContent()));
         } catch (Exception e) {
             monitor.warning("Failed to add Verifiable Credential to Identity Hub", e);

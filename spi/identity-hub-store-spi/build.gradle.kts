@@ -22,6 +22,7 @@ dependencies {
     testFixturesImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testFixturesImplementation("org.assertj:assertj-core:${assertj}")
     testFixturesImplementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
 }
 
 publishing {
