@@ -101,6 +101,14 @@ components:
           type: string
           description: "[UNSUPPORTED] Cryptographically random string that ensures\
             \ each object is unique"
+        dateCreated:
+          type: integer
+          description: Unix epoch timestamp interpreted as the time the logical entry
+            was created by the DID owner or another permitted party
+          format: int64
+        recordId:
+          type: string
+          description: Unique identifier of the record
         dataCid:
           type: string
           description: "[UNSUPPORTED] If data is available, this field should contain\
