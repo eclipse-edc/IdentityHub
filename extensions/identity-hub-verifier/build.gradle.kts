@@ -25,8 +25,8 @@ val mockitoVersion: String by project
 val assertj: String by project
 
 dependencies {
-    implementation(project(":extensions:identity-hub"))
-    implementation(project(":identity-hub-core:identity-hub-client"))
+    implementation(project(":core:identity-hub"))
+    implementation(project(":core:identity-hub-client"))
     implementation(project(":spi:identity-hub-spi"))
     implementation("${edcGroup}:core-base:${edcVersion}")
     implementation("${edcGroup}:core-boot:${edcVersion}")
@@ -36,6 +36,7 @@ dependencies {
 
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation("org.assertj:assertj-core:${assertj}")
+    testImplementation(project(":extensions:identity-hub-api"))
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("${edcGroup}:identity-did-core:${edcVersion}")
     testImplementation("${edcGroup}:junit:${edcVersion}")

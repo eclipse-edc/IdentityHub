@@ -17,14 +17,14 @@ package org.eclipse.dataspaceconnector.identityhub.cli;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspaceconnector.identityhub.credentials.model.VerifiableCredential;
+import org.eclipse.dataspaceconnector.identityhub.spi.credentials.model.VerifiableCredential;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
 
 import java.util.concurrent.Callable;
 
-import static org.eclipse.dataspaceconnector.identityhub.credentials.CryptoUtils.readPrivateEcKey;
+import static org.eclipse.dataspaceconnector.identityhub.spi.credentials.CryptoUtils.readPrivateEcKey;
 
 
 @Command(name = "add", description = "Adds a verifiable credential to identity hub")
