@@ -22,7 +22,8 @@ val edcVersion: String by project
 val edcGroup: String by project
 
 dependencies {
-    implementation(project(":extensions:identity-hub"))
+    implementation(project(":core:identity-hub"))
+    implementation(project(":extensions:identity-hub-api"))
     implementation(project(":extensions:identity-hub-verifier"))
     implementation("${edcGroup}:observability-api:${edcVersion}")
     implementation("${edcGroup}:identity-did-core:${edcVersion}")

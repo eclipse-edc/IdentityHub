@@ -26,6 +26,7 @@ val edcVersion: String by project
 val jupiterVersion: String by project
 val assertj: String by project
 val mockitoVersion: String by project
+val swagger: String by project
 
 dependencies {
     api("org.jetbrains:annotations:${jetBrainsAnnotationsVersion}")
@@ -33,6 +34,9 @@ dependencies {
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
     implementation("${edcGroup}:identity-did-spi:${edcVersion}")
     implementation("${edcGroup}:identity-did-crypto:${edcVersion}")
+    implementation("io.swagger.core.v3:swagger-jaxrs2-jakarta:${swagger}") {
+        exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
+    }
 
     testFixturesImplementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
     testFixturesImplementation("${edcGroup}:identity-did-spi:${edcVersion}")

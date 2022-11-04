@@ -25,8 +25,8 @@ import org.eclipse.dataspaceconnector.iam.did.spi.document.EllipticCurvePublicKe
 import org.eclipse.dataspaceconnector.iam.did.spi.document.Service;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidResolver;
 import org.eclipse.dataspaceconnector.iam.did.spi.resolution.DidResolverRegistry;
-import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClient;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
+import org.eclipse.dataspaceconnector.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.dataspaceconnector.junit.extensions.EdcExtension;
 import org.eclipse.dataspaceconnector.junit.testfixtures.TestUtils;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;

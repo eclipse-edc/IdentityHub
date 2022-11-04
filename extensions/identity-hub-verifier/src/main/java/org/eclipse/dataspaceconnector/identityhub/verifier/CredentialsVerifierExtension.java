@@ -17,7 +17,7 @@ package org.eclipse.dataspaceconnector.identityhub.verifier;
 import okhttp3.OkHttpClient;
 import org.eclipse.dataspaceconnector.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.dataspaceconnector.identityhub.client.IdentityHubClientImpl;
-import org.eclipse.dataspaceconnector.identityhub.credentials.VerifiableCredentialsJwtServiceImpl;
+import org.eclipse.dataspaceconnector.identityhub.spi.credentials.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Inject;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Provider;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;

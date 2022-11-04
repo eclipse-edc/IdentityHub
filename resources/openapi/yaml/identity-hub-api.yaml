@@ -1,0 +1,145 @@
+openapi: 3.0.1
+info:
+  title: Eclipse Dataspace Connector Identity Hub
+  version: 0.0.1
+paths:
+  /identity-hub/self-description:
+    get:
+      tags:
+      - IdentityHub
+      description: Serve Self-Description document as defined in Gaia-X Trust Framework
+        (https://gaia-x.gitlab.io/policy-rules-committee/trust-framework/)
+      operationId: getSelfDescription
+      responses:
+        default:
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonNode'
+  /identity-hub:
+    post:
+      tags:
+      - IdentityHub
+      description: A Decentralized Web Node (https://identity.foundation/decentralized-web-node/spec)
+        compatible endpoint supporting operations to read and write Verifiable Credentials
+        into an Identity Hub
+      operationId: handleRequest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestObject'
+      responses:
+        default:
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseObject'
+components:
+  schemas:
+    JsonNode:
+      type: object
+    MessageResponseObject:
+      type: object
+      properties:
+        messageId:
+          type: string
+          description: "[UNSUPPORTED] Stringified Version 1 CID of the associated\
+            \ message"
+        status:
+          $ref: '#/components/schemas/MessageStatus'
+        entries:
+          type: array
+          description: Resulting message entries returned from the invocation of the
+            corresponding message as free form objects
+          items:
+            type: object
+            description: Resulting message entries returned from the invocation of
+              the corresponding message as free form objects
+    MessageStatus:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: An integer set to the HTTP Status Code appropriate for the
+            status of the response
+          format: int32
+        detail:
+          type: string
+          description: A string that describes a terse summary of the status
+    RequestStatus:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: An integer set to the HTTP Status Code appropriate for the
+            status of the response
+          format: int32
+        detail:
+          type: string
+          description: A string that describes a terse summary of the status
+    ResponseObject:
+      type: object
+      properties:
+        requestId:
+          type: string
+        status:
+          $ref: '#/components/schemas/RequestStatus'
+        replies:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageResponseObject'
+    Descriptor:
+      type: object
+      properties:
+        method:
+          type: string
+          description: A string that matches a Decentralized Web Node Interface method
+        nonce:
+          type: string
+          description: "[UNSUPPORTED] Cryptographically random string that ensures\
+            \ each object is unique"
+        dateCreated:
+          type: integer
+          description: Unix epoch timestamp interpreted as the time the logical entry
+            was created by the DID owner or another permitted party
+          format: int64
+        recordId:
+          type: string
+          description: Unique identifier of the record
+        dataCid:
+          type: string
+          description: "[UNSUPPORTED] If data is available, this field should contain\
+            \ stringified Version 1 CID of the DAG PB encoded data"
+        dataFormat:
+          type: string
+          description: "[UNSUPPORTED] if data is available, this field should contain\
+            \ a registered IANA Media Type data format. Use 'application/vc+ldp' for\
+            \ Verifiable Credentials."
+    MessageRequestObject:
+      type: object
+      properties:
+        descriptor:
+          $ref: '#/components/schemas/Descriptor'
+        data:
+          type: array
+          description: Optional base64Url encoded string of the message data
+          items:
+            type: string
+            description: Optional base64Url encoded string of the message data
+            format: byte
+    RequestObject:
+      type: object
+      properties:
+        requestId:
+          type: string
+        target:
+          type: string
+          description: "[UNSUPPORTED] Decentralized Identifier base URI of the DID-relative\
+            \ URL"
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageRequestObject'
