@@ -14,15 +14,15 @@ dependencies {
     api(project(":spi:identity-hub-store-spi"))
     implementation("${edcGroup}:transaction-spi:${edcVersion}")
     implementation("${edcGroup}:transaction-datasource-spi:${edcVersion}")
-    implementation("${edcGroup}:common-sql:${edcVersion}")
+    implementation("${edcGroup}:sql-core:${edcVersion}")
 
     testImplementation("org.assertj:assertj-core:${assertj}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-params:${jupiterVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
-    testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
-    testImplementation("${edcGroup}:common-sql:${edcVersion}:test-fixtures")
+    testImplementation("${edcGroup}:junit:${edcVersion}")
+    testImplementation("${edcGroup}:sql-core:${edcVersion}:test-fixtures")
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
     testImplementation("org.postgresql:postgresql:${postgresVersion}")
 }

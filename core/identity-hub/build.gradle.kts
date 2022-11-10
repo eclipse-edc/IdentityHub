@@ -29,7 +29,6 @@ dependencies {
     implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
     implementation("${edcGroup}:transaction-spi:${edcVersion}")
 
-    testImplementation("${edcGroup}:common-util:${edcVersion}:test-fixtures")
     testImplementation("${edcGroup}:junit:${edcVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-params:${jupiterVersion}")
