@@ -36,7 +36,7 @@ repositories {
 }
 
 application {
-    mainClass.set("org.eclipse.dataspaceconnector.identityhub.cli.IdentityHubCli")
+    mainClass.set("org.eclipse.edc.identityhub.cli.IdentityHubCli")
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {

@@ -124,7 +124,7 @@ allprojects {
             prettyPrint = true
             classpath = java.sourceSets["main"].runtimeClasspath
             buildClasspath = classpath
-            resourcePackages = setOf("org.eclipse.dataspaceconnector")
+            resourcePackages = setOf("org.eclipse.edc")
             outputDir = file("${rootProject.projectDir.path}/resources/openapi/yaml")
         }
         configurations {

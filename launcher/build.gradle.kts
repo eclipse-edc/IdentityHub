@@ -25,13 +25,13 @@ dependencies {
     implementation(project(":core:identity-hub"))
     implementation(project(":extensions:identity-hub-api"))
     implementation(project(":extensions:identity-hub-verifier"))
-    implementation("${edcGroup}:observability-api:${edcVersion}")
+    implementation("${edcGroup}:api-observability:${edcVersion}")
     implementation("${edcGroup}:identity-did-core:${edcVersion}")
     implementation("${edcGroup}:identity-did-web:${edcVersion}")
 }
 
 application {
-    mainClass.set("org.eclipse.dataspaceconnector.boot.system.runtime.BaseRuntime")
+    mainClass.set("org.eclipse.edc.boot.system.runtime.BaseRuntime")
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {

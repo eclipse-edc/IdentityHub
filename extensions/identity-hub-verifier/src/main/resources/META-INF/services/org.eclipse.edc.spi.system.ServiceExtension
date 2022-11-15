@@ -1,0 +1,2 @@
+org.eclipse.edc.identityhub.verifier.CredentialsVerifierExtension
+org.eclipse.edc.identityhub.verifier.JwtCredentialsVerifierExtension
