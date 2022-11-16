@@ -16,25 +16,14 @@ plugins {
     `java-library`
     `maven-publish`
 }
-val assertj: String by project
-val edcVersion: String by project
-val edcGroup: String by project
-val jupiterVersion: String by project
-val nimbusVersion: String by project
-val mockitoVersion: String by project
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
     implementation(project(":spi:identity-hub-store-spi"))
-    implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
-    implementation("${edcGroup}:transaction-spi:${edcVersion}")
+    implementation(libs.nimbus.jwt)
+    implementation(edc.spi.transaction)
 
-    testImplementation("${edcGroup}:junit:${edcVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:${jupiterVersion}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
-    testImplementation("org.assertj:assertj-core:${assertj}")
-    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation(edc.core.junit)
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
 }

@@ -3,24 +3,8 @@ info:
   title: Eclipse Dataspace Connector Identity Hub
   version: 0.0.1
 paths:
-  /identity-hub/self-description:
-    get:
-      tags:
-      - IdentityHub
-      description: Serve Self-Description document as defined in Gaia-X Trust Framework
-        (https://gaia-x.gitlab.io/policy-rules-committee/trust-framework/)
-      operationId: getSelfDescription
-      responses:
-        default:
-          description: default response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/JsonNode'
   /identity-hub:
     post:
-      tags:
-      - IdentityHub
       description: A Decentralized Web Node (https://identity.foundation/decentralized-web-node/spec)
         compatible endpoint supporting operations to read and write Verifiable Credentials
         into an Identity Hub
@@ -32,114 +16,158 @@ paths:
               $ref: '#/components/schemas/RequestObject'
       responses:
         default:
-          description: default response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponseObject'
+          description: default response
+      tags:
+      - IdentityHub
+  /identity-hub/self-description:
+    get:
+      description: Serve Self-Description document as defined in Gaia-X Trust Framework
+        (https://gaia-x.gitlab.io/policy-rules-committee/trust-framework/)
+      operationId: getSelfDescription
+      responses:
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonNode'
+          description: default response
+      tags:
+      - IdentityHub
 components:
   schemas:
-    JsonNode:
-      type: object
-    MessageResponseObject:
-      type: object
-      properties:
-        messageId:
-          type: string
-          description: "[UNSUPPORTED] Stringified Version 1 CID of the associated\
-            \ message"
-        status:
-          $ref: '#/components/schemas/MessageStatus'
-        entries:
-          type: array
-          description: Resulting message entries returned from the invocation of the
-            corresponding message as free form objects
-          items:
-            type: object
-            description: Resulting message entries returned from the invocation of
-              the corresponding message as free form objects
-    MessageStatus:
-      type: object
-      properties:
-        code:
-          type: integer
-          description: An integer set to the HTTP Status Code appropriate for the
-            status of the response
-          format: int32
-        detail:
-          type: string
-          description: A string that describes a terse summary of the status
-    RequestStatus:
-      type: object
-      properties:
-        code:
-          type: integer
-          description: An integer set to the HTTP Status Code appropriate for the
-            status of the response
-          format: int32
-        detail:
-          type: string
-          description: A string that describes a terse summary of the status
-    ResponseObject:
-      type: object
-      properties:
-        requestId:
-          type: string
-        status:
-          $ref: '#/components/schemas/RequestStatus'
-        replies:
-          type: array
-          items:
-            $ref: '#/components/schemas/MessageResponseObject'
     Descriptor:
       type: object
+      example: null
       properties:
-        method:
-          type: string
-          description: A string that matches a Decentralized Web Node Interface method
-        nonce:
-          type: string
-          description: "[UNSUPPORTED] Cryptographically random string that ensures\
-            \ each object is unique"
-        dateCreated:
-          type: integer
-          description: Unix epoch timestamp interpreted as the time the logical entry
-            was created by the DID owner or another permitted party
-          format: int64
-        recordId:
-          type: string
-          description: Unique identifier of the record
         dataCid:
           type: string
           description: "[UNSUPPORTED] If data is available, this field should contain\
             \ stringified Version 1 CID of the DAG PB encoded data"
+          example: null
         dataFormat:
           type: string
           description: "[UNSUPPORTED] if data is available, this field should contain\
             \ a registered IANA Media Type data format. Use 'application/vc+ldp' for\
             \ Verifiable Credentials."
+          example: null
+        dateCreated:
+          type: integer
+          format: int64
+          description: Unix epoch timestamp interpreted as the time the logical entry
+            was created by the DID owner or another permitted party
+          example: null
+        method:
+          type: string
+          description: A string that matches a Decentralized Web Node Interface method
+          example: null
+        nonce:
+          type: string
+          description: "[UNSUPPORTED] Cryptographically random string that ensures\
+            \ each object is unique"
+          example: null
+        recordId:
+          type: string
+          description: Unique identifier of the record
+          example: null
+    JsonNode:
+      type: object
+      example: null
     MessageRequestObject:
       type: object
+      example: null
       properties:
-        descriptor:
-          $ref: '#/components/schemas/Descriptor'
         data:
           type: array
           description: Optional base64Url encoded string of the message data
+          example: null
           items:
             type: string
-            description: Optional base64Url encoded string of the message data
             format: byte
+            description: Optional base64Url encoded string of the message data
+            example: null
+        descriptor:
+          $ref: '#/components/schemas/Descriptor'
+    MessageResponseObject:
+      type: object
+      example: null
+      properties:
+        entries:
+          type: array
+          description: Resulting message entries returned from the invocation of the
+            corresponding message as free form objects
+          example: null
+          items:
+            type: object
+            description: Resulting message entries returned from the invocation of
+              the corresponding message as free form objects
+            example: null
+        messageId:
+          type: string
+          description: "[UNSUPPORTED] Stringified Version 1 CID of the associated\
+            \ message"
+          example: null
+        status:
+          $ref: '#/components/schemas/MessageStatus'
+    MessageStatus:
+      type: object
+      example: null
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: An integer set to the HTTP Status Code appropriate for the
+            status of the response
+          example: null
+        detail:
+          type: string
+          description: A string that describes a terse summary of the status
+          example: null
     RequestObject:
       type: object
+      example: null
       properties:
+        messages:
+          type: array
+          example: null
+          items:
+            $ref: '#/components/schemas/MessageRequestObject'
         requestId:
           type: string
+          example: null
         target:
           type: string
           description: "[UNSUPPORTED] Decentralized Identifier base URI of the DID-relative\
             \ URL"
-        messages:
+          example: null
+    RequestStatus:
+      type: object
+      example: null
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: An integer set to the HTTP Status Code appropriate for the
+            status of the response
+          example: null
+        detail:
+          type: string
+          description: A string that describes a terse summary of the status
+          example: null
+    ResponseObject:
+      type: object
+      example: null
+      properties:
+        replies:
           type: array
+          example: null
           items:
-            $ref: '#/components/schemas/MessageRequestObject'
+            $ref: '#/components/schemas/MessageResponseObject'
+        requestId:
+          type: string
+          example: null
+        status:
+          $ref: '#/components/schemas/RequestStatus'
