@@ -17,9 +17,9 @@ package org.eclipse.edc.identityhub.api;
 import org.eclipse.edc.identityhub.api.controller.IdentityHubController;
 import org.eclipse.edc.identityhub.selfdescription.SelfDescriptionLoader;
 import org.eclipse.edc.identityhub.spi.processor.MessageProcessorRegistry;
-import org.eclipse.edc.runtime.metamodel.annotation.EdcSetting;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -34,7 +34,7 @@ import java.util.Optional;
 public class IdentityHubApiExtension implements ServiceExtension {
 
     public static final String NAME = "Identity Hub API";
-    @EdcSetting
+    @Setting
     private static final String SELF_DESCRIPTION_DOCUMENT_PATH_SETTING = "edc.self.description.document.path";
     private static final String DEFAULT_SELF_DESCRIPTION_FILE_NAME = "default-self-description.json";
     @Inject
