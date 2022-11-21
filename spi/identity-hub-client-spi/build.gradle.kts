@@ -18,17 +18,9 @@ plugins {
     `maven-publish`
 }
 
-
-val edcVersion: String by project
-val edcGroup: String by project
-val nimbusVersion: String by project
-
-
 dependencies {
-
-
-    implementation("${edcGroup}:core-spi:${edcVersion}")
-    implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
+    api(edc.spi.core)
+    implementation(libs.nimbus.jwt)
 }
 
 

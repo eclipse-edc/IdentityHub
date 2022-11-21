@@ -18,16 +18,13 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
-val edcVersion: String by project
-val edcGroup: String by project
-
 dependencies {
     implementation(project(":core:identity-hub"))
     implementation(project(":extensions:identity-hub-api"))
     implementation(project(":extensions:identity-hub-verifier"))
-    implementation("${edcGroup}:api-observability:${edcVersion}")
-    implementation("${edcGroup}:identity-did-core:${edcVersion}")
-    implementation("${edcGroup}:identity-did-web:${edcVersion}")
+    implementation(edc.ext.observability)
+    implementation(edc.ext.identity.did.core)
+    implementation(edc.ext.identity.did.web)
 }
 
 application {

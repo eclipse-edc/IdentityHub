@@ -17,33 +17,20 @@ plugins {
     `maven-publish`
 }
 
-val jacksonVersion: String by project
-val okHttpVersion: String by project
-val edcVersion: String by project
-val edcGroup: String by project
-val jupiterVersion: String by project
-val assertj: String by project
-val nimbusVersion: String by project
-val mockitoVersion: String by project
-
 dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:identity-hub-client-spi"))
-    api("${edcGroup}:core-spi:${edcVersion}")
-    implementation("${edcGroup}:http:${edcVersion}")
-    implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    implementation("${edcGroup}:core-spi:${edcVersion}")
-    implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
+    api(edc.spi.core)
+    implementation(edc.ext.http)
+    implementation(libs.okhttp)
+    implementation(libs.jackson.databind)
+    implementation(edc.spi.core)
+    implementation(libs.nimbus.jwt)
 
     testImplementation(project(":core:identity-hub"))
     testImplementation(project(":extensions:identity-hub-api"))
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
-    testImplementation("${edcGroup}:junit:${edcVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
-    testImplementation("org.assertj:assertj-core:${assertj}")
-    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation(edc.core.junit)
 }
 
 publishing {

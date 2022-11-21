@@ -18,32 +18,19 @@ plugins {
     `maven-publish`
 }
 
-val edcVersion: String by project
-val edcGroup: String by project
-val jupiterVersion: String by project
-val restAssured: String by project
-val mockitoVersion: String by project
-val assertj: String by project
-val nimbusVersion: String by project
-
 dependencies {
     api(project(":spi:identity-hub-spi"))
     implementation(project(":spi:identity-hub-store-spi"))
     implementation(project(":core:identity-hub"))
-    implementation("${edcGroup}:http:${edcVersion}")
-    implementation("${edcGroup}:transaction-spi:${edcVersion}")
+    implementation(edc.ext.http)
+    implementation(edc.spi.transaction)
 
 
-    testImplementation("${edcGroup}:junit:${edcVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:${jupiterVersion}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
-
-    testImplementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
-    testImplementation("org.assertj:assertj-core:${assertj}")
-    testImplementation("io.rest-assured:rest-assured:${restAssured}")
-    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation(edc.core.junit)
+    testImplementation(libs.nimbus.jwt)
+    testImplementation(libs.restAssured)
     testImplementation(project(":spi:identity-hub-spi"))
+
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
 }
