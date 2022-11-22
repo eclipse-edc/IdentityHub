@@ -14,7 +14,7 @@ dependencies {
     implementation(libs.jackson.databind)
     implementation(libs.okhttp)
     implementation(libs.nimbus.jwt)
-    implementation(libs.bouncycastle.bcpkix.jdk15on)
+    implementation(libs.bouncyCastle.bcpkix)
 }
 repositories {
     mavenCentral()

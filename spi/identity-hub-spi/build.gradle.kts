@@ -28,7 +28,7 @@ dependencies {
     implementation(edc.ext.identity.did.crypto)
 
 
-    implementation("io.swagger.core.v3:swagger-jaxrs2-jakarta:${swagger}") {
+    implementation(libs.swagger.jaxrs) {
         exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
     }
 
