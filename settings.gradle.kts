@@ -1,11 +1,5 @@
 rootProject.name = "identity-hub"
 
-val edcVersion: String by settings
-val bouncyCastleVersion: String by settings
-val picocliVersion: String by settings
-val edcGroup: String by settings
-val edcGradlePluginsVersion: String by settings
-
 // this is needed to have access to snapshot builds of plugins
 pluginManagement {
     repositories {
@@ -28,18 +22,15 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create("libs") {
-            from("${edcGroup}:edc-versions:${edcGradlePluginsVersion}")
-            version("picocli", picocliVersion)
-            version("bouncycastle", bouncyCastleVersion)
+            from("org.eclipse.edc:edc-versions:0.0.1-SNAPSHOT")
+            version("picocli", "4.6.3")
 
             library("picocli-core", "info.picocli", "picocli").versionRef("picocli")
             library("picocli-codegen", "info.picocli", "picocli-codegen").versionRef("picocli")
-            library("bouncycastle-bcpkix-jdk15on", "org.bouncycastle", "bcpkix-jdk15on").versionRef("bouncycastle")
-
-
+            library("swagger-jaxrs", "io.swagger.core.v3", "swagger-jaxrs2-jakarta").version("2.1.13")
         }
         create("edc") {
-            version("edc", edcVersion)
+            version("edc", "0.0.1-20221113-SNAPSHOT")
             library("spi-core", "org.eclipse.edc", "core-spi").versionRef("edc")
             library("spi-transaction", "org.eclipse.edc", "transaction-spi").versionRef("edc")
             library("spi-transaction-datasource", "org.eclipse.edc", "transaction-datasource-spi").versionRef("edc")
