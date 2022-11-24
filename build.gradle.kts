@@ -30,8 +30,10 @@ val javaVersion: String by project
 
 val defaultVersion: String by project
 
-// makes the project version overridable using the "-PidentityHubVersion..." flag. Useful for CI builds
-val actualVersion: String = (project.findProperty("identityHubVersion") ?: defaultVersion) as String
+var actualVersion: String = (project.findProperty("version") ?: defaultVersion) as String
+if (actualVersion == "unspecified") {
+    actualVersion = defaultVersion
+}
 
 buildscript {
     dependencies {
