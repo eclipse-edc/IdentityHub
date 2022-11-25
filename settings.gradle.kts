@@ -30,7 +30,7 @@ dependencyResolutionManagement {
             library("swagger-jaxrs", "io.swagger.core.v3", "swagger-jaxrs2-jakarta").version("2.1.13")
         }
         create("edc") {
-            version("edc", "0.0.1-20221113-SNAPSHOT")
+            version("edc", "0.0.1-SNAPSHOT")
             library("spi-core", "org.eclipse.edc", "core-spi").versionRef("edc")
             library("spi-transaction", "org.eclipse.edc", "transaction-spi").versionRef("edc")
             library("spi-transaction-datasource", "org.eclipse.edc", "transaction-datasource-spi").versionRef("edc")
