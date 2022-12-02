@@ -28,7 +28,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -41,25 +40,22 @@ import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentia
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.FEATURE_DETECTION_READ;
-import static org.eclipse.edc.junit.testfixtures.TestUtils.getFreePort;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 @ExtendWith(EdcExtension.class)
-class IdentityHubControllerTest {
+abstract class IdentityHubApiTest {
 
-    private static final int PORT = getFreePort();
-    private static final String API_URL = String.format("http://localhost:%s/api", PORT);
     private static final String NONCE = UUID.randomUUID().toString();
     private static final String TARGET = "http://some.test.url";
     private static final String REQUEST_ID = UUID.randomUUID().toString();
-
-    private static final String BASE_PATH = "/identity-hub";
+    private static final String IDENTITY_HUB_PATH = "/identity-hub";
+    private String apiBasePath;
 
     @BeforeEach
     void setUp(EdcExtension extension) {
-        extension.setConfiguration(Map.of("web.http.port", String.valueOf(PORT)));
+        apiBasePath = configureApi(extension);
     }
 
     @Test
@@ -122,8 +118,8 @@ class IdentityHubControllerTest {
     @Test
     void getSelfDescription() {
         given()
-                .baseUri(API_URL)
-                .basePath(BASE_PATH)
+                .baseUri(apiBasePath)
+                .basePath(IDENTITY_HUB_PATH)
                 .get("/self-description")
                 .then()
                 .assertThat()
@@ -131,10 +127,12 @@ class IdentityHubControllerTest {
                 .body("selfDescriptionCredential.credentialSubject.gx-participant:headquarterAddress.gx-participant:country.@value", equalTo("FR"));
     }
 
+    protected abstract String configureApi(EdcExtension extension);
+
     private RequestSpecification baseRequest() {
         return given()
-                .baseUri(API_URL)
-                .basePath(BASE_PATH)
+                .baseUri(apiBasePath)
+                .basePath(IDENTITY_HUB_PATH)
                 .contentType(ContentType.JSON)
                 .when();
     }

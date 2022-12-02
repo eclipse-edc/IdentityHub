@@ -22,8 +22,10 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.eclipse.edc.web.spi.WebServer;
 import org.eclipse.edc.web.spi.WebService;
+import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
+import org.eclipse.edc.web.spi.configuration.WebServiceSettings;
 
 import java.util.Optional;
 
@@ -37,13 +39,25 @@ public class IdentityHubApiExtension implements ServiceExtension {
     @Setting
     private static final String SELF_DESCRIPTION_DOCUMENT_PATH_SETTING = "edc.self.description.document.path";
     private static final String DEFAULT_SELF_DESCRIPTION_FILE_NAME = "default-self-description.json";
+    private static final String IDENTITY_CONTEXT_ALIAS = "identity";
+    private static final String DEFAULT_IDENTITY_API_CONTEXT_PATH = "/api/v1/identity";
+    private static final int DEFAULT_IDENTITY_API_PORT = 8188;
+    public static final WebServiceSettings SETTINGS = WebServiceSettings.Builder.newInstance()
+            .apiConfigKey("web.http." + IDENTITY_CONTEXT_ALIAS)
+            .contextAlias(IDENTITY_CONTEXT_ALIAS)
+            .defaultPath(DEFAULT_IDENTITY_API_CONTEXT_PATH)
+            .defaultPort(DEFAULT_IDENTITY_API_PORT)
+            .useDefaultContext(true)
+            .name("Identity API")
+            .build();
     @Inject
     private WebService webService;
-
-    @Inject
-    private TransactionContext transactionContext;
     @Inject
     private MessageProcessorRegistry messageProcessorRegistry;
+    @Inject
+    private WebServiceConfigurer configurer;
+    @Inject
+    private WebServer webServer;
 
     @Override
     public String name() {
@@ -53,14 +67,16 @@ public class IdentityHubApiExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         var mapper = context.getTypeManager().getMapper();
-
-
         var loader = new SelfDescriptionLoader(mapper);
         var selfDescription = Optional.ofNullable(context.getSetting(SELF_DESCRIPTION_DOCUMENT_PATH_SETTING, null))
                 .map(loader::fromFile)
                 .orElse(loader.fromClasspath(DEFAULT_SELF_DESCRIPTION_FILE_NAME));
         var identityHubController = new IdentityHubController(messageProcessorRegistry, selfDescription);
-        webService.registerResource(identityHubController);
+
+        var webServiceConfig = configurer.configure(context, webServer, SETTINGS);
+
+        context.registerService(IdentityHubApiConfiguration.class, new IdentityHubApiConfiguration(webServiceConfig));
+        webService.registerResource(webServiceConfig.getContextAlias(), identityHubController);
     }
 
 }
