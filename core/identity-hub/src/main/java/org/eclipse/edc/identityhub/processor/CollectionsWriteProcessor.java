@@ -93,7 +93,7 @@ public class CollectionsWriteProcessor implements MessageProcessor {
             var jwt = SignedJWT.parse(new String(data));
             var vcClaim = Optional.ofNullable(jwt.getJWTClaimsSet().getClaim(VERIFIABLE_CREDENTIALS_KEY))
                     .orElseThrow(() -> new EdcException("Missing `vc` claim in signed JWT"));
-            mapper.readValue(vcClaim.toString(), VerifiableCredential.class);
+            mapper.convertValue(vcClaim, VerifiableCredential.class);
         } catch (Exception e) {
             return Result.failure("Failed to parse Verifiable Credential: " + e.getMessage());
         }
