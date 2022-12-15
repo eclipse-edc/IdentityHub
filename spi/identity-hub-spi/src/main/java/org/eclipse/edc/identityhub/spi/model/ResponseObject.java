@@ -21,22 +21,16 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * See <a href="https://identity.foundation/decentralized-web-node/spec/#response-objects">Response Object documentation</a>
  */
 @JsonDeserialize(builder = ResponseObject.Builder.class)
 public class ResponseObject {
-    private String requestId;
     private RequestStatus status;
     private Collection<MessageResponseObject> replies;
 
     private ResponseObject() {
-    }
-
-    public String getRequestId() {
-        return requestId;
     }
 
     public RequestStatus getStatus() {
@@ -60,10 +54,6 @@ public class ResponseObject {
             return new Builder();
         }
 
-        public Builder requestId(String requestId) {
-            responseObject.requestId = requestId;
-            return this;
-        }
 
         public Builder status(RequestStatus status) {
             responseObject.status = status;
@@ -76,7 +66,6 @@ public class ResponseObject {
         }
 
         public ResponseObject build() {
-            Objects.requireNonNull(responseObject.requestId, "ResponseObject must contain requestId property.");
             return responseObject;
         }
     }

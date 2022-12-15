@@ -158,10 +158,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     }
 
     private RequestBody buildRequestBody(Descriptor descriptor, byte[] data) throws JsonProcessingException {
-        var requestId = UUID.randomUUID().toString();
         var requestObject = RequestObject.Builder.newInstance()
-                .requestId(requestId)
-                .target("target")
                 .messages(List.of(MessageRequestObject.Builder.newInstance()
                         .descriptor(descriptor)
                         .data(data)

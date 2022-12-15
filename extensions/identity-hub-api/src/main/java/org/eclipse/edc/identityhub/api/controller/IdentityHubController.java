@@ -62,7 +62,6 @@ public class IdentityHubController {
                 .collect(Collectors.toList());
 
         return ResponseObject.Builder.newInstance()
-                .requestId(requestObject.getRequestId())
                 .status(RequestStatus.OK)
                 .replies(replies)
                 .build();
