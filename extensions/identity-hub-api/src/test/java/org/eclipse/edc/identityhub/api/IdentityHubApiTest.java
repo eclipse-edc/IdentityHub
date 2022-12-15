@@ -81,7 +81,6 @@ abstract class IdentityHubApiTest {
                 .post()
                 .then()
                 .statusCode(200)
-                .body("requestId", equalTo(REQUEST_ID))
                 .body("replies", hasSize(1))
                 .body("replies[0].entries", hasSize(1))
                 .body("replies[0].entries[0].interfaces.collections['CollectionsQuery']", is(true))
@@ -95,7 +94,6 @@ abstract class IdentityHubApiTest {
                 .post()
                 .then()
                 .statusCode(200)
-                .body("requestId", equalTo(REQUEST_ID))
                 .body("replies", hasSize(1))
                 .body("replies[0].status.code", equalTo(501))
                 .body("replies[0].status.detail", equalTo("The interface method is not implemented"));
@@ -109,7 +107,6 @@ abstract class IdentityHubApiTest {
                 .post()
                 .then()
                 .statusCode(200)
-                .body("requestId", equalTo(REQUEST_ID))
                 .body("replies", hasSize(1))
                 .body("replies[0].status.code", equalTo(400))
                 .body("replies[0].status.detail", equalTo("The message was malformed or improperly constructed"));
@@ -143,8 +140,6 @@ abstract class IdentityHubApiTest {
 
     private RequestObject createRequestObject(String method, byte[] data) {
         return RequestObject.Builder.newInstance()
-                .requestId(REQUEST_ID)
-                .target(TARGET)
                 .messages(List.of(
                         MessageRequestObject.Builder.newInstance()
                                 .descriptor(Descriptor.Builder.newInstance()
@@ -165,7 +160,6 @@ abstract class IdentityHubApiTest {
                 .post()
                 .then()
                 .statusCode(200)
-                .body("requestId", equalTo(REQUEST_ID))
                 .body("replies", hasSize(1))
                 .body("replies[0].status.code", equalTo(200))
                 .body("replies[0].status.detail", equalTo("The message was successfully processed"));
@@ -177,7 +171,6 @@ abstract class IdentityHubApiTest {
                 .post()
                 .then()
                 .statusCode(200)
-                .body("requestId", equalTo(REQUEST_ID))
                 .body("replies", hasSize(1))
                 .body("replies[0].status.code", equalTo(200))
                 .body("replies[0].status.detail", equalTo("The message was successfully processed"))

@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +29,7 @@ import java.util.List;
 @JsonDeserialize(builder = ResponseObject.Builder.class)
 public class ResponseObject {
     private RequestStatus status;
-    private Collection<MessageResponseObject> replies;
+    private Collection<MessageResponseObject> replies = new ArrayList<>();
 
     private ResponseObject() {
     }

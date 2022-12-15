@@ -46,7 +46,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
-import static org.eclipse.edc.identityhub.spi.model.MessageResponseObject.MESSAGE_ID_VALUE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -134,7 +133,7 @@ class CollectionsWriteProcessorTest {
     @MethodSource("invalidInputProvider")
     void writeCredentials_invalidInput(MessageRequestObject requestObject) {
         // Arrange
-        var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
+        var expectedResult = MessageResponseObject.Builder.newInstance().status(MessageStatus.MALFORMED_MESSAGE).build();
 
         // Act
         var result = writeProcessor.process(requestObject);
@@ -149,7 +148,7 @@ class CollectionsWriteProcessorTest {
         // Arrange
         doThrow(new EdcException("store error")).when(identityHubStore).add(any());
         var requestObject = getValidMessageRequestObject();
-        var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.UNHANDLED_ERROR).build();
+        var expectedResult = MessageResponseObject.Builder.newInstance().status(MessageStatus.UNHANDLED_ERROR).build();
 
         // Act
         var result = writeProcessor.process(requestObject);
@@ -167,7 +166,7 @@ class CollectionsWriteProcessorTest {
         var result = writeProcessor.process(requestObject);
 
         // Assert
-        var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
+        var expectedResult = MessageResponseObject.Builder.newInstance().status(MessageStatus.OK).build();
 
         var captor = ArgumentCaptor.forClass(IdentityHubRecord.class);
         verify(identityHubStore).add(captor.capture());

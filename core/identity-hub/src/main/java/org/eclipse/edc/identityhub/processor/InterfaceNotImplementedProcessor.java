@@ -20,7 +20,6 @@ import org.eclipse.edc.identityhub.spi.processor.MessageProcessor;
 
 import java.util.List;
 
-import static org.eclipse.edc.identityhub.spi.model.MessageResponseObject.MESSAGE_ID_VALUE;
 import static org.eclipse.edc.identityhub.spi.model.MessageStatus.INTERFACE_NOT_IMPLEMENTED;
 
 /**
@@ -31,7 +30,6 @@ public class InterfaceNotImplementedProcessor implements MessageProcessor {
     @Override
     public MessageResponseObject process(MessageRequestObject requestObject) {
         return MessageResponseObject.Builder.newInstance()
-                .messageId(MESSAGE_ID_VALUE)
                 .status(INTERFACE_NOT_IMPLEMENTED)
                 .entries(List.of())
                 .build();

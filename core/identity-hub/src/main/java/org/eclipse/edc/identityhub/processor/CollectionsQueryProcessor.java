@@ -24,8 +24,6 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.stream.Collectors;
 
-import static org.eclipse.edc.identityhub.spi.model.MessageResponseObject.MESSAGE_ID_VALUE;
-
 /**
  * Processor of "CollectionsQuery" messages, returning the list of objects available in the {@link IdentityHubStore}
  */
@@ -45,7 +43,6 @@ public class CollectionsQueryProcessor implements MessageProcessor {
         try (var stream = transactionContext.execute(identityHubStore::getAll)) {
             var entries = stream.map(IdentityHubRecord::getPayload).collect(Collectors.toList());
             return MessageResponseObject.Builder.newInstance()
-                    .messageId(MESSAGE_ID_VALUE)
                     .status(MessageStatus.OK)
                     .entries(entries)
                     .build();

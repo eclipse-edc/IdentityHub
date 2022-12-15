@@ -31,7 +31,6 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import java.util.Optional;
 
 import static java.lang.String.format;
-import static org.eclipse.edc.identityhub.spi.model.MessageResponseObject.MESSAGE_ID_VALUE;
 
 /**
  * Processor of "CollectionsWrite" messages, in order to write objects into the {@link IdentityHubStore}.
@@ -56,17 +55,17 @@ public class CollectionsWriteProcessor implements MessageProcessor {
         var record = createRecord(requestObject);
         if (record.failed()) {
             monitor.warning(format("Failed to create record %s", record.getFailureDetail()));
-            return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
+            return MessageResponseObject.Builder.newInstance().status(MessageStatus.MALFORMED_MESSAGE).build();
         }
 
         try {
             transactionContext.execute(() -> identityHubStore.add(record.getContent()));
         } catch (Exception e) {
             monitor.warning("Failed to add Verifiable Credential to Identity Hub", e);
-            return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.UNHANDLED_ERROR).build();
+            return MessageResponseObject.Builder.newInstance().status(MessageStatus.UNHANDLED_ERROR).build();
         }
 
-        return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
+        return MessageResponseObject.Builder.newInstance().status(MessageStatus.OK).build();
     }
 
     private Result<IdentityHubRecord> createRecord(MessageRequestObject requestObject) {

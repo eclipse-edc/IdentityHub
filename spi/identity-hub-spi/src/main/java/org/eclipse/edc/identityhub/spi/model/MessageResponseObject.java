@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * MessageResponseObject are objects in the replies of a <a href="https://identity.foundation/decentralized-web-node/spec/#response-objects">Response Object </a>.
@@ -32,19 +31,12 @@ import java.util.UUID;
 @JsonDeserialize(builder = MessageResponseObject.Builder.class)
 public class MessageResponseObject {
 
-    public static final String MESSAGE_ID_VALUE = UUID.randomUUID().toString();
-
-    private String messageId;
     private MessageStatus status;
     private Collection<?> entries = new ArrayList<>();
 
     private MessageResponseObject() {
     }
 
-    @Schema(description = "[UNSUPPORTED] Stringified Version 1 CID of the associated message")
-    public String getMessageId() {
-        return messageId;
-    }
 
     public MessageStatus getStatus() {
         return status;
@@ -68,10 +60,6 @@ public class MessageResponseObject {
             return new Builder();
         }
 
-        public Builder messageId(String messageId) {
-            messageResponseObject.messageId = messageId;
-            return this;
-        }
 
         public Builder status(MessageStatus status) {
             messageResponseObject.status = status;
@@ -84,7 +72,6 @@ public class MessageResponseObject {
         }
 
         public MessageResponseObject build() {
-            Objects.requireNonNull(messageResponseObject.messageId, "MessageResponseObject must contain messageId property.");
             Objects.requireNonNull(messageResponseObject.status, "MessageResponseObject must contain status property.");
             return messageResponseObject;
         }
