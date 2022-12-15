@@ -99,8 +99,7 @@ class CollectionsWriteProcessorTest {
     }
 
     private static Descriptor.Builder descriptorBuilder() {
-        return Descriptor.Builder.newInstance()
-                .nonce(UUID.randomUUID().toString());
+        return Descriptor.Builder.newInstance();
     }
 
     private static MessageRequestObject getValidMessageRequestObject() {

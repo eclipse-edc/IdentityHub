@@ -27,7 +27,6 @@ import java.util.Objects;
 @JsonDeserialize(builder = Descriptor.Builder.class)
 public class Descriptor {
     private String method;
-    private String nonce;
     private long dateCreated;
     private String recordId;
     private String dataCid;
@@ -49,11 +48,6 @@ public class Descriptor {
     @Schema(description = "Unix epoch timestamp interpreted as the time the logical entry was created by the DID owner or another permitted party")
     public long getDateCreated() {
         return dateCreated;
-    }
-
-    @Schema(description = "[UNSUPPORTED] Cryptographically random string that ensures each object is unique")
-    public String getNonce() {
-        return nonce;
     }
 
     @Schema(description = "[UNSUPPORTED] If data is available, this field should contain stringified Version 1 CID of the DAG PB encoded data")
@@ -85,10 +79,6 @@ public class Descriptor {
             return this;
         }
 
-        public Builder nonce(String nonce) {
-            descriptor.nonce = nonce;
-            return this;
-        }
 
         public Builder dateCreated(long dateCreated) {
             descriptor.dateCreated = dateCreated;
@@ -112,7 +102,6 @@ public class Descriptor {
 
         public Descriptor build() {
             Objects.requireNonNull(descriptor.method, "Descriptor must contain method property.");
-            Objects.requireNonNull(descriptor.nonce, "Descriptor must contain nonce property.");
             return descriptor;
         }
     }

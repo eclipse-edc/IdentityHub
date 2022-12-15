@@ -46,10 +46,7 @@ import static org.hamcrest.Matchers.is;
 
 @ExtendWith(EdcExtension.class)
 abstract class IdentityHubApiTest {
-
-    private static final String NONCE = UUID.randomUUID().toString();
-    private static final String TARGET = "http://some.test.url";
-    private static final String REQUEST_ID = UUID.randomUUID().toString();
+    
     private static final String IDENTITY_HUB_PATH = "/identity-hub";
     private String apiBasePath;
 
@@ -144,7 +141,6 @@ abstract class IdentityHubApiTest {
                         MessageRequestObject.Builder.newInstance()
                                 .descriptor(Descriptor.Builder.newInstance()
                                         .method(method)
-                                        .nonce(NONCE)
                                         .recordId(UUID.randomUUID().toString())
                                         .dateCreated(Instant.now().getEpochSecond())
                                         .build())

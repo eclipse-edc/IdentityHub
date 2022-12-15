@@ -61,8 +61,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
 
     private static Descriptor.Builder defaultDescriptor(String method) {
         return Descriptor.Builder.newInstance()
-                .method(method)
-                .nonce(UUID.randomUUID().toString());
+                .method(method);
     }
 
     private static <T> StatusResult<T> identityHubCallError(Response response) throws IOException {
