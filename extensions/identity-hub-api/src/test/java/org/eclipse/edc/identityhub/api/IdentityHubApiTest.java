@@ -46,7 +46,8 @@ import static org.hamcrest.Matchers.is;
 
 @ExtendWith(EdcExtension.class)
 abstract class IdentityHubApiTest {
-    
+
+    public static final String DATA_FORMAT = "application/vc+jwt";
     private static final String IDENTITY_HUB_PATH = "/identity-hub";
     private String apiBasePath;
 
@@ -100,7 +101,7 @@ abstract class IdentityHubApiTest {
     void writeMalformedMessage() {
         byte[] data = "invalid base64".getBytes(UTF_8);
         baseRequest()
-                .body(createRequestObject(COLLECTIONS_WRITE.getName(), data))
+                .body(createRequestObject(COLLECTIONS_WRITE.getName(), data, DATA_FORMAT))
                 .post()
                 .then()
                 .statusCode(200)
@@ -136,12 +137,17 @@ abstract class IdentityHubApiTest {
     }
 
     private RequestObject createRequestObject(String method, byte[] data) {
+        return createRequestObject(method, data, null);
+    }
+
+    private RequestObject createRequestObject(String method, byte[] data, String dataFormat) {
         return RequestObject.Builder.newInstance()
                 .messages(List.of(
                         MessageRequestObject.Builder.newInstance()
                                 .descriptor(Descriptor.Builder.newInstance()
                                         .method(method)
                                         .recordId(UUID.randomUUID().toString())
+                                        .dataFormat(dataFormat)
                                         .dateCreated(Instant.now().getEpochSecond())
                                         .build())
                                 .data(data)
@@ -152,7 +158,7 @@ abstract class IdentityHubApiTest {
     private void collectionsWrite(SignedJWT verifiableCredential) {
         byte[] data = verifiableCredential.serialize().getBytes(UTF_8);
         baseRequest()
-                .body(createRequestObject(COLLECTIONS_WRITE.getName(), data))
+                .body(createRequestObject(COLLECTIONS_WRITE.getName(), data, DATA_FORMAT))
                 .post()
                 .then()
                 .statusCode(200)

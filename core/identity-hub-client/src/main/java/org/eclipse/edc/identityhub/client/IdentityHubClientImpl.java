@@ -26,6 +26,7 @@ import okhttp3.Response;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.spi.model.Descriptor;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
+import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.RequestObject;
 import org.eclipse.edc.identityhub.spi.model.ResponseObject;
 import org.eclipse.edc.spi.EdcException;
@@ -40,8 +41,10 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -49,6 +52,7 @@ import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLE
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 
 public class IdentityHubClientImpl implements IdentityHubClient {
+    public static final String DATA_FORMAT = "application/vc+jwt";
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final Monitor monitor;
@@ -122,6 +126,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
         var payload = verifiableCredential.serialize().getBytes(UTF_8);
         var descriptor = defaultDescriptor(COLLECTIONS_WRITE.getName())
                 .recordId(UUID.randomUUID().toString())
+                .dataFormat(DATA_FORMAT)
                 .dateCreated(Instant.now().getEpochSecond()) // TODO: this should be passed from input
                 .build();
         try (var response = httpClient.newCall(new Request.Builder()
@@ -132,10 +137,30 @@ public class IdentityHubClientImpl implements IdentityHubClient {
             if (response.code() != 200) {
                 return identityHubCallError(response);
             }
+            var responseObject = objectMapper.readValue(response.body().byteStream(), ResponseObject.class);
+
+            if (responseObject.getStatus() != null && !responseObject.getStatus().isSuccess()) {
+                return StatusResult.failure(ResponseStatus.FATAL_ERROR, responseObject.getStatus().getDetail());
+            }
+
+            var requestStatus = Optional.of(responseObject.getStatus())
+                    .map(status -> Stream.of(status))
+                    .orElseGet(Stream::empty);
+
+            var messageStatus = responseObject.getReplies()
+                    .stream()
+                    .map(MessageResponseObject::getStatus);
+
+            return Stream.concat(messageStatus, requestStatus)
+                    .filter(status -> !status.isSuccess())
+                    .map(status -> StatusResult.<Void>failure(ResponseStatus.FATAL_ERROR, status.getDetail()))
+                    .findFirst()
+                    .orElseGet(() -> StatusResult.success());
+
+
         } catch (IOException e) {
             return StatusResult.failure(ResponseStatus.FATAL_ERROR, e.getMessage());
         }
-        return StatusResult.success();
     }
 
     private Result<SignedJWT> parse(Object entry) {

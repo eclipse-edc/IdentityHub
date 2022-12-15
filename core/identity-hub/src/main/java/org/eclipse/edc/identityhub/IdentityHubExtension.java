@@ -18,7 +18,11 @@ import org.eclipse.edc.identityhub.processor.CollectionsQueryProcessor;
 import org.eclipse.edc.identityhub.processor.CollectionsWriteProcessor;
 import org.eclipse.edc.identityhub.processor.FeatureDetectionReadProcessor;
 import org.eclipse.edc.identityhub.processor.MessageProcessorRegistryImpl;
+import org.eclipse.edc.identityhub.processor.data.DataValidatorRegistryImpl;
+import org.eclipse.edc.identityhub.processor.data.JwtVerifiableCredential;
+import org.eclipse.edc.identityhub.processor.data.LdpVerifiableCredential;
 import org.eclipse.edc.identityhub.spi.processor.MessageProcessorRegistry;
+import org.eclipse.edc.identityhub.spi.processor.data.DataValidatorRegistry;
 import org.eclipse.edc.identityhub.store.InMemoryIdentityHubStore;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -44,14 +48,21 @@ public class IdentityHubExtension implements ServiceExtension {
     @Inject
     private TransactionContext transactionContext;
 
+    @Inject
+    private DataValidatorRegistry dataValidatorRegistry;
+
 
     @Provider(isDefault = true)
     public MessageProcessorRegistry messageProcessorRegistry(ServiceExtensionContext context) {
         var mapper = context.getTypeManager().getMapper();
         var methodProcessorFactory = new MessageProcessorRegistryImpl();
 
+
+        dataValidatorRegistry.register(new JwtVerifiableCredential(mapper));
+        dataValidatorRegistry.register(new LdpVerifiableCredential());
+
         methodProcessorFactory.register(COLLECTIONS_QUERY, new CollectionsQueryProcessor(identityHubStore, transactionContext));
-        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, mapper, context.getMonitor(), transactionContext));
+        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, context.getMonitor(), transactionContext, dataValidatorRegistry));
         methodProcessorFactory.register(FEATURE_DETECTION_READ, new FeatureDetectionReadProcessor());
 
         return methodProcessorFactory;
@@ -60,5 +71,11 @@ public class IdentityHubExtension implements ServiceExtension {
     @Provider(isDefault = true)
     public IdentityHubStore identityHubStore() {
         return new InMemoryIdentityHubStore();
+    }
+
+
+    @Provider(isDefault = true)
+    public DataValidatorRegistry dataValidatorRegistry() {
+        return new DataValidatorRegistryImpl();
     }
 }

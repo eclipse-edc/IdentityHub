@@ -55,7 +55,7 @@ public class Descriptor {
         return dataCid;
     }
 
-    @Schema(description = "[UNSUPPORTED] if data is available, this field should contain a registered IANA Media Type data format. Use 'application/vc+ldp' for Verifiable Credentials.")
+    @Schema(description = "if data is available, this field should contain a registered IANA Media Type data format. Use 'application/vc+ldp' for Verifiable Credentials.")
     public String getDataFormat() {
         return dataFormat;
     }
