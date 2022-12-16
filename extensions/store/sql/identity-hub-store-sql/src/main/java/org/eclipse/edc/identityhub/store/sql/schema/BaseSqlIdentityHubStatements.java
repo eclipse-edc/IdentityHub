@@ -24,8 +24,8 @@ public class BaseSqlIdentityHubStatements implements IdentityHubStatements {
 
     @Override
     public String getInsertTemplate() {
-        return format("INSERT INTO %s (%s, %s, %s) VALUES (?,?,?)",
-                getTable(), getIdColumn(), getPayloadColumn(), getCreatedAtColumn());
+        return format("INSERT INTO %s (%s, %s, %s, %s) VALUES (?,?,?,?)",
+                getTable(), getIdColumn(), getPayloadColumn(), getPayloadFormatColumn(), getCreatedAtColumn());
     }
 
     @Override

@@ -25,11 +25,17 @@ public class IdentityHubRecord extends Entity {
 
     private byte[] payload;
 
+    private String payloadFormat;
+
     private IdentityHubRecord() {
     }
 
     public byte[] getPayload() {
         return payload;
+    }
+
+    public String getPayloadFormat() {
+        return payloadFormat;
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -57,6 +63,11 @@ public class IdentityHubRecord extends Entity {
 
         public Builder payload(byte[] payload) {
             entity.payload = payload;
+            return self();
+        }
+
+        public Builder payloadFormat(String payloadFormat) {
+            entity.payloadFormat = payloadFormat;
             return self();
         }
     }

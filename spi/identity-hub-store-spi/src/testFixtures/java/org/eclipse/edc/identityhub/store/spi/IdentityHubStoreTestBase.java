@@ -52,6 +52,7 @@ public abstract class IdentityHubStoreTestBase {
         var vc = VerifiableCredential.Builder.newInstance().id(UUID.randomUUID().toString()).build();
         return IdentityHubRecord.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
+                .payloadFormat("application/json")
                 .payload(toByteArray(vc))
                 .build();
     }

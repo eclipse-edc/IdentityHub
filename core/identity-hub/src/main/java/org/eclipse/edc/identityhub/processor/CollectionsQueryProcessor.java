@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.processor;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.MessageStatus;
+import org.eclipse.edc.identityhub.spi.model.Record;
 import org.eclipse.edc.identityhub.spi.processor.MessageProcessor;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
@@ -41,11 +42,20 @@ public class CollectionsQueryProcessor implements MessageProcessor {
     @Override
     public MessageResponseObject process(MessageRequestObject requestObject) {
         try (var stream = transactionContext.execute(identityHubStore::getAll)) {
-            var entries = stream.map(IdentityHubRecord::getPayload).collect(Collectors.toList());
+            var entries = stream.map(this::toRecord).collect(Collectors.toList());
             return MessageResponseObject.Builder.newInstance()
                     .status(MessageStatus.OK)
                     .entries(entries)
                     .build();
         }
+    }
+
+    private Record toRecord(IdentityHubRecord identityHubRecord) {
+        return Record.Builder.newInstance()
+                .id(identityHubRecord.getId())
+                .createdAt(identityHubRecord.getCreatedAt())
+                .dataFormat(identityHubRecord.getPayloadFormat())
+                .data(identityHubRecord.getPayload())
+                .build();
     }
 }

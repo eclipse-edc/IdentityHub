@@ -19,6 +19,7 @@ import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.spi.model.Descriptor;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
+import org.eclipse.edc.identityhub.spi.model.Record;
 import org.eclipse.edc.identityhub.spi.model.RequestObject;
 import org.eclipse.edc.junit.extensions.EdcExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -176,8 +176,8 @@ abstract class IdentityHubApiTest {
                 .body("replies", hasSize(1))
                 .body("replies[0].status.code", equalTo(200))
                 .body("replies[0].status.detail", equalTo("The message was successfully processed"))
-                .extract().body().jsonPath().getList("replies[0].entries", String.class)
-                .stream().map(s -> Base64.getDecoder().decode(s))
+                .extract().body().jsonPath().getList("replies[0].entries", Record.class)
+                .stream().map(s -> s.getData())
                 .collect(Collectors.toList());
     }
 }

@@ -27,6 +27,7 @@ import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.spi.model.Descriptor;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
+import org.eclipse.edc.identityhub.spi.model.Record;
 import org.eclipse.edc.identityhub.spi.model.RequestObject;
 import org.eclipse.edc.identityhub.spi.model.ResponseObject;
 import org.eclipse.edc.spi.EdcException;
@@ -165,8 +166,14 @@ public class IdentityHubClientImpl implements IdentityHubClient {
 
     private Result<SignedJWT> parse(Object entry) {
         try {
-            var jwt = new String(objectMapper.convertValue(entry, byte[].class));
-            return Result.success(SignedJWT.parse(jwt));
+            var record = objectMapper.convertValue(entry, Record.class);
+            if (DATA_FORMAT.equalsIgnoreCase(record.getDataFormat())) {
+                var jwt = new String(record.getData());
+                return Result.success(SignedJWT.parse(jwt));
+            } else {
+                return Result.failure(format("Expected dataFormat %s found %s", DATA_FORMAT, record.getDataFormat()));
+            }
+
         } catch (ParseException e) {
             monitor.warning("Could not parse JWT", e);
             return Result.failure(e.getMessage());

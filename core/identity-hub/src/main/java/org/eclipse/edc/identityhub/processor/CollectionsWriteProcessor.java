@@ -86,9 +86,10 @@ public class CollectionsWriteProcessor implements MessageProcessor {
             return Result.failure(parsing.getFailureMessages());
         }
         return Result.success(IdentityHubRecord.Builder.newInstance()
-                .id(requestObject.getDescriptor().getRecordId())
+                .id(descriptor.getRecordId())
                 .payload(requestObject.getData())
-                .createdAt(requestObject.getDescriptor().getDateCreated())
+                .payloadFormat(descriptor.getDataFormat())
+                .createdAt(descriptor.getDateCreated())
                 .build());
     }
 }

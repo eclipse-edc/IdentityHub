@@ -24,6 +24,7 @@ import okhttp3.ResponseBody;
 import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.MessageStatus;
+import org.eclipse.edc.identityhub.spi.model.Record;
 import org.eclipse.edc.identityhub.spi.model.RequestStatus;
 import org.eclipse.edc.identityhub.spi.model.ResponseObject;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -98,10 +99,16 @@ class IdentityHubClientImplTest {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
         var jws = buildSignedJwt(credential, "http://some.test.url", "http://some.test.url", generateEcKey());
 
+        var record = Record.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .dataFormat(IdentityHubClientImpl.DATA_FORMAT)
+                .createdAt(System.currentTimeMillis())
+                .data(jws.serialize().getBytes(StandardCharsets.UTF_8))
+                .build();
         Interceptor interceptor = chain -> {
             var request = chain.request();
             var replies = MessageResponseObject.Builder.newInstance()
-                    .status(MessageStatus.OK).entries(List.of(jws.serialize().getBytes(StandardCharsets.UTF_8))).build();
+                    .status(MessageStatus.OK).entries(List.of(record)).build();
             var responseObject = ResponseObject.Builder.newInstance()
                     .status(RequestStatus.OK)
                     .replies(List.of(replies))

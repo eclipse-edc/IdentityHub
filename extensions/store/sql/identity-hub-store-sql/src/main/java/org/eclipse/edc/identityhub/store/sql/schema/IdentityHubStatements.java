@@ -31,6 +31,11 @@ public interface IdentityHubStatements {
         return "payload";
     }
 
+    default String getPayloadFormatColumn() {
+        return "payloadFormat";
+    }
+
+
     default String getCreatedAtColumn() {
         return "created_at";
     }

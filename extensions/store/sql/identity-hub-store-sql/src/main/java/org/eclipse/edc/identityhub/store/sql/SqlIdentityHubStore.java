@@ -68,7 +68,7 @@ public class SqlIdentityHubStore implements IdentityHubStore {
         transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 var payload = new String(record.getPayload());
-                executeQuery(connection, statements.getInsertTemplate(), record.getId(), payload, record.getCreatedAt());
+                executeQuery(connection, statements.getInsertTemplate(), record.getId(), payload, record.getPayloadFormat(), record.getCreatedAt());
             } catch (Exception e) {
                 throw new EdcPersistenceException(e.getMessage(), e);
             }
