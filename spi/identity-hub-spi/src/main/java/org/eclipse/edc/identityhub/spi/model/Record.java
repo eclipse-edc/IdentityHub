@@ -20,7 +20,9 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.util.Objects;
 
-
+/**
+ * The {@link Record} is an object produced by CollectionQuery interface
+ */
 @JsonDeserialize(builder = Record.Builder.class)
 public class Record {
 
