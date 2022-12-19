@@ -25,10 +25,13 @@ import org.eclipse.edc.identityhub.spi.model.Descriptor;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.MessageStatus;
+import org.eclipse.edc.identityhub.spi.processor.data.DataValidator;
+import org.eclipse.edc.identityhub.spi.processor.data.DataValidatorRegistry;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,12 +49,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
-import static org.eclipse.edc.identityhub.spi.model.MessageResponseObject.MESSAGE_ID_VALUE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 
 class CollectionsWriteProcessorTest {
@@ -59,6 +62,8 @@ class CollectionsWriteProcessorTest {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String ISSUER = "http://some.test.url";
     private static final String SUBJECT = "http://some.test.url";
+
+    private DataValidatorRegistry validatorRegistry;
 
     private IdentityHubStore identityHubStore;
     private CollectionsWriteProcessor writeProcessor;
@@ -100,8 +105,7 @@ class CollectionsWriteProcessorTest {
     }
 
     private static Descriptor.Builder descriptorBuilder() {
-        return Descriptor.Builder.newInstance()
-                .nonce(UUID.randomUUID().toString());
+        return Descriptor.Builder.newInstance();
     }
 
     private static MessageRequestObject getValidMessageRequestObject() {
@@ -114,6 +118,7 @@ class CollectionsWriteProcessorTest {
     private static Descriptor getValidDescriptor() {
         return descriptorBuilder()
                 .method("test")
+                .dataFormat("validDateFormat")
                 .dateCreated(Instant.now().getEpochSecond())
                 .recordId(UUID.randomUUID().toString())
                 .build();
@@ -127,14 +132,16 @@ class CollectionsWriteProcessorTest {
     @BeforeEach
     void setUp() {
         identityHubStore = mock(IdentityHubStore.class);
-        writeProcessor = new CollectionsWriteProcessor(identityHubStore, OBJECT_MAPPER, mock(Monitor.class), new NoopTransactionContext());
+        validatorRegistry = mock(DataValidatorRegistry.class);
+
+        writeProcessor = new CollectionsWriteProcessor(identityHubStore, mock(Monitor.class), new NoopTransactionContext(), validatorRegistry);
     }
 
     @ParameterizedTest
     @MethodSource("invalidInputProvider")
     void writeCredentials_invalidInput(MessageRequestObject requestObject) {
         // Arrange
-        var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
+        var expectedResult = MessageResponseObject.Builder.newInstance().status(MessageStatus.MALFORMED_MESSAGE).build();
 
         // Act
         var result = writeProcessor.process(requestObject);
@@ -148,8 +155,11 @@ class CollectionsWriteProcessorTest {
     void writeCredentials_addStoreFailure() {
         // Arrange
         doThrow(new EdcException("store error")).when(identityHubStore).add(any());
+        var validator = mock(DataValidator.class);
+        when(validator.validate(any())).thenReturn(Result.success());
+        when(validatorRegistry.resolve(any())).thenReturn(validator);
         var requestObject = getValidMessageRequestObject();
-        var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.UNHANDLED_ERROR).build();
+        var expectedResult = MessageResponseObject.Builder.newInstance().status(MessageStatus.UNHANDLED_ERROR).build();
 
         // Act
         var result = writeProcessor.process(requestObject);
@@ -162,12 +172,15 @@ class CollectionsWriteProcessorTest {
     void writeCredentials() {
         // Arrange
         var requestObject = getValidMessageRequestObject();
+        var validator = mock(DataValidator.class);
+        when(validator.validate(any())).thenReturn(Result.success());
+        when(validatorRegistry.resolve(any())).thenReturn(validator);
 
         // Act
         var result = writeProcessor.process(requestObject);
 
         // Assert
-        var expectedResult = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
+        var expectedResult = MessageResponseObject.Builder.newInstance().status(MessageStatus.OK).build();
 
         var captor = ArgumentCaptor.forClass(IdentityHubRecord.class);
         verify(identityHubStore).add(captor.capture());

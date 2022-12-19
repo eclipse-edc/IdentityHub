@@ -24,6 +24,7 @@ import okhttp3.ResponseBody;
 import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.MessageStatus;
+import org.eclipse.edc.identityhub.spi.model.Record;
 import org.eclipse.edc.identityhub.spi.model.RequestStatus;
 import org.eclipse.edc.identityhub.spi.model.ResponseObject;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -39,7 +40,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
-import static org.eclipse.edc.identityhub.spi.model.MessageResponseObject.MESSAGE_ID_VALUE;
 import static org.mockito.Mockito.mock;
 
 class IdentityHubClientImplTest {
@@ -99,12 +99,17 @@ class IdentityHubClientImplTest {
         var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
         var jws = buildSignedJwt(credential, "http://some.test.url", "http://some.test.url", generateEcKey());
 
+        var record = Record.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .dataFormat(IdentityHubClientImpl.DATA_FORMAT)
+                .createdAt(System.currentTimeMillis())
+                .data(jws.serialize().getBytes(StandardCharsets.UTF_8))
+                .build();
         Interceptor interceptor = chain -> {
             var request = chain.request();
-            var replies = MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE)
-                    .status(MessageStatus.OK).entries(List.of(jws.serialize().getBytes(StandardCharsets.UTF_8))).build();
+            var replies = MessageResponseObject.Builder.newInstance()
+                    .status(MessageStatus.OK).entries(List.of(record)).build();
             var responseObject = ResponseObject.Builder.newInstance()
-                    .requestId(UUID.randomUUID().toString())
                     .status(RequestStatus.OK)
                     .replies(List.of(replies))
                     .build();
@@ -154,7 +159,7 @@ class IdentityHubClientImplTest {
     void getVerifiableCredentialsDeserializationError() {
         Interceptor interceptor = chain -> {
             var request = chain.request();
-            var body = ResponseBody.create("{}", MediaType.get("application/json"));
+            var body = ResponseBody.create("{\"replies\": [{}]}", MediaType.get("application/json"));
 
             return new Response.Builder()
                     .body(body)

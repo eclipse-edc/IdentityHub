@@ -14,41 +14,35 @@
 
 package org.eclipse.edc.identityhub.processor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.MessageStatus;
 import org.eclipse.edc.identityhub.spi.processor.MessageProcessor;
+import org.eclipse.edc.identityhub.spi.processor.data.DataValidatorRegistry;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
-import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import java.util.Optional;
-
 import static java.lang.String.format;
-import static org.eclipse.edc.identityhub.spi.model.MessageResponseObject.MESSAGE_ID_VALUE;
 
 /**
  * Processor of "CollectionsWrite" messages, in order to write objects into the {@link IdentityHubStore}.
  */
 public class CollectionsWriteProcessor implements MessageProcessor {
-    private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
 
     private final IdentityHubStore identityHubStore;
-    private final ObjectMapper mapper;
     private final Monitor monitor;
     private final TransactionContext transactionContext;
 
-    public CollectionsWriteProcessor(IdentityHubStore identityHubStore, ObjectMapper mapper, Monitor monitor, TransactionContext transactionContext) {
+    private final DataValidatorRegistry validatorRegistry;
+
+    public CollectionsWriteProcessor(IdentityHubStore identityHubStore, Monitor monitor, TransactionContext transactionContext, DataValidatorRegistry validatorRegistry) {
         this.identityHubStore = identityHubStore;
-        this.mapper = mapper;
         this.monitor = monitor;
         this.transactionContext = transactionContext;
+        this.validatorRegistry = validatorRegistry;
     }
 
     @Override
@@ -56,24 +50,20 @@ public class CollectionsWriteProcessor implements MessageProcessor {
         var record = createRecord(requestObject);
         if (record.failed()) {
             monitor.warning(format("Failed to create record %s", record.getFailureDetail()));
-            return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.MALFORMED_MESSAGE).build();
+            return MessageResponseObject.Builder.newInstance().status(MessageStatus.MALFORMED_MESSAGE).build();
         }
 
         try {
             transactionContext.execute(() -> identityHubStore.add(record.getContent()));
         } catch (Exception e) {
             monitor.warning("Failed to add Verifiable Credential to Identity Hub", e);
-            return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.UNHANDLED_ERROR).build();
+            return MessageResponseObject.Builder.newInstance().status(MessageStatus.UNHANDLED_ERROR).build();
         }
 
-        return MessageResponseObject.Builder.newInstance().messageId(MESSAGE_ID_VALUE).status(MessageStatus.OK).build();
+        return MessageResponseObject.Builder.newInstance().status(MessageStatus.OK).build();
     }
 
     private Result<IdentityHubRecord> createRecord(MessageRequestObject requestObject) {
-        var parsing = canParseData(requestObject.getData());
-        if (parsing.failed()) {
-            return Result.failure(parsing.getFailureMessages());
-        }
         var descriptor = requestObject.getDescriptor();
         if (descriptor.getRecordId() == null) {
             return Result.failure("Missing mandatory `recordId` in descriptor");
@@ -81,22 +71,25 @@ public class CollectionsWriteProcessor implements MessageProcessor {
         if (descriptor.getDateCreated() == 0) {
             return Result.failure("Missing mandatory `dateCreated` in descriptor");
         }
-        return Result.success(IdentityHubRecord.Builder.newInstance()
-                .id(requestObject.getDescriptor().getRecordId())
-                .payload(requestObject.getData())
-                .createdAt(requestObject.getDescriptor().getDateCreated())
-                .build());
-    }
-
-    private Result<Void> canParseData(byte[] data) {
-        try {
-            var jwt = SignedJWT.parse(new String(data));
-            var vcClaim = Optional.ofNullable(jwt.getJWTClaimsSet().getClaim(VERIFIABLE_CREDENTIALS_KEY))
-                    .orElseThrow(() -> new EdcException("Missing `vc` claim in signed JWT"));
-            mapper.convertValue(vcClaim, VerifiableCredential.class);
-        } catch (Exception e) {
-            return Result.failure("Failed to parse Verifiable Credential: " + e.getMessage());
+        if (descriptor.getDataFormat() == null) {
+            return Result.failure("Missing mandatory `dataFormat` in descriptor");
         }
-        return Result.success();
+
+        var validator = validatorRegistry.resolve(descriptor.getDataFormat());
+
+        if (validator == null) {
+            return Result.failure(format("No registered validator for `dataFormat` %s", descriptor.getDataFormat()));
+        }
+        var parsing = validator.validate(requestObject.getData());
+
+        if (parsing.failed()) {
+            return Result.failure(parsing.getFailureMessages());
+        }
+        return Result.success(IdentityHubRecord.Builder.newInstance()
+                .id(descriptor.getRecordId())
+                .payload(requestObject.getData())
+                .payloadFormat(descriptor.getDataFormat())
+                .createdAt(descriptor.getDateCreated())
+                .build());
     }
 }

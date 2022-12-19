@@ -26,6 +26,8 @@ import okhttp3.Response;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.spi.model.Descriptor;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
+import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
+import org.eclipse.edc.identityhub.spi.model.Record;
 import org.eclipse.edc.identityhub.spi.model.RequestObject;
 import org.eclipse.edc.identityhub.spi.model.ResponseObject;
 import org.eclipse.edc.spi.EdcException;
@@ -49,6 +51,7 @@ import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLE
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 
 public class IdentityHubClientImpl implements IdentityHubClient {
+    public static final String DATA_FORMAT = "application/vc+jwt";
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final Monitor monitor;
@@ -61,8 +64,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
 
     private static Descriptor.Builder defaultDescriptor(String method) {
         return Descriptor.Builder.newInstance()
-                .method(method)
-                .nonce(UUID.randomUUID().toString());
+                .method(method);
     }
 
     private static <T> StatusResult<T> identityHubCallError(Response response) throws IOException {
@@ -88,7 +90,6 @@ public class IdentityHubClientImpl implements IdentityHubClient {
 
     @Override
     public StatusResult<Collection<SignedJWT>> getVerifiableCredentials(String hubBaseUrl) {
-        ResponseObject responseObject;
         var descriptor = defaultDescriptor(COLLECTIONS_QUERY.getName()).build();
         try (var response = httpClient.newCall(
                         new Request.Builder()
@@ -101,21 +102,25 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 return identityHubCallError(response);
             }
 
-            responseObject = objectMapper.readValue(response.body().byteStream(), ResponseObject.class);
+            try (var body = response.body()) {
+                var responseObject = objectMapper.readValue(body.string(), ResponseObject.class);
+                var verifiableCredentials = responseObject
+                        .getReplies()
+                        .stream()
+                        .flatMap(r -> r.getEntries().stream())
+                        .map(this::parse)
+                        .filter(AbstractResult::succeeded)
+                        .map(AbstractResult::getContent)
+                        .collect(Collectors.toList());
+                return StatusResult.success(verifiableCredentials);
+            }
+
+
         } catch (IOException e) {
             return StatusResult.failure(ResponseStatus.FATAL_ERROR, e.getMessage());
         }
 
-        var verifiableCredentials = responseObject
-                .getReplies()
-                .stream()
-                .flatMap(r -> r.getEntries().stream())
-                .map(this::parse)
-                .filter(AbstractResult::succeeded)
-                .map(AbstractResult::getContent)
-                .collect(Collectors.toList());
 
-        return StatusResult.success(verifiableCredentials);
     }
 
     @Override
@@ -123,6 +128,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
         var payload = verifiableCredential.serialize().getBytes(UTF_8);
         var descriptor = defaultDescriptor(COLLECTIONS_WRITE.getName())
                 .recordId(UUID.randomUUID().toString())
+                .dataFormat(DATA_FORMAT)
                 .dateCreated(Instant.now().getEpochSecond()) // TODO: this should be passed from input
                 .build();
         try (var response = httpClient.newCall(new Request.Builder()
@@ -133,16 +139,42 @@ public class IdentityHubClientImpl implements IdentityHubClient {
             if (response.code() != 200) {
                 return identityHubCallError(response);
             }
+
+            try (var body = response.body()) {
+                var responseObject = objectMapper.readValue(body.string(), ResponseObject.class);
+
+                // If the status of Response object is not success return error
+                if (responseObject.getStatus() != null && !responseObject.getStatus().isSuccess()) {
+                    return StatusResult.failure(ResponseStatus.FATAL_ERROR, responseObject.getStatus().getDetail());
+                }
+
+                // If the status of one of the replies is not success return error
+                return responseObject.getReplies()
+                        .stream()
+                        .map(MessageResponseObject::getStatus)
+                        .filter(status -> !status.isSuccess())
+                        .map(status -> StatusResult.<Void>failure(ResponseStatus.FATAL_ERROR, status.getDetail()))
+                        .findFirst()
+                        .orElseGet(() -> StatusResult.success());
+
+            }
+
+
         } catch (IOException e) {
             return StatusResult.failure(ResponseStatus.FATAL_ERROR, e.getMessage());
         }
-        return StatusResult.success();
     }
 
     private Result<SignedJWT> parse(Object entry) {
         try {
-            var jwt = new String(objectMapper.convertValue(entry, byte[].class));
-            return Result.success(SignedJWT.parse(jwt));
+            var record = objectMapper.convertValue(entry, Record.class);
+            if (DATA_FORMAT.equalsIgnoreCase(record.getDataFormat())) {
+                var jwt = new String(record.getData());
+                return Result.success(SignedJWT.parse(jwt));
+            } else {
+                return Result.failure(format("Expected dataFormat %s found %s", DATA_FORMAT, record.getDataFormat()));
+            }
+
         } catch (ParseException e) {
             monitor.warning("Could not parse JWT", e);
             return Result.failure(e.getMessage());
@@ -158,10 +190,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     }
 
     private RequestBody buildRequestBody(Descriptor descriptor, byte[] data) throws JsonProcessingException {
-        var requestId = UUID.randomUUID().toString();
         var requestObject = RequestObject.Builder.newInstance()
-                .requestId(requestId)
-                .target("target")
                 .messages(List.of(MessageRequestObject.Builder.newInstance()
                         .descriptor(descriptor)
                         .data(data)

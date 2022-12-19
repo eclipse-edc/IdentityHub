@@ -14,12 +14,13 @@
 
 package org.eclipse.edc.identityhub.spi.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Describes status of the request done by calling the identity-hub endpoint.
  */
-abstract class Status {
+public abstract class Status {
     private final int code;
     private final String detail;
 
@@ -36,5 +37,11 @@ abstract class Status {
     @Schema(description = "A string that describes a terse summary of the status")
     public String getDetail() {
         return detail;
+    }
+
+
+    @JsonIgnore
+    public boolean isSuccess() {
+        return code >= 200 && code < 300;
     }
 }

@@ -27,7 +27,6 @@ import java.util.Objects;
 @JsonDeserialize(builder = Descriptor.Builder.class)
 public class Descriptor {
     private String method;
-    private String nonce;
     private long dateCreated;
     private String recordId;
     private String dataCid;
@@ -51,17 +50,12 @@ public class Descriptor {
         return dateCreated;
     }
 
-    @Schema(description = "[UNSUPPORTED] Cryptographically random string that ensures each object is unique")
-    public String getNonce() {
-        return nonce;
-    }
-
     @Schema(description = "[UNSUPPORTED] If data is available, this field should contain stringified Version 1 CID of the DAG PB encoded data")
     public String getDataCid() {
         return dataCid;
     }
 
-    @Schema(description = "[UNSUPPORTED] if data is available, this field should contain a registered IANA Media Type data format. Use 'application/vc+ldp' for Verifiable Credentials.")
+    @Schema(description = "if data is available, this field should contain a registered IANA Media Type data format. Use 'application/vc+ldp' for Verifiable Credentials.")
     public String getDataFormat() {
         return dataFormat;
     }
@@ -85,10 +79,6 @@ public class Descriptor {
             return this;
         }
 
-        public Builder nonce(String nonce) {
-            descriptor.nonce = nonce;
-            return this;
-        }
 
         public Builder dateCreated(long dateCreated) {
             descriptor.dateCreated = dateCreated;
@@ -112,7 +102,6 @@ public class Descriptor {
 
         public Descriptor build() {
             Objects.requireNonNull(descriptor.method, "Descriptor must contain method property.");
-            Objects.requireNonNull(descriptor.nonce, "Descriptor must contain nonce property.");
             return descriptor;
         }
     }

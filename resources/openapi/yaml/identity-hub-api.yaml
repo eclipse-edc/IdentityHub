@@ -50,9 +50,9 @@ components:
           example: null
         dataFormat:
           type: string
-          description: "[UNSUPPORTED] if data is available, this field should contain\
-            \ a registered IANA Media Type data format. Use 'application/vc+ldp' for\
-            \ Verifiable Credentials."
+          description: "if data is available, this field should contain a registered\
+            \ IANA Media Type data format. Use 'application/vc+ldp' for Verifiable\
+            \ Credentials."
           example: null
         dateCreated:
           type: integer
@@ -63,11 +63,6 @@ components:
         method:
           type: string
           description: A string that matches a Decentralized Web Node Interface method
-          example: null
-        nonce:
-          type: string
-          description: "[UNSUPPORTED] Cryptographically random string that ensures\
-            \ each object is unique"
           example: null
         recordId:
           type: string
@@ -105,11 +100,6 @@ components:
             description: Resulting message entries returned from the invocation of
               the corresponding message as free form objects
             example: null
-        messageId:
-          type: string
-          description: "[UNSUPPORTED] Stringified Version 1 CID of the associated\
-            \ message"
-          example: null
         status:
           $ref: '#/components/schemas/MessageStatus'
     MessageStatus:
@@ -135,14 +125,6 @@ components:
           example: null
           items:
             $ref: '#/components/schemas/MessageRequestObject'
-        requestId:
-          type: string
-          example: null
-        target:
-          type: string
-          description: "[UNSUPPORTED] Decentralized Identifier base URI of the DID-relative\
-            \ URL"
-          example: null
     RequestStatus:
       type: object
       example: null
@@ -166,8 +148,5 @@ components:
           example: null
           items:
             $ref: '#/components/schemas/MessageResponseObject'
-        requestId:
-          type: string
-          example: null
         status:
           $ref: '#/components/schemas/RequestStatus'

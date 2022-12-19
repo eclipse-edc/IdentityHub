@@ -19,6 +19,7 @@ import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.spi.model.Descriptor;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
+import org.eclipse.edc.identityhub.spi.model.Record;
 import org.eclipse.edc.identityhub.spi.model.RequestObject;
 import org.eclipse.edc.junit.extensions.EdcExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -47,9 +47,7 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(EdcExtension.class)
 abstract class IdentityHubApiTest {
 
-    private static final String NONCE = UUID.randomUUID().toString();
-    private static final String TARGET = "http://some.test.url";
-    private static final String REQUEST_ID = UUID.randomUUID().toString();
+    public static final String DATA_FORMAT = "application/vc+jwt";
     private static final String IDENTITY_HUB_PATH = "/identity-hub";
     private String apiBasePath;
 
@@ -81,7 +79,6 @@ abstract class IdentityHubApiTest {
                 .post()
                 .then()
                 .statusCode(200)
-                .body("requestId", equalTo(REQUEST_ID))
                 .body("replies", hasSize(1))
                 .body("replies[0].entries", hasSize(1))
                 .body("replies[0].entries[0].interfaces.collections['CollectionsQuery']", is(true))
@@ -95,7 +92,6 @@ abstract class IdentityHubApiTest {
                 .post()
                 .then()
                 .statusCode(200)
-                .body("requestId", equalTo(REQUEST_ID))
                 .body("replies", hasSize(1))
                 .body("replies[0].status.code", equalTo(501))
                 .body("replies[0].status.detail", equalTo("The interface method is not implemented"));
@@ -105,11 +101,10 @@ abstract class IdentityHubApiTest {
     void writeMalformedMessage() {
         byte[] data = "invalid base64".getBytes(UTF_8);
         baseRequest()
-                .body(createRequestObject(COLLECTIONS_WRITE.getName(), data))
+                .body(createRequestObject(COLLECTIONS_WRITE.getName(), data, DATA_FORMAT))
                 .post()
                 .then()
                 .statusCode(200)
-                .body("requestId", equalTo(REQUEST_ID))
                 .body("replies", hasSize(1))
                 .body("replies[0].status.code", equalTo(400))
                 .body("replies[0].status.detail", equalTo("The message was malformed or improperly constructed"));
@@ -142,15 +137,17 @@ abstract class IdentityHubApiTest {
     }
 
     private RequestObject createRequestObject(String method, byte[] data) {
+        return createRequestObject(method, data, null);
+    }
+
+    private RequestObject createRequestObject(String method, byte[] data, String dataFormat) {
         return RequestObject.Builder.newInstance()
-                .requestId(REQUEST_ID)
-                .target(TARGET)
                 .messages(List.of(
                         MessageRequestObject.Builder.newInstance()
                                 .descriptor(Descriptor.Builder.newInstance()
                                         .method(method)
-                                        .nonce(NONCE)
                                         .recordId(UUID.randomUUID().toString())
+                                        .dataFormat(dataFormat)
                                         .dateCreated(Instant.now().getEpochSecond())
                                         .build())
                                 .data(data)
@@ -161,11 +158,10 @@ abstract class IdentityHubApiTest {
     private void collectionsWrite(SignedJWT verifiableCredential) {
         byte[] data = verifiableCredential.serialize().getBytes(UTF_8);
         baseRequest()
-                .body(createRequestObject(COLLECTIONS_WRITE.getName(), data))
+                .body(createRequestObject(COLLECTIONS_WRITE.getName(), data, DATA_FORMAT))
                 .post()
                 .then()
                 .statusCode(200)
-                .body("requestId", equalTo(REQUEST_ID))
                 .body("replies", hasSize(1))
                 .body("replies[0].status.code", equalTo(200))
                 .body("replies[0].status.detail", equalTo("The message was successfully processed"));
@@ -177,12 +173,11 @@ abstract class IdentityHubApiTest {
                 .post()
                 .then()
                 .statusCode(200)
-                .body("requestId", equalTo(REQUEST_ID))
                 .body("replies", hasSize(1))
                 .body("replies[0].status.code", equalTo(200))
                 .body("replies[0].status.detail", equalTo("The message was successfully processed"))
-                .extract().body().jsonPath().getList("replies[0].entries", String.class)
-                .stream().map(s -> Base64.getDecoder().decode(s))
+                .extract().body().jsonPath().getList("replies[0].entries", Record.class)
+                .stream().map(s -> s.getData())
                 .collect(Collectors.toList());
     }
 }

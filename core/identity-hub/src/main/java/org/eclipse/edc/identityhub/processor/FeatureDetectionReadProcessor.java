@@ -23,7 +23,6 @@ import org.eclipse.edc.identityhub.spi.processor.MessageProcessor;
 
 import java.util.List;
 
-import static org.eclipse.edc.identityhub.spi.model.MessageResponseObject.MESSAGE_ID_VALUE;
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 
@@ -35,7 +34,6 @@ public class FeatureDetectionReadProcessor implements MessageProcessor {
     @Override
     public MessageResponseObject process(MessageRequestObject requestObject) {
         return MessageResponseObject.Builder.newInstance()
-                .messageId(MESSAGE_ID_VALUE)
                 .status(MessageStatus.OK)
                 .entries(List.of(
                         FeatureDetection.Builder.newInstance().interfaces(
