@@ -23,14 +23,14 @@ import org.eclipse.edc.spi.result.Result;
 
 import java.util.Optional;
 
-public class JwtVerifiableCredential implements DataValidator {
+public class JwtVerifiableCredentialValidator implements DataValidator {
 
     public static final String DATA_FORMAT = "application/vc+jwt";
     private static final String VERIFIABLE_CREDENTIALS_KEY = "vc";
 
     private final ObjectMapper mapper;
 
-    public JwtVerifiableCredential(ObjectMapper mapper) {
+    public JwtVerifiableCredentialValidator(ObjectMapper mapper) {
         this.mapper = mapper;
     }
 

@@ -42,10 +42,8 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -92,7 +90,6 @@ public class IdentityHubClientImpl implements IdentityHubClient {
 
     @Override
     public StatusResult<Collection<SignedJWT>> getVerifiableCredentials(String hubBaseUrl) {
-        ResponseObject responseObject;
         var descriptor = defaultDescriptor(COLLECTIONS_QUERY.getName()).build();
         try (var response = httpClient.newCall(
                         new Request.Builder()
@@ -105,21 +102,25 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 return identityHubCallError(response);
             }
 
-            responseObject = objectMapper.readValue(response.body().byteStream(), ResponseObject.class);
+            try (var body = response.body()) {
+                var responseObject = objectMapper.readValue(body.string(), ResponseObject.class);
+                var verifiableCredentials = responseObject
+                        .getReplies()
+                        .stream()
+                        .flatMap(r -> r.getEntries().stream())
+                        .map(this::parse)
+                        .filter(AbstractResult::succeeded)
+                        .map(AbstractResult::getContent)
+                        .collect(Collectors.toList());
+                return StatusResult.success(verifiableCredentials);
+            }
+
+
         } catch (IOException e) {
             return StatusResult.failure(ResponseStatus.FATAL_ERROR, e.getMessage());
         }
 
-        var verifiableCredentials = responseObject
-                .getReplies()
-                .stream()
-                .flatMap(r -> r.getEntries().stream())
-                .map(this::parse)
-                .filter(AbstractResult::succeeded)
-                .map(AbstractResult::getContent)
-                .collect(Collectors.toList());
 
-        return StatusResult.success(verifiableCredentials);
     }
 
     @Override
@@ -138,25 +139,25 @@ public class IdentityHubClientImpl implements IdentityHubClient {
             if (response.code() != 200) {
                 return identityHubCallError(response);
             }
-            var responseObject = objectMapper.readValue(response.body().byteStream(), ResponseObject.class);
 
-            if (responseObject.getStatus() != null && !responseObject.getStatus().isSuccess()) {
-                return StatusResult.failure(ResponseStatus.FATAL_ERROR, responseObject.getStatus().getDetail());
+            try (var body = response.body()) {
+                var responseObject = objectMapper.readValue(body.string(), ResponseObject.class);
+
+                // If the status of Response object is not success return error
+                if (responseObject.getStatus() != null && !responseObject.getStatus().isSuccess()) {
+                    return StatusResult.failure(ResponseStatus.FATAL_ERROR, responseObject.getStatus().getDetail());
+                }
+
+                // If the status of one of the replies is not success return error
+                return responseObject.getReplies()
+                        .stream()
+                        .map(MessageResponseObject::getStatus)
+                        .filter(status -> !status.isSuccess())
+                        .map(status -> StatusResult.<Void>failure(ResponseStatus.FATAL_ERROR, status.getDetail()))
+                        .findFirst()
+                        .orElseGet(() -> StatusResult.success());
+
             }
-
-            var requestStatus = Optional.of(responseObject.getStatus())
-                    .map(status -> Stream.of(status))
-                    .orElseGet(Stream::empty);
-
-            var messageStatus = responseObject.getReplies()
-                    .stream()
-                    .map(MessageResponseObject::getStatus);
-
-            return Stream.concat(messageStatus, requestStatus)
-                    .filter(status -> !status.isSuccess())
-                    .map(status -> StatusResult.<Void>failure(ResponseStatus.FATAL_ERROR, status.getDetail()))
-                    .findFirst()
-                    .orElseGet(() -> StatusResult.success());
 
 
         } catch (IOException e) {

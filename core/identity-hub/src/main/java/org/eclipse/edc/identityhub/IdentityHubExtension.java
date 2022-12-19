@@ -19,7 +19,7 @@ import org.eclipse.edc.identityhub.processor.CollectionsWriteProcessor;
 import org.eclipse.edc.identityhub.processor.FeatureDetectionReadProcessor;
 import org.eclipse.edc.identityhub.processor.MessageProcessorRegistryImpl;
 import org.eclipse.edc.identityhub.processor.data.DataValidatorRegistryImpl;
-import org.eclipse.edc.identityhub.processor.data.JwtVerifiableCredential;
+import org.eclipse.edc.identityhub.processor.data.JwtVerifiableCredentialValidator;
 import org.eclipse.edc.identityhub.spi.processor.MessageProcessorRegistry;
 import org.eclipse.edc.identityhub.spi.processor.data.DataValidatorRegistry;
 import org.eclipse.edc.identityhub.store.InMemoryIdentityHubStore;
@@ -57,7 +57,7 @@ public class IdentityHubExtension implements ServiceExtension {
         var methodProcessorFactory = new MessageProcessorRegistryImpl();
 
 
-        dataValidatorRegistry.register(new JwtVerifiableCredential(mapper));
+        dataValidatorRegistry.register(new JwtVerifiableCredentialValidator(mapper));
 
         methodProcessorFactory.register(COLLECTIONS_QUERY, new CollectionsQueryProcessor(identityHubStore, transactionContext));
         methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, context.getMonitor(), transactionContext, dataValidatorRegistry));

@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.spi.processor.data;
 
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Contains a set of validators that will be applied based on dataFormat when receiving a CollectionWrite request
@@ -37,5 +38,6 @@ public interface DataValidatorRegistry {
      * @param dataFormat The input dataFormat
      * @return {@link DataValidator}
      */
+    @Nullable
     DataValidator resolve(String dataFormat);
 }
