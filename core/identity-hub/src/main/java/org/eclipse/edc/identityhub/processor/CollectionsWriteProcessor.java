@@ -14,11 +14,11 @@
 
 package org.eclipse.edc.identityhub.processor;
 
+import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.MessageStatus;
 import org.eclipse.edc.identityhub.spi.processor.MessageProcessor;
-import org.eclipse.edc.identityhub.spi.processor.data.DataValidatorRegistry;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -36,9 +36,9 @@ public class CollectionsWriteProcessor implements MessageProcessor {
     private final Monitor monitor;
     private final TransactionContext transactionContext;
 
-    private final DataValidatorRegistry validatorRegistry;
+    private final CredentialEnvelopeTransformerRegistry validatorRegistry;
 
-    public CollectionsWriteProcessor(IdentityHubStore identityHubStore, Monitor monitor, TransactionContext transactionContext, DataValidatorRegistry validatorRegistry) {
+    public CollectionsWriteProcessor(IdentityHubStore identityHubStore, Monitor monitor, TransactionContext transactionContext, CredentialEnvelopeTransformerRegistry validatorRegistry) {
         this.identityHubStore = identityHubStore;
         this.monitor = monitor;
         this.transactionContext = transactionContext;
@@ -80,7 +80,7 @@ public class CollectionsWriteProcessor implements MessageProcessor {
         if (validator == null) {
             return Result.failure(format("No registered validator for `dataFormat` %s", descriptor.getDataFormat()));
         }
-        var parsing = validator.validate(requestObject.getData());
+        var parsing = validator.parse(requestObject.getData());
 
         if (parsing.failed()) {
             return Result.failure(parsing.getFailureMessages());

@@ -33,7 +33,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.map;
-import static org.eclipse.edc.identityhub.spi.credentials.VerifiableCredentialsJwtService.VERIFIABLE_CREDENTIALS_KEY;
 
 @IntegrationTest
 @ExtendWith(EdcExtension.class)
@@ -96,7 +95,7 @@ class VerifiableCredentialsIntegrationTest {
         assertThat(vcs)
                 .extractingByKey(VC1.getId())
                 .asInstanceOf(map(String.class, Map.class))
-                .extractingByKey(VERIFIABLE_CREDENTIALS_KEY)
+                .extractingByKey("vc")
                 .satisfies(c -> assertThat(MAPPER.convertValue(c, VerifiableCredential.class))
                         .usingRecursiveComparison()
                         .isEqualTo(VC1));

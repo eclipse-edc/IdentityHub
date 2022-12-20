@@ -83,7 +83,9 @@ public class VerifiableCredentialTestUtil {
             var jwsSigner = new ECDSASigner(jwk.toECPrivateKey());
             jws.sign(jwsSigner);
 
-            return SignedJWT.parse(jws.serialize());
+            var output = SignedJWT.parse(jws.serialize());
+            output.getJWTClaimsSet();
+            return output;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

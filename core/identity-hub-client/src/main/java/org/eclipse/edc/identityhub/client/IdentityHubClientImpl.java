@@ -18,12 +18,13 @@ package org.eclipse.edc.identityhub.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jwt.SignedJWT;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
+import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
+import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.identityhub.spi.model.Descriptor;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
@@ -38,7 +39,6 @@ import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -46,7 +46,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
 
@@ -56,10 +55,13 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     private final ObjectMapper objectMapper;
     private final Monitor monitor;
 
-    public IdentityHubClientImpl(OkHttpClient httpClient, ObjectMapper objectMapper, Monitor monitor) {
+    private final CredentialEnvelopeTransformerRegistry transformerRegistry;
+
+    public IdentityHubClientImpl(OkHttpClient httpClient, ObjectMapper objectMapper, Monitor monitor, CredentialEnvelopeTransformerRegistry transformerRegistry) {
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
         this.monitor = monitor;
+        this.transformerRegistry = transformerRegistry;
     }
 
     private static Descriptor.Builder defaultDescriptor(String method) {
@@ -89,7 +91,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     }
 
     @Override
-    public StatusResult<Collection<SignedJWT>> getVerifiableCredentials(String hubBaseUrl) {
+    public StatusResult<Collection<CredentialEnvelope>> getVerifiableCredentials(String hubBaseUrl) {
         var descriptor = defaultDescriptor(COLLECTIONS_QUERY.getName()).build();
         try (var response = httpClient.newCall(
                         new Request.Builder()
@@ -124,8 +126,18 @@ public class IdentityHubClientImpl implements IdentityHubClient {
     }
 
     @Override
-    public StatusResult<Void> addVerifiableCredential(String hubBaseUrl, SignedJWT verifiableCredential) {
-        var payload = verifiableCredential.serialize().getBytes(UTF_8);
+    public StatusResult<Void> addVerifiableCredential(String hubBaseUrl, CredentialEnvelope verifiableCredential) {
+
+        var transformer = transformerRegistry.resolve(verifiableCredential.format());
+        if (transformer == null) {
+            return StatusResult.failure(ResponseStatus.FATAL_ERROR, format("Transformer not found for format %s", verifiableCredential.format()));
+        }
+        Result<byte[]> result = transformer.serialize(verifiableCredential);
+
+        if (result.failed()) {
+            return StatusResult.failure(ResponseStatus.FATAL_ERROR, result.getFailureDetail());
+        }
+
         var descriptor = defaultDescriptor(COLLECTIONS_WRITE.getName())
                 .recordId(UUID.randomUUID().toString())
                 .dataFormat(DATA_FORMAT)
@@ -133,7 +145,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 .build();
         try (var response = httpClient.newCall(new Request.Builder()
                         .url(hubBaseUrl)
-                        .post(buildRequestBody(descriptor, payload))
+                        .post(buildRequestBody(descriptor, result.getContent()))
                         .build())
                 .execute()) {
             if (response.code() != 200) {
@@ -165,20 +177,14 @@ public class IdentityHubClientImpl implements IdentityHubClient {
         }
     }
 
-    private Result<SignedJWT> parse(Object entry) {
-        try {
-            var record = objectMapper.convertValue(entry, Record.class);
-            if (DATA_FORMAT.equalsIgnoreCase(record.getDataFormat())) {
-                var jwt = new String(record.getData());
-                return Result.success(SignedJWT.parse(jwt));
-            } else {
-                return Result.failure(format("Expected dataFormat %s found %s", DATA_FORMAT, record.getDataFormat()));
-            }
+    private Result<CredentialEnvelope> parse(Object entry) {
+        var record = objectMapper.convertValue(entry, Record.class);
+        var t = transformerRegistry.resolve(record.getDataFormat());
 
-        } catch (ParseException e) {
-            monitor.warning("Could not parse JWT", e);
-            return Result.failure(e.getMessage());
+        if (t == null) {
+            return Result.failure(format("Transformer not found for format %s", record.getDataFormat()));
         }
+        return t.parse(record.getData());
     }
 
     private RequestBody buildRequestBody(Descriptor descriptor) {

@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.client.spi;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
 import org.eclipse.edc.spi.response.StatusResult;
 
 import java.util.Collection;
@@ -42,7 +42,7 @@ public interface IdentityHubClient {
      * @param hubBaseUrl Base URL of the IdentityHub instance.
      * @return status result containing VerifiableCredentials if request successful.
      */
-    StatusResult<Collection<SignedJWT>> getVerifiableCredentials(String hubBaseUrl);
+    StatusResult<Collection<CredentialEnvelope>> getVerifiableCredentials(String hubBaseUrl);
 
     /**
      * Write a VerifiableCredential.
@@ -51,6 +51,6 @@ public interface IdentityHubClient {
      * @param verifiableCredential A verifiable credential to be saved.
      * @return status result.
      */
-    StatusResult<Void> addVerifiableCredential(String hubBaseUrl, SignedJWT verifiableCredential);
+    StatusResult<Void> addVerifiableCredential(String hubBaseUrl, CredentialEnvelope verifiableCredential);
 
 }

@@ -10,6 +10,10 @@ dependencies {
     annotationProcessor(libs.picocli.codegen)
 
     implementation(project(":core:identity-hub-client"))
+    implementation(project(":extensions:credentials:identity-hub-credentials-jwt"))
+    implementation(project(":extensions:identity-hub-verifier-jwt"))
+
+
     implementation(edc.spi.identity.did)
     implementation(libs.jackson.databind)
     implementation(libs.okhttp)

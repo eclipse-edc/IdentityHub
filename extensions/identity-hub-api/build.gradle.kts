@@ -30,6 +30,7 @@ dependencies {
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.restAssured)
     testImplementation(project(":spi:identity-hub-spi"))
+    testImplementation(project(":extensions:credentials:identity-hub-credentials-jwt"))
 
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))

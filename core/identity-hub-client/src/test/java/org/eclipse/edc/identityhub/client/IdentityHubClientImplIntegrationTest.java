@@ -15,9 +15,12 @@
 package org.eclipse.edc.identityhub.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
+import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
+import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer;
+import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
 import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
+import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.junit.extensions.EdcExtension;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -31,7 +34,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(EdcExtension.class)
 class IdentityHubClientImplIntegrationTest {
@@ -42,12 +47,14 @@ class IdentityHubClientImplIntegrationTest {
             .credentialSubject(Map.of("foo", "bar"))
             .build();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private final CredentialEnvelopeTransformerRegistry registry = mock(CredentialEnvelopeTransformerRegistry.class);
     private IdentityHubClient client;
 
     @BeforeEach
     void setUp() {
         var okHttpClient = TestUtils.testOkHttpClient();
-        client = new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, mock(Monitor.class));
+        when(registry.resolve(any())).thenReturn(new JwtCredentialEnvelopeTransformer(OBJECT_MAPPER));
+        client = new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, mock(Monitor.class), registry);
     }
 
     @Test
@@ -62,16 +69,17 @@ class IdentityHubClientImplIntegrationTest {
     void addAndQueryVerifiableCredentials() {
         var jws = buildSignedJwt(VERIFIABLE_CREDENTIAL, "http://test.url", "http://some.test.url", generateEcKey());
 
-        addVerifiableCredential(jws);
-        getVerifiableCredential(jws);
+        var jwsEnvelope = new JwtCredentialEnvelope(jws);
+        addVerifiableCredential(jwsEnvelope);
+        getVerifiableCredential(jwsEnvelope);
     }
 
-    private void addVerifiableCredential(SignedJWT jws) {
+    private void addVerifiableCredential(CredentialEnvelope jws) {
         var statusResult = client.addVerifiableCredential(API_URL, jws);
         assertThat(statusResult.succeeded()).isTrue();
     }
 
-    private void getVerifiableCredential(SignedJWT jws) {
+    private void getVerifiableCredential(CredentialEnvelope jws) {
         var statusResult = client.getVerifiableCredentials(API_URL);
         assertThat(statusResult.succeeded()).isTrue();
         assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().contains(jws);

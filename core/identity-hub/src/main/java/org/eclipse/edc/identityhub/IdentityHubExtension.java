@@ -18,10 +18,9 @@ import org.eclipse.edc.identityhub.processor.CollectionsQueryProcessor;
 import org.eclipse.edc.identityhub.processor.CollectionsWriteProcessor;
 import org.eclipse.edc.identityhub.processor.FeatureDetectionReadProcessor;
 import org.eclipse.edc.identityhub.processor.MessageProcessorRegistryImpl;
-import org.eclipse.edc.identityhub.processor.data.DataValidatorRegistryImpl;
-import org.eclipse.edc.identityhub.processor.data.JwtVerifiableCredentialValidator;
+import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
+import org.eclipse.edc.identityhub.spi.credentials.transformer.DefaultCredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.identityhub.spi.processor.MessageProcessorRegistry;
-import org.eclipse.edc.identityhub.spi.processor.data.DataValidatorRegistry;
 import org.eclipse.edc.identityhub.store.InMemoryIdentityHubStore;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -48,19 +47,15 @@ public class IdentityHubExtension implements ServiceExtension {
     private TransactionContext transactionContext;
 
     @Inject
-    private DataValidatorRegistry dataValidatorRegistry;
+    private CredentialEnvelopeTransformerRegistry credentialEnvelopeTransformerRegistry;
 
 
     @Provider(isDefault = true)
     public MessageProcessorRegistry messageProcessorRegistry(ServiceExtensionContext context) {
-        var mapper = context.getTypeManager().getMapper();
         var methodProcessorFactory = new MessageProcessorRegistryImpl();
 
-
-        dataValidatorRegistry.register(new JwtVerifiableCredentialValidator(mapper));
-
         methodProcessorFactory.register(COLLECTIONS_QUERY, new CollectionsQueryProcessor(identityHubStore, transactionContext));
-        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, context.getMonitor(), transactionContext, dataValidatorRegistry));
+        methodProcessorFactory.register(COLLECTIONS_WRITE, new CollectionsWriteProcessor(identityHubStore, context.getMonitor(), transactionContext, credentialEnvelopeTransformerRegistry));
         methodProcessorFactory.register(FEATURE_DETECTION_READ, new FeatureDetectionReadProcessor());
 
         return methodProcessorFactory;
@@ -73,7 +68,7 @@ public class IdentityHubExtension implements ServiceExtension {
 
 
     @Provider(isDefault = true)
-    public DataValidatorRegistry dataValidatorRegistry() {
-        return new DataValidatorRegistryImpl();
+    public CredentialEnvelopeTransformerRegistry dataValidatorRegistry() {
+        return new DefaultCredentialEnvelopeTransformerRegistry();
     }
 }

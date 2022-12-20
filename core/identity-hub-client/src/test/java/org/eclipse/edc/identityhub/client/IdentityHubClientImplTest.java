@@ -21,7 +21,10 @@ import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
+import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer;
 import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
+import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.MessageStatus;
 import org.eclipse.edc.identityhub.spi.model.Record;
@@ -30,6 +33,7 @@ import org.eclipse.edc.identityhub.spi.model.ResponseObject;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.response.ResponseStatus;
 import org.eclipse.edc.spi.response.StatusResult;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -40,12 +44,22 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class IdentityHubClientImplTest {
     private static final String HUB_URL = "http://some.test.url";
     private static final String VERIFIABLE_CREDENTIAL_ID = UUID.randomUUID().toString();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private final CredentialEnvelopeTransformerRegistry registry = mock(CredentialEnvelopeTransformerRegistry.class);
+
+
+    @BeforeEach
+    void setup() {
+        when(registry.resolve(any())).thenReturn(new JwtCredentialEnvelopeTransformer(OBJECT_MAPPER));
+    }
 
     @Test
     void getSelfDescription() {
@@ -127,7 +141,7 @@ class IdentityHubClientImplTest {
         var client = createClient(interceptor);
         var statusResult = client.getVerifiableCredentials(HUB_URL);
         assertThat(statusResult.succeeded()).isTrue();
-        assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(jws);
+        assertThat(statusResult.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(new JwtCredentialEnvelope(jws));
     }
 
     @Test
@@ -195,7 +209,7 @@ class IdentityHubClientImplTest {
         };
 
         var client = createClient(interceptor);
-        var statusResult = client.addVerifiableCredential(HUB_URL, jws);
+        var statusResult = client.addVerifiableCredential(HUB_URL, new JwtCredentialEnvelope(jws));
 
         var expectedResult = StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: , response body: %s", code, body));
         assertThat(statusResult).usingRecursiveComparison().isEqualTo(expectedResult);
@@ -211,7 +225,7 @@ class IdentityHubClientImplTest {
         };
 
         var client = createClient(interceptor);
-        var statusResult = client.addVerifiableCredential(HUB_URL, jws);
+        var statusResult = client.addVerifiableCredential(HUB_URL, new JwtCredentialEnvelope(jws));
 
         var expectedResult = StatusResult.failure(ResponseStatus.FATAL_ERROR, exceptionMessage);
         assertThat(statusResult).usingRecursiveComparison().isEqualTo(expectedResult);
@@ -222,6 +236,6 @@ class IdentityHubClientImplTest {
                 .addInterceptor(interceptor)
                 .build();
 
-        return new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, mock(Monitor.class));
+        return new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, mock(Monitor.class), registry);
     }
 }

@@ -16,14 +16,12 @@ package org.eclipse.edc.identityhub.cli;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.edc.spi.result.Result;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
 
-import java.text.ParseException;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static java.util.stream.Collectors.toList;
@@ -48,18 +46,12 @@ class ListVerifiableCredentialsCommand implements Callable<Integer> {
             throw new CliException("Failed to get verifiable credentials: " + result.getFailureDetail());
         }
         var vcs = result.getContent().stream()
-                .map(this::getClaims)
+                .map(envelope -> envelope.toVerifiableCredential(MAPPER))
+                .map(Result::getContent)
                 .collect(toList());
         MAPPER.writeValue(out, vcs);
         out.println();
         return 0;
     }
-
-    private Map<String, Object> getClaims(SignedJWT jwt) {
-        try {
-            return jwt.getJWTClaimsSet().getClaims();
-        } catch (ParseException e) {
-            throw new CliException("Error while reading Verifiable Credentials claims", e);
-        }
-    }
 }
+
