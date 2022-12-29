@@ -29,6 +29,5 @@ dependencies {
     testImplementation(libs.jackson.databind)
     testImplementation(libs.okhttp)
     testImplementation(libs.nimbus.jwt)
-    testImplementation(libs.bouncyCastle.bcpkix)
 }
 
