@@ -17,23 +17,19 @@ package org.eclipse.edc.identityhub.spi.credentials.transformer;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DefaultCredentialEnvelopeTransformerRegistry implements CredentialEnvelopeTransformerRegistry {
+public class CredentialEnvelopeTransformerRegistryImpl implements CredentialEnvelopeTransformerRegistry {
 
 
-    private final Map<String, CredentialEnvelopeTransformer> validators = new HashMap<>();
+    private final Map<String, CredentialEnvelopeTransformer> transformers = new HashMap<>();
 
-
-    public DefaultCredentialEnvelopeTransformerRegistry() {
-
-    }
 
     @Override
-    public void register(CredentialEnvelopeTransformer validator) {
-        validators.put(validator.dataFormat(), validator);
+    public void register(CredentialEnvelopeTransformer transformer) {
+        transformers.put(transformer.dataFormat(), transformer);
     }
 
     @Override
     public CredentialEnvelopeTransformer resolve(String dataFormat) {
-        return validators.get(dataFormat);
+        return transformers.get(dataFormat);
     }
 }

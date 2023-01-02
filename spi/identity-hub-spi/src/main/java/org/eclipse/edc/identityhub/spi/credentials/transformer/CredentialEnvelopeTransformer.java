@@ -26,7 +26,7 @@ public interface CredentialEnvelopeTransformer<T extends CredentialEnvelope> {
 
 
     /**
-     * Validate the input data
+     * Validate and parse the input data into a {@link CredentialEnvelope}
      *
      * @param data Input
      * @return The result of the validation
@@ -34,7 +34,13 @@ public interface CredentialEnvelopeTransformer<T extends CredentialEnvelope> {
     Result<T> parse(byte[] data);
 
 
-    Result<byte[]> serialize(T carrier);
+    /**
+     * Serialize the {@link  CredentialEnvelope} into byte array
+     *
+     * @param envelope The input envelope
+     * @return The result of the serialization
+     */
+    Result<byte[]> serialize(T envelope);
 
 
     /**

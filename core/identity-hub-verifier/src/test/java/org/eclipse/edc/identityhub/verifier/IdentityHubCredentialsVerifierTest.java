@@ -21,7 +21,7 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
 import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifier;
-import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialVerifierRegistry;
+import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistry;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.response.ResponseStatus;
 import org.eclipse.edc.spi.response.StatusResult;
@@ -45,7 +45,7 @@ class IdentityHubCredentialsVerifierTest {
 
     private final Monitor monitorMock = mock(Monitor.class);
     private final IdentityHubClient identityHubClientMock = mock(IdentityHubClient.class);
-    private final CredentialVerifierRegistry verifierRegistry = mock(CredentialVerifierRegistry.class);
+    private final CredentialEnvelopeVerifierRegistry verifierRegistry = mock(CredentialEnvelopeVerifierRegistry.class);
     private final CredentialsVerifier credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClientMock, monitorMock, verifierRegistry);
 
 

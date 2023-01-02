@@ -19,7 +19,7 @@ import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
-import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialVerifierRegistry;
+import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistry;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 
@@ -41,19 +41,19 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     private final IdentityHubClient identityHubClient;
     private final Monitor monitor;
 
-    private final CredentialVerifierRegistry credentialVerifierRegistry;
+    private final CredentialEnvelopeVerifierRegistry credentialEnvelopeVerifierRegistry;
 
     /**
      * Create a new credential verifier that uses an Identity Hub
      *
      * @param identityHubClient          IdentityHubClient.
-     * @param credentialVerifierRegistry
+     * @param credentialEnvelopeVerifierRegistry
      *
      */
-    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, CredentialVerifierRegistry credentialVerifierRegistry) {
+    public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, CredentialEnvelopeVerifierRegistry credentialEnvelopeVerifierRegistry) {
         this.identityHubClient = identityHubClient;
         this.monitor = monitor;
-        this.credentialVerifierRegistry = credentialVerifierRegistry;
+        this.credentialEnvelopeVerifierRegistry = credentialEnvelopeVerifierRegistry;
     }
 
     /**
@@ -136,7 +136,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
 
 
     private Result<Map.Entry<String, Object>> verifyCredential(CredentialEnvelope verifiableCredentials, DidDocument didDocument) {
-        var verifier = credentialVerifierRegistry.resolve(verifiableCredentials.format());
+        var verifier = credentialEnvelopeVerifierRegistry.resolve(verifiableCredentials.format());
 
         if (verifier == null) {
             return Result.failure(format("Missing verifier for credentials with format %s", verifiableCredentials.format()));

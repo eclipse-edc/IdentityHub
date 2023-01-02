@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.verifier.jwt;
 
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
-import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialVerifierRegistry;
+import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provides;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -34,7 +34,7 @@ public class JwtCredentialsVerifierExtension implements ServiceExtension {
     private DidPublicKeyResolver didPublicKeyResolver;
 
     @Inject
-    private CredentialVerifierRegistry verifierRegistry;
+    private CredentialEnvelopeVerifierRegistry verifierRegistry;
 
     @Inject(required = false)
     private JwtCredentialsVerifier jwtCredentialsVerifier;
@@ -50,26 +50,29 @@ public class JwtCredentialsVerifierExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        verifierRegistry.register(JwtCredentialEnvelope.DATA_FORMAT, new JwtCredentialEnvelopeVerifier(createJwtVerifier(context, jwtCredentialsVerifier), verifiableCredentialsJwtService(context, verifiableCredentialsJwtService)));
+        var jwtVerifier = createJwtVerifier(context, jwtCredentialsVerifier);
+        var credentialsJwtService = verifiableCredentialsJwtService(context, verifiableCredentialsJwtService);
+
+        verifierRegistry.register(JwtCredentialEnvelope.DATA_FORMAT, new JwtCredentialEnvelopeVerifier(jwtVerifier, credentialsJwtService));
     }
 
-    public JwtCredentialsVerifier createJwtVerifier(ServiceExtensionContext ctx, JwtCredentialsVerifier verifier) {
-        if (verifier == null) {
-            var verifierService = new DidJwtCredentialsVerifier(didPublicKeyResolver, monitor);
-            ctx.registerService(JwtCredentialsVerifier.class, verifierService);
-            return verifierService;
-        } else {
-            return verifier;
-        }
-    }
-
-    public VerifiableCredentialsJwtService verifiableCredentialsJwtService(ServiceExtensionContext ctx, VerifiableCredentialsJwtService verifiableCredentialsJwtService) {
+    private VerifiableCredentialsJwtService verifiableCredentialsJwtService(ServiceExtensionContext ctx, VerifiableCredentialsJwtService verifiableCredentialsJwtService) {
         if (verifiableCredentialsJwtService == null) {
             var service = new VerifiableCredentialsJwtServiceImpl(ctx.getTypeManager().getMapper(), monitor);
             ctx.registerService(VerifiableCredentialsJwtService.class, service);
             return service;
         } else {
             return verifiableCredentialsJwtService;
+        }
+    }
+
+    private JwtCredentialsVerifier createJwtVerifier(ServiceExtensionContext ctx, JwtCredentialsVerifier verifier) {
+        if (verifier == null) {
+            var verifierService = new DidJwtCredentialsVerifier(didPublicKeyResolver, monitor);
+            ctx.registerService(JwtCredentialsVerifier.class, verifierService);
+            return verifierService;
+        } else {
+            return verifier;
         }
     }
 }

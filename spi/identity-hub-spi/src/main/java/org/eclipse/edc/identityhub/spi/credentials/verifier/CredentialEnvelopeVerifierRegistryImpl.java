@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2022 Microsoft Corporation
+ *  Copyright (c) 2023 Microsoft Corporation
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -12,19 +12,18 @@
  *
  */
 
-package org.eclipse.edc.identityhub.verifier;
+package org.eclipse.edc.identityhub.spi.credentials.verifier;
 
-import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifier;
-import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialVerifierRegistry;
+
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Default implementation for {@link CredentialVerifierRegistry}
+ * Default implementation for {@link CredentialEnvelopeVerifierRegistry}
  */
-public class DefaultCredentialVerifierRegistry implements CredentialVerifierRegistry {
+public class CredentialEnvelopeVerifierRegistryImpl implements CredentialEnvelopeVerifierRegistry {
 
     private final Map<String, CredentialEnvelopeVerifier> registry = new HashMap<>();
 

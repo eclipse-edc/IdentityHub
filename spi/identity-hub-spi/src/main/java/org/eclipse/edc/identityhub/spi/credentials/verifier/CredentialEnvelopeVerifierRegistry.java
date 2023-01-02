@@ -21,7 +21,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
  * based on a given format.
  */
 @ExtensionPoint
-public interface CredentialVerifierRegistry {
+public interface CredentialEnvelopeVerifierRegistry {
 
 
     void register(String format, CredentialEnvelopeVerifier verifier);

@@ -24,7 +24,7 @@ import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
-import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialVerifierRegistry;
+import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistry;
 import org.eclipse.edc.identityhub.verifier.IdentityHubCredentialsVerifier;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.response.ResponseStatus;
@@ -59,7 +59,7 @@ class IdentityHubJwtCredentialsVerifierTest {
     private final Monitor monitorMock = mock(Monitor.class);
     private final IdentityHubClient identityHubClientMock = mock(IdentityHubClient.class);
     private final JwtCredentialsVerifier jwtCredentialsVerifierMock = mock(JwtCredentialsVerifier.class);
-    private final CredentialVerifierRegistry credentialsVerifierRegistry = mock(CredentialVerifierRegistry.class);
+    private final CredentialEnvelopeVerifierRegistry credentialsVerifierRegistry = mock(CredentialEnvelopeVerifierRegistry.class);
     private final VerifiableCredentialsJwtServiceImpl verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(OBJECT_MAPPER, monitorMock);
     private final CredentialsVerifier credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClientMock, monitorMock, credentialsVerifierRegistry);
 

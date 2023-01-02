@@ -64,7 +64,7 @@ class CollectionsWriteProcessorTest {
     private static final String ISSUER = "http://some.test.url";
     private static final String SUBJECT = "http://some.test.url";
 
-    private CredentialEnvelopeTransformerRegistry validatorRegistry;
+    private CredentialEnvelopeTransformerRegistry tranformerRegistry;
 
     private IdentityHubStore identityHubStore;
     private CollectionsWriteProcessor writeProcessor;
@@ -133,9 +133,9 @@ class CollectionsWriteProcessorTest {
     @BeforeEach
     void setUp() {
         identityHubStore = mock(IdentityHubStore.class);
-        validatorRegistry = mock(CredentialEnvelopeTransformerRegistry.class);
+        tranformerRegistry = mock(CredentialEnvelopeTransformerRegistry.class);
 
-        writeProcessor = new CollectionsWriteProcessor(identityHubStore, mock(Monitor.class), new NoopTransactionContext(), validatorRegistry);
+        writeProcessor = new CollectionsWriteProcessor(identityHubStore, mock(Monitor.class), new NoopTransactionContext(), tranformerRegistry);
     }
 
     @ParameterizedTest
@@ -156,10 +156,10 @@ class CollectionsWriteProcessorTest {
     void writeCredentials_addStoreFailure() {
         // Arrange
         doThrow(new EdcException("store error")).when(identityHubStore).add(any());
-        var validator = mock(CredentialEnvelopeTransformer.class);
+        var transformer = mock(CredentialEnvelopeTransformer.class);
         var carrier = mock(CredentialEnvelope.class);
-        when(validator.parse(any())).thenReturn(Result.success(carrier));
-        when(validatorRegistry.resolve(any())).thenReturn(validator);
+        when(transformer.parse(any())).thenReturn(Result.success(carrier));
+        when(tranformerRegistry.resolve(any())).thenReturn(transformer);
         var requestObject = getValidMessageRequestObject();
         var expectedResult = MessageResponseObject.Builder.newInstance().status(MessageStatus.UNHANDLED_ERROR).build();
 
@@ -174,10 +174,10 @@ class CollectionsWriteProcessorTest {
     void writeCredentials() {
         // Arrange
         var requestObject = getValidMessageRequestObject();
-        var validator = mock(CredentialEnvelopeTransformer.class);
+        var transformer = mock(CredentialEnvelopeTransformer.class);
         var carrier = mock(CredentialEnvelope.class);
-        when(validator.parse(any())).thenReturn(Result.success(carrier));
-        when(validatorRegistry.resolve(any())).thenReturn(validator);
+        when(transformer.parse(any())).thenReturn(Result.success(carrier));
+        when(tranformerRegistry.resolve(any())).thenReturn(transformer);
 
         // Act
         var result = writeProcessor.process(requestObject);

@@ -27,9 +27,9 @@ public interface CredentialEnvelopeTransformerRegistry {
     /**
      * Register a {@link CredentialEnvelopeTransformer} into the registry, and it will be associated to {@link CredentialEnvelopeTransformer#dataFormat} Media type
      *
-     * @param validator The validator
+     * @param transformer The transformer
      */
-    void register(CredentialEnvelopeTransformer validator);
+    void register(CredentialEnvelopeTransformer transformer);
 
 
     /**

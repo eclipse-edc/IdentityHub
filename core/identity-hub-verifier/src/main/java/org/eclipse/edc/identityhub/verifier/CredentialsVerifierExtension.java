@@ -18,11 +18,13 @@ import okhttp3.OkHttpClient;
 import org.eclipse.edc.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.edc.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
-import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialVerifierRegistry;
+import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistry;
+import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistryImpl;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
+import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 
 /**
@@ -40,12 +42,15 @@ public class CredentialsVerifierExtension implements ServiceExtension {
     private Monitor monitor;
 
 
-    @Inject
-    private CredentialVerifierRegistry credentialVerifierRegistry;
+    private CredentialEnvelopeVerifierRegistry credentialEnvelopeVerifierRegistry;
 
     @Inject
     private CredentialEnvelopeTransformerRegistry credentialEnvelopeTransformerRegistry;
 
+    @Override
+    public void initialize(ServiceExtensionContext context) {
+        credentialEnvelopeVerifierRegistry = new CredentialEnvelopeVerifierRegistryImpl();
+    }
 
     @Override
     public String name() {
@@ -55,13 +60,13 @@ public class CredentialsVerifierExtension implements ServiceExtension {
     @Provider
     public CredentialsVerifier createCredentialsVerifier() {
         var client = new IdentityHubClientImpl(httpClient, typeManager.getMapper(), monitor, credentialEnvelopeTransformerRegistry);
-        return new IdentityHubCredentialsVerifier(client, monitor, credentialVerifierRegistry);
+        return new IdentityHubCredentialsVerifier(client, monitor, credentialEnvelopeVerifierRegistry);
     }
 
 
-    @Provider(isDefault = true)
-    public CredentialVerifierRegistry credentialVerifierRegistry() {
-        return new DefaultCredentialVerifierRegistry();
+    @Provider
+    public CredentialEnvelopeVerifierRegistry credentialVerifierRegistry() {
+        return credentialEnvelopeVerifierRegistry;
     }
 
 }

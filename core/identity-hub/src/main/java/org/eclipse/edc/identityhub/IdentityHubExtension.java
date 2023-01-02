@@ -19,12 +19,13 @@ import org.eclipse.edc.identityhub.processor.CollectionsWriteProcessor;
 import org.eclipse.edc.identityhub.processor.FeatureDetectionReadProcessor;
 import org.eclipse.edc.identityhub.processor.MessageProcessorRegistryImpl;
 import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
-import org.eclipse.edc.identityhub.spi.credentials.transformer.DefaultCredentialEnvelopeTransformerRegistry;
+import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistryImpl;
 import org.eclipse.edc.identityhub.spi.processor.MessageProcessorRegistry;
 import org.eclipse.edc.identityhub.store.InMemoryIdentityHubStore;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.runtime.metamodel.annotation.Provides;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -37,6 +38,7 @@ import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.FEATU
  * EDC extension to boot the services used by the Identity Hub
  */
 
+@Provides({ CredentialEnvelopeTransformerRegistry.class })
 public class IdentityHubExtension implements ServiceExtension {
 
 
@@ -46,9 +48,14 @@ public class IdentityHubExtension implements ServiceExtension {
     @Inject
     private TransactionContext transactionContext;
 
-    @Inject
     private CredentialEnvelopeTransformerRegistry credentialEnvelopeTransformerRegistry;
 
+
+    @Override
+    public void initialize(ServiceExtensionContext context) {
+        credentialEnvelopeTransformerRegistry = new CredentialEnvelopeTransformerRegistryImpl();
+        context.registerService(CredentialEnvelopeTransformerRegistry.class, credentialEnvelopeTransformerRegistry);
+    }
 
     @Provider(isDefault = true)
     public MessageProcessorRegistry messageProcessorRegistry(ServiceExtensionContext context) {
@@ -66,9 +73,4 @@ public class IdentityHubExtension implements ServiceExtension {
         return new InMemoryIdentityHubStore();
     }
 
-
-    @Provider(isDefault = true)
-    public CredentialEnvelopeTransformerRegistry dataValidatorRegistry() {
-        return new DefaultCredentialEnvelopeTransformerRegistry();
-    }
 }

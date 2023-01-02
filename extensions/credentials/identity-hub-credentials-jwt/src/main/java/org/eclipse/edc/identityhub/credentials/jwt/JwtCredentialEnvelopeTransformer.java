@@ -51,8 +51,8 @@ public class JwtCredentialEnvelopeTransformer implements CredentialEnvelopeTrans
     }
 
     @Override
-    public Result<byte[]> serialize(JwtCredentialEnvelope carrier) {
-        return Result.success(carrier.getJwtVerifiableCredentials().serialize().getBytes(StandardCharsets.UTF_8));
+    public Result<byte[]> serialize(JwtCredentialEnvelope envelope) {
+        return Result.success(envelope.getJwtVerifiableCredentials().serialize().getBytes(StandardCharsets.UTF_8));
     }
 
 
