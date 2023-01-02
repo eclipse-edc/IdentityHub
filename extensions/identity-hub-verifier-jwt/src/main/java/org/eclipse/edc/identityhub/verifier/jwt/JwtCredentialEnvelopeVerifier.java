@@ -25,6 +25,8 @@ import java.util.Map;
 
 /**
  * Implementation of a Verifiable Credentials verifier working with JWT format
+ *
+ * @see <a href="https://www.w3.org/TR/vc-data-model/#example-usage-of-the-id-property">vc-data-model</a>
  */
 public class JwtCredentialEnvelopeVerifier implements CredentialEnvelopeVerifier<JwtCredentialEnvelope> {
 
