@@ -14,11 +14,11 @@
 
 package org.eclipse.edc.identityhub.processor;
 
+import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.MessageStatus;
 import org.eclipse.edc.identityhub.spi.processor.MessageProcessor;
-import org.eclipse.edc.identityhub.spi.processor.data.DataValidatorRegistry;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -36,13 +36,13 @@ public class CollectionsWriteProcessor implements MessageProcessor {
     private final Monitor monitor;
     private final TransactionContext transactionContext;
 
-    private final DataValidatorRegistry validatorRegistry;
+    private final CredentialEnvelopeTransformerRegistry transformerRegistry;
 
-    public CollectionsWriteProcessor(IdentityHubStore identityHubStore, Monitor monitor, TransactionContext transactionContext, DataValidatorRegistry validatorRegistry) {
+    public CollectionsWriteProcessor(IdentityHubStore identityHubStore, Monitor monitor, TransactionContext transactionContext, CredentialEnvelopeTransformerRegistry transformerRegistry) {
         this.identityHubStore = identityHubStore;
         this.monitor = monitor;
         this.transactionContext = transactionContext;
-        this.validatorRegistry = validatorRegistry;
+        this.transformerRegistry = transformerRegistry;
     }
 
     @Override
@@ -75,12 +75,12 @@ public class CollectionsWriteProcessor implements MessageProcessor {
             return Result.failure("Missing mandatory `dataFormat` in descriptor");
         }
 
-        var validator = validatorRegistry.resolve(descriptor.getDataFormat());
+        var transformer = transformerRegistry.resolve(descriptor.getDataFormat());
 
-        if (validator == null) {
-            return Result.failure(format("No registered validator for `dataFormat` %s", descriptor.getDataFormat()));
+        if (transformer == null) {
+            return Result.failure(format("No registered transformer for `dataFormat` %s", descriptor.getDataFormat()));
         }
-        var parsing = validator.validate(requestObject.getData());
+        var parsing = transformer.parse(requestObject.getData());
 
         if (parsing.failed()) {
             return Result.failure(parsing.getFailureMessages());

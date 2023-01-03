@@ -19,9 +19,9 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.iam.did.spi.key.PrivateKeyWrapper;
 import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
-import org.eclipse.edc.identityhub.spi.credentials.VerifiableCredentialsJwtService;
-import org.eclipse.edc.identityhub.spi.credentials.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
+import org.eclipse.edc.identityhub.verifier.jwt.VerifiableCredentialsJwtService;
+import org.eclipse.edc.identityhub.verifier.jwt.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.edc.spi.monitor.Monitor;
 
 import java.util.Map;

@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -35,7 +36,7 @@ public class VerifiableCredential {
 
     private String id;
 
-    private Map<String, Object> credentialSubject;
+    private Map<String, Object> credentialSubject = new HashMap<>();
 
     private VerifiableCredential() {
     }

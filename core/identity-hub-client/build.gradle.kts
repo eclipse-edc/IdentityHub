@@ -29,8 +29,11 @@ dependencies {
 
     testImplementation(project(":core:identity-hub"))
     testImplementation(project(":extensions:identity-hub-api"))
+    testImplementation(project(":extensions:credentials:identity-hub-credentials-jwt"))
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(edc.core.junit)
+    testImplementation(edc.core.identity.did)
+
 }
 
 publishing {

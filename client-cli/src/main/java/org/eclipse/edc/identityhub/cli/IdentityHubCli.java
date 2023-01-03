@@ -18,8 +18,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import org.eclipse.edc.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
-import org.eclipse.edc.identityhub.spi.credentials.VerifiableCredentialsJwtService;
-import org.eclipse.edc.identityhub.spi.credentials.VerifiableCredentialsJwtServiceImpl;
+import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer;
+import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistryImpl;
+import org.eclipse.edc.identityhub.verifier.jwt.VerifiableCredentialsJwtService;
+import org.eclipse.edc.identityhub.verifier.jwt.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -58,7 +60,11 @@ public class IdentityHubCli {
         var okHttpClient = new OkHttpClient.Builder().build();
         var objectMapper = new ObjectMapper();
         var monitor = new ConsoleMonitor();
-        identityHubClient = new IdentityHubClientImpl(okHttpClient, objectMapper, monitor);
+
+        var registry = new CredentialEnvelopeTransformerRegistryImpl();
+        registry.register(new JwtCredentialEnvelopeTransformer(objectMapper));
+
+        identityHubClient = new IdentityHubClientImpl(okHttpClient, objectMapper, monitor, registry);
         verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(objectMapper, monitor);
     }
 }

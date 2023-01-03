@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.cli;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
 import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -69,7 +70,11 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
             throw new CliException("Error while signing Verifiable Credential", e);
         }
 
-        command.cli.identityHubClient.addVerifiableCredential(command.cli.hubUrl, signedJwt);
+        var result = command.cli.identityHubClient.addVerifiableCredential(command.cli.hubUrl, new JwtCredentialEnvelope(signedJwt));
+
+        if (result.failed()) {
+            throw new CliException("Error while adding the Verifiable credential to the Identity Hub");
+        }
 
         out.println("Verifiable Credential added successfully");
 

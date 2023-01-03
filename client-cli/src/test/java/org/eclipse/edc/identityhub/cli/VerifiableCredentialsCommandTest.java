@@ -17,10 +17,10 @@ package org.eclipse.edc.identityhub.cli;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
-import org.eclipse.edc.identityhub.spi.credentials.VerifiableCredentialsJwtServiceImpl;
+import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
 import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
+import org.eclipse.edc.identityhub.verifier.jwt.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ import static org.eclipse.edc.identityhub.cli.CliTestUtils.PRIVATE_KEY_PATH;
 import static org.eclipse.edc.identityhub.cli.CliTestUtils.createVerifiableCredential;
 import static org.eclipse.edc.identityhub.cli.CliTestUtils.signVerifiableCredential;
 import static org.eclipse.edc.identityhub.cli.CliTestUtils.verifyVerifiableCredentialSignature;
-import static org.eclipse.edc.identityhub.spi.credentials.VerifiableCredentialsJwtService.VERIFIABLE_CREDENTIALS_KEY;
+import static org.eclipse.edc.identityhub.verifier.jwt.VerifiableCredentialsJwtService.VERIFIABLE_CREDENTIALS_KEY;
 import static org.eclipse.edc.spi.response.StatusResult.success;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -51,9 +51,9 @@ class VerifiableCredentialsCommandTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final VerifiableCredential VC1 = createVerifiableCredential();
-    private static final SignedJWT SIGNED_VC1 = signVerifiableCredential(VC1);
+    private static final JwtCredentialEnvelope SIGNED_VC1 = new JwtCredentialEnvelope(signVerifiableCredential(VC1));
     private static final VerifiableCredential VC2 = createVerifiableCredential();
-    private static final SignedJWT SIGNED_VC2 = signVerifiableCredential(VC2);
+    private static final JwtCredentialEnvelope SIGNED_VC2 = new JwtCredentialEnvelope(signVerifiableCredential(VC2));
     private static final String HUB_URL = "http://some.test.url";
 
     private final IdentityHubCli app = new IdentityHubCli();
@@ -106,7 +106,7 @@ class VerifiableCredentialsCommandTest {
         var claims = MAPPER.readValue(outContent, new TypeReference<List<Map<String, Object>>>() {
         });
         var vcs = claims.stream()
-                .map(c -> MAPPER.convertValue(c.get(VERIFIABLE_CREDENTIALS_KEY), VerifiableCredential.class))
+                .map(c -> MAPPER.convertValue(c, VerifiableCredential.class))
                 .collect(Collectors.toList());
 
         assertThat(vcs)
@@ -118,7 +118,7 @@ class VerifiableCredentialsCommandTest {
     void add() throws Exception {
         // arrange
         var json = MAPPER.writeValueAsString(VC1);
-        var vcArgCaptor = ArgumentCaptor.forClass(SignedJWT.class);
+        var vcArgCaptor = ArgumentCaptor.forClass(JwtCredentialEnvelope.class);
         doReturn(success()).when(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), vcArgCaptor.capture());
 
         // act
@@ -131,8 +131,8 @@ class VerifiableCredentialsCommandTest {
         assertThat(outContent).isEqualTo("Verifiable Credential added successfully" + System.lineSeparator());
         assertThat(errContent).isEmpty();
 
-        verify(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), isA(SignedJWT.class));
-        var signedJwt = vcArgCaptor.getValue();
+        verify(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), isA(JwtCredentialEnvelope.class));
+        var signedJwt = vcArgCaptor.getValue().getJwtVerifiableCredentials();
 
         // assert JWT signature
         assertThat(verifyVerifiableCredentialSignature(signedJwt)).isTrue();

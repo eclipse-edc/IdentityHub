@@ -20,6 +20,7 @@ plugins {
 dependencies {
     api(project(":spi:identity-hub-spi"))
     implementation(project(":spi:identity-hub-store-spi"))
+    
     implementation(libs.nimbus.jwt)
     implementation(edc.spi.transaction)
 

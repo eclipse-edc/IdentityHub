@@ -21,12 +21,13 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
+import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformer;
+import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.identityhub.spi.model.Descriptor;
 import org.eclipse.edc.identityhub.spi.model.MessageRequestObject;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.MessageStatus;
-import org.eclipse.edc.identityhub.spi.processor.data.DataValidator;
-import org.eclipse.edc.identityhub.spi.processor.data.DataValidatorRegistry;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.spi.EdcException;
@@ -63,7 +64,7 @@ class CollectionsWriteProcessorTest {
     private static final String ISSUER = "http://some.test.url";
     private static final String SUBJECT = "http://some.test.url";
 
-    private DataValidatorRegistry validatorRegistry;
+    private CredentialEnvelopeTransformerRegistry tranformerRegistry;
 
     private IdentityHubStore identityHubStore;
     private CollectionsWriteProcessor writeProcessor;
@@ -132,9 +133,9 @@ class CollectionsWriteProcessorTest {
     @BeforeEach
     void setUp() {
         identityHubStore = mock(IdentityHubStore.class);
-        validatorRegistry = mock(DataValidatorRegistry.class);
+        tranformerRegistry = mock(CredentialEnvelopeTransformerRegistry.class);
 
-        writeProcessor = new CollectionsWriteProcessor(identityHubStore, mock(Monitor.class), new NoopTransactionContext(), validatorRegistry);
+        writeProcessor = new CollectionsWriteProcessor(identityHubStore, mock(Monitor.class), new NoopTransactionContext(), tranformerRegistry);
     }
 
     @ParameterizedTest
@@ -155,9 +156,10 @@ class CollectionsWriteProcessorTest {
     void writeCredentials_addStoreFailure() {
         // Arrange
         doThrow(new EdcException("store error")).when(identityHubStore).add(any());
-        var validator = mock(DataValidator.class);
-        when(validator.validate(any())).thenReturn(Result.success());
-        when(validatorRegistry.resolve(any())).thenReturn(validator);
+        var transformer = mock(CredentialEnvelopeTransformer.class);
+        var carrier = mock(CredentialEnvelope.class);
+        when(transformer.parse(any())).thenReturn(Result.success(carrier));
+        when(tranformerRegistry.resolve(any())).thenReturn(transformer);
         var requestObject = getValidMessageRequestObject();
         var expectedResult = MessageResponseObject.Builder.newInstance().status(MessageStatus.UNHANDLED_ERROR).build();
 
@@ -172,9 +174,10 @@ class CollectionsWriteProcessorTest {
     void writeCredentials() {
         // Arrange
         var requestObject = getValidMessageRequestObject();
-        var validator = mock(DataValidator.class);
-        when(validator.validate(any())).thenReturn(Result.success());
-        when(validatorRegistry.resolve(any())).thenReturn(validator);
+        var transformer = mock(CredentialEnvelopeTransformer.class);
+        var carrier = mock(CredentialEnvelope.class);
+        when(transformer.parse(any())).thenReturn(Result.success(carrier));
+        when(tranformerRegistry.resolve(any())).thenReturn(transformer);
 
         // Act
         var result = writeProcessor.process(requestObject);
