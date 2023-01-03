@@ -71,6 +71,36 @@ jobs:
         run: docker-compose -f system-tests/docker-compose.yml logs
         if: always()
 
+  Check-Cosmos-Key:
+    runs-on: ubuntu-latest
+    steps:
+      - id: has-cosmos-key
+        env:
+          HAS_COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
+        if: "${{ env.HAS_COSMOS_KEY != '' }}"
+        run: echo "::set-output name=defined::true"
+    outputs:
+      has-cosmos-key: ${{ steps.has-cosmos-key.outputs.defined }}
+
+  Azure-CosmosDB-Integration-Tests:
+    # run only if COSMOS_KEY is present
+    needs: [ Check-Cosmos-Key ]
+    if: needs.Check-Cosmos-Key.outputs.has-cosmos-key == 'true'
+    runs-on: ubuntu-latest
+
+    env:
+      COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
+      COSMOS_URL: ${{ secrets.COSMOS_URL }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/gradle-setup
+
+      - name: Azure CosmosDB Tests
+        uses: ./.github/actions/run-tests
+        with:
+          command: ./gradlew test -DincludeTags="AzureCosmosDbIntegrationTest"
+
   Postgresql-Integration-Tests:
     runs-on: ubuntu-latest
     env:
@@ -97,6 +127,7 @@ jobs:
     needs:
       - Test
       - Postgresql-Integration-Tests
+      - Azure-CosmosDB-Integration-Tests
     runs-on: ubuntu-latest
     if: always()
     steps:

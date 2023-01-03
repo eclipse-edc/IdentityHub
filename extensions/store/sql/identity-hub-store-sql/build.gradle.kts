@@ -16,8 +16,7 @@ dependencies {
 
 publishing {
     publications {
-        create<MavenPublication>("identity-hub-store-sql") {
-            artifactId = "identity-hub-store-sql"
+        create<MavenPublication>(project.name) {
             from(components["java"])
         }
     }
