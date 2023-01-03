@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2020 - 2022 Amadeus
+ *  Copyright (c) 2020 - 2023 Amadeus
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -14,41 +14,34 @@
 
 package org.eclipse.edc.identityhub.store.sql;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.identityhub.store.sql.schema.IdentityHubStatements;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
+import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.stream.Stream;
-import javax.sql.DataSource;
 
-import static java.lang.String.format;
 import static org.eclipse.edc.sql.SqlQueryExecutor.executeQuery;
 
 /**
  * SQL implementation for {@link IdentityHubStore}.
  */
-public class SqlIdentityHubStore implements IdentityHubStore {
-
-    private final DataSourceRegistry dataSourceRegistry;
-    private final String dataSourceName;
-    private final TransactionContext transactionContext;
+public class SqlIdentityHubStore extends AbstractSqlStore implements IdentityHubStore {
     private final IdentityHubStatements statements;
 
     public SqlIdentityHubStore(DataSourceRegistry dataSourceRegistry,
                                String dataSourceName,
                                TransactionContext transactionContext,
-                               IdentityHubStatements identityHubStatements) {
-        this.dataSourceRegistry = Objects.requireNonNull(dataSourceRegistry);
-        this.dataSourceName = Objects.requireNonNull(dataSourceName);
-        this.transactionContext = Objects.requireNonNull(transactionContext);
+                               IdentityHubStatements identityHubStatements, ObjectMapper mapper) {
+        super(dataSourceRegistry, dataSourceName, transactionContext, mapper);
         statements = Objects.requireNonNull(identityHubStatements);
     }
 
@@ -81,13 +74,5 @@ public class SqlIdentityHubStore implements IdentityHubStore {
                 .payload(resultSet.getString(statements.getPayloadColumn()).getBytes())
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
                 .build();
-    }
-
-    private DataSource getDataSource() {
-        return Objects.requireNonNull(dataSourceRegistry.resolve(dataSourceName), format("DataSource %s could not be resolved", dataSourceName));
-    }
-
-    private Connection getConnection() throws SQLException {
-        return getDataSource().getConnection();
     }
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2020 - 2022 Amadeus
+ *  Copyright (c) 2020 - 2023 Amadeus
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -56,6 +56,6 @@ public class SqlIdentityHubStoreExtension implements ServiceExtension {
     public IdentityHubStore identityHubStore(ServiceExtensionContext context) {
         var s = Objects.requireNonNullElse(statements, new BaseSqlIdentityHubStatements());
         var dataSource = context.getSetting(DATASOURCE_NAME_SETTING, DEFAULT_DATASOURCE_NAME);
-        return new SqlIdentityHubStore(dataSourceRegistry, dataSource, trxContext, s);
+        return new SqlIdentityHubStore(dataSourceRegistry, dataSource, trxContext, s, context.getTypeManager().getMapper());
     }
 }
