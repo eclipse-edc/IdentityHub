@@ -44,7 +44,8 @@ dependencyResolutionManagement {
             library("ext-identity-did-web", "org.eclipse.edc", "identity-did-web").versionRef("edc")
             library("ext-http", "org.eclipse.edc", "http").versionRef("edc")
             library("ext-observability", "org.eclipse.edc", "api-observability").versionRef("edc")
-
+            library("ext-azure-cosmos-core", "org.eclipse.edc", "azure-cosmos-core").versionRef("edc")
+            library("ext-azure-test", "org.eclipse.edc", "azure-test").versionRef("edc")
         }
     }
 }
@@ -58,6 +59,7 @@ include(":core:identity-hub-verifier")
 
 
 include(":extensions:store:sql:identity-hub-store-sql")
+include(":extensions:store:cosmos:identity-hub-store-cosmos")
 include(":extensions:identity-hub-api")
 include(":extensions:identity-hub-verifier-jwt")
 include(":extensions:credentials:identity-hub-credentials-jwt")
