@@ -29,6 +29,7 @@ import org.eclipse.edc.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.junit.extensions.EdcExtension;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
@@ -45,9 +46,8 @@ import java.util.UUID;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateCredential;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
-import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
-import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toMap;
 import static org.eclipse.edc.junit.testfixtures.TestUtils.getFreePort;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -56,6 +56,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(EdcExtension.class)
 class CredentialsVerifierExtensionTest {
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static final int PORT = getFreePort();
@@ -63,7 +64,9 @@ class CredentialsVerifierExtensionTest {
     private static final String DID_METHOD = "test-method";
     private static final String CREDENTIAL_ISSUER = format("did:%s:%s", DID_METHOD, "http://some.test.url");
     private static final String SUBJECT = "http://some.test.url";
+
     private final CredentialEnvelopeTransformerRegistry registry = mock(CredentialEnvelopeTransformerRegistry.class);
+
     private IdentityHubClient identityHubClient;
 
     private static DidDocument createDidDocument(ECKey jwk) throws JsonProcessingException {
@@ -78,8 +81,7 @@ class CredentialsVerifierExtensionTest {
     @BeforeEach
     void setUp(EdcExtension extension) {
         when(registry.resolve(any())).thenReturn(new JwtCredentialEnvelopeTransformer(OBJECT_MAPPER));
-
-        identityHubClient = new IdentityHubClientImpl(TestUtils.testOkHttpClient(), new ObjectMapper(), mock(Monitor.class), registry);
+        identityHubClient = new IdentityHubClientImpl(TestUtils.testOkHttpClient(), OBJECT_MAPPER, mock(Monitor.class), registry);
         extension.setConfiguration(Map.of("web.http.port", String.valueOf(PORT)));
     }
 
@@ -88,7 +90,7 @@ class CredentialsVerifierExtensionTest {
         // Arrange
         var jwk = generateEcKey();
         var didDocument = createDidDocument(jwk);
-        var credential = generateVerifiableCredential();
+        var credential = generateCredential();
         var jwt = buildSignedJwt(credential, CREDENTIAL_ISSUER, SUBJECT, jwk);
         var didResolverMock = mock(DidResolver.class);
         when(didResolverMock.getMethod()).thenReturn(DID_METHOD);
@@ -100,12 +102,16 @@ class CredentialsVerifierExtensionTest {
         var addResult = identityHubClient.addVerifiableCredential(API_URL, new JwtCredentialEnvelope(jwt));
         assertThat(addResult.succeeded()).isTrue();
         var credentials = verifier.getVerifiedCredentials(didDocument);
-        var expectedCredentials = toMap(credential, CREDENTIAL_ISSUER, SUBJECT);
 
         // Assert
         assertThat(credentials.succeeded()).isTrue();
         assertThat(credentials.getContent())
-                .usingRecursiveComparison()
-                .isEqualTo(expectedCredentials);
+                .hasSize(1)
+                .extractingByKey(credential.getId())
+                .satisfies(o -> {
+                    assertThat(o).isNotNull().isInstanceOf(Credential.class);
+                    var cred = (Credential) o;
+                    assertThat(cred).usingRecursiveComparison().isEqualTo(credential);
+                });
     }
 }

@@ -18,8 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
-import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.junit.extensions.EdcExtension;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
@@ -28,11 +28,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.Map;
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateCredential;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -42,10 +40,8 @@ import static org.mockito.Mockito.when;
 class IdentityHubClientImplIntegrationTest {
 
     private static final String API_URL = "http://localhost:8181/api/identity-hub";
-    private static final VerifiableCredential VERIFIABLE_CREDENTIAL = VerifiableCredential.Builder.newInstance()
-            .id(UUID.randomUUID().toString())
-            .credentialSubject(Map.of("foo", "bar"))
-            .build();
+    private static final Credential VERIFIABLE_CREDENTIAL = generateCredential();
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final CredentialEnvelopeTransformerRegistry registry = mock(CredentialEnvelopeTransformerRegistry.class);
     private IdentityHubClient client;

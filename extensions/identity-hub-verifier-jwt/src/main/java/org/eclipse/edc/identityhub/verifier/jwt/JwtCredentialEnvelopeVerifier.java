@@ -14,14 +14,14 @@
 
 package org.eclipse.edc.identityhub.verifier.jwt;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifier;
 import org.eclipse.edc.spi.result.Result;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Map;
 
 /**
  * Implementation of a Verifiable Credentials verifier working with JWT format
@@ -32,18 +32,17 @@ public class JwtCredentialEnvelopeVerifier implements CredentialEnvelopeVerifier
 
     private final JwtCredentialsVerifier jwtCredentialsVerifier;
 
-    private final VerifiableCredentialsJwtService verifiableCredentialsJwtService;
+    private final ObjectMapper mapper;
 
 
-    public JwtCredentialEnvelopeVerifier(JwtCredentialsVerifier jwtCredentialsVerifier, VerifiableCredentialsJwtService verifiableCredentialsJwtService) {
+    public JwtCredentialEnvelopeVerifier(JwtCredentialsVerifier jwtCredentialsVerifier, ObjectMapper mapper) {
         this.jwtCredentialsVerifier = jwtCredentialsVerifier;
-        this.verifiableCredentialsJwtService = verifiableCredentialsJwtService;
+        this.mapper = mapper;
     }
 
     @Override
-    public Result<Map.Entry<String, Object>> verify(JwtCredentialEnvelope verifiableCredentials, DidDocument didDocument) {
-
-        var jwt = verifiableCredentials.getJwtVerifiableCredentials();
+    public Result<Credential> verify(JwtCredentialEnvelope vc, DidDocument didDocument) {
+        var jwt = vc.getJwt();
         var result = verifyJwtClaims(jwt, didDocument);
         if (result.failed()) {
             return Result.failure(result.getFailureMessages());
@@ -53,7 +52,12 @@ public class JwtCredentialEnvelopeVerifier implements CredentialEnvelopeVerifier
         if (signatureResult.failed()) {
             return Result.failure(signatureResult.getFailureMessages());
         }
-        return verifiableCredentialsJwtService.extractCredential(jwt);
+        var verifiableCredentialResult = vc.toVerifiableCredential(mapper);
+        if (verifiableCredentialResult.failed()) {
+            return Result.failure(verifiableCredentialResult.getFailureMessages());
+        }
+
+        return Result.success(verifiableCredentialResult.getContent().getItem());
     }
 
     @NotNull

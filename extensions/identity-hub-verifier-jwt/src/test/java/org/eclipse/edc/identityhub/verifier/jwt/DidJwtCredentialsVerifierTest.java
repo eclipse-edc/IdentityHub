@@ -18,6 +18,8 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.edc.iam.did.crypto.key.EcPublicKeyWrapper;
+import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -32,9 +34,8 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Date.from;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateCredential;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
-import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
-import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toPublicKeyWrapper;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -48,7 +49,7 @@ class DidJwtCredentialsVerifierTest {
     private static final String ISSUER = "http://some.test.url";
     private static final String SUBJECT = "http://some.test.url";
     private static final String OTHER_SUBJECT = "http://some.test.url" + "other";
-    private static final SignedJWT JWT = buildSignedJwt(generateVerifiableCredential(), ISSUER, SUBJECT, JWK);
+    private static final SignedJWT JWT = buildSignedJwt(generateCredential(), ISSUER, SUBJECT, JWK);
     private DidPublicKeyResolver didPublicKeyResolver;
     private DidJwtCredentialsVerifier didJwtCredentialsVerifier;
 
@@ -122,13 +123,13 @@ class DidJwtCredentialsVerifierTest {
 
     @Test
     void verifyClaims_OnEmptySubject() {
-        var jwt = buildSignedJwt(generateVerifiableCredential(), ISSUER, null, JWK);
+        var jwt = buildSignedJwt(generateCredential(), ISSUER, null, JWK);
         assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, OTHER_SUBJECT).failed()).isTrue();
     }
 
     @Test
     void verifyClaims_OnEmptyIssuer() {
-        var jwt = buildSignedJwt(generateVerifiableCredential(), null, SUBJECT, JWK);
+        var jwt = buildSignedJwt(generateCredential(), null, SUBJECT, JWK);
         assertThat(didJwtCredentialsVerifier.verifyClaims(jwt, SUBJECT).failed()).isTrue();
     }
 
@@ -206,5 +207,9 @@ class DidJwtCredentialsVerifierTest {
 
         // Act & Assert
         assertThat(didJwtCredentialsVerifier.isSignedByIssuer(jwt).failed()).isTrue();
+    }
+
+    public static PublicKeyWrapper toPublicKeyWrapper(ECKey jwk) {
+        return new EcPublicKeyWrapper(jwk);
     }
 }

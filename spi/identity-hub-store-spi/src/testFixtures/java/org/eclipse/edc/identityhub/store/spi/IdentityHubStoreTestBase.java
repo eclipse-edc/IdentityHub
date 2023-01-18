@@ -16,7 +16,8 @@ package org.eclipse.edc.identityhub.store.spi;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
+import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.junit.jupiter.api.Test;
 
@@ -30,32 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public abstract class IdentityHubStoreTestBase {
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Random RAND = new Random();
-
-    private static byte[] toByteArray(VerifiableCredential vc) {
-        try {
-            return MAPPER.writeValueAsBytes(vc);
-        } catch (JsonProcessingException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    private static List<IdentityHubRecord> createIdentityHubRecords() {
-        var credentialsCount = RAND.nextInt(10) + 1;
-        return IntStream.range(0, credentialsCount)
-                .mapToObj(i -> createIdentityHubRecord())
-                .collect(Collectors.toList());
-    }
-
-    private static IdentityHubRecord createIdentityHubRecord() {
-        var vc = VerifiableCredential.Builder.newInstance().id(UUID.randomUUID().toString()).build();
-        return IdentityHubRecord.Builder.newInstance()
-                .id(UUID.randomUUID().toString())
-                .payloadFormat("application/json")
-                .payload(toByteArray(vc))
-                .build();
-    }
 
     @Test
     void saveSameVerifiableCredentialTwice_shouldThrows() {
@@ -87,4 +65,28 @@ public abstract class IdentityHubStoreTestBase {
     }
 
     protected abstract IdentityHubStore getStore();
+
+    private static byte[] toByteArray(Credential vc) {
+        try {
+            return MAPPER.writeValueAsBytes(vc);
+        } catch (JsonProcessingException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private static List<IdentityHubRecord> createIdentityHubRecords() {
+        var credentialsCount = RAND.nextInt(10) + 1;
+        return IntStream.range(0, credentialsCount)
+                .mapToObj(i -> createIdentityHubRecord())
+                .collect(Collectors.toList());
+    }
+
+    private static IdentityHubRecord createIdentityHubRecord() {
+        var credential = VerifiableCredentialTestUtil.generateCredential();
+        return IdentityHubRecord.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .payloadFormat("application/json")
+                .payload(toByteArray(credential))
+                .build();
+    }
 }

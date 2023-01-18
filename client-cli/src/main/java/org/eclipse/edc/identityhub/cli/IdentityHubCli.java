@@ -20,8 +20,6 @@ import org.eclipse.edc.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer;
 import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistryImpl;
-import org.eclipse.edc.identityhub.verifier.jwt.VerifiableCredentialsJwtService;
-import org.eclipse.edc.identityhub.verifier.jwt.VerifiableCredentialsJwtServiceImpl;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -37,8 +35,6 @@ public class IdentityHubCli {
     String hubUrl;
 
     IdentityHubClient identityHubClient;
-
-    VerifiableCredentialsJwtService verifiableCredentialsJwtService;
 
     public static void main(String... args) {
         CommandLine commandLine = getCommandLine();
@@ -65,6 +61,5 @@ public class IdentityHubCli {
         registry.register(new JwtCredentialEnvelopeTransformer(objectMapper));
 
         identityHubClient = new IdentityHubClientImpl(okHttpClient, objectMapper, monitor, registry);
-        verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(objectMapper, monitor);
     }
 }

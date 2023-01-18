@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.junit.testfixtures;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -24,10 +25,13 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.edc.iam.did.crypto.key.EcPublicKeyWrapper;
-import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
-import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
+import org.eclipse.edc.identityhub.spi.credentials.model.CredentialSubject;
+import org.eclipse.edc.identityhub.spi.credentials.model.Proof;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,19 +39,34 @@ import java.util.UUID;
  * Util class to manipulate VerifiableCredentials in tests.
  */
 public class VerifiableCredentialTestUtil {
+    
     private static final ECKeyGenerator EC_KEY_GENERATOR = new ECKeyGenerator(Curve.P_256);
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private VerifiableCredentialTestUtil() {
-
-
     }
 
-    public static VerifiableCredential generateVerifiableCredential() {
-        return VerifiableCredential.Builder.newInstance()
+    public static Credential generateCredential() {
+        return Credential.Builder.newInstance()
+                .context("https://www.w3.org/2018/credentials/v1")
                 .id(UUID.randomUUID().toString())
-                .credentialSubject(Map.of(
-                        UUID.randomUUID().toString(), "cred1",
-                        UUID.randomUUID().toString(), "cred2"))
+                .issuer("issuer")
+                .issuanceDate(Date.from(Instant.now().truncatedTo(ChronoUnit.SECONDS)))
+                .type("test")
+                .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id("id-test")
+                        .claim("cred1", UUID.randomUUID().toString())
+                        .claim("cred2", UUID.randomUUID().toString())
+                        .build())
+                .build();
+    }
+
+    public static Proof generateProof() {
+        return Proof.Builder.newInstance()
+                .verificationMethod("verificationMethod")
+                .proofPurpose("proofPurpose")
+                .created(Date.from(Instant.now().truncatedTo(ChronoUnit.SECONDS)))
+                .type("type")
                 .build();
     }
 
@@ -59,13 +78,9 @@ public class VerifiableCredentialTestUtil {
         }
     }
 
-    public static PublicKeyWrapper toPublicKeyWrapper(ECKey jwk) {
-        return new EcPublicKeyWrapper(jwk);
-    }
-
-    public static SignedJWT buildSignedJwt(VerifiableCredential credential, String issuer, String subject, ECKey jwk) {
+    public static SignedJWT buildSignedJwt(Credential credential, String issuer, String subject, ECKey jwk) {
         var claims = new JWTClaimsSet.Builder()
-                .claim("vc", credential)
+                .claim("vc", MAPPER.convertValue(credential, Map.class))
                 .issuer(issuer)
                 .subject(subject)
                 .expirationTime(null)
@@ -89,13 +104,5 @@ public class VerifiableCredentialTestUtil {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public static Map<String, Object> toMap(VerifiableCredential verifiableCredential, String issuer, String subject) {
-        return Map.of(verifiableCredential.getId(),
-                Map.of("vc", Map.of("credentialSubject", verifiableCredential.getCredentialSubject(),
-                                "id", verifiableCredential.getId()),
-                        "sub", subject,
-                        "iss", issuer));
     }
 }

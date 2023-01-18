@@ -26,7 +26,6 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 @Extension(value = JwtCredentialsExtension.NAME)
 public class JwtCredentialsExtension implements ServiceExtension {
 
-
     public static final String NAME = "Verifiable credential in JWT format";
 
     @Inject

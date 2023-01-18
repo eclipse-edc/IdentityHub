@@ -17,15 +17,17 @@ package org.eclipse.edc.identityhub.cli;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.edc.iam.did.crypto.key.EcPrivateKeyWrapper;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
-import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
+import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialFactory;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
 
 import java.util.concurrent.Callable;
 
-import static org.eclipse.edc.identityhub.spi.credentials.CryptoUtils.readPrivateEcKey;
+import static org.eclipse.edc.identityhub.cli.CryptoUtils.readEcKeyPemFile;
 
 
 @Command(name = "add", description = "Adds a verifiable credential to identity hub")
@@ -55,30 +57,31 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         var out = spec.commandLine().getOut();
 
-        VerifiableCredential vc;
-        try {
-            vc = MAPPER.readValue(verifiableCredentialJson, VerifiableCredential.class);
-        } catch (JsonProcessingException e) {
-            throw new CliException("Error while processing request json.");
-        }
+        var credential = toCredential();
+        var jwt = toJwt(credential);
 
-        SignedJWT signedJwt;
-        try {
-            var privateKey = readPrivateEcKey(privateKeyPemFile);
-            signedJwt = command.cli.verifiableCredentialsJwtService.buildSignedJwt(vc, issuer, subject, privateKey);
-        } catch (Exception e) {
-            throw new CliException("Error while signing Verifiable Credential", e);
-        }
-
-        var result = command.cli.identityHubClient.addVerifiableCredential(command.cli.hubUrl, new JwtCredentialEnvelope(signedJwt));
-
-        if (result.failed()) {
-            throw new CliException("Error while adding the Verifiable credential to the Identity Hub");
-        }
+        command.cli.identityHubClient.addVerifiableCredential(command.cli.hubUrl, new JwtCredentialEnvelope(jwt))
+                .orElseThrow(responseFailure -> new CliException("Error while adding the Verifiable credential to the Identity Hub"));
 
         out.println("Verifiable Credential added successfully");
 
         return 0;
     }
 
+    private Credential toCredential() {
+        try {
+            return MAPPER.readValue(verifiableCredentialJson, Credential.class);
+        } catch (JsonProcessingException e) {
+            throw new CliException("Error while processing request json.");
+        }
+    }
+
+    private SignedJWT toJwt(Credential credential) {
+        try {
+            var privateKey = readEcKeyPemFile(privateKeyPemFile);
+            return JwtCredentialFactory.buildSignedJwt(credential, issuer, subject, new EcPrivateKeyWrapper(privateKey), MAPPER);
+        } catch (Exception e) {
+            throw new CliException("Error while signing Verifiable Credential", e);
+        }
+    }
 }

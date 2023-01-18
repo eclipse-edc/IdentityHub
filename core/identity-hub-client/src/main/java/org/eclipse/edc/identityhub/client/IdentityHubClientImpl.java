@@ -127,7 +127,6 @@ public class IdentityHubClientImpl implements IdentityHubClient {
 
     @Override
     public StatusResult<Void> addVerifiableCredential(String hubBaseUrl, CredentialEnvelope verifiableCredential) {
-
         var transformer = transformerRegistry.resolve(verifiableCredential.format());
         if (transformer == null) {
             return StatusResult.failure(ResponseStatus.FATAL_ERROR, format("Transformer not found for format %s", verifiableCredential.format()));

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2022 Microsoft Corporation
+ *  Copyright (c) 2023 Amadeus
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,73 +8,38 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Microsoft Corporation - initial API and implementation
+ *       Amadeus - initial API and implementation
  *
  */
 
 package org.eclipse.edc.identityhub.spi.credentials.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 /**
- * <p>
- *   Represents a VerifiableCredential that can be stored in the Identity Hub. The model follows the  <a href="https://www.w3.org/TR/vc-data-model/">W3C Verifiable Credential</a> specification.
- * </p>
- * <p>
- *   The MIME type "application/vc+ldp" should be used to identify the correct format when passing Verifiable Credentials as data to the Identity Hub.
- * </p>
+ * Represents a verifiable credential as defined in <a href="https://www.w3.org/TR/vc-data-model">W3C specification</a>.
  */
-// TODO: implement Verifiable Credential model
-@JsonDeserialize(builder = VerifiableCredential.Builder.class)
-public class VerifiableCredential {
+public class VerifiableCredential extends Verifiable<Credential> {
 
-    private String id;
+    private static final String DEFAULT_CONTEXT = "https://www.w3.org/2018/credentials/v1";
+    private static final String DEFAULT_TYPE = "VerifiableCredential";
 
-    private Map<String, Object> credentialSubject = new HashMap<>();
-
-    private VerifiableCredential() {
+    @JsonCreator
+    public VerifiableCredential(@JsonProperty("proof") Proof proof) {
+        super(proof);
     }
 
-    public String getId() {
-        return id;
+    public VerifiableCredential(Credential credential, Proof proof) {
+        super(credential, proof);
     }
 
-    public Map<String, Object> getCredentialSubject() {
-        return credentialSubject;
-    }
-
-    @JsonPOJOBuilder(withPrefix = "")
-    public static final class Builder {
-        VerifiableCredential verifiableCredential;
-
-        private Builder() {
-            verifiableCredential = new VerifiableCredential();
-        }
-
-        @JsonCreator
-        public static Builder newInstance() {
-            return new Builder();
-        }
-
-        public Builder id(String id) {
-            verifiableCredential.id = id;
-            return this;
-        }
-
-        public Builder credentialSubject(Map<String, Object> credentialSubject) {
-            verifiableCredential.credentialSubject = Map.copyOf(credentialSubject);
-            return this;
-        }
-
-        public VerifiableCredential build() {
-            Objects.requireNonNull(verifiableCredential.id, "VerifiableCredential must contain id property.");
-            return verifiableCredential;
-        }
+    @JsonIgnore
+    public boolean isValid() {
+        Objects.requireNonNull(item, "Credential cannot be null.");
+        return item.getContexts().contains(DEFAULT_CONTEXT) && item.getTypes().contains(DEFAULT_TYPE);
     }
 }

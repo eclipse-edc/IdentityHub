@@ -19,9 +19,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
-import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
-import org.eclipse.edc.identityhub.verifier.jwt.VerifiableCredentialsJwtServiceImpl;
-import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -35,10 +35,8 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.cli.CliTestUtils.PRIVATE_KEY_PATH;
-import static org.eclipse.edc.identityhub.cli.CliTestUtils.createVerifiableCredential;
-import static org.eclipse.edc.identityhub.cli.CliTestUtils.signVerifiableCredential;
+import static org.eclipse.edc.identityhub.cli.CliTestUtils.toJwtVerifiableCredential;
 import static org.eclipse.edc.identityhub.cli.CliTestUtils.verifyVerifiableCredentialSignature;
-import static org.eclipse.edc.identityhub.verifier.jwt.VerifiableCredentialsJwtService.VERIFIABLE_CREDENTIALS_KEY;
 import static org.eclipse.edc.spi.response.StatusResult.success;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -49,11 +47,11 @@ import static org.mockito.Mockito.when;
 
 class VerifiableCredentialsCommandTest {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final VerifiableCredential VC1 = createVerifiableCredential();
-    private static final JwtCredentialEnvelope SIGNED_VC1 = new JwtCredentialEnvelope(signVerifiableCredential(VC1));
-    private static final VerifiableCredential VC2 = createVerifiableCredential();
-    private static final JwtCredentialEnvelope SIGNED_VC2 = new JwtCredentialEnvelope(signVerifiableCredential(VC2));
+    private static final ObjectMapper MAPPER = new TypeManager().getMapper();
+    private static final Credential CREDENTIAL1 = VerifiableCredentialTestUtil.generateCredential();
+    private static final JwtCredentialEnvelope VC1 = new JwtCredentialEnvelope(toJwtVerifiableCredential(CREDENTIAL1));
+    private static final Credential CREDENTIAL2 = VerifiableCredentialTestUtil.generateCredential();
+    private static final JwtCredentialEnvelope VC2 = new JwtCredentialEnvelope(toJwtVerifiableCredential(CREDENTIAL2));
     private static final String HUB_URL = "http://some.test.url";
 
     private final IdentityHubCli app = new IdentityHubCli();
@@ -64,7 +62,6 @@ class VerifiableCredentialsCommandTest {
     @BeforeEach
     void setUp() {
         app.identityHubClient = mock(IdentityHubClient.class);
-        app.verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(new ObjectMapper(), mock(Monitor.class));
         app.hubUrl = HUB_URL;
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
@@ -92,7 +89,7 @@ class VerifiableCredentialsCommandTest {
     @Test
     void list() throws Exception {
         // arrange
-        when(app.identityHubClient.getVerifiableCredentials(app.hubUrl)).thenReturn(success(List.of(SIGNED_VC1, SIGNED_VC2)));
+        when(app.identityHubClient.getVerifiableCredentials(app.hubUrl)).thenReturn(success(List.of(VC1, VC2)));
 
         // act
         var exitCode = executeList();
@@ -106,18 +103,18 @@ class VerifiableCredentialsCommandTest {
         var claims = MAPPER.readValue(outContent, new TypeReference<List<Map<String, Object>>>() {
         });
         var vcs = claims.stream()
-                .map(c -> MAPPER.convertValue(c, VerifiableCredential.class))
+                .map(c -> MAPPER.convertValue(c, Credential.class))
                 .collect(Collectors.toList());
 
         assertThat(vcs)
                 .usingRecursiveFieldByFieldElementComparator()
-                .isEqualTo(List.of(VC1, VC2));
+                .isEqualTo(List.of(CREDENTIAL1, CREDENTIAL2));
     }
 
     @Test
     void add() throws Exception {
         // arrange
-        var json = MAPPER.writeValueAsString(VC1);
+        var json = MAPPER.writeValueAsString(CREDENTIAL1);
         var vcArgCaptor = ArgumentCaptor.forClass(JwtCredentialEnvelope.class);
         doReturn(success()).when(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), vcArgCaptor.capture());
 
@@ -132,16 +129,16 @@ class VerifiableCredentialsCommandTest {
         assertThat(errContent).isEmpty();
 
         verify(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), isA(JwtCredentialEnvelope.class));
-        var signedJwt = vcArgCaptor.getValue().getJwtVerifiableCredentials();
+        var envelope = vcArgCaptor.getValue();
+        var signedJwt = envelope.getJwt();
 
         // assert JWT signature
         assertThat(verifyVerifiableCredentialSignature(signedJwt)).isTrue();
 
-        // verify verifiable credential claim
-        var vcClaim = signedJwt.getJWTClaimsSet().getJSONObjectClaim(VERIFIABLE_CREDENTIALS_KEY);
-        var vcClaimJson = MAPPER.writeValueAsString(vcClaim);
-        var verifiableCredential = MAPPER.readValue(vcClaimJson, VerifiableCredential.class);
-        assertThat(verifiableCredential).usingRecursiveComparison().isEqualTo(VC1);
+        var result = envelope.toVerifiableCredential(MAPPER);
+
+        assertThat(result.succeeded()).isTrue();
+        assertThat(result.getContent().getItem()).usingRecursiveComparison().isEqualTo(CREDENTIAL1);
     }
 
     @Test
@@ -163,7 +160,7 @@ class VerifiableCredentialsCommandTest {
     @Test
     void add_invalidPrivateKey_fails() throws JsonProcessingException {
         // arrange
-        var json = MAPPER.writeValueAsString(VC1);
+        var json = MAPPER.writeValueAsString(CREDENTIAL1);
 
         // act
         var exitCode = executeAdd(json, "non-existing-key");
