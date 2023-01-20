@@ -28,7 +28,7 @@ public interface CredentialEnvelope {
     String format();
 
     /**
-     * Convert the content of {@link CredentialEnvelope} to {@link VerifiableCredential}
+     * Convert the content of {@link CredentialEnvelope} to {@link VerifiableCredential}.
      *
      * @param mapper The json mapper.
      * @return The result of the conversion process

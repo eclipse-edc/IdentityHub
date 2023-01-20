@@ -24,6 +24,7 @@ import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistry;
 import org.eclipse.edc.identityhub.verifier.IdentityHubCredentialsVerifier;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -39,9 +40,8 @@ import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateCredential;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
-import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
-import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.toMap;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -60,14 +60,12 @@ class IdentityHubJwtCredentialsVerifierTest {
     private final IdentityHubClient identityHubClientMock = mock(IdentityHubClient.class);
     private final JwtCredentialsVerifier jwtCredentialsVerifierMock = mock(JwtCredentialsVerifier.class);
     private final CredentialEnvelopeVerifierRegistry credentialsVerifierRegistry = mock(CredentialEnvelopeVerifierRegistry.class);
-    private final VerifiableCredentialsJwtServiceImpl verifiableCredentialsJwtService = new VerifiableCredentialsJwtServiceImpl(OBJECT_MAPPER, monitorMock);
     private final CredentialsVerifier credentialsVerifier = new IdentityHubCredentialsVerifier(identityHubClientMock, monitorMock, credentialsVerifierRegistry);
 
     @Test
     void getVerifiedClaims_getValidClaims() {
-
         // Arrange
-        var credential = generateVerifiableCredential();
+        var credential = generateCredential();
         var jws = buildSignedJwt(credential, ISSUER, SUBJECT, generateEcKey());
         setUpMocks(jws, true, true);
 
@@ -77,15 +75,20 @@ class IdentityHubJwtCredentialsVerifierTest {
         // Assert
         assertThat(credentials.succeeded()).isTrue();
         assertThat(credentials.getContent())
-                .usingRecursiveComparison()
-                .isEqualTo(toMap(credential, ISSUER, SUBJECT));
+                .hasSize(1)
+                .extractingByKey(credential.getId())
+                .satisfies(o -> {
+                    assertThat(o).isInstanceOf(Credential.class);
+                    var cred = (Credential) o;
+                    assertThat(cred).usingRecursiveComparison().isEqualTo(credential);
+                });
     }
 
     @Test
     void getVerifiedClaims_filtersSignedByWrongIssuer() {
 
         // Arrange
-        var credential = generateVerifiableCredential();
+        var credential = generateCredential();
         var jws = buildSignedJwt(credential, ISSUER, SUBJECT, generateEcKey());
         setUpMocks(jws, true, false);
 
@@ -159,7 +162,7 @@ class IdentityHubJwtCredentialsVerifierTest {
     }
 
     private void setUpMocks(SignedJWT jws, boolean isSigned, boolean claimsValid) {
-        when(credentialsVerifierRegistry.resolve("application/vc+jwt")).thenReturn(new JwtCredentialEnvelopeVerifier(jwtCredentialsVerifierMock, verifiableCredentialsJwtService));
+        when(credentialsVerifierRegistry.resolve("application/vc+jwt")).thenReturn(new JwtCredentialEnvelopeVerifier(jwtCredentialsVerifierMock, OBJECT_MAPPER));
         when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.success(List.of(new JwtCredentialEnvelope(jws))));
         when(jwtCredentialsVerifierMock.isSignedByIssuer(jws)).thenReturn(isSigned ? Result.success() : Result.failure("JWT not signed"));
         when(jwtCredentialsVerifierMock.verifyClaims(eq(jws), any())).thenReturn(claimsValid ? Result.success() : Result.failure("VC not valid"));

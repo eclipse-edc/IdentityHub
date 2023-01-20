@@ -23,11 +23,11 @@ dependencies {
     implementation(edc.spi.identity.did)
     implementation(libs.nimbus.jwt)
     implementation(libs.okhttp)
-
-
+    
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(project(":extensions:identity-hub-api"))
     testImplementation(edc.core.identity.did)
+    testImplementation(edc.ext.identity.did.crypto)
     testImplementation(edc.core.junit)
 }
 

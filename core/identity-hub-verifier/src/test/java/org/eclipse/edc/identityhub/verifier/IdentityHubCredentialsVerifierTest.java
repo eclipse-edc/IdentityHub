@@ -14,11 +14,12 @@
 
 package org.eclipse.edc.identityhub.verifier;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.edc.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
+import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
 import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifier;
 import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistry;
@@ -28,7 +29,6 @@ import org.eclipse.edc.spi.response.StatusResult;
 import org.eclipse.edc.spi.result.Result;
 import org.junit.jupiter.api.Test;
 
-import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.List;
 
@@ -76,7 +76,7 @@ class IdentityHubCredentialsVerifierTest {
 
         assertThat(result.succeeded()).isTrue();
 
-        assertThat(result.getContent().size()).isEqualTo(0);
+        assertThat(result.getContent().size()).isZero();
     }
 
     @Test
@@ -87,21 +87,21 @@ class IdentityHubCredentialsVerifierTest {
 
         when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.success(List.of(envelope)));
         when(verifierRegistry.resolve(any())).thenReturn(verifier);
-        when(verifier.verify(envelope, DID_DOCUMENT)).thenReturn(Result.success(new AbstractMap.SimpleEntry<>("credentialId", Collections.emptyMap())));
+        var credential = VerifiableCredentialTestUtil.generateCredential();
+        when(verifier.verify(envelope, DID_DOCUMENT)).thenReturn(Result.success(credential));
 
         var result = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         assertThat(result.succeeded()).isTrue();
 
         var content = result.getContent();
-        assertThat(content.size()).isEqualTo(1);
 
-        assertThat(content).extractingByKey("credentialId").satisfies(credential -> {
-            assertThat(credential)
-                    .asInstanceOf(InstanceOfAssertFactories.MAP)
-                    .size()
-                    .isEqualTo(0);
-        });
+        assertThat(content).hasSize(1)
+                .extractingByKey(credential.getId()).satisfies(obj -> {
+                    assertThat(obj).isInstanceOf(Credential.class);
+                    var cred = (Credential) obj;
+                    assertThat(cred).usingRecursiveComparison().isEqualTo(credential);
+                });
     }
 
 

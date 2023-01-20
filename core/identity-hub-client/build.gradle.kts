@@ -33,7 +33,6 @@ dependencies {
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(edc.core.junit)
     testImplementation(edc.core.identity.did)
-
 }
 
 publishing {

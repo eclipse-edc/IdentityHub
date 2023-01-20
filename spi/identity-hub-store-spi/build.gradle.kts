@@ -7,8 +7,8 @@ plugins {
 dependencies {
     api(project(":spi:identity-hub-spi"))
     api(edc.spi.core)
-    
 
+    testFixturesImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testFixturesImplementation(libs.junit.jupiter.api)
     testFixturesImplementation(libs.assertj)
     testFixturesImplementation(libs.nimbus.jwt)
@@ -17,8 +17,7 @@ dependencies {
 
 publishing {
     publications {
-        create<MavenPublication>("identity-hub-store-spi") {
-            artifactId = "identity-hub-store-spi"
+        create<MavenPublication>(project.name) {
             from(components["java"])
         }
     }

@@ -25,8 +25,6 @@ dependencies {
     implementation(libs.jackson.databind)
     implementation(libs.nimbus.jwt)
     implementation(edc.spi.identity.did)
-    implementation(edc.ext.identity.did.crypto)
-
 
     implementation(libs.swagger.jaxrs) {
         exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
@@ -34,13 +32,11 @@ dependencies {
 
     testFixturesImplementation(libs.nimbus.jwt)
     testFixturesImplementation(edc.spi.identity.did)
-    testFixturesImplementation(edc.ext.identity.did.crypto)
 }
 
 publishing {
     publications {
-        create<MavenPublication>("identity-hub-spi") {
-            artifactId = "identity-hub-spi"
+        create<MavenPublication>(project.name) {
             from(components["java"])
         }
     }

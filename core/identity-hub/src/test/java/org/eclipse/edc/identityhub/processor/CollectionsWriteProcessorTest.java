@@ -48,8 +48,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateCredential;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
-import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateVerifiableCredential;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -126,7 +126,7 @@ class CollectionsWriteProcessorTest {
     }
 
     private static byte[] getValidData() {
-        var verifiableCredential = generateVerifiableCredential();
+        var verifiableCredential = generateCredential();
         return buildSignedJwt(verifiableCredential, ISSUER, SUBJECT, generateEcKey()).serialize().getBytes(StandardCharsets.UTF_8);
     }
 

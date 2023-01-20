@@ -23,7 +23,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer;
-import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
+import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.identityhub.spi.model.MessageResponseObject;
 import org.eclipse.edc.identityhub.spi.model.MessageStatus;
@@ -50,11 +50,9 @@ import static org.mockito.Mockito.when;
 
 class IdentityHubClientImplTest {
     private static final String HUB_URL = "http://some.test.url";
-    private static final String VERIFIABLE_CREDENTIAL_ID = UUID.randomUUID().toString();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final CredentialEnvelopeTransformerRegistry registry = mock(CredentialEnvelopeTransformerRegistry.class);
-
 
     @BeforeEach
     void setup() {
@@ -85,7 +83,6 @@ class IdentityHubClientImplTest {
 
     @Test
     void getSelfDescriptionServerError() {
-
         var errorMessage = "test-error-message";
         var body = "{}";
         var code = 500;
@@ -110,7 +107,7 @@ class IdentityHubClientImplTest {
 
     @Test
     void getVerifiableCredentials() {
-        var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
+        var credential = VerifiableCredentialTestUtil.generateCredential();
         var jws = buildSignedJwt(credential, "http://some.test.url", "http://some.test.url", generateEcKey());
 
         var record = Record.Builder.newInstance()
@@ -122,7 +119,9 @@ class IdentityHubClientImplTest {
         Interceptor interceptor = chain -> {
             var request = chain.request();
             var replies = MessageResponseObject.Builder.newInstance()
-                    .status(MessageStatus.OK).entries(List.of(record)).build();
+                    .status(MessageStatus.OK)
+                    .entries(List.of(record))
+                    .build();
             var responseObject = ResponseObject.Builder.newInstance()
                     .status(RequestStatus.OK)
                     .replies(List.of(replies))
@@ -191,7 +190,7 @@ class IdentityHubClientImplTest {
 
     @Test
     void addVerifiableCredentialsServerError() {
-        var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
+        var credential = VerifiableCredentialTestUtil.generateCredential();
         var jws = buildSignedJwt(credential, "http://some.test.url", "http://some.test.url", generateEcKey());
         var errorMessage = "test error message";
         var body = "{}";
@@ -217,7 +216,7 @@ class IdentityHubClientImplTest {
 
     @Test
     void addVerifiableCredentialsIoException() {
-        var credential = VerifiableCredential.Builder.newInstance().id(VERIFIABLE_CREDENTIAL_ID).build();
+        var credential = VerifiableCredentialTestUtil.generateCredential();
         var jws = buildSignedJwt(credential, "http://some.test.url", "http://some.test.url", generateEcKey());
         var exceptionMessage = "test exception message";
         Interceptor interceptor = chain -> {

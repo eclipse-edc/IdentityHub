@@ -18,6 +18,7 @@ import org.eclipse.edc.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
 import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistry;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -46,9 +47,8 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     /**
      * Create a new credential verifier that uses an Identity Hub
      *
-     * @param identityHubClient          IdentityHubClient.
-     * @param credentialEnvelopeVerifierRegistry
-     *
+     * @param identityHubClient                  IdentityHubClient.
+     * @param credentialEnvelopeVerifierRegistry verifier registry
      */
     public IdentityHubCredentialsVerifier(IdentityHubClient identityHubClient, Monitor monitor, CredentialEnvelopeVerifierRegistry credentialEnvelopeVerifierRegistry) {
         this.identityHubClient = identityHubClient;
@@ -57,26 +57,11 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     }
 
     /**
-     * Get credentials from the IdentityHub of participant, verifies the credentials, and returns the successfully verified credentials.
-     * To be successfully verified, credentials needs to be signed by the specified issuer in the JWT.
-     * Here an example of the format returned by this method:
-     * <pre>{@code
-     * {
-     *     "vc_id_1": {
-     *         "vc": {
-     *           "id": "vc_id_1",
-     *           "credentialSubject": {
-     *             "region": "eu"
-     *           },
-     *            "iss": "did:web:issuer1",
-     *            "sub": "did:web:subjectA"
-     *         }
-     *       }
-     *   }
-     *   }</pre>
+     * Returns a map of successfully verified Credential such as defined in <a href="https://www.w3.org/TR/vc-data-model/#credentials">W3C specification</a>.
+     * The key of each map entry is the associated <a href="https://www.w3.org/TR/vc-data-model/#identifiers">credential identifier</a>.
      *
      * @param didDocument of a participant. The Did Document should contain an IdentityHub service.
-     * @return VerifiableCredentials.
+     * @return verified credentials.
      */
     @Override
     public Result<Map<String, Object>> getVerifiedCredentials(DidDocument didDocument) {
@@ -122,7 +107,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
         var verifiedlCredentials = verifiedCredentialsResult.get(true)
                 .stream()
                 .map(Result::getContent)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .collect(Collectors.toMap(Credential::getId, credential -> (Object) credential));
 
         var verifiedCredentialsFailure = verifiedCredentialsResult
                 .get(false)
@@ -135,7 +120,7 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     }
 
 
-    private Result<Map.Entry<String, Object>> verifyCredential(CredentialEnvelope verifiableCredentials, DidDocument didDocument) {
+    private Result<Credential> verifyCredential(CredentialEnvelope verifiableCredentials, DidDocument didDocument) {
         var verifier = credentialEnvelopeVerifierRegistry.resolve(verifiableCredentials.format());
 
         if (verifier == null) {

@@ -16,23 +16,22 @@ package org.eclipse.edc.identityhub.credentials.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
 import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
-import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.Result;
 
-import java.text.ParseException;
-import java.util.Optional;
+import java.util.Objects;
 
-import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer.VERIFIABLE_CREDENTIALS_KEY;
+import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.DATA_FORMAT;
+import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.VERIFIABLE_CREDENTIALS_KEY;
 
 public class JwtCredentialEnvelope implements CredentialEnvelope {
-    public static final String DATA_FORMAT = "application/vc+jwt";
 
-    private final SignedJWT jwtVerifiableCredentials;
+    private final SignedJWT jwt;
 
-    public JwtCredentialEnvelope(SignedJWT jwtVerifiableCredentials) {
-        this.jwtVerifiableCredentials = jwtVerifiableCredentials;
+    public JwtCredentialEnvelope(SignedJWT jwt) {
+        this.jwt = jwt;
     }
 
     @Override
@@ -42,18 +41,21 @@ public class JwtCredentialEnvelope implements CredentialEnvelope {
 
     @Override
     public Result<VerifiableCredential> toVerifiableCredential(ObjectMapper mapper) {
-
         try {
-            var vcClaim = Optional.ofNullable(jwtVerifiableCredentials.getJWTClaimsSet().getClaim(VERIFIABLE_CREDENTIALS_KEY))
-                    .orElseThrow(() -> new EdcException("Missing `vc` claim in signed JWT"));
-            return Result.success(mapper.convertValue(vcClaim, VerifiableCredential.class));
-        } catch (ParseException e) {
-            return Result.failure(e.getMessage());
+            var payload = jwt.getJWTClaimsSet().getClaims();
+            var vcObject = payload.get(VERIFIABLE_CREDENTIALS_KEY);
+            if (vcObject == null) {
+                return Result.failure(String.format("Missing `%s` claim", VERIFIABLE_CREDENTIALS_KEY));
+            }
+            var credential = mapper.convertValue(vcObject, Credential.class);
+            // JWT Verifiable Credentials do not have embedded proof.
+            return Result.success(new VerifiableCredential(credential, null));
+        } catch (Exception e) {
+            return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), e::toString));
         }
-
     }
 
-    public SignedJWT getJwtVerifiableCredentials() {
-        return jwtVerifiableCredentials;
+    public SignedJWT getJwt() {
+        return jwt;
     }
 }

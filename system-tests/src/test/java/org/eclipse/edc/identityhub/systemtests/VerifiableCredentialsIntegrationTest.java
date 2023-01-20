@@ -19,7 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.identityhub.cli.IdentityHubCli;
-import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
+import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
+import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.junit.extensions.EdcExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,10 +30,8 @@ import picocli.CommandLine;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
 @IntegrationTest
 @ExtendWith(EdcExtension.class)
@@ -43,12 +42,7 @@ class VerifiableCredentialsIntegrationTest {
     private static final String PARTICIPANT_DID = "did:web:localhost%3A8080:participant";
     private static final String AUTHORITY_PRIVATE_KEY_PATH = "resources/jwt/authority/private-key.pem";
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final VerifiableCredential VC1 = VerifiableCredential.Builder.newInstance()
-            .id(UUID.randomUUID().toString())
-            .credentialSubject(Map.of(
-                    "key1", "value1",
-                    "key2", "value2"))
-            .build();
+    private static final Credential CREDENTIAL = VerifiableCredentialTestUtil.generateCredential();
 
     private final CommandLine cmd = IdentityHubCli.getCommandLine();
     private final StringWriter out = new StringWriter();
@@ -79,7 +73,7 @@ class VerifiableCredentialsIntegrationTest {
     }
 
     private void addVerifiableCredentialWithCli() throws JsonProcessingException {
-        var json = MAPPER.writeValueAsString(VC1);
+        var json = MAPPER.writeValueAsString(CREDENTIAL);
         int result = cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", AUTHORITY_DID, "-b", PARTICIPANT_DID, "-k", AUTHORITY_PRIVATE_KEY_PATH);
         assertThat(result).isZero();
     }
@@ -92,12 +86,11 @@ class VerifiableCredentialsIntegrationTest {
         assertThat(verifiedCredentials.succeeded()).isTrue();
 
         var vcs = verifiedCredentials.getContent();
-        assertThat(vcs)
-                .extractingByKey(VC1.getId())
-                .asInstanceOf(map(String.class, Map.class))
-                .extractingByKey("vc")
-                .satisfies(c -> assertThat(MAPPER.convertValue(c, VerifiableCredential.class))
-                        .usingRecursiveComparison()
-                        .isEqualTo(VC1));
+        assertThat(vcs).extractingByKey(CREDENTIAL.getId())
+                .satisfies(o -> {
+                    assertThat(o).isInstanceOf(Credential.class);
+                    var cred = (Credential) o;
+                    assertThat(cred).usingRecursiveComparison().isEqualTo(CREDENTIAL);
+                });
     }
 }
