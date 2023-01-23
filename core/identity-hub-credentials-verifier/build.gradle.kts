@@ -32,12 +32,3 @@ dependencies {
     testImplementation(edc.core.identity.did)
     testImplementation(edc.core.junit)
 }
-
-publishing {
-    publications {
-        create<MavenPublication>("identity-hub-credentials-verifier") {
-            artifactId = "identity-hub-credentials-verifier"
-            from(components["java"])
-        }
-    }
-}

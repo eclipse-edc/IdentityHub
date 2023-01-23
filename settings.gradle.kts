@@ -51,16 +51,16 @@ dependencyResolutionManagement {
     }
 }
 
-include(":client-cli")
 include(":core:identity-hub")
 include(":core:identity-hub-client")
-include(":core:identity-hub-verifier")
+include(":core:identity-hub-credentials-verifier")
 include(":extensions:credentials:identity-hub-credentials-jwt")
 include(":extensions:identity-hub-api")
 include(":extensions:identity-hub-verifier-jwt")
 include(":extensions:self-description-api")
 include(":extensions:store:cosmos:identity-hub-store-cosmos")
 include(":extensions:store:sql:identity-hub-store-sql")
+include(":identity-hub-cli")
 include(":launcher")
 include(":spi:identity-hub-client-spi")
 include(":spi:identity-hub-spi")
