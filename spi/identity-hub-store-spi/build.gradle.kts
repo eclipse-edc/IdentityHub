@@ -14,11 +14,3 @@ dependencies {
     testFixturesImplementation(libs.nimbus.jwt)
     testFixturesImplementation(libs.jackson.databind)
 }
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}

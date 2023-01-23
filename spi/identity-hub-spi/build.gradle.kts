@@ -33,11 +33,3 @@ dependencies {
     testFixturesImplementation(libs.nimbus.jwt)
     testFixturesImplementation(edc.spi.identity.did)
 }
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}

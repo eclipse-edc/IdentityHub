@@ -23,13 +23,3 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     implementation(libs.nimbus.jwt)
 }
-
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}
-

@@ -13,11 +13,3 @@ dependencies {
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
     testImplementation(libs.postgres)
 }
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}
