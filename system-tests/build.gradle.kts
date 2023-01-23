@@ -32,3 +32,7 @@ dependencies {
     testImplementation(libs.nimbus.jwt)
 }
 
+edcBuild {
+    publish.set(false)
+}
+
