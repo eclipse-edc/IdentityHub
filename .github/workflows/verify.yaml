@@ -1,9 +1,8 @@
 name: Test Code (Style, Tests)
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -44,34 +43,99 @@ jobs:
 
       - uses: ./.github/actions/gradle-setup
 
-      - name: 'Build system tests launcher'
-        run: ./gradlew :system-tests:launcher:shadowJar
-
       - name: 'Upgrade docker-compose (for --wait option)'
         run: |
           sudo curl -L https://github.com/docker/compose/releases/download/v2.6.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
 
       - name: 'Run application in docker-compose'
-        run: docker-compose -f system-tests/tests/docker-compose.yml up --build --wait
+        run: docker-compose -f system-tests/docker-compose.yml up --wait
         timeout-minutes: 10
 
       - name: 'Unit and system tests'
-        run: ./gradlew test
+        uses: ./.github/actions/run-tests
+        with:
+          command: ./gradlew test
         timeout-minutes: 10
         env:
           INTEGRATION_TEST: true
           JACOCO: "true"
 
-      - name: 'Publish Test Results'
-        uses: EnricoMi/publish-unit-test-result-action@v1
-        if: always()
-        with:
-          files: "**/test-results/**/*.xml"
-
-      - name: CodeCov
-        uses: codecov/codecov-action@v3
+      #      - name: 'Publish Test Results'
+      #        uses: EnricoMi/publish-unit-test-result-action@v1
+      #        if: always()
+      #        with:
+      #          files: "**/test-results/**/*.xml"
 
       - name: 'docker-compose logs'
-        run: docker-compose -f system-tests/tests/docker-compose.yml logs
+        run: docker-compose -f system-tests/docker-compose.yml logs
         if: always()
+
+  Check-Cosmos-Key:
+    runs-on: ubuntu-latest
+    steps:
+      - id: has-cosmos-key
+        env:
+          HAS_COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
+        if: "${{ env.HAS_COSMOS_KEY != '' }}"
+        run: echo "::set-output name=defined::true"
+    outputs:
+      has-cosmos-key: ${{ steps.has-cosmos-key.outputs.defined }}
+
+  Azure-CosmosDB-Integration-Tests:
+    # run only if COSMOS_KEY is present
+    needs: [ Check-Cosmos-Key ]
+    if: needs.Check-Cosmos-Key.outputs.has-cosmos-key == 'true'
+    runs-on: ubuntu-latest
+
+    env:
+      COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
+      COSMOS_URL: ${{ secrets.COSMOS_URL }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/gradle-setup
+
+      - name: Azure CosmosDB Tests
+        uses: ./.github/actions/run-tests
+        with:
+          command: ./gradlew test -DincludeTags="AzureCosmosDbIntegrationTest"
+
+  Postgresql-Integration-Tests:
+    runs-on: ubuntu-latest
+    env:
+      JACOCO: true
+
+    services:
+      postgres:
+        image: postgres:14.2
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: password
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/gradle-setup
+
+      - name: Postgresql Tests
+        uses: ./.github/actions/run-tests
+        with:
+          command: ./gradlew test -DincludeTags="PostgresqlIntegrationTest"
+
+  Upload-Coverage-Report-To-Codecov:
+    needs:
+      - Test
+      - Postgresql-Integration-Tests
+      - Azure-CosmosDB-Integration-Tests
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      # Sources are needed for Codecov report
+      - uses: actions/checkout@v3
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+      - name: CodeCov
+        uses: codecov/codecov-action@v3

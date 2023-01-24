@@ -5,38 +5,29 @@ plugins {
     `maven-publish`
 }
 
-val edcGroup: String by project
-val edcVersion: String by project
-val jacksonVersion: String by project
-val jupiterVersion: String by project
-val assertj: String by project
-val mockitoVersion: String by project
-val okHttpVersion: String by project
-val nimbusVersion: String by project
-val bouncycastleVersion: String by project
-val picoCliVersion: String by project
-
 dependencies {
-    api("info.picocli:picocli:${picoCliVersion}")
-    annotationProcessor("info.picocli:picocli-codegen:${picoCliVersion}")
+    api(libs.picocli.core)
+    annotationProcessor(libs.picocli.codegen)
+    
+    implementation(project(":core:identity-hub-client"))
+    implementation(project(":extensions:credentials:identity-hub-credentials-jwt"))
+    implementation(project(":extensions:identity-hub-verifier-jwt"))
 
-    implementation(project(":identity-hub-core:identity-hub-client"))
-    implementation("${edcGroup}:identity-did-spi:${edcVersion}")
-    implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
-    implementation("com.squareup.okhttp3:okhttp:${okHttpVersion}")
-    implementation("com.nimbusds:nimbus-jose-jwt:${nimbusVersion}")
-    implementation("org.bouncycastle:bcpkix-jdk15on:${bouncycastleVersion}")
-    testImplementation("org.assertj:assertj-core:${assertj}")
-    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${jupiterVersion}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}")
+    implementation(edc.ext.identity.did.crypto)
+    implementation(edc.spi.identity.did)
+    implementation(libs.jackson.databind)
+    implementation(libs.okhttp)
+    implementation(libs.nimbus.jwt)
+
+    testImplementation(testFixtures(project(":spi:identity-hub-spi")))
 }
+
 repositories {
     mavenCentral()
 }
 
 application {
-    mainClass.set("org.eclipse.dataspaceconnector.identityhub.cli.IdentityHubCli")
+    mainClass.set("org.eclipse.edc.identityhub.cli.IdentityHubCli")
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {

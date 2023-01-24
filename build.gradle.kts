@@ -13,170 +13,73 @@
  */
 
 plugins {
-    java
     `java-library`
-    signing
-    `maven-publish`
-    checkstyle
-    id("org.gradle.crypto.checksum") version "1.4.0"
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
-    jacoco
 }
 
-repositories {
-    mavenCentral()
-}
 
-val projectGroup: String by project
-val swagger: String by project
-val rsApi : String by project
-
-// these values are required for the project POM (for publishing)
 val edcDeveloperId: String by project
 val edcDeveloperName: String by project
 val edcDeveloperEmail: String by project
 val edcScmConnection: String by project
 val edcWebsiteUrl: String by project
 val edcScmUrl: String by project
+val edcGroup: String by project
+val annotationProcessorVersion: String by project
+val metaModelVersion: String by project
+val javaVersion: String by project
 
 val defaultVersion: String by project
 
-// makes the project version overridable using the "-PidentityHubVersion..." flag. Useful for CI builds
-val projectVersion: String = (project.findProperty("identityHubVersion") ?: defaultVersion) as String
-
-var deployUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-
-if (projectVersion.contains("SNAPSHOT")) {
-    deployUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+var actualVersion: String = (project.findProperty("version") ?: defaultVersion) as String
+if (actualVersion == "unspecified") {
+    actualVersion = defaultVersion
 }
 
-subprojects{
-    afterEvaluate {
-        publishing {
-            publications.forEach { i ->
-                val mp = (i as MavenPublication)
-                mp.pom {
-                    name.set(project.name)
-                    description.set("edc :: ${project.name}")
-                    url.set(edcWebsiteUrl)
-
-                    licenses {
-                        license {
-                            name.set("The Apache License, Version 2.0")
-                            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                        }
-                        developers {
-                            developer {
-                                id.set(edcDeveloperId)
-                                name.set(edcDeveloperName)
-                                email.set(edcDeveloperEmail)
-                            }
-                        }
-                        scm {
-                            connection.set(edcScmConnection)
-                            url.set(edcScmUrl)
-                        }
-                    }
-                }
-            }
-        }
+buildscript {
+    dependencies {
+        val edcGradlePluginsVersion: String by project
+        classpath("org.eclipse.edc.edc-build:org.eclipse.edc.edc-build.gradle.plugin:${edcGradlePluginsVersion}")
     }
 }
+
 
 allprojects {
-    apply(plugin = "maven-publish")
-    apply(plugin = "checkstyle")
+    apply(plugin = "${edcGroup}.edc-build")
 
-    apply(plugin = "java")
+    // configure which version of the annotation processor to use. defaults to the same version as the plugin
+    configure<org.eclipse.edc.plugins.autodoc.AutodocExtension> {
+        processorVersion.set(annotationProcessorVersion)
+        outputDirectory.set(project.buildDir)
+    }
 
-    version = projectVersion
-    group = projectGroup
+    configure<org.eclipse.edc.plugins.edcbuild.extensions.BuildExtension> {
+        versions {
+            // override default dependency versions here
+            projectVersion.set(actualVersion)
+            metaModel.set(metaModelVersion)
 
-    checkstyle {
-        toolVersion = "9.0"
+        }
+        pom {
+            projectName.set(project.name)
+            description.set("edc :: ${project.name}")
+            projectUrl.set(edcWebsiteUrl)
+            scmConnection.set(edcScmConnection)
+            scmUrl.set(edcScmUrl)
+        }
+        swagger {
+            title.set("Identity HUB REST API")
+            description = "Identity HUB REST APIs - merged by OpenApiMerger"
+            outputFilename.set(project.name)
+            outputDirectory.set(file("${rootProject.projectDir.path}/resources/openapi/yaml"))
+        }
+        javaLanguageVersion.set(JavaLanguageVersion.of(javaVersion))
+    }
+
+    configure<CheckstyleExtension> {
         configFile = rootProject.file("resources/checkstyle-config.xml")
         configDirectory.set(rootProject.file("resources"))
-        maxErrors = 0 // does not tolerate errors
     }
 
-    repositories {
-        mavenCentral()
-        mavenLocal()
-        maven {
-            url = uri("https://maven.iais.fraunhofer.de/artifactory/eis-ids-public/")
-        }
-        maven{
-            url= uri("https://oss.sonatype.org/content/repositories/snapshots/")
-        }
-    }
-
-    pluginManager.withPlugin("io.swagger.core.v3.swagger-gradle-plugin") {
-
-        dependencies {
-            // this is used to scan the classpath and generate an openapi yaml file
-            implementation("io.swagger.core.v3:swagger-jaxrs2-jakarta:${swagger}")
-            implementation("jakarta.ws.rs:jakarta.ws.rs-api:${rsApi}")
-        }
-        // this is used to scan the classpath and generate an openapi yaml file
-        tasks.withType<io.swagger.v3.plugins.gradle.tasks.ResolveTask> {
-            outputFileName = project.name
-            outputFormat = io.swagger.v3.plugins.gradle.tasks.ResolveTask.Format.YAML
-            prettyPrint = true
-            classpath = java.sourceSets["main"].runtimeClasspath
-            buildClasspath = classpath
-            resourcePackages = setOf("org.eclipse.dataspaceconnector")
-            outputDir = file("${rootProject.projectDir.path}/resources/openapi/yaml")
-        }
-        configurations {
-            all {
-                exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
-            }
-        }
-    }
-
-    pluginManager.withPlugin("java-library"){
-        if (!project.hasProperty("skip.signing")) {
-
-            apply(plugin = "signing")
-            publishing {
-                repositories {
-                    maven {
-                        name = "OSSRH"
-                        setUrl(deployUrl)
-                        credentials {
-                            username = System.getenv("OSSRH_USER") ?: return@credentials
-                            password = System.getenv("OSSRH_PASSWORD") ?: return@credentials
-                        }
-                    }
-                }
-
-                signing {
-                    useGpgCmd()
-                    sign(publishing.publications)
-                }
-            }
-        }
-    }
-
-    tasks.test {
-        useJUnitPlatform()
-        testLogging {
-            showStandardStreams = true
-        }
-    }
-
-    if (System.getenv("JACOCO") == "true") {
-        apply(plugin = "jacoco")
-        tasks.test {
-            finalizedBy(tasks.jacocoTestReport)
-        }
-        tasks.jacocoTestReport {
-            reports {
-                // Generate XML report for codecov.io
-                xml.required.set(true)
-            }
-        }
-    }
 
     // EdcRuntimeExtension uses this to determine the runtime classpath of the module to run.
     tasks.register("printClasspath") {
@@ -186,19 +89,4 @@ allprojects {
     }
 
 }
-buildscript {
-    dependencies {
-        classpath("io.swagger.core.v3:swagger-gradle-plugin:2.1.13")
-    }
-}
 
-nexusPublishing {
-    repositories {
-        sonatype {
-            nexusUrl.set(uri("https://oss.sonatype.org/service/local/"))
-            snapshotRepositoryUrl.set(uri("https://oss.sonatype.org/content/repositories/snapshots/"))
-            username.set(System.getenv("OSSRH_USER") ?: return@sonatype)
-            password.set(System.getenv("OSSRH_PASSWORD") ?: return@sonatype)
-        }
-    }
-}
