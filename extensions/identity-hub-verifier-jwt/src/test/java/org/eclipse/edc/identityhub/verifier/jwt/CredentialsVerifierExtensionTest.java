@@ -14,9 +14,6 @@
 
 package org.eclipse.edc.identityhub.verifier.jwt;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.edc.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.edc.iam.did.spi.document.DidConstants;
@@ -33,8 +30,8 @@ import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.junit.extensions.EdcExtension;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
-import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,8 +54,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(EdcExtension.class)
 class CredentialsVerifierExtensionTest {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final TypeManager TYPE_MANAGER = new TypeManager();
     private static final int PORT = getFreePort();
     private static final String API_URL = format("http://localhost:%d/api/identity-hub", PORT);
     private static final String DID_METHOD = "test-method";
@@ -69,8 +65,8 @@ class CredentialsVerifierExtensionTest {
 
     private IdentityHubClient identityHubClient;
 
-    private static DidDocument createDidDocument(ECKey jwk) throws JsonProcessingException {
-        var ecKey = OBJECT_MAPPER.readValue(jwk.toJSONString(), EllipticCurvePublicKey.class);
+    private static DidDocument createDidDocument(ECKey jwk) {
+        var ecKey = TYPE_MANAGER.readValue(jwk.toJSONString(), EllipticCurvePublicKey.class);
         return DidDocument.Builder.newInstance()
                 .id(SUBJECT)
                 .service(List.of(new Service("IdentityHub", "IdentityHub", API_URL)))
@@ -80,13 +76,13 @@ class CredentialsVerifierExtensionTest {
 
     @BeforeEach
     void setUp(EdcExtension extension) {
-        when(registry.resolve(any())).thenReturn(new JwtCredentialEnvelopeTransformer(OBJECT_MAPPER));
-        identityHubClient = new IdentityHubClientImpl(TestUtils.testOkHttpClient(), OBJECT_MAPPER, mock(Monitor.class), registry);
+        when(registry.resolve(any())).thenReturn(new JwtCredentialEnvelopeTransformer(TYPE_MANAGER.getMapper()));
+        identityHubClient = new IdentityHubClientImpl(TestUtils.testHttpClient(), TYPE_MANAGER, registry);
         extension.setConfiguration(Map.of("web.http.port", String.valueOf(PORT)));
     }
 
     @Test
-    void getVerifiedClaims_getValidClaims(CredentialsVerifier verifier, DidResolverRegistry registry) throws JsonProcessingException {
+    void getVerifiedClaims_getValidClaims(CredentialsVerifier verifier, DidResolverRegistry registry) {
         // Arrange
         var jwk = generateEcKey();
         var didDocument = createDidDocument(jwk);

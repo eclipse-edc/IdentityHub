@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.selfdescription;
+package org.eclipse.edc.identityhub.api.selfdescription.loader;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

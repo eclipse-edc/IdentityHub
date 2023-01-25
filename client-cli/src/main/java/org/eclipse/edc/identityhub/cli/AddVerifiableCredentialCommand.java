@@ -21,10 +21,17 @@ import org.eclipse.edc.iam.did.crypto.key.EcPrivateKeyWrapper;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialFactory;
 import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
+import org.eclipse.edc.identityhub.spi.credentials.model.CredentialSubject;
+import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
 
+import java.sql.Date;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import static org.eclipse.edc.identityhub.cli.CryptoUtils.readEcKeyPemFile;
@@ -34,6 +41,7 @@ import static org.eclipse.edc.identityhub.cli.CryptoUtils.readEcKeyPemFile;
 class AddVerifiableCredentialCommand implements Callable<Integer> {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final JwtCredentialFactory JWT_CREDENTIAL_FACTORY = new JwtCredentialFactory(MAPPER);
 
     @ParentCommand
     private VerifiableCredentialsCommand command;
@@ -41,8 +49,8 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
     @CommandLine.Spec
     private CommandLine.Model.CommandSpec spec;
 
-    @CommandLine.Option(names = { "-c", "--verifiable-credential" }, required = true, description = "Verifiable Credential as JSON")
-    private String verifiableCredentialJson;
+    @CommandLine.Option(names = { "-c", "--claims" }, required = true, description = "Claims of the Verifiable Credential")
+    private String claims;
 
     @CommandLine.Option(names = { "-i", "--issuer" }, required = true, description = "DID of the Verifiable Credential issuer")
     private String issuer;
@@ -56,8 +64,8 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         var out = spec.commandLine().getOut();
-
-        var credential = toCredential();
+        var credentialSubject = createCredentialSubject();
+        var credential = toCredential(credentialSubject);
         var jwt = toJwt(credential);
 
         command.cli.identityHubClient.addVerifiableCredential(command.cli.hubUrl, new JwtCredentialEnvelope(jwt))
@@ -68,18 +76,34 @@ class AddVerifiableCredentialCommand implements Callable<Integer> {
         return 0;
     }
 
-    private Credential toCredential() {
+    private CredentialSubject createCredentialSubject() {
+        Map<String, Object> claimsMap;
         try {
-            return MAPPER.readValue(verifiableCredentialJson, Credential.class);
+            claimsMap = MAPPER.readValue(claims, Map.class);
         } catch (JsonProcessingException e) {
             throw new CliException("Error while processing request json.");
         }
+        var builder = CredentialSubject.Builder.newInstance()
+                .id(subject);
+        claimsMap.forEach(builder::claim);
+        return builder.build();
+    }
+
+    private Credential toCredential(CredentialSubject credentialSubject) {
+        return Credential.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .issuer(issuer)
+                .issuanceDate(Date.from(Instant.now().truncatedTo(ChronoUnit.SECONDS)))
+                .context(VerifiableCredential.DEFAULT_CONTEXT)
+                .type(VerifiableCredential.DEFAULT_TYPE)
+                .credentialSubject(credentialSubject)
+                .build();
     }
 
     private SignedJWT toJwt(Credential credential) {
         try {
             var privateKey = readEcKeyPemFile(privateKeyPemFile);
-            return JwtCredentialFactory.buildSignedJwt(credential, issuer, subject, new EcPrivateKeyWrapper(privateKey), MAPPER);
+            return JWT_CREDENTIAL_FACTORY.buildSignedJwt(credential, new EcPrivateKeyWrapper(privateKey));
         } catch (Exception e) {
             throw new CliException("Error while signing Verifiable Credential", e);
         }

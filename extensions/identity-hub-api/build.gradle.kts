@@ -39,8 +39,7 @@ dependencies {
 
 publishing {
     publications {
-        create<MavenPublication>("identity-hub-api") {
-            artifactId = "identity-hub-api"
+        create<MavenPublication>(project.name) {
             from(components["java"])
         }
     }

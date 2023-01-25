@@ -25,8 +25,8 @@ import java.util.Objects;
  */
 public class VerifiableCredential extends Verifiable<Credential> {
 
-    private static final String DEFAULT_CONTEXT = "https://www.w3.org/2018/credentials/v1";
-    private static final String DEFAULT_TYPE = "VerifiableCredential";
+    public static final String DEFAULT_CONTEXT = "https://www.w3.org/2018/credentials/v1";
+    public static final String DEFAULT_TYPE = "VerifiableCredential";
 
     @JsonCreator
     public VerifiableCredential(@JsonProperty("proof") Proof proof) {

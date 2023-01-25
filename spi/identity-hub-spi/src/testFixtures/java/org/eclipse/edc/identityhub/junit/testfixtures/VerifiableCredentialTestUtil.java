@@ -28,6 +28,7 @@ import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.model.CredentialSubject;
 import org.eclipse.edc.identityhub.spi.credentials.model.Proof;
+import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -39,7 +40,7 @@ import java.util.UUID;
  * Util class to manipulate VerifiableCredentials in tests.
  */
 public class VerifiableCredentialTestUtil {
-    
+
     private static final ECKeyGenerator EC_KEY_GENERATOR = new ECKeyGenerator(Curve.P_256);
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -48,11 +49,11 @@ public class VerifiableCredentialTestUtil {
 
     public static Credential generateCredential() {
         return Credential.Builder.newInstance()
-                .context("https://www.w3.org/2018/credentials/v1")
+                .context(VerifiableCredential.DEFAULT_CONTEXT)
                 .id(UUID.randomUUID().toString())
                 .issuer("issuer")
                 .issuanceDate(Date.from(Instant.now().truncatedTo(ChronoUnit.SECONDS)))
-                .type("test")
+                .type(VerifiableCredential.DEFAULT_TYPE)
                 .credentialSubject(CredentialSubject.Builder.newInstance()
                         .id("id-test")
                         .claim("cred1", UUID.randomUUID().toString())

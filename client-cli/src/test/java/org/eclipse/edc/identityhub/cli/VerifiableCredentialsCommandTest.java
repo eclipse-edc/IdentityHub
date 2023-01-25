@@ -21,6 +21,7 @@ import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
 import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.cli.CliTestUtils.PRIVATE_KEY_PATH;
 import static org.eclipse.edc.identityhub.cli.CliTestUtils.toJwtVerifiableCredential;
 import static org.eclipse.edc.identityhub.cli.CliTestUtils.verifyVerifiableCredentialSignature;
-import static org.eclipse.edc.spi.response.StatusResult.success;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.doReturn;
@@ -68,28 +68,9 @@ class VerifiableCredentialsCommandTest {
     }
 
     @Test
-    void getSelfDescription() throws JsonProcessingException {
-        var selfDescription = MAPPER.createObjectNode();
-        selfDescription.put("key1", "value1");
-        // arrange
-        when(app.identityHubClient.getSelfDescription(app.hubUrl)).thenReturn(success(selfDescription));
-
-        // act
-        var exitCode = executeGetSelfDescription();
-        var outContent = out.toString();
-        var errContent = err.toString();
-
-        // assert
-        assertThat(exitCode).isZero();
-        assertThat(errContent).isEmpty();
-
-        assertThat(MAPPER.readTree(outContent)).usingRecursiveComparison().isEqualTo(selfDescription);
-    }
-
-    @Test
     void list() throws Exception {
         // arrange
-        when(app.identityHubClient.getVerifiableCredentials(app.hubUrl)).thenReturn(success(List.of(VC1, VC2)));
+        when(app.identityHubClient.getVerifiableCredentials(app.hubUrl)).thenReturn(Result.success(List.of(VC1, VC2)));
 
         // act
         var exitCode = executeList();
@@ -114,12 +95,12 @@ class VerifiableCredentialsCommandTest {
     @Test
     void add() throws Exception {
         // arrange
-        var json = MAPPER.writeValueAsString(CREDENTIAL1);
+        var json = MAPPER.writeValueAsString(CREDENTIAL1.getCredentialSubject().getClaims());
         var vcArgCaptor = ArgumentCaptor.forClass(JwtCredentialEnvelope.class);
-        doReturn(success()).when(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), vcArgCaptor.capture());
+        doReturn(Result.success()).when(app.identityHubClient).addVerifiableCredential(eq(app.hubUrl), vcArgCaptor.capture());
 
         // act
-        var exitCode = executeAdd(json, PRIVATE_KEY_PATH);
+        var exitCode = executeAdd(json, CREDENTIAL1.getIssuer(), CREDENTIAL1.getCredentialSubject().getId(), PRIVATE_KEY_PATH);
         var outContent = out.toString();
         var errContent = err.toString();
 
@@ -138,7 +119,10 @@ class VerifiableCredentialsCommandTest {
         var result = envelope.toVerifiableCredential(MAPPER);
 
         assertThat(result.succeeded()).isTrue();
-        assertThat(result.getContent().getItem()).usingRecursiveComparison().isEqualTo(CREDENTIAL1);
+        assertThat(result.getContent().getItem()).usingRecursiveComparison()
+                .ignoringFields("id")
+                .ignoringFields("issuanceDate")
+                .isEqualTo(CREDENTIAL1);
     }
 
     @Test
@@ -147,7 +131,7 @@ class VerifiableCredentialsCommandTest {
         var json = "Invalid json";
 
         // act
-        var exitCode = executeAdd(json, PRIVATE_KEY_PATH);
+        var exitCode = executeAdd(json, "issuer", "subject", PRIVATE_KEY_PATH);
         var outContent = out.toString();
         var errContent = err.toString();
 
@@ -160,10 +144,10 @@ class VerifiableCredentialsCommandTest {
     @Test
     void add_invalidPrivateKey_fails() throws JsonProcessingException {
         // arrange
-        var json = MAPPER.writeValueAsString(CREDENTIAL1);
+        var json = MAPPER.writeValueAsString(CREDENTIAL1.getCredentialSubject().getClaims());
 
         // act
-        var exitCode = executeAdd(json, "non-existing-key");
+        var exitCode = executeAdd(json, CREDENTIAL1.getIssuer(), CREDENTIAL2.getCredentialSubject().getId(), "non-existing-key");
         var outContent = out.toString();
         var errContent = err.toString();
 
@@ -173,15 +157,11 @@ class VerifiableCredentialsCommandTest {
         assertThat(errContent).contains("Error while signing Verifiable Credential");
     }
 
-    private int executeGetSelfDescription() {
-        return cmd.execute("-s", HUB_URL, "sd", "get");
-    }
-
     private int executeList() {
         return cmd.execute("-s", HUB_URL, "vc", "list");
     }
 
-    private int executeAdd(String json, String privateKey) {
-        return cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", "identity-hub-test-issuer", "-b", "identity-hub-test-subject", "-k", privateKey);
+    private int executeAdd(String json, String issuer, String subject, String privateKey) {
+        return cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", issuer, "-b", subject, "-k", privateKey);
     }
 }

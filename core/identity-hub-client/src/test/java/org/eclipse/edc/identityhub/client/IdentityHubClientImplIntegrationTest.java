@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer;
@@ -23,7 +22,7 @@ import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
 import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
 import org.eclipse.edc.junit.extensions.EdcExtension;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
-import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,23 +41,15 @@ class IdentityHubClientImplIntegrationTest {
     private static final String API_URL = "http://localhost:8181/api/identity-hub";
     private static final Credential VERIFIABLE_CREDENTIAL = generateCredential();
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final TypeManager TYPE_MANAGER = new TypeManager();
     private final CredentialEnvelopeTransformerRegistry registry = mock(CredentialEnvelopeTransformerRegistry.class);
     private IdentityHubClient client;
 
     @BeforeEach
     void setUp() {
-        var okHttpClient = TestUtils.testOkHttpClient();
-        when(registry.resolve(any())).thenReturn(new JwtCredentialEnvelopeTransformer(OBJECT_MAPPER));
-        client = new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, mock(Monitor.class), registry);
-    }
-
-    @Test
-    void getSelfDescription() {
-        var statusResult = client.getSelfDescription(API_URL);
-
-        assertThat(statusResult.succeeded()).isTrue();
-        assertThat(statusResult.getContent().get("selfDescriptionCredential")).isNotNull();
+        var okHttpClient = TestUtils.testHttpClient();
+        when(registry.resolve(any())).thenReturn(new JwtCredentialEnvelopeTransformer(TYPE_MANAGER.getMapper()));
+        client = new IdentityHubClientImpl(okHttpClient, TYPE_MANAGER, registry);
     }
 
     @Test

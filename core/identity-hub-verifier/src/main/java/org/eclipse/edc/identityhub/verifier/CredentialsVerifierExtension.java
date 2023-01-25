@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.verifier;
 
-import okhttp3.OkHttpClient;
 import org.eclipse.edc.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.edc.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistry;
@@ -22,6 +21,7 @@ import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVe
 import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistryImpl;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.http.EdcHttpClient;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -33,7 +33,7 @@ import org.eclipse.edc.spi.types.TypeManager;
 public class CredentialsVerifierExtension implements ServiceExtension {
 
     @Inject
-    private OkHttpClient httpClient;
+    private EdcHttpClient httpClient;
 
     @Inject
     private TypeManager typeManager;
@@ -41,12 +41,11 @@ public class CredentialsVerifierExtension implements ServiceExtension {
     @Inject
     private Monitor monitor;
 
-
-    private CredentialEnvelopeVerifierRegistry credentialEnvelopeVerifierRegistry;
-
     @Inject
     private CredentialEnvelopeTransformerRegistry credentialEnvelopeTransformerRegistry;
 
+    private CredentialEnvelopeVerifierRegistry credentialEnvelopeVerifierRegistry;
+    
     @Override
     public void initialize(ServiceExtensionContext context) {
         credentialEnvelopeVerifierRegistry = new CredentialEnvelopeVerifierRegistryImpl();
@@ -59,10 +58,9 @@ public class CredentialsVerifierExtension implements ServiceExtension {
 
     @Provider
     public CredentialsVerifier createCredentialsVerifier() {
-        var client = new IdentityHubClientImpl(httpClient, typeManager.getMapper(), monitor, credentialEnvelopeTransformerRegistry);
+        var client = new IdentityHubClientImpl(httpClient, typeManager, credentialEnvelopeTransformerRegistry);
         return new IdentityHubCredentialsVerifier(client, monitor, credentialEnvelopeVerifierRegistry);
     }
-
 
     @Provider
     public CredentialEnvelopeVerifierRegistry credentialVerifierRegistry() {

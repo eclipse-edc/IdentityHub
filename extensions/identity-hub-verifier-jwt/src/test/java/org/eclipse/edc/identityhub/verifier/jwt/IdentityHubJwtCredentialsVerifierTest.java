@@ -28,8 +28,6 @@ import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistry;
 import org.eclipse.edc.identityhub.verifier.IdentityHubCredentialsVerifier;
 import org.eclipse.edc.spi.monitor.Monitor;
-import org.eclipse.edc.spi.response.ResponseStatus;
-import org.eclipse.edc.spi.response.StatusResult;
 import org.eclipse.edc.spi.result.Result;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -116,7 +114,7 @@ class IdentityHubJwtCredentialsVerifierTest {
     void getVerifiedClaims_idHubCallFails() {
 
         // Arrange
-        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.failure(ResponseStatus.FATAL_ERROR));
+        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(Result.failure("error"));
 
         // Act
         var credentials = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
@@ -163,7 +161,7 @@ class IdentityHubJwtCredentialsVerifierTest {
 
     private void setUpMocks(SignedJWT jws, boolean isSigned, boolean claimsValid) {
         when(credentialsVerifierRegistry.resolve("application/vc+jwt")).thenReturn(new JwtCredentialEnvelopeVerifier(jwtCredentialsVerifierMock, OBJECT_MAPPER));
-        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.success(List.of(new JwtCredentialEnvelope(jws))));
+        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(Result.success(List.of(new JwtCredentialEnvelope(jws))));
         when(jwtCredentialsVerifierMock.isSignedByIssuer(jws)).thenReturn(isSigned ? Result.success() : Result.failure("JWT not signed"));
         when(jwtCredentialsVerifierMock.verifyClaims(eq(jws), any())).thenReturn(claimsValid ? Result.success() : Result.failure("VC not valid"));
     }

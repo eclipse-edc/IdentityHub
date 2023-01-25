@@ -24,7 +24,7 @@ import static org.eclipse.edc.identityhub.cli.CryptoUtils.readEcKeyPemFile;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 
 class CliTestUtils {
-    
+
     public static final String PUBLIC_KEY_PATH = "src/test/resources/test-public-key.pem";
     public static final String PRIVATE_KEY_PATH = "src/test/resources/test-private-key.pem";
     public static final ECKey PUBLIC_KEY;
@@ -44,10 +44,9 @@ class CliTestUtils {
 
     public static SignedJWT toJwtVerifiableCredential(Credential vc) {
         try {
-
             return buildSignedJwt(vc,
-                    "identity-hub-test-issuer",
-                    "identity-hub-test-subject",
+                    vc.getIssuer(),
+                    vc.getCredentialSubject().getId(),
                     PRIVATE_KEY);
         } catch (Exception e) {
             throw new RuntimeException(e);

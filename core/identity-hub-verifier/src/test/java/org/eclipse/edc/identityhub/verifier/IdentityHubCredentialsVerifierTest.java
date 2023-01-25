@@ -24,8 +24,6 @@ import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
 import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifier;
 import org.eclipse.edc.identityhub.spi.credentials.verifier.CredentialEnvelopeVerifierRegistry;
 import org.eclipse.edc.spi.monitor.Monitor;
-import org.eclipse.edc.spi.response.ResponseStatus;
-import org.eclipse.edc.spi.response.StatusResult;
 import org.eclipse.edc.spi.result.Result;
 import org.junit.jupiter.api.Test;
 
@@ -53,7 +51,7 @@ class IdentityHubCredentialsVerifierTest {
     void getVerifiableCredentials_shouldReturnError_withEmptyRegistry() {
 
         var envelope = mock(CredentialEnvelope.class);
-        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.success(List.of(envelope)));
+        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(Result.success(List.of(envelope)));
         var result = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         assertThat(result.failed()).isTrue();
@@ -62,7 +60,7 @@ class IdentityHubCredentialsVerifierTest {
     @Test
     void getVerifiableCredentials_shouldReturnError_FailedRequest() {
 
-        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.failure(ResponseStatus.FATAL_ERROR, "Failure"));
+        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(Result.failure("Failure"));
         var result = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         assertThat(result.failed()).isTrue();
@@ -71,12 +69,12 @@ class IdentityHubCredentialsVerifierTest {
     @Test
     void getVerifiableCredentials_shouldReturnEmptyCredentials() {
 
-        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.success(Collections.emptyList()));
+        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(Result.success(Collections.emptyList()));
         var result = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 
         assertThat(result.succeeded()).isTrue();
 
-        assertThat(result.getContent().size()).isZero();
+        assertThat(result.getContent()).isEmpty();
     }
 
     @Test
@@ -85,7 +83,7 @@ class IdentityHubCredentialsVerifierTest {
         var envelope = mock(CredentialEnvelope.class);
         var verifier = mock(CredentialEnvelopeVerifier.class);
 
-        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(StatusResult.success(List.of(envelope)));
+        when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(Result.success(List.of(envelope)));
         when(verifierRegistry.resolve(any())).thenReturn(verifier);
         var credential = VerifiableCredentialTestUtil.generateCredential();
         when(verifier.verify(envelope, DID_DOCUMENT)).thenReturn(Result.success(credential));
