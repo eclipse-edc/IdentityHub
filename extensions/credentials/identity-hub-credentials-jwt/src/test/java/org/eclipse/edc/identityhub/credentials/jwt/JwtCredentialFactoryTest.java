@@ -30,32 +30,29 @@ class JwtCredentialFactoryTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Credential CREDENTIAL = generateCredential();
+
+    private JwtCredentialFactory jwtCredentialFactory;
     private EcPrivateKeyWrapper privateKey;
     private EcPublicKeyWrapper publicKey;
 
     @BeforeEach
     public void setUp() {
         var key = generateEcKey();
+        jwtCredentialFactory = new JwtCredentialFactory(OBJECT_MAPPER);
         privateKey = new EcPrivateKeyWrapper(key);
         publicKey = new EcPublicKeyWrapper(key);
     }
 
     @Test
     void buildSignedJwt_success() throws Exception {
-        // Arrange
-        var issuer = "test-issuer";
-        var subject = "test-subject";
+        var signedJwt = jwtCredentialFactory.buildSignedJwt(CREDENTIAL, privateKey);
 
-        // Act
-        var signedJwt = JwtCredentialFactory.buildSignedJwt(CREDENTIAL, issuer, subject, privateKey, OBJECT_MAPPER);
-
-        // Assert
         boolean result = signedJwt.verify(publicKey.verifier());
         assertThat(result).isTrue();
 
         assertThat(signedJwt.getJWTClaimsSet().getClaims())
-                .containsEntry("iss", issuer)
-                .containsEntry("sub", subject)
+                .containsEntry("iss", CREDENTIAL.getIssuer())
+                .containsEntry("sub", CREDENTIAL.getCredentialSubject().getId())
                 .extractingByKey(VERIFIABLE_CREDENTIALS_KEY)
                 .satisfies(c -> assertThat(OBJECT_MAPPER.convertValue(c, Credential.class))
                         .usingRecursiveComparison()

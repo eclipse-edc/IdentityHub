@@ -14,13 +14,12 @@
 
 package org.eclipse.edc.identityhub.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelope;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer;
 import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
@@ -30,9 +29,10 @@ import org.eclipse.edc.identityhub.spi.model.MessageStatus;
 import org.eclipse.edc.identityhub.spi.model.Record;
 import org.eclipse.edc.identityhub.spi.model.RequestStatus;
 import org.eclipse.edc.identityhub.spi.model.ResponseObject;
-import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.spi.response.ResponseStatus;
 import org.eclipse.edc.spi.response.StatusResult;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,59 +50,13 @@ import static org.mockito.Mockito.when;
 
 class IdentityHubClientImplTest {
     private static final String HUB_URL = "http://some.test.url";
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final TypeManager TYPE_MANAGER = new TypeManager();
 
     private final CredentialEnvelopeTransformerRegistry registry = mock(CredentialEnvelopeTransformerRegistry.class);
 
     @BeforeEach
     void setup() {
-        when(registry.resolve(any())).thenReturn(new JwtCredentialEnvelopeTransformer(OBJECT_MAPPER));
-    }
-
-    @Test
-    void getSelfDescription() {
-        var selfDescription = OBJECT_MAPPER.createObjectNode();
-        selfDescription.put("key1", "value1");
-
-        Interceptor interceptor = chain -> {
-            var request = chain.request();
-            return new Response.Builder()
-                    .body(ResponseBody.create(OBJECT_MAPPER.writeValueAsString(selfDescription), MediaType.get("application/json")))
-                    .request(request)
-                    .protocol(Protocol.HTTP_2)
-                    .code(200)
-                    .message("")
-                    .build();
-        };
-
-        var client = createClient(interceptor);
-        var statusResult = client.getSelfDescription(HUB_URL);
-        assertThat(statusResult.succeeded()).isTrue();
-        assertThat(statusResult.getContent()).isEqualTo(selfDescription);
-    }
-
-    @Test
-    void getSelfDescriptionServerError() {
-        var errorMessage = "test-error-message";
-        var body = "{}";
-        var code = 500;
-
-        Interceptor interceptor = chain -> {
-            var request = chain.request();
-            return new Response.Builder()
-                    .body(ResponseBody.create(body, MediaType.get("application/json")))
-                    .request(request)
-                    .protocol(Protocol.HTTP_2)
-                    .code(code)
-                    .message(errorMessage)
-                    .build();
-        };
-
-        var client = createClient(interceptor);
-        var statusResult = client.getSelfDescription(HUB_URL);
-
-        var expectedResult = StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: , response body: %s", code, body));
-        assertThat(statusResult).usingRecursiveComparison().isEqualTo(expectedResult);
+        when(registry.resolve(any())).thenReturn(new JwtCredentialEnvelopeTransformer(TYPE_MANAGER.getMapper()));
     }
 
     @Test
@@ -112,7 +66,7 @@ class IdentityHubClientImplTest {
 
         var record = Record.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
-                .dataFormat(IdentityHubClientImpl.DATA_FORMAT)
+                .dataFormat(JwtCredentialConstants.DATA_FORMAT)
                 .createdAt(System.currentTimeMillis())
                 .data(jws.serialize().getBytes(StandardCharsets.UTF_8))
                 .build();
@@ -126,7 +80,7 @@ class IdentityHubClientImplTest {
                     .status(RequestStatus.OK)
                     .replies(List.of(replies))
                     .build();
-            var body = ResponseBody.create(OBJECT_MAPPER.writeValueAsString(responseObject), MediaType.get("application/json"));
+            var body = ResponseBody.create(TYPE_MANAGER.writeValueAsString(responseObject), MediaType.get("application/json"));
 
             return new Response.Builder()
                     .body(body)
@@ -147,7 +101,7 @@ class IdentityHubClientImplTest {
     void getVerifiableCredentialsServerError() {
 
         var errorMessage = "test-message";
-        var body = "{}";
+        var body = "{\"foo\":\"bar\"}";
         var code = 500;
 
         Interceptor interceptor = chain -> {
@@ -162,10 +116,9 @@ class IdentityHubClientImplTest {
         };
 
         var client = createClient(interceptor);
-        var statusResult = client.getVerifiableCredentials(HUB_URL);
-
-        var expectedResult = StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: , response body: %s", code, body));
-        assertThat(statusResult).usingRecursiveComparison().isEqualTo(expectedResult);
+        var result = client.getVerifiableCredentials(HUB_URL);
+        assertThat(result.failed()).isTrue();
+        assertThat(result.getFailureDetail()).contains(body);
     }
 
     @Test
@@ -184,8 +137,8 @@ class IdentityHubClientImplTest {
         };
 
         var client = createClient(interceptor);
-        var statusResult = client.getVerifiableCredentials(HUB_URL);
-        assertThat(statusResult.fatalError()).isTrue();
+        var result = client.getVerifiableCredentials(HUB_URL);
+        assertThat(result.failed()).isTrue();
     }
 
     @Test
@@ -199,7 +152,7 @@ class IdentityHubClientImplTest {
         Interceptor interceptor = chain -> {
             var request = chain.request();
             return new Response.Builder()
-                    .body(ResponseBody.create("{}", MediaType.get("application/json")))
+                    .body(ResponseBody.create(body, MediaType.get("application/json")))
                     .request(request)
                     .protocol(Protocol.HTTP_2)
                     .code(code)
@@ -208,10 +161,9 @@ class IdentityHubClientImplTest {
         };
 
         var client = createClient(interceptor);
-        var statusResult = client.addVerifiableCredential(HUB_URL, new JwtCredentialEnvelope(jws));
-
-        var expectedResult = StatusResult.failure(ResponseStatus.FATAL_ERROR, String.format("IdentityHub error response code: %s, response headers: , response body: %s", code, body));
-        assertThat(statusResult).usingRecursiveComparison().isEqualTo(expectedResult);
+        var result = client.addVerifiableCredential(HUB_URL, new JwtCredentialEnvelope(jws));
+        assertThat(result.failed()).isTrue();
+        assertThat(result.getFailureDetail()).contains("500");
     }
 
     @Test
@@ -231,10 +183,6 @@ class IdentityHubClientImplTest {
     }
 
     private IdentityHubClientImpl createClient(Interceptor interceptor) {
-        var okHttpClient = new OkHttpClient.Builder()
-                .addInterceptor(interceptor)
-                .build();
-
-        return new IdentityHubClientImpl(okHttpClient, OBJECT_MAPPER, mock(Monitor.class), registry);
+        return new IdentityHubClientImpl(TestUtils.testHttpClient(interceptor), TYPE_MANAGER, registry);
     }
 }

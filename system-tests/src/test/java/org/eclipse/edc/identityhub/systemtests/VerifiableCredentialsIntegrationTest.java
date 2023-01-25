@@ -19,8 +19,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.identityhub.cli.IdentityHubCli;
-import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
+import org.eclipse.edc.identityhub.spi.credentials.model.CredentialSubject;
+import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
 import org.eclipse.edc.junit.extensions.EdcExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,11 @@ import picocli.CommandLine;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.sql.Date;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +47,7 @@ class VerifiableCredentialsIntegrationTest {
     private static final String PARTICIPANT_DID = "did:web:localhost%3A8080:participant";
     private static final String AUTHORITY_PRIVATE_KEY_PATH = "resources/jwt/authority/private-key.pem";
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final Credential CREDENTIAL = VerifiableCredentialTestUtil.generateCredential();
+    private static final Credential CREDENTIAL = createCredential();
 
     private final CommandLine cmd = IdentityHubCli.getCommandLine();
     private final StringWriter out = new StringWriter();
@@ -65,16 +70,9 @@ class VerifiableCredentialsIntegrationTest {
         assertGetVerifiedCredentials(verifier, resolverRegistry);
     }
 
-    @Test
-    void get_self_description() {
-        int result = cmd.execute("-s", HUB_URL, "sd", "get");
-        assertThat(result).isZero();
-        assertThat(out.toString()).contains("did:web:test.delta-dao.com");
-    }
-
     private void addVerifiableCredentialWithCli() throws JsonProcessingException {
-        var json = MAPPER.writeValueAsString(CREDENTIAL);
-        int result = cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", AUTHORITY_DID, "-b", PARTICIPANT_DID, "-k", AUTHORITY_PRIVATE_KEY_PATH);
+        var json = MAPPER.writeValueAsString(CREDENTIAL.getCredentialSubject().getClaims());
+        int result = cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", CREDENTIAL.getIssuer(), "-b", CREDENTIAL.getCredentialSubject().getId(), "-k", AUTHORITY_PRIVATE_KEY_PATH);
         assertThat(result).isZero();
     }
 
@@ -86,11 +84,28 @@ class VerifiableCredentialsIntegrationTest {
         assertThat(verifiedCredentials.succeeded()).isTrue();
 
         var vcs = verifiedCredentials.getContent();
-        assertThat(vcs).extractingByKey(CREDENTIAL.getId())
-                .satisfies(o -> {
-                    assertThat(o).isInstanceOf(Credential.class);
-                    var cred = (Credential) o;
-                    assertThat(cred).usingRecursiveComparison().isEqualTo(CREDENTIAL);
-                });
+        assertThat(vcs).hasSize(1);
+        var verifiedCredential = vcs.values().stream().findFirst()
+                .orElseThrow(() -> new AssertionError("Failed to find verified credential"));
+
+        assertThat(verifiedCredential).isInstanceOf(Credential.class);
+        assertThat((Credential) verifiedCredential).usingRecursiveComparison()
+                .ignoringFields("id", "issuanceDate")
+                .isEqualTo(CREDENTIAL);
+    }
+
+    private static Credential createCredential() {
+        return Credential.Builder.newInstance()
+                .context(VerifiableCredential.DEFAULT_CONTEXT)
+                .id(UUID.randomUUID().toString())
+                .type(VerifiableCredential.DEFAULT_TYPE)
+                .issuer(AUTHORITY_DID)
+                .issuanceDate(Date.from(Instant.now().truncatedTo(ChronoUnit.SECONDS)))
+                .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id(PARTICIPANT_DID)
+                        .claim("hello", "world")
+                        .claim("foo", "bar")
+                        .build())
+                .build();
     }
 }

@@ -20,8 +20,7 @@ plugins {
 dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:identity-hub-client-spi"))
-    api(edc.spi.core)
-    implementation(edc.ext.http)
+    api(edc.spi.http)
     implementation(libs.okhttp)
     implementation(libs.jackson.databind)
     implementation(edc.spi.core)
@@ -37,8 +36,7 @@ dependencies {
 
 publishing {
     publications {
-        create<MavenPublication>("identity-hub-client") {
-            artifactId = "identity-hub-client"
+        create<MavenPublication>(project.name) {
             from(components["java"])
         }
     }

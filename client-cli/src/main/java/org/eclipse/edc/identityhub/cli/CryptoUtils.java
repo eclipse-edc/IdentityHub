@@ -29,6 +29,9 @@ public class CryptoUtils {
 
     /**
      * Read {@link ECKey} from a PEM file.
+     *
+     * @throws IOException   if file cannot be read.
+     * @throws JOSEException if {@link ECKey} cannot be parsed from PEM.
      */
     public static ECKey readEcKeyPemFile(String file) throws IOException, JOSEException {
         var contents = readString(Path.of(file));

@@ -14,43 +14,31 @@
 
 package org.eclipse.edc.identityhub.client.spi;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
-import org.eclipse.edc.spi.response.StatusResult;
+import org.eclipse.edc.spi.result.Result;
 
 import java.util.Collection;
 
 /**
- * IdentityHub Client
- * This client is used to call the IdentityHub endpoints in order query and write VerifiableCredentials, and display the
- * Self-Description document.
+ * This client is used to call the IdentityHub endpoints in order query and write VerifiableCredentials.
  * Eventually, this may be expanded to handle other types of objects and operations.
  */
 public interface IdentityHubClient {
 
     /**
-     * Display the Self-Description document.
-     *
-     * @param hubBaseUrl Base URL of the IdentityHub instance.
-     * @return status result containing the Self-Description document if request successful.
-     */
-    StatusResult<JsonNode> getSelfDescription(String hubBaseUrl);
-
-    /**
      * Get VerifiableCredentials provided by an Identity Hub instance.
      *
      * @param hubBaseUrl Base URL of the IdentityHub instance.
-     * @return status result containing VerifiableCredentials if request successful.
+     * @return result containing VerifiableCredentials if request successful.
      */
-    StatusResult<Collection<CredentialEnvelope>> getVerifiableCredentials(String hubBaseUrl);
+    Result<Collection<CredentialEnvelope>> getVerifiableCredentials(String hubBaseUrl);
 
     /**
      * Write a VerifiableCredential.
      *
      * @param hubBaseUrl           Base URL of the IdentityHub instance.
      * @param verifiableCredential A verifiable credential to be saved.
-     * @return status result.
+     * @return result.
      */
-    StatusResult<Void> addVerifiableCredential(String hubBaseUrl, CredentialEnvelope verifiableCredential);
-
+    Result<Void> addVerifiableCredential(String hubBaseUrl, CredentialEnvelope verifiableCredential);
 }
