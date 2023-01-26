@@ -30,17 +30,11 @@ dependencies {
 
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(project(":extensions:identity-hub-api"))
-    testImplementation(project(":core:identity-hub-verifier"))
+    testImplementation(project(":core:identity-hub-credentials-verifier"))
 
     testImplementation(edc.ext.identity.did.crypto)
     testImplementation(edc.core.identity.did)
     testImplementation(edc.core.junit)
 }
 
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}
+

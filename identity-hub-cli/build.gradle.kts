@@ -34,12 +34,3 @@ tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
     mergeServiceFiles()
     archiveFileName.set("identity-hub-cli.jar")
 }
-
-publishing {
-    publications {
-        create<MavenPublication>("identity-hub-cli") {
-            artifactId = "identity-hub-cli"
-            from(components["java"])
-        }
-    }
-}

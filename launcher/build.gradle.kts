@@ -20,7 +20,7 @@ plugins {
 
 dependencies {
     implementation(project(":core:identity-hub"))
-    implementation(project(":core:identity-hub-verifier"))
+    implementation(project(":core:identity-hub-credentials-verifier"))
     implementation(project(":extensions:identity-hub-api"))
     implementation(project(":extensions:self-description-api"))
     implementation(edc.ext.observability)
@@ -36,4 +36,8 @@ tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
     exclude("**/pom.properties", "**/pom.xm")
     mergeServiceFiles()
     archiveFileName.set("identity-hub.jar")
+}
+
+edcBuild {
+    publish.set(false)
 }

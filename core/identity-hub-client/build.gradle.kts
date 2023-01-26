@@ -33,11 +33,3 @@ dependencies {
     testImplementation(edc.core.junit)
     testImplementation(edc.core.identity.did)
 }
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}

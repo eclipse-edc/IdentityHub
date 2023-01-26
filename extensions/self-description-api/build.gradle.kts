@@ -25,13 +25,3 @@ dependencies {
     testImplementation(edc.core.junit)
     testImplementation(libs.restAssured)
 }
-
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}
-

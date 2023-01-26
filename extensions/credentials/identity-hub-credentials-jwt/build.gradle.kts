@@ -30,11 +30,3 @@ dependencies {
     testImplementation(edc.ext.identity.did.crypto)
     testImplementation(edc.core.junit)
 }
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}

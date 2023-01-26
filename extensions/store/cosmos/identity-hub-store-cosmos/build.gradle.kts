@@ -27,12 +27,3 @@ dependencies {
     testImplementation(testFixtures(edc.ext.azure.test))
 
 }
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}
-

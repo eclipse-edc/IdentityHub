@@ -20,7 +20,7 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     api(edc.spi.identity.did)
     testImplementation(project(":launcher"))
-    testImplementation(project(":client-cli"))
+    testImplementation(project(":identity-hub-cli"))
 
     testImplementation(edc.core.junit)
 
@@ -30,5 +30,9 @@ dependencies {
     testImplementation(libs.jackson.databind)
     testImplementation(libs.okhttp)
     testImplementation(libs.nimbus.jwt)
+}
+
+edcBuild {
+    publish.set(false)
 }
 
