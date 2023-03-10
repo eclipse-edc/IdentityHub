@@ -57,7 +57,7 @@ public class CosmosIdentityHubStore implements IdentityHubStore {
     @Override
     public void add(IdentityHubRecord record) {
         var document = new IdentityHubRecordDocument(record, partitionKey);
-        cosmosDbApi.saveItem(document);
+        cosmosDbApi.createItem(document);
     }
 
     private IdentityHubRecordDocument convertObject(Object databaseDocument) {
