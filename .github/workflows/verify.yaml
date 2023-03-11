@@ -33,6 +33,27 @@ jobs:
       - name: Check OpenAPI definition match code
         run: git diff --exit-code
 
+  Verify-Launcher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/gradle-setup
+
+      - name: 'Build launcher'
+        run: ./gradlew :launcher:shadowJar
+
+      - name: 'Build Docker image'
+        run: docker build -t identity-hub ./launcher
+
+      - name: 'Start Identity Hub'
+        run: docker run -d --rm --name identity-hub identity-hub
+
+      - name: 'Wait for Identity Hub to be healthy'
+        uses: raschmitt/wait-for-healthy-container@v1
+        with:
+          container-name: identity-hub
+          timeout: 60
+
   Test:
     permissions:
       checks: write
