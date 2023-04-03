@@ -6,11 +6,11 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
-    api(edc.spi.core)
+    api(libs.edc.spi.core)
 
     testFixturesImplementation(testFixtures(project(":spi:identity-hub-spi")))
-    testFixturesImplementation(libs.junit.jupiter.api)
-    testFixturesImplementation(libs.assertj)
-    testFixturesImplementation(libs.nimbus.jwt)
-    testFixturesImplementation(libs.jackson.databind)
+    testFixturesImplementation(root.junit.jupiter.api)
+    testFixturesImplementation(root.assertj)
+    testFixturesImplementation(root.nimbus.jwt)
+    testFixturesImplementation(root.jackson.databind)
 }

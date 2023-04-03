@@ -14,13 +14,14 @@
 
 plugins {
     `java-library`
+    `maven-publish`
+    `version-catalog`
 }
 
 
 val edcScmConnection: String by project
 val edcWebsiteUrl: String by project
 val edcScmUrl: String by project
-val group: String by project
 val annotationProcessorVersion: String by project
 val metaModelVersion: String by project
 val javaVersion: String by project
@@ -31,7 +32,6 @@ buildscript {
         classpath("org.eclipse.edc.edc-build:org.eclipse.edc.edc-build.gradle.plugin:${edcGradlePluginsVersion}")
     }
 }
-
 
 allprojects {
     apply(plugin = "${group}.edc-build")
@@ -75,6 +75,15 @@ allprojects {
             println(sourceSets["main"].runtimeClasspath.asPath)
         }
     }
-
 }
+
+publishing {
+    publications {
+        create<MavenPublication>("identity-hub-version-catalog") {
+            from(components["versionCatalog"])
+            artifactId = "identity-hub-versions"
+        }
+    }
+}
+
 

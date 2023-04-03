@@ -1,7 +1,7 @@
 plugins {
     `java-library`
     id("application")
-    id("com.github.johnrengelman.shadow") version "8.0.0"
+    alias(libs.plugins.shadow)
     `maven-publish`
 }
 
@@ -13,11 +13,11 @@ dependencies {
     implementation(project(":extensions:credentials:identity-hub-credentials-jwt"))
     implementation(project(":extensions:identity-hub-verifier-jwt"))
 
-    implementation(edc.core.connector)
-    implementation(edc.ext.identity.did.crypto)
-    implementation(edc.spi.identity.did)
-    implementation(libs.jackson.databind)
-    implementation(libs.nimbus.jwt)
+    implementation(libs.edc.core.connector)
+    implementation(libs.edc.ext.identity.did.crypto)
+    implementation(libs.edc.spi.identity.did)
+    implementation(root.jackson.databind)
+    implementation(root.nimbus.jwt)
 
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
 }
