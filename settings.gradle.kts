@@ -22,39 +22,8 @@ dependencyResolutionManagement {
         mavenLocal()
     }
     versionCatalogs {
-        create("libs") {
+        create("root") {
             from("org.eclipse.edc:edc-versions:0.0.1-SNAPSHOT")
-            version("picocli", "4.6.3")
-
-            library("picocli-core", "info.picocli", "picocli").versionRef("picocli")
-            library("picocli-codegen", "info.picocli", "picocli-codegen").versionRef("picocli")
-            library("swagger-jaxrs", "io.swagger.core.v3", "swagger-jaxrs2-jakarta").version("2.1.13")
-        }
-        create("edc") {
-            version("edc", "0.0.1-SNAPSHOT")
-            library("spi-core", "org.eclipse.edc", "core-spi").versionRef("edc")
-            library("spi-transaction", "org.eclipse.edc", "transaction-spi").versionRef("edc")
-            library("spi-transaction-datasource", "org.eclipse.edc", "transaction-datasource-spi").versionRef("edc")
-            library("spi-identity-did", "org.eclipse.edc", "identity-did-spi").versionRef("edc")
-            library("spi-http", "org.eclipse.edc", "http-spi").versionRef("edc")
-            library("boot", "org.eclipse.edc", "boot").versionRef("edc")
-            library("core-connector", "org.eclipse.edc", "connector-core").versionRef("edc")
-            library("core-jersey", "org.eclipse.edc", "jersey-core").versionRef("edc")
-            library("core-sql", "org.eclipse.edc", "sql-core").versionRef("edc")
-            library("core-identity-did", "org.eclipse.edc", "identity-did-core").versionRef("edc")
-            library("core-junit", "org.eclipse.edc", "junit").versionRef("edc")
-            library("ext-identity-did-crypto", "org.eclipse.edc", "identity-did-crypto").versionRef("edc")
-            library("ext-identity-did-core", "org.eclipse.edc", "identity-did-core").versionRef("edc")
-            library("ext-identity-did-web", "org.eclipse.edc", "identity-did-web").versionRef("edc")
-            library("ext-http", "org.eclipse.edc", "http").versionRef("edc")
-            library("ext-observability", "org.eclipse.edc", "api-observability").versionRef("edc")
-            library("ext-azure-cosmos-core", "org.eclipse.edc", "azure-cosmos-core").versionRef("edc")
-            library("ext-azure-test", "org.eclipse.edc", "azure-test").versionRef("edc")
-
-            bundle(
-                "connector",
-                listOf("boot", "core-connector", "core-jersey", "ext-observability")
-            )
         }
     }
 }

@@ -15,7 +15,7 @@
 plugins {
     `java-library`
     id("application")
-    id("com.github.johnrengelman.shadow") version "8.0.0"
+    alias(libs.plugins.shadow)
 }
 
 dependencies {
@@ -23,9 +23,9 @@ dependencies {
     runtimeOnly(project(":core:identity-hub-credentials-verifier"))
     runtimeOnly(project(":extensions:identity-hub-api"))
     runtimeOnly(project(":extensions:self-description-api"))
-    runtimeOnly(edc.bundles.connector)
-    runtimeOnly(edc.ext.identity.did.core)
-    runtimeOnly(edc.ext.identity.did.web)
+    runtimeOnly(libs.bundles.connector)
+    runtimeOnly(libs.edc.ext.identity.did.core)
+    runtimeOnly(libs.edc.ext.identity.did.web)
 }
 
 application {

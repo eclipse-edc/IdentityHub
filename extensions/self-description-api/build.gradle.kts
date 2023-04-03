@@ -21,7 +21,7 @@ plugins {
 dependencies {
     implementation(project(":extensions:identity-hub-api"))
 
-    implementation(edc.ext.http)
-    testImplementation(edc.core.junit)
-    testImplementation(libs.restAssured)
+    implementation(libs.edc.ext.http)
+    testImplementation(libs.edc.core.junit)
+    testImplementation(root.restAssured)
 }

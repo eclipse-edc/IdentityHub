@@ -22,13 +22,13 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     implementation(project(":spi:identity-hub-store-spi"))
     implementation(project(":core:identity-hub"))
-    implementation(edc.ext.http)
-    implementation(edc.spi.transaction)
+    implementation(libs.edc.ext.http)
+    implementation(libs.edc.spi.transaction)
 
 
-    testImplementation(edc.core.junit)
-    testImplementation(libs.nimbus.jwt)
-    testImplementation(libs.restAssured)
+    testImplementation(libs.edc.core.junit)
+    testImplementation(root.nimbus.jwt)
+    testImplementation(root.restAssured)
     testImplementation(project(":spi:identity-hub-spi"))
     testImplementation(project(":extensions:credentials:identity-hub-credentials-jwt"))
 

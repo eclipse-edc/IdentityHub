@@ -22,14 +22,14 @@ val swagger: String by project
 
 dependencies {
 
-    implementation(libs.jackson.databind)
-    implementation(libs.nimbus.jwt)
-    implementation(edc.spi.identity.did)
+    implementation(root.jackson.databind)
+    implementation(root.nimbus.jwt)
+    implementation(libs.edc.spi.identity.did)
 
     implementation(libs.swagger.jaxrs) {
         exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
     }
 
-    testFixturesImplementation(libs.nimbus.jwt)
-    testFixturesImplementation(edc.spi.identity.did)
+    testFixturesImplementation(root.nimbus.jwt)
+    testFixturesImplementation(libs.edc.spi.identity.did)
 }
