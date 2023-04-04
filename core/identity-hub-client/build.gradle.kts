@@ -21,10 +21,7 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:identity-hub-client-spi"))
     api(libs.edc.spi.http)
-    implementation(root.okhttp)
-    implementation(root.jackson.databind)
-    implementation(libs.edc.spi.core)
-    implementation(root.nimbus.jwt)
+    api(libs.edc.spi.core)
 
     testImplementation(project(":core:identity-hub"))
     testImplementation(project(":extensions:identity-hub-api"))

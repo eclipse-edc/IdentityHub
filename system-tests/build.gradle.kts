@@ -28,7 +28,6 @@ dependencies {
     testImplementation(libs.picocli.core)
     testImplementation(libs.picocli.codegen)
     testImplementation(root.jackson.databind)
-    testImplementation(root.okhttp)
     testImplementation(root.nimbus.jwt)
 }
 

@@ -28,7 +28,7 @@ import java.util.List;
  *
  * @param <T> Result type
  */
-class AggregatedResult<T> extends AbstractResult<T, Failure> {
+class AggregatedResult<T> extends AbstractResult<T, Failure, AggregatedResult<T>> {
     AggregatedResult(T successfulResult, List<String> failureMessage) {
         super(successfulResult, failureMessage.isEmpty() ? null : new Failure(failureMessage));
     }
