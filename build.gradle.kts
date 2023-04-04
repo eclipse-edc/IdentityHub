@@ -14,10 +14,7 @@
 
 plugins {
     `java-library`
-    `maven-publish`
-    `version-catalog`
 }
-
 
 val edcScmConnection: String by project
 val edcWebsiteUrl: String by project
@@ -68,7 +65,6 @@ allprojects {
         configDirectory.set(rootProject.file("resources"))
     }
 
-
     // EdcRuntimeExtension uses this to determine the runtime classpath of the module to run.
     tasks.register("printClasspath") {
         doLast {
@@ -76,14 +72,3 @@ allprojects {
         }
     }
 }
-
-publishing {
-    publications {
-        create<MavenPublication>("identity-hub-version-catalog") {
-            from(components["versionCatalog"])
-            artifactId = "identity-hub-versions"
-        }
-    }
-}
-
-
