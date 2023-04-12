@@ -23,5 +23,5 @@ dependencies {
 
     implementation(libs.edc.ext.http)
     testImplementation(libs.edc.core.junit)
-    testImplementation(root.restAssured)
+    testImplementation(libs.restAssured)
 }

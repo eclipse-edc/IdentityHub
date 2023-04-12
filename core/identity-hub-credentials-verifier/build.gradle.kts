@@ -23,7 +23,7 @@ dependencies {
     implementation(project(":spi:identity-hub-spi"))
 
     implementation(libs.edc.spi.identity.did)
-    implementation(root.nimbus.jwt)
+    implementation(libs.nimbus.jwt)
 
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(project(":extensions:identity-hub-api"))

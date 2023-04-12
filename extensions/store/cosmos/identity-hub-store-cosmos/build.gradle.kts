@@ -20,8 +20,8 @@ dependencies {
     api(project(":spi:identity-hub-store-spi"))
     api(libs.edc.ext.azure.cosmos.core)
 
-    implementation(root.failsafe.core)
-    implementation(root.azure.cosmos)
+    implementation(libs.failsafe.core)
+    implementation(libs.azure.cosmos)
 
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
     testImplementation(testFixtures(libs.edc.ext.azure.test))

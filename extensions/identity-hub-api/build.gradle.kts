@@ -27,8 +27,8 @@ dependencies {
 
 
     testImplementation(libs.edc.core.junit)
-    testImplementation(root.nimbus.jwt)
-    testImplementation(root.restAssured)
+    testImplementation(libs.nimbus.jwt)
+    testImplementation(libs.restAssured)
     testImplementation(project(":spi:identity-hub-spi"))
     testImplementation(project(":extensions:credentials:identity-hub-credentials-jwt"))
 
