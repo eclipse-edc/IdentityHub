@@ -21,5 +21,5 @@ plugins {
 dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
-    implementation(root.nimbus.jwt)
+    implementation(libs.nimbus.jwt)
 }

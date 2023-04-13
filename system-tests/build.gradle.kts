@@ -27,8 +27,8 @@ dependencies {
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(libs.picocli.core)
     testImplementation(libs.picocli.codegen)
-    testImplementation(root.jackson.databind)
-    testImplementation(root.nimbus.jwt)
+    testImplementation(libs.jackson.databind)
+    testImplementation(libs.nimbus.jwt)
 }
 
 edcBuild {

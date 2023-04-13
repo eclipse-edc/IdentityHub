@@ -21,7 +21,7 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     implementation(project(":spi:identity-hub-store-spi"))
     
-    implementation(root.nimbus.jwt)
+    implementation(libs.nimbus.jwt)
     implementation(libs.edc.spi.transaction)
 
     testImplementation(libs.edc.core.junit)

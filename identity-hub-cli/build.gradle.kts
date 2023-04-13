@@ -16,8 +16,8 @@ dependencies {
     implementation(libs.edc.core.connector)
     implementation(libs.edc.ext.identity.did.crypto)
     implementation(libs.edc.spi.identity.did)
-    implementation(root.jackson.databind)
-    implementation(root.nimbus.jwt)
+    implementation(libs.jackson.databind)
+    implementation(libs.nimbus.jwt)
 
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
 }

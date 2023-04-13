@@ -11,5 +11,5 @@ dependencies {
     testImplementation(libs.edc.core.junit)
     testImplementation(testFixtures(libs.edc.core.sql))
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
-    testImplementation(root.postgres)
+    testImplementation(libs.postgres)
 }
