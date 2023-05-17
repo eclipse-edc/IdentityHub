@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.credentials.jwt;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -31,7 +30,10 @@ import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants
 
 public class JwtCredentialFactory {
 
-    private JwtCredentialFactory() {
+    private final ObjectMapper mapper;
+
+    public JwtCredentialFactory(ObjectMapper mapper) {
+        this.mapper = mapper;
     }
 
     /**
@@ -51,22 +53,19 @@ public class JwtCredentialFactory {
      * }</pre>
      *
      * @param credential the credential
-     * @param issuer     issuer of the credential
-     * @param subject    credential subject
      * @param privateKey private key for signing the JWT
-     * @param mapper     object mapper
      * @return the verifiable credential in JWT format.
      */
-    public static SignedJWT buildSignedJwt(Credential credential, String issuer, String subject, PrivateKeyWrapper privateKey, ObjectMapper mapper) throws JOSEException, ParseException, JsonProcessingException {
+    public SignedJWT buildSignedJwt(Credential credential, PrivateKeyWrapper privateKey) throws JOSEException, ParseException {
         var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
         // this step of preparatory mapping is required as nimbus relies on Gson which will not respect the format annotation defined in the @Credential object.
         var mapped = mapper.convertValue(credential, Map.class);
         var claims = new JWTClaimsSet.Builder()
                 .claim(VERIFIABLE_CREDENTIALS_KEY, mapped)
-                .issuer(issuer)
+                .issuer(credential.getIssuer())
                 .issueTime(credential.getIssuanceDate())
                 .expirationTime(credential.getExpirationDate())
-                .subject(subject)
+                .subject(credential.getCredentialSubject().getId())
                 .build();
 
         var jws = new SignedJWT(jwsHeader, claims);

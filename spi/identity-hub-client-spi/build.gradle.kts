@@ -19,17 +19,7 @@ plugins {
 }
 
 dependencies {
-    api(edc.spi.core)
+    api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
     implementation(libs.nimbus.jwt)
 }
-
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}
-

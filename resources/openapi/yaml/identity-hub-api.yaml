@@ -23,20 +23,6 @@ paths:
           description: default response
       tags:
       - IdentityHub
-  /identity-hub/self-description:
-    get:
-      description: Serve Self-Description document as defined in Gaia-X Trust Framework
-        (https://gaia-x.gitlab.io/policy-rules-committee/trust-framework/)
-      operationId: getSelfDescription
-      responses:
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/JsonNode'
-          description: default response
-      tags:
-      - IdentityHub
 components:
   schemas:
     Descriptor:
@@ -68,9 +54,6 @@ components:
           type: string
           description: Unique identifier of the record
           example: null
-    JsonNode:
-      type: object
-      example: null
     MessageRequestObject:
       type: object
       example: null

@@ -20,26 +20,13 @@ plugins {
 dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:identity-hub-client-spi"))
-    api(edc.spi.core)
-    implementation(edc.ext.http)
-    implementation(libs.okhttp)
-    implementation(libs.jackson.databind)
-    implementation(edc.spi.core)
-    implementation(libs.nimbus.jwt)
+    api(libs.edc.spi.http)
+    api(libs.edc.spi.core)
 
     testImplementation(project(":core:identity-hub"))
     testImplementation(project(":extensions:identity-hub-api"))
     testImplementation(project(":extensions:credentials:identity-hub-credentials-jwt"))
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
-    testImplementation(edc.core.junit)
-    testImplementation(edc.core.identity.did)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("identity-hub-client") {
-            artifactId = "identity-hub-client"
-            from(components["java"])
-        }
-    }
+    testImplementation(libs.edc.core.junit)
+    testImplementation(libs.edc.ext.identity.did.core)
 }

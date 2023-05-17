@@ -22,8 +22,9 @@ jobs:
           # empty params are needed, otherwise the job will fail.
           job_params: |
             {
+              "REPO": "https://github.com/eclipse-edc/IdentityHub"
             }
-          job_name: "IdentityHub-Snapshot"
+          job_name: "Publish-Component"
           job_timeout: "3600" # Default 30 sec. (optional)
 
       - name: Log Jenkins URL

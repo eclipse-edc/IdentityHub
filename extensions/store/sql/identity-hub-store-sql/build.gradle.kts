@@ -4,20 +4,12 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-store-spi"))
-    implementation(edc.spi.transaction)
-    implementation(edc.spi.transaction.datasource)
-    implementation(edc.core.sql)
+    implementation(libs.edc.spi.transaction)
+    implementation(libs.edc.spi.transaction.datasource)
+    implementation(libs.edc.core.sql)
 
-    testImplementation(edc.core.junit)
-    testImplementation(testFixtures(edc.core.sql))
+    testImplementation(libs.edc.core.junit)
+    testImplementation(testFixtures(libs.edc.core.sql))
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
     testImplementation(libs.postgres)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
 }

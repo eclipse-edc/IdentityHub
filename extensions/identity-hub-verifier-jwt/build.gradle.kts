@@ -24,23 +24,16 @@ dependencies {
     implementation(project(":core:identity-hub-client"))
     implementation(project(":spi:identity-hub-spi"))
 
-    implementation(edc.spi.identity.did)
+    implementation(libs.edc.spi.identity.did)
     implementation(libs.nimbus.jwt)
-    implementation(libs.okhttp)
 
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(project(":extensions:identity-hub-api"))
-    testImplementation(project(":core:identity-hub-verifier"))
+    testImplementation(project(":core:identity-hub-credentials-verifier"))
 
-    testImplementation(edc.ext.identity.did.crypto)
-    testImplementation(edc.core.identity.did)
-    testImplementation(edc.core.junit)
+    testImplementation(libs.edc.ext.identity.did.crypto)
+    testImplementation(libs.edc.ext.identity.did.core)
+    testImplementation(libs.edc.core.junit)
 }
 
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}
+

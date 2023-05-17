@@ -18,21 +18,12 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-store-spi"))
-    api(edc.ext.azure.cosmos.core)
+    api(libs.edc.ext.azure.cosmos.core)
 
     implementation(libs.failsafe.core)
     implementation(libs.azure.cosmos)
 
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
-    testImplementation(testFixtures(edc.ext.azure.test))
+    testImplementation(testFixtures(libs.edc.ext.azure.test))
 
 }
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
-}
-

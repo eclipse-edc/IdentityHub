@@ -15,16 +15,17 @@
 plugins {
     `java-library`
     id("application")
-    id("com.github.johnrengelman.shadow") version "7.0.0"
+    alias(libs.plugins.shadow)
 }
 
 dependencies {
-    implementation(project(":core:identity-hub"))
-    implementation(project(":core:identity-hub-verifier"))
-    implementation(project(":extensions:identity-hub-api"))
-    implementation(edc.ext.observability)
-    implementation(edc.ext.identity.did.core)
-    implementation(edc.ext.identity.did.web)
+    runtimeOnly(project(":core:identity-hub"))
+    runtimeOnly(project(":core:identity-hub-credentials-verifier"))
+    runtimeOnly(project(":extensions:identity-hub-api"))
+    runtimeOnly(project(":extensions:self-description-api"))
+    runtimeOnly(libs.bundles.connector)
+    runtimeOnly(libs.edc.ext.identity.did.core)
+    runtimeOnly(libs.edc.ext.identity.did.web)
 }
 
 application {
@@ -35,4 +36,8 @@ tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
     exclude("**/pom.properties", "**/pom.xm")
     mergeServiceFiles()
     archiveFileName.set("identity-hub.jar")
+}
+
+edcBuild {
+    publish.set(false)
 }

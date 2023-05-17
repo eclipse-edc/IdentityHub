@@ -18,17 +18,20 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
-    api(edc.spi.identity.did)
+    api(libs.edc.spi.identity.did)
     testImplementation(project(":launcher"))
-    testImplementation(project(":client-cli"))
+    testImplementation(project(":identity-hub-cli"))
 
-    testImplementation(edc.core.junit)
+    testImplementation(libs.edc.core.junit)
 
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(libs.picocli.core)
     testImplementation(libs.picocli.codegen)
     testImplementation(libs.jackson.databind)
-    testImplementation(libs.okhttp)
     testImplementation(libs.nimbus.jwt)
+}
+
+edcBuild {
+    publish.set(false)
 }
 

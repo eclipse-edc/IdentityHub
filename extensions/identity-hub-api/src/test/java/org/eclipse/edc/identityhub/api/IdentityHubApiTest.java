@@ -110,18 +110,6 @@ abstract class IdentityHubApiTest {
                 .body("replies[0].status.detail", equalTo("The message was malformed or improperly constructed"));
     }
 
-    @Test
-    void getSelfDescription() {
-        given()
-                .baseUri(apiBasePath)
-                .basePath(IDENTITY_HUB_PATH)
-                .get("/self-description")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body("selfDescriptionCredential.credentialSubject.gx-participant:headquarterAddress.gx-participant:country.@value", equalTo("FR"));
-    }
-
     protected abstract String configureApi(EdcExtension extension);
 
     private RequestSpecification baseRequest() {

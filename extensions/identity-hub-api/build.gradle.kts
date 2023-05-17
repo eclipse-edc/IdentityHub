@@ -22,11 +22,11 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     implementation(project(":spi:identity-hub-store-spi"))
     implementation(project(":core:identity-hub"))
-    implementation(edc.ext.http)
-    implementation(edc.spi.transaction)
+    implementation(libs.edc.ext.http)
+    implementation(libs.edc.spi.transaction)
 
 
-    testImplementation(edc.core.junit)
+    testImplementation(libs.edc.core.junit)
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.restAssured)
     testImplementation(project(":spi:identity-hub-spi"))
@@ -35,14 +35,3 @@ dependencies {
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
 }
-
-
-publishing {
-    publications {
-        create<MavenPublication>("identity-hub-api") {
-            artifactId = "identity-hub-api"
-            from(components["java"])
-        }
-    }
-}
-

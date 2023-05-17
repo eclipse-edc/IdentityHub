@@ -20,21 +20,12 @@ plugins {
 dependencies {
     implementation(project(":spi:identity-hub-spi"))
 
-    implementation(edc.spi.identity.did)
+    implementation(libs.edc.spi.identity.did)
     implementation(libs.nimbus.jwt)
-    implementation(libs.okhttp)
-    
+
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(project(":extensions:identity-hub-api"))
-    testImplementation(edc.core.identity.did)
-    testImplementation(edc.ext.identity.did.crypto)
-    testImplementation(edc.core.junit)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
+    testImplementation(libs.edc.ext.identity.did.core)
+    testImplementation(libs.edc.ext.identity.did.crypto)
+    testImplementation(libs.edc.core.junit)
 }

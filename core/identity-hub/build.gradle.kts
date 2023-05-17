@@ -22,18 +22,9 @@ dependencies {
     implementation(project(":spi:identity-hub-store-spi"))
     
     implementation(libs.nimbus.jwt)
-    implementation(edc.spi.transaction)
+    implementation(libs.edc.spi.transaction)
 
-    testImplementation(edc.core.junit)
+    testImplementation(libs.edc.core.junit)
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("identity-hub") {
-            artifactId = "identity-hub"
-            from(components["java"])
-        }
-    }
 }

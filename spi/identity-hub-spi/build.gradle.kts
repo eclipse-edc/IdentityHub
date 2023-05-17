@@ -24,20 +24,12 @@ dependencies {
 
     implementation(libs.jackson.databind)
     implementation(libs.nimbus.jwt)
-    implementation(edc.spi.identity.did)
+    implementation(libs.edc.spi.identity.did)
 
     implementation(libs.swagger.jaxrs) {
         exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
     }
 
     testFixturesImplementation(libs.nimbus.jwt)
-    testFixturesImplementation(edc.spi.identity.did)
-}
-
-publishing {
-    publications {
-        create<MavenPublication>(project.name) {
-            from(components["java"])
-        }
-    }
+    testFixturesImplementation(libs.edc.spi.identity.did)
 }
