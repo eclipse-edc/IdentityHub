@@ -60,3 +60,15 @@ jobs:
           tag: "v${{ env.IDENTITYHUB_VERSION }}"
           token: ${{ secrets.GITHUB_TOKEN }}
           removeArtifacts: true
+
+  Bump-Version:
+    name: 'Update release version'
+    # cannot use the workflow-level env yet as it does not yet exist, must take output from previous job
+    if: ${{ !endsWith( needs.Prepare-Release.outputs.ih-version, '-SNAPSHOT') }}
+    needs: [Prepare-Release, Github-Release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/bump-version
+        with:
+          target_branch: "main"
