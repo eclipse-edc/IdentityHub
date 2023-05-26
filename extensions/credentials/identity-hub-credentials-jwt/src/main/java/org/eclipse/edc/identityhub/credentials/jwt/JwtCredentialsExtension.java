@@ -19,6 +19,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.spi.types.TypeManager;
 
 /**
  * Extension for handling parsing and encoding verifiable credential in JWT format.
@@ -31,6 +32,9 @@ public class JwtCredentialsExtension implements ServiceExtension {
     @Inject
     private CredentialEnvelopeTransformerRegistry transformerRegistry;
 
+    @Inject
+    private TypeManager typeManager;
+
     @Override
     public String name() {
         return NAME;
@@ -38,6 +42,6 @@ public class JwtCredentialsExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        transformerRegistry.register(new JwtCredentialEnvelopeTransformer(context.getTypeManager().getMapper()));
+        transformerRegistry.register(new JwtCredentialEnvelopeTransformer(typeManager.getMapper()));
     }
 }
