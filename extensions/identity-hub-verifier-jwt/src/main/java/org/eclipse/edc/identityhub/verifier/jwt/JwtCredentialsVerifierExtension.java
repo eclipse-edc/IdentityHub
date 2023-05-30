@@ -21,6 +21,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Provides;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.spi.types.TypeManager;
 
 import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.DATA_FORMAT;
 
@@ -39,6 +40,9 @@ public class JwtCredentialsVerifierExtension implements ServiceExtension {
     @Inject
     private CredentialEnvelopeVerifierRegistry verifierRegistry;
 
+    @Inject
+    private TypeManager typeManager;
+
     @Override
     public String name() {
         return "JWT Credentials Verifier";
@@ -48,6 +52,6 @@ public class JwtCredentialsVerifierExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         var jwtVerifier = new DidJwtCredentialsVerifier(didPublicKeyResolver, monitor);
         context.registerService(JwtCredentialsVerifier.class, jwtVerifier);
-        verifierRegistry.register(DATA_FORMAT, new JwtCredentialEnvelopeVerifier(jwtVerifier, context.getTypeManager().getMapper()));
+        verifierRegistry.register(DATA_FORMAT, new JwtCredentialEnvelopeVerifier(jwtVerifier, typeManager.getMapper()));
     }
 }
