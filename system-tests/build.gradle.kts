@@ -28,6 +28,8 @@ dependencies {
     testImplementation(libs.picocli.core)
     testImplementation(libs.picocli.codegen)
     testImplementation(libs.jackson.databind)
+    testImplementation(libs.mockserver.client)
+    testImplementation(libs.mockserver.netty)
     testImplementation(libs.nimbus.jwt)
 }
 

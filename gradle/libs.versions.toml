@@ -7,6 +7,7 @@ edc = "0.1.1-SNAPSHOT"
 failsafe = "3.3.1"
 jackson = "2.14.2"
 jupiter = "5.9.2"
+mockserver = "5.15.0"
 nimbus = "9.25"
 picocli = "4.6.3"
 postgres = "42.6.0"
@@ -36,6 +37,7 @@ edc-ext-identity-did-crypto = { module = "org.eclipse.edc:identity-did-crypto", 
 edc-ext-identity-did-core = { module = "org.eclipse.edc:identity-did-core", version.ref = "edc" }
 edc-ext-identity-did-web = { module = "org.eclipse.edc:identity-did-web", version.ref = "edc" }
 edc-ext-http = { module = "org.eclipse.edc:http", version.ref = "edc" }
+edc-ext-json-ld = { module = "org.eclipse.edc:json-ld", version.ref = "edc" }
 edc-ext-micrometer-jetty = { module = "org.eclipse.edc:jetty-micrometer", version.ref = "edc" }
 edc-ext-micrometer-jersey = { module = "org.eclipse.edc:jersey-micrometer", version.ref = "edc" }
 edc-ext-observability = { module = "org.eclipse.edc:api-observability", version.ref = "edc" }
@@ -45,6 +47,8 @@ edc-ext-jdklogger = { module = "org.eclipse.edc:monitor-jdk-logger", version.ref
 failsafe-core = { module = "dev.failsafe:failsafe", version.ref = "failsafe" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "jupiter" }
+mockserver-client = { module = "org.mock-server:mockserver-client-java", version.ref = "mockserver" }
+mockserver-netty = { module = "org.mock-server:mockserver-netty", version.ref = "mockserver" }
 nimbus-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus" }
 picocli-core = { module = "info.picocli:picocli", version.ref = "picocli" }
 picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli" }
@@ -53,7 +57,7 @@ restAssured = { module = "io.rest-assured:rest-assured", version.ref = "restAssu
 swagger-jaxrs = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger" }
 
 [bundles]
-connector = [ "edc.boot", "edc.core-connector", "edc.ext.http", "edc.ext-observability" ]
+connector = [ "edc.boot", "edc.core-connector", "edc.ext.http", "edc-ext-observability", "edc-ext-json-ld" ]
 
 [plugins]
 shadow = { id = "com.github.johnrengelman.shadow", version = "8.0.0" }
