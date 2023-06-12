@@ -23,9 +23,11 @@ import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.model.CredentialSubject;
 import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
 import org.eclipse.edc.junit.extensions.EdcExtension;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockserver.integration.ClientAndServer;
 import picocli.CommandLine;
 
 import java.io.PrintWriter;
@@ -37,6 +39,10 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.junit.testfixtures.TestUtils.getResourceFileContentAsString;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
+import static org.mockserver.stop.Stop.stopQuietly;
 
 @IntegrationTest
 @ExtendWith(EdcExtension.class)
@@ -47,7 +53,8 @@ class VerifiableCredentialsIntegrationTest {
     private static final String PARTICIPANT_DID = "did:web:localhost%3A8080:participant";
     private static final String AUTHORITY_PRIVATE_KEY_PATH = "resources/jwt/authority/private-key.pem";
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final Credential CREDENTIAL = createCredential();
+    private final Credential credential = createCredential();
+    private ClientAndServer didServer;
 
     private final CommandLine cmd = IdentityHubCli.getCommandLine();
     private final StringWriter out = new StringWriter();
@@ -55,6 +62,11 @@ class VerifiableCredentialsIntegrationTest {
 
     @BeforeEach
     void setUp(EdcExtension extension) {
+        didServer = ClientAndServer.startClientAndServer(8080);
+        didServer.when(request().withPath("/authority/did.json"))
+                .respond(response(getResourceFileContentAsString("webdid/authority/did.json")));
+        didServer.when(request().withPath("/participant/did.json"))
+                .respond(response(getResourceFileContentAsString("webdid/participant/did.json")));
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
 
@@ -64,19 +76,30 @@ class VerifiableCredentialsIntegrationTest {
                 "edc.iam.did.web.use.https", "false"));
     }
 
+    @AfterEach
+    public void stopServer() {
+        stopQuietly(didServer);
+    }
+
     @Test
     void push_and_get_verifiable_credentials(CredentialsVerifier verifier, DidResolverRegistry resolverRegistry) throws Exception {
         addVerifiableCredentialWithCli();
-        assertGetVerifiedCredentials(verifier, resolverRegistry);
+
+        var verifiedCredential = getVerifiedCredential(verifier, resolverRegistry);
+
+        assertThat(verifiedCredential).isInstanceOf(Credential.class).usingRecursiveComparison()
+                .ignoringFields("id", "issuanceDate")
+                .isEqualTo(credential);
     }
 
     private void addVerifiableCredentialWithCli() throws JsonProcessingException {
-        var json = MAPPER.writeValueAsString(CREDENTIAL.getCredentialSubject().getClaims());
-        int result = cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", CREDENTIAL.getIssuer(), "-b", CREDENTIAL.getCredentialSubject().getId(), "-k", AUTHORITY_PRIVATE_KEY_PATH);
+        var json = MAPPER.writeValueAsString(credential.getCredentialSubject().getClaims());
+        int result = cmd.execute("-s", HUB_URL, "vc", "add", "-c", json, "-i", credential.getIssuer(), "-b", credential.getCredentialSubject().getId(), "-k", AUTHORITY_PRIVATE_KEY_PATH);
+
         assertThat(result).isZero();
     }
 
-    private void assertGetVerifiedCredentials(CredentialsVerifier verifier, DidResolverRegistry resolverRegistry) {
+    private Object getVerifiedCredential(CredentialsVerifier verifier, DidResolverRegistry resolverRegistry) {
         var didResult = resolverRegistry.resolve(PARTICIPANT_DID);
         assertThat(didResult.succeeded()).isTrue();
 
@@ -85,16 +108,11 @@ class VerifiableCredentialsIntegrationTest {
 
         var vcs = verifiedCredentials.getContent();
         assertThat(vcs).hasSize(1);
-        var verifiedCredential = vcs.values().stream().findFirst()
+        return vcs.values().stream().findFirst()
                 .orElseThrow(() -> new AssertionError("Failed to find verified credential"));
-
-        assertThat(verifiedCredential).isInstanceOf(Credential.class);
-        assertThat((Credential) verifiedCredential).usingRecursiveComparison()
-                .ignoringFields("id", "issuanceDate")
-                .isEqualTo(CREDENTIAL);
     }
 
-    private static Credential createCredential() {
+    private Credential createCredential() {
         return Credential.Builder.newInstance()
                 .context(VerifiableCredential.DEFAULT_CONTEXT)
                 .id(UUID.randomUUID().toString())
