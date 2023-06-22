@@ -29,7 +29,7 @@ cd IdentityHub
 
 ```
 cd OtherDirectory
-mvn dependency:copy -Dartifact=org.eclipse.edc:identity-hub-cli:0.1.2-SNAPSHOT:jar:all -DoutputDirectory=.
-java -jar identity-hub-cli-0.1.2-SNAPSHOT-all.jar --help
+mvn dependency:copy -Dartifact=org.eclipse.edc:identity-hub-cli:-SNAPSHOT:jar:all -DoutputDirectory=.
+java -jar identity-hub-cli--SNAPSHOT-all.jar --help
 ```
 
