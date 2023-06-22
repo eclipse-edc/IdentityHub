@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
@@ -36,9 +35,11 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.mockito.ArgumentCaptor;
 
 import java.nio.charset.StandardCharsets;
@@ -69,41 +70,6 @@ class CollectionsWriteProcessorTest {
     private IdentityHubStore identityHubStore;
     private CollectionsWriteProcessor writeProcessor;
 
-    private static Stream<Arguments> invalidInputProvider() throws JOSEException {
-        var missingRecordIdDescriptor = descriptorBuilder()
-                .method("test")
-                .dateCreated(Instant.now().getEpochSecond())
-                .build();
-
-        var missingDateCreatedDescriptor = descriptorBuilder()
-                .method("test")
-                .recordId(UUID.randomUUID().toString())
-                .build();
-
-        var verifiableCredentialWithoutId = new JWTClaimsSet.Builder()
-                .claim("vc", "{ \"credentialSubject\": { \"foo\": \"bar\" }}")
-                .issuer(ISSUER)
-                .subject(SUBJECT)
-                .expirationTime(null)
-                .notBeforeTime(null)
-                .build();
-        var dataWithInvalidVc = buildSignedJwt(verifiableCredentialWithoutId, generateEcKey()).serialize().getBytes(StandardCharsets.UTF_8);
-
-        var jws = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).build(), new JWTClaimsSet.Builder().build());
-        jws.sign(new ECDSASigner(generateEcKey().toECPrivateKey()));
-        var dataWithoutMandatoryVcField = jws.serialize().getBytes(StandardCharsets.UTF_8);
-
-        return Stream.of(
-                // valid descriptor but invalid data
-                Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(getValidDescriptor()).data(dataWithInvalidVc).build()),
-                Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(getValidDescriptor()).data(dataWithoutMandatoryVcField).build()),
-                Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(getValidDescriptor()).data("{".getBytes(StandardCharsets.UTF_8)).build()),
-                Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(getValidDescriptor()).data("invalid base64".getBytes(StandardCharsets.UTF_8)).build()),
-                // valid date but invalid descriptor
-                Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(missingRecordIdDescriptor).data(getValidData()).build()),
-                Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(missingDateCreatedDescriptor).data(getValidData()).build())
-        );
-    }
 
     private static Descriptor.Builder descriptorBuilder() {
         return Descriptor.Builder.newInstance();
@@ -139,7 +105,7 @@ class CollectionsWriteProcessorTest {
     }
 
     @ParameterizedTest
-    @MethodSource("invalidInputProvider")
+    @ArgumentsSource(InvalidArgumentProvider.class)
     void writeCredentials_invalidInput(MessageRequestObject requestObject) {
         // Arrange
         var expectedResult = MessageResponseObject.Builder.newInstance().status(MessageStatus.MALFORMED_MESSAGE).build();
@@ -193,5 +159,44 @@ class CollectionsWriteProcessorTest {
         assertThat(record.getId()).isEqualTo(requestObject.getDescriptor().getRecordId());
         assertThat(record.getCreatedAt()).isEqualTo(requestObject.getDescriptor().getDateCreated());
         assertThat(record.getPayload()).isEqualTo(requestObject.getData());
+    }
+
+    private static class InvalidArgumentProvider implements ArgumentsProvider {
+        @Override
+        public Stream<? extends Arguments> provideArguments(ExtensionContext extensionContext) throws Exception {
+            var missingRecordIdDescriptor = descriptorBuilder()
+                    .method("test")
+                    .dateCreated(Instant.now().getEpochSecond())
+                    .build();
+
+            var missingDateCreatedDescriptor = descriptorBuilder()
+                    .method("test")
+                    .recordId(UUID.randomUUID().toString())
+                    .build();
+
+            var verifiableCredentialWithoutId = new JWTClaimsSet.Builder()
+                    .claim("vc", "{ \"credentialSubject\": { \"foo\": \"bar\" }}")
+                    .issuer(ISSUER)
+                    .subject(SUBJECT)
+                    .expirationTime(null)
+                    .notBeforeTime(null)
+                    .build();
+            var dataWithInvalidVc = buildSignedJwt(verifiableCredentialWithoutId, generateEcKey()).serialize().getBytes(StandardCharsets.UTF_8);
+
+            var jws = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).build(), new JWTClaimsSet.Builder().build());
+            jws.sign(new ECDSASigner(generateEcKey().toECPrivateKey()));
+            var dataWithoutMandatoryVcField = jws.serialize().getBytes(StandardCharsets.UTF_8);
+
+            return Stream.of(
+                    // valid descriptor but invalid data
+                    Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(getValidDescriptor()).data(dataWithInvalidVc).build()),
+                    Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(getValidDescriptor()).data(dataWithoutMandatoryVcField).build()),
+                    Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(getValidDescriptor()).data("{".getBytes(StandardCharsets.UTF_8)).build()),
+                    Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(getValidDescriptor()).data("invalid base64".getBytes(StandardCharsets.UTF_8)).build()),
+                    // valid date but invalid descriptor
+                    Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(missingRecordIdDescriptor).data(getValidData()).build()),
+                    Arguments.of(MessageRequestObject.Builder.newInstance().descriptor(missingDateCreatedDescriptor).data(getValidData()).build())
+            );
+        }
     }
 }

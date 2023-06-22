@@ -18,8 +18,8 @@ import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.edc.iam.did.spi.credentials.CredentialsVerifier;
 import org.eclipse.edc.iam.did.spi.document.DidConstants;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.iam.did.spi.document.EllipticCurvePublicKey;
 import org.eclipse.edc.iam.did.spi.document.Service;
+import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.identityhub.client.IdentityHubClientImpl;
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -66,11 +67,15 @@ class CredentialsVerifierExtensionTest {
     private IdentityHubClient identityHubClient;
 
     private static DidDocument createDidDocument(ECKey jwk) {
-        var ecKey = TYPE_MANAGER.readValue(jwk.toJSONString(), EllipticCurvePublicKey.class);
+        var vm = VerificationMethod.Builder.create()
+                .id(UUID.randomUUID().toString())
+                .type(DidConstants.ECDSA_SECP_256_K_1_VERIFICATION_KEY_2019)
+                .publicKeyJwk(jwk.toPublicJWK().toJSONObject())
+                .build();
         return DidDocument.Builder.newInstance()
                 .id(SUBJECT)
                 .service(List.of(new Service("IdentityHub", "IdentityHub", API_URL)))
-                .verificationMethod(UUID.randomUUID().toString(), DidConstants.ECDSA_SECP_256_K_1_VERIFICATION_KEY_2019, ecKey)
+                .verificationMethod(Collections.singletonList(vm))
                 .build();
     }
 

@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 import static java.lang.String.format;
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLECTIONS_QUERY;
 import static org.eclipse.edc.identityhub.spi.model.WebNodeInterfaceMethod.COLLECTIONS_WRITE;
-import static org.eclipse.edc.spi.http.FallbackFactories.statusMustBe;
+import static org.eclipse.edc.spi.http.FallbackFactories.retryWhenStatusIsNot;
 import static org.eclipse.edc.spi.result.Result.failure;
 
 public class IdentityHubClientImpl implements IdentityHubClient {
@@ -70,7 +70,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 .post(body)
                 .build();
 
-        return httpClient.execute(request, List.of(statusMustBe(200)), this::extractCredentials);
+        return httpClient.execute(request, List.of(retryWhenStatusIsNot(200)), this::extractCredentials);
     }
     
     @Override
@@ -96,7 +96,7 @@ public class IdentityHubClientImpl implements IdentityHubClient {
                 .post(toRequestBody(descriptor, result.getContent()))
                 .build();
 
-        return httpClient.execute(request, List.of(statusMustBe(200)), this::handleAddResponse);
+        return httpClient.execute(request, List.of(retryWhenStatusIsNot(200)), this::handleAddResponse);
     }
 
     private Result<CredentialEnvelope> parse(Object entry) {
