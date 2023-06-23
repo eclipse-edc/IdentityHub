@@ -2,7 +2,7 @@
 name: Feature Request
 about: Help us with new ideas
 title: ''
-labels: ''
+labels: [ "feature_request", "triage" ]
 assignees: ''
 
 ---
