@@ -71,6 +71,7 @@ public class SqlIdentityHubStore extends AbstractSqlStore implements IdentityHub
     private IdentityHubRecord parse(ResultSet resultSet) throws SQLException {
         return IdentityHubRecord.Builder.newInstance()
                 .id(resultSet.getString(statements.getIdColumn()))
+                .payloadFormat(resultSet.getString(statements.getPayloadFormatColumn()))
                 .payload(resultSet.getString(statements.getPayloadColumn()).getBytes())
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
                 .build();
