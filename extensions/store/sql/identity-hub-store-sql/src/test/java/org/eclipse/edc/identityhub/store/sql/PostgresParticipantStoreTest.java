@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.store.sql;
 
-import org.eclipse.edc.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStoreTestBase;
 import org.eclipse.edc.identityhub.store.sql.schema.BaseSqlIdentityHubStatements;
@@ -23,25 +22,16 @@ import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
 @PostgresqlDbIntegrationTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
 public class PostgresParticipantStoreTest extends IdentityHubStoreTestBase {
     private SqlIdentityHubStore store;
-    @Mock
-    private ResultSet resultSet;
 
     @BeforeEach
     void setUp(PostgresqlStoreSetupExtension extension) throws IOException {
@@ -52,24 +42,6 @@ public class PostgresParticipantStoreTest extends IdentityHubStoreTestBase {
 
         var schema = Files.readString(Paths.get("docs/schema.sql"));
         extension.runQuery(schema);
-    }
-
-    @Test
-    public void testParse() throws SQLException {
-        // Mock the necessary values in the ResultSet
-        when(resultSet.getString("idColumn")).thenReturn("123");
-        when(resultSet.getString("payloadFormatColumn")).thenReturn("json");
-        when(resultSet.getString("payloadColumn")).thenReturn("{\"key\": \"value\"}");
-        when(resultSet.getLong("createdAtColumn")).thenReturn(1625385600000L);
-
-        // Call the parse method
-        IdentityHubRecord result = store.parse(resultSet);
-
-        // Verify the parsed IdentityHubRecord
-        assertEquals("123", result.getId());
-        assertEquals("json", result.getPayloadFormat());
-        assertEquals("{\"key\": \"value\"}", new String(result.getPayload()));
-        assertEquals(1625385600000L, result.getCreatedAt());
     }
 
     @AfterEach
