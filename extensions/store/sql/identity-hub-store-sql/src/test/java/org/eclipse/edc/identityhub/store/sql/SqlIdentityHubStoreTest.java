@@ -17,7 +17,7 @@ import java.sql.SQLException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
-public class SqlIdentityHubStoreTest2 {
+public class SqlIdentityHubStoreTest {
 
     @Mock
     private ResultSet resultSet;
