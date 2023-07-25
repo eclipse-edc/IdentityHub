@@ -19,6 +19,7 @@ import org.eclipse.edc.identityhub.store.spi.IdentityHubRecord;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.identityhub.store.sql.schema.IdentityHubStatements;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
+import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -29,19 +30,15 @@ import java.sql.SQLException;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static org.eclipse.edc.sql.SqlQueryExecutor.executeQuery;
-
 /**
  * SQL implementation for {@link IdentityHubStore}.
  */
 public class SqlIdentityHubStore extends AbstractSqlStore implements IdentityHubStore {
     private final IdentityHubStatements statements;
 
-    public SqlIdentityHubStore(DataSourceRegistry dataSourceRegistry,
-                               String dataSourceName,
-                               TransactionContext transactionContext,
-                               IdentityHubStatements identityHubStatements, ObjectMapper mapper) {
-        super(dataSourceRegistry, dataSourceName, transactionContext, mapper);
+    public SqlIdentityHubStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext,
+                               IdentityHubStatements identityHubStatements, ObjectMapper mapper, QueryExecutor queryExecutor) {
+        super(dataSourceRegistry, dataSourceName, transactionContext, mapper, queryExecutor);
         statements = Objects.requireNonNull(identityHubStatements);
     }
 
@@ -49,7 +46,7 @@ public class SqlIdentityHubStore extends AbstractSqlStore implements IdentityHub
     public @NotNull Stream<IdentityHubRecord> getAll() {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                return executeQuery(connection, true, this::parse, statements.getFindAllTemplate());
+                return queryExecutor.query(connection, true, this::parse, statements.getFindAllTemplate());
             } catch (Exception e) {
                 throw new EdcPersistenceException(e.getMessage(), e);
             }
@@ -61,7 +58,7 @@ public class SqlIdentityHubStore extends AbstractSqlStore implements IdentityHub
         transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 var payload = new String(record.getPayload());
-                executeQuery(connection, statements.getInsertTemplate(), record.getId(), payload, record.getPayloadFormat(), record.getCreatedAt());
+                queryExecutor.execute(connection, statements.getInsertTemplate(), record.getId(), payload, record.getPayloadFormat(), record.getCreatedAt());
             } catch (Exception e) {
                 throw new EdcPersistenceException(e.getMessage(), e);
             }
@@ -72,6 +69,7 @@ public class SqlIdentityHubStore extends AbstractSqlStore implements IdentityHub
         return IdentityHubRecord.Builder.newInstance()
                 .id(resultSet.getString(statements.getIdColumn()))
                 .payload(resultSet.getString(statements.getPayloadColumn()).getBytes())
+                .payloadFormat(resultSet.getString(statements.getPayloadFormatColumn()))
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
                 .build();
     }

@@ -56,37 +56,33 @@ public abstract class IdentityHubStoreTestBase {
         try (var stream = getStore().getAll()) {
             var stored = stream.collect(Collectors.toList());
             assertThat(stored).hasSize(records.size());
-            records.forEach(expected -> assertThat(stored).anySatisfy(r -> {
-                assertThat(r.getId()).isEqualTo(expected.getId());
-                assertThat(r.getPayload()).isEqualTo(expected.getPayload());
-            }));
+            records.forEach(expected -> assertThat(stored).anySatisfy(r -> assertThat(r).usingRecursiveComparison().isEqualTo(expected)));
         }
-
     }
 
     protected abstract IdentityHubStore getStore();
 
-    private static byte[] toByteArray(Credential vc) {
-        try {
-            return MAPPER.writeValueAsBytes(vc);
-        } catch (JsonProcessingException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    private static List<IdentityHubRecord> createIdentityHubRecords() {
+    private List<IdentityHubRecord> createIdentityHubRecords() {
         var credentialsCount = RAND.nextInt(10) + 1;
         return IntStream.range(0, credentialsCount)
                 .mapToObj(i -> createIdentityHubRecord())
                 .collect(Collectors.toList());
     }
 
-    private static IdentityHubRecord createIdentityHubRecord() {
+    private IdentityHubRecord createIdentityHubRecord() {
         var credential = VerifiableCredentialTestUtil.generateCredential();
         return IdentityHubRecord.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .payloadFormat("application/json")
                 .payload(toByteArray(credential))
                 .build();
+    }
+
+    private byte[] toByteArray(Credential vc) {
+        try {
+            return MAPPER.writeValueAsBytes(vc);
+        } catch (JsonProcessingException e) {
+            throw new AssertionError(e);
+        }
     }
 }

@@ -24,6 +24,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
+import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
@@ -49,6 +50,8 @@ public class SqlIdentityHubStoreExtension implements ServiceExtension {
     private TransactionContext trxContext;
     @Inject
     private TypeManager typeManager;
+    @Inject
+    private QueryExecutor queryExecutor;
 
     @Override
     public String name() {
@@ -56,11 +59,10 @@ public class SqlIdentityHubStoreExtension implements ServiceExtension {
     }
 
 
-
     @Provider
     public IdentityHubStore identityHubStore(ServiceExtensionContext context) {
         var s = Objects.requireNonNullElse(statements, new BaseSqlIdentityHubStatements());
         var dataSource = context.getSetting(DATASOURCE_NAME_SETTING, DEFAULT_DATASOURCE_NAME);
-        return new SqlIdentityHubStore(dataSourceRegistry, dataSource, trxContext, s, typeManager.getMapper());
+        return new SqlIdentityHubStore(dataSourceRegistry, dataSource, trxContext, s, typeManager.getMapper(), queryExecutor);
     }
 }

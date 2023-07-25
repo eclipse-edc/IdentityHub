@@ -17,8 +17,9 @@ package org.eclipse.edc.identityhub.store.sql;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStore;
 import org.eclipse.edc.identityhub.store.spi.IdentityHubStoreTestBase;
 import org.eclipse.edc.identityhub.store.sql.schema.BaseSqlIdentityHubStatements;
-import org.eclipse.edc.junit.annotations.PostgresqlDbIntegrationTest;
+import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.spi.types.TypeManager;
+import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,17 +29,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-@PostgresqlDbIntegrationTest
+@ComponentTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
-public class PostgresParticipantStoreTest extends IdentityHubStoreTestBase {
+public class PostgresIdentityHubStoreTest extends IdentityHubStoreTestBase {
     private SqlIdentityHubStore store;
 
     @BeforeEach
-    void setUp(PostgresqlStoreSetupExtension extension) throws IOException {
+    void setUp(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) throws IOException {
         var statements = new BaseSqlIdentityHubStatements();
         var typeManager = new TypeManager();
 
-        store = new SqlIdentityHubStore(extension.getDataSourceRegistry(), extension.getDatasourceName(), extension.getTransactionContext(), statements, typeManager.getMapper());
+        store = new SqlIdentityHubStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
+                extension.getTransactionContext(), statements, typeManager.getMapper(), queryExecutor);
 
         var schema = Files.readString(Paths.get("docs/schema.sql"));
         extension.runQuery(schema);
