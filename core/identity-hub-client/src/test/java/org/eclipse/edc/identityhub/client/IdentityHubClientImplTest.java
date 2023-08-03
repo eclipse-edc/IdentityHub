@@ -66,7 +66,7 @@ class IdentityHubClientImplTest {
 
         var record = Record.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
-                .dataFormat(JwtCredentialConstants.DATA_FORMAT)
+                .dataFormat(JwtCredentialConstants.VC_DATA_FORMAT)
                 .createdAt(System.currentTimeMillis())
                 .data(jws.serialize().getBytes(StandardCharsets.UTF_8))
                 .build();

@@ -21,9 +21,10 @@ import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
 import org.eclipse.edc.identityhub.spi.credentials.model.VerifiableCredential;
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.List;
 import java.util.Objects;
 
-import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.DATA_FORMAT;
+import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.VC_DATA_FORMAT;
 import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.VERIFIABLE_CREDENTIALS_KEY;
 
 public class JwtCredentialEnvelope implements CredentialEnvelope {
@@ -36,11 +37,11 @@ public class JwtCredentialEnvelope implements CredentialEnvelope {
 
     @Override
     public String format() {
-        return DATA_FORMAT;
+        return VC_DATA_FORMAT;
     }
 
     @Override
-    public Result<VerifiableCredential> toVerifiableCredential(ObjectMapper mapper) {
+    public Result<List<VerifiableCredential>> toVerifiableCredentials(ObjectMapper mapper) {
         try {
             var payload = jwt.getJWTClaimsSet().getClaims();
             var vcObject = payload.get(VERIFIABLE_CREDENTIALS_KEY);
@@ -49,7 +50,7 @@ public class JwtCredentialEnvelope implements CredentialEnvelope {
             }
             var credential = mapper.convertValue(vcObject, Credential.class);
             // JWT Verifiable Credentials do not have embedded proof.
-            return Result.success(new VerifiableCredential(credential, null));
+            return Result.success(List.of(new VerifiableCredential(credential, null)));
         } catch (Exception e) {
             return Result.failure(Objects.requireNonNullElseGet(e.getMessage(), e::toString));
         }

@@ -51,13 +51,14 @@ class JwtCredentialEnvelopeTest {
         var envelope = new JwtCredentialEnvelope(jwt);
 
         // Act
-        var result = envelope.toVerifiableCredential(OBJECT_MAPPER);
+        var result = envelope.toVerifiableCredentials(OBJECT_MAPPER);
 
         // Assert
         assertThat(result.succeeded()).isTrue();
-        var vc = result.getContent();
-        assertThat(vc.getProof()).isNull();
-        assertThat(vc.getItem()).usingRecursiveComparison().isEqualTo(CREDENTIAL);
+        assertThat(result.getContent()).hasSize(1).anySatisfy(verifiableCredential -> {
+            assertThat(verifiableCredential.getProof()).isNull();
+            assertThat(verifiableCredential.getItem()).usingRecursiveComparison().isEqualTo(CREDENTIAL);
+        });
     }
 
     @Test
@@ -68,7 +69,7 @@ class JwtCredentialEnvelopeTest {
         var envelope = new JwtCredentialEnvelope(jws);
 
         // Act
-        var result = envelope.toVerifiableCredential(OBJECT_MAPPER);
+        var result = envelope.toVerifiableCredentials(OBJECT_MAPPER);
 
         // Assert
         assertThat(result.failed()).isTrue();
@@ -83,7 +84,7 @@ class JwtCredentialEnvelopeTest {
         var envelope = new JwtCredentialEnvelope(jws);
 
         // Act
-        var result = envelope.toVerifiableCredential(OBJECT_MAPPER);
+        var result = envelope.toVerifiableCredentials(OBJECT_MAPPER);
 
         // Assert
         assertThat(result.failed()).isTrue();
