@@ -11,7 +11,7 @@ mockserver = "5.15.0"
 nimbus = "9.25"
 picocli = "4.6.3"
 postgres = "42.6.0"
-restAssured = "4.5.0"
+restAssured = "5.3.1"
 swagger = "2.1.13"
 
 [libraries]
