@@ -60,4 +60,4 @@ swagger-jaxrs = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.
 connector = [ "edc.boot", "edc.core-connector", "edc.ext.http", "edc-ext-observability", "edc-ext-json-ld" ]
 
 [plugins]
-shadow = { id = "com.github.johnrengelman.shadow", version = "8.0.0" }
+shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
