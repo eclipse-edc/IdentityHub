@@ -16,6 +16,8 @@ package org.eclipse.edc.identityhub.verifier;
 
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Failure;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -31,5 +33,10 @@ import java.util.List;
 class AggregatedResult<T> extends AbstractResult<T, Failure, AggregatedResult<T>> {
     AggregatedResult(T successfulResult, List<String> failureMessage) {
         super(successfulResult, failureMessage.isEmpty() ? null : new Failure(failureMessage));
+    }
+
+    @Override
+    protected <R1 extends AbstractResult<C1, Failure, R1>, C1> @NotNull R1 newInstance(@Nullable C1 content, @Nullable Failure failure) {
+        return (R1) new AggregatedResult<>(content, failure.getMessages());
     }
 }

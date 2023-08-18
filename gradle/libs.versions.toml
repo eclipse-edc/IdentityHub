@@ -2,16 +2,16 @@
 format.version = "1.1"
 
 [versions]
-assertj = "3.23.1"
-edc = "0.1.4-SNAPSHOT"
-failsafe = "3.3.1"
+assertj = "3.24.2"
+edc = "0.2.1-SNAPSHOT"
+failsafe = "3.3.2"
 jackson = "2.14.2"
-jupiter = "5.9.2"
+jupiter = "5.10.0"
 mockserver = "5.15.0"
 nimbus = "9.25"
 picocli = "4.6.3"
 postgres = "42.6.0"
-restAssured = "4.5.0"
+restAssured = "5.3.1"
 swagger = "2.1.13"
 
 [libraries]
@@ -60,4 +60,4 @@ swagger-jaxrs = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.
 connector = [ "edc.boot", "edc.core-connector", "edc.ext.http", "edc-ext-observability", "edc-ext-json-ld" ]
 
 [plugins]
-shadow = { id = "com.github.johnrengelman.shadow", version = "8.0.0" }
+shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
