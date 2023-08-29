@@ -23,7 +23,8 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 
-import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.DATA_FORMAT;
+import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.VC_DATA_FORMAT;
+import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.VP_DATA_FORMAT;
 
 /**
  * Extension to provide verifier for IdentityHub Verifiable Credentials in JWT format.
@@ -52,6 +53,7 @@ public class JwtCredentialsVerifierExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         var jwtVerifier = new DidJwtCredentialsVerifier(didPublicKeyResolver, monitor);
         context.registerService(JwtCredentialsVerifier.class, jwtVerifier);
-        verifierRegistry.register(DATA_FORMAT, new JwtCredentialEnvelopeVerifier(jwtVerifier, typeManager.getMapper()));
+        verifierRegistry.register(VC_DATA_FORMAT, new JwtCredentialEnvelopeVerifier(jwtVerifier, typeManager.getMapper()));
+        verifierRegistry.register(VP_DATA_FORMAT, new JwtPresentationEnvelopeVerifier(jwtVerifier, typeManager.getMapper()));
     }
 }

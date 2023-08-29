@@ -86,7 +86,7 @@ class IdentityHubCredentialsVerifierTest {
         when(identityHubClientMock.getVerifiableCredentials(HUB_BASE_URL)).thenReturn(Result.success(List.of(envelope)));
         when(verifierRegistry.resolve(any())).thenReturn(verifier);
         var credential = VerifiableCredentialTestUtil.generateCredential();
-        when(verifier.verify(envelope, DID_DOCUMENT)).thenReturn(Result.success(credential));
+        when(verifier.verify(envelope, DID_DOCUMENT)).thenReturn(Result.success(List.of(credential)));
 
         var result = credentialsVerifier.getVerifiedCredentials(DID_DOCUMENT);
 

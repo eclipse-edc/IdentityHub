@@ -16,6 +16,10 @@ package org.eclipse.edc.identityhub.credentials.jwt;
 
 public interface JwtCredentialConstants {
     
-    String DATA_FORMAT = "application/vc+jwt";
+    String VC_DATA_FORMAT = "application/vc+jwt";
+
+    String VP_DATA_FORMAT = "application/vp+ld+jwt";
     String VERIFIABLE_CREDENTIALS_KEY = "vc";
+
+    String VERIFIABLE_PRESENTATION_KEY = "vp";
 }

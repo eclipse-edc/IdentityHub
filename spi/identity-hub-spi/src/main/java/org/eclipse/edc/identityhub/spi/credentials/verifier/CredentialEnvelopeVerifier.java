@@ -19,10 +19,12 @@ import org.eclipse.edc.identityhub.spi.credentials.model.Credential;
 import org.eclipse.edc.identityhub.spi.credentials.model.CredentialEnvelope;
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.List;
+
 /**
  * Abstraction over the verification process on verifiable credential carried in a {@link CredentialEnvelope}
  */
 public interface CredentialEnvelopeVerifier<T extends CredentialEnvelope> {
 
-    Result<Credential> verify(T vc, DidDocument didDocument);
+    Result<List<Credential>> verify(T vc, DidDocument didDocument);
 }

@@ -25,6 +25,7 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -101,32 +102,31 @@ public class IdentityHubCredentialsVerifier implements CredentialsVerifier {
     private AggregatedResult<Map<String, Object>> verifyCredentials(Collection<CredentialEnvelope> verifiableCredentials, DidDocument didDocument) {
         var verifiedCredentialsResult = verifiableCredentials
                 .stream()
-                .map(credentials -> verifyCredential(credentials, didDocument))
+                .map(credentials -> extractVerifiedCredentials(credentials, didDocument))
                 .collect(partitioningBy(Result::succeeded));
 
-        var verifiedlCredentials = verifiedCredentialsResult.get(true)
+        var verifiedCredentials = verifiedCredentialsResult.get(true)
                 .stream()
-                .map(Result::getContent)
-                .collect(Collectors.toMap(Credential::getId, credential -> (Object) credential));
+                .flatMap(r -> r.getContent().stream())
+                .collect(Collectors.toMap(Credential::getId, Object.class::cast));
 
         var verifiedCredentialsFailure = verifiedCredentialsResult
                 .get(false)
                 .stream()
                 .map(Result::getFailureDetail)
-                .collect(Collectors.toList());
+                .toList();
 
-        return new AggregatedResult<>(verifiedlCredentials, verifiedCredentialsFailure);
-
+        return new AggregatedResult<>(verifiedCredentials, verifiedCredentialsFailure);
     }
 
 
-    private Result<Credential> verifyCredential(CredentialEnvelope verifiableCredentials, DidDocument didDocument) {
-        var verifier = credentialEnvelopeVerifierRegistry.resolve(verifiableCredentials.format());
+    private Result<List<Credential>> extractVerifiedCredentials(CredentialEnvelope envelope, DidDocument didDocument) {
+        var verifier = credentialEnvelopeVerifierRegistry.resolve(envelope.format());
 
         if (verifier == null) {
-            return Result.failure(format("Missing verifier for credentials with format %s", verifiableCredentials.format()));
+            return Result.failure(format("Missing verifier for credentials with format %s", envelope.format()));
         }
-        return verifier.verify(verifiableCredentials, didDocument);
+        return verifier.verify(envelope, didDocument);
     }
 
 

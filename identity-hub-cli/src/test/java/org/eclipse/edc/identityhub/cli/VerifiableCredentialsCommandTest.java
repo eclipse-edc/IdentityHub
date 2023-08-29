@@ -116,13 +116,15 @@ class VerifiableCredentialsCommandTest {
         // assert JWT signature
         assertThat(verifyVerifiableCredentialSignature(signedJwt)).isTrue();
 
-        var result = envelope.toVerifiableCredential(MAPPER);
+        var result = envelope.toVerifiableCredentials(MAPPER);
 
         assertThat(result.succeeded()).isTrue();
-        assertThat(result.getContent().getItem()).usingRecursiveComparison()
-                .ignoringFields("id")
-                .ignoringFields("issuanceDate")
-                .isEqualTo(CREDENTIAL1);
+        assertThat(result.getContent()).hasSize(1).anySatisfy(verifiableCredential ->
+                assertThat(verifiableCredential.getItem()).usingRecursiveComparison()
+                        .ignoringFields("id")
+                        .ignoringFields("issuanceDate")
+                        .isEqualTo(CREDENTIAL1));
+
     }
 
     @Test
