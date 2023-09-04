@@ -91,8 +91,9 @@ maven/mavencentral/commons-logging/commons-logging/1.1.1, Apache-2.0, approved, 
 maven/mavencentral/commons-logging/commons-logging/1.2, Apache-2.0, approved, CQ10162
 maven/mavencentral/dev.failsafe/failsafe-okhttp/3.3.2, Apache-2.0, approved, #9178
 maven/mavencentral/dev.failsafe/failsafe/3.3.2, Apache-2.0, approved, #9268
-maven/mavencentral/info.picocli/picocli-codegen/4.6.3, Apache-2.0, approved, clearlydefined
+maven/mavencentral/info.picocli/picocli-codegen/4.7.5, , restricted, clearlydefined
 maven/mavencentral/info.picocli/picocli/4.6.3, Apache-2.0, approved, clearlydefined
+maven/mavencentral/info.picocli/picocli/4.7.5, Apache-2.0, approved, #4365
 maven/mavencentral/io.github.classgraph/classgraph/4.8.138, MIT, approved, CQ22530
 maven/mavencentral/io.github.classgraph/classgraph/4.8.154, MIT, approved, CQ22530
 maven/mavencentral/io.netty/netty-buffer/4.1.86.Final, Apache-2.0, approved, CQ21842
