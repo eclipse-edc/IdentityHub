@@ -17,6 +17,8 @@ package org.eclipse.edc.identityhub.spi.credentials.model;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.List;
+
 /**
  * The {@link CredentialEnvelope} it's used to wrap an implementation of verifiable credential with a given format.
  */
@@ -33,6 +35,6 @@ public interface CredentialEnvelope {
      * @param mapper The json mapper.
      * @return The result of the conversion process
      */
+    Result<List<VerifiableCredential>> toVerifiableCredentials(ObjectMapper mapper);
 
-    Result<VerifiableCredential> toVerifiableCredential(ObjectMapper mapper);
 }

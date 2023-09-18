@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2022 Microsoft Corporation
+ *  Copyright (c) 2023 GAIA-X
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,7 +8,7 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Microsoft Corporation - initial API and implementation
+ *       GAIA-X - initial API and implementation
  *
  */
 
@@ -21,37 +21,36 @@ import org.eclipse.edc.spi.result.Result;
 
 import java.nio.charset.StandardCharsets;
 
-import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.VC_DATA_FORMAT;
+import static org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialConstants.VP_DATA_FORMAT;
 
-public class JwtCredentialEnvelopeTransformer implements CredentialEnvelopeTransformer<JwtCredentialEnvelope> {
+public class JwtPresentationEnvelopeTransformer implements CredentialEnvelopeTransformer<JwtPresentationEnvelope> {
 
     private final ObjectMapper mapper;
 
-    public JwtCredentialEnvelopeTransformer(ObjectMapper mapper) {
+    public JwtPresentationEnvelopeTransformer(ObjectMapper mapper) {
         this.mapper = mapper;
     }
 
     @Override
-    public Result<JwtCredentialEnvelope> parse(byte[] data) {
+    public Result<JwtPresentationEnvelope> parse(byte[] data) {
         try {
             var jwt = SignedJWT.parse(new String(data));
-            var envelope = new JwtCredentialEnvelope(jwt);
-            // verify that the VC can be properly build from the signed JWT.
+            var envelope = new JwtPresentationEnvelope(jwt);
             envelope.toVerifiableCredentials(mapper);
-            return Result.success(new JwtCredentialEnvelope(jwt));
+            return Result.success(envelope);
         } catch (Exception e) {
-            return Result.failure("Failed to parse Verifiable Credential: " + e.getMessage());
+            return Result.failure("Failed to parse Verifiable Presentation: " + e.getMessage());
         }
     }
 
     @Override
-    public Result<byte[]> serialize(JwtCredentialEnvelope envelope) {
+    public Result<byte[]> serialize(JwtPresentationEnvelope envelope) {
         return Result.success(envelope.getJwt().serialize().getBytes(StandardCharsets.UTF_8));
     }
 
 
     @Override
     public String dataFormat() {
-        return VC_DATA_FORMAT;
+        return VP_DATA_FORMAT;
     }
 }

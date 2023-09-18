@@ -43,5 +43,6 @@ public class JwtCredentialsExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         transformerRegistry.register(new JwtCredentialEnvelopeTransformer(typeManager.getMapper()));
+        transformerRegistry.register(new JwtPresentationEnvelopeTransformer(typeManager.getMapper()));
     }
 }

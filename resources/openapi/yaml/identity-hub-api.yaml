@@ -27,108 +27,86 @@ components:
   schemas:
     Descriptor:
       type: object
-      example: null
       properties:
         dataCid:
           type: string
           description: "[UNSUPPORTED] If data is available, this field should contain\
             \ stringified Version 1 CID of the DAG PB encoded data"
-          example: null
         dataFormat:
           type: string
           description: "if data is available, this field should contain a registered\
             \ IANA Media Type data format. Use 'application/vc+ldp' for Verifiable\
             \ Credentials."
-          example: null
         dateCreated:
           type: integer
           format: int64
           description: Unix epoch timestamp interpreted as the time the logical entry
             was created by the DID owner or another permitted party
-          example: null
         method:
           type: string
           description: A string that matches a Decentralized Web Node Interface method
-          example: null
         recordId:
           type: string
           description: Unique identifier of the record
-          example: null
     MessageRequestObject:
       type: object
-      example: null
       properties:
         data:
           type: array
           description: Optional base64Url encoded string of the message data
-          example: null
           items:
             type: string
             format: byte
             description: Optional base64Url encoded string of the message data
-            example: null
         descriptor:
           $ref: '#/components/schemas/Descriptor'
     MessageResponseObject:
       type: object
-      example: null
       properties:
         entries:
           type: array
           description: Resulting message entries returned from the invocation of the
             corresponding message as free form objects
-          example: null
           items:
             type: object
             description: Resulting message entries returned from the invocation of
               the corresponding message as free form objects
-            example: null
         status:
           $ref: '#/components/schemas/MessageStatus'
     MessageStatus:
       type: object
-      example: null
       properties:
         code:
           type: integer
           format: int32
           description: An integer set to the HTTP Status Code appropriate for the
             status of the response
-          example: null
         detail:
           type: string
           description: A string that describes a terse summary of the status
-          example: null
     RequestObject:
       type: object
-      example: null
       properties:
         messages:
           type: array
-          example: null
           items:
             $ref: '#/components/schemas/MessageRequestObject'
     RequestStatus:
       type: object
-      example: null
       properties:
         code:
           type: integer
           format: int32
           description: An integer set to the HTTP Status Code appropriate for the
             status of the response
-          example: null
         detail:
           type: string
           description: A string that describes a terse summary of the status
-          example: null
     ResponseObject:
       type: object
-      example: null
       properties:
         replies:
           type: array
-          example: null
           items:
             $ref: '#/components/schemas/MessageResponseObject'
         status:

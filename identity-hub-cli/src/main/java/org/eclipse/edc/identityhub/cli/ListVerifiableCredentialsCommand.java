@@ -22,6 +22,7 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
 
 import static java.util.stream.Collectors.toList;
@@ -46,12 +47,12 @@ class ListVerifiableCredentialsCommand implements Callable<Integer> {
             throw new CliException("Failed to get verifiable credentials: " + result.getFailureDetail());
         }
         var vcs = result.getContent().stream()
-                .map(envelope -> envelope.toVerifiableCredential(MAPPER))
+                .map(envelope -> envelope.toVerifiableCredentials(MAPPER))
                 .map(Result::getContent)
+                .flatMap(Collection::stream)
                 .collect(toList());
         MAPPER.writeValue(out, vcs);
         out.println();
         return 0;
     }
 }
-

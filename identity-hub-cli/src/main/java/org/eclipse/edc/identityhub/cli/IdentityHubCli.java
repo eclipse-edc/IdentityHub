@@ -21,6 +21,7 @@ import org.eclipse.edc.connector.core.base.EdcHttpClientImpl;
 import org.eclipse.edc.identityhub.client.IdentityHubClientImpl;
 import org.eclipse.edc.identityhub.client.spi.IdentityHubClient;
 import org.eclipse.edc.identityhub.credentials.jwt.JwtCredentialEnvelopeTransformer;
+import org.eclipse.edc.identityhub.credentials.jwt.JwtPresentationEnvelopeTransformer;
 import org.eclipse.edc.identityhub.spi.credentials.transformer.CredentialEnvelopeTransformerRegistryImpl;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -81,6 +82,7 @@ public class IdentityHubCli {
 
         var registry = new CredentialEnvelopeTransformerRegistryImpl();
         registry.register(new JwtCredentialEnvelopeTransformer(typeManager.getMapper()));
+        registry.register(new JwtPresentationEnvelopeTransformer(typeManager.getMapper()));
 
         identityHubClient = new IdentityHubClientImpl(client, typeManager, registry);
     }
