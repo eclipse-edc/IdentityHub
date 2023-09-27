@@ -19,14 +19,15 @@ The entire work package is too large to be done in one feature branch, so we wil
 To avoid potential conflicts with existing implementations (model classes, interfaces, etc.) the current state of the
 IdentityHub will be preserved in a separate branch.
 
-It's generally good practice to have the `main` branch reflect the most recent state of development, but there are
+It's generally just good practice to have the `main` branch reflect the most recent state of development, but there are
 other, more technical advantages as well:
 
 - some GitHub actions only run on the `main` branch
-- new workflows are only detected once they are on the `main` branch
+- dependabot only inspects the `main` branch
+- new workflows are only detected once they are available on the `main` branch
 - cloning the repo by default clones the `main` branch
-- creating PRs targets the `main` branch - that would constitute a significant potential of PRs that target the wrong
-  head branch
+- newly created PRs by default target the `main` branch. Doing ongoing dev work on any other branch would be a
+  significant risk of PRs targeting the wrong head branch. While it's not a big issue, it can be an annoying one.
 
 ## Approach
 
