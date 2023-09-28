@@ -48,8 +48,8 @@ Parses and validates tokens created by the STS:
   both STS and the IH are embedded in the connector, it could even short-circuit, and simply load the `KeyPairResource`.
   from storage. This must be abstracted out through a resolver or similar.
 - compares the request (=query) with the scopes in the token to see if it matches
-- validate other claims (`sub`, `aud`, `iss`, `jti`, `iat`...) _this will depend on the solution for
-  proof-of-possession_
+- validate other claims (`sub`, `aud`, `iss`, `jti`, `iat`...) depending on the implementation of the
+  proof-of-original-possession.
 
 ## Aggregate Services Module
 
