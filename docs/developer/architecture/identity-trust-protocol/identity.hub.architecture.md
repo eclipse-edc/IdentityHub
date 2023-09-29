@@ -20,7 +20,7 @@ three IH services (STS, CS, and DIDS) as a single unit, or separate them into in
 Two deployment topologies will be supported:
 
 1. **Embedded**: The Identity Hub can be embedded in an EDC control-plane runtime
-2. **Standalone**: The Identity HUb can be deployed as a single or clustered standalone runtime
+2. **Standalone**: The Identity Hub can be deployed as a single or clustered standalone runtime
 
 ## 1.4. Key Use Cases
 
