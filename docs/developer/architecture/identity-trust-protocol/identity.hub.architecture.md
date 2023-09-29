@@ -3,7 +3,7 @@
 An `Identity Hub` (IH) manages identity resources in a dataspace. Specifically, it provides two services:
 
 - **Credential Service (CS)**. The CS manages [Verifiable Credentials](https://www.w3.org/TR/vc-data-model/).
-  This includes read and write endpoints for Verifiable Presentations (VPs) and Verifiable Credentials (CS).
+  This includes read and write endpoints for Verifiable Presentations (VPs) and Verifiable Credentials (VCs).
 - **DID Service (DIDS)**. The DIDS is responsible for the creation, management and resolution of participant DIDs.
 
 ## 1.2. EDC Foundation
