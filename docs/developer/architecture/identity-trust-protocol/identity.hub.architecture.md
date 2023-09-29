@@ -4,7 +4,7 @@ An `Identity Hub` (IH) manages identity resources in a dataspace. Specifically, 
 
 - **Credential Service (CS)**. The CS manages [Verifiable Credentials](https://www.w3.org/TR/vc-data-model/).
   This includes read and write endpoints for Verifiable Presentations (VPs) and Verifiable Credentials (CS).
-- **DID Service (DIDS)**. The DCS is responsible for the creation, management and resolution of participant DIDs.
+- **DID Service (DIDS)**. The DIDS is responsible for the creation, management and resolution of participant DIDs.
 
 ## 1.2. EDC Foundation
 
@@ -35,7 +35,7 @@ Two deployment topologies will be supported:
 
 A participant context (PC) functions as a unit of management and control for `identity resources` in the Identity Hub.
 All resources are contained and accessed through a PC. Contexts are tied to the participant identity as defined in
-the [DSP specifications]() and created through the [IH Management API](#311-elevated-privilege-operations).
+the [DSP specifications](https://github.com/International-Data-Spaces-Association/ids-specification) and created through the [IH Management API](#311-elevated-privilege-operations).
 
 Access control for public client API endpoints is scoped to a specific PC. For example, an access token as defined in
 the [Base Identity Protocol specification]() is associated with a specific context and may not be used to access
