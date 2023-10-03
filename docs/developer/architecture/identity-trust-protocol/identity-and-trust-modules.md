@@ -1,6 +1,6 @@
 # Modules and services of the IdentityHub
 
-![module-overview](./identity-and-trust-modules.png)
+![module-overview](./identity.hub.modules.png)
 
 ## VC Module
 
