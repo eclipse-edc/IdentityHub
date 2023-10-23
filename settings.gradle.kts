@@ -22,19 +22,19 @@ dependencyResolutionManagement {
         mavenLocal()
     }
 }
-
-include(":core:identity-hub")
-include(":core:identity-hub-client")
-include(":core:identity-hub-credentials-verifier")
-include(":extensions:credentials:identity-hub-credentials-jwt")
-include(":extensions:identity-hub-api")
-include(":extensions:identity-hub-verifier-jwt")
-include(":extensions:self-description-api")
-include(":extensions:store:sql:identity-hub-store-sql")
-include(":identity-hub-cli")
-include(":launcher")
-include(":spi:identity-hub-client-spi")
+// SPI modules
 include(":spi:identity-hub-spi")
 include(":spi:identity-hub-store-spi")
-include(":system-tests")
+
+// core modules
+include(":core:identity-hub-api")
+
+
+// other modules
+include(":launcher")
+include(":e2e-tests")
 include(":version-catalog")
+include("core:identity-hub-transform")
+
+// test modules
+include(":e2e-tests:api-tests")

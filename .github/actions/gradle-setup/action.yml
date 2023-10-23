@@ -4,7 +4,7 @@ runs:
   using: "composite"
   steps:
     # Install Java and cache MVD Gradle build.
-    - uses: actions/setup-java@v2
+    - uses: actions/setup-java@v3
       with:
         java-version: '17'
         distribution: 'temurin'
