@@ -24,7 +24,10 @@ import static io.restassured.RestAssured.given;
 import static org.eclipse.edc.junit.testfixtures.TestUtils.getFreePort;
 import static org.eclipse.edc.spi.system.ServiceExtensionContext.PARTICIPANT_ID;
 
-public class IdentityHubParticipant {
+/**
+ * The IdentityHubRuntimeConfiguration class represents an IdentityHub Runtime configuration and provides various information, such as API endpoints
+ */
+public class IdentityHubRuntimeConfiguration {
 
     private Endpoint resolutionEndpoint;
     private String id;
@@ -48,10 +51,10 @@ public class IdentityHubParticipant {
     }
 
     public static final class Builder {
-        private final IdentityHubParticipant participant;
+        private final IdentityHubRuntimeConfiguration participant;
 
         private Builder() {
-            participant = new IdentityHubParticipant();
+            participant = new IdentityHubRuntimeConfiguration();
         }
 
         public static Builder newInstance() {
@@ -68,7 +71,7 @@ public class IdentityHubParticipant {
             return this;
         }
 
-        public IdentityHubParticipant build() {
+        public IdentityHubRuntimeConfiguration build() {
             participant.resolutionEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/v1/resolution"), Map.of());
             return participant;
         }

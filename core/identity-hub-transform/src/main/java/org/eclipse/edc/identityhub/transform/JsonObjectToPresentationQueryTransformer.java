@@ -27,6 +27,9 @@ import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Transforms a JsonObject into a PresentationQuery object.
+ */
 public class JsonObjectToPresentationQueryTransformer extends AbstractJsonLdTransformer<JsonObject, PresentationQuery> {
 
     private final ObjectMapper mapper;
@@ -41,16 +44,16 @@ public class JsonObjectToPresentationQueryTransformer extends AbstractJsonLdTran
         var bldr = PresentationQuery.Builder.newinstance();
         visitProperties(jsonObject, (k, v) -> {
             switch (k) {
-                case PresentationQuery.PRESENTATION_QUERY_DEFINITION_PROPERTY -> bldr.presentationDefinition(readPresentationDefinition(v));
+                case PresentationQuery.PRESENTATION_QUERY_DEFINITION_PROPERTY -> bldr.presentationDefinition(readPresentationDefinition(v, context));
                 case PresentationQuery.PRESENTATION_QUERY_SCOPE_PROPERTY -> transformArrayOrObject(v, Object.class, o -> bldr.scope(o.toString()), context);
-                default -> context.reportProblem("unknown property '%s'".formatted(k));
+                default -> context.reportProblem("Unknown property '%s'".formatted(k));
             }
         });
 
         return bldr.build();
     }
 
-    private PresentationDefinition readPresentationDefinition(JsonValue v) {
+    private PresentationDefinition readPresentationDefinition(JsonValue v, TransformerContext context) {
         JsonObject jo;
         if (v.getValueType() == JsonValue.ValueType.ARRAY && !((JsonArray) v).isEmpty()) {
             jo = v.asJsonArray().getJsonObject(0);
@@ -61,6 +64,7 @@ public class JsonObjectToPresentationQueryTransformer extends AbstractJsonLdTran
         try {
             return mapper.readValue(rawJson.toString(), PresentationDefinition.class);
         } catch (JsonProcessingException e) {
+            context.reportProblem("Error reading JSON literal: %s".formatted(e.getMessage()));
             return null;
         }
     }

@@ -51,8 +51,8 @@ public class PresentationApiController implements PresentationApi {
     private final PresentationGenerator presentationGenerator;
     private final Monitor monitor;
 
-    public PresentationApiController(JsonObjectValidatorRegistry validatorRegistry, TypeTransformerRegistry transformerRegistry, CredentialQueryResolver queryResolver, AccessTokenVerifier accessTokenVerifier,
-                                     PresentationGenerator presentationGenerator, Monitor monitor) {
+    public PresentationApiController(JsonObjectValidatorRegistry validatorRegistry, TypeTransformerRegistry transformerRegistry, CredentialQueryResolver queryResolver,
+                                     AccessTokenVerifier accessTokenVerifier, PresentationGenerator presentationGenerator, Monitor monitor) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
         this.queryResolver = queryResolver;

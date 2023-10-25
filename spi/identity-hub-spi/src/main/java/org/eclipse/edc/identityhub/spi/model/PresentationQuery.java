@@ -19,7 +19,8 @@ import org.eclipse.edc.identityhub.spi.model.presentationdefinition.Presentation
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_NAMESPACE;
+import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_PREFIX;
+
 
 /**
  * Represents a query that is sent to a CredentialService.
@@ -27,9 +28,9 @@ import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_NA
  * @see <a href="https://github.com/eclipse-tractusx/identity-trust/blob/main/specifications/M1/verifiable.presentation.protocol.md#411-query-for-presentations">IATP Specification</a>
  */
 public class PresentationQuery {
-    public static final String PRESENTATION_QUERY_SCOPE_PROPERTY = IATP_NAMESPACE + "scope";
-    public static final String PRESENTATION_QUERY_DEFINITION_PROPERTY = IATP_NAMESPACE + "presentation_definition";
-    public static final String PRESENTATION_QUERY_TYPE_PROPERTY = IATP_NAMESPACE + "Query";
+    public static final String PRESENTATION_QUERY_SCOPE_PROPERTY = IATP_PREFIX + "scope";
+    public static final String PRESENTATION_QUERY_DEFINITION_PROPERTY = IATP_PREFIX + "presentation_definition";
+    public static final String PRESENTATION_QUERY_TYPE_PROPERTY = IATP_PREFIX + "Query";
     private List<String> scopes = new ArrayList<>();
     private PresentationDefinition presentationDefinition;
 

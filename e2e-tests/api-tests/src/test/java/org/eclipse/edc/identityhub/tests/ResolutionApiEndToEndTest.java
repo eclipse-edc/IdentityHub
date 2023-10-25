@@ -21,7 +21,7 @@ import org.eclipse.edc.identityhub.spi.model.PresentationResponse;
 import org.eclipse.edc.identityhub.spi.model.PresentationSubmission;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
-import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubParticipant;
+import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguration;
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
@@ -61,7 +61,7 @@ public class ResolutionApiEndToEndTest {
               ]
             }
             """;
-    protected static final IdentityHubParticipant IDENTITY_HUB_PARTICIPANT = IdentityHubParticipant.Builder.newInstance()
+    protected static final IdentityHubRuntimeConfiguration IDENTITY_HUB_PARTICIPANT = IdentityHubRuntimeConfiguration.Builder.newInstance()
             .name("identity-hub")
             .id("identity-hub")
             .build();

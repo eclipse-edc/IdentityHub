@@ -15,5 +15,8 @@
 package org.eclipse.edc.identityhub.spi.model;
 
 public interface IdentityHubConstants {
-    String IATP_NAMESPACE = "https://w3id.org/tractusx-trust/v0.8/";
+    String IATP_PREFIX = "https://w3id.org/tractusx-trust/v0.8/";
+    String IATP_CONTEXT_URL = "https://w3id.org/tractusx-trust/v0.8";
+    String PRESENTATION_EXCHANGE_URL = "https://identity.foundation/presentation-exchange/submission/v1";
+
 }
