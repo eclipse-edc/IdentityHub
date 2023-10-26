@@ -14,23 +14,15 @@
 
 plugins {
     `java-library`
-    `java-test-fixtures`
     `maven-publish`
 }
 
-val swagger: String by project
-
 dependencies {
+    api(project(":spi:identity-hub-spi"))
+    api(libs.edc.spi.jsonld)
+    api(libs.edc.spi.transform)
 
-    api(libs.edc.spi.identitytrust)
-    implementation(libs.jackson.databind)
-    implementation(libs.nimbus.jwt)
-    implementation(libs.edc.spi.identity.did)
-
-    implementation(libs.swagger.jaxrs) {
-        exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
-    }
-
-    testFixturesImplementation(libs.nimbus.jwt)
-    testFixturesImplementation(libs.edc.spi.identity.did)
+    testImplementation(libs.edc.ext.jsonld)
+    testImplementation(libs.edc.core.transform)
+    testImplementation(libs.edc.junit)
 }

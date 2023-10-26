@@ -19,13 +19,13 @@ plugins {
 }
 
 dependencies {
-    runtimeOnly(project(":core:identity-hub"))
-    runtimeOnly(project(":core:identity-hub-credentials-verifier"))
-    runtimeOnly(project(":extensions:identity-hub-api"))
-    runtimeOnly(project(":extensions:self-description-api"))
+    runtimeOnly(project(":core:identity-hub-api"))
+//    runtimeOnly(project(":core:identity-hub-credentials-verifier"))
+//    runtimeOnly(project(":extensions:identity-hub-api"))
+//    runtimeOnly(project(":extensions:self-description-api"))
     runtimeOnly(libs.bundles.connector)
-    runtimeOnly(libs.edc.ext.identity.did.core)
-    runtimeOnly(libs.edc.ext.identity.did.web)
+//    runtimeOnly(libs.edc.ext.identity.did.core)
+//    runtimeOnly(libs.edc.ext.identity.did.web)
 }
 
 application {

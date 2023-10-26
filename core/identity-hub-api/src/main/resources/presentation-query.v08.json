@@ -1,0 +1,12 @@
+{
+  "@context": {
+    "scope": {
+      "@id": "https://w3id.org/tractusx-trust/v0.8/scope",
+      "@container": "@set"
+    },
+    "presentation_definition":{
+      "@id": "https://w3id.org/tractusx-trust/v0.8/presentation_definition",
+      "@type": "@json"
+    }
+  }
+}

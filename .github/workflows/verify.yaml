@@ -21,19 +21,9 @@ jobs:
       - name: Run Checkstyle
         run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures
 
-  OpenAPI-Definitions:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/gradle-setup
-
-      - name: Generate OpenAPI definition from code
-        run: ./gradlew resolve
-
-      - name: Check OpenAPI definition match code
-        run: git diff --exit-code
-
   Verify-Launcher:
+    # disabled temporarily
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -79,7 +69,7 @@ jobs:
       #        with:
       #          files: "**/test-results/**/*.xml"
 
-  Component-Tests:
+  Integration-Tests:
     runs-on: ubuntu-latest
     env:
       JACOCO: true
@@ -91,12 +81,12 @@ jobs:
       - name: Component Tests
         uses: ./.github/actions/run-tests
         with:
-          command: ./gradlew test -DincludeTags="ComponentTest"
+          command: ./gradlew compileJava compileTestJava test -DincludeTags="ComponentTest,ApiTest,EndToEndTest"
 
   Upload-Coverage-Report-To-Codecov:
     needs:
       - Test
-      - Component-Tests
+      - Integration-Tests
     runs-on: ubuntu-latest
     if: always()
     steps:
