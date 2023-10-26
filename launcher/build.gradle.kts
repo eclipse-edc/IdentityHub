@@ -20,12 +20,10 @@ plugins {
 
 dependencies {
     runtimeOnly(project(":core:identity-hub-api"))
-//    runtimeOnly(project(":core:identity-hub-credentials-verifier"))
-//    runtimeOnly(project(":extensions:identity-hub-api"))
-//    runtimeOnly(project(":extensions:self-description-api"))
+    runtimeOnly(project(":core:identity-hub-core"))
+    runtimeOnly(project(":extensions:cryptography:public-key-provider"))
+    runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.bundles.connector)
-//    runtimeOnly(libs.edc.ext.identity.did.core)
-//    runtimeOnly(libs.edc.ext.identity.did.web)
 }
 
 application {
