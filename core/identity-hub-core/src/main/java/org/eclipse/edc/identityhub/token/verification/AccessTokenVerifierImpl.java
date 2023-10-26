@@ -84,7 +84,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
             var atSub = accessTokenClaims.getSubject();
 
             // correlate sub and access_token.sub
-            if (!correlate(claimToken.getStringClaim("sub"), atSub)) {
+            if (!Objects.equals(claimToken.getStringClaim("sub"), atSub)) {
                 return failure("ID token 'sub' claim is not equal to '%s.sub' claim.".formatted(ACCES_TOKEN_CLAIM));
             }
 
@@ -99,11 +99,5 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         } catch (JOSEException e) {
             return failure("Could not verify %s with STS public key: %s".formatted(ACCES_TOKEN_CLAIM, e.getMessage()));
         }
-    }
-
-    private boolean correlate(String sub, String accessTokenSub) {
-        // todo: make this overridable (and bit more generic), so that cases, where the DID is different from the participant ID
-        //  can be handled in a flexible way, because then access_token.sub != sub
-        return Objects.equals(sub, accessTokenSub);
     }
 }

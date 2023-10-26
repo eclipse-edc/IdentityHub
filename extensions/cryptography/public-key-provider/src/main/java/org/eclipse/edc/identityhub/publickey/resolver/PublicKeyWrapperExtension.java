@@ -37,6 +37,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 
+/**
+ * This extension reads a public key either from a {@link Vault} or from a file located on the file system, and
+ * attempts to interpret the contents either as PEM or as JWK (JSON).
+ * If either no secret alias or file path is configured, or if the contents are neither PEM nor JWK, an {@link EdcException} is thrown.
+ */
 @Extension(value = "PublicKey Provider extension")
 public class PublicKeyWrapperExtension implements ServiceExtension {
 
@@ -101,7 +106,7 @@ public class PublicKeyWrapperExtension implements ServiceExtension {
      */
     private PublicKeyWrapper parseRawPublicKey(String raw) {
         try {
-            if (isJwk(raw)) {
+            if (isJson(raw)) {
                 return jwkToPublicKey(JWK.parse(raw));
             } else {
                 return jwkToPublicKey(JWK.parseFromPEMEncodedObjects(raw));
@@ -112,12 +117,12 @@ public class PublicKeyWrapperExtension implements ServiceExtension {
     }
 
     /**
-     * Checks if the given raw string represents a JWK (JSON Web Key).
+     * Checks if the given raw string represents a JSON structure.
      *
      * @param raw The raw string to be checked.
-     * @return true if the raw string is a valid JWK, false otherwise.
+     * @return true if the raw string is a valid JSON object, false otherwise.
      */
-    private boolean isJwk(String raw) {
+    private boolean isJson(String raw) {
         try (var parser = new ObjectMapper().createParser(raw)) {
             parser.nextToken();
             return true;

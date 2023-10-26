@@ -29,6 +29,14 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.verification.jwt.SelfIssuedIdTokenVerifier;
 
+/**
+ * This extension provides some core services for the IdentityHub, such as:
+ * <ul>
+ *     <li>an {@link AccessTokenVerifier}</li>
+ *     <li>a {@link JwtValidator}</li>
+ *     <li>a {@link JwtVerifier}</li>
+ * </ul>
+ */
 @Extension(value = "Core Services extension")
 public class CoreServicesExtension implements ServiceExtension {
 
@@ -41,11 +49,11 @@ public class CoreServicesExtension implements ServiceExtension {
     private DidResolverRegistry didResolverRegistry;
 
     @Inject
-    private PublicKeyWrapper stsPublicKey;
+    private PublicKeyWrapper identityHubPublicKey;
 
     @Provider
     public AccessTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
-        return new AccessTokenVerifierImpl(getJwtVerifier(), getJwtValidator(), getOwnDid(context), stsPublicKey);
+        return new AccessTokenVerifierImpl(getJwtVerifier(), getJwtValidator(), getOwnDid(context), identityHubPublicKey);
     }
 
     @Provider
