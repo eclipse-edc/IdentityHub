@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.tests;
 
-import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identityhub.spi.model.InputDescriptorMapping;
 import org.eclipse.edc.identityhub.spi.model.PresentationResponse;
@@ -29,14 +29,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentMatchers;
 
-import java.sql.Date;
-import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
-import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
+import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.generateSiToken;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
@@ -69,7 +66,7 @@ public class ResolutionApiEndToEndTest {
     private static final CredentialQueryResolver CREDENTIAL_QUERY_RESOLVER = mock();
     private static final PresentationGenerator PRESENTATION_GENERATOR = mock();
     private static final AccessTokenVerifier ACCESS_TOKEN_VERIFIER = mock();
-
+    
     @RegisterExtension
     static EdcRuntimeExtension runtime;
 
@@ -79,6 +76,9 @@ public class ResolutionApiEndToEndTest {
         runtime.registerServiceMock(PresentationGenerator.class, PRESENTATION_GENERATOR);
         runtime.registerServiceMock(AccessTokenVerifier.class, ACCESS_TOKEN_VERIFIER);
     }
+
+    private final ECKey consumerKey = generateEcKey();
+    private final ECKey providerKey = generateEcKey();
 
     @Test
     void query_tokenNotPresent_shouldReturn401() {
@@ -103,7 +103,7 @@ public class ResolutionApiEndToEndTest {
                 """;
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
-                .header(AUTHORIZATION, generateJwt())
+                .header(AUTHORIZATION, generateSiToken())
                 .body(query)
                 .post("/presentation/query")
                 .then()
@@ -127,7 +127,7 @@ public class ResolutionApiEndToEndTest {
                 """;
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
-                .header(AUTHORIZATION, generateJwt())
+                .header(AUTHORIZATION, generateSiToken())
                 .body(query)
                 .post("/presentation/query")
                 .then()
@@ -138,7 +138,7 @@ public class ResolutionApiEndToEndTest {
 
     @Test
     void query_tokenVerificationFails_shouldReturn401() {
-        var token = generateJwt();
+        var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(failure("token not verified"));
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
@@ -154,7 +154,7 @@ public class ResolutionApiEndToEndTest {
 
     @Test
     void query_queryResolutionFails_shouldReturn403() {
-        var token = generateJwt();
+        var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(failure("scope mismatch!"));
 
@@ -172,7 +172,7 @@ public class ResolutionApiEndToEndTest {
 
     @Test
     void query_presentationGenerationFails_shouldReturn500() {
-        var token = generateJwt();
+        var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(success(List.of()));
         when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null))).thenReturn(failure("generator test error"));
@@ -189,7 +189,7 @@ public class ResolutionApiEndToEndTest {
 
     @Test
     void query_success() {
-        var token = generateJwt();
+        var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(success(List.of()));
         when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null))).thenReturn(success(createPresentationResponse()));
@@ -211,15 +211,5 @@ public class ResolutionApiEndToEndTest {
         return new PresentationResponse(TestData.VP_EXAMPLE, submission);
     }
 
-    private String generateJwt() {
-        var ecKey = generateEcKey();
-        var jwt = buildSignedJwt(new JWTClaimsSet.Builder().audience("test-audience")
-                .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
-                .issuer("test-issuer")
-                .subject("test-subject")
-                .jwtID(UUID.randomUUID().toString()).build(), ecKey);
-
-        return jwt.serialize();
-    }
 
 }

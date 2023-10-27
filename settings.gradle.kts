@@ -28,13 +28,16 @@ include(":spi:identity-hub-store-spi")
 
 // core modules
 include(":core:identity-hub-api")
+include(":core:identity-hub-transform")
+include(":core:identity-hub-core")
 
+// extension modules
+include(":extensions:cryptography:public-key-provider")
 
 // other modules
 include(":launcher")
-include(":e2e-tests")
 include(":version-catalog")
-include("core:identity-hub-transform")
 
 // test modules
+include(":e2e-tests")
 include(":e2e-tests:api-tests")
