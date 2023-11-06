@@ -14,8 +14,11 @@
 
 package org.eclipse.edc.identityservice.api.validation;
 
+import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 import org.eclipse.edc.identityhub.spi.model.PresentationQuery;
+import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
 
@@ -30,18 +33,37 @@ import static org.eclipse.edc.validator.spi.Violation.violation;
 public class PresentationQueryValidator implements Validator<JsonObject> {
     @Override
     public ValidationResult validate(JsonObject input) {
+        if (input == null) {
+            return failure(violation("Presentation query was null", "."));
+        }
         var scope = input.get(PresentationQuery.PRESENTATION_QUERY_SCOPE_PROPERTY);
 
         var presentationDef = input.get(PresentationQuery.PRESENTATION_QUERY_DEFINITION_PROPERTY);
 
-        if (scope == null && presentationDef == null) {
+        if (isNullObject(scope) && isNullObject(presentationDef)) {
             return failure(violation("Must contain either a 'scope' or a 'presentationDefinition' property.", null));
         }
 
-        if (scope != null && presentationDef != null) {
+        if (!isNullObject(scope) && !isNullObject(presentationDef)) {
             return failure(violation("Must contain either a 'scope' or a 'presentationDefinition', not both.", null));
         }
 
         return success();
+    }
+
+    /**
+     * Checks if the given JsonValue object is the Null-Object. Due to JSON-LD expansion, a {@code "presentation_query": null}
+     * would get expanded to an array, thus a simple equals-null check is not sufficient.
+     *
+     * @param value the JsonValue to check
+     * @return true if the JsonValue object is either null, or its value type is NULL, false otherwise
+     */
+    private boolean isNullObject(JsonValue value) {
+        if (value instanceof JsonArray) {
+            value = ((JsonArray) value).get(0).asJsonObject().get(JsonLdKeywords.VALUE);
+
+            return value.getValueType() == JsonValue.ValueType.NULL;
+        }
+        return value == null;
     }
 }
