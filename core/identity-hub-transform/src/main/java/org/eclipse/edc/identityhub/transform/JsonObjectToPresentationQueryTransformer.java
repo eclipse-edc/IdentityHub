@@ -60,7 +60,7 @@ public class JsonObjectToPresentationQueryTransformer extends AbstractJsonLdTran
         } else {
             jo = v.asJsonObject();
         }
-        var rawJson = jo.getJsonObject(JsonLdKeywords.VALUE);
+        var rawJson = jo.get(JsonLdKeywords.VALUE);
         try {
             return mapper.readValue(rawJson.toString(), PresentationDefinition.class);
         } catch (JsonProcessingException e) {

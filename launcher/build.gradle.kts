@@ -23,6 +23,7 @@ dependencies {
     runtimeOnly(project(":core:identity-hub-core"))
     runtimeOnly(project(":extensions:cryptography:public-key-provider"))
     runtimeOnly(libs.edc.identity.did.core)
+    runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.bundles.connector)
 }
 
