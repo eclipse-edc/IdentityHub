@@ -29,7 +29,7 @@ import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_PR
  */
 public class PresentationQuery {
     public static final String PRESENTATION_QUERY_SCOPE_PROPERTY = IATP_PREFIX + "scope";
-    public static final String PRESENTATION_QUERY_DEFINITION_PROPERTY = IATP_PREFIX + "presentation_definition";
+    public static final String PRESENTATION_QUERY_DEFINITION_PROPERTY = IATP_PREFIX + "presentationDefinition";
     public static final String PRESENTATION_QUERY_TYPE_PROPERTY = IATP_PREFIX + "Query";
     private List<String> scopes = new ArrayList<>();
     private PresentationDefinition presentationDefinition;

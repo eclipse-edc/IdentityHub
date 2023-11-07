@@ -34,10 +34,6 @@ import org.eclipse.edc.web.jersey.jsonld.JerseyJsonLdInterceptor;
 import org.eclipse.edc.web.jersey.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
-import java.net.URISyntaxException;
-
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_CONTEXT_URL;
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.spi.CoreConstants.JSON_LD;
 
 @Extension(value = "Presentation API Extension")
@@ -45,8 +41,7 @@ public class PresentationApiExtension implements ServiceExtension {
 
     public static final String RESOLUTION_SCOPE = "resolution-scope";
     public static final String RESOLUTION_CONTEXT = "resolution";
-    public static final String PRESENTATION_EXCHANGE_V_1_JSON = "presentation-exchange.v1.json";
-    public static final String PRESENTATION_QUERY_V_08_JSON = "presentation-query.v08.json";
+
     @Inject
     private TypeTransformerRegistry typeTransformer;
 
@@ -77,8 +72,6 @@ public class PresentationApiExtension implements ServiceExtension {
         validatorRegistry.register(PresentationQuery.PRESENTATION_QUERY_TYPE_PROPERTY, new PresentationQueryValidator());
 
 
-        // Setup API
-        cacheContextDocuments(getClass().getClassLoader());
         var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, accessTokenVerifier, presentationGenerator, context.getMonitor());
 
         var jsonLdMapper = typeManager.getMapper(JSON_LD);
@@ -91,12 +84,5 @@ public class PresentationApiExtension implements ServiceExtension {
         typeTransformer.register(new JsonValueToGenericTypeTransformer(jsonLdMapper));
     }
 
-    private void cacheContextDocuments(ClassLoader classLoader) {
-        try {
-            jsonLd.registerCachedDocument(PRESENTATION_EXCHANGE_URL, classLoader.getResource(PRESENTATION_EXCHANGE_V_1_JSON).toURI());
-            jsonLd.registerCachedDocument(IATP_CONTEXT_URL, classLoader.getResource(PRESENTATION_QUERY_V_08_JSON).toURI());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
+
 }

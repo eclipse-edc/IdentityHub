@@ -49,7 +49,7 @@ public interface ApiSchema {
             String type,
             @Schema(name = "scope", requiredMode = NOT_REQUIRED)
             List<String> scope,
-            @Schema(name = "presentation_definition", requiredMode = NOT_REQUIRED)
+            @Schema(name = "presentationDefinition", requiredMode = NOT_REQUIRED)
             PresentationDefinitionSchema presentationDefinitionSchema
     ) {
 
@@ -60,7 +60,7 @@ public interface ApiSchema {
                     "https://identity.foundation/presentation-exchange/submission/v1"
                   ],
                   "@type": "Query",
-                  "presentation_definition": null,
+                  "presentationDefinition": null,
                   "scope": [
                     "org.eclipse.edc.vc.type:SomeCredential_0.3.5:write,
                     "org.eclipse.edc.vc.type:SomeOtherCredential:read,
@@ -83,7 +83,7 @@ public interface ApiSchema {
         private static final String EXAMPLE = """
                 {
                   "comment": "taken from https://identity.foundation/presentation-exchange/spec/v2.0.0/#presentation-definition"
-                  "presentation_definition": {
+                  "presentationDefinition": {
                     "id": "first simple example",
                     "input_descriptors": [
                       {
