@@ -86,7 +86,7 @@ class JsonObjectToPresentationQueryTransformerTest {
                     "https://w3id.org/tractusx-trust/v0.8"
                   ],
                   "@type": "Query",
-                   "presentation_definition": {
+                   "presentationDefinition": {
                        "id": "first simple example",
                        "input_descriptors": [
                          {
@@ -135,7 +135,7 @@ class JsonObjectToPresentationQueryTransformerTest {
                   ],
                   "@type": "Query",
                   "scope": ["test-scope1"],
-                   "presentation_definition": {
+                   "presentationDefinition": {
                        "id": "first simple example",
                        "input_descriptors": [
                          {

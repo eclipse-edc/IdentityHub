@@ -66,7 +66,7 @@ public class ResolutionApiEndToEndTest {
     private static final CredentialQueryResolver CREDENTIAL_QUERY_RESOLVER = mock();
     private static final PresentationGenerator PRESENTATION_GENERATOR = mock();
     private static final AccessTokenVerifier ACCESS_TOKEN_VERIFIER = mock();
-    
+
     @RegisterExtension
     static EdcRuntimeExtension runtime;
 
@@ -121,7 +121,7 @@ public class ResolutionApiEndToEndTest {
                     "https://w3id.org/tractusx-trust/v0.8"
                   ],
                   "@type": "Query",
-                  "presentation_definition":{
+                  "presentationDefinition":{
                   }
                 }
                 """;

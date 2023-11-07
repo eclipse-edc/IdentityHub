@@ -25,7 +25,7 @@ import static org.eclipse.edc.validator.spi.Violation.violation;
 
 /**
  * Validates, that a JsonObject representing a {@link PresentationQuery} contains <em>either</em> a {@code scope} property,
- * <em>or</em> a {@code presentation_definition} query.
+ * <em>or</em> a {@code presentationDefinition} query.
  */
 public class PresentationQueryValidator implements Validator<JsonObject> {
     @Override
@@ -35,11 +35,11 @@ public class PresentationQueryValidator implements Validator<JsonObject> {
         var presentationDef = input.get(PresentationQuery.PRESENTATION_QUERY_DEFINITION_PROPERTY);
 
         if (scope == null && presentationDef == null) {
-            return failure(violation("Must contain either a 'scope' or a 'presentation_definition' property.", null));
+            return failure(violation("Must contain either a 'scope' or a 'presentationDefinition' property.", null));
         }
 
         if (scope != null && presentationDef != null) {
-            return failure(violation("Must contain either a 'scope' or a 'presentation_definition', not both.", null));
+            return failure(violation("Must contain either a 'scope' or a 'presentationDefinition', not both.", null));
         }
 
         return success();

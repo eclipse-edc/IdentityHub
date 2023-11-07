@@ -70,7 +70,7 @@ class PresentationQueryValidatorTest {
     @Test
     void validate_withNone_fails() {
         var jo = createObjectBuilder().build();
-        assertThat(validator.validate(jo)).isFailed().detail().contains("Must contain either a 'scope' or a 'presentation_definition' property.");
+        assertThat(validator.validate(jo)).isFailed().detail().contains("Must contain either a 'scope' or a 'presentationDefinition' property.");
     }
 
     @Test
@@ -84,7 +84,7 @@ class PresentationQueryValidatorTest {
                 .add(PresentationQuery.PRESENTATION_QUERY_DEFINITION_PROPERTY, createPresentationDefArray(presDef))
                 .build();
 
-        assertThat(validator.validate(jo)).isFailed().detail().contains("Must contain either a 'scope' or a 'presentation_definition', not both.");
+        assertThat(validator.validate(jo)).isFailed().detail().contains("Must contain either a 'scope' or a 'presentationDefinition', not both.");
     }
 
     private JsonArray createScopeArray() {

@@ -49,14 +49,14 @@ public interface PresentationApi {
             responses = {
                     @ApiResponse(responseCode = "200", description = "The query was successfully processed, the response contains the VerifiablePresentation",
                             content = @Content(schema = @Schema(implementation = PresentationResponse.class), mediaType = "application/ld+json")),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, for example when both scope and presentation_definition are given",
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, for example when both scope and presentationDefinition are given",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetailSchema.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "No Authorization header was given.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetailSchema.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "403", description = "The given authentication token could not be validated. This can happen, when the request body " +
                             "calls for a broader query scope than the granted scope in the auth token",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetailSchema.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "501", description = "When the request contained a presentation_definition object, but the implementation does not support it.",
+                    @ApiResponse(responseCode = "501", description = "When the request contained a presentationDefinition object, but the implementation does not support it.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetailSchema.class)), mediaType = "application/json"))
             }
     )
