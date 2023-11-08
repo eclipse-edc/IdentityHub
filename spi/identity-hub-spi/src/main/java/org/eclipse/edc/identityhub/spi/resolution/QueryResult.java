@@ -19,16 +19,16 @@ import org.eclipse.edc.spi.result.AbstractResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.identityhub.spi.resolution.QueryFailure.Reason.INVALID_SCOPE;
-import static org.eclipse.edc.identityhub.spi.resolution.QueryFailure.Reason.OTHER;
 import static org.eclipse.edc.identityhub.spi.resolution.QueryFailure.Reason.STORAGE_FAILURE;
 import static org.eclipse.edc.identityhub.spi.resolution.QueryFailure.Reason.UNAUTHORIZED_SCOPE;
 
-
+/**
+ * Represents a query executed by the {@link CredentialQueryResolver}
+ */
 public class QueryResult extends AbstractResult<Stream<VerifiableCredentialContainer>, QueryFailure, QueryResult> {
     protected QueryResult(Stream<VerifiableCredentialContainer> content, QueryFailure failure) {
         super(content, failure);
@@ -46,26 +46,37 @@ public class QueryResult extends AbstractResult<Stream<VerifiableCredentialConta
         return (R1) new QueryResult(null, failure);
     }
 
-    public static QueryResult other(String... message) {
-        return new QueryResult(null, new QueryFailure(Arrays.asList(message), OTHER));
-    }
-
+    /**
+     * The query failed because no scope string was found
+     */
     public static QueryResult noScopeFound(String message) {
         return new QueryResult(null, new QueryFailure(List.of(message), INVALID_SCOPE));
     }
 
+    /**
+     * The query failed because the credential storage reported an error
+     */
     public static QueryResult storageFailure(List<String> failureMessages) {
         return new QueryResult(null, new QueryFailure(failureMessages, STORAGE_FAILURE));
     }
 
+    /**
+     * The query failed, because the scope string was not valid (format, allowed values, etc.)
+     */
     public static QueryResult invalidScope(List<String> failureMessages) {
         return new QueryResult(null, new QueryFailure(failureMessages, INVALID_SCOPE));
     }
 
+    /**
+     * The query failed because the query is unauthorized, e.g. by insufficiently broad scopes
+     */
     public static QueryResult unauthorized(String failureMessage) {
         return new QueryResult(null, new QueryFailure(List.of(failureMessage), UNAUTHORIZED_SCOPE));
     }
 
+    /**
+     * Query successful. List of credentials is in the content.
+     */
     public static QueryResult success(Stream<VerifiableCredentialContainer> credentials) {
         return new QueryResult(credentials, null);
     }
