@@ -35,9 +35,7 @@ import static org.eclipse.edc.spi.result.Result.success;
 
 public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
-
     private final CredentialStore credentialStore;
-
     private final ScopeToCriterionTransformer scopeTransformer;
 
     public CredentialQueryResolverImpl(CredentialStore credentialStore, ScopeToCriterionTransformer scopeTransformer) {
@@ -104,8 +102,15 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         };
     }
 
-    private Result<List<Criterion>> parseScopes(List<String> query) {
-        var transformResult = query.stream()
+    /**
+     * Parses a list of scope strings, converts them to {@link Criterion} objects, and returns a {@link Result} containing
+     * the list of converted criteria. If any scope string fails to be converted, a failure result is returned.
+     *
+     * @param scopes The list of scope strings to parse and convert.
+     * @return A {@link Result} containing the list of converted {@link Criterion} objects.
+     */
+    private Result<List<Criterion>> parseScopes(List<String> scopes) {
+        var transformResult = scopes.stream()
                 .map(scopeTransformer::transform)
                 .toList();
 

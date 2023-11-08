@@ -98,7 +98,7 @@ public class CoreServicesExtension implements ServiceExtension {
     }
 
     @Provider
-    public CredentialQueryResolver createCredentialQueryResolver(ServiceExtensionContext context) {
+    public CredentialQueryResolver createCredentialQueryResolver() {
         return new CredentialQueryResolverImpl(credentialStore, transformer);
     }
 
