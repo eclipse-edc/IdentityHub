@@ -23,13 +23,14 @@ import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguration;
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
-import org.eclipse.edc.junit.annotations.EndToEndTest;
+import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentMatchers;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -44,8 +45,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@EndToEndTest
-public class ResolutionApiEndToEndTest {
+@ComponentTest
+public class ResolutionApiComponentTest {
     public static final String VALID_QUERY_WITH_SCOPE = """
             {
               "@context": [
@@ -174,7 +175,7 @@ public class ResolutionApiEndToEndTest {
     void query_presentationGenerationFails_shouldReturn500() {
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
-        when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(success(List.of()));
+        when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(success(Stream.empty()));
         when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null))).thenReturn(failure("generator test error"));
 
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
@@ -191,7 +192,7 @@ public class ResolutionApiEndToEndTest {
     void query_success() {
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
-        when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(success(List.of()));
+        when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(success(Stream.empty()));
         when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null))).thenReturn(success(createPresentationResponse()));
 
         var resp = IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()

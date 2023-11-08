@@ -41,6 +41,7 @@ import java.sql.Date;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static jakarta.json.Json.createObjectBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -148,7 +149,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
-        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(Result.success(List.of()));
+        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(Result.success(Stream.empty()));
 
         when(generator.createPresentation(anyList(), any())).thenReturn(Result.failure("test-failure"));
 
@@ -163,7 +164,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
-        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(Result.success(List.of()));
+        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(Result.success(Stream.empty()));
 
         var pres = new PresentationResponse(generateJwt(), new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("id", "ldp_vp", "$.verifiableCredentials[0]"))));
         when(generator.createPresentation(anyList(), any())).thenReturn(Result.success(pres));
