@@ -17,6 +17,8 @@ package org.eclipse.edc.identityhub.core;
 import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.identitytrust.validation.SelfIssuedIdTokenValidator;
+import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
+import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identityhub.token.verification.AccessTokenVerifierImpl;
 import org.eclipse.edc.identitytrust.validation.JwtValidator;
@@ -61,6 +63,9 @@ public class CoreServicesExtension implements ServiceExtension {
     @Inject
     private JsonLd jsonLd;
 
+    @Inject
+    private CredentialStore credentialStore;
+
     @Override
     public void initialize(ServiceExtensionContext context) {
         // Setup API
@@ -86,6 +91,11 @@ public class CoreServicesExtension implements ServiceExtension {
             jwtVerifier = new SelfIssuedIdTokenVerifier(didResolverRegistry);
         }
         return jwtVerifier;
+    }
+
+    @Provider
+    public CredentialQueryResolver createCredentialQueryResolver(ServiceExtensionContext context) {
+        return new CredentialQueryResolverImpl(credentialStore);
     }
 
     private String getOwnDid(ServiceExtensionContext context) {

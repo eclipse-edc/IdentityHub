@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub;
 
 import org.eclipse.edc.identityhub.defaults.InMemoryCredentialStore;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
-import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -29,12 +28,6 @@ public class DefaultServicesExtension implements ServiceExtension {
     public CredentialStore createInMemStore() {
         return new InMemoryCredentialStore();
 
-    }
-
-    @Provider(isDefault = true)
-    public CredentialQueryResolver createCredentialResolver(ServiceExtensionContext context) {
-        context.getMonitor().warning("  #### Creating a default NOOP CredentialQueryResolver, that will always return 'null'!");
-        return (query, issuerScopes) -> null;
     }
 
     @Provider(isDefault = true)
