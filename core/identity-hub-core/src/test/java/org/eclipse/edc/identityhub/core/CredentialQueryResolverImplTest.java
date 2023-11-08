@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.core;
 
 import org.eclipse.edc.identityhub.spi.model.PresentationQuery;
 import org.eclipse.edc.identityhub.spi.model.presentationdefinition.PresentationDefinition;
+import org.eclipse.edc.identityhub.spi.resolution.QueryFailure;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
@@ -61,6 +62,7 @@ class CredentialQueryResolverImplTest {
         when(storeMock.query(any())).thenReturn(success(Stream.empty()));
         var res = resolver.query(createPresentationQuery(), List.of("foobar"));
         assertThat(res.succeeded()).isFalse();
+        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
         assertThat(res.getFailureDetail()).contains("Invalid query: must contain at least one scope.");
     }
 
@@ -70,6 +72,7 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(createPresentationQuery("invalid"),
                 List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
         assertThat(res.failed()).isTrue();
+        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
         assertThat(res.getFailureDetail()).isEqualTo("Scope string has invalid format.");
     }
 
@@ -77,6 +80,7 @@ class CredentialQueryResolverImplTest {
     void query_scopeStringHasWrongOperator_shouldReturnFailure() {
         var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:write"), List.of("ignored"));
         assertThat(res.failed()).isTrue();
+        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
         assertThat(res.getFailureDetail()).isEqualTo("Invalid scope operation: write");
     }
 
@@ -122,6 +126,7 @@ class CredentialQueryResolverImplTest {
                 List.of("org.eclipse.edc.vc.type:TestCredential:read"));
 
         assertThat(res.failed()).isTrue();
+        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
         assertThat(res.getFailureDetail()).isEqualTo("Invalid query: requested Credentials outside of scope.");
     }
 
@@ -158,6 +163,7 @@ class CredentialQueryResolverImplTest {
                 List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
 
         assertThat(res.failed()).isTrue();
+        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
         assertThat(res.getFailureDetail()).isEqualTo("Invalid query: requested Credentials outside of scope.");
     }
 
@@ -170,6 +176,7 @@ class CredentialQueryResolverImplTest {
                 List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
 
         assertThat(res.failed()).isTrue();
+        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.STORAGE_FAILURE);
         assertThat(res.getFailureDetail()).isEqualTo("test-failure");
     }
 

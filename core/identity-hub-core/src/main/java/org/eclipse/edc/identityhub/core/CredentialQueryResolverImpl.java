@@ -16,19 +16,17 @@ package org.eclipse.edc.identityhub.core;
 
 import org.eclipse.edc.identityhub.spi.model.PresentationQuery;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
+import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource;
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
@@ -45,27 +43,27 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
     }
 
     @Override
-    public Result<Stream<VerifiableCredentialContainer>> query(PresentationQuery query, List<String> issuerScopes) {
+    public QueryResult query(PresentationQuery query, List<String> issuerScopes) {
         if (query.getPresentationDefinition() != null) {
             throw new UnsupportedOperationException("Querying with a DIF Presentation Exchange definition is not yet supported.");
         }
         if (query.getScopes().isEmpty()) {
-            return failure("Invalid query: must contain at least one scope.");
+            return QueryResult.noScopeFound("Invalid query: must contain at least one scope.");
         }
 
         // check that all prover scopes are valid
-        var proverScopeFailures = checkScope(query.getScopes());
-        if (proverScopeFailures != null) return proverScopeFailures;
+        var proverScopeResult = checkScope(query.getScopes());
+        if (proverScopeResult.failed()) return QueryResult.invalidScope(proverScopeResult.getFailureMessages());
 
         // check that all issuer scopes are valid
-        var issuerScopeFailures = checkScope(issuerScopes);
-        if (issuerScopeFailures != null) return issuerScopeFailures;
+        var issuerScopeResult = checkScope(issuerScopes);
+        if (issuerScopeResult.failed()) return QueryResult.invalidScope(issuerScopeResult.getFailureMessages());
 
         // query storage for requested credentials
         var queryspec = convertToQuerySpec(query.getScopes());
         var res = credentialStore.query(queryspec);
         if (res.failed()) {
-            return failure(res.getFailureMessages());
+            return QueryResult.storageFailure(res.getFailureMessages());
         }
 
         // the credentials requested by the other party
@@ -84,8 +82,8 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         var isValidQuery = validateResults(new ArrayList<>(wantedCredentials), new ArrayList<>(allowedCredentials));
 
         return isValidQuery ?
-                success(wantedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential))
-                : failure("Invalid query: requested Credentials outside of scope.");
+                QueryResult.success(wantedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential))
+                : QueryResult.unauthorized("Invalid query: requested Credentials outside of scope.");
     }
 
     /**
@@ -103,8 +101,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         };
     }
 
-    @Nullable
-    private Result<Stream<VerifiableCredentialContainer>> checkScope(List<String> query) {
+    private Result<Void> checkScope(List<String> query) {
         var proverScopeFailures = query.stream()
                 .map(this::isValidScope)
                 .filter(AbstractResult::failed)
@@ -113,7 +110,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         if (!proverScopeFailures.isEmpty()) {
             return failure(proverScopeFailures);
         }
-        return null;
+        return success();
     }
 
     /**
