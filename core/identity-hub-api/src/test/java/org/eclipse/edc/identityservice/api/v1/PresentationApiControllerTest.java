@@ -23,6 +23,7 @@ import org.eclipse.edc.identityhub.spi.model.PresentationResponse;
 import org.eclipse.edc.identityhub.spi.model.PresentationSubmission;
 import org.eclipse.edc.identityhub.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
+import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.EdcException;
@@ -49,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.identityhub.spi.model.PresentationQuery.PRESENTATION_QUERY_TYPE_PROPERTY;
+import static org.eclipse.edc.identityhub.spi.resolution.QueryResult.success;
 import static org.eclipse.edc.validator.spi.ValidationResult.failure;
 import static org.eclipse.edc.validator.spi.ValidationResult.success;
 import static org.eclipse.edc.validator.spi.Violation.violation;
@@ -135,7 +137,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
-        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(Result.failure("test-failure"));
+        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(QueryResult.unauthorized("test-failure"));
 
         assertThatThrownBy(() -> controller().queryPresentation(createObjectBuilder().build(), generateJwt()))
                 .isInstanceOf(NotAuthorizedException.class)
@@ -149,7 +151,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
-        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(Result.success(Stream.empty()));
+        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
         when(generator.createPresentation(anyList(), any())).thenReturn(Result.failure("test-failure"));
 
@@ -164,7 +166,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
-        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(Result.success(Stream.empty()));
+        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
         var pres = new PresentationResponse(generateJwt(), new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("id", "ldp_vp", "$.verifiableCredentials[0]"))));
         when(generator.createPresentation(anyList(), any())).thenReturn(Result.success(pres));

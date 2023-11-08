@@ -14,7 +14,9 @@
 
 package org.eclipse.edc.identityhub;
 
+import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.defaults.InMemoryCredentialStore;
+import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -35,4 +37,12 @@ public class DefaultServicesExtension implements ServiceExtension {
         context.getMonitor().warning("  #### Creating a default NOOP PresentationGenerator, that will always return 'null'!");
         return (credentials, presentationDefinition) -> null;
     }
+
+    @Provider(isDefault = true)
+    public ScopeToCriterionTransformer createScopeTransformer(ServiceExtensionContext context) {
+        context.getMonitor().warning("Using the default EdcScopeToCriterionTransformer. This is not intended for production use and should be replaced " +
+                "with a specialized implementation for your dataspace!");
+        return new EdcScopeToCriterionTransformer();
+    }
+
 }

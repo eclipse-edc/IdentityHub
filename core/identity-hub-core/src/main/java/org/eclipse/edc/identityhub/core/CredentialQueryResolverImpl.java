@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.core;
 
+import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.model.PresentationQuery;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
@@ -34,12 +35,14 @@ import static org.eclipse.edc.spi.result.Result.success;
 
 public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
-    private static final String SCOPE_SEPARATOR = ":";
-    private final CredentialStore credentialStore;
-    private final List<String> allowedOperations = List.of("read", "*", "all");
 
-    public CredentialQueryResolverImpl(CredentialStore credentialStore) {
+    private final CredentialStore credentialStore;
+
+    private final ScopeToCriterionTransformer scopeTransformer;
+
+    public CredentialQueryResolverImpl(CredentialStore credentialStore, ScopeToCriterionTransformer scopeTransformer) {
         this.credentialStore = credentialStore;
+        this.scopeTransformer = scopeTransformer;
     }
 
     @Override
@@ -52,37 +55,37 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         }
 
         // check that all prover scopes are valid
-        var proverScopeResult = checkScope(query.getScopes());
+        var proverScopeResult = parseScopes(query.getScopes());
         if (proverScopeResult.failed()) return QueryResult.invalidScope(proverScopeResult.getFailureMessages());
 
         // check that all issuer scopes are valid
-        var issuerScopeResult = checkScope(issuerScopes);
+        var issuerScopeResult = parseScopes(issuerScopes);
         if (issuerScopeResult.failed()) return QueryResult.invalidScope(issuerScopeResult.getFailureMessages());
 
         // query storage for requested credentials
-        var queryspec = convertToQuerySpec(query.getScopes());
+        var queryspec = convertToQuerySpec(proverScopeResult.getContent());
         var res = credentialStore.query(queryspec);
         if (res.failed()) {
             return QueryResult.storageFailure(res.getFailureMessages());
         }
 
         // the credentials requested by the other party
-        var wantedCredentials = res.getContent().toList();
+        var requestedCredentials = res.getContent().toList();
 
         // check that prover scope is not wider than issuer scope
-        var issuerQuery = convertToQuerySpec(issuerScopes);
+        var issuerQuery = convertToQuerySpec(issuerScopeResult.getContent());
         var predicate = issuerQuery.getFilterExpression().stream()
                 .map(c -> credentialsPredicate(c.getOperandRight().toString()))
                 .reduce(Predicate::or)
                 .orElse(x -> false);
 
         // now narrow down the requested credentials to only contain allowed creds
-        var allowedCredentials = wantedCredentials.stream().filter(predicate).toList();
+        var allowedCredentials = requestedCredentials.stream().filter(predicate).toList();
 
-        var isValidQuery = validateResults(new ArrayList<>(wantedCredentials), new ArrayList<>(allowedCredentials));
+        var isValidQuery = validateResults(new ArrayList<>(requestedCredentials), new ArrayList<>(allowedCredentials));
 
         return isValidQuery ?
-                QueryResult.success(wantedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential))
+                QueryResult.success(requestedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential))
                 : QueryResult.unauthorized("Invalid query: requested Credentials outside of scope.");
     }
 
@@ -101,16 +104,16 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         };
     }
 
-    private Result<Void> checkScope(List<String> query) {
-        var proverScopeFailures = query.stream()
-                .map(this::isValidScope)
-                .filter(AbstractResult::failed)
-                .flatMap(r -> r.getFailureMessages().stream())
+    private Result<List<Criterion>> parseScopes(List<String> query) {
+        var transformResult = query.stream()
+                .map(scopeTransformer::transform)
                 .toList();
-        if (!proverScopeFailures.isEmpty()) {
-            return failure(proverScopeFailures);
+
+        if (transformResult.stream().anyMatch(AbstractResult::failed)) {
+            return failure(transformResult.stream().flatMap(r -> r.getFailureMessages().stream()).toList());
         }
-        return success();
+
+        return success(transformResult.stream().map(AbstractResult::getContent).toList());
     }
 
     /**
@@ -126,7 +129,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         if (requestedCredentials == allowedCredentials) {
             return true;
         }
-        if (requestedCredentials.size() != allowedCredentials.size()) {
+        if (requestedCredentials.size() > allowedCredentials.size()) {
             return false;
         }
 
@@ -134,52 +137,9 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         return requestedCredentials.isEmpty();
     }
 
-    private QuerySpec convertToQuerySpec(List<String> scopes) {
-        var criteria = scopes.stream()
-                .map(this::convertScopeToCriterion)
-                .toList();
-
+    private QuerySpec convertToQuerySpec(List<Criterion> criteria) {
         return QuerySpec.Builder.newInstance()
                 .filter(criteria)
                 .build();
-    }
-
-    /**
-     * Converts a scope string to a {@link Criterion} object. For example,
-     * <pre>
-     *     org.eclipse.edc.vc.type:DemoCredential:read
-     * </pre>
-     * would be converted to
-     * <pre>
-     *     verifiableCredential.credential.types contains DemoCredential
-     * </pre>
-     * <p>
-     * take note that the operation ("read") must be checked somewhere else, and is ignored here.
-     *
-     * @param scope The scope string to convert.
-     * @return The converted {@link Criterion} object.
-     */
-    //todo: make this pluggable and more versatile
-    private Criterion convertScopeToCriterion(String scope) {
-        var tokens = isValidScope(scope);
-        if (tokens.failed()) {
-            throw new IllegalArgumentException("Scope string cannot be converted: %s".formatted(tokens.getFailureDetail()));
-        }
-        var credentialType = tokens.getContent()[1];
-        return new Criterion("verifiableCredential.credential.types", "like", credentialType);
-    }
-
-    private Result<String[]> isValidScope(String scope) {
-        if (scope == null) return failure("Scope was null");
-
-        var tokens = scope.split(SCOPE_SEPARATOR);
-        if (tokens.length != 3) {
-            return failure("Scope string has invalid format.");
-        }
-        if (!allowedOperations.contains(tokens[2])) {
-            return failure("Invalid scope operation: " + tokens[2]);
-        }
-
-        return success(tokens);
     }
 }

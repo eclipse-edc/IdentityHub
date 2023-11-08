@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.core;
 
 
+import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.model.PresentationQuery;
 import org.eclipse.edc.identityhub.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identityhub.spi.resolution.QueryFailure;
@@ -46,7 +47,7 @@ import static org.mockito.Mockito.when;
 class CredentialQueryResolverImplTest {
 
     private final CredentialStore storeMock = mock();
-    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock);
+    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer());
 
     @Test
     void query_noResult() {
@@ -73,7 +74,7 @@ class CredentialQueryResolverImplTest {
                 List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
         assertThat(res.failed()).isTrue();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
-        assertThat(res.getFailureDetail()).isEqualTo("Scope string has invalid format.");
+        assertThat(res.getFailureDetail()).contains("Scope string has invalid format.");
     }
 
     @Test
@@ -81,7 +82,7 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:write"), List.of("ignored"));
         assertThat(res.failed()).isTrue();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
-        assertThat(res.getFailureDetail()).isEqualTo("Invalid scope operation: write");
+        assertThat(res.getFailureDetail()).contains("Invalid scope operation: write");
     }
 
     @Test

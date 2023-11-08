@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.core;
 import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.identitytrust.validation.SelfIssuedIdTokenValidator;
+import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
@@ -66,6 +67,9 @@ public class CoreServicesExtension implements ServiceExtension {
     @Inject
     private CredentialStore credentialStore;
 
+    @Inject
+    private ScopeToCriterionTransformer transformer;
+
     @Override
     public void initialize(ServiceExtensionContext context) {
         // Setup API
@@ -95,7 +99,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public CredentialQueryResolver createCredentialQueryResolver(ServiceExtensionContext context) {
-        return new CredentialQueryResolverImpl(credentialStore);
+        return new CredentialQueryResolverImpl(credentialStore, transformer);
     }
 
     private String getOwnDid(ServiceExtensionContext context) {
