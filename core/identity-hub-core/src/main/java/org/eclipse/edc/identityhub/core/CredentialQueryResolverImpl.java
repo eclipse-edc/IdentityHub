@@ -25,7 +25,6 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -54,21 +53,25 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
         // check that all prover scopes are valid
         var proverScopeResult = parseScopes(query.getScopes());
-        if (proverScopeResult.failed()) return QueryResult.invalidScope(proverScopeResult.getFailureMessages());
+        if (proverScopeResult.failed()) {
+            return QueryResult.invalidScope(proverScopeResult.getFailureMessages());
+        }
 
         // check that all issuer scopes are valid
         var issuerScopeResult = parseScopes(issuerScopes);
-        if (issuerScopeResult.failed()) return QueryResult.invalidScope(issuerScopeResult.getFailureMessages());
+        if (issuerScopeResult.failed()) {
+            return QueryResult.invalidScope(issuerScopeResult.getFailureMessages());
+        }
 
         // query storage for requested credentials
         var queryspec = convertToQuerySpec(proverScopeResult.getContent());
-        var res = credentialStore.query(queryspec);
-        if (res.failed()) {
-            return QueryResult.storageFailure(res.getFailureMessages());
+        var credentialResult = credentialStore.query(queryspec);
+        if (credentialResult.failed()) {
+            return QueryResult.storageFailure(credentialResult.getFailureMessages());
         }
 
         // the credentials requested by the other party
-        var requestedCredentials = res.getContent().toList();
+        var requestedCredentials = credentialResult.getContent().toList();
 
         // check that prover scope is not wider than issuer scope
         var issuerQuery = convertToQuerySpec(issuerScopeResult.getContent());
@@ -77,10 +80,8 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
                 .reduce(Predicate::or)
                 .orElse(x -> false);
 
-        // now narrow down the requested credentials to only contain allowed creds
-        var allowedCredentials = requestedCredentials.stream().filter(predicate).toList();
-
-        var isValidQuery = validateResults(new ArrayList<>(requestedCredentials), new ArrayList<>(allowedCredentials));
+        // now narrow down the requested credentials to only contain allowed credentials
+        var isValidQuery = requestedCredentials.stream().filter(predicate).count() == requestedCredentials.size();
 
         return isValidQuery ?
                 QueryResult.success(requestedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential))
@@ -119,27 +120,6 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         }
 
         return success(transformResult.stream().map(AbstractResult::getContent).toList());
-    }
-
-    /**
-     * Checks whether the list of requested credentials is valid. Validity is determined by whether the list of requested credentials
-     * contains elements that are not in the list of allowed credentials. The list of allowed credentials may contain more elements, but not less.
-     * Every element, that is in the list of requested credentials must be found in the list of allowed credentials.
-     *
-     * @param requestedCredentials The list of requested credentials.
-     * @param allowedCredentials   The list of allowed credentials.
-     * @return true if the list of requested credentials contains only elements that can be found in the list of allowed credentials, false otherwise.
-     */
-    private boolean validateResults(List<VerifiableCredentialResource> requestedCredentials, List<VerifiableCredentialResource> allowedCredentials) {
-        if (requestedCredentials == allowedCredentials) {
-            return true;
-        }
-        if (requestedCredentials.size() > allowedCredentials.size()) {
-            return false;
-        }
-
-        requestedCredentials.removeAll(allowedCredentials);
-        return requestedCredentials.isEmpty();
     }
 
     private QuerySpec convertToQuerySpec(List<Criterion> criteria) {

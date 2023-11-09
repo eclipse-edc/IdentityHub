@@ -169,6 +169,20 @@ class CredentialQueryResolverImplTest {
     }
 
     @Test
+    void query_sameSizeDifferentScope() {
+        var credential1 = createCredentialResource("TestCredential");
+        var credential2 = createCredentialResource("AnotherCredential");
+        when(storeMock.query(any())).thenReturn(success(Stream.of(credential1)));
+
+        var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read", "org.eclipse.edc.vc.type:AnotherCredential:read"),
+                List.of("org.eclipse.edc.vc.type:FooCredential:read", "org.eclipse.edc.vc.type:BarCredential:read"));
+
+        assertThat(res.failed()).isTrue();
+        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
+        assertThat(res.getFailureDetail()).isEqualTo("Invalid query: requested Credentials outside of scope.");
+    }
+
+    @Test
     void query_storeReturnsFailure() {
         var credential1 = createCredentialResource("TestCredential");
         when(storeMock.query(any())).thenReturn(StoreResult.notFound("test-failure"));
