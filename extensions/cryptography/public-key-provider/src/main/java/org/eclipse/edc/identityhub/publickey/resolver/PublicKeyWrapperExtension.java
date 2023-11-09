@@ -51,6 +51,9 @@ public class PublicKeyWrapperExtension implements ServiceExtension {
     @Setting(value = "Path to a file that holds the public key, e.g. a PEM file. Do not use in production!")
     public static final String PUBLIC_KEY_PATH_PROPERTY = "edc.ih.iam.publickey.path";
 
+    @Setting(value = "Public key in PEM format")
+    public static final String PUBLIC_KEY_PEM = "edc.ih.iam.publickey.pem";
+
     @Inject
     private Vault vault;
 
@@ -65,6 +68,11 @@ public class PublicKeyWrapperExtension implements ServiceExtension {
         var path = context.getSetting(PUBLIC_KEY_PATH_PROPERTY, null);
         if (path != null) {
             return getPublicKeyFromFile(path);
+        }
+
+        var pem = context.getSetting(PUBLIC_KEY_PEM, null);
+        if (pem != null) {
+            return parseRawPublicKey(pem);
         }
 
         throw new EdcException("No public key was configured! Please either configure '%s' or '%s'.".formatted(PUBLIC_KEY_PATH_PROPERTY, PUBLIC_KEY_VAULT_ALIAS_PROPERTY));

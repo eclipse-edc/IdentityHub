@@ -85,7 +85,7 @@ public class PresentationApiController implements PresentationApi {
         var credentials = queryResolver.query(presentationQuery, issuerScopes).orElseThrow(f -> new NotAuthorizedException(f.getFailureDetail()));
 
         // package the credentials in a VP and sign
-        var presentationResponse = presentationGenerator.createPresentation(credentials, presentationQuery.getPresentationDefinition())
+        var presentationResponse = presentationGenerator.createPresentation(credentials.toList(), presentationQuery.getPresentationDefinition())
                 .orElseThrow(failure -> new EdcException("Error creating VerifiablePresentation: %s".formatted(failure.getFailureDetail())));
         return Response.ok()
                 .entity(presentationResponse)

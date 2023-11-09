@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.spi.resolution;
 
 import org.eclipse.edc.identityhub.spi.model.PresentationQuery;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
-import org.eclipse.edc.spi.result.Result;
 
 import java.util.List;
 
@@ -33,5 +32,5 @@ public interface CredentialQueryResolver {
      * @param query        The representation of the query to be executed.
      * @param issuerScopes The list of issuer scopes to be considered during the query processing.
      */
-    Result<List<VerifiableCredentialContainer>> query(PresentationQuery query, List<String> issuerScopes);
+    QueryResult query(PresentationQuery query, List<String> issuerScopes);
 }
