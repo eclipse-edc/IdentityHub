@@ -18,5 +18,8 @@ public interface IdentityHubConstants {
     String IATP_PREFIX = "https://w3id.org/tractusx-trust/v0.8/";
     String IATP_CONTEXT_URL = "https://w3id.org/tractusx-trust/v0.8";
     String PRESENTATION_EXCHANGE_URL = "https://identity.foundation/presentation-exchange/submission/v1";
-
+    String W3C_CREDENTIALS_URL = "https://www.w3.org/2018/credentials/v1";
+    String VERIFIABLE_PRESENTATION_TYPE = "VerifiablePresentation";
+    String JWS_2020_URL = "https://w3id.org/security/suites/jws-2020/v1";
+    String DID_CONTEXT_URL = "https://www.w3.org/ns/did/v1";
 }

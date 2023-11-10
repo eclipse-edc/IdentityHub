@@ -26,6 +26,15 @@ import java.util.List;
  * Represents a Presentation Generator that creates a presentation based on a list of verifiable credentials
  * and an optional presentation definition.
  */
+@FunctionalInterface
 public interface PresentationGenerator {
+    /**
+     * Creates a presentation based on a list of verifiable credentials and an optional presentation definition.
+     *
+     * @param credentials            The list of verifiable credentials to include in the presentation.
+     * @param presentationDefinition The optional presentation definition.
+     * @return A Result object containing a PresentationResponse if the presentation creation is successful,
+     * or a failure message if it fails.
+     */
     Result<PresentationResponse> createPresentation(List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition);
 }
