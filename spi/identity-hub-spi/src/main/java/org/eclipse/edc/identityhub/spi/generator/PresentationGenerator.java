@@ -33,8 +33,7 @@ public interface PresentationGenerator {
      *
      * @param credentials            The list of verifiable credentials to include in the presentation.
      * @param presentationDefinition The optional presentation definition.
-     * @return A Result object containing a PresentationResponse if the presentation creation is successful,
-     * or a failure message if it fails.
+     * @return A Result object containing a PresentationResponse if the presentation creation is successful, or a failure message if it fails.
      */
     Result<PresentationResponse> createPresentation(List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition);
 }
