@@ -22,55 +22,72 @@ import org.eclipse.edc.identityhub.spi.model.PresentationResponse;
 import org.eclipse.edc.identityhub.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identitytrust.model.VerifiablePresentation;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.VERIFIABLE_PRESENTATION_TYPE;
+import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identitytrust.model.CredentialFormat.JSON_LD;
 
 public class PresentationGeneratorImpl implements PresentationGenerator {
-    private final CredentialFormat defaultFormatVc;
     private final CredentialFormat defaultFormatVp;
-    private final String credentialHolderId;
     private final PresentationCreatorRegistry registry;
+    private final Monitor monitor;
 
     /**
      * Creates a PresentationGeneratorImpl object with the specified default formats for verifiable credentials and presentations.
      *
-     * @param defaultFormatVc    The default format for verifiable credentials.
-     * @param defaultFormatVp    The default format for verifiable presentations.
-     * @param credentialHolderId The ID of the credential holder, for example a DID.
+     * @param defaultFormatVp The default format for verifiable presentations.
      */
-    public PresentationGeneratorImpl(CredentialFormat defaultFormatVc, CredentialFormat defaultFormatVp, String credentialHolderId, PresentationCreatorRegistry registry) {
-        this.defaultFormatVc = defaultFormatVc;
+    public PresentationGeneratorImpl(CredentialFormat defaultFormatVp, PresentationCreatorRegistry registry, Monitor monitor) {
         this.defaultFormatVp = defaultFormatVp;
-        this.credentialHolderId = credentialHolderId;
         this.registry = registry;
+        this.monitor = monitor;
     }
 
+    /**
+     * Creates a presentation based on the given list of verifiable credentials and optional presentation definition. If the desired format ist {@link CredentialFormat#JSON_LD},
+     * all JWT-VCs in the list will be packaged in a separate JWT VP, because LDP-VPs cannot contain JWT-VCs.
+     * <em>Note: submitting a {@link PresentationDefinition} is not supported at the moment, and it will be ignored after logging a warning. </em>
+     *
+     * @param credentials            The list of verifiable credentials to include in the presentation.
+     * @param presentationDefinition The optional presentation definition. <em>Not supported at the moment!</em>
+     * @return A Result object wrapping the PresentationResponse.
+     */
     @Override
     public Result<PresentationResponse> createPresentation(List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition) {
 
-        VerifiablePresentation.Builder.newInstance()
-                .credentials(credentials.stream().map(VerifiableCredentialContainer::credential).toList())
-                .type(VERIFIABLE_PRESENTATION_TYPE)
-                .id(UUID.randomUUID().toString())
-                .holder(credentialHolderId)
-                .build();
-
+        if (presentationDefinition != null) {
+            monitor.warning("A PresentationDefinition was submitted, but is currently ignored by the generator.");
+        }
         var groups = credentials.stream().collect(Collectors.groupingBy(VerifiableCredentialContainer::format));
-        var jwtVcs = groups.get(CredentialFormat.JWT);
-        var ldpVcs = groups.get(CredentialFormat.JSON_LD);
+        var jwtVcs = ofNullable(groups.get(CredentialFormat.JWT)).orElseGet(List::of);
+        var ldpVcs = ofNullable(groups.get(JSON_LD)).orElseGet(List::of);
 
-        JsonObject jwtVp = registry.createPresentation(jwtVcs, CredentialFormat.JWT);
-        String ldpVp = registry.createPresentation(ldpVcs, CredentialFormat.JSON_LD);
-        var vpToken = Json.createArrayBuilder().add(jwtVp).add(ldpVp).build();
 
-        PresentationResponse presentationResponse = new PresentationResponse(vpToken.toString(), null);
+        String vpToken;
+        if (defaultFormatVp == JSON_LD) { // LDP-VPs cannot contain JWT VCs
+            var arrayBuilder = Json.createArrayBuilder();
+            if (!ldpVcs.isEmpty()) {
+                JsonObject ldpVp = registry.createPresentation(ldpVcs, CredentialFormat.JSON_LD);
+                arrayBuilder.add(ldpVp);
+            }
+
+            if (!jwtVcs.isEmpty()) {
+                monitor.warning("The VP was requested in %s format, but the request yielded %s JWT-VCs, which cannot be transported in a LDP-VP. A second VP will be returned, containing JWT-VCs".formatted(JSON_LD, jwtVcs.size()));
+                String jwtVp = registry.createPresentation(jwtVcs, CredentialFormat.JWT);
+                arrayBuilder.add(jwtVp);
+            }
+
+            vpToken = arrayBuilder.build().toString();
+        } else { //defaultFormatVp == JWT
+            vpToken = registry.createPresentation(credentials, CredentialFormat.JWT);
+        }
+
+        var presentationResponse = new PresentationResponse(vpToken, null);
         return Result.success(presentationResponse);
     }
 }

@@ -56,7 +56,7 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
 
     @Test
     @DisplayName("Verify succesful creation of a JWT_VP")
-    public void createPresentation_success() {
+    void createPresentation_success() {
         var vcSigningKey = createKey(Curve.P_256, TestConstants.CENTRAL_ISSUER_KEY_ID);
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, Map.of("vc", TestConstants.VC_CONTENT_DEGREE_EXAMPLE));
         var vcc = new VerifiableCredentialContainer(jwtVc, CredentialFormat.JWT, createDummyCredential());
@@ -73,7 +73,7 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
 
     @Test
     @DisplayName("Should create a JWT_VP with VCs of different formats")
-    public void create_whenVcsNotSameFormat() {
+    void create_whenVcsNotSameFormat() {
         var vcSigningKey = createKey(Curve.P_256, TestConstants.CENTRAL_ISSUER_KEY_ID);
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, Map.of("vc", TestConstants.VC_CONTENT_DEGREE_EXAMPLE));
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
@@ -93,7 +93,7 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
 
     @Test
     @DisplayName("Should create a valid VP with no credential")
-    public void create_whenVcsEmpty_shouldReturnEmptyVp() {
+    void create_whenVcsEmpty_shouldReturnEmptyVp() {
         var vpJwt = creator.createPresentation(List.of(), KEY_ID, audClaim);
         assertThat(vpJwt).isNotNull();
         assertThatNoException().isThrownBy(() -> SignedJWT.parse(vpJwt));
@@ -107,14 +107,15 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
 
     @Test
     @DisplayName("Should throw an exception if no key is found for a key-id")
-    public void create_whenKeyNotFound() {
+    void create_whenKeyNotFound() {
         var vcc = new VerifiableCredentialContainer("foobar", CredentialFormat.JWT, createDummyCredential());
         assertThatThrownBy(() -> creator.createPresentation(List.of(vcc), "not-exist", audClaim)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     @DisplayName("Should throw an exception if the required additional data is missing")
-    public void create_whenRequiredAdditionalDataMissing_throwsIllegalArgumentException() {
+    @Override
+    void create_whenRequiredAdditionalDataMissing_throwsIllegalArgumentException() {
         var vcc = new VerifiableCredentialContainer("foobar", CredentialFormat.JWT, createDummyCredential());
         assertThatThrownBy(() -> creator.createPresentation(List.of(vcc), KEY_ID))
                 .describedAs("Expected exception when no additional data provided")
@@ -122,6 +123,20 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
         assertThatThrownBy(() -> creator.createPresentation(List.of(vcc), KEY_ID, Map.of()))
                 .describedAs("Expected exception when additional data does not contain expected value ('aud')")
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("Should return an empty JWT when no credentials are passed")
+    void create_whenEmptyList() {
+
+        var vpJwt = creator.createPresentation(List.of(), KEY_ID, audClaim);
+        assertThat(vpJwt).isNotNull();
+        assertThatNoException().isThrownBy(() -> SignedJWT.parse(vpJwt));
+        var claims = parseJwt(vpJwt);
+
+        REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim)
+                .isNotNull());
+        assertThat(claims.getClaim("vp")).isNotNull();
     }
 
     private JWTClaimsSet parseJwt(String vpJwt) {

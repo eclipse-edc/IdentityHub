@@ -51,6 +51,10 @@ abstract class PresentationCreatorTest {
     @DisplayName("Should throw an exception if the required additional data is missing")
     abstract void create_whenRequiredAdditionalDataMissing_throwsIllegalArgumentException();
 
+    @Test
+    @DisplayName("Should return an empty JWT when no credentials are passed")
+    abstract void create_whenEmptyList();
+
     protected ECKey createKey(Curve p256, String centralIssuerKeyId) {
         try {
             return new ECKeyGenerator(p256)

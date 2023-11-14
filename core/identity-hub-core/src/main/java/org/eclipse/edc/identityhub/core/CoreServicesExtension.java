@@ -140,7 +140,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public PresentationGenerator presentationGenerator(ServiceExtensionContext context) {
-        return new PresentationGeneratorImpl(CredentialFormat.JSON_LD, CredentialFormat.JSON_LD, getOwnDid(context), presentationCreatorRegistry);
+        return new PresentationGeneratorImpl(CredentialFormat.JSON_LD, presentationCreatorRegistry, context.getMonitor());
     }
 
 

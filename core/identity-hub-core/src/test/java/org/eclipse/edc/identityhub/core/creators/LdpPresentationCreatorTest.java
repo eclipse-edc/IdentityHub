@@ -37,6 +37,7 @@ import org.eclipse.edc.verifiablecredentials.jwt.TestConstants;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.net.URISyntaxException;
@@ -129,6 +130,16 @@ class LdpPresentationCreatorTest extends PresentationCreatorTest {
         assertThatThrownBy(() -> creator.createPresentation(List.of(vcc), KEY_ID, Map.of("some-key", "some-value")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Must provide additional data: 'types'");
+    }
+
+    @Test
+    @DisplayName("Should return an empty JWT when no credentials are passed")
+    @Override
+    void create_whenEmptyList() {
+
+        var result = creator.createPresentation(List.of(), KEY_ID, types);
+        assertThat(result).isNotNull();
+        assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }
 
     private OctetKeyPair createKey(String keyId) {
