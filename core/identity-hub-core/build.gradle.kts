@@ -7,6 +7,8 @@ dependencies {
     api(project(":spi:identity-hub-store-spi"))
     implementation(libs.edc.core.connector) // for the CriterionToPredicateConverterImpl
     implementation(libs.edc.spi.jsonld)
+    implementation(libs.edc.spi.jsonld)
+    implementation(libs.edc.ext.jsonld) // for the JSON-LD mapper
     implementation(libs.edc.iatp.service) // JWT validator
     implementation(libs.edc.core.crypto) // JWT verifier
     implementation(libs.edc.jws2020)

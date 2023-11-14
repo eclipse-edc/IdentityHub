@@ -22,4 +22,6 @@ public interface IdentityHubConstants {
     String VERIFIABLE_PRESENTATION_TYPE = "VerifiablePresentation";
     String JWS_2020_URL = "https://w3id.org/security/suites/jws-2020/v1";
     String DID_CONTEXT_URL = "https://www.w3.org/ns/did/v1";
+    String JWS_2020_SIGNATURE_SUITE = "JsonWebSignature2020";
+    String ED25519_SIGNATURE_SUITE = "Ed25519Signature2020"; // not used right now
 }

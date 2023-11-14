@@ -23,6 +23,7 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.OctetKeyPair;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.eclipse.edc.iam.did.spi.key.PrivateKeyWrapper;
+import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
@@ -56,7 +57,6 @@ import static org.mockito.Mockito.when;
 
 class LdpPresentationCreatorTest extends PresentationCreatorTest {
 
-    public static final String JSON_WEB_SIGNATURE_2020 = "JsonWebSignature2020";
     private final PrivateKeyResolver resolverMock = mock();
     private final Map<String, Object> types = Map.of("types", List.of("VerifiablePresentation", "SomeOtherPresentationType"));
     private LdpPresentationCreator creator;
@@ -66,12 +66,12 @@ class LdpPresentationCreatorTest extends PresentationCreatorTest {
         var vpSigningKey = createKey(KEY_ID);
         when(resolverMock.resolvePrivateKey(eq(KEY_ID), any())).thenReturn(new OctetKeyPairWrapper(vpSigningKey));
         var signatureSuiteRegistryMock = mock(SignatureSuiteRegistry.class);
-        when(signatureSuiteRegistryMock.getForId(JSON_WEB_SIGNATURE_2020)).thenReturn(new JwsSignature2020Suite(new ObjectMapper()));
+        when(signatureSuiteRegistryMock.getForId(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE)).thenReturn(new JwsSignature2020Suite(new ObjectMapper()));
         var ldpIssuer = LdpIssuer.Builder.newInstance()
                 .jsonLd(initializeJsonLd())
                 .monitor(mock())
                 .build();
-        creator = new LdpPresentationCreator(resolverMock, "did:web:test-issuer", signatureSuiteRegistryMock, JSON_WEB_SIGNATURE_2020, ldpIssuer,
+        creator = new LdpPresentationCreator(resolverMock, "did:web:test-issuer", signatureSuiteRegistryMock, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer,
                 JacksonJsonLd.createObjectMapper());
     }
 

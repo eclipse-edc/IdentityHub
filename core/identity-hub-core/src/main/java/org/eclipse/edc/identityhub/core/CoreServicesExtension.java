@@ -22,6 +22,7 @@ import org.eclipse.edc.identityhub.core.creators.LdpPresentationCreator;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
+import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
@@ -44,6 +45,7 @@ import org.eclipse.edc.verification.jwt.SelfIssuedIdTokenVerifier;
 import java.net.URISyntaxException;
 import java.time.Clock;
 
+import static org.eclipse.edc.identityhub.core.CoreServicesExtension.NAME;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.DID_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.JWS_2020_URL;
@@ -53,9 +55,10 @@ import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CRE
 /**
  * This extension provides core services for the IdentityHub that are not intended to be user-replaceable.
  */
-@Extension(value = "Core Services extension")
+@Extension(value = NAME)
 public class CoreServicesExtension implements ServiceExtension {
 
+    public static final String NAME = "IdentityHub Core Services Extension";
     @Setting(value = "Configure this IdentityHub's DID", required = true)
     public static final String OWN_DID_PROPERTY = "edc.ih.iam.id";
     public static final String PRESENTATION_EXCHANGE_V_1_JSON = "presentation-exchange.v1.json";
@@ -63,9 +66,11 @@ public class CoreServicesExtension implements ServiceExtension {
     public static final String DID_JSON = "did.json";
     public static final String JWS_2020_JSON = "jws2020.json";
     public static final String CREDENTIALS_V_1_JSON = "credentials.v1.json";
-    private final String defaultSuite = "JsonWebSignature2020";
+    private final String defaultSuite = IdentityHubConstants.JWS_2020_SIGNATURE_SUITE;
+    private PresentationCreatorRegistryImpl presentationCreatorRegistry;
     private JwtVerifier jwtVerifier;
     private JwtValidator jwtValidator;
+
     @Inject
     private DidResolverRegistry didResolverRegistry;
     @Inject
@@ -82,7 +87,11 @@ public class CoreServicesExtension implements ServiceExtension {
     private Clock clock;
     @Inject
     private SignatureSuiteRegistry signatureSuiteRegistry;
-    private PresentationCreatorRegistryImpl presentationCreatorRegistry;
+
+    @Override
+    public String name() {
+        return NAME;
+    }
 
     @Override
     public void initialize(ServiceExtensionContext context) {
@@ -122,7 +131,7 @@ public class CoreServicesExtension implements ServiceExtension {
             presentationCreatorRegistry = new PresentationCreatorRegistryImpl();
             presentationCreatorRegistry.addCreator(new JwtPresentationCreator(privateKeyResolver, clock, getOwnDid(context)), CredentialFormat.JWT);
 
-            var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).build();
+            var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(context.getMonitor()).build();
             presentationCreatorRegistry.addCreator(new LdpPresentationCreator(privateKeyResolver, getOwnDid(context), signatureSuiteRegistry, defaultSuite, ldpIssuer, null),
                     CredentialFormat.JSON_LD);
         }
