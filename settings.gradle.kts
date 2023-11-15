@@ -28,7 +28,6 @@ include(":spi:identity-hub-store-spi")
 
 // core modules
 include(":core:identity-hub-api")
-include(":core:identity-hub-transform")
 include(":core:identity-hub-core")
 
 // extension modules
