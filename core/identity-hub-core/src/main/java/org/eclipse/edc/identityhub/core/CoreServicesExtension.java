@@ -50,6 +50,7 @@ import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.DID_CON
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.JWS_2020_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
+import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_SUBMISSION_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;
 
 /**
@@ -63,6 +64,7 @@ public class CoreServicesExtension implements ServiceExtension {
     public static final String OWN_DID_PROPERTY = "edc.ih.iam.id";
     public static final String PRESENTATION_EXCHANGE_V_1_JSON = "presentation-exchange.v1.json";
     public static final String PRESENTATION_QUERY_V_08_JSON = "presentation-query.v08.json";
+    public static final String PRESENTATION_SUBMISSION_V1_JSON = "presentation-submission.v1.json";
     public static final String DID_JSON = "did.json";
     public static final String JWS_2020_JSON = "jws2020.json";
     public static final String CREDENTIALS_V_1_JSON = "credentials.v1.json";
@@ -155,6 +157,7 @@ public class CoreServicesExtension implements ServiceExtension {
             jsonLd.registerCachedDocument(DID_CONTEXT_URL, classLoader.getResource(DID_JSON).toURI());
             jsonLd.registerCachedDocument(JWS_2020_URL, classLoader.getResource(JWS_2020_JSON).toURI());
             jsonLd.registerCachedDocument(W3C_CREDENTIALS_URL, classLoader.getResource(CREDENTIALS_V_1_JSON).toURI());
+            jsonLd.registerCachedDocument(PRESENTATION_SUBMISSION_URL, classLoader.getResource(PRESENTATION_SUBMISSION_V1_JSON).toURI());
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
