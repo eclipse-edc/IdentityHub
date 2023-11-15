@@ -231,6 +231,7 @@ maven/mavencentral/org.eclipse.edc/identity-did-spi/0.3.2-SNAPSHOT, Apache-2.0, 
 maven/mavencentral/org.eclipse.edc/identity-did-web/0.3.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/identity-trust-service/0.3.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/identity-trust-spi/0.3.2-SNAPSHOT, Apache-2.0, approved, technology.edc
+maven/mavencentral/org.eclipse.edc/identity-trust-transform/0.3.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jersey-core/0.3.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jersey-providers/0.3.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jetty-core/0.3.2-SNAPSHOT, Apache-2.0, approved, technology.edc
