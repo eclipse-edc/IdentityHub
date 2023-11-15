@@ -102,7 +102,7 @@ public class JwtPresentationCreator implements PresentationCreator<String> {
                 .issuer(issuerId)
                 .issueTime(now)
                 .notBeforeTime(now)
-                .claim("jti", UUID.randomUUID().toString())
+                .jwtID(UUID.randomUUID().toString())
                 .claim("vp", createVpClaim(rawVcs))
                 .expirationTime(Date.from(Instant.now().plusSeconds(60)));
 
