@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.identityhub.spi.generator;
 
-import org.eclipse.edc.identityhub.spi.model.PresentationResponse;
-import org.eclipse.edc.identityhub.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponse;
+import org.eclipse.edc.identitytrust.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.spi.result.Result;
 import org.jetbrains.annotations.Nullable;
 

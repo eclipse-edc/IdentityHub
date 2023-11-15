@@ -22,9 +22,9 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
-import org.eclipse.edc.identityhub.spi.model.PresentationQuery;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
@@ -37,7 +37,7 @@ import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.identityhub.spi.model.PresentationQuery.PRESENTATION_QUERY_TYPE_PROPERTY;
+import static org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery.PRESENTATION_QUERY_TYPE_PROPERTY;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)

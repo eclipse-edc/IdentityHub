@@ -15,13 +15,13 @@
 package org.eclipse.edc.identityservice.api;
 
 import org.eclipse.edc.core.transform.transformer.to.JsonValueToGenericTypeTransformer;
+import org.eclipse.edc.iam.identitytrust.transform.to.JsonObjectToPresentationQueryTransformer;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
-import org.eclipse.edc.identityhub.spi.model.PresentationQuery;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
-import org.eclipse.edc.identityhub.transform.JsonObjectToPresentationQueryTransformer;
 import org.eclipse.edc.identityservice.api.v1.PresentationApiController;
 import org.eclipse.edc.identityservice.api.validation.PresentationQueryValidator;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -79,7 +79,7 @@ public class PresentationApiExtension implements ServiceExtension {
         webService.registerResource(RESOLUTION_CONTEXT, new JerseyJsonLdInterceptor(jsonLd, jsonLdMapper, RESOLUTION_SCOPE));
         webService.registerResource(RESOLUTION_CONTEXT, controller);
 
-        // register transformer
+        // register transformer -- remove once registration is handled in EDC
         typeTransformer.register(new JsonObjectToPresentationQueryTransformer(jsonLdMapper));
         typeTransformer.register(new JsonValueToGenericTypeTransformer(jsonLdMapper));
     }

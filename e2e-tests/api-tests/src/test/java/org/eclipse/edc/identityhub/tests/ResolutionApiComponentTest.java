@@ -16,14 +16,14 @@ package org.eclipse.edc.identityhub.tests;
 
 import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
-import org.eclipse.edc.identityhub.spi.model.InputDescriptorMapping;
-import org.eclipse.edc.identityhub.spi.model.PresentationResponse;
-import org.eclipse.edc.identityhub.spi.model.PresentationSubmission;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguration;
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
+import org.eclipse.edc.identitytrust.model.credentialservice.InputDescriptorMapping;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponse;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationSubmission;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
 import org.junit.jupiter.api.Test;

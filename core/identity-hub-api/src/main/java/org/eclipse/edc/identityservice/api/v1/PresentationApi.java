@@ -29,8 +29,8 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.edc.identityhub.spi.model.PresentationResponse;
 import org.eclipse.edc.identityservice.api.v1.ApiSchema.ApiErrorDetailSchema;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponse;
 
 @OpenAPIDefinition(
         info = @Info(description = "This represents the Presentation API as per IATP specification. It serves endpoints to query for specific VerifiablePresentations.", title = "Resolution API",
