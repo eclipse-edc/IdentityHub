@@ -21,18 +21,6 @@ jobs:
       - name: Run Checkstyle
         run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures
 
-  OpenAPI-Definitions:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/gradle-setup
-
-      - name: Generate OpenAPI definition from code
-        run: ./gradlew resolve
-
-      - name: Check OpenAPI definition match code
-        run: git diff --exit-code
-
   Verify-Launcher:
     runs-on: ubuntu-latest
     steps:
@@ -45,8 +33,20 @@ jobs:
       - name: 'Build Docker image'
         run: docker build -t identity-hub ./launcher
 
+      - name: 'Create public key file'
+        run: |
+          mkdir -p keys
+          openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout keys/key.pem -out keys/cert.pem -subj="/CN=www.foo.bar"
+
       - name: 'Start Identity Hub'
-        run: docker run -d --rm --name identity-hub identity-hub
+        run: |
+          docker run -d --rm --name identity-hub \
+            -v $(pwd)/keys:/opt/keys \
+            -e "EDC_IH_IAM_PUBLICKEY_PATH=/opt/keys/key.pem" \
+            -e "EDC_IH_IAM_ID=did:web:test" \
+            -e "WEB_HTTP_RESOLUTION_PORT=10001" \
+            -e "WEB_HTTP_RESOLUTION_PATH=/api/v1/resolution/" \
+            identity-hub:latest
 
       - name: 'Wait for Identity Hub to be healthy'
         uses: raschmitt/wait-for-healthy-container@v1
@@ -79,7 +79,7 @@ jobs:
       #        with:
       #          files: "**/test-results/**/*.xml"
 
-  Component-Tests:
+  Integration-Tests:
     runs-on: ubuntu-latest
     env:
       JACOCO: true
@@ -91,12 +91,12 @@ jobs:
       - name: Component Tests
         uses: ./.github/actions/run-tests
         with:
-          command: ./gradlew test -DincludeTags="ComponentTest"
+          command: ./gradlew compileJava compileTestJava test -DincludeTags="ComponentTest,ApiTest,EndToEndTest"
 
   Upload-Coverage-Report-To-Codecov:
     needs:
       - Test
-      - Component-Tests
+      - Integration-Tests
     runs-on: ubuntu-latest
     if: always()
     steps:

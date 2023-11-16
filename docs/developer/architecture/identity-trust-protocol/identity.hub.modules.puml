@@ -1,0 +1,58 @@
+@startuml
+!pragma layout smetana
+
+!include ../styles/diagram.styles.puml
+
+hide stereotype
+
+skinparam component {
+  backgroundColor<<api module>> #9ee4aa
+  borderColor<<api module>> #185522
+  backgroundColor<<shared service>> #FFFFFF
+  backgroundColor<<shared lib>> Green
+}
+
+skinparam frame {
+   backgroundColor<<api module>> #1F6F2C
+}
+
+title Identity Hub Modules
+
+frame "APIs" {
+   component  "Hub API" as HubApi <<api module>>
+   component "Management API" as ManagementApi <<api module>>
+}
+
+component "Aggregate Services Module" as AggregateServices
+component "VC Module" as VcModule
+component "DID Module" as DidModule
+component "Auth/Permission Module" as AuthModule
+component "Participant Context \nModule" as PcModule
+
+frame "Shared Modules" {
+   component "Identity DID Core" as DidCore <<shared service>>
+   component "KeyPair Module" as KpModule <<shared service>>
+}
+
+frame "Libraries" {
+   component "Crypto Core Library" as CryptoCore <<shared service>>
+}
+
+AggregateServices -up-> HubApi
+AggregateServices -up-> ManagementApi
+
+AuthModule -up-> AggregateServices
+
+PcModule -up-> AuthModule
+PcModule -up-> AggregateServices
+
+KpModule -up-> AggregateServices
+CryptoCore -up-> KpModule
+
+VcModule -up-> AggregateServices
+
+DidModule -up->AggregateServices
+DidCore -up-> DidModule
+
+
+@enduml
