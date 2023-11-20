@@ -168,7 +168,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
-        var pres = new PresentationResponse(generateJwt(), new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("id", "ldp_vp", "$.verifiableCredentials[0]"))));
+        var pres = new PresentationResponse(new Object[] {generateJwt()}, new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("id", "ldp_vp", "$.verifiableCredentials[0]"))));
         when(generator.createPresentation(anyList(), any())).thenReturn(Result.success(pres));
 
         var response = controller().queryPresentation(createObjectBuilder().build(), generateJwt());
