@@ -87,7 +87,7 @@ public class PresentationGeneratorImpl implements PresentationGenerator {
             vpToken = registry.createPresentation(credentials, CredentialFormat.JWT);
         }
 
-        var presentationResponse = new PresentationResponse(vpToken, null);
+        var presentationResponse = new PresentationResponse(new Object[] {vpToken}, null);
         return Result.success(presentationResponse);
     }
 }

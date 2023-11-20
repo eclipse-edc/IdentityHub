@@ -210,7 +210,7 @@ public class ResolutionApiComponentTest {
 
     private PresentationResponse createPresentationResponse() {
         var submission = new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("input-id", "ldp-vp", "foo")));
-        return new PresentationResponse(TestData.VP_EXAMPLE, submission);
+        return new PresentationResponse(new Object[] {TestData.VP_EXAMPLE}, submission);
     }
 
 
