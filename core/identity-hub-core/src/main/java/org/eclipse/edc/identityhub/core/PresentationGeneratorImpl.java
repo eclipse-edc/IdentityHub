@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.core;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
@@ -26,6 +25,7 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -68,26 +68,25 @@ public class PresentationGeneratorImpl implements PresentationGenerator {
         var ldpVcs = ofNullable(groups.get(JSON_LD)).orElseGet(List::of);
 
 
-        String vpToken;
+        var vpToken = new ArrayList<>();
+
         if (defaultFormatVp == JSON_LD) { // LDP-VPs cannot contain JWT VCs
-            var arrayBuilder = Json.createArrayBuilder();
             if (!ldpVcs.isEmpty()) {
                 JsonObject ldpVp = registry.createPresentation(ldpVcs, CredentialFormat.JSON_LD);
-                arrayBuilder.add(ldpVp);
+                vpToken.add(ldpVp.toString());
             }
 
             if (!jwtVcs.isEmpty()) {
                 monitor.warning("The VP was requested in %s format, but the request yielded %s JWT-VCs, which cannot be transported in a LDP-VP. A second VP will be returned, containing JWT-VCs".formatted(JSON_LD, jwtVcs.size()));
                 String jwtVp = registry.createPresentation(jwtVcs, CredentialFormat.JWT);
-                arrayBuilder.add(jwtVp);
+                vpToken.add(jwtVp);
             }
 
-            vpToken = arrayBuilder.build().toString();
         } else { //defaultFormatVp == JWT
-            vpToken = registry.createPresentation(credentials, CredentialFormat.JWT);
+            vpToken.add(registry.createPresentation(credentials, CredentialFormat.JWT));
         }
 
-        var presentationResponse = new PresentationResponse(new Object[] {vpToken}, null);
+        var presentationResponse = new PresentationResponse(vpToken.toArray(new Object[0]), null);
         return Result.success(presentationResponse);
     }
 }

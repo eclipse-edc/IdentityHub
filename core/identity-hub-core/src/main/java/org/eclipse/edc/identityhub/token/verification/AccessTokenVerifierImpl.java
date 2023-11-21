@@ -68,7 +68,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
 
         // make sure an access_token claim exists
         var claimToken = validationResult.getContent();
-        if (claimToken.getClaim("access_token") == null) {
+        if (claimToken.getClaim(ACCES_TOKEN_CLAIM) == null) {
             return failure("No 'access_token' claim was found on ID Token.");
         }
 
