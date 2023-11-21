@@ -63,7 +63,7 @@ class PresentationGeneratorImplTest {
         List<VerifiableCredentialContainer> ldpVcs = List.of();
 
         var result = presentationGenerator.createPresentation(ldpVcs, null);
-        assertThat(result).isSucceeded();
+        assertThat(result).isSucceeded().matches(pr -> pr.vpToken().length == 0, "VP Tokens should be empty");
     }
 
     @Test
