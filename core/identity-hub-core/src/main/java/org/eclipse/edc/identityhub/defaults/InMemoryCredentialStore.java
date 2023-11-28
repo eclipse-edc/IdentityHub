@@ -24,6 +24,7 @@ import org.eclipse.edc.spi.result.StoreResult;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
@@ -54,7 +55,7 @@ public class InMemoryCredentialStore implements CredentialStore {
     public StoreResult<Stream<VerifiableCredentialResource>> query(QuerySpec querySpec) {
         lock.readLock().lock();
         try {
-            var result = queryResolver.query(store.values().stream(), querySpec);
+            var result = queryResolver.query(store.values().stream(), querySpec, Predicate::or, x -> false);
             return success(result);
         } finally {
             lock.readLock().unlock();

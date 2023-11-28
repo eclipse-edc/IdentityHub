@@ -18,6 +18,7 @@ import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Registry that contains multiple {@link PresentationCreator} objects and assigns them a {@link CredentialFormat}.
@@ -34,15 +35,16 @@ public interface PresentationCreatorRegistry {
      * Creates a VerifiablePresentation based on a list of verifiable credentials and a credential format. How the presentation will be represented
      * depends on the format. JWT-VPs will be represented as {@link String}, LDP-VPs will be represented as {@link jakarta.json.JsonObject}.
      *
-     * @param credentials The list of verifiable credentials to include in the presentation.
-     * @param format      The format for the presentation.
-     * @param <T>         The type of the presentation. Can be {@link String}, when format is {@link CredentialFormat#JWT}, or {@link jakarta.json.JsonObject},
-     *                    when the format is {@link CredentialFormat#JSON_LD}
+     * @param <T>            The type of the presentation. Can be {@link String}, when format is {@link CredentialFormat#JWT}, or {@link jakarta.json.JsonObject},
+     *                       when the format is {@link CredentialFormat#JSON_LD}
+     * @param credentials    The list of verifiable credentials to include in the presentation.
+     * @param format         The format for the presentation.
+     * @param additionalData Optional additional data that might be required to create the presentation, such as types, etc.
      * @return The created presentation.
      * @throws IllegalArgumentException         if the credential cannot be represented in the desired format. For example, LDP-VPs cannot contain JWT-VCs.
      * @throws org.eclipse.edc.spi.EdcException if no creator is registered for a particular format
      */
-    <T> T createPresentation(List<VerifiableCredentialContainer> credentials, CredentialFormat format);
+    <T> T createPresentation(List<VerifiableCredentialContainer> credentials, CredentialFormat format, Map<String, Object> additionalData);
 
     /**
      * Specify, which key ID is to be used for which {@link CredentialFormat}. It is recommended to use a separate key for every format.
