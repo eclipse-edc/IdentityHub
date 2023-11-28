@@ -27,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
@@ -55,10 +56,11 @@ public class PresentationGeneratorImpl implements PresentationGenerator {
      *
      * @param credentials            The list of verifiable credentials to include in the presentation.
      * @param presentationDefinition The optional presentation definition. <em>Not supported at the moment!</em>
+     * @param audience               The Participant ID of the entity who the VP is intended for. May be null for some VP formats.
      * @return A Result object wrapping the PresentationResponse.
      */
     @Override
-    public Result<PresentationResponse> createPresentation(List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition) {
+    public Result<PresentationResponse> createPresentation(List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition, @Nullable String audience) {
 
         if (presentationDefinition != null) {
             monitor.warning("A PresentationDefinition was submitted, but is currently ignored by the generator.");
@@ -70,20 +72,24 @@ public class PresentationGeneratorImpl implements PresentationGenerator {
 
         var vpToken = new ArrayList<>();
 
+        Map<String, Object> additionalData = audience != null ? Map.of("aud", "audience") : Map.of();
+
         if (defaultFormatVp == JSON_LD) { // LDP-VPs cannot contain JWT VCs
             if (!ldpVcs.isEmpty()) {
-                JsonObject ldpVp = registry.createPresentation(ldpVcs, CredentialFormat.JSON_LD);
-                vpToken.add(ldpVp.toString());
+
+                // todo: once we support PresentationDefinition, the types list could be dynamic
+                JsonObject ldpVp = registry.createPresentation(ldpVcs, CredentialFormat.JSON_LD, Map.of("types", List.of("VerifiablePresentation")));
+                vpToken.add(ldpVp);
             }
 
             if (!jwtVcs.isEmpty()) {
                 monitor.warning("The VP was requested in %s format, but the request yielded %s JWT-VCs, which cannot be transported in a LDP-VP. A second VP will be returned, containing JWT-VCs".formatted(JSON_LD, jwtVcs.size()));
-                String jwtVp = registry.createPresentation(jwtVcs, CredentialFormat.JWT);
+                String jwtVp = registry.createPresentation(jwtVcs, CredentialFormat.JWT, additionalData);
                 vpToken.add(jwtVp);
             }
 
         } else { //defaultFormatVp == JWT
-            vpToken.add(registry.createPresentation(credentials, CredentialFormat.JWT));
+            vpToken.add(registry.createPresentation(credentials, CredentialFormat.JWT, additionalData));
         }
 
         var presentationResponse = new PresentationResponse(vpToken.toArray(new Object[0]), null);

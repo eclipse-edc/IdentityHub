@@ -62,7 +62,7 @@ class PresentationGeneratorImplTest {
         presentationGenerator = new PresentationGeneratorImpl(JSON_LD, registry, monitor);
         List<VerifiableCredentialContainer> ldpVcs = List.of();
 
-        var result = presentationGenerator.createPresentation(ldpVcs, null);
+        var result = presentationGenerator.createPresentation(ldpVcs, null, null);
         assertThat(result).isSucceeded().matches(pr -> pr.vpToken().length == 0, "VP Tokens should be empty");
     }
 
@@ -72,7 +72,7 @@ class PresentationGeneratorImplTest {
         presentationGenerator = new PresentationGeneratorImpl(JSON_LD, registry, monitor);
 
         var credentials = List.of(createCredential(JSON_LD), createCredential(JSON_LD));
-        var result = presentationGenerator.createPresentation(credentials, null);
+        var result = presentationGenerator.createPresentation(credentials, null, null);
 
         assertThat(result).isSucceeded();
         verify(registry).createPresentation(argThat(argument -> argument.size() == 2), eq(JSON_LD), any());
@@ -86,7 +86,7 @@ class PresentationGeneratorImplTest {
 
         var credentials = List.of(createCredential(JSON_LD), createCredential(JWT));
 
-        var result = presentationGenerator.createPresentation(credentials, null);
+        var result = presentationGenerator.createPresentation(credentials, null, null);
         assertThat(result).isSucceeded();
         verify(registry).createPresentation(argThat(argument -> argument.size() == 1), eq(JWT), any());
         verify(registry).createPresentation(argThat(argument -> argument.size() == 1), eq(JSON_LD), any());
@@ -101,7 +101,7 @@ class PresentationGeneratorImplTest {
 
         var credentials = List.of(createCredential(JWT), createCredential(JWT));
 
-        var result = presentationGenerator.createPresentation(credentials, null);
+        var result = presentationGenerator.createPresentation(credentials, null, null);
         assertThat(result).isSucceeded();
         verify(registry).createPresentation(argThat(argument -> argument.size() == 2), eq(JWT), any());
         verify(registry, never()).createPresentation(any(), eq(JSON_LD), any());
@@ -116,7 +116,7 @@ class PresentationGeneratorImplTest {
 
         var credentials = List.of(createCredential(JWT), createCredential(JWT));
 
-        var result = presentationGenerator.createPresentation(credentials, null);
+        var result = presentationGenerator.createPresentation(credentials, null, null);
         assertThat(result).isSucceeded();
         verify(registry).createPresentation(argThat(argument -> argument.size() == 2), eq(JWT), any());
         verify(registry, never()).createPresentation(any(), eq(JSON_LD), any());
@@ -130,7 +130,7 @@ class PresentationGeneratorImplTest {
 
         var credentials = List.of(createCredential(JSON_LD), createCredential(JWT));
 
-        var result = presentationGenerator.createPresentation(credentials, null);
+        var result = presentationGenerator.createPresentation(credentials, null, null);
         assertThat(result).isSucceeded();
         verify(registry).createPresentation(argThat(argument -> argument.size() == 2), eq(JWT), any());
         verify(registry, never()).createPresentation(any(), eq(JSON_LD), any());
@@ -142,7 +142,7 @@ class PresentationGeneratorImplTest {
         presentationGenerator = new PresentationGeneratorImpl(JWT, registry, monitor);
 
         var credentials = List.of(createCredential(JSON_LD), createCredential(JSON_LD));
-        var result = presentationGenerator.createPresentation(credentials, null);
+        var result = presentationGenerator.createPresentation(credentials, null, null);
 
         assertThat(result).isSucceeded();
         verify(registry).createPresentation(argThat(argument -> argument.size() == 2), eq(JWT), any());
@@ -152,7 +152,7 @@ class PresentationGeneratorImplTest {
     @Test
     void generate_withPresentationDef_shouldLogWarning() {
         presentationGenerator = new PresentationGeneratorImpl(JSON_LD, registry, monitor);
-        presentationGenerator.createPresentation(List.of(), PresentationDefinition.Builder.newInstance().id("test-id").build());
+        presentationGenerator.createPresentation(List.of(), PresentationDefinition.Builder.newInstance().id("test-id").build(), null);
         verify(monitor).warning(contains("A PresentationDefinition was submitted, but is currently ignored by the generator."));
 
     }

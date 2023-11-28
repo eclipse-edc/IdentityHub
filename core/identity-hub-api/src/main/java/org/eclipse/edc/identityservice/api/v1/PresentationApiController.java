@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityservice.api.v1;
 
+import com.nimbusds.jwt.SignedJWT;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.HeaderParam;
@@ -34,6 +35,10 @@ import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.NotAuthorizedException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
+import org.jetbrains.annotations.Nullable;
+
+import java.text.ParseException;
+import java.util.Optional;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -85,11 +90,20 @@ public class PresentationApiController implements PresentationApi {
         var credentials = queryResolver.query(presentationQuery, issuerScopes).orElseThrow(f -> new NotAuthorizedException(f.getFailureDetail()));
 
         // package the credentials in a VP and sign
-        var presentationResponse = presentationGenerator.createPresentation(credentials.toList(), presentationQuery.getPresentationDefinition())
+        var audience = getAudience(token);
+        var presentationResponse = presentationGenerator.createPresentation(credentials.toList(), presentationQuery.getPresentationDefinition(), audience)
                 .orElseThrow(failure -> new EdcException("Error creating VerifiablePresentation: %s".formatted(failure.getFailureDetail())));
         return Response.ok()
                 .entity(presentationResponse)
                 .build();
+    }
+
+    private @Nullable String getAudience(String token) {
+        try {
+            return Optional.ofNullable(SignedJWT.parse(token).getJWTClaimsSet().getClaim("client_id")).map(Object::toString).orElse(null);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Response notImplemented() {
