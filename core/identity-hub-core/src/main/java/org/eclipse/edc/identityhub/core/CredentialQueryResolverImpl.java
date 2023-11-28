@@ -81,7 +81,8 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         }
 
         // now narrow down the requested credentials to only contain allowed credentials
-        var isValidQuery = allowedCred.getContent().count() == requestedCredentials.size();
+        var content = allowedCred.getContent().toList();
+        var isValidQuery = content.equals(requestedCredentials);
 
         return isValidQuery ?
                 QueryResult.success(requestedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential))

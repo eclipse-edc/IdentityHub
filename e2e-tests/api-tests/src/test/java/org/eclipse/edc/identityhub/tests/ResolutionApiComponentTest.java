@@ -177,7 +177,7 @@ public class ResolutionApiComponentTest {
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
-        when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null))).thenReturn(failure("generator test error"));
+        when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(failure("generator test error"));
 
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
@@ -194,7 +194,7 @@ public class ResolutionApiComponentTest {
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
-        when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null))).thenReturn(success(createPresentationResponse()));
+        when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(success(createPresentationResponse()));
 
         var resp = IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
