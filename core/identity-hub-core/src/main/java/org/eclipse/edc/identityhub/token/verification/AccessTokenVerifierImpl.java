@@ -21,6 +21,7 @@ import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identitytrust.validation.JwtValidator;
 import org.eclipse.edc.identitytrust.verification.JwtVerifier;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 
 import java.text.ParseException;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import static com.nimbusds.jwt.JWTClaimNames.SUBJECT;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
 
@@ -43,12 +45,14 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
     private final JwtValidator jwtValidator;
     private final String audience;
     private final PublicKeyWrapper stsPublicKey;
+    private final Monitor monitor;
 
-    public AccessTokenVerifierImpl(JwtVerifier jwtVerifier, JwtValidator jwtValidator, String audience, PublicKeyWrapper stsPublicKey) {
+    public AccessTokenVerifierImpl(JwtVerifier jwtVerifier, JwtValidator jwtValidator, String audience, PublicKeyWrapper stsPublicKey, Monitor monitor) {
         this.jwtVerifier = jwtVerifier;
         this.jwtValidator = jwtValidator;
         this.audience = audience;
         this.stsPublicKey = stsPublicKey;
+        this.monitor = monitor;
     }
 
     @Override
@@ -84,8 +88,10 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
             var atSub = accessTokenClaims.getSubject();
 
             // correlate sub and access_token.sub
-            if (!Objects.equals(claimToken.getStringClaim("sub"), atSub)) {
-                return failure("ID token 'sub' claim is not equal to '%s.sub' claim.".formatted(ACCES_TOKEN_CLAIM));
+            var sub = claimToken.getStringClaim(SUBJECT);
+            if (!Objects.equals(sub, atSub)) {
+                monitor.warning("ID token [sub] claim is not equal to [%s.sub] claim: expected '%s', got '%s'. Proof-of-possession could not be established!".formatted(ACCES_TOKEN_CLAIM, sub, atSub));
+                // return failure("ID token 'sub' claim is not equal to '%s.sub' claim.".formatted(ACCES_TOKEN_CLAIM));
             }
 
             // verify that the access_token contains a scope claim

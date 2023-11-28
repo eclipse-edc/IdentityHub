@@ -53,7 +53,7 @@ class AccessTokenVerifierImplTest {
     private final JwtVerifier jwtVerifierMock = mock();
     private final JwtValidator jwtValidatorMock = mock();
     private final PublicKeyWrapper pkWrapper = mock();
-    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(jwtVerifierMock, jwtValidatorMock, OWN_DID, pkWrapper);
+    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(jwtVerifierMock, jwtValidatorMock, OWN_DID, pkWrapper, mock());
 
     @BeforeEach
     void setup() throws JOSEException {
@@ -62,23 +62,12 @@ class AccessTokenVerifierImplTest {
         when(pkWrapper.verifier()).thenReturn(new ECDSAVerifier(CONSUMER_KEY));
     }
 
-    private ClaimToken convert(TokenRepresentation argument) {
-        try {
-            var ctb = ClaimToken.Builder.newInstance();
-            SignedJWT.parse(argument.getToken()).getJWTClaimsSet().getClaims().forEach(ctb::claim);
-            return ctb.build();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Test
     void verify_validJwt() {
         assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID)))
                 .isSucceeded()
                 .satisfies(strings -> Assertions.assertThat(strings).containsOnly(TEST_SCOPE));
     }
-
 
     @Test
     void verify_jwtVerifierFails() {
@@ -137,6 +126,16 @@ class AccessTokenVerifierImplTest {
 
         assertThat(verifier.verify(siToken)).isFailed()
                 .detail().contains("No scope claim was found on the access_token");
+    }
+
+    private ClaimToken convert(TokenRepresentation argument) {
+        try {
+            var ctb = ClaimToken.Builder.newInstance();
+            SignedJWT.parse(argument.getToken()).getJWTClaimsSet().getClaims().forEach(ctb::claim);
+            return ctb.build();
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

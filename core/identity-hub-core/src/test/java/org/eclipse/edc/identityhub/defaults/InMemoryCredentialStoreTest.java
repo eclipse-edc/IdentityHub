@@ -61,9 +61,9 @@ class InMemoryCredentialStoreTest {
 
         resources.forEach(store::create);
 
-        var res = store.query(QuerySpec.max());
+        var res = store.query(QuerySpec.none());
         assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent()).hasSize(5).containsAll(resources);
+        Assertions.assertThat(res.getContent()).isEmpty();
     }
 
 

@@ -15,6 +15,8 @@
 package org.eclipse.edc.identityhub.core.creators;
 
 import com.apicatalog.ld.signature.SignatureSuite;
+import com.apicatalog.ld.signature.method.VerificationMethod;
+import com.apicatalog.vc.integrity.DataIntegrityProofOptions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.JWK;
@@ -122,7 +124,7 @@ public class LdpPresentationCreator implements PresentationCreator<JsonObject> {
 
         var types = (List) additionalData.get("types");
         var presentationObject = Json.createObjectBuilder()
-                .add(CONTEXT, stringArray(List.of(IATP_CONTEXT_URL, W3C_CREDENTIALS_URL, PRESENTATION_EXCHANGE_URL)))
+                .add(CONTEXT, stringArray(List.of(W3C_CREDENTIALS_URL, PRESENTATION_EXCHANGE_URL)))
                 .add(ID_PROPERTY, IATP_CONTEXT_URL + "/id/" + UUID.randomUUID())
                 .add(TYPE_PROPERTY, stringArray(types))
                 .add(HOLDER_PROPERTY, issuerId)
@@ -153,11 +155,19 @@ public class LdpPresentationCreator implements PresentationCreator<JsonObject> {
         var jwk = extractKey(pk);
         var keypair = new JwkMethod(keyId, type, null, jwk);
 
-        return ldpIssuer.signDocument(presentationObject, keypair, suite.createOptions())
+        var options = (DataIntegrityProofOptions) suite.createOptions();
+        options.purpose(URI.create("https://w3id.org/security#assertionMethod"));
+        options.verificationMethod(getVerificationMethod(keyId));
+        return ldpIssuer.signDocument(presentationObject, keypair, options)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 
+    private VerificationMethod getVerificationMethod(URI keyId) {
+        return new JwkMethod(keyId, null, null, null);
+    }
+
     private JWK extractKey(PrivateKeyWrapper pk) {
+        // this is a bit of a hack. ultimately, the PrivateKeyWrapper class should have a getter for the actual private key
         return ReflectionUtil.getFieldValue("privateKey", pk);
     }
 

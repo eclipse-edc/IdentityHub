@@ -37,11 +37,11 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
     }
 
     @Override
-    public <T> T createPresentation(List<VerifiableCredentialContainer> credentials, CredentialFormat format) {
+    public <T> T createPresentation(List<VerifiableCredentialContainer> credentials, CredentialFormat format, Map<String, Object> additionalData) {
         var creator = ofNullable(creators.get(format)).orElseThrow(() -> new EdcException("No PresentationCreator was found for CredentialFormat %s".formatted(format)));
         var keyId = ofNullable(keyIds.get(format)).orElseThrow(() -> new EdcException("No key ID was registered for CredentialFormat %s".formatted(format)));
 
-        return (T) creator.createPresentation(credentials, keyId);
+        return (T) creator.createPresentation(credentials, keyId, additionalData);
     }
 
     @Override

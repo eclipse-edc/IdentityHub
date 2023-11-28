@@ -41,20 +41,21 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
     public static final String TYPE_OPERAND = "verifiableCredential.credential.types";
     public static final String ALIAS_LITERAL = "org.eclipse.edc.vc.type";
     public static final String LIKE_OPERATOR = "like";
+    public static final String CONTAINS_OPERATOR = "contains";
     private static final String SCOPE_SEPARATOR = ":";
     private final List<String> allowedOperations = List.of("read", "*", "all");
 
     @Override
     public Result<Criterion> transform(String scope) {
-        var tokens = parseScope(scope);
+        var tokens = tokenize(scope);
         if (tokens.failed()) {
             return failure("Scope string cannot be converted: %s".formatted(tokens.getFailureDetail()));
         }
         var credentialType = tokens.getContent()[1];
-        return success(new Criterion(TYPE_OPERAND, LIKE_OPERATOR, credentialType));
+        return success(new Criterion(TYPE_OPERAND, CONTAINS_OPERATOR, credentialType));
     }
 
-    private Result<String[]> parseScope(String scope) {
+    protected Result<String[]> tokenize(String scope) {
         if (scope == null) return failure("Scope was null");
 
         var tokens = scope.split(SCOPE_SEPARATOR);

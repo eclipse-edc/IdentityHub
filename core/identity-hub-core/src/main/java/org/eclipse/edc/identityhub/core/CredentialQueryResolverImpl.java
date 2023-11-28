@@ -75,13 +75,14 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
         // check that prover scope is not wider than issuer scope
         var issuerQuery = convertToQuerySpec(issuerScopeResult.getContent());
-        var predicate = issuerQuery.getFilterExpression().stream()
-                .map(c -> credentialsPredicate(c.getOperandRight().toString()))
-                .reduce(Predicate::or)
-                .orElse(x -> false);
+        var allowedCred = credentialStore.query(issuerQuery);
+        if (allowedCred.failed()) {
+            return QueryResult.invalidScope(allowedCred.getFailureMessages());
+        }
 
         // now narrow down the requested credentials to only contain allowed credentials
-        var isValidQuery = requestedCredentials.stream().filter(predicate).count() == requestedCredentials.size();
+        var content = allowedCred.getContent().toList();
+        var isValidQuery = content.equals(requestedCredentials);
 
         return isValidQuery ?
                 QueryResult.success(requestedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential))

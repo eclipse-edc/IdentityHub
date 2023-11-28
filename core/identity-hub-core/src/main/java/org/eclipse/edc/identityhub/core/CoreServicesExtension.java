@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.core;
 
 import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
-import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
+import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.identitytrust.validation.SelfIssuedIdTokenValidator;
 import org.eclipse.edc.identityhub.core.creators.JwtPresentationCreator;
 import org.eclipse.edc.identityhub.core.creators.LdpPresentationCreator;
@@ -39,6 +39,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.security.PrivateKeyResolver;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 import org.eclipse.edc.verification.jwt.SelfIssuedIdTokenVerifier;
 
@@ -52,6 +53,7 @@ import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.JWS_202
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_SUBMISSION_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;
+import static org.eclipse.edc.spi.CoreConstants.JSON_LD;
 
 /**
  * This extension provides core services for the IdentityHub that are not intended to be user-replaceable.
@@ -74,7 +76,7 @@ public class CoreServicesExtension implements ServiceExtension {
     private JwtValidator jwtValidator;
 
     @Inject
-    private DidResolverRegistry didResolverRegistry;
+    private DidPublicKeyResolver didResolverRegistry;
     @Inject
     private PublicKeyWrapper identityHubPublicKey;
     @Inject
@@ -89,6 +91,8 @@ public class CoreServicesExtension implements ServiceExtension {
     private Clock clock;
     @Inject
     private SignatureSuiteRegistry signatureSuiteRegistry;
+    @Inject
+    private TypeManager typeManager;
 
     @Override
     public String name() {
@@ -103,7 +107,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public AccessTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
-        return new AccessTokenVerifierImpl(getJwtVerifier(), getJwtValidator(), getOwnDid(context), identityHubPublicKey);
+        return new AccessTokenVerifierImpl(getJwtVerifier(), getJwtValidator(), getOwnDid(context), identityHubPublicKey, context.getMonitor());
     }
 
     @Provider
@@ -134,7 +138,7 @@ public class CoreServicesExtension implements ServiceExtension {
             presentationCreatorRegistry.addCreator(new JwtPresentationCreator(privateKeyResolver, clock, getOwnDid(context)), CredentialFormat.JWT);
 
             var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(context.getMonitor()).build();
-            presentationCreatorRegistry.addCreator(new LdpPresentationCreator(privateKeyResolver, getOwnDid(context), signatureSuiteRegistry, defaultSuite, ldpIssuer, null),
+            presentationCreatorRegistry.addCreator(new LdpPresentationCreator(privateKeyResolver, getOwnDid(context), signatureSuiteRegistry, defaultSuite, ldpIssuer, typeManager.getMapper(JSON_LD)),
                     CredentialFormat.JSON_LD);
         }
         return presentationCreatorRegistry;
@@ -142,7 +146,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public PresentationGenerator presentationGenerator(ServiceExtensionContext context) {
-        return new PresentationGeneratorImpl(CredentialFormat.JSON_LD, presentationCreatorRegistry, context.getMonitor());
+        return new PresentationGeneratorImpl(CredentialFormat.JSON_LD, presentationCreatorRegistry(context), context.getMonitor());
     }
 
 
