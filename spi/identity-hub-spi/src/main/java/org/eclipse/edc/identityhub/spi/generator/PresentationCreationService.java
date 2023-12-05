@@ -27,7 +27,7 @@ import java.util.List;
  * and an optional presentation definition.
  */
 @FunctionalInterface
-public interface PresentationGenerator {
+public interface PresentationCreationService {
     /**
      * Creates a presentation based on a list of verifiable credentials and an optional presentation definition.
      *

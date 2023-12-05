@@ -16,7 +16,7 @@ package org.eclipse.edc.identityservice.api;
 
 import org.eclipse.edc.core.transform.transformer.to.JsonValueToGenericTypeTransformer;
 import org.eclipse.edc.iam.identitytrust.transform.to.JsonObjectToPresentationQueryTransformer;
-import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
+import org.eclipse.edc.identityhub.spi.generator.PresentationCreationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identityservice.api.v1.PresentationApiController;
@@ -58,7 +58,7 @@ public class PresentationApiExtension implements ServiceExtension {
     private CredentialQueryResolver credentialResolver;
 
     @Inject
-    private PresentationGenerator presentationGenerator;
+    private PresentationCreationService presentationCreationService;
 
     @Inject
     private JsonLd jsonLd;
@@ -72,7 +72,7 @@ public class PresentationApiExtension implements ServiceExtension {
         validatorRegistry.register(PresentationQuery.PRESENTATION_QUERY_TYPE_PROPERTY, new PresentationQueryValidator());
 
 
-        var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, accessTokenVerifier, presentationGenerator, context.getMonitor());
+        var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, accessTokenVerifier, presentationCreationService, context.getMonitor());
 
         var jsonLdMapper = typeManager.getMapper(JSON_LD);
         webService.registerResource(RESOLUTION_CONTEXT, new ObjectMapperProvider(jsonLdMapper));

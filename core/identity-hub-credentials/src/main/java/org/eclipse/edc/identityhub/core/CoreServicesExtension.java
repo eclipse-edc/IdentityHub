@@ -20,8 +20,8 @@ import org.eclipse.edc.iam.identitytrust.validation.SelfIssuedIdTokenValidator;
 import org.eclipse.edc.identityhub.core.creators.JwtPresentationCreator;
 import org.eclipse.edc.identityhub.core.creators.LdpPresentationCreator;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.spi.generator.PresentationCreationService;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
-import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
@@ -145,8 +145,8 @@ public class CoreServicesExtension implements ServiceExtension {
     }
 
     @Provider
-    public PresentationGenerator presentationGenerator(ServiceExtensionContext context) {
-        return new PresentationGeneratorImpl(CredentialFormat.JSON_LD, presentationCreatorRegistry(context), context.getMonitor());
+    public PresentationCreationService presentationGenerator(ServiceExtensionContext context) {
+        return new PresentationCreationServiceImpl(CredentialFormat.JSON_LD, presentationCreatorRegistry(context), context.getMonitor());
     }
 
 

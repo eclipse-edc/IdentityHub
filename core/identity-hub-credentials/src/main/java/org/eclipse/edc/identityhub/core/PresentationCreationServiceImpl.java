@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.core;
 
 import jakarta.json.JsonObject;
+import org.eclipse.edc.identityhub.spi.generator.PresentationCreationService;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
-import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponse;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identitytrust.model.CredentialFormat.JSON_LD;
 
-public class PresentationGeneratorImpl implements PresentationGenerator {
+public class PresentationCreationServiceImpl implements PresentationCreationService {
     private final CredentialFormat defaultFormatVp;
     private final PresentationCreatorRegistry registry;
     private final Monitor monitor;
@@ -43,7 +43,7 @@ public class PresentationGeneratorImpl implements PresentationGenerator {
      *
      * @param defaultFormatVp The default format for verifiable presentations.
      */
-    public PresentationGeneratorImpl(CredentialFormat defaultFormatVp, PresentationCreatorRegistry registry, Monitor monitor) {
+    public PresentationCreationServiceImpl(CredentialFormat defaultFormatVp, PresentationCreatorRegistry registry, Monitor monitor) {
         this.defaultFormatVp = defaultFormatVp;
         this.registry = registry;
         this.monitor = monitor;

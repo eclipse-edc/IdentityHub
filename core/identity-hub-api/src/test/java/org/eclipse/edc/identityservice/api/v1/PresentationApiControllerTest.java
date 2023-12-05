@@ -16,7 +16,7 @@ package org.eclipse.edc.identityservice.api.v1;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
+import org.eclipse.edc.identityhub.spi.generator.PresentationCreationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
@@ -71,7 +71,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final CredentialQueryResolver queryResolver = mock();
     private final AccessTokenVerifier accessTokenVerifier = mock();
-    private final PresentationGenerator generator = mock();
+    private final PresentationCreationService generator = mock();
 
 
     @Test
