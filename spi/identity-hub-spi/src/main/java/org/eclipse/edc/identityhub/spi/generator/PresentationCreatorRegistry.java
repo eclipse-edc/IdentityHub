@@ -21,15 +21,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Registry that contains multiple {@link PresentationCreator} objects and assigns them a {@link CredentialFormat}.
+ * Registry that contains multiple {@link PresentationGenerator} objects and assigns them a {@link CredentialFormat}.
  * With this, it is possible to generate VerifiablePresentations in different formats.
  */
 public interface PresentationCreatorRegistry {
 
     /**
-     * Registers a {@link PresentationCreator} for a particular {@link CredentialFormat}
+     * Registers a {@link PresentationGenerator} for a particular {@link CredentialFormat}
      */
-    void addCreator(PresentationCreator<?> creator, CredentialFormat format);
+    void addCreator(PresentationGenerator<?> creator, CredentialFormat format);
 
     /**
      * Creates a VerifiablePresentation based on a list of verifiable credentials and a credential format. How the presentation will be represented

@@ -25,7 +25,7 @@ import jakarta.json.JsonArray;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.iam.did.spi.key.PrivateKeyWrapper;
-import org.eclipse.edc.identityhub.spi.generator.PresentationCreator;
+import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
@@ -52,7 +52,7 @@ import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.CONTEXT;
  * LdpPresentationCreator is a class that implements the PresentationCreator interface to generate Verifiable Presentations based on Verifiable Credential Containers.
  * VPs are represented as {@link JsonObject}.
  */
-public class LdpPresentationCreator implements PresentationCreator<JsonObject> {
+public class LdpPresentationGenerator implements PresentationGenerator<JsonObject> {
 
     public static final String ID_PROPERTY = "id";
     public static final String TYPE_PROPERTY = "type";
@@ -65,8 +65,8 @@ public class LdpPresentationCreator implements PresentationCreator<JsonObject> {
     private final LdpIssuer ldpIssuer;
     private final ObjectMapper mapper;
 
-    public LdpPresentationCreator(PrivateKeyResolver privateKeyResolver, String ownDid,
-                                  SignatureSuiteRegistry signatureSuiteRegistry, String defaultSignatureSuite, LdpIssuer ldpIssuer, ObjectMapper mapper) {
+    public LdpPresentationGenerator(PrivateKeyResolver privateKeyResolver, String ownDid,
+                                    SignatureSuiteRegistry signatureSuiteRegistry, String defaultSignatureSuite, LdpIssuer ldpIssuer, ObjectMapper mapper) {
         this.privateKeyResolver = privateKeyResolver;
         this.issuerId = ownDid;
         this.signatureSuiteRegistry = signatureSuiteRegistry;
@@ -77,10 +77,10 @@ public class LdpPresentationCreator implements PresentationCreator<JsonObject> {
 
     /**
      * Will always throw an {@link UnsupportedOperationException}.
-     * Please use {@link LdpPresentationCreator#createPresentation(List, String, Map)} instead.
+     * Please use {@link LdpPresentationGenerator#generatePresentation(List, String, Map)} instead.
      */
     @Override
-    public JsonObject createPresentation(List<VerifiableCredentialContainer> credentials, String keyId) {
+    public JsonObject generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId) {
         throw new UnsupportedOperationException("Must provide additional data: 'types'");
 
     }
@@ -101,7 +101,7 @@ public class LdpPresentationCreator implements PresentationCreator<JsonObject> {
      *                                  or if one or more VerifiableCredentials cannot be represented in the JSON-LD format.
      */
     @Override
-    public JsonObject createPresentation(List<VerifiableCredentialContainer> credentials, String keyId, Map<String, Object> additionalData) {
+    public JsonObject generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId, Map<String, Object> additionalData) {
         if (!additionalData.containsKey("types")) {
             throw new IllegalArgumentException("Must provide additional data: 'types'");
         }

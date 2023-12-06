@@ -35,7 +35,8 @@ Two deployment topologies will be supported:
 
 A participant context (PC) functions as a unit of management and control for `identity resources` in the Identity Hub.
 All resources are contained and accessed through a PC. Contexts are tied to the participant identity as defined in
-the [DSP specifications](https://github.com/International-Data-Spaces-Association/ids-specification) and created through the [IH Management API](#311-elevated-privilege-operations).
+the [DSP specifications](https://github.com/International-Data-Spaces-Association/ids-specification) and created through
+the [IH Management API](#311-elevated-privilege-operations).
 
 Access control for public client API endpoints is scoped to a specific PC. For example, an access token as defined in
 the [Base Identity Protocol specification]() is associated with a specific context and may not be used to access
@@ -56,7 +57,7 @@ participant. A `Verifiable Credential` (VC), `DID`, and `DID Document` are ident
 A `VerifiableCredentialResource` (VCR) is a type of `identity resource` and will be stored on the holder side:
 
 ```java
-class VerifiableCredentialResource implements IdentityResource  {
+class VerifiableCredentialResource implements IdentityResource {
     String id;
     long timestamp;
     VcState state;
@@ -68,7 +69,6 @@ class VerifiableCredentialResource implements IdentityResource  {
 }
 ```
 
-
 The `issuerId` is a `URN`, typically a DID, that can be resolved to return the service endpoint of the Credential
 Issuer.
 
@@ -79,6 +79,7 @@ The `state` and `timestamp` fields are used to determine when the resource enter
 the resource was requested.
 
 On the issuer the record for an already issued VC would look like this:
+
 ```java
 class VerifiableCredentialRecord {
     VcState state; // 
@@ -389,9 +390,10 @@ persistence.
 
 All CRUD operations publish events.
 
-### 3.5.2. VerifiablePresentationGenerator
+### 3.5.2. VerifiablePresentationService
 
-The `VerifiablePresentationGenerator` is responsible for generating Verifiable Presentations (VP) from a (VC).
+The `VerifiablePresentationService` is responsible for delegating to generators, that generate Verifiable
+Presentations (VP) from a (VC).
 
 ### 3.5.3. CredentialRequestManager
 

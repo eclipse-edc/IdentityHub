@@ -25,7 +25,7 @@ import java.util.Map;
  * @param <T> the type of the presentation
  */
 @FunctionalInterface
-public interface PresentationCreator<T> {
+public interface PresentationGenerator<T> {
     /**
      * Generates a Verifiable Presentation based on a list of Verifiable Credential Containers and a key ID. Implementors must
      * use the key ID to resolve the private key used for signing. Recipients of the VP must use the key ID to resolve the public
@@ -42,7 +42,7 @@ public interface PresentationCreator<T> {
      * @throws IllegalArgumentException      If not all VCs can be represented in one VP.
      * @throws UnsupportedOperationException If additional data is required by the implementation, or if specified key is not suitable for signing.
      */
-    T createPresentation(List<VerifiableCredentialContainer> credentials, String keyId);
+    T generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId);
 
     /**
      * Generates a Verifiable Presentation based on a list of Verifiable Credential Containers and a key ID. Implementors must
@@ -59,7 +59,7 @@ public interface PresentationCreator<T> {
      * @return The generated Verifiable Presentation. The concrete return type depends on the implementation.
      * @throws IllegalArgumentException If not all VCs can be represented in one VP, mandatory additional information was not given, or the specified key is not suitable for signing.
      */
-    default T createPresentation(List<VerifiableCredentialContainer> credentials, String keyId, Map<String, Object> additionalData) {
-        return createPresentation(credentials, keyId);
+    default T generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId, Map<String, Object> additionalData) {
+        return generatePresentation(credentials, keyId);
     }
 }

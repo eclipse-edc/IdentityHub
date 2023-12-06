@@ -21,7 +21,7 @@ import com.nimbusds.jwt.SignedJWT;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import org.eclipse.edc.iam.did.spi.key.PrivateKeyWrapper;
-import org.eclipse.edc.identityhub.spi.generator.PresentationCreator;
+import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.spi.EdcException;
@@ -46,7 +46,7 @@ import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CRE
  * JwtPresentationCreator is an implementation of the PresentationCreator interface that generates Verifiable Presentations in JWT format.
  * VPs are returned as {@link String}
  */
-public class JwtPresentationCreator implements PresentationCreator<String> {
+public class JwtPresentationGenerator implements PresentationGenerator<String> {
     private final PrivateKeyResolver privateKeyResolver;
     private final Clock clock;
     private final String issuerId;
@@ -58,7 +58,7 @@ public class JwtPresentationCreator implements PresentationCreator<String> {
      * @param clock              The clock used for generating timestamps.
      * @param issuerId           The ID of the issuer for the presentation. Could be a DID.
      */
-    public JwtPresentationCreator(PrivateKeyResolver privateKeyResolver, Clock clock, String issuerId) {
+    public JwtPresentationGenerator(PrivateKeyResolver privateKeyResolver, Clock clock, String issuerId) {
         this.privateKeyResolver = privateKeyResolver;
         this.clock = clock;
         this.issuerId = issuerId;
@@ -66,10 +66,10 @@ public class JwtPresentationCreator implements PresentationCreator<String> {
 
     /**
      * Will always throw an {@link UnsupportedOperationException}.
-     * Please use {@link JwtPresentationCreator#createPresentation(List, String, Map)} instead.
+     * Please use {@link JwtPresentationGenerator#generatePresentation(List, String, Map)} instead.
      */
     @Override
-    public String createPresentation(List<VerifiableCredentialContainer> credentials, String keyId) {
+    public String generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId) {
         throw new UnsupportedOperationException("Must provide additional data: 'aud'");
     }
 
@@ -85,7 +85,7 @@ public class JwtPresentationCreator implements PresentationCreator<String> {
      * @throws EdcException                  If signing the JWT fails.
      */
     @Override
-    public String createPresentation(List<VerifiableCredentialContainer> credentials, String keyId, Map<String, Object> additionalData) {
+    public String generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId, Map<String, Object> additionalData) {
 
         // check if expected data is there
         if (!additionalData.containsKey("aud")) {

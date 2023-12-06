@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.Map;
 
-abstract class PresentationCreatorTest {
+abstract class PresentationGeneratorTest {
 
     public static final String KEY_ID = "https://test.com/test-keys#key-1";
 
