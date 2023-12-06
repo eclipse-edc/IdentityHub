@@ -17,11 +17,11 @@ package org.eclipse.edc.identityhub.core;
 import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.identitytrust.validation.SelfIssuedIdTokenValidator;
-import org.eclipse.edc.identityhub.core.creators.JwtPresentationCreator;
-import org.eclipse.edc.identityhub.core.creators.LdpPresentationCreator;
+import org.eclipse.edc.identityhub.core.creators.JwtPresentationGenerator;
+import org.eclipse.edc.identityhub.core.creators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
-import org.eclipse.edc.identityhub.spi.generator.PresentationCreationService;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
+import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
@@ -135,18 +135,18 @@ public class CoreServicesExtension implements ServiceExtension {
     public PresentationCreatorRegistry presentationCreatorRegistry(ServiceExtensionContext context) {
         if (presentationCreatorRegistry == null) {
             presentationCreatorRegistry = new PresentationCreatorRegistryImpl();
-            presentationCreatorRegistry.addCreator(new JwtPresentationCreator(privateKeyResolver, clock, getOwnDid(context)), CredentialFormat.JWT);
+            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(privateKeyResolver, clock, getOwnDid(context)), CredentialFormat.JWT);
 
             var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(context.getMonitor()).build();
-            presentationCreatorRegistry.addCreator(new LdpPresentationCreator(privateKeyResolver, getOwnDid(context), signatureSuiteRegistry, defaultSuite, ldpIssuer, typeManager.getMapper(JSON_LD)),
+            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, getOwnDid(context), signatureSuiteRegistry, defaultSuite, ldpIssuer, typeManager.getMapper(JSON_LD)),
                     CredentialFormat.JSON_LD);
         }
         return presentationCreatorRegistry;
     }
 
     @Provider
-    public PresentationCreationService presentationGenerator(ServiceExtensionContext context) {
-        return new PresentationCreationServiceImpl(CredentialFormat.JSON_LD, presentationCreatorRegistry(context), context.getMonitor());
+    public VerifiablePresentationService presentationGenerator(ServiceExtensionContext context) {
+        return new VerifiablePresentationServiceImpl(CredentialFormat.JSON_LD, presentationCreatorRegistry(context), context.getMonitor());
     }
 
 

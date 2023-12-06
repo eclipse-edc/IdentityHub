@@ -41,17 +41,17 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class JwtPresentationCreatorTest extends PresentationCreatorTest {
+class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
     public static final List<String> REQUIRED_CLAIMS = asList("aud", "exp", "iat", "vp");
     private final Map<String, Object> audClaim = Map.of("aud", "did:web:test-audience");
     private final PrivateKeyResolver resolverMock = mock();
-    private JwtPresentationCreator creator;
+    private JwtPresentationGenerator creator;
 
     @BeforeEach
     void setup() {
         var vpSigningKey = createKey(Curve.P_384, "vp-key");
         when(resolverMock.resolvePrivateKey(eq(KEY_ID), any())).thenReturn(new EcPrivateKeyWrapper(vpSigningKey));
-        creator = new JwtPresentationCreator(resolverMock, Clock.systemUTC(), "did:web:test-issuer");
+        creator = new JwtPresentationGenerator(resolverMock, Clock.systemUTC(), "did:web:test-issuer");
     }
 
     @Test
@@ -61,7 +61,7 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, Map.of("vc", TestConstants.VC_CONTENT_DEGREE_EXAMPLE));
         var vcc = new VerifiableCredentialContainer(jwtVc, CredentialFormat.JWT, createDummyCredential());
 
-        var vpJwt = creator.createPresentation(List.of(vcc), KEY_ID, audClaim);
+        var vpJwt = creator.generatePresentation(List.of(vcc), KEY_ID, audClaim);
         assertThat(vpJwt).isNotNull();
         assertThatNoException().isThrownBy(() -> SignedJWT.parse(vpJwt));
         var claims = parseJwt(vpJwt);
@@ -81,7 +81,7 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
         var vc1 = new VerifiableCredentialContainer(jwtVc, CredentialFormat.JWT, createDummyCredential());
         var vc2 = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
 
-        var vpJwt = creator.createPresentation(List.of(vc1, vc2), KEY_ID, audClaim);
+        var vpJwt = creator.generatePresentation(List.of(vc1, vc2), KEY_ID, audClaim);
         assertThat(vpJwt).isNotNull();
         assertThatNoException().isThrownBy(() -> SignedJWT.parse(vpJwt));
 
@@ -94,7 +94,7 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
     @Test
     @DisplayName("Should create a valid VP with no credential")
     void create_whenVcsEmpty_shouldReturnEmptyVp() {
-        var vpJwt = creator.createPresentation(List.of(), KEY_ID, audClaim);
+        var vpJwt = creator.generatePresentation(List.of(), KEY_ID, audClaim);
         assertThat(vpJwt).isNotNull();
         assertThatNoException().isThrownBy(() -> SignedJWT.parse(vpJwt));
 
@@ -109,7 +109,7 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
     @DisplayName("Should throw an exception if no key is found for a key-id")
     void create_whenKeyNotFound() {
         var vcc = new VerifiableCredentialContainer("foobar", CredentialFormat.JWT, createDummyCredential());
-        assertThatThrownBy(() -> creator.createPresentation(List.of(vcc), "not-exist", audClaim)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exist", audClaim)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -117,10 +117,10 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
     @Override
     void create_whenRequiredAdditionalDataMissing_throwsIllegalArgumentException() {
         var vcc = new VerifiableCredentialContainer("foobar", CredentialFormat.JWT, createDummyCredential());
-        assertThatThrownBy(() -> creator.createPresentation(List.of(vcc), KEY_ID))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), KEY_ID))
                 .describedAs("Expected exception when no additional data provided")
                 .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> creator.createPresentation(List.of(vcc), KEY_ID, Map.of()))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), KEY_ID, Map.of()))
                 .describedAs("Expected exception when additional data does not contain expected value ('aud')")
                 .isInstanceOf(IllegalArgumentException.class);
     }
@@ -129,7 +129,7 @@ class JwtPresentationCreatorTest extends PresentationCreatorTest {
     @DisplayName("Should return an empty JWT when no credentials are passed")
     void create_whenEmptyList() {
 
-        var vpJwt = creator.createPresentation(List.of(), KEY_ID, audClaim);
+        var vpJwt = creator.generatePresentation(List.of(), KEY_ID, audClaim);
         assertThat(vpJwt).isNotNull();
         assertThatNoException().isThrownBy(() -> SignedJWT.parse(vpJwt));
         var claims = parseJwt(vpJwt);

@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import com.nimbusds.jose.jwk.ECKey;
-import org.eclipse.edc.identityhub.spi.generator.PresentationCreationService;
+import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
@@ -66,7 +66,7 @@ public class ResolutionApiComponentTest {
             .build();
     // todo: these mocks should be replaced, once their respective implementations exist!
     private static final CredentialQueryResolver CREDENTIAL_QUERY_RESOLVER = mock();
-    private static final PresentationCreationService PRESENTATION_GENERATOR = mock();
+    private static final VerifiablePresentationService PRESENTATION_GENERATOR = mock();
     private static final AccessTokenVerifier ACCESS_TOKEN_VERIFIER = mock();
 
     @RegisterExtension
@@ -75,7 +75,7 @@ public class ResolutionApiComponentTest {
     static {
         runtime = new EdcRuntimeExtension(":launcher", "identity-hub", IDENTITY_HUB_PARTICIPANT.controlPlaneConfiguration());
         runtime.registerServiceMock(CredentialQueryResolver.class, CREDENTIAL_QUERY_RESOLVER);
-        runtime.registerServiceMock(PresentationCreationService.class, PRESENTATION_GENERATOR);
+        runtime.registerServiceMock(VerifiablePresentationService.class, PRESENTATION_GENERATOR);
         runtime.registerServiceMock(AccessTokenVerifier.class, ACCESS_TOKEN_VERIFIER);
     }
 

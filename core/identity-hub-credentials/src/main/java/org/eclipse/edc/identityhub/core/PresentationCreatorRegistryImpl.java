@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.core;
 
-import org.eclipse.edc.identityhub.spi.generator.PresentationCreator;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
+import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.spi.EdcException;
@@ -28,11 +28,11 @@ import static java.util.Optional.ofNullable;
 
 public class PresentationCreatorRegistryImpl implements PresentationCreatorRegistry {
 
-    private final Map<CredentialFormat, PresentationCreator<?>> creators = new HashMap<>();
+    private final Map<CredentialFormat, PresentationGenerator<?>> creators = new HashMap<>();
     private final Map<CredentialFormat, String> keyIds = new HashMap<>();
 
     @Override
-    public void addCreator(PresentationCreator<?> creator, CredentialFormat format) {
+    public void addCreator(PresentationGenerator<?> creator, CredentialFormat format) {
         creators.put(format, creator);
     }
 
@@ -41,7 +41,7 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
         var creator = ofNullable(creators.get(format)).orElseThrow(() -> new EdcException("No PresentationCreator was found for CredentialFormat %s".formatted(format)));
         var keyId = ofNullable(keyIds.get(format)).orElseThrow(() -> new EdcException("No key ID was registered for CredentialFormat %s".formatted(format)));
 
-        return (T) creator.createPresentation(credentials, keyId, additionalData);
+        return (T) creator.generatePresentation(credentials, keyId, additionalData);
     }
 
     @Override
