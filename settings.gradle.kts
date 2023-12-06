@@ -25,10 +25,12 @@ dependencyResolutionManagement {
 // SPI modules
 include(":spi:identity-hub-spi")
 include(":spi:identity-hub-store-spi")
+include(":spi:identity-hub-did-spi")
 
 // core modules
 include(":core:identity-hub-api")
 include(":core:identity-hub-credentials")
+include(":core:identity-hub-did")
 
 // extension modules
 include(":extensions:cryptography:public-key-provider")
