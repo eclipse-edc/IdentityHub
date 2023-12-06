@@ -28,7 +28,7 @@ include(":spi:identity-hub-store-spi")
 
 // core modules
 include(":core:identity-hub-api")
-include(":core:identity-hub-core")
+include(":core:identity-hub-credentials")
 
 // extension modules
 include(":extensions:cryptography:public-key-provider")

@@ -48,18 +48,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class PresentationGeneratorImplTest {
+class PresentationCreationServiceImplTest {
 
     private final Monitor monitor = mock();
     private final PresentationCreatorRegistry registry = mock();
     private final ObjectMapper mapper = JacksonJsonLd.createObjectMapper();
-    private PresentationGeneratorImpl presentationGenerator;
+    private PresentationCreationServiceImpl presentationGenerator;
 
 
     @Test
     void generate_noCredentials() {
         when(registry.createPresentation(anyList(), eq(JSON_LD), any())).thenReturn(jsonObject(EMPTY_LDP_VP));
-        presentationGenerator = new PresentationGeneratorImpl(JSON_LD, registry, monitor);
+        presentationGenerator = new PresentationCreationServiceImpl(JSON_LD, registry, monitor);
         List<VerifiableCredentialContainer> ldpVcs = List.of();
 
         var result = presentationGenerator.createPresentation(ldpVcs, null, null);
@@ -69,7 +69,7 @@ class PresentationGeneratorImplTest {
     @Test
     void generate_defaultFormatLdp_containsOnlyLdpVc() {
         when(registry.createPresentation(any(), eq(JSON_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
-        presentationGenerator = new PresentationGeneratorImpl(JSON_LD, registry, monitor);
+        presentationGenerator = new PresentationCreationServiceImpl(JSON_LD, registry, monitor);
 
         var credentials = List.of(createCredential(JSON_LD), createCredential(JSON_LD));
         var result = presentationGenerator.createPresentation(credentials, null, null);
@@ -82,7 +82,7 @@ class PresentationGeneratorImplTest {
     void generate_defaultFormatLdp_mixedVcs() {
         when(registry.createPresentation(any(), eq(JSON_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
         when(registry.createPresentation(any(), eq(JWT), any())).thenReturn(JWT_VP);
-        presentationGenerator = new PresentationGeneratorImpl(JSON_LD, registry, monitor);
+        presentationGenerator = new PresentationCreationServiceImpl(JSON_LD, registry, monitor);
 
         var credentials = List.of(createCredential(JSON_LD), createCredential(JWT));
 
@@ -97,7 +97,7 @@ class PresentationGeneratorImplTest {
     void generate_defaultFormatLdp_onlyJwtVcs() {
         when(registry.createPresentation(any(), eq(JWT), any())).thenReturn(JWT_VP);
         when(registry.createPresentation(any(), eq(JSON_LD), any())).thenReturn(jsonObject(EMPTY_LDP_VP));
-        presentationGenerator = new PresentationGeneratorImpl(JSON_LD, registry, monitor);
+        presentationGenerator = new PresentationCreationServiceImpl(JSON_LD, registry, monitor);
 
         var credentials = List.of(createCredential(JWT), createCredential(JWT));
 
@@ -112,7 +112,7 @@ class PresentationGeneratorImplTest {
     void generate_defaultFormatJwt_onlyJwtVcs() {
         when(registry.createPresentation(any(), eq(JWT), any())).thenReturn(JWT_VP);
         when(registry.createPresentation(any(), eq(JSON_LD), any())).thenReturn(jsonObject(EMPTY_LDP_VP));
-        presentationGenerator = new PresentationGeneratorImpl(JWT, registry, monitor);
+        presentationGenerator = new PresentationCreationServiceImpl(JWT, registry, monitor);
 
         var credentials = List.of(createCredential(JWT), createCredential(JWT));
 
@@ -126,7 +126,7 @@ class PresentationGeneratorImplTest {
     void generate_defaultFormatJwt_mixedVcs() {
         when(registry.createPresentation(any(), eq(JSON_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
         when(registry.createPresentation(any(), eq(JWT), any())).thenReturn(JWT_VP);
-        presentationGenerator = new PresentationGeneratorImpl(JWT, registry, monitor);
+        presentationGenerator = new PresentationCreationServiceImpl(JWT, registry, monitor);
 
         var credentials = List.of(createCredential(JSON_LD), createCredential(JWT));
 
@@ -139,7 +139,7 @@ class PresentationGeneratorImplTest {
     @Test
     void generate_defaultFormatJwt_onlyLdpVc() {
         when(registry.createPresentation(any(), eq(JWT), any())).thenReturn(JWT_VP);
-        presentationGenerator = new PresentationGeneratorImpl(JWT, registry, monitor);
+        presentationGenerator = new PresentationCreationServiceImpl(JWT, registry, monitor);
 
         var credentials = List.of(createCredential(JSON_LD), createCredential(JSON_LD));
         var result = presentationGenerator.createPresentation(credentials, null, null);
@@ -151,7 +151,7 @@ class PresentationGeneratorImplTest {
 
     @Test
     void generate_withPresentationDef_shouldLogWarning() {
-        presentationGenerator = new PresentationGeneratorImpl(JSON_LD, registry, monitor);
+        presentationGenerator = new PresentationCreationServiceImpl(JSON_LD, registry, monitor);
         presentationGenerator.createPresentation(List.of(), PresentationDefinition.Builder.newInstance().id("test-id").build(), null);
         verify(monitor).warning(contains("A PresentationDefinition was submitted, but is currently ignored by the generator."));
 

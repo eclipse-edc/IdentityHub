@@ -20,7 +20,7 @@ plugins {
 
 dependencies {
     runtimeOnly(project(":core:identity-hub-api"))
-    runtimeOnly(project(":core:identity-hub-core"))
+    runtimeOnly(project(":core:identity-hub-credentials"))
     runtimeOnly(project(":extensions:cryptography:public-key-provider"))
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.identity.did.web)

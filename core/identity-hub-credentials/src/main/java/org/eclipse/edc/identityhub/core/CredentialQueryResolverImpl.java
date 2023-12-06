@@ -25,8 +25,8 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.function.Predicate;
 
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
@@ -82,26 +82,11 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
         // now narrow down the requested credentials to only contain allowed credentials
         var content = allowedCred.getContent().toList();
-        var isValidQuery = content.equals(requestedCredentials);
+        var isValidQuery = new HashSet<>(content).containsAll(requestedCredentials);
 
         return isValidQuery ?
                 QueryResult.success(requestedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential))
                 : QueryResult.unauthorized("Invalid query: requested Credentials outside of scope.");
-    }
-
-    /**
-     * Returns a predicate that filters {@link VerifiableCredentialResource} objects based on the provided type by
-     * inspecting the {@code types} property of the {@link org.eclipse.edc.identitytrust.model.VerifiableCredential} that is
-     * encapsulated in the resource.
-     *
-     * @param type The type to filter by.
-     * @return A predicate that filters {@link VerifiableCredentialResource} objects based on the provided type.
-     */
-    private Predicate<VerifiableCredentialResource> credentialsPredicate(String type) {
-        return resource -> {
-            var cred = resource.getVerifiableCredential();
-            return cred != null && cred.credential() != null && cred.credential().getTypes().contains(type);
-        };
     }
 
     /**

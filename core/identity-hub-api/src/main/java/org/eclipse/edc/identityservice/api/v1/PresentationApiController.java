@@ -22,7 +22,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
+import org.eclipse.edc.identityhub.spi.generator.PresentationCreationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
@@ -53,16 +53,16 @@ public class PresentationApiController implements PresentationApi {
     private final TypeTransformerRegistry transformerRegistry;
     private final CredentialQueryResolver queryResolver;
     private final AccessTokenVerifier accessTokenVerifier;
-    private final PresentationGenerator presentationGenerator;
+    private final PresentationCreationService presentationCreationService;
     private final Monitor monitor;
 
     public PresentationApiController(JsonObjectValidatorRegistry validatorRegistry, TypeTransformerRegistry transformerRegistry, CredentialQueryResolver queryResolver,
-                                     AccessTokenVerifier accessTokenVerifier, PresentationGenerator presentationGenerator, Monitor monitor) {
+                                     AccessTokenVerifier accessTokenVerifier, PresentationCreationService presentationCreationService, Monitor monitor) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
         this.queryResolver = queryResolver;
         this.accessTokenVerifier = accessTokenVerifier;
-        this.presentationGenerator = presentationGenerator;
+        this.presentationCreationService = presentationCreationService;
         this.monitor = monitor;
     }
 
@@ -91,7 +91,7 @@ public class PresentationApiController implements PresentationApi {
 
         // package the credentials in a VP and sign
         var audience = getAudience(token);
-        var presentationResponse = presentationGenerator.createPresentation(credentials.toList(), presentationQuery.getPresentationDefinition(), audience)
+        var presentationResponse = presentationCreationService.createPresentation(credentials.toList(), presentationQuery.getPresentationDefinition(), audience)
                 .orElseThrow(failure -> new EdcException("Error creating VerifiablePresentation: %s".formatted(failure.getFailureDetail())));
         return Response.ok()
                 .entity(presentationResponse)
