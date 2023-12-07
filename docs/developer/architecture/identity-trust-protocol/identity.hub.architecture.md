@@ -166,23 +166,16 @@ Services may register to receive `KeyPairManager` events, for example, when a ro
 
 ### 2.2.4. DID Resources
 
-A `DIDResource` is a `DID` and associated entries in a `DID` document.
+A `DIDResource` is a `DID` and associated entries in a `DID` document. It represents the lifecycle of a DID Document in
+the IdentityHub.
 
 ```java
 class DidResource {
     String did;
     DidState state;
-    long timestamp;
-    List<ServiceEndpoint> serviceEndpoints;
-    List<VerificationMethod> verificationMethods;
-    List<VerificationRelationship> verificationRelationships;
-}
-
-class VerificationMethod {
-    String id;
-    String type;
-    String material;
-    String keyPairResourceId;
+    long stateTimestamp;
+    long createTimestamp;
+    DidDocument document;
 }
 
 class VerificationRelationship {
@@ -191,12 +184,8 @@ class VerificationRelationship {
 }
 ```
 
-The `serviceEndpoints` property contains a collection of `ServiceEndpoints` that can be added through configuration or
-an API invocation.
-
-The `verificationMethods` property contains a collection of `VerificationMethods` associated with Key
-
-The `verificationRelationships` property contains a collection of `VerificationRelationships` associated with Key
+The `DidDocument` is defined in the connector repository and is a representation of
+a [W3C DID](https://www.w3.org/TR/did-core/).
 
 > NB: There is no DID manager.
 
@@ -421,23 +410,24 @@ particular participant context. The DID module makes use of the EDC `Identity DI
 
 ### 3.6.1. DidDocumentPublisher
 
-The `DidDocumentPublisher` is responsible for generating, provisioning and deprovisioning DID documents to
-a `Verifiable Data Registry` (VDR) such as a CDN that serves a Web domain. The publisher is a state machine that can
-asynchronously transition as follows:
+The `DidDocumentPublisher` is responsible for generating, publishing and unpublishing DID documents to
+a `Verifiable Data Registry` (VDR) such as a CDN that serves a Web domain. The publisher can transition as follows:
 
-- **Publish**: GENERATED -> PROVISIONING -> PROVISIONED
-- **Unpublish**: PROVISIONED -> DEPROVISIONING -> DEPROVISIONED
-- **Republish**: PROVISIONED -> GENERATED -> PROVISIONING -> PROVISIONED
+- **Publish**: GENERATED -> PUBLISHED
+- **Unpublish**: PUBLISHED -> UNPUBLISHED
 
 All operations publish events.
 
-The `DidDocumentPublisher` delegates to extensions for handling provisioning to VDRs.
+There can be only one publisher per DID method, and all available publishers are kept in a `DidPublisherRegistry`, which
+can be used to contribute publishers via the extension mechanism.
 
 ### 3.6.2. DidDocumentService
 
 The `DidDocumentService` returns a **managed** DID document to the requesting client. Note that it _**does not**_
 resolve foreign DID documents. Note also this service is intended for internal use. DID resolution should be performed
 through specific DID methods that work directly with a VDR.
+
+The `DidDocumentService` uses the `DidResourceStore` internally.
 
 ## 3.7. Auth/Permission Module
 

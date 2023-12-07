@@ -15,16 +15,13 @@
 package org.eclipse.edc.identithub.did.spi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
+import org.eclipse.edc.iam.did.spi.document.DidDocument;
 
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents a {@link org.eclipse.edc.iam.did.spi.document.DidDocument}
+ * This class wraps a {@link org.eclipse.edc.iam.did.spi.document.DidDocument} and represents its lifecycle in the identity hub.
  */
 public class DidResource {
     @JsonIgnore
@@ -33,8 +30,7 @@ public class DidResource {
     private DidState state = DidState.INITIAL;
     private long stateTimestamp;
     private long createTimestamp;
-    private List<Service> serviceEndpoints = new ArrayList<>();
-    private List<VerificationMethod> verificationMethods = new ArrayList<>();
+    private DidDocument document;
     // todo: what is this?
     // private List<VerificationRelationship> verificationRelationships;
 
@@ -53,12 +49,12 @@ public class DidResource {
         return stateTimestamp;
     }
 
-    public List<Service> getServiceEndpoints() {
-        return serviceEndpoints;
+    public long getCreateTimestamp() {
+        return createTimestamp;
     }
 
-    public List<VerificationMethod> getVerificationMethods() {
-        return verificationMethods;
+    public DidDocument getDocument() {
+        return document;
     }
 
     public static final class Builder {
@@ -78,7 +74,7 @@ public class DidResource {
             return this;
         }
 
-        public Builder timestamp(long timestamp) {
+        public Builder stateTimeStamp(long timestamp) {
             this.resource.stateTimestamp = timestamp;
             return this;
         }
@@ -88,23 +84,13 @@ public class DidResource {
             return this;
         }
 
-        public Builder serviceEndpoints(List<Service> serviceEndpoints) {
-            this.resource.serviceEndpoints = serviceEndpoints;
+        public Builder document(DidDocument document) {
+            this.resource.document = document;
             return this;
         }
 
-        public Builder serviceEndpoint(Service service) {
-            this.resource.serviceEndpoints.add(service);
-            return this;
-        }
-
-        public Builder verificationMethods(List<VerificationMethod> verificationMethodResources) {
-            this.resource.verificationMethods = verificationMethodResources;
-            return this;
-        }
-
-        public Builder verificationMethod(VerificationMethod method) {
-            this.resource.verificationMethods.add(method);
+        public Builder createTimestamp(long createdAt) {
+            this.resource.createTimestamp = createdAt;
             return this;
         }
 
