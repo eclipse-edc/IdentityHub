@@ -15,12 +15,14 @@
 package org.eclipse.edc.identithub.did.spi;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.result.Result;
 
 /**
  * The DidDocumentPublisher is responsible for taking a {@link DidDocument} and making it available at a VDR (verifiable data registry).
  * For example, an implementation may choose to publish the DID to a CDN.
  */
+@ExtensionPoint
 public interface DidDocumentPublisher {
 
     /**

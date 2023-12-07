@@ -15,6 +15,7 @@
 package org.eclipse.edc.identithub.did.spi.store;
 
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
+import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.result.StoreResult;
 
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.List;
 /**
  * The DidResourceStore interface provides CRUD methods for interacting with a store of {@link DidResource} objects.
  */
+@ExtensionPoint
 public interface DidResourceStore {
 
     /**
