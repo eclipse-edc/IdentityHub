@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identithub.did.spi.model;
 
+import java.util.Arrays;
+
 /**
  * The DidState enum represents the state of a DID resource in the internal store.
  */
@@ -44,5 +46,9 @@ public enum DidState {
 
     public int code() {
         return code;
+    }
+
+    public static DidState from(int code) {
+        return Arrays.stream(values()).filter(tps -> tps.code == code).findFirst().orElse(null);
     }
 }

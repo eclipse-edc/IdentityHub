@@ -16,8 +16,10 @@ package org.eclipse.edc.identithub.did.spi.store;
 
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -51,14 +53,14 @@ public interface DidResourceStore {
      * @param did The DID to search for.
      * @return The {@link DidResource} object found in the store, or null if no matching object is found.
      */
-    DidResource getById(String did);
+    DidResource findById(String did);
 
     /**
      * Retrieves all {@link DidResource} objects from the store.
      *
      * @return A {@link List} containing {@link DidResource} objects retrieved from the store.
      */
-    List<DidResource> getAll();
+    Collection<DidResource> query(QuerySpec query);
 
     /**
      * Deletes a {@link DidResource} object from the store with the specified DID. If the specified DID document does not
@@ -69,4 +71,11 @@ public interface DidResourceStore {
      */
     StoreResult<Void> deleteById(String did);
 
+    default String alreadyExistsErrorMessage(String did) {
+        return "A DidResource with ID %s already exists.".formatted(did);
+    }
+
+    default String notFoundErrorMessage(String did) {
+        return "A DidResource with ID %s was not found.".formatted(did);
+    }
 }

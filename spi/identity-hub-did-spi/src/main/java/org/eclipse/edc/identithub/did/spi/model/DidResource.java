@@ -27,7 +27,7 @@ public class DidResource {
     @JsonIgnore
     private Clock clock = Clock.systemUTC();
     private String did;
-    private DidState state = DidState.INITIAL;
+    private int state = DidState.INITIAL.code();
     private long stateTimestamp;
     private long createTimestamp;
     private DidDocument document;
@@ -41,8 +41,12 @@ public class DidResource {
         return did;
     }
 
-    public DidState getState() {
+    public int getState() {
         return state;
+    }
+
+    public DidState getStateAsEnum() {
+        return DidState.from(state);
     }
 
     public long getStateTimestamp() {
@@ -70,7 +74,7 @@ public class DidResource {
         }
 
         public Builder state(DidState state) {
-            this.resource.state = state;
+            this.resource.state = state.code();
             return this;
         }
 
@@ -103,6 +107,11 @@ public class DidResource {
             }
 
             return resource;
+        }
+
+        public Builder state(int code) {
+            this.resource.state = code;
+            return this;
         }
 
         public static Builder newInstance() {
