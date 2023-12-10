@@ -14,7 +14,7 @@ postgres = "42.6.0"
 restAssured = "5.3.2"
 swagger = "2.2.18"
 rsApi = "3.1.0"
-testcontainers = "1.19.1"
+testcontainers = "1.19.3"
 
 [libraries]
 edc-util = { module = "org.eclipse.edc:util", version.ref = "edc" }
