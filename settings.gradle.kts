@@ -31,6 +31,7 @@ include(":spi:identity-hub-did-spi")
 include(":core:identity-hub-api")
 include(":core:identity-hub-credentials")
 include(":core:identity-hub-did")
+include(":core:identity-hub-did-store-sql")
 
 // extension modules
 include(":extensions:cryptography:public-key-provider")

@@ -18,10 +18,12 @@ plugins {
     `maven-publish`
 }
 
-val swagger: String by project
-
 dependencies {
 
-    api(libs.edc.spi.identitytrust)
-    implementation(libs.edc.spi.identity.did)
+    api(libs.edc.spi.identity.did)
+
+    testFixturesImplementation(libs.edc.spi.identity.did)
+    testFixturesImplementation(libs.junit.jupiter.api)
+    testFixturesImplementation(libs.edc.junit)
+    testFixturesImplementation(libs.assertj)
 }
