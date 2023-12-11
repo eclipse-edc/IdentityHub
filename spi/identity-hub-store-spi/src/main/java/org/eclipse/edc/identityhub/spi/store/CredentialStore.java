@@ -57,4 +57,12 @@ public interface CredentialStore {
      * @return A {@link StoreResult} object indicating the result of the operation.
      */
     StoreResult<Void> delete(String id);
+
+    default String alreadyExistsErrorMessage(String id) {
+        return "A VerifiableCredentialResource with ID %s already exists.".formatted(id);
+    }
+
+    default String notFoundErrorMessage(String id) {
+        return "A VerifiableCredentialResource with ID %s was not found.".formatted(id);
+    }
 }

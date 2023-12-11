@@ -1,0 +1,402 @@
+/*
+ *  Copyright (c) 2023 Metaform Systems, Inc.
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Metaform Systems,Inc. - initial API and implementation
+ *
+ */
+
+package org.eclipse.edc.identityhub.credentials.store.test;
+
+import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.store.model.VcState;
+import org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource;
+import org.eclipse.edc.identitytrust.model.CredentialFormat;
+import org.eclipse.edc.identitytrust.model.CredentialSubject;
+import org.eclipse.edc.identitytrust.model.Issuer;
+import org.eclipse.edc.identitytrust.model.VerifiableCredential;
+import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Map;
+
+import static java.util.stream.IntStream.range;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+
+public abstract class CredentialStoreTestBase {
+    public static final String EXAMPLE_VC_WITH_PHD_DEGREE = """
+            {
+              "@context": [
+                "https://www.w3.org/2018/credentials/v1",
+                "https://www.w3.org/2018/credentials/examples/v1"
+              ],
+              "id": "http://example.gov/credentials/3732",
+              "type": ["VerifiableCredential", "UniversityDegreeCredential"],
+              "issuer": "https://example.edu",
+              "issuanceDate": "2010-01-01T19:23:24Z",
+              "credentialSubject": {
+                "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+                "degree": {
+                  "type": "PhdDegree",
+                  "name": "Doctor of Philosophy Degree"
+                }
+              },
+              "proof": {
+                "type": "Ed25519Signature2020",
+                "created": "2021-11-13T18:19:39Z",
+                "verificationMethod": "https://example.edu/issuers/14#key-1",
+                "proofPurpose": "assertionMethod",
+                "proofValue": "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdo
+                               WhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+              }
+            }
+            """;
+    private static final String EXAMPLE_VC = """
+            {
+              "@context": [
+                "https://www.w3.org/2018/credentials/v1",
+                "https://www.w3.org/2018/credentials/examples/v1"
+              ],
+              "id": "http://example.gov/credentials/3732",
+              "type": ["VerifiableCredential", "UniversityDegreeCredential"],
+              "issuer": "https://example.edu",
+              "issuanceDate": "2010-01-01T19:23:24Z",
+              "credentialSubject": {
+                "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+                "degree": {
+                  "type": "BachelorDegree",
+                  "name": "Bachelor of Science and Arts"
+                }
+              },
+              "proof": {
+                "type": "Ed25519Signature2020",
+                "created": "2021-11-13T18:19:39Z",
+                "verificationMethod": "https://example.edu/issuers/14#key-1",
+                "proofPurpose": "assertionMethod",
+                "proofValue": "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdo
+                               WhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+              }
+            }
+            """;
+
+    @Test
+    void create() {
+        var result = getStore().create(createCredential());
+        assertThat(result).isSucceeded();
+
+    }
+
+    @Test
+    void create_whenExists_shouldReturnFailure() {
+        var credential = createCredential();
+        var result = getStore().create(credential);
+        assertThat(result).isSucceeded();
+        var result2 = getStore().create(credential);
+
+        assertThat(result2).isFailed().detail().contains("already exists");
+    }
+
+    @Test
+    void query_byId() {
+        range(0, 5)
+                .mapToObj(i -> createCredentialBuilder().id("id" + i).build())
+                .forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("id", "=", "id2"))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1));
+    }
+
+    @Test
+    void query_byVcState() {
+        var creds = createCredentials();
+        var expectedCred = createCredentialBuilder().state(VcState.REISSUE_REQUESTED).id("id-test").build();
+        creds.add(expectedCred);
+        creds.forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("state", "=", VcState.REISSUE_REQUESTED.getCode()))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
+    void query_likeRawVc() {
+        var creds = createCredentials();
+
+        var expectedCred = createCredentialBuilder()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC_WITH_PHD_DEGREE, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
+                .build();
+        creds.add(expectedCred);
+        creds.forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("verifiableCredential.rawVc", "like", "%PhdDegree%"))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
+    void query_byVcFormat() {
+        var creds = createCredentials();
+
+        var expectedCred = createCredentialBuilder()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JWT, createVerifiableCredential().build()))
+                .build();
+        creds.add(expectedCred);
+        creds.forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("verifiableCredential.format", "=", CredentialFormat.JWT.ordinal()))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
+    void query_byJsonProperty_type() {
+        var creds = createCredentials();
+
+        var expectedCred = createCredentialBuilder()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                        .type("TestType")
+                        .build()))
+                .build();
+        creds.add(expectedCred);
+        creds.forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("verifiableCredential.credential.types", "contains", "TestType"))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
+    void query_byJsonProperty_credentialSubject() {
+        var creds = createCredentials();
+
+        var expectedCred = createCredentialBuilder()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                        .credentialSubject(CredentialSubject.Builder.newInstance()
+                                .claim("degreeType", "PhdDegree")
+                                .build())
+                        .build()))
+                .build();
+        creds.add(expectedCred);
+        creds.forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("verifiableCredential.credential.credentialSubject.degreeType", "=", "PhdDegree"))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
+    void query_byJsonProperty_credentialSubjectComplex() {
+        var creds = createCredentials();
+
+        var expectedCred = createCredentialBuilder()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                        .credentialSubject(CredentialSubject.Builder.newInstance()
+                                .claim("complexSubject", Map.of(
+                                        "sub-key1", "sub-value1",
+                                        "sub-key2", Map.of("sub-sub-key1", "sub-sub-value1")))
+                                .build())
+                        .build()))
+                .build();
+        creds.add(expectedCred);
+        creds.forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("verifiableCredential.credential.credentialSubject.complexSubject.sub-key1", "=", "sub-value1"))
+                .filter(new Criterion("verifiableCredential.credential.credentialSubject.complexSubject.sub-key2.sub-sub-key1", "=", "sub-sub-value1"))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
+    void query_byJsonProperty_issuanceDate() {
+        var creds = createCredentials();
+
+        var issuanceDate = Instant.parse("2023-12-11T10:15:30.00Z");
+        var expectedCred = createCredentialBuilder()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                        .issuanceDate(issuanceDate)
+                        .build()))
+                .build();
+        creds.add(expectedCred);
+        creds.forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("verifiableCredential.credential.issuanceDate", "=", issuanceDate.toString()))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
+    void query_noQuerySpec() {
+        var resources = range(0, 5)
+                .mapToObj(i -> createCredentialBuilder().id("id" + i).build())
+                .toList();
+
+        resources.forEach(getStore()::create);
+
+        var res = getStore().query(QuerySpec.none());
+        assertThat(res).isSucceeded();
+        Assertions.assertThat(res.getContent())
+                .usingRecursiveFieldByFieldElementComparator()
+                .containsExactlyInAnyOrder(resources.toArray(new VerifiableCredentialResource[0]));
+    }
+
+    @Test
+    void query_whenNotFound() {
+        var resources = range(0, 5)
+                .mapToObj(i -> createCredentialBuilder()
+                        .id("id" + i)
+                        .build())
+                .toList();
+
+        resources.forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("holderId", "=", "some-holder"))
+                .build();
+        var res = getStore().query(query);
+        assertThat(res).isSucceeded();
+        Assertions.assertThat(res.getContent()).isEmpty();
+    }
+
+    @Test
+    void query_byInvalidField_shouldReturnEmptyList() {
+        var resources = range(0, 5)
+                .mapToObj(i -> createCredentialBuilder()
+                        .id("id" + i)
+                        .build())
+                .toList();
+
+        resources.forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("invalidField", "=", "test-value"))
+                .build();
+        var res = getStore().query(query);
+        assertThat(res).isSucceeded();
+        Assertions.assertThat(res.getContent()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void update() {
+        var credential = createCredentialBuilder();
+        var result = getStore().create(credential.build());
+        assertThat(result).isSucceeded();
+
+        var updateRes = getStore().update(credential.state(VcState.ISSUED).build());
+        assertThat(updateRes).isSucceeded();
+    }
+
+    @Test
+    void update_whenIdChanges_fails() {
+        var credential = createCredentialBuilder();
+        var result = getStore().create(credential.build());
+
+        var updateRes = getStore().update(credential.state(VcState.ISSUED).id("another-id").build());
+        assertThat(updateRes).isFailed().detail().contains("with ID another-id was not found");
+    }
+
+    @Test
+    void update_whenNotExists() {
+        var credential = createCredentialBuilder();
+        var updateRes = getStore().update(credential.state(VcState.ISSUED).id("another-id").build());
+        assertThat(updateRes).isFailed().detail().contains("with ID another-id was not found");
+    }
+
+    @Test
+    void delete() {
+        var credential = createCredential();
+        getStore().create(credential);
+
+        var deleteRes = getStore().delete(credential.getId());
+        assertThat(deleteRes).isSucceeded();
+    }
+
+    @Test
+    void delete_whenNotExists() {
+        assertThat(getStore().delete("not-exist")).isFailed()
+                .detail().contains("with ID not-exist was not found");
+    }
+
+    protected abstract CredentialStore getStore();
+
+    protected VerifiableCredentialResource createCredential() {
+        return createCredentialBuilder()
+                .build();
+    }
+
+    protected VerifiableCredentialResource.Builder createCredentialBuilder() {
+
+        return VerifiableCredentialResource.Builder.newInstance()
+                .issuerId("test-issuer")
+                .holderId("test-holder")
+                .state(VcState.ISSUED)
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
+                .id("test-id");
+    }
+
+    @NotNull
+    private ArrayList<VerifiableCredentialResource> createCredentials() {
+        return new ArrayList<>(range(0, 5)
+                .mapToObj(i -> createCredentialBuilder().id("id" + i).build())
+                .toList());
+    }
+
+    private VerifiableCredential.Builder createVerifiableCredential() {
+        return VerifiableCredential.Builder.newInstance()
+                .credentialSubject(CredentialSubject.Builder.newInstance().id("test-subject").claim("test-key", "test-val").build())
+                .issuanceDate(Instant.now())
+                .type("VerifiableCredential")
+                .issuer(new Issuer("test-issuer", Map.of()))
+                .id("did:web:test-credential");
+    }
+}
