@@ -23,7 +23,14 @@ import org.eclipse.edc.util.reflection.ReflectionUtil;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+/**
+ * This converts a Criterion to a Predicate, that can be used to query a {@link Stream} of {@link VerifiableCredentialResource} objects.
+ * <p>
+ * Since the object graph of a {@link org.eclipse.edc.identitytrust.model.VerifiableCredential} is quite open, some special handling is required, e.g. for the
+ * {@code credentialSubject} object.
+ */
 public class CriterionToCredentialResourceConverter extends CriterionToPredicateConverterImpl implements CriterionToPredicateConverter {
     @Override
     protected Object property(String key, Object object) {
