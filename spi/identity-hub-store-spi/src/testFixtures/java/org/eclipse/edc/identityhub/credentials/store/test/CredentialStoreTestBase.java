@@ -130,7 +130,7 @@ public abstract class CredentialStoreTestBase {
         creds.forEach(getStore()::create);
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("state", "=", VcState.REISSUE_REQUESTED.getCode()))
+                .filter(new Criterion("state", "=", VcState.REISSUE_REQUESTED.code()))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -217,6 +217,31 @@ public abstract class CredentialStoreTestBase {
 
         var query = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("verifiableCredential.credential.credentialSubject.degreeType", "=", "PhdDegree"))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
+    void query_byJsonProperty_credentialSubjectId() {
+        var creds = createCredentials();
+
+        var expectedCred = createCredentialBuilder()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                        .credentialSubject(CredentialSubject.Builder.newInstance()
+                                .claim("foo", "bar")
+                                .id("test-subject-id")
+                                .build())
+                        .build()))
+                .build();
+        creds.add(expectedCred);
+        creds.forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("verifiableCredential.credential.credentialSubject.id", "=", "test-subject-id"))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()

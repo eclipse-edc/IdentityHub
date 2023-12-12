@@ -34,7 +34,7 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
 public class InMemoryCredentialStore implements CredentialStore {
     private final Map<String, VerifiableCredentialResource> store = new HashMap<>();
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
-    private final QueryResolver<VerifiableCredentialResource> queryResolver = new ReflectionBasedQueryResolver<>(VerifiableCredentialResource.class);
+    private final QueryResolver<VerifiableCredentialResource> queryResolver = new ReflectionBasedQueryResolver<>(VerifiableCredentialResource.class, new CriterionToCredentialResourceConverter());
 
     @Override
     public StoreResult<Void> create(VerifiableCredentialResource credentialResource) {
@@ -55,7 +55,9 @@ public class InMemoryCredentialStore implements CredentialStore {
     public StoreResult<Stream<VerifiableCredentialResource>> query(QuerySpec querySpec) {
         lock.readLock().lock();
         try {
-            var result = queryResolver.query(store.values().stream(), querySpec, Predicate::or, x -> false);
+            // if no filter is present, we return true
+            Predicate<Object> fallback = querySpec.getFilterExpression().isEmpty() ? x -> true : x -> false;
+            var result = queryResolver.query(store.values().stream(), querySpec, Predicate::or, fallback);
             return success(result);
         } finally {
             lock.readLock().unlock();
