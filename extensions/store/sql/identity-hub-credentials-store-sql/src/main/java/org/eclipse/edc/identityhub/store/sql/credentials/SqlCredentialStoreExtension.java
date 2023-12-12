@@ -12,10 +12,10 @@
  *
  */
 
-package org.eclipse.edc.identityhub.did.store.sql;
+package org.eclipse.edc.identityhub.store.sql.credentials;
 
-import org.eclipse.edc.identityhub.did.store.sql.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -27,7 +27,7 @@ import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import static org.eclipse.edc.identityhub.did.store.sql.SqlCredentialStoreExtension.NAME;
+import static org.eclipse.edc.identityhub.store.sql.credentials.SqlCredentialStoreExtension.NAME;
 
 @Extension(value = NAME)
 public class SqlCredentialStoreExtension implements ServiceExtension {

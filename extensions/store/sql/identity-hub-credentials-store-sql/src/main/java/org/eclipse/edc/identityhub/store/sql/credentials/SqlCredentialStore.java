@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.did.store.sql;
+package org.eclipse.edc.identityhub.store.sql.credentials;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;

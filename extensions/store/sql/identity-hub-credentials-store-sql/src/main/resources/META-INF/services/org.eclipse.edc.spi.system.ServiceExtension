@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.edc.identityhub.did.store.sql.SqlCredentialStoreExtension
+org.eclipse.edc.identityhub.store.sql.credentials.SqlCredentialStoreExtension

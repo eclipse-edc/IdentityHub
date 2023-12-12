@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.did.store.sql;
+package org.eclipse.edc.identityhub.store.sql.credentials;
 
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.statement.SqlStatements;

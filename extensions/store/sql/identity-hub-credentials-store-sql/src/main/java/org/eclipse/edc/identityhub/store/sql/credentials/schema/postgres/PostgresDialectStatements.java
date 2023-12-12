@@ -12,9 +12,9 @@
  *
  */
 
-package org.eclipse.edc.identityhub.did.store.sql.schema.postgres;
+package org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres;
 
-import org.eclipse.edc.identityhub.did.store.sql.BaseSqlDialectStatements;
+import org.eclipse.edc.identityhub.store.sql.credentials.BaseSqlDialectStatements;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.dialect.PostgresDialect;
