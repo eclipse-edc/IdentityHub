@@ -35,7 +35,6 @@ import static org.eclipse.edc.identityhub.publickey.resolver.PublicKeyWrapperExt
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -45,18 +44,16 @@ class PublicKeyWrapperExtensionTest {
     public static final String PEMFILE_NAME = "testkey.pem";
     private static final String JWKFILE_NAME = "testkey.json";
     private final Vault vaultMock = mock();
-    private ServiceExtensionContext context;
     private PublicKeyWrapperExtension extension;
 
     @BeforeEach
     void setup(ObjectFactory factory, ServiceExtensionContext context) {
         context.registerService(Vault.class, vaultMock);
-        this.context = spy(context);
         this.extension = factory.constructInstance(PublicKeyWrapperExtension.class);
     }
 
     @Test
-    void createPublicKeyWrapper_fromVaultPem() {
+    void createPublicKeyWrapper_fromVaultPem(ServiceExtensionContext context) {
         when(context.getSetting(eq(PUBLIC_KEY_VAULT_ALIAS_PROPERTY), any())).thenReturn("foo");
         when(vaultMock.resolveSecret(eq("foo"))).thenReturn(getPem());
 
@@ -67,7 +64,7 @@ class PublicKeyWrapperExtensionTest {
 
 
     @Test
-    void createPublicKeyWrapper_fromVaultJwk() {
+    void createPublicKeyWrapper_fromVaultJwk(ServiceExtensionContext context) {
         when(context.getSetting(eq(PUBLIC_KEY_VAULT_ALIAS_PROPERTY), any())).thenReturn("foo");
         when(vaultMock.resolveSecret(eq("foo"))).thenReturn(getJwk());
 
@@ -78,7 +75,7 @@ class PublicKeyWrapperExtensionTest {
 
 
     @Test
-    void createPublicKeyWrapper_fromFilePem() {
+    void createPublicKeyWrapper_fromFilePem(ServiceExtensionContext context) {
         var file = TestUtils.getFileFromResourceName(PEMFILE_NAME);
         when(context.getSetting(eq(PUBLIC_KEY_PATH_PROPERTY), any())).thenReturn(file.getAbsolutePath());
 
@@ -89,7 +86,7 @@ class PublicKeyWrapperExtensionTest {
     }
 
     @Test
-    void createPublicKeyWrapper_fromFileJwk() {
+    void createPublicKeyWrapper_fromFileJwk(ServiceExtensionContext context) {
         var file = TestUtils.getFileFromResourceName(JWKFILE_NAME);
         when(context.getSetting(eq(PUBLIC_KEY_PATH_PROPERTY), any())).thenReturn(file.getAbsolutePath());
 
@@ -100,7 +97,7 @@ class PublicKeyWrapperExtensionTest {
     }
 
     @Test
-    void createPublicKeyWrapper_fromVaultInvalidFormat() {
+    void createPublicKeyWrapper_fromVaultInvalidFormat(ServiceExtensionContext context) {
         when(context.getSetting(eq(PUBLIC_KEY_VAULT_ALIAS_PROPERTY), any())).thenReturn("foo");
         when(vaultMock.resolveSecret(eq("foo"))).thenReturn("some invalid string");
 
@@ -109,7 +106,7 @@ class PublicKeyWrapperExtensionTest {
     }
 
     @Test
-    void createPublicKeyWrapper_fromFileInvalidFormat() {
+    void createPublicKeyWrapper_fromFileInvalidFormat(ServiceExtensionContext context) {
 
         when(context.getSetting(eq(PUBLIC_KEY_PATH_PROPERTY), any())).thenReturn(TestUtils.getFileFromResourceName("invalidkey.txt").getAbsolutePath());
         assertThatThrownBy(() -> extension.createPublicKey(context)).isInstanceOf(EdcException.class).hasRootCauseInstanceOf(JOSEException.class);
@@ -118,7 +115,7 @@ class PublicKeyWrapperExtensionTest {
     }
 
     @Test
-    void createPublicKeyWrapper_notConfigured() {
+    void createPublicKeyWrapper_notConfigured(ServiceExtensionContext context) {
         assertThatThrownBy(() -> extension.createPublicKey(context)).isInstanceOf(EdcException.class).hasMessage("No public key was configured! Please either configure 'edc.ih.iam.publickey.path' or 'edc.ih.iam.publickey.alias'.");
 
     }
