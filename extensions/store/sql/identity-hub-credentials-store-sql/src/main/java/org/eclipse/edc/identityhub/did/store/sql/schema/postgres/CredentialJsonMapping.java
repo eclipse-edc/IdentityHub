@@ -22,12 +22,15 @@ import java.util.List;
 
 import static org.eclipse.edc.identityhub.did.store.sql.schema.postgres.PostgresDialectStatements.CREDENTIAL_SUBJECT_ALIAS;
 
+/**
+ * Maps the canonical format of a {@link org.eclipse.edc.identitytrust.model.VerifiableCredential} onto its JSON representation
+ * and generates query statements for Postgres.
+ */
 public class CredentialJsonMapping extends JsonFieldMapping {
 
     public CredentialJsonMapping(String columnName) {
         super(columnName);
         add("credentialSubject", CREDENTIAL_SUBJECT_ALIAS);
-
     }
 
     @Override

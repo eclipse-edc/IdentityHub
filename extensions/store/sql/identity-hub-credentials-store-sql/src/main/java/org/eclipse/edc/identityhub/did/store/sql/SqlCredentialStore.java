@@ -41,7 +41,7 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
 
 
 /**
- * SQL-based {@link VerifiableCredentialResource} store intended for use with PostgreSQLs
+ * SQL-based {@link VerifiableCredentialResource} store intended for use with PostgreSQL
  */
 public class SqlCredentialStore extends AbstractSqlStore implements CredentialStore {
 

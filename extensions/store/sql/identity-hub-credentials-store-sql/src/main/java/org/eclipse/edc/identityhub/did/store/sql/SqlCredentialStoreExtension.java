@@ -31,7 +31,7 @@ import static org.eclipse.edc.identityhub.did.store.sql.SqlCredentialStoreExtens
 
 @Extension(value = NAME)
 public class SqlCredentialStoreExtension implements ServiceExtension {
-    public static final String NAME = "DID Resource SQL Store Extension";
+    public static final String NAME = "CredentialResource SQL Store Extension";
 
     @Setting(value = "Datasource name for the DidResource database", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE)
     public static final String DATASOURCE_SETTING_NAME = "edc.datasource.credentials.name";

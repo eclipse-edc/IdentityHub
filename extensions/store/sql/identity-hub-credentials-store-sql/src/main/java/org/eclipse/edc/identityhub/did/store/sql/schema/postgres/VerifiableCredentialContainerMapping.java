@@ -17,6 +17,9 @@ package org.eclipse.edc.identityhub.did.store.sql.schema.postgres;
 import org.eclipse.edc.identityhub.did.store.sql.CredentialStoreStatements;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
+/**
+ * Maps the canonical format of a {@link org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer} to SQL column names
+ */
 public class VerifiableCredentialContainerMapping extends TranslationMapping {
     public VerifiableCredentialContainerMapping(CredentialStoreStatements statements) {
         add("rawVc", statements.getRawVcColumn());
