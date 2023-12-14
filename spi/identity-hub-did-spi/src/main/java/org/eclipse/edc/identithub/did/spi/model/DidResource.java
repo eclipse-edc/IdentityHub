@@ -61,6 +61,10 @@ public class DidResource {
         return document;
     }
 
+    public void transitionState(DidState newState) {
+        this.state = newState.code();
+    }
+
     public static final class Builder {
         private final DidResource resource;
 
