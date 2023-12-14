@@ -33,11 +33,11 @@ public enum VcState {
         this.code = code;
     }
 
-    public static VcState from(int code) {
-        return Arrays.stream(values()).filter(tps -> tps.code == code).findFirst().orElse(null);
+    public int code() {
+        return code;
     }
 
-    public int getCode() {
-        return code;
+    public static VcState from(int code) {
+        return Arrays.stream(values()).filter(tps -> tps.code == code).findFirst().orElse(null);
     }
 }
