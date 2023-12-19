@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
+import org.eclipse.edc.identityhub.api.validation.PresentationQueryValidator;
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
 import org.eclipse.edc.identitytrust.model.presentationdefinition.Constraints;
 import org.eclipse.edc.identitytrust.model.presentationdefinition.Field;

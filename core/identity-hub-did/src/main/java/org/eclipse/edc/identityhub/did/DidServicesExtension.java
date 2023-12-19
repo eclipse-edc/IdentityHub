@@ -15,15 +15,25 @@
 package org.eclipse.edc.identityhub.did;
 
 import org.eclipse.edc.identithub.did.spi.DidDocumentPublisherRegistry;
+import org.eclipse.edc.identithub.did.spi.DidDocumentService;
+import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
+import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.system.ServiceExtension;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import static org.eclipse.edc.identityhub.did.DidServicesExtension.NAME;
 
 @Extension(value = NAME)
 public class DidServicesExtension implements ServiceExtension {
     public static final String NAME = "DID Service Extension";
+    @Inject
+    private TransactionContext transactionContext;
+    @Inject
+    private DidResourceStore didResourceStore;
+
+    private DidDocumentPublisherRegistry didPublisherRegistry;
 
     @Override
     public String name() {
@@ -31,7 +41,15 @@ public class DidServicesExtension implements ServiceExtension {
     }
 
     @Provider
-    public DidDocumentPublisherRegistry createRegistry() {
-        return new DidDocumentPublisherRegistryImpl();
+    public DidDocumentPublisherRegistry getDidPublisherRegistry() {
+        if (didPublisherRegistry == null) {
+            didPublisherRegistry = new DidDocumentPublisherRegistryImpl();
+        }
+        return didPublisherRegistry;
+    }
+
+    @Provider
+    public DidDocumentService createDidDocumentService() {
+        return new DidDocumentServiceImpl(transactionContext, didResourceStore, getDidPublisherRegistry());
     }
 }

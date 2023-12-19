@@ -104,12 +104,12 @@ public class DidResource {
 
         public DidResource build() {
             Objects.requireNonNull(resource.did, "Must have an identifier");
-            Objects.requireNonNull(resource.state, "Must have a state");
-
             if (resource.stateTimestamp <= 0) {
                 resource.stateTimestamp = resource.clock.millis();
             }
-
+            if (resource.createTimestamp <= 0) {
+                resource.createTimestamp = resource.clock.millis();
+            }
             return resource;
         }
 

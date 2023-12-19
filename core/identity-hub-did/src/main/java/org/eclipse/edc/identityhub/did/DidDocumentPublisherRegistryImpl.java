@@ -24,8 +24,9 @@ import java.util.Map;
  * In-mem variant of the publisher registry.
  */
 public class DidDocumentPublisherRegistryImpl implements DidDocumentPublisherRegistry {
+    public static final String DID_PREFIX = "did:";
+    public static final String DID_METHOD_SEPARATOR = ":";
     private final Map<String, DidDocumentPublisher> publishers = new HashMap<>();
-
 
     @Override
     public void addPublisher(String didMethodName, DidDocumentPublisher publisher) {
@@ -34,11 +35,12 @@ public class DidDocumentPublisherRegistryImpl implements DidDocumentPublisherReg
 
     @Override
     public DidDocumentPublisher getPublisher(String did) {
-        return publishers.get(did);
+        // only need the "did" and method prefix
+        did = did.replace(DID_PREFIX, "");
+        var endIndex = did.indexOf(DID_METHOD_SEPARATOR);
+        return endIndex >= 0 ?
+                publishers.get(DID_PREFIX + did.substring(0, endIndex)) :
+                null;
     }
 
-    @Override
-    public boolean canPublish(String did) {
-        return publishers.containsKey(did);
-    }
 }

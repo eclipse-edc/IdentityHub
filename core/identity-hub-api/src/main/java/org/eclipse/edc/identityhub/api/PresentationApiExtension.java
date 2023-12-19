@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2023 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,19 +8,19 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Metaform Systems, Inc. - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityservice.api;
+package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.core.transform.transformer.to.JsonValueToGenericTypeTransformer;
 import org.eclipse.edc.iam.identitytrust.transform.to.JsonObjectToPresentationQueryTransformer;
+import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
+import org.eclipse.edc.identityhub.api.validation.PresentationQueryValidator;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
-import org.eclipse.edc.identityservice.api.v1.PresentationApiController;
-import org.eclipse.edc.identityservice.api.validation.PresentationQueryValidator;
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -34,7 +34,7 @@ import org.eclipse.edc.web.jersey.jsonld.JerseyJsonLdInterceptor;
 import org.eclipse.edc.web.jersey.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
-import static org.eclipse.edc.identityservice.api.PresentationApiExtension.NAME;
+import static org.eclipse.edc.identityhub.api.PresentationApiExtension.NAME;
 import static org.eclipse.edc.spi.CoreConstants.JSON_LD;
 
 @Extension(value = NAME)

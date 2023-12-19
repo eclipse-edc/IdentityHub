@@ -14,17 +14,12 @@
 
 package org.eclipse.edc.identityhub.publisher.did.local;
 
-import org.eclipse.edc.identithub.did.spi.DidConstants;
 import org.eclipse.edc.identithub.did.spi.DidDocumentPublisher;
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.identithub.did.spi.model.DidState;
 import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
 import org.eclipse.edc.spi.monitor.Monitor;
-import org.eclipse.edc.spi.query.Criterion;
-import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
-
-import java.util.Collection;
 
 import static org.eclipse.edc.identithub.did.spi.DidConstants.DID_WEB_METHOD_REGEX;
 import static org.eclipse.edc.spi.result.Result.failure;
@@ -85,16 +80,6 @@ public class LocalDidPublisher implements DidDocumentPublisher {
                 .map(v -> success())
                 .orElse(f -> failure(f.getFailureDetail()));
 
-    }
-
-    @Override
-    public Collection<DidResource> getPublishedDocuments() {
-        var q = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("state", "=", DidState.PUBLISHED.code()))
-                .filter(new Criterion("did", "like", DidConstants.DID_WEB_METHOD + "%"))
-                .build();
-
-        return didResourceStore.query(q);
     }
 
     private boolean isPublished(DidResource didResource) {

@@ -37,12 +37,4 @@ public interface DidDocumentPublisherRegistry {
      */
     DidDocumentPublisher getPublisher(String did);
 
-
-    /**
-     * Determines whether a given DID can be published by this registry. The DID must conform to the <a href="https://www.w3.org/TR/did-core/#did-syntax">W3C DID Syntax</a>
-     *
-     * @param did The W3C DID to examine
-     * @return true if a publisher is found for this DID method, false if no publisher is found, or the DID is not valid.
-     */
-    boolean canPublish(String did);
 }

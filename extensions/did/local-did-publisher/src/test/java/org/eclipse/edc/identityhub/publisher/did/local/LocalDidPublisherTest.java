@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.publisher.did.local.TestFunctions.createDidResource;
 import static org.mockito.ArgumentMatchers.any;
@@ -170,19 +169,4 @@ class LocalDidPublisherTest {
         verify(storeMock).update(any());
         verifyNoMoreInteractions(storeMock);
     }
-
-    @Test
-    void getPublishedDocuments() {
-        var list = range(0, 10)
-                .mapToObj(i -> createDidResource().did("did:web:" + i).state(DidState.PUBLISHED).build())
-                .toList();
-
-        when(storeMock.query(any())).thenReturn(list);
-
-        assertThat(publisher.getPublishedDocuments())
-                .usingRecursiveFieldByFieldElementComparator()
-                .containsAll(list);
-    }
-
-
 }
