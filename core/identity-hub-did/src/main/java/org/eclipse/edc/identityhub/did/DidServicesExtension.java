@@ -14,7 +14,9 @@
 
 package org.eclipse.edc.identityhub.did;
 
+import org.eclipse.edc.identithub.did.spi.DidDocumentPublisherRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
+import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.system.ServiceExtension;
 
 import static org.eclipse.edc.identityhub.did.DidServicesExtension.NAME;
@@ -22,4 +24,14 @@ import static org.eclipse.edc.identityhub.did.DidServicesExtension.NAME;
 @Extension(value = NAME)
 public class DidServicesExtension implements ServiceExtension {
     public static final String NAME = "DID Service Extension";
+
+    @Override
+    public String name() {
+        return NAME;
+    }
+
+    @Provider
+    public DidDocumentPublisherRegistry createRegistry() {
+        return new DidDocumentPublisherRegistryImpl();
+    }
 }

@@ -25,6 +25,11 @@ import static org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtensi
 public class DidDefaultServicesExtension implements ServiceExtension {
     public static final String NAME = "DID Default Services Extension";
 
+    @Override
+    public String name() {
+        return NAME;
+    }
+
     @Provider(isDefault = true)
     public DidResourceStore createInMemoryDidResourceStore() {
         return new InMemoryDidResourceStore();

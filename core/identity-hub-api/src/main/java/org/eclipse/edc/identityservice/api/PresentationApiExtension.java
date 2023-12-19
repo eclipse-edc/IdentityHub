@@ -34,37 +34,36 @@ import org.eclipse.edc.web.jersey.jsonld.JerseyJsonLdInterceptor;
 import org.eclipse.edc.web.jersey.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
+import static org.eclipse.edc.identityservice.api.PresentationApiExtension.NAME;
 import static org.eclipse.edc.spi.CoreConstants.JSON_LD;
 
-@Extension(value = "Presentation API Extension")
+@Extension(value = NAME)
 public class PresentationApiExtension implements ServiceExtension {
 
+    public static final String NAME = "Presentation API Extension";
     public static final String RESOLUTION_SCOPE = "resolution-scope";
     public static final String RESOLUTION_CONTEXT = "resolution";
-
     @Inject
     private TypeTransformerRegistry typeTransformer;
-
     @Inject
     private JsonObjectValidatorRegistry validatorRegistry;
-
     @Inject
     private WebService webService;
-
     @Inject
     private AccessTokenVerifier accessTokenVerifier;
-
     @Inject
     private CredentialQueryResolver credentialResolver;
-
     @Inject
     private VerifiablePresentationService verifiablePresentationService;
-
     @Inject
     private JsonLd jsonLd;
-
     @Inject
     private TypeManager typeManager;
+
+    @Override
+    public String name() {
+        return NAME;
+    }
 
     @Override
     public void initialize(ServiceExtensionContext context) {
