@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.edc.identityhub.api.PresentationApiExtension
+org.eclipse.edc.identityhub.api.didmanagement.DidManagementApiExtension

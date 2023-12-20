@@ -15,11 +15,8 @@
 package org.eclipse.edc.identithub.did.spi;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.result.Result;
-
-import java.util.Collection;
 
 /**
  * The DidDocumentPublisher is responsible for taking a {@link DidDocument} and making it available at a VDR (verifiable data registry).
@@ -38,27 +35,18 @@ public interface DidDocumentPublisher {
     boolean canHandle(String id);
 
     /**
-     * Publishes a given {@link DidDocument} to a verifiable data registry (VDR). Publishing the same DID twice is a noop.
+     * Publishes a given {@link DidDocument} to a verifiable data registry (VDR).
      *
-     * @param did the DID to publish. A document with that DID must exist in the database.
+     * @param did the DID of the document to publish
      * @return a {@link Result} object indicating the success or failure of the operation.
      */
     Result<Void> publish(String did);
 
     /**
-     * Unpublishes a given {@link DidDocument} from a verifiable data registry (VDR). Attempting to unpublish a DID document
-     * that isn't published will result in an error.
+     * Unpublishes a given {@link DidDocument} from a verifiable data registry (VDR).
      *
-     * @param did the DID to unpublish. A document with that DID must exist in the database.
+     * @param did the DID of the document to un-publish
      * @return a {@link Result} object indicating the success or failure of the operation.
      */
     Result<Void> unpublish(String did);
-
-    /**
-     * Returns a list of all {@link DidDocument}s that are managed by this publisher, and are currently published.
-     *
-     * @return a list of documents that are currently published.
-     */
-    //todo: not sure if needed?
-    Collection<DidResource> getPublishedDocuments();
 }

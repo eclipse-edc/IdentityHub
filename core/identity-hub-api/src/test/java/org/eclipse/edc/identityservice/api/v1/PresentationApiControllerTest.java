@@ -16,6 +16,7 @@ package org.eclipse.edc.identityservice.api.v1;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.JsonObject;
+import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;

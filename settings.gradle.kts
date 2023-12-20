@@ -37,6 +37,7 @@ include(":extensions:cryptography:public-key-provider")
 include(":extensions:store:sql:identity-hub-did-store-sql")
 include(":extensions:store:sql:identity-hub-credentials-store-sql")
 include(":extensions:did:local-did-publisher")
+include(":extensions:did:did-management-api")
 
 // other modules
 include(":launcher")
