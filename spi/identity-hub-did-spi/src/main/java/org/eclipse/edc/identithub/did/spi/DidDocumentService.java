@@ -81,7 +81,7 @@ public interface DidDocumentService {
     }
 
     default String noPublisherFoundMessage(String did) {
-        return "No publisher was found for did '%s'".formatted(did);
+        return "No publisher was found for DID '%s'".formatted(did);
     }
 
     DidResource findById(String did);
