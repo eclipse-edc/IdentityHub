@@ -256,7 +256,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
         when(didDocumentServiceMock.deleteById(eq(TEST_DID))).thenReturn(ServiceResult.success());
         baseRequest()
                 .body(new DidRequestPayload(TEST_DID))
-                .delete("/")
+                .post("/delete")
                 .then()
                 .log().ifError()
                 .statusCode(204);
@@ -270,7 +270,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
         when(didDocumentServiceMock.deleteById(eq(TEST_DID))).thenReturn(ServiceResult.notFound("test-message"));
         baseRequest()
                 .body(new DidRequestPayload(TEST_DID))
-                .delete("/")
+                .post("/delete")
                 .then()
                 .log().ifError()
                 .statusCode(404);
@@ -284,7 +284,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
         when(didDocumentServiceMock.deleteById(eq(TEST_DID))).thenReturn(ServiceResult.conflict("test-message"));
         baseRequest()
                 .body(new DidRequestPayload(TEST_DID))
-                .delete("/")
+                .post("/delete")
                 .then()
                 .log().ifError()
                 .statusCode(409);

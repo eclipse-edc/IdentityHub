@@ -25,7 +25,7 @@ concurrency:
 jobs:
   Publish-To-SwaggerHub:
     # do NOT run on forks. The Org ("edc") is unique all across SwaggerHub
-    #    if: github.repository == 'eclipse-edc/IdentityHub'
+    if: github.repository == 'eclipse-edc/IdentityHub'
     runs-on: ubuntu-latest
     env:
       rootDir: resources/openapi/yaml
