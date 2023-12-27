@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.api.didmanagement.v1;
 
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -84,7 +83,8 @@ public class DidManagementApiController implements DidManagementApi {
     }
 
     @Override
-    @DELETE
+    @POST
+    @Path("/delete")
     public void deleteDidFromBody(DidRequestPayload request) {
         documentService.deleteById(request.did())
                 .orElseThrow(exceptionMapper(DidDocument.class, request.did()));

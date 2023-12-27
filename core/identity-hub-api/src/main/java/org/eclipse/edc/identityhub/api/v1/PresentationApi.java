@@ -17,7 +17,6 @@ package org.eclipse.edc.identityhub.api.v1;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -37,9 +36,8 @@ import org.eclipse.edc.identitytrust.model.credentialservice.PresentationRespons
 @SecurityScheme(name = "Authentication",
         description = "Self-Issued ID token containing an access_token",
         type = SecuritySchemeType.HTTP,
-        scheme = "Bearer",
-        bearerFormat = "JWT",
-        in = SecuritySchemeIn.HEADER)
+        scheme = "bearer",
+        bearerFormat = "JWT")
 public interface PresentationApi {
 
     @Tag(name = "Resolution API")
