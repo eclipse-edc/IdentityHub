@@ -4,7 +4,7 @@ format.version = "1.1"
 [versions]
 assertj = "3.24.2"
 awaitility = "4.2.0"
-edc = "0.4.2-SNAPSHOT"
+edc = "0.4.2-refactor"
 failsafe = "3.3.2"
 jackson = "2.14.2"
 jupiter = "5.10.1"
@@ -40,11 +40,11 @@ edc-core-micrometer = { module = "org.eclipse.edc:micrometer-core", version.ref 
 edc-core-api = { module = "org.eclipse.edc:api-core", version.ref = "edc" }
 edc-core-stateMachine = { module = "org.eclipse.edc:state-machine", version.ref = "edc" }
 edc-core-sql = { module = "org.eclipse.edc:sql-core", version.ref = "edc" }
+edc-core-token = { module = "org.eclipse.edc:token-core", version.ref = "edc" }
 edc-core-jersey = { module = "org.eclipse.edc:jersey-core", version.ref = "edc" }
 edc-core-jerseyproviders = { module = "org.eclipse.edc:jersey-providers", version.ref = "edc" }
 edc-core-junit = { module = "org.eclipse.edc:junit", version.ref = "edc" }
 edc-core-transform = { module = "org.eclipse.edc:transform-core", version.ref = "edc" }
-edc-identity-did-crypto = { module = "org.eclipse.edc:identity-did-crypto", version.ref = "edc" }
 edc-identity-did-core = { module = "org.eclipse.edc:identity-did-core", version.ref = "edc" }
 edc-identity-did-web = { module = "org.eclipse.edc:identity-did-web", version.ref = "edc" }
 edc-iatp-service = { module = "org.eclipse.edc:identity-trust-service", version.ref = "edc" }

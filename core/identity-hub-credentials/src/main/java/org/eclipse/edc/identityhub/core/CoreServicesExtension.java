@@ -14,9 +14,6 @@
 
 package org.eclipse.edc.identityhub.core;
 
-import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
-import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.edc.iam.identitytrust.validation.SelfIssuedIdTokenValidator;
 import org.eclipse.edc.identityhub.core.creators.JwtPresentationGenerator;
 import org.eclipse.edc.identityhub.core.creators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
@@ -28,20 +25,22 @@ import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identityhub.token.verification.AccessTokenVerifierImpl;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
-import org.eclipse.edc.identitytrust.validation.JwtValidator;
-import org.eclipse.edc.identitytrust.verification.JwtVerifier;
 import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.spi.iam.PublicKeyResolver;
+import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.PrivateKeyResolver;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
+import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
+import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
-import org.eclipse.edc.verification.jwt.SelfIssuedIdTokenVerifier;
 
 import java.net.URISyntaxException;
 import java.time.Clock;
@@ -64,6 +63,15 @@ public class CoreServicesExtension implements ServiceExtension {
     public static final String NAME = "IdentityHub Core Services Extension";
     @Setting(value = "Configure this IdentityHub's DID", required = true)
     public static final String OWN_DID_PROPERTY = "edc.ih.iam.id";
+
+    @Setting(value = "Key alias, which was used to store the public key in the vaule", required = true)
+    public static final String PUBLIC_KEY_VAULT_ALIAS_PROPERTY = "edc.ih.iam.publickey.alias";
+
+    @Setting(value = "Path to a file that holds the public key, e.g. a PEM file. Do not use in production!")
+    public static final String PUBLIC_KEY_PATH_PROPERTY = "edc.ih.iam.publickey.path";
+
+    @Setting(value = "Public key in PEM format")
+    public static final String PUBLIC_KEY_PEM = "edc.ih.iam.publickey.pem";
     public static final String PRESENTATION_EXCHANGE_V_1_JSON = "presentation-exchange.v1.json";
     public static final String PRESENTATION_QUERY_V_08_JSON = "presentation-query.v08.json";
     public static final String PRESENTATION_SUBMISSION_V1_JSON = "presentation-submission.v1.json";
@@ -72,13 +80,9 @@ public class CoreServicesExtension implements ServiceExtension {
     public static final String CREDENTIALS_V_1_JSON = "credentials.v1.json";
     private final String defaultSuite = IdentityHubConstants.JWS_2020_SIGNATURE_SUITE;
     private PresentationCreatorRegistryImpl presentationCreatorRegistry;
-    private JwtVerifier jwtVerifier;
-    private JwtValidator jwtValidator;
 
     @Inject
-    private DidPublicKeyResolver didResolverRegistry;
-    @Inject
-    private PublicKeyWrapper identityHubPublicKey;
+    private PublicKeyResolver publicKeyResolver;
     @Inject
     private JsonLd jsonLd;
     @Inject
@@ -93,6 +97,14 @@ public class CoreServicesExtension implements ServiceExtension {
     private SignatureSuiteRegistry signatureSuiteRegistry;
     @Inject
     private TypeManager typeManager;
+    @Inject
+    private TokenValidationService tokenValidationService;
+    @Inject
+    private TokenValidationRulesRegistry tokenValidationRulesRegistry;
+    @Inject
+    private Vault vault;
+    @Inject
+    private KeyParserRegistry keyParserRegistry;
 
     @Override
     public String name() {
@@ -107,24 +119,9 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public AccessTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
-        return new AccessTokenVerifierImpl(getJwtVerifier(), getJwtValidator(), getOwnDid(context), identityHubPublicKey, context.getMonitor());
+        return new AccessTokenVerifierImpl(tokenValidationService, createPublicKey(context), tokenValidationRulesRegistry, getOwnDid(context), context.getMonitor(), publicKeyResolver);
     }
 
-    @Provider
-    public JwtValidator getJwtValidator() {
-        if (jwtValidator == null) {
-            jwtValidator = new SelfIssuedIdTokenValidator();
-        }
-        return jwtValidator;
-    }
-
-    @Provider
-    public JwtVerifier getJwtVerifier() {
-        if (jwtVerifier == null) {
-            jwtVerifier = new SelfIssuedIdTokenVerifier(didResolverRegistry);
-        }
-        return jwtVerifier;
-    }
 
     @Provider
     public CredentialQueryResolver createCredentialQueryResolver() {
@@ -165,5 +162,15 @@ public class CoreServicesExtension implements ServiceExtension {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private LocalPublicKeySupplier createPublicKey(ServiceExtensionContext context) {
+        return LocalPublicKeySupplier.Builder.newInstance()
+                .vault(vault)
+                .vaultAlias(context.getSetting(PUBLIC_KEY_VAULT_ALIAS_PROPERTY, null))
+                .publicKeyPath(context.getSetting(PUBLIC_KEY_PATH_PROPERTY, null))
+                .rawString(context.getSetting(PUBLIC_KEY_PEM, null))
+                .keyParserRegistry(keyParserRegistry)
+                .build();
     }
 }

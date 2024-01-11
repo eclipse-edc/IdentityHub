@@ -14,23 +14,21 @@
 
 package org.eclipse.edc.identityhub.token.verification;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
-import com.nimbusds.jwt.SignedJWT;
 import org.assertj.core.api.Assertions;
-import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
-import org.eclipse.edc.identitytrust.validation.JwtValidator;
-import org.eclipse.edc.identitytrust.verification.JwtVerifier;
 import org.eclipse.edc.spi.iam.ClaimToken;
-import org.eclipse.edc.spi.iam.TokenRepresentation;
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.edc.spi.iam.PublicKeyResolver;
+import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
+import org.eclipse.edc.token.spi.TokenValidationService;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
-import java.text.ParseException;
+import java.security.PublicKey;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.CONSUMER_KEY;
 import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.PROVIDER_KEY;
@@ -39,47 +37,38 @@ import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.gen
 import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.generateSiToken;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
-import static org.eclipse.edc.spi.result.Result.failure;
-import static org.eclipse.edc.spi.result.Result.success;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 class AccessTokenVerifierImplTest {
     public static final String OWN_DID = "did:web:consumer";
     private static final String OTHER_PARTICIPANT_DID = "did:web:provider";
-    private final JwtVerifier jwtVerifierMock = mock();
-    private final JwtValidator jwtValidatorMock = mock();
-    private final PublicKeyWrapper pkWrapper = mock();
-    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(jwtVerifierMock, jwtValidatorMock, OWN_DID, pkWrapper, mock());
-
-    @BeforeEach
-    void setup() throws JOSEException {
-        when(jwtValidatorMock.validateToken(any(), any())).thenAnswer(a -> success(convert(a.getArgument(0, TokenRepresentation.class))));
-        when(jwtVerifierMock.verify(any(), eq(OWN_DID))).thenReturn(success());
-        when(pkWrapper.verifier()).thenReturn(new ECDSAVerifier(CONSUMER_KEY));
-    }
+    private final TokenValidationService tokenValidationSerivce = mock();
+    private final Supplier<PublicKey> publicKeySupplier = Mockito::mock;
+    private final TokenValidationRulesRegistry tokenValidationRulesRegistry = mock();
+    private final PublicKeyResolver pkResolver = mock();
+    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, publicKeySupplier, tokenValidationRulesRegistry, OWN_DID, mock(), pkResolver);
+    private final ClaimToken idToken = ClaimToken.Builder.newInstance()
+            .claim("access_token", "test-at")
+            .claim("scope", "org.eclipse.edc.vc.type:SomeTestCredential:read")
+            .build();
 
     @Test
-    void verify_validJwt() {
+    void verify_validSiToken_validAccessToken() {
+        when(tokenValidationSerivce.validate(anyString(), any(), anyList()))
+                .thenReturn(Result.success(idToken));
         assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID)))
                 .isSucceeded()
                 .satisfies(strings -> Assertions.assertThat(strings).containsOnly(TEST_SCOPE));
     }
 
     @Test
-    void verify_jwtVerifierFails() {
-        when(jwtVerifierMock.verify(any(), eq(OWN_DID))).thenReturn(failure("test-failure"));
-        assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID))).isFailed()
-                .detail().contains("test-failure");
-    }
-
-    @Test
-    void verify_jwtValidatorFails() {
-        reset(jwtValidatorMock);
-        when(jwtValidatorMock.validateToken(any(), eq(OWN_DID))).thenReturn(failure("test-failure"));
+    void verify_siTokenValidationFails() {
+        when(tokenValidationSerivce.validate(anyString(), any(), anyList()))
+                .thenReturn(Result.failure("test-failure"));
         assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID))).isFailed()
                 .detail().contains("test-failure");
     }
@@ -96,22 +85,20 @@ class AccessTokenVerifierImplTest {
                 // "access_token" claim is missing
                 .build();
 
-        reset(jwtValidatorMock);
-        when(jwtValidatorMock.validateToken(any(), eq(OWN_DID))).thenReturn(success(claimToken));
-
+        when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.success(claimToken));
         assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID))).isFailed()
                 .detail().contains("No 'access_token' claim was found on ID Token.");
     }
 
     @Test
-    void verify_accessTokenSignatureInvalid() {
+    void verify_accessTokenValidationFails() {
         var spoofedKey = generateEcKey();
         var accessToken = generateJwt(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, Map.of("scope", TEST_SCOPE), spoofedKey);
         var siToken = generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "access_token", accessToken), PROVIDER_KEY);
 
-
-        assertThat(verifier.verify(siToken))
-                .isFailed().detail().isEqualTo("Could not verify access_token: Invalid Signature");
+        when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.failure("test-failure"));
+        assertThat(verifier.verify(siToken)).isFailed()
+                .detail().isEqualTo("test-failure");
     }
 
     @Test
@@ -120,22 +107,16 @@ class AccessTokenVerifierImplTest {
     }
 
     @Test
-    void verify_accessTokenDoesNotContainScope() {
+    void verify_accessTokenDoesNotContainScopeClaim() {
         var accessToken = generateJwt(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, Map.of(/*scope missing*/), CONSUMER_KEY);
         var siToken = generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "access_token", accessToken), PROVIDER_KEY);
 
-        assertThat(verifier.verify(siToken)).isFailed()
-                .detail().contains("No scope claim was found on the access_token");
-    }
+        when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.success(idToken));
+        when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.failure("test-failure"));
 
-    private ClaimToken convert(TokenRepresentation argument) {
-        try {
-            var ctb = ClaimToken.Builder.newInstance();
-            SignedJWT.parse(argument.getToken()).getJWTClaimsSet().getClaims().forEach(ctb::claim);
-            return ctb.build();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
+        assertThat(verifier.verify(siToken))
+                .isFailed()
+                .detail().contains("test-failure");
     }
 
 

@@ -14,12 +14,13 @@
 
 package org.eclipse.edc.identityhub.core.creators;
 
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.edc.iam.did.crypto.key.EcPrivateKeyWrapper;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.PrivateKeyResolver;
 import org.eclipse.edc.verifiablecredentials.jwt.JwtCreationUtils;
 import org.eclipse.edc.verifiablecredentials.jwt.TestConstants;
@@ -48,9 +49,10 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
     private JwtPresentationGenerator creator;
 
     @BeforeEach
-    void setup() {
+    void setup() throws JOSEException {
         var vpSigningKey = createKey(Curve.P_384, "vp-key");
-        when(resolverMock.resolvePrivateKey(eq(KEY_ID), any())).thenReturn(new EcPrivateKeyWrapper(vpSigningKey));
+        when(resolverMock.resolvePrivateKey(any())).thenReturn(Result.failure("not found"));
+        when(resolverMock.resolvePrivateKey(eq(KEY_ID))).thenReturn(Result.success(vpSigningKey.toPrivateKey()));
         creator = new JwtPresentationGenerator(resolverMock, Clock.systemUTC(), "did:web:test-issuer");
     }
 
@@ -87,8 +89,7 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
 
         var claims = parseJwt(vpJwt);
 
-        REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim)
-                .isNotNull());
+        REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
     }
 
     @Test
@@ -100,9 +101,7 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
 
         var claims = parseJwt(vpJwt);
 
-        REQUIRED_CLAIMS
-                .forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim)
-                        .isNotNull());
+        REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
     }
 
     @Test
@@ -134,8 +133,7 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThatNoException().isThrownBy(() -> SignedJWT.parse(vpJwt));
         var claims = parseJwt(vpJwt);
 
-        REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim)
-                .isNotNull());
+        REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
         assertThat(claims.getClaim("vp")).isNotNull();
     }
 

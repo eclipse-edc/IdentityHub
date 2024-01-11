@@ -19,30 +19,29 @@ import com.apicatalog.ld.signature.method.VerificationMethod;
 import com.apicatalog.vc.integrity.DataIntegrityProofOptions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.jwk.JWK;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.iam.did.spi.key.PrivateKeyWrapper;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.security.signature.jws2020.JwkMethod;
+import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.security.PrivateKeyResolver;
-import org.eclipse.edc.util.reflection.ReflectionUtil;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
+import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;
@@ -64,6 +63,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
     private final String defaultSignatureSuite;
     private final LdpIssuer ldpIssuer;
     private final ObjectMapper mapper;
+    private final CryptoConverter cryptoConverter = new CryptoConverter();
 
     public LdpPresentationGenerator(PrivateKeyResolver privateKeyResolver, String ownDid,
                                     SignatureSuiteRegistry signatureSuiteRegistry, String defaultSignatureSuite, LdpIssuer ldpIssuer, ObjectMapper mapper) {
@@ -119,8 +119,8 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         }
 
         // check if private key can be resolved
-        var pk = ofNullable(privateKeyResolver.resolvePrivateKey(keyId, PrivateKeyWrapper.class))
-                .orElseThrow(() -> new IllegalArgumentException("No key could be found with key ID '%s'.".formatted(keyId)));
+        var pk = privateKeyResolver.resolvePrivateKey(keyId)
+                .orElseThrow(f -> new IllegalArgumentException(f.getFailureDetail()));
 
         var types = (List) additionalData.get("types");
         var presentationObject = Json.createObjectBuilder()
@@ -150,9 +150,9 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         return array.build();
     }
 
-    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, PrivateKeyWrapper pk, URI keyId) {
+    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, PrivateKey pk, URI keyId) {
         var type = URI.create(suite.getId().toString());
-        var jwk = extractKey(pk);
+        var jwk = cryptoConverter.createJwk(new KeyPair(null, pk));
         var keypair = new JwkMethod(keyId, type, null, jwk);
 
         var options = (DataIntegrityProofOptions) suite.createOptions();
@@ -164,11 +164,6 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
     private VerificationMethod getVerificationMethod(URI keyId) {
         return new JwkMethod(keyId, null, null, null);
-    }
-
-    private JWK extractKey(PrivateKeyWrapper pk) {
-        // this is a bit of a hack. ultimately, the PrivateKeyWrapper class should have a getter for the actual private key
-        return ReflectionUtil.getFieldValue("privateKey", pk);
     }
 
     private JsonArrayBuilder stringArray(Collection<?> values) {

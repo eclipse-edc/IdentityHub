@@ -20,10 +20,10 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
-import org.eclipse.edc.iam.did.spi.key.PrivateKeyWrapper;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
+import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.security.PrivateKeyResolver;
 
@@ -33,10 +33,10 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.VERIFIABLE_PRESENTATION_TYPE;
@@ -50,6 +50,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
     private final PrivateKeyResolver privateKeyResolver;
     private final Clock clock;
     private final String issuerId;
+    private final CryptoConverter cryptoConverter;
 
     /**
      * Creates a JWT presentation based on a list of Verifiable Credential Containers.
@@ -62,6 +63,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
         this.privateKeyResolver = privateKeyResolver;
         this.clock = clock;
         this.issuerId = issuerId;
+        cryptoConverter = new CryptoConverter();
     }
 
     /**
@@ -77,7 +79,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
      * Creates a presentation using the given Verifiable Credential Containers and additional data.
      *
      * @param credentials    The list of Verifiable Credential Containers to include in the presentation.
-     * @param keyId          The key ID of the private key to be used for generating the presentation.
+     * @param privateKeyId   The key ID of the private key to be used for generating the presentation.
      * @param additionalData Additional data to include in the presentation. Must contain an entry 'aud'. Every entry in the map is added as a claim to the token.
      * @return The serialized JWT presentation.
      * @throws IllegalArgumentException      If the additional data does not contain the required 'aud' value or if no private key could be resolved for the key ID.
@@ -85,7 +87,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
      * @throws EdcException                  If signing the JWT fails.
      */
     @Override
-    public String generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId, Map<String, Object> additionalData) {
+    public String generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyId, Map<String, Object> additionalData) {
 
         // check if expected data is there
         if (!additionalData.containsKey("aud")) {
@@ -93,8 +95,8 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
         }
 
         // check if private key can be resolved
-        var pk = ofNullable(privateKeyResolver.resolvePrivateKey(keyId, PrivateKeyWrapper.class))
-                .orElseThrow(() -> new IllegalArgumentException("No key could be found with key ID '%s'.".formatted(keyId)));
+        var pk = privateKeyResolver.resolvePrivateKey(privateKeyId)
+                .orElseThrow((f) -> new IllegalArgumentException(f.getFailureDetail()));
 
         var rawVcs = credentials.stream().map(VerifiableCredentialContainer::rawVc);
         var now = Date.from(clock.instant());
@@ -108,12 +110,14 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
 
         additionalData.forEach(claimsSet::claim);
 
-        var algo = pk.signer().supportedJWSAlgorithms().stream().findFirst()
-                .orElseThrow(() -> new UnsupportedOperationException("Private key with ID '%s' did not provide any supported JWS algorithms.".formatted(keyId)));
-        var signedJwt = new SignedJWT(new JWSHeader.Builder(algo).keyID(keyId).build(), claimsSet.build());
+        var signer = cryptoConverter.createSignerFor(pk);
+        var algo = cryptoConverter.getRecommendedAlgorithm(signer);
+        algo = Optional.ofNullable(algo)
+                .orElseThrow(() -> new UnsupportedOperationException("Private key with ID '%s' did not provide any supported JWS algorithms.".formatted(privateKeyId)));
+        var signedJwt = new SignedJWT(new JWSHeader.Builder(algo).keyID(privateKeyId).build(), claimsSet.build());
 
         try {
-            signedJwt.sign(pk.signer());
+            signedJwt.sign(signer);
         } catch (JOSEException e) {
             throw new EdcException(e);
         }
