@@ -38,6 +38,7 @@ import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
+import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
@@ -132,7 +133,7 @@ public class CoreServicesExtension implements ServiceExtension {
     public PresentationCreatorRegistry presentationCreatorRegistry(ServiceExtensionContext context) {
         if (presentationCreatorRegistry == null) {
             presentationCreatorRegistry = new PresentationCreatorRegistryImpl();
-            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(privateKeyResolver, clock, getOwnDid(context)), CredentialFormat.JWT);
+            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(privateKeyResolver, clock, getOwnDid(context), new JwtGenerationService()), CredentialFormat.JWT);
 
             var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(context.getMonitor()).build();
             presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, getOwnDid(context), signatureSuiteRegistry, defaultSuite, ldpIssuer, typeManager.getMapper(JSON_LD)),
@@ -140,6 +141,7 @@ public class CoreServicesExtension implements ServiceExtension {
         }
         return presentationCreatorRegistry;
     }
+
 
     @Provider
     public VerifiablePresentationService presentationGenerator(ServiceExtensionContext context) {

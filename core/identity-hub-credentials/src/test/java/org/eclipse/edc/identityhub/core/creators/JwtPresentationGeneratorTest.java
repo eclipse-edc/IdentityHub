@@ -22,6 +22,8 @@ import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.PrivateKeyResolver;
+import org.eclipse.edc.token.JwtGenerationService;
+import org.eclipse.edc.token.spi.TokenGenerationService;
 import org.eclipse.edc.verifiablecredentials.jwt.JwtCreationUtils;
 import org.eclipse.edc.verifiablecredentials.jwt.TestConstants;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +48,7 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
     public static final List<String> REQUIRED_CLAIMS = asList("aud", "exp", "iat", "vp");
     private final Map<String, Object> audClaim = Map.of("aud", "did:web:test-audience");
     private final PrivateKeyResolver resolverMock = mock();
+    private final TokenGenerationService tokenGenerationService = new JwtGenerationService();
     private JwtPresentationGenerator creator;
 
     @BeforeEach
@@ -53,7 +56,7 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
         var vpSigningKey = createKey(Curve.P_384, "vp-key");
         when(resolverMock.resolvePrivateKey(any())).thenReturn(Result.failure("not found"));
         when(resolverMock.resolvePrivateKey(eq(KEY_ID))).thenReturn(Result.success(vpSigningKey.toPrivateKey()));
-        creator = new JwtPresentationGenerator(resolverMock, Clock.systemUTC(), "did:web:test-issuer");
+        creator = new JwtPresentationGenerator(resolverMock, Clock.systemUTC(), "did:web:test-issuer", tokenGenerationService);
     }
 
     @Test

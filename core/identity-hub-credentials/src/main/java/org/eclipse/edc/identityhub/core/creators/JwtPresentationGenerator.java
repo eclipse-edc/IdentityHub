@@ -14,43 +14,49 @@
 
 package org.eclipse.edc.identityhub.core.creators;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
-import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.security.PrivateKeyResolver;
+import org.eclipse.edc.token.spi.TokenDecorator;
+import org.eclipse.edc.token.spi.TokenGenerationService;
 
-import java.sql.Date;
+import java.security.PrivateKey;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.VERIFIABLE_PRESENTATION_TYPE;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.JWT_ID;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.NOT_BEFORE;
 
 /**
  * JwtPresentationCreator is an implementation of the PresentationCreator interface that generates Verifiable Presentations in JWT format.
  * VPs are returned as {@link String}
  */
 public class JwtPresentationGenerator implements PresentationGenerator<String> {
+    public static final String VERIFIABLE_PRESENTATION_CLAIM = "vp";
     private final PrivateKeyResolver privateKeyResolver;
     private final Clock clock;
     private final String issuerId;
-    private final CryptoConverter cryptoConverter;
+
+    private final TokenGenerationService tokenGenerationService;
 
     /**
      * Creates a JWT presentation based on a list of Verifiable Credential Containers.
@@ -59,11 +65,11 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
      * @param clock              The clock used for generating timestamps.
      * @param issuerId           The ID of the issuer for the presentation. Could be a DID.
      */
-    public JwtPresentationGenerator(PrivateKeyResolver privateKeyResolver, Clock clock, String issuerId) {
+    public JwtPresentationGenerator(PrivateKeyResolver privateKeyResolver, Clock clock, String issuerId, TokenGenerationService tokenGenerationService) {
         this.privateKeyResolver = privateKeyResolver;
         this.clock = clock;
         this.issuerId = issuerId;
-        cryptoConverter = new CryptoConverter();
+        this.tokenGenerationService = tokenGenerationService;
     }
 
     /**
@@ -94,35 +100,24 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
             throw new IllegalArgumentException("Must provide additional data: 'aud'");
         }
 
-        // check if private key can be resolved
-        var pk = privateKeyResolver.resolvePrivateKey(privateKeyId)
-                .orElseThrow((f) -> new IllegalArgumentException(f.getFailureDetail()));
-
         var rawVcs = credentials.stream().map(VerifiableCredentialContainer::rawVc);
+        Supplier<PrivateKey> privateKeySupplier = () -> privateKeyResolver.resolvePrivateKey(privateKeyId).orElseThrow(f -> new IllegalArgumentException(f.getFailureDetail()));
+        var tokenResult = tokenGenerationService.generate(privateKeySupplier, vpDecorator(rawVcs), tp -> {
+            additionalData.forEach(tp::claims);
+            return tp;
+        });
+
+        return tokenResult.map(TokenRepresentation::getToken).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+    }
+
+    private TokenDecorator vpDecorator(Stream<String> rawVcs) {
         var now = Date.from(clock.instant());
-        var claimsSet = new JWTClaimsSet.Builder()
-                .issuer(issuerId)
-                .issueTime(now)
-                .notBeforeTime(now)
-                .jwtID(UUID.randomUUID().toString())
-                .claim("vp", createVpClaim(rawVcs))
-                .expirationTime(Date.from(Instant.now().plusSeconds(60)));
-
-        additionalData.forEach(claimsSet::claim);
-
-        var signer = cryptoConverter.createSignerFor(pk);
-        var algo = cryptoConverter.getRecommendedAlgorithm(signer);
-        algo = Optional.ofNullable(algo)
-                .orElseThrow(() -> new UnsupportedOperationException("Private key with ID '%s' did not provide any supported JWS algorithms.".formatted(privateKeyId)));
-        var signedJwt = new SignedJWT(new JWSHeader.Builder(algo).keyID(privateKeyId).build(), claimsSet.build());
-
-        try {
-            signedJwt.sign(signer);
-        } catch (JOSEException e) {
-            throw new EdcException(e);
-        }
-
-        return signedJwt.serialize();
+        return tp -> tp.claims(ISSUER, issuerId)
+                .claims(ISSUED_AT, now)
+                .claims(NOT_BEFORE, now)
+                .claims(JWT_ID, UUID.randomUUID().toString())
+                .claims(VERIFIABLE_PRESENTATION_CLAIM, createVpClaim(rawVcs))
+                .claims(EXPIRATION_TIME, Date.from(Instant.now().plusSeconds(60)));
     }
 
     private String createVpClaim(Stream<String> rawVcs) {
