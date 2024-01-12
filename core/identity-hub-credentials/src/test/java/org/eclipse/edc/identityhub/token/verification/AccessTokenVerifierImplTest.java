@@ -24,10 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.security.PublicKey;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.CONSUMER_KEY;
@@ -41,6 +38,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AccessTokenVerifierImplTest {
@@ -50,7 +49,7 @@ class AccessTokenVerifierImplTest {
     private final Supplier<PublicKey> publicKeySupplier = Mockito::mock;
     private final TokenValidationRulesRegistry tokenValidationRulesRegistry = mock();
     private final PublicKeyResolver pkResolver = mock();
-    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, publicKeySupplier, tokenValidationRulesRegistry, OWN_DID, mock(), pkResolver);
+    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, publicKeySupplier, tokenValidationRulesRegistry, mock(), pkResolver);
     private final ClaimToken idToken = ClaimToken.Builder.newInstance()
             .claim("access_token", "test-at")
             .claim("scope", "org.eclipse.edc.vc.type:SomeTestCredential:read")
@@ -63,6 +62,8 @@ class AccessTokenVerifierImplTest {
         assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID)))
                 .isSucceeded()
                 .satisfies(strings -> Assertions.assertThat(strings).containsOnly(TEST_SCOPE));
+        verify(tokenValidationSerivce, times(2)).validate(anyString(), any(PublicKeyResolver.class), anyList());
+
     }
 
     @Test
@@ -75,19 +76,12 @@ class AccessTokenVerifierImplTest {
 
     @Test
     void verify_noAccessTokenClaim() {
-        var claimToken = ClaimToken.Builder.newInstance()
-                .claim("iss", "did:web:provider")
-                .claim("aud", OWN_DID)
-                .claim("sub", "BPN0001")
-                .claim("exp", Instant.now().toString())
-                .claim("nbf", Instant.now().minus(1, ChronoUnit.DAYS).toString())
-                .claim("jti", UUID.randomUUID().toString())
-                // "access_token" claim is missing
-                .build();
+        when(tokenValidationSerivce.validate(anyString(), any(PublicKeyResolver.class), anyList()))
+                .thenReturn(Result.failure("no access token"));
 
-        when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.success(claimToken));
         assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID))).isFailed()
-                .detail().contains("No 'access_token' claim was found on ID Token.");
+                .detail().contains("no access token");
+        verify(tokenValidationSerivce).validate(anyString(), any(PublicKeyResolver.class), anyList());
     }
 
     @Test

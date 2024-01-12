@@ -63,7 +63,6 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
     private final String defaultSignatureSuite;
     private final LdpIssuer ldpIssuer;
     private final ObjectMapper mapper;
-    private final CryptoConverter cryptoConverter = new CryptoConverter();
 
     public LdpPresentationGenerator(PrivateKeyResolver privateKeyResolver, String ownDid,
                                     SignatureSuiteRegistry signatureSuiteRegistry, String defaultSignatureSuite, LdpIssuer ldpIssuer, ObjectMapper mapper) {
@@ -152,7 +151,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
     private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, PrivateKey pk, URI keyId) {
         var type = URI.create(suite.getId().toString());
-        var jwk = cryptoConverter.createJwk(new KeyPair(null, pk));
+        var jwk = CryptoConverter.createJwk(new KeyPair(null, pk));
         var keypair = new JwkMethod(keyId, type, null, jwk);
 
         var options = (DataIntegrityProofOptions) suite.createOptions();

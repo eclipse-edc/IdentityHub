@@ -15,21 +15,25 @@
 package org.eclipse.edc.identityhub.token.verification;
 
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
-import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.spi.iam.PublicKeyResolver;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
 
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 import static com.nimbusds.jwt.JWTClaimNames.SUBJECT;
-import static org.eclipse.edc.spi.result.Result.failure;
+import static org.eclipse.edc.identityhub.DefaultServicesExtension.ACCESS_TOKEN_CLAIM;
+import static org.eclipse.edc.identityhub.DefaultServicesExtension.ACCESS_TOKEN_SCOPE_CLAIM;
+import static org.eclipse.edc.identityhub.DefaultServicesExtension.IATP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.DefaultServicesExtension.IATP_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.spi.result.Result.success;
 
 /**
@@ -37,21 +41,18 @@ import static org.eclipse.edc.spi.result.Result.success;
  * issuer's DID
  */
 public class AccessTokenVerifierImpl implements AccessTokenVerifier {
-    public static final String ACCES_TOKEN_CLAIM = "access_token";
-    public static final String ACCESS_TOKEN_SCOPE_CLAIM = "scope";
+
     private static final String SCOPE_SEPARATOR = " ";
     private final TokenValidationService tokenValidationService;
     private final TokenValidationRulesRegistry tokenValidationRulesRegistry;
-    private final String audience;
     private final Supplier<PublicKey> stsPublicKey;
     private final Monitor monitor;
     private final PublicKeyResolver publicKeyResolver;
 
-    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, Supplier<PublicKey> publicKeySupplier, TokenValidationRulesRegistry tokenValidationRulesRegistry, String audience, Monitor monitor,
+    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, Supplier<PublicKey> publicKeySupplier, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
                                    PublicKeyResolver publicKeyResolver) {
         this.tokenValidationService = tokenValidationService;
         this.tokenValidationRulesRegistry = tokenValidationRulesRegistry;
-        this.audience = audience;
         this.monitor = monitor;
         this.stsPublicKey = publicKeySupplier;
         this.publicKeyResolver = publicKeyResolver;
@@ -59,40 +60,35 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
 
     @Override
     public Result<List<String>> verify(String token) {
-        // verify cryptographic integrity
-        var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules("iatp-si"));
+        var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(IATP_SELF_ISSUED_TOKEN_CONTEXT));
         if (res.failed()) {
             return res.mapTo();
         }
 
-        // make sure an access_token claim exists
         var claimToken = res.getContent();
-        if (claimToken.getClaim(ACCES_TOKEN_CLAIM) == null) {
-            return failure("No 'access_token' claim was found on ID Token.");
-        }
+        var accessTokenString = claimToken.getStringClaim(ACCESS_TOKEN_CLAIM);
+        var subClaim = claimToken.getStringClaim(SUBJECT);
 
-        var accessTokenString = claimToken.getClaim(ACCES_TOKEN_CLAIM).toString();
+        TokenValidationRule subClaimsMatch = (at, additional) -> {
+            var atSub = at.getStringClaim(SUBJECT);
+            // correlate sub and access_token.sub
+            if (!Objects.equals(subClaim, atSub)) {
+                monitor.warning("ID token [sub] claim is not equal to [%s.sub] claim: expected '%s', got '%s'. Proof-of-possession could not be established!".formatted(ACCESS_TOKEN_CLAIM, subClaim, atSub));
+                // return failure("ID token 'sub' claim is not equal to '%s.sub' claim.".formatted(ACCES_TOKEN_CLAIM));
+            }
+            return Result.success();
+        };
 
         // verify the correctness of the 'access_token'
-        var result = tokenValidationService.validate(accessTokenString, id -> Result.success(stsPublicKey.get()), tokenValidationRulesRegistry.getRules("iatp-access-token"));
+        var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(IATP_ACCESS_TOKEN_CONTEXT));
+        rules.add(subClaimsMatch);
+        var result = tokenValidationService.validate(accessTokenString, id -> Result.success(stsPublicKey.get()), rules);
         if (result.failed()) {
             return result.mapTo();
         }
-        var accessToken = result.getContent();
-        var atSub = accessToken.getClaim(JwtRegisteredClaimNames.SUBJECT);
-
-        // correlate sub and access_token.sub
-        var sub = claimToken.getStringClaim(SUBJECT);
-        if (!Objects.equals(sub, atSub)) {
-            monitor.warning("ID token [sub] claim is not equal to [%s.sub] claim: expected '%s', got '%s'. Proof-of-possession could not be established!".formatted(ACCES_TOKEN_CLAIM, sub, atSub));
-            // return failure("ID token 'sub' claim is not equal to '%s.sub' claim.".formatted(ACCES_TOKEN_CLAIM));
-        }
 
         // verify that the access_token contains a scope claim
-        var scope = accessToken.getStringClaim(ACCESS_TOKEN_SCOPE_CLAIM);
-        if (scope == null) {
-            return failure("No %s claim was found on the %s".formatted(ACCESS_TOKEN_SCOPE_CLAIM, ACCES_TOKEN_CLAIM));
-        }
+        var scope = result.getContent().getStringClaim(ACCESS_TOKEN_SCOPE_CLAIM);
         return success(Arrays.asList(scope.split(SCOPE_SEPARATOR)));
     }
 }
