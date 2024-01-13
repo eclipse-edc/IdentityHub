@@ -31,6 +31,12 @@ import static org.eclipse.edc.identityhub.core.CoreServicesExtension.PUBLIC_KEY_
 import static org.eclipse.edc.identityhub.core.CoreServicesExtension.PUBLIC_KEY_VAULT_ALIAS_PROPERTY;
 
 
+/**
+ * Provides a public key, that is resolved from the vault, a file (using the path) or a raw string, in that sequence.
+ * Typically, we use this when we have a public key configured for the STS service, so we can verify access tokens created by it.
+ * <p>
+ * It is NOT intended for general use when resolving arbitrary public keys!
+ */
 public class LocalPublicKeySupplier implements Supplier<PublicKey> {
     public static final String NO_PUBLIC_KEY_CONFIGURED_ERROR = "No public key was configured! Please either configure '%s', '%s' or '%s'."
             .formatted(PUBLIC_KEY_VAULT_ALIAS_PROPERTY, PUBLIC_KEY_PATH_PROPERTY, PUBLIC_KEY_VAULT_ALIAS_PROPERTY);
@@ -65,7 +71,7 @@ public class LocalPublicKeySupplier implements Supplier<PublicKey> {
      * Retrieves a public key from a PEM file specified by the given path.
      *
      * @param path The path to the PEM file containing the public key.
-     * @return A {@link PublicKeyWrapper} object representing the public key.
+     * @return A {@link PublicKey} object representing the public key.
      * @throws EdcException If an error occurs while reading the file or parsing the public key.
      */
     private Result<PublicKey> getPublicKeyFromFile(String path) {
