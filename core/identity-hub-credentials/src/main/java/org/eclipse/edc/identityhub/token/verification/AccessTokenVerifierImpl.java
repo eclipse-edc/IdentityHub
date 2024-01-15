@@ -14,23 +14,26 @@
 
 package org.eclipse.edc.identityhub.token.verification;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
-import org.eclipse.edc.identitytrust.validation.JwtValidator;
-import org.eclipse.edc.identitytrust.verification.JwtVerifier;
-import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.iam.PublicKeyResolver;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.token.spi.TokenValidationRule;
+import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
+import org.eclipse.edc.token.spi.TokenValidationService;
 
-import java.text.ParseException;
+import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static com.nimbusds.jwt.JWTClaimNames.SUBJECT;
-import static org.eclipse.edc.spi.result.Result.failure;
+import static org.eclipse.edc.identityhub.DefaultServicesExtension.ACCESS_TOKEN_CLAIM;
+import static org.eclipse.edc.identityhub.DefaultServicesExtension.ACCESS_TOKEN_SCOPE_CLAIM;
+import static org.eclipse.edc.identityhub.DefaultServicesExtension.IATP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.DefaultServicesExtension.IATP_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.spi.result.Result.success;
 
 /**
@@ -38,72 +41,54 @@ import static org.eclipse.edc.spi.result.Result.success;
  * issuer's DID
  */
 public class AccessTokenVerifierImpl implements AccessTokenVerifier {
-    public static final String ACCES_TOKEN_CLAIM = "access_token";
-    public static final String ACCESS_TOKEN_SCOPE_CLAIM = "scope";
-    private static final String SCOPE_SEPARATOR = " ";
-    private final JwtVerifier jwtVerifier;
-    private final JwtValidator jwtValidator;
-    private final String audience;
-    private final PublicKeyWrapper stsPublicKey;
-    private final Monitor monitor;
 
-    public AccessTokenVerifierImpl(JwtVerifier jwtVerifier, JwtValidator jwtValidator, String audience, PublicKeyWrapper stsPublicKey, Monitor monitor) {
-        this.jwtVerifier = jwtVerifier;
-        this.jwtValidator = jwtValidator;
-        this.audience = audience;
-        this.stsPublicKey = stsPublicKey;
+    private static final String SCOPE_SEPARATOR = " ";
+    private final TokenValidationService tokenValidationService;
+    private final TokenValidationRulesRegistry tokenValidationRulesRegistry;
+    private final Supplier<PublicKey> stsPublicKey;
+    private final Monitor monitor;
+    private final PublicKeyResolver publicKeyResolver;
+
+    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, Supplier<PublicKey> publicKeySupplier, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
+                                   PublicKeyResolver publicKeyResolver) {
+        this.tokenValidationService = tokenValidationService;
+        this.tokenValidationRulesRegistry = tokenValidationRulesRegistry;
         this.monitor = monitor;
+        this.stsPublicKey = publicKeySupplier;
+        this.publicKeyResolver = publicKeyResolver;
     }
 
     @Override
     public Result<List<String>> verify(String token) {
-        // verify cryptographic integrity
-        var res = jwtVerifier.verify(token, audience);
+        var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(IATP_SELF_ISSUED_TOKEN_CONTEXT));
         if (res.failed()) {
             return res.mapTo();
         }
 
-        // assert valid structure
-        var tokenRep = TokenRepresentation.Builder.newInstance().token(token).build();
-        var validationResult = jwtValidator.validateToken(tokenRep, audience);
-        if (validationResult.failed()) {
-            return validationResult.mapTo();
-        }
+        var claimToken = res.getContent();
+        var accessTokenString = claimToken.getStringClaim(ACCESS_TOKEN_CLAIM);
+        var subClaim = claimToken.getStringClaim(SUBJECT);
 
-        // make sure an access_token claim exists
-        var claimToken = validationResult.getContent();
-        if (claimToken.getClaim(ACCES_TOKEN_CLAIM) == null) {
-            return failure("No 'access_token' claim was found on ID Token.");
-        }
-
-        var accessTokenString = claimToken.getClaim(ACCES_TOKEN_CLAIM).toString();
-
-        // verify the correctness of the 'access_token'
-        try {
-            var accessTokenJwt = SignedJWT.parse(accessTokenString);
-            if (!accessTokenJwt.verify(stsPublicKey.verifier())) {
-                return failure("Could not verify %s: Invalid Signature".formatted(ACCES_TOKEN_CLAIM));
-            }
-            var accessTokenClaims = accessTokenJwt.getJWTClaimsSet();
-            var atSub = accessTokenClaims.getSubject();
-
+        TokenValidationRule subClaimsMatch = (at, additional) -> {
+            var atSub = at.getStringClaim(SUBJECT);
             // correlate sub and access_token.sub
-            var sub = claimToken.getStringClaim(SUBJECT);
-            if (!Objects.equals(sub, atSub)) {
-                monitor.warning("ID token [sub] claim is not equal to [%s.sub] claim: expected '%s', got '%s'. Proof-of-possession could not be established!".formatted(ACCES_TOKEN_CLAIM, sub, atSub));
+            if (!Objects.equals(subClaim, atSub)) {
+                monitor.warning("ID token [sub] claim is not equal to [%s.sub] claim: expected '%s', got '%s'. Proof-of-possession could not be established!".formatted(ACCESS_TOKEN_CLAIM, subClaim, atSub));
                 // return failure("ID token 'sub' claim is not equal to '%s.sub' claim.".formatted(ACCES_TOKEN_CLAIM));
             }
+            return Result.success();
+        };
 
-            // verify that the access_token contains a scope claim
-            var scope = accessTokenClaims.getStringClaim(ACCESS_TOKEN_SCOPE_CLAIM);
-            if (scope == null) {
-                return failure("No %s claim was found on the %s".formatted(ACCESS_TOKEN_SCOPE_CLAIM, ACCES_TOKEN_CLAIM));
-            }
-            return success(Arrays.asList(scope.split(SCOPE_SEPARATOR)));
-        } catch (ParseException e) {
-            return failure("Error parsing %s: %s".formatted(ACCES_TOKEN_CLAIM, e.getMessage()));
-        } catch (JOSEException e) {
-            return failure("Could not verify %s with STS public key: %s".formatted(ACCES_TOKEN_CLAIM, e.getMessage()));
+        // verify the correctness of the 'access_token'
+        var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(IATP_ACCESS_TOKEN_CONTEXT));
+        rules.add(subClaimsMatch);
+        var result = tokenValidationService.validate(accessTokenString, id -> Result.success(stsPublicKey.get()), rules);
+        if (result.failed()) {
+            return result.mapTo();
         }
+
+        // verify that the access_token contains a scope claim
+        var scope = result.getContent().getStringClaim(ACCESS_TOKEN_SCOPE_CLAIM);
+        return success(Arrays.asList(scope.split(SCOPE_SEPARATOR)));
     }
 }

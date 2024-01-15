@@ -15,14 +15,7 @@
 package org.eclipse.edc.identityhub.core.creators;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWEDecrypter;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.Ed25519Signer;
 import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.OctetKeyPair;
-import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
-import org.eclipse.edc.iam.did.spi.key.PrivateKeyWrapper;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
@@ -31,6 +24,7 @@ import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.security.signature.jws2020.JwsSignature2020Suite;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.PrivateKeyResolver;
 import org.eclipse.edc.verifiablecredentials.jwt.JwtCreationUtils;
 import org.eclipse.edc.verifiablecredentials.jwt.TestConstants;
@@ -40,7 +34,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.net.URISyntaxException;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 
@@ -63,9 +58,13 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     private LdpPresentationGenerator creator;
 
     @BeforeEach
-    void setup() throws URISyntaxException {
-        var vpSigningKey = createKey(KEY_ID);
-        when(resolverMock.resolvePrivateKey(eq(KEY_ID), any())).thenReturn(new OctetKeyPairWrapper(vpSigningKey));
+    void setup() throws NoSuchAlgorithmException {
+        var vpSigningKey = KeyPairGenerator.getInstance("Ed25519")
+                .generateKeyPair()
+                .getPrivate();
+
+        when(resolverMock.resolvePrivateKey(any())).thenReturn(Result.failure("no key found"));
+        when(resolverMock.resolvePrivateKey(eq(KEY_ID))).thenReturn(Result.success(vpSigningKey));
         var signatureSuiteRegistryMock = mock(SignatureSuiteRegistry.class);
         when(signatureSuiteRegistryMock.getForId(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE)).thenReturn(new JwsSignature2020Suite(new ObjectMapper()));
         var ldpIssuer = LdpIssuer.Builder.newInstance()
@@ -114,9 +113,9 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     public void create_whenKeyNotFound() {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
+
         assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exists", types))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("No key could be found with key ID 'not-exists'");
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Override
@@ -142,16 +141,6 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }
 
-    private OctetKeyPair createKey(String keyId) {
-        try {
-            return new OctetKeyPairGenerator(Curve.Ed25519)
-                    .keyID(keyId)
-                    .generate();
-        } catch (JOSEException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @NotNull
     private TitaniumJsonLd initializeJsonLd() {
         var jld = new TitaniumJsonLd(mock());
@@ -165,20 +154,4 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         return jld;
     }
 
-    private record OctetKeyPairWrapper(OctetKeyPair privateKey) implements PrivateKeyWrapper {
-
-        @Override
-        public JWEDecrypter decrypter() {
-            return null; // not needed here
-        }
-
-        @Override
-        public JWSSigner signer() {
-            try {
-                return new Ed25519Signer(privateKey);
-            } catch (JOSEException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 }

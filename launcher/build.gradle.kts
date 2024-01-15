@@ -22,10 +22,11 @@ dependencies {
     runtimeOnly(project(":core:identity-hub-api"))
     runtimeOnly(project(":core:identity-hub-did"))
     runtimeOnly(project(":core:identity-hub-credentials"))
-    runtimeOnly(project(":extensions:cryptography:public-key-provider"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
     runtimeOnly(project(":extensions:did:did-management-api"))
     runtimeOnly(libs.edc.identity.did.core)
+    runtimeOnly(libs.edc.core.token)
+
     runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.bundles.connector)
 }

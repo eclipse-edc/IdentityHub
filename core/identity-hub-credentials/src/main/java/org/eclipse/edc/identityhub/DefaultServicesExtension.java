@@ -20,13 +20,16 @@ import org.eclipse.edc.identityhub.defaults.InMemoryCredentialStore;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.token.rules.ClaimIsPresentRule;
 import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
+import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.security.signature.jws2020.JwsSignature2020Suite;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 
 import java.util.Collection;
 import java.util.Map;
@@ -37,16 +40,32 @@ import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
 public class DefaultServicesExtension implements ServiceExtension {
 
     public static final String NAME = "IdentityHub Default Services Extension";
+    public static final String IATP_SELF_ISSUED_TOKEN_CONTEXT = "iatp-si";
+    public static final String IATP_ACCESS_TOKEN_CONTEXT = "iatp-access-token";
+    public static final String ACCESS_TOKEN_CLAIM = "access_token";
+    public static final String ACCESS_TOKEN_SCOPE_CLAIM = "scope";
+
+    @Inject
+    private TokenValidationRulesRegistry registry;
 
     @Override
     public String name() {
         return NAME;
     }
 
+
+    @Override
+    public void initialize(ServiceExtensionContext context) {
+        var accessTokenRule = new ClaimIsPresentRule(ACCESS_TOKEN_CLAIM);
+        registry.addRule(IATP_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
+
+        var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
+        registry.addRule(IATP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
+    }
+
     @Provider(isDefault = true)
     public CredentialStore createInMemStore() {
         return new InMemoryCredentialStore();
-
     }
 
     @Provider(isDefault = true)
