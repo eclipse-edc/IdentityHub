@@ -36,6 +36,7 @@ include(":core:identity-hub-did")
 include(":extensions:common:security")
 include(":extensions:store:sql:identity-hub-did-store-sql")
 include(":extensions:store:sql:identity-hub-credentials-store-sql")
+include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:did:did-management-api")
 

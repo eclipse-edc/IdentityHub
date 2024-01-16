@@ -17,9 +17,11 @@ package org.eclipse.edc.identityhub;
 import com.apicatalog.ld.signature.SignatureSuite;
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.defaults.InMemoryCredentialStore;
+import org.eclipse.edc.identityhub.defaults.InMemoryParticipantContextStore;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.token.rules.ClaimIsPresentRule;
 import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
@@ -64,8 +66,13 @@ public class DefaultServicesExtension implements ServiceExtension {
     }
 
     @Provider(isDefault = true)
-    public CredentialStore createInMemStore() {
+    public CredentialStore createDefaultCredentialStore() {
         return new InMemoryCredentialStore();
+    }
+
+    @Provider(isDefault = true)
+    public ParticipantContextStore createDefaultParticipantContextStore() {
+        return new InMemoryParticipantContextStore();
     }
 
     @Provider(isDefault = true)

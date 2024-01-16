@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import org.eclipse.edc.identityhub.credentials.store.test.CredentialStoreTestBase;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.store.test.CredentialStoreTestBase;
 
 class InMemoryCredentialStoreTest extends CredentialStoreTestBase {
 

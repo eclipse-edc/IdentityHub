@@ -124,7 +124,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
     }
 
     @Override
-    public StoreResult<Void> delete(String id) {
+    public StoreResult<Void> deleteById(String id) {
         Objects.requireNonNull(id);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {

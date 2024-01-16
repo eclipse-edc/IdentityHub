@@ -56,7 +56,7 @@ public interface CredentialStore {
      * @param id The ID of the verifiable credential resource to delete.
      * @return A {@link StoreResult} object indicating the result of the operation.
      */
-    StoreResult<Void> delete(String id);
+    StoreResult<Void> deleteById(String id);
 
     default String alreadyExistsErrorMessage(String id) {
         return "A VerifiableCredentialResource with ID %s already exists.".formatted(id);
