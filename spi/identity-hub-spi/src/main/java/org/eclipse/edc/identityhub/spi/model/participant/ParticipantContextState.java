@@ -14,8 +14,20 @@
 
 package org.eclipse.edc.identityhub.spi.model.participant;
 
+/**
+ * The state a {@link ParticipantContext} entry is in.
+ */
 public enum ParticipantContextState {
+    /**
+     * The {@link ParticipantContext} was created in the database, but is not yet operational.
+     */
     CREATED,
+    /**
+     * The {@link ParticipantContext} is operational and can be used.
+     */
     ACTIVATED,
+    /**
+     * The {@link ParticipantContext} is disabled and can not be used currently.
+     */
     DEACTIVATED
 }

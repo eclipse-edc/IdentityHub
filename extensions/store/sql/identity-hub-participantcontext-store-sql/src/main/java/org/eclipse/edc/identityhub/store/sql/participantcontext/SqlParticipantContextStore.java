@@ -43,8 +43,12 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
 
     private final ParticipantContextStoreStatements statements;
 
-    public SqlParticipantContextStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext,
-                                      ObjectMapper objectMapper, QueryExecutor queryExecutor, ParticipantContextStoreStatements statements) {
+    public SqlParticipantContextStore(DataSourceRegistry dataSourceRegistry,
+                                      String dataSourceName,
+                                      TransactionContext transactionContext,
+                                      ObjectMapper objectMapper,
+                                      QueryExecutor queryExecutor,
+                                      ParticipantContextStoreStatements statements) {
         super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
         this.statements = statements;
     }
@@ -94,7 +98,8 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 if (findByIdInternal(connection, id) != null) {
-                    queryExecutor.execute(connection, statements.getUpdateTemplate(),
+                    queryExecutor.execute(connection,
+                            statements.getUpdateTemplate(),
                             id,
                             participantContext.getCreatedDate(),
                             participantContext.getLastModifiedDate(),
