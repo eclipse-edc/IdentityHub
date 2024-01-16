@@ -36,7 +36,7 @@ public interface ParticipantContextStore {
      * Queries the store for ParticipantContexts based on the given query specification.
      *
      * @param querySpec The {@link QuerySpec} indicating the criteria for the query.
-     * @return A {@link StoreResult} object containing a list of {@link ParticipantContext} objects that match the query.
+     * @return A {@link StoreResult} object containing a list of {@link ParticipantContext} objects that match the query. If none are found, returns an empty stream.
      */
     StoreResult<Stream<ParticipantContext>> query(QuerySpec querySpec);
 
