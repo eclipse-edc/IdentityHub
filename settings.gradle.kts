@@ -33,6 +33,7 @@ include(":core:identity-hub-credentials")
 include(":core:identity-hub-did")
 
 // extension modules
+include(":extensions:common:security")
 include(":extensions:store:sql:identity-hub-did-store-sql")
 include(":extensions:store:sql:identity-hub-credentials-store-sql")
 include(":extensions:did:local-did-publisher")
