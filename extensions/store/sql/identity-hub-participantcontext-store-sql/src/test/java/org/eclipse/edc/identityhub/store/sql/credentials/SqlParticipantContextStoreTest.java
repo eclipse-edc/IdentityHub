@@ -14,9 +14,11 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials;
 
-import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres.PostgresDialectStatements;
-import org.eclipse.edc.identityhub.store.test.CredentialStoreTestBase;
+import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.identityhub.store.sql.participantcontext.ParticipantContextStoreStatements;
+import org.eclipse.edc.identityhub.store.sql.participantcontext.SqlParticipantContextStore;
+import org.eclipse.edc.identityhub.store.sql.participantcontext.schema.postgres.PostgresDialectStatements;
+import org.eclipse.edc.identityhub.store.test.ParticipantContextStoreTestBase;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.QueryExecutor;
@@ -31,15 +33,15 @@ import java.nio.file.Paths;
 
 @ComponentTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
-class SqlCredentialsStoreTest extends CredentialStoreTestBase {
+class SqlParticipantContextStoreTest extends ParticipantContextStoreTestBase {
 
-    private final CredentialStoreStatements statements = new PostgresDialectStatements();
-    private SqlCredentialStore store;
+    private final ParticipantContextStoreStatements statements = new PostgresDialectStatements();
+    private SqlParticipantContextStore store;
 
     @BeforeEach
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) throws IOException {
         var typeManager = new TypeManager();
-        store = new SqlCredentialStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
+        store = new SqlParticipantContextStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
                 extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements);
 
         var schema = Files.readString(Paths.get("./docs/schema.sql"));
@@ -48,11 +50,11 @@ class SqlCredentialsStoreTest extends CredentialStoreTestBase {
 
     @AfterEach
     void tearDown(PostgresqlStoreSetupExtension extension) {
-        extension.runQuery("DROP TABLE " + statements.getCredentialResourceTable() + " CASCADE");
+        extension.runQuery("DROP TABLE " + statements.getParticipantContextTable() + " CASCADE");
     }
 
     @Override
-    protected CredentialStore getStore() {
+    protected ParticipantContextStore getStore() {
         return store;
     }
 }

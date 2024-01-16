@@ -18,79 +18,19 @@ import org.eclipse.edc.connector.core.store.ReflectionBasedQueryResolver;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource;
 import org.eclipse.edc.spi.query.QueryResolver;
-import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.spi.result.StoreResult;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
-
-import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
-import static org.eclipse.edc.spi.result.StoreResult.notFound;
-import static org.eclipse.edc.spi.result.StoreResult.success;
-
-public class InMemoryCredentialStore implements CredentialStore {
-    private final Map<String, VerifiableCredentialResource> store = new HashMap<>();
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
-    private final QueryResolver<VerifiableCredentialResource> queryResolver = new ReflectionBasedQueryResolver<>(VerifiableCredentialResource.class, new CriterionToCredentialResourceConverter());
+/**
+ * In-memory variant of the {@link CredentialStore} that is thread-safe.
+ */
+public class InMemoryCredentialStore extends InMemoryEntityStore<VerifiableCredentialResource> implements CredentialStore {
 
     @Override
-    public StoreResult<Void> create(VerifiableCredentialResource credentialResource) {
-        lock.writeLock().lock();
-        var id = credentialResource.getId();
-        try {
-            if (store.containsKey(id)) {
-                return alreadyExists("A VerifiableCredentialResource with ID %s already exists".formatted(id));
-            }
-            store.put(id, credentialResource);
-            return success(null);
-        } finally {
-            lock.writeLock().unlock();
-        }
+    protected String getId(VerifiableCredentialResource newObject) {
+        return newObject.getId();
     }
 
     @Override
-    public StoreResult<Stream<VerifiableCredentialResource>> query(QuerySpec querySpec) {
-        lock.readLock().lock();
-        try {
-            // if no filter is present, we return true
-            Predicate<Object> fallback = querySpec.getFilterExpression().isEmpty() ? x -> true : x -> false;
-            var result = queryResolver.query(store.values().stream(), querySpec, Predicate::or, fallback);
-            return success(result);
-        } finally {
-            lock.readLock().unlock();
-        }
+    protected QueryResolver<VerifiableCredentialResource> createQueryResolver() {
+        return new ReflectionBasedQueryResolver<>(VerifiableCredentialResource.class, new CriterionToCredentialResourceConverter());
     }
-
-    @Override
-    public StoreResult<Void> update(VerifiableCredentialResource credentialResource) {
-        lock.writeLock().lock();
-        try {
-            var id = credentialResource.getId();
-            if (!store.containsKey(id)) {
-                return notFound("A VerifiableCredentialResource with ID %s was not found".formatted(id));
-            }
-            store.put(id, credentialResource);
-            return success();
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public StoreResult<Void> delete(String id) {
-        lock.writeLock().lock();
-        try {
-            if (!store.containsKey(id)) {
-                return notFound("A VerifiableCredentialResource with ID %s was not found".formatted(id));
-            }
-            store.remove(id);
-            return success();
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
 }
