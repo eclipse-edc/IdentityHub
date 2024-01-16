@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.edc.common.crypto) // for the crypto converter
-    implementation(libs.nimbus.jwt)
+    implementation(libs.edc.spi.core)
+    implementation(libs.edc.util)
     testImplementation(libs.edc.junit)
 }

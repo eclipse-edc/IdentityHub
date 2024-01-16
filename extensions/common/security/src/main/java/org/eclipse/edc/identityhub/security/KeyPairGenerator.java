@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.security;
 
-import com.apicatalog.jsonld.StringUtils;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.util.string.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.security.InvalidAlgorithmParameterException;
@@ -57,7 +57,7 @@ public class KeyPairGenerator {
      * @return A {@link KeyPair}, or a failure indicating what went wrong.
      */
     public static Result<KeyPair> generateKeyPair(String algorithm, Map<String, Object> parameters) {
-        if (StringUtils.isBlank(algorithm)) {
+        if (StringUtils.isNullOrBlank(algorithm)) {
             return generateEdDsa(CURVE_ED25519);
         }
         algorithm = algorithm.toUpperCase();
