@@ -191,6 +191,37 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(anyOf(equalTo(200), equalTo(204)));
         verify(didDocumentServiceMock).addService(eq(TEST_DID), any(Service.class));
+        verifyNoMoreInteractions(didDocumentServiceMock);
+    }
+
+    @Test
+    void addEndpoint_withAutoPublish() {
+        when(didDocumentServiceMock.addService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.success());
+        when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.success());
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .post("/%s/endpoints?autoPublish=true".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(anyOf(equalTo(200), equalTo(204)));
+        verify(didDocumentServiceMock).addService(eq(TEST_DID), any(Service.class));
+        verify(didDocumentServiceMock).publish(eq(TEST_DID));
+        verifyNoMoreInteractions(didDocumentServiceMock);
+    }
+
+    @Test
+    void addEndpoint_whenAutoPublishFails_expect400() {
+        when(didDocumentServiceMock.addService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.success());
+        when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.badRequest("publisher not working"));
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .post("/%s/endpoints?autoPublish=true".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400);
+        verify(didDocumentServiceMock).addService(eq(TEST_DID), any(Service.class));
+        verify(didDocumentServiceMock).publish(eq(TEST_DID));
+        verifyNoMoreInteractions(didDocumentServiceMock);
     }
 
     @Test
@@ -227,6 +258,39 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(anyOf(equalTo(200), equalTo(204)));
         verify(didDocumentServiceMock).replaceService(eq(TEST_DID), any(Service.class));
+        verifyNoMoreInteractions(didDocumentServiceMock);
+    }
+
+    @Test
+    void replaceEndpoint_withAutoPublish() {
+        when(didDocumentServiceMock.replaceService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.success());
+        when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.success());
+
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .patch("/%s/endpoints?autoPublish=true".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(anyOf(equalTo(200), equalTo(204)));
+        verify(didDocumentServiceMock).replaceService(eq(TEST_DID), any(Service.class));
+        verify(didDocumentServiceMock).publish(eq(TEST_DID));
+        verifyNoMoreInteractions(didDocumentServiceMock);
+    }
+
+    @Test
+    void replaceEndpoint_whenAutoPublishFails_expect400() {
+        when(didDocumentServiceMock.replaceService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.success());
+        when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.badRequest("publisher not working"));
+
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .patch("/%s/endpoints?autoPublish=true".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400);
+        verify(didDocumentServiceMock).replaceService(eq(TEST_DID), any(Service.class));
+        verify(didDocumentServiceMock).publish(eq(TEST_DID));
+        verifyNoMoreInteractions(didDocumentServiceMock);
     }
 
     @Test
@@ -263,6 +327,39 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(anyOf(equalTo(200), equalTo(204)));
         verify(didDocumentServiceMock).removeService(eq(TEST_DID), eq("test-service-id"));
+        verifyNoMoreInteractions(didDocumentServiceMock);
+    }
+
+    @Test
+    void removeEndpoint_withAutoPublish() {
+        when(didDocumentServiceMock.removeService(eq(TEST_DID), anyString())).thenReturn(ServiceResult.success());
+        when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.success());
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .delete("/%s/endpoints?serviceId=test-service-id&autoPublish=true".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(anyOf(equalTo(200), equalTo(204)));
+        verify(didDocumentServiceMock).removeService(eq(TEST_DID), eq("test-service-id"));
+        verify(didDocumentServiceMock).publish(eq(TEST_DID));
+
+        verifyNoMoreInteractions(didDocumentServiceMock);
+    }
+
+    @Test
+    void removeEndpoint_whenAutoPublishFails_expect400() {
+        when(didDocumentServiceMock.removeService(eq(TEST_DID), anyString())).thenReturn(ServiceResult.success());
+        when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.badRequest("publisher not reachable"));
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .delete("/%s/endpoints?serviceId=test-service-id&autoPublish=true".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400);
+        verify(didDocumentServiceMock).removeService(eq(TEST_DID), eq("test-service-id"));
+        verify(didDocumentServiceMock).publish(eq(TEST_DID));
+
+        verifyNoMoreInteractions(didDocumentServiceMock);
     }
 
     @Test

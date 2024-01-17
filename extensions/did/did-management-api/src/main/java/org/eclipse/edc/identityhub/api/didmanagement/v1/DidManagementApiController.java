@@ -27,6 +27,7 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identithub.did.spi.model.DidState;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.Collection;
 
@@ -81,24 +82,27 @@ public class DidManagementApiController implements DidManagementApi {
     @Override
     @POST
     @Path("/{did}/endpoints")
-    public void addEndpoint(@PathParam("did") String did, Service service) {
+    public void addEndpoint(@PathParam("did") String did, Service service, @QueryParam("autoPublish") boolean autoPublish) {
         documentService.addService(did, service)
+                .compose(v -> autoPublish ? documentService.publish(did) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, did));
     }
 
     @Override
     @PATCH
     @Path("/{did}/endpoints")
-    public void replaceEndpoint(@PathParam("did") String did, Service service) {
+    public void replaceEndpoint(@PathParam("did") String did, Service service, @QueryParam("autoPublish") boolean autoPublish) {
         documentService.replaceService(did, service)
+                .compose(v -> autoPublish ? documentService.publish(did) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, did));
     }
 
     @Override
     @DELETE
     @Path("/{did}/endpoints")
-    public void removeEndpoint(@PathParam("did") String did, @QueryParam("serviceId") String serviceId) {
+    public void removeEndpoint(@PathParam("did") String did, @QueryParam("serviceId") String serviceId, @QueryParam("autoPublish") boolean autoPublish) {
         documentService.removeService(did, serviceId)
+                .compose(v -> autoPublish ? documentService.publish(did) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, did));
     }
 

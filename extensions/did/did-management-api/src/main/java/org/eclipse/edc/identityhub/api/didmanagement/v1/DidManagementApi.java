@@ -103,7 +103,7 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void addEndpoint(String did, Service service);
+    void addEndpoint(String did, Service service, boolean autoPublish);
 
     @Tag(name = "DID Management API")
     @Operation(description = "Replaces a service endpoint of a particular DID document.",
@@ -118,7 +118,7 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void replaceEndpoint(String did, Service service);
+    void replaceEndpoint(String did, Service service, boolean autoPublish);
 
     @Tag(name = "DID Management API")
     @Operation(description = "Removes a service endpoint from a particular DID document.",
@@ -133,5 +133,5 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void removeEndpoint(String did, String serviceId);
+    void removeEndpoint(String did, String serviceId, boolean autoPublish);
 }
