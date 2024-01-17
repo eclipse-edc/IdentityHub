@@ -40,6 +40,7 @@ include(":extensions:store:sql:identity-hub-credentials-store-sql")
 include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:did:did-management-api")
+include(":extensions:api:participant-context-mgmt-api")
 
 // other modules
 include(":launcher")

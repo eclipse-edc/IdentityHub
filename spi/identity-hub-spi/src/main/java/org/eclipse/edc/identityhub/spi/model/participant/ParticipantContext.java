@@ -14,9 +14,14 @@
 
 package org.eclipse.edc.identityhub.spi.model.participant;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+
 import java.time.Instant;
 import java.util.Objects;
 
+@JsonDeserialize(builder = ParticipantContext.Builder.class)
 public class ParticipantContext {
     private String participantId;
     private long createdDate;
@@ -74,6 +79,7 @@ public class ParticipantContext {
         this.lastModifiedDate = Instant.now().toEpochMilli();
     }
 
+    @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder {
         private final ParticipantContext participantContext;
 
@@ -117,6 +123,7 @@ public class ParticipantContext {
             return participantContext;
         }
 
+        @JsonCreator
         public static Builder newInstance() {
             return new Builder();
         }
