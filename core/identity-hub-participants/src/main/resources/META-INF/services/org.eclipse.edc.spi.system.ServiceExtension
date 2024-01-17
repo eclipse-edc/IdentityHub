@@ -11,3 +11,4 @@
 #       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
 #
 #
+org.eclipse.edc.identityhub.participantcontext.ParticipantContextExtension

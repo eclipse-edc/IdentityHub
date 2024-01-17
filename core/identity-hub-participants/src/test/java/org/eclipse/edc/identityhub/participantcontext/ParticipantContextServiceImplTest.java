@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.participantcontext;
 
 import org.assertj.core.api.Assertions;
-import org.eclipse.edc.identityhub.spi.RandomStringGenerator;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
@@ -27,7 +26,6 @@ import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.Test;
 
 import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -45,14 +43,7 @@ class ParticipantContextServiceImplTest {
     private final Vault vault = mock();
     private final ParticipantContextStore participantContextStore = mock();
     private final SecureRandom secureRandom = new SecureRandom();
-    // generates 64 random bytes and base64-encodes them
-    private final RandomStringGenerator randomBase64Generator = () -> {
-        byte[] array = new byte[64];
-        secureRandom.nextBytes(array);
-        var enc = Base64.getEncoder();
-        return enc.encodeToString(array);
-    };
-    private final ParticipantContextServiceImpl participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), randomBase64Generator);
+    private final ParticipantContextServiceImpl participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), new Base64StringGenerator());
 
     @Test
     void createParticipantContext() {
