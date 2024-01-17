@@ -15,18 +15,18 @@
 package org.eclipse.edc.identityhub.api.didmanagement.v1;
 
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identithub.did.spi.model.DidState;
-import org.eclipse.edc.identityhub.api.didmanagement.v1.validation.DidRequestValidator;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
 import java.util.Collection;
 
@@ -39,22 +39,11 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 public class DidManagementApiController implements DidManagementApi {
 
     private final DidDocumentService documentService;
-    private final DidRequestValidator requestValidator;
 
     public DidManagementApiController(DidDocumentService documentService) {
         this.documentService = documentService;
-        this.requestValidator = new DidRequestValidator();
     }
 
-    @POST
-    @Override
-    public void createDidDocument(DidDocument document, @QueryParam("publish") boolean publish) {
-        requestValidator.validate(document).orElseThrow(ValidationFailureException::new);
-
-        documentService.store(document)
-                .compose(v -> publish ? documentService.publish(document.getId()) : ServiceResult.success())
-                .orElseThrow(exceptionMapper(DidDocument.class, document.getId()));
-    }
 
     @Override
     @POST
@@ -72,23 +61,6 @@ public class DidManagementApiController implements DidManagementApi {
                 .orElseThrow(exceptionMapper(DidDocument.class, didRequestPayload.did()));
     }
 
-    @PUT
-    @Override
-    public void updateDid(DidDocument document, @QueryParam("republish") boolean republish) {
-        requestValidator.validate(document).orElseThrow(ValidationFailureException::new);
-        var did = document.getId();
-        documentService.update(document)
-                .compose(v -> republish ? documentService.publish(did) : ServiceResult.success())
-                .orElseThrow(exceptionMapper(DidDocument.class, did));
-    }
-
-    @Override
-    @POST
-    @Path("/delete")
-    public void deleteDidFromBody(DidRequestPayload request) {
-        documentService.deleteById(request.did())
-                .orElseThrow(exceptionMapper(DidDocument.class, request.did()));
-    }
 
     @POST
     @Path("/query")
@@ -104,6 +76,30 @@ public class DidManagementApiController implements DidManagementApi {
     public String getState(DidRequestPayload request) {
         var byId = documentService.findById(request.did());
         return byId != null ? DidState.from(byId.getState()).toString() : null;
+    }
+
+    @Override
+    @POST
+    @Path("/{did}/endpoints")
+    public void addEndpoint(@PathParam("did") String did, Service service) {
+        documentService.addService(did, service)
+                .orElseThrow(exceptionMapper(Service.class, did));
+    }
+
+    @Override
+    @PATCH
+    @Path("/{did}/endpoints")
+    public void replaceEndpoint(@PathParam("did") String did, Service service) {
+        documentService.replaceService(did, service)
+                .orElseThrow(exceptionMapper(Service.class, did));
+    }
+
+    @Override
+    @DELETE
+    @Path("/{did}/endpoints")
+    public void removeEndpoint(@PathParam("did") String did, @QueryParam("serviceId") String serviceId) {
+        documentService.removeService(did, serviceId)
+                .orElseThrow(exceptionMapper(Service.class, did));
     }
 
 }

@@ -33,12 +33,10 @@ import java.util.List;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -54,22 +52,6 @@ class DidDocumentServiceImplTest {
         when(publisherRegistry.getPublisher(startsWith("did:web:"))).thenReturn(publisherMock);
 
         service = new DidDocumentServiceImpl(trx, storeMock, publisherRegistry);
-    }
-
-    @Test
-    void store() {
-        var doc = createDidDocument().build();
-        when(storeMock.save(argThat(dr -> dr.getDocument().equals(doc)))).thenReturn(StoreResult.success());
-        assertThat(service.store(doc)).isSucceeded();
-    }
-
-    @Test
-    void store_alreadyExists() {
-        var doc = createDidDocument().build();
-        when(storeMock.save(argThat(dr -> dr.getDocument().equals(doc)))).thenReturn(StoreResult.alreadyExists("foo"));
-        assertThat(service.store(doc)).isFailed().detail().isEqualTo("foo");
-        verify(storeMock).save(any());
-        verifyNoInteractions(publisherMock);
     }
 
     @Test
@@ -187,78 +169,6 @@ class DidDocumentServiceImplTest {
     }
 
     @Test
-    void update() {
-        var doc = createDidDocument().build();
-        var did = doc.getId();
-        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
-        when(storeMock.update(any())).thenReturn(StoreResult.success());
-
-        assertThat(service.update(doc)).isSucceeded();
-
-        verify(storeMock).findById(did);
-        verify(storeMock).update(argThat(dr -> dr.getDocument().equals(doc)));
-        verifyNoMoreInteractions(publisherMock, storeMock, publisherRegistry);
-    }
-
-    @Test
-    void update_notExists() {
-        var doc = createDidDocument().build();
-        var did = doc.getId();
-        when(storeMock.findById(eq(did))).thenReturn(null);
-        when(storeMock.update(any())).thenReturn(StoreResult.success());
-
-        assertThat(service.update(doc))
-                .isFailed()
-                .detail()
-                .isEqualTo(service.notFoundMessage(did));
-
-        verify(storeMock).findById(did);
-        verifyNoMoreInteractions(publisherMock, storeMock, publisherRegistry);
-    }
-
-    @Test
-    void deleteById() {
-        var doc = createDidDocument().build();
-        var did = doc.getId();
-        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.UNPUBLISHED).document(doc).build());
-        when(storeMock.deleteById(any())).thenReturn(StoreResult.success());
-
-        assertThat(service.deleteById(did)).isSucceeded();
-
-        verify(storeMock).findById(did);
-        verify(storeMock).deleteById(did);
-        verifyNoMoreInteractions(publisherMock, storeMock, publisherRegistry);
-    }
-
-    @Test
-    void deleteById_alreadyPublished() {
-        var doc = createDidDocument().build();
-        var did = doc.getId();
-        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
-
-        assertThat(service.deleteById(did)).isFailed()
-                .detail()
-                .isEqualTo("Cannot delete DID '%s' because it is already published. Un-publish first!".formatted(did));
-
-        verify(storeMock).findById(did);
-        verifyNoMoreInteractions(publisherMock, storeMock, publisherRegistry);
-    }
-
-    @Test
-    void deleteById_notExists() {
-        var doc = createDidDocument().build();
-        var did = doc.getId();
-        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.UNPUBLISHED).document(doc).build());
-        when(storeMock.deleteById(any())).thenReturn(StoreResult.notFound("test-message"));
-
-        assertThat(service.deleteById(did)).isFailed().detail().isEqualTo("test-message");
-
-        verify(storeMock).findById(did);
-        verify(storeMock).deleteById(did);
-        verifyNoMoreInteractions(publisherMock, storeMock, publisherRegistry);
-    }
-
-    @Test
     void queryDocuments() {
         var q = QuerySpec.max();
         var doc = createDidDocument().build();
@@ -270,6 +180,140 @@ class DidDocumentServiceImplTest {
         verify(storeMock).query(eq(q));
         verifyNoMoreInteractions(publisherMock, storeMock, publisherRegistry);
     }
+
+    @Test
+    void addEndpoint() {
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        when(storeMock.update(any())).thenReturn(StoreResult.success());
+        var res = service.addService(did, new Service("new-id", "test-type", "https://test.com"));
+        assertThat(res).isSucceeded();
+
+        verify(storeMock).findById(eq(did));
+        verify(storeMock).update(any());
+        verifyNoMoreInteractions(storeMock, publisherMock);
+    }
+
+    @Test
+    void addEndpoint_alreadyExists() {
+        var newService = new Service("new-id", "test-type", "https://test.com");
+        var doc = createDidDocument().service(List.of(newService)).build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        var res = service.addService(did, newService);
+        assertThat(res).isFailed()
+                .detail()
+                .isEqualTo("DID 'did:web:testdid' already contains a service endpoint with ID 'new-id'.");
+
+        verify(storeMock).findById(eq(did));
+        verifyNoMoreInteractions(storeMock, publisherMock);
+    }
+
+    @Test
+    void addEndpoint_didNotFound() {
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(null);
+        var res = service.addService(did, new Service("test-id", "test-type", "https://test.com"));
+        assertThat(res).isFailed()
+                .detail()
+                .isEqualTo("DID 'did:web:testdid' not found.");
+
+        verify(storeMock).findById(eq(did));
+        verifyNoMoreInteractions(storeMock, publisherMock);
+    }
+
+    @Test
+    void replaceEndpoint() {
+        var toReplace = new Service("new-id", "test-type", "https://test.com");
+        var doc = createDidDocument().service(List.of(toReplace)).build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        when(storeMock.update(any())).thenReturn(StoreResult.success());
+
+        var res = service.replaceService(did, toReplace);
+        assertThat(res).isSucceeded();
+
+        verify(storeMock).findById(eq(did));
+        verify(storeMock).update(any());
+        verifyNoMoreInteractions(storeMock, publisherMock);
+    }
+
+    @Test
+    void replaceEndpoint_doesNotExist() {
+        var replace = new Service("new-id", "test-type", "https://test.com");
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+
+        var res = service.replaceService(did, replace);
+        assertThat(res).isFailed()
+                .detail()
+                .isEqualTo("DID 'did:web:testdid' does not contain a service endpoint with ID 'new-id'.");
+
+        verify(storeMock).findById(eq(did));
+        verifyNoMoreInteractions(storeMock, publisherMock);
+    }
+
+    @Test
+    void replaceEndpoint_didNotFound() {
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(null);
+        var res = service.replaceService(did, new Service("test-id", "test-type", "https://test.com"));
+        assertThat(res).isFailed()
+                .detail()
+                .isEqualTo("DID 'did:web:testdid' not found.");
+
+        verify(storeMock).findById(eq(did));
+        verifyNoMoreInteractions(storeMock, publisherMock);
+    }
+
+    @Test
+    void removeEndpoint() {
+        var toRemove = new Service("new-id", "test-type", "https://test.com");
+        var doc = createDidDocument().service(List.of(toRemove)).build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+        when(storeMock.update(any())).thenReturn(StoreResult.success());
+
+        var res = service.removeService(did, toRemove.getId());
+        assertThat(res).isSucceeded();
+
+        verify(storeMock).findById(eq(did));
+        verify(storeMock).update(any());
+        verifyNoMoreInteractions(storeMock, publisherMock);
+    }
+
+    @Test
+    void removeEndpoint_doesNotExist() {
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).document(doc).build());
+
+        var res = service.removeService(did, "not-exist-id");
+        assertThat(res).isFailed()
+                .detail().isEqualTo("DID 'did:web:testdid' does not contain a service endpoint with ID 'not-exist-id'.");
+
+        verify(storeMock).findById(eq(did));
+        verifyNoMoreInteractions(storeMock, publisherMock);
+    }
+
+    @Test
+    void removeEndpoint_didNotFound() {
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(null);
+        var res = service.removeService(did, "does-not-matter-id");
+        assertThat(res).isFailed()
+                .detail()
+                .isEqualTo("DID 'did:web:testdid' not found.");
+
+        verify(storeMock).findById(eq(did));
+        verifyNoMoreInteractions(storeMock, publisherMock);
+    }
+
 
     private DidDocument.Builder createDidDocument() {
         return DidDocument.Builder.newInstance()

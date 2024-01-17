@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -47,45 +47,6 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
     public static final String TEST_DID = "did:web:host%3A1234:test-did";
     private final DidDocumentService didDocumentServiceMock = mock();
 
-    @Test
-    void create_success() {
-        when(didDocumentServiceMock.store(any())).thenReturn(ServiceResult.success());
-        var document = createDidDocument().build();
-
-        baseRequest()
-                .with()
-                .body(document)
-                .post()
-                .then()
-                .log().ifError()
-                .statusCode(anyOf(equalTo(200), equalTo(204)));
-    }
-
-    @Test
-    void create_alreadyExists_expect409() {
-        when(didDocumentServiceMock.store(any())).thenReturn(ServiceResult.conflict("already exists"));
-        var document = createDidDocument().build();
-
-        baseRequest()
-                .body(document)
-                .post()
-                .then()
-                .log().ifValidationFails()
-                .statusCode(409);
-    }
-
-    @Test
-    void create_malformedBody_expect400() {
-        when(didDocumentServiceMock.store(any())).thenReturn(ServiceResult.success());
-        var document = createDidDocument().id("not a uri").build();
-
-        baseRequest()
-                .body(document)
-                .post()
-                .then()
-                .log().ifValidationFails()
-                .statusCode(400);
-    }
 
     @Test
     void publish_success() {
@@ -185,114 +146,6 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
-    void updateDid_success() {
-        var doc = createDidDocument().id(TEST_DID).build();
-        when(didDocumentServiceMock.update(any())).thenReturn(ServiceResult.success());
-
-        baseRequest()
-                .body(doc)
-                .put()
-                .then()
-                .log().ifError()
-                .statusCode(204);
-        verify(didDocumentServiceMock).update(argThat(dd -> dd.getId().equals(TEST_DID)));
-        verifyNoMoreInteractions(didDocumentServiceMock);
-    }
-
-    @Test
-    void updateDid_success_withRepublish() {
-        var doc = createDidDocument().id(TEST_DID).build();
-        when(didDocumentServiceMock.update(any())).thenReturn(ServiceResult.success());
-        when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.success());
-
-        baseRequest()
-                .body(doc)
-                .put("?republish=true")
-                .then()
-                .log().ifError()
-                .statusCode(204);
-        verify(didDocumentServiceMock).update(argThat(dd -> dd.getId().equals(TEST_DID)));
-        verify(didDocumentServiceMock).publish(eq(TEST_DID));
-        verifyNoMoreInteractions(didDocumentServiceMock);
-    }
-
-    @Test
-    void updateDid_success_withRepublishFails() {
-
-        var doc = createDidDocument().id(TEST_DID).build();
-        when(didDocumentServiceMock.update(any())).thenReturn(ServiceResult.success());
-        when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.badRequest("test-failure"));
-
-        baseRequest()
-                .body(doc)
-                .put("?republish=true")
-                .then()
-                .log().ifError()
-                .statusCode(400);
-        verify(didDocumentServiceMock).update(argThat(dd -> dd.getId().equals(TEST_DID)));
-        verify(didDocumentServiceMock).publish(eq(TEST_DID));
-        verifyNoMoreInteractions(didDocumentServiceMock);
-    }
-
-    @Test
-    void updateDid_whenNotExist_expect404() {
-
-        var doc = createDidDocument().id(TEST_DID).build();
-        when(didDocumentServiceMock.update(any())).thenReturn(ServiceResult.notFound("test-failure"));
-
-        baseRequest()
-                .body(doc)
-                .put()
-                .then()
-                .log().ifError()
-                .statusCode(404);
-        verify(didDocumentServiceMock).update(argThat(dd -> dd.getId().equals(TEST_DID)));
-        verifyNoMoreInteractions(didDocumentServiceMock);
-    }
-
-    @Test
-    void deleteDid_success() {
-
-        when(didDocumentServiceMock.deleteById(eq(TEST_DID))).thenReturn(ServiceResult.success());
-        baseRequest()
-                .body(new DidRequestPayload(TEST_DID))
-                .post("/delete")
-                .then()
-                .log().ifError()
-                .statusCode(204);
-        verify(didDocumentServiceMock).deleteById(eq(TEST_DID));
-        verifyNoMoreInteractions(didDocumentServiceMock);
-    }
-
-    @Test
-    void deleteDid_whenNotExist_expect404() {
-
-        when(didDocumentServiceMock.deleteById(eq(TEST_DID))).thenReturn(ServiceResult.notFound("test-message"));
-        baseRequest()
-                .body(new DidRequestPayload(TEST_DID))
-                .post("/delete")
-                .then()
-                .log().ifError()
-                .statusCode(404);
-        verify(didDocumentServiceMock).deleteById(eq(TEST_DID));
-        verifyNoMoreInteractions(didDocumentServiceMock);
-    }
-
-    @Test
-    void deleteDid_whenAlreadyPublished_expect409() {
-
-        when(didDocumentServiceMock.deleteById(eq(TEST_DID))).thenReturn(ServiceResult.conflict("test-message"));
-        baseRequest()
-                .body(new DidRequestPayload(TEST_DID))
-                .post("/delete")
-                .then()
-                .log().ifError()
-                .statusCode(409);
-        verify(didDocumentServiceMock).deleteById(eq(TEST_DID));
-        verifyNoMoreInteractions(didDocumentServiceMock);
-    }
-
-    @Test
     void query_withSimpleField() {
         var resultList = List.of(createDidDocument().build());
         when(didDocumentServiceMock.queryDocuments(any())).thenReturn(ServiceResult.success(resultList));
@@ -326,6 +179,114 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
                 .statusCode(400);
 
         verify(didDocumentServiceMock).queryDocuments(eq(q));
+    }
+
+    @Test
+    void addEndpoint() {
+        when(didDocumentServiceMock.addService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.success());
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .post("/%s/endpoints".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(anyOf(equalTo(200), equalTo(204)));
+        verify(didDocumentServiceMock).addService(eq(TEST_DID), any(Service.class));
+    }
+
+    @Test
+    void addEndpoint_alreadyExists() {
+        when(didDocumentServiceMock.addService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.conflict("exists"));
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .post("/%s/endpoints".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(409);
+        verify(didDocumentServiceMock).addService(eq(TEST_DID), any(Service.class));
+    }
+
+    @Test
+    void addEndpoint_didNotFound() {
+        when(didDocumentServiceMock.addService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.notFound("did not found"));
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .post("/%s/endpoints".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(404);
+        verify(didDocumentServiceMock).addService(eq(TEST_DID), any(Service.class));
+    }
+
+    @Test
+    void replaceEndpoint() {
+        when(didDocumentServiceMock.replaceService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.success());
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .patch("/%s/endpoints".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(anyOf(equalTo(200), equalTo(204)));
+        verify(didDocumentServiceMock).replaceService(eq(TEST_DID), any(Service.class));
+    }
+
+    @Test
+    void replaceEndpoint_doesNotExist() {
+        when(didDocumentServiceMock.replaceService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.badRequest("service not found"));
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .patch("/%s/endpoints".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400);
+        verify(didDocumentServiceMock).replaceService(eq(TEST_DID), any(Service.class));
+    }
+
+    @Test
+    void replaceEndpoint_didNotFound() {
+        when(didDocumentServiceMock.replaceService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.notFound("did not found"));
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .patch("/%s/endpoints".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(404);
+        verify(didDocumentServiceMock).replaceService(eq(TEST_DID), any(Service.class));
+    }
+
+    @Test
+    void removeEndpoint() {
+        when(didDocumentServiceMock.removeService(eq(TEST_DID), anyString())).thenReturn(ServiceResult.success());
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .delete("/%s/endpoints?serviceId=test-service-id".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(anyOf(equalTo(200), equalTo(204)));
+        verify(didDocumentServiceMock).removeService(eq(TEST_DID), eq("test-service-id"));
+    }
+
+    @Test
+    void removeEndpoint_doesNotExist() {
+        when(didDocumentServiceMock.removeService(eq(TEST_DID), anyString())).thenReturn(ServiceResult.badRequest("service not found"));
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .delete("/%s/endpoints?serviceId=test-service-id".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400);
+        verify(didDocumentServiceMock).removeService(eq(TEST_DID), eq("test-service-id"));
+    }
+
+    @Test
+    void removeEndpoint_didNotFound() {
+        when(didDocumentServiceMock.removeService(eq(TEST_DID), anyString())).thenReturn(ServiceResult.notFound("did not found"));
+        baseRequest()
+                .body(new DidRequestPayload(TEST_DID))
+                .delete("/%s/endpoints?serviceId=test-service-id".formatted(TEST_DID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(404);
+        verify(didDocumentServiceMock).removeService(eq(TEST_DID), eq("test-service-id"));
     }
 
     @Override
