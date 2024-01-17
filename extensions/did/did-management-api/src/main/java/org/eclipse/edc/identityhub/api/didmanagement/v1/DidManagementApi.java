@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.api.didmanagement.v1;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -93,6 +94,7 @@ public interface DidManagementApi {
     @Tag(name = "DID Management API")
     @Operation(description = "Adds a service endpoint to a particular DID document.",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
+            parameters = {@Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false.")},
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -108,6 +110,7 @@ public interface DidManagementApi {
     @Tag(name = "DID Management API")
     @Operation(description = "Replaces a service endpoint of a particular DID document.",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
+            parameters = {@Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false.")},
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -123,6 +126,8 @@ public interface DidManagementApi {
     @Tag(name = "DID Management API")
     @Operation(description = "Removes a service endpoint from a particular DID document.",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
+            parameters = {@Parameter(name = "serviceId", description = "The ID of the service that should get removed"), @Parameter(name = "autoPublish", description = "Whether the DID should " +
+                    "get republished after the removal. Defaults to false.")},
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
