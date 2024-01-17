@@ -15,6 +15,7 @@
 package org.eclipse.edc.identithub.did.spi;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -26,14 +27,6 @@ import java.util.Collection;
  */
 public interface DidDocumentService {
 
-
-    /**
-     * Stores a DID document in persistent storage.
-     *
-     * @param document the {@link DidDocument} to store
-     * @return a {@link ServiceResult} to indicate success or failure.
-     */
-    ServiceResult<Void> store(DidDocument document);
 
     /**
      * Publishes an already existing DID document. Returns a failure if the DID document was not found or cannot be published.
@@ -52,21 +45,6 @@ public interface DidDocumentService {
      */
     ServiceResult<Void> unpublish(String did);
 
-    /**
-     * Updates a given DID document if it exists, returns a failure otherwise.
-     *
-     * @param document The DID document to update
-     * @return success, or a failure indicating what went wrong.
-     */
-    ServiceResult<Void> update(DidDocument document);
-
-    /**
-     * Deletes a DID document if found.
-     *
-     * @param did The ID of the DID document to delete.
-     * @return A {@link ServiceResult} indicating success or failure.
-     */
-    ServiceResult<Void> deleteById(String did);
 
     /**
      * Queries the {@link DidDocument} objects based on the given query specification.
@@ -85,4 +63,31 @@ public interface DidDocumentService {
     }
 
     DidResource findById(String did);
+
+    /**
+     * Adds a service endpoint entry to a did document.
+     *
+     * @param did     The DID of the document to which the entry should be added.
+     * @param service The service endpoint to add.
+     * @return success if added, a failure otherwise, e.g. because that same service already exists.
+     */
+    ServiceResult<Void> addService(String did, Service service);
+
+    /**
+     * Replaces a service endpoint entry in a did document.
+     *
+     * @param did     The DID of the document in which the entry should be replaced.
+     * @param service The new service endpoint .
+     * @return success if replaced, a failure otherwise, e.g. because a service with that ID does not exist exists.
+     */
+    ServiceResult<Void> replaceService(String did, Service service);
+
+    /**
+     * Removes a service endpoint entry from a did document.
+     *
+     * @param did       The DID of the document from which the entry should be removed.
+     * @param serviceId The service endpoint to remove.
+     * @return success if removed, a failure otherwise, e.g. because a service with that ID does not exist exists.
+     */
+    ServiceResult<Void> removeService(String did, String serviceId);
 }
