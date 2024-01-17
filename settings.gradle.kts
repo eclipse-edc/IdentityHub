@@ -30,6 +30,7 @@ include(":spi:identity-hub-did-spi")
 // core modules
 include(":core:identity-hub-api")
 include(":core:identity-hub-credentials")
+include(":core:identity-hub-participants")
 include(":core:identity-hub-did")
 
 // extension modules
