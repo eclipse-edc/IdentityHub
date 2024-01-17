@@ -64,9 +64,30 @@ public interface DidDocumentService {
 
     DidResource findById(String did);
 
+    /**
+     * Adds a service endpoint entry to a did document.
+     *
+     * @param did     The DID of the document to which the entry should be added.
+     * @param service The service endpoint to add.
+     * @return success if added, a failure otherwise, e.g. because that same service already exists.
+     */
     ServiceResult<Void> addService(String did, Service service);
 
+    /**
+     * Replaces a service endpoint entry in a did document.
+     *
+     * @param did     The DID of the document in which the entry should be replaced.
+     * @param service The new service endpoint .
+     * @return success if replaced, a failure otherwise, e.g. because a service with that ID does not exist exists.
+     */
     ServiceResult<Void> replaceService(String did, Service service);
 
+    /**
+     * Removes a service endpoint entry from a did document.
+     *
+     * @param did       The DID of the document from which the entry should be removed.
+     * @param serviceId The service endpoint to remove.
+     * @return success if removed, a failure otherwise, e.g. because a service with that ID does not exist exists.
+     */
     ServiceResult<Void> removeService(String did, String serviceId);
 }
