@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.did.store.sql.schema.postgres;
 
 import org.eclipse.edc.identityhub.did.store.sql.DidResourceStatements;
-import org.eclipse.edc.sql.translation.JsonFieldMapping;
+import org.eclipse.edc.sql.translation.JsonFieldTranslator;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
 /**
@@ -30,8 +30,8 @@ public class DidDocumentMapping extends TranslationMapping {
 
     public DidDocumentMapping(DidResourceStatements statements) {
         add(FIELD_ID, statements.getIdColumn());
-        add(FIELD_SERVICE, new JsonFieldMapping(FIELD_SERVICE));
-        add(FIELD_VERIFICATION_METHOD, new JsonFieldMapping(FIELD_VERIFICATION_METHOD));
+        add(FIELD_SERVICE, new JsonFieldTranslator(FIELD_SERVICE));
+        add(FIELD_VERIFICATION_METHOD, new JsonFieldTranslator(FIELD_VERIFICATION_METHOD));
         add(FIELD_AUTHENTICATION, FIELD_AUTHENTICATION);
     }
 }
