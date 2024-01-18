@@ -35,7 +35,8 @@ Two deployment topologies will be supported:
 
 A participant context (PC) functions as a unit of management and control for `identity resources` in the Identity Hub.
 All resources are contained and accessed through a PC. Contexts are tied to the participant identity as defined in
-the [DSP specifications](https://github.com/International-Data-Spaces-Association/ids-specification) and created through the [IH Management API](#311-elevated-privilege-operations).
+the [DSP specifications](https://github.com/International-Data-Spaces-Association/ids-specification) and created through
+the [IH Management API](#311-elevated-privilege-operations).
 
 Access control for public client API endpoints is scoped to a specific PC. For example, an access token as defined in
 the [Base Identity Protocol specification]() is associated with a specific context and may not be used to access
@@ -56,7 +57,7 @@ participant. A `Verifiable Credential` (VC), `DID`, and `DID Document` are ident
 A `VerifiableCredentialResource` (VCR) is a type of `identity resource` and will be stored on the holder side:
 
 ```java
-class VerifiableCredentialResource implements IdentityResource  {
+class VerifiableCredentialResource implements IdentityResource {
     String id;
     long timestamp;
     VcState state;
@@ -68,7 +69,6 @@ class VerifiableCredentialResource implements IdentityResource  {
 }
 ```
 
-
 The `issuerId` is a `URN`, typically a DID, that can be resolved to return the service endpoint of the Credential
 Issuer.
 
@@ -79,6 +79,7 @@ The `state` and `timestamp` fields are used to determine when the resource enter
 the resource was requested.
 
 On the issuer the record for an already issued VC would look like this:
+
 ```java
 class VerifiableCredentialRecord {
     VcState state; // 
@@ -165,23 +166,16 @@ Services may register to receive `KeyPairManager` events, for example, when a ro
 
 ### 2.2.4. DID Resources
 
-A `DIDResource` is a `DID` and associated entries in a `DID` document.
+A `DIDResource` is a `DID` and associated entries in a `DID` document. It represents the lifecycle of a DID Document in
+the IdentityHub.
 
 ```java
 class DidResource {
     String did;
     DidState state;
-    long timestamp;
-    List<ServiceEndpoint> serviceEndpoints;
-    List<VerificationMethod> verificationMethods;
-    List<VerificationRelationship> verificationRelationships;
-}
-
-class VerificationMethod {
-    String id;
-    String type;
-    String material;
-    String keyPairResourceId;
+    long stateTimestamp;
+    long createTimestamp;
+    DidDocument document;
 }
 
 class VerificationRelationship {
@@ -190,12 +184,8 @@ class VerificationRelationship {
 }
 ```
 
-The `serviceEndpoints` property contains a collection of `ServiceEndpoints` that can be added through configuration or
-an API invocation.
-
-The `verificationMethods` property contains a collection of `VerificationMethods` associated with Key
-
-The `verificationRelationships` property contains a collection of `VerificationRelationships` associated with Key
+The `DidDocument` is defined in the connector repository and is a representation of
+a [W3C DID](https://www.w3.org/TR/did-core/).
 
 > NB: There is no DID manager.
 
@@ -389,9 +379,10 @@ persistence.
 
 All CRUD operations publish events.
 
-### 3.5.2. VerifiablePresentationGenerator
+### 3.5.2. VerifiablePresentationService
 
-The `VerifiablePresentationGenerator` is responsible for generating Verifiable Presentations (VP) from a (VC).
+The `VerifiablePresentationService` is responsible for delegating to generators, that generate Verifiable
+Presentations (VP) from a (VC).
 
 ### 3.5.3. CredentialRequestManager
 
@@ -419,23 +410,24 @@ particular participant context. The DID module makes use of the EDC `Identity DI
 
 ### 3.6.1. DidDocumentPublisher
 
-The `DidDocumentPublisher` is responsible for generating, provisioning and deprovisioning DID documents to
-a `Verifiable Data Registry` (VDR) such as a CDN that serves a Web domain. The publisher is a state machine that can
-asynchronously transition as follows:
+The `DidDocumentPublisher` is responsible for generating, publishing and unpublishing DID documents to
+a `Verifiable Data Registry` (VDR) such as a CDN that serves a Web domain. The publisher can transition as follows:
 
-- **Publish**: GENERATED -> PROVISIONING -> PROVISIONED
-- **Unpublish**: PROVISIONED -> DEPROVISIONING -> DEPROVISIONED
-- **Republish**: PROVISIONED -> GENERATED -> PROVISIONING -> PROVISIONED
+- **Publish**: GENERATED -> PUBLISHED
+- **Unpublish**: PUBLISHED -> UNPUBLISHED
 
 All operations publish events.
 
-The `DidDocumentPublisher` delegates to extensions for handling provisioning to VDRs.
+There can be only one publisher per DID method, and all available publishers are kept in a `DidPublisherRegistry`, which
+can be used to contribute publishers via the extension mechanism.
 
 ### 3.6.2. DidDocumentService
 
 The `DidDocumentService` returns a **managed** DID document to the requesting client. Note that it _**does not**_
 resolve foreign DID documents. Note also this service is intended for internal use. DID resolution should be performed
 through specific DID methods that work directly with a VDR.
+
+The `DidDocumentService` uses the `DidResourceStore` internally.
 
 ## 3.7. Auth/Permission Module
 

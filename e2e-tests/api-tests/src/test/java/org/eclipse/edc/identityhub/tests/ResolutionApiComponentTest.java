@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import com.nimbusds.jose.jwk.ECKey;
-import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
+import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
@@ -66,7 +66,7 @@ public class ResolutionApiComponentTest {
             .build();
     // todo: these mocks should be replaced, once their respective implementations exist!
     private static final CredentialQueryResolver CREDENTIAL_QUERY_RESOLVER = mock();
-    private static final PresentationGenerator PRESENTATION_GENERATOR = mock();
+    private static final VerifiablePresentationService PRESENTATION_GENERATOR = mock();
     private static final AccessTokenVerifier ACCESS_TOKEN_VERIFIER = mock();
 
     @RegisterExtension
@@ -75,7 +75,7 @@ public class ResolutionApiComponentTest {
     static {
         runtime = new EdcRuntimeExtension(":launcher", "identity-hub", IDENTITY_HUB_PARTICIPANT.controlPlaneConfiguration());
         runtime.registerServiceMock(CredentialQueryResolver.class, CREDENTIAL_QUERY_RESOLVER);
-        runtime.registerServiceMock(PresentationGenerator.class, PRESENTATION_GENERATOR);
+        runtime.registerServiceMock(VerifiablePresentationService.class, PRESENTATION_GENERATOR);
         runtime.registerServiceMock(AccessTokenVerifier.class, ACCESS_TOKEN_VERIFIER);
     }
 
@@ -177,7 +177,7 @@ public class ResolutionApiComponentTest {
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
-        when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null))).thenReturn(failure("generator test error"));
+        when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(failure("generator test error"));
 
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
@@ -194,7 +194,7 @@ public class ResolutionApiComponentTest {
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
-        when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null))).thenReturn(success(createPresentationResponse()));
+        when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(success(createPresentationResponse()));
 
         var resp = IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)

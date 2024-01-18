@@ -25,13 +25,21 @@ dependencyResolutionManagement {
 // SPI modules
 include(":spi:identity-hub-spi")
 include(":spi:identity-hub-store-spi")
+include(":spi:identity-hub-did-spi")
 
 // core modules
 include(":core:identity-hub-api")
-include(":core:identity-hub-core")
+include(":core:identity-hub-credentials")
+include(":core:identity-hub-participants")
+include(":core:identity-hub-did")
 
 // extension modules
-include(":extensions:cryptography:public-key-provider")
+include(":extensions:common:security")
+include(":extensions:store:sql:identity-hub-did-store-sql")
+include(":extensions:store:sql:identity-hub-credentials-store-sql")
+include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
+include(":extensions:did:local-did-publisher")
+include(":extensions:did:did-management-api")
 
 // other modules
 include(":launcher")

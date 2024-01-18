@@ -23,7 +23,7 @@ import org.eclipse.edc.policy.model.Policy;
  * specifically the issuance and re-issuance policies as well as a representation of the VC
  */
 public class VerifiableCredentialResource extends IdentityResource {
-    private VcState state;
+    private int state;
     private Policy issuancePolicy;
     private Policy reissuancePolicy;
     private VerifiableCredentialContainer verifiableCredential;
@@ -33,7 +33,7 @@ public class VerifiableCredentialResource extends IdentityResource {
     }
 
     public VcState getState() {
-        return state;
+        return VcState.from(state);
     }
 
     public Policy getIssuancePolicy() {
@@ -54,12 +54,8 @@ public class VerifiableCredentialResource extends IdentityResource {
             super(resource);
         }
 
-        public static Builder newInstance() {
-            return new Builder(new VerifiableCredentialResource());
-        }
-
         public Builder state(VcState state) {
-            resource.state = state;
+            resource.state = state.code();
             return self();
         }
 
@@ -85,10 +81,14 @@ public class VerifiableCredentialResource extends IdentityResource {
 
         @Override
         public VerifiableCredentialResource build() {
-            if (resource.state == null) {
-                resource.state = VcState.INITIAL;
+            if (resource.state == 0) {
+                resource.state = VcState.INITIAL.code();
             }
             return super.build();
+        }
+
+        public static Builder newInstance() {
+            return new Builder(new VerifiableCredentialResource());
         }
     }
 }

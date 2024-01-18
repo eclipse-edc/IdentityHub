@@ -4,15 +4,16 @@
 
 ## VC Module
 
-Contains the `PresentationCreationService` and a `CredentialManager`.<br/>
+Contains the `VerifiablePresentationService` and a `CredentialManager`.<br/>
 Its job is to
-    - generate and serve VPs (through the [Hub API](#hub-api))
-    - CRUD VCs, for example when the Issuer wants to write a VC via the [Hub API](#management-api) or
-      the [Management API](#management-api)
-    - run the `VerifiableCredentialManager` 
-    - exchanges protocol messages with the Issuer, e.g. in response to a credential-offer
+- generate and serve VPs (through the [Hub API](#hub-api))
+- CRUD VCs, for example when the Issuer wants to write a VC via the [Hub API](#management-api) or
+the [Management API](#management-api)
+- run the `VerifiableCredentialManager`
+- exchanges protocol messages with the Issuer, e.g. in response to a credential-offer
 
-`VerifiableCredentialManager`: it can be configured whether credentials are auto-renewed (default is `true`). Once a renewal
+`VerifiableCredentialManager`: it can be configured whether credentials are auto-renewed (default is `true`). Once a
+renewal
 is triggered , it moves into the `REISSUE_REQUESTING` state. Generally, renewals can be triggered by three events:
 
 1. an incoming credential offer

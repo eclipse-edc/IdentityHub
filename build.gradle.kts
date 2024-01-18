@@ -47,8 +47,8 @@ allprojects {
             scmUrl.set(edcScmUrl)
         }
         swagger {
-            title.set("Identity HUB REST API")
-            description = "Identity HUB REST APIs - merged by OpenApiMerger"
+            title.set("Identity Hub REST API")
+            description = "Identity Hub REST APIs - merged by OpenApiMerger"
             outputFilename.set(project.name)
             outputDirectory.set(file("${rootProject.projectDir.path}/resources/openapi/yaml"))
         }

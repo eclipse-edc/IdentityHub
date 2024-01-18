@@ -16,7 +16,8 @@ package org.eclipse.edc.identityservice.api.v1;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
+import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
+import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
@@ -71,7 +72,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final CredentialQueryResolver queryResolver = mock();
     private final AccessTokenVerifier accessTokenVerifier = mock();
-    private final PresentationGenerator generator = mock();
+    private final VerifiablePresentationService generator = mock();
 
 
     @Test
@@ -153,7 +154,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
-        when(generator.createPresentation(anyList(), any())).thenReturn(Result.failure("test-failure"));
+        when(generator.createPresentation(anyList(), any(), any())).thenReturn(Result.failure("test-failure"));
 
         assertThatThrownBy(() -> controller().queryPresentation(createObjectBuilder().build(), generateJwt()))
                 .isExactlyInstanceOf(EdcException.class)
@@ -169,7 +170,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
         var pres = new PresentationResponse(new Object[] {generateJwt()}, new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("id", "ldp_vp", "$.verifiableCredentials[0]"))));
-        when(generator.createPresentation(anyList(), any())).thenReturn(Result.success(pres));
+        when(generator.createPresentation(anyList(), any(), any())).thenReturn(Result.success(pres));
 
         var response = controller().queryPresentation(createObjectBuilder().build(), generateJwt());
         assertThat(response).isNotNull();

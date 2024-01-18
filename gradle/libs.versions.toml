@@ -2,25 +2,26 @@
 format.version = "1.1"
 
 [versions]
-assertj = "3.24.2"
+assertj = "3.25.1"
 awaitility = "4.2.0"
-edc = "0.4.1-SNAPSHOT"
+edc = "0.4.2-SNAPSHOT"
 failsafe = "3.3.2"
 jackson = "2.14.2"
 jupiter = "5.10.1"
 mockserver = "5.15.0"
-nimbus = "9.37"
-postgres = "42.6.0"
-restAssured = "5.3.2"
+nimbus = "9.37.3"
+postgres = "42.7.1"
+restAssured = "5.4.0"
 swagger = "2.2.18"
 rsApi = "3.1.0"
-testcontainers = "1.19.1"
+testcontainers = "1.19.3"
 
 [libraries]
 edc-util = { module = "org.eclipse.edc:util", version.ref = "edc" }
 edc-junit = { module = "org.eclipse.edc:junit", version.ref = "edc" }
 edc-jws2020 = { module = "org.eclipse.edc:jws2020", version.ref = "edc" }
 edc-boot = { module = "org.eclipse.edc:boot", version.ref = "edc" }
+edc-common-crypto = { module = "org.eclipse.edc:crypto-common", version.ref = "edc" }
 edc-spi-core = { module = "org.eclipse.edc:core-spi", version.ref = "edc" }
 edc-spi-http = { module = "org.eclipse.edc:http-spi", version.ref = "edc" }
 edc-spi-policy-engine = { module = "org.eclipse.edc:policy-engine-spi", version.ref = "edc" }
@@ -32,6 +33,7 @@ edc-spi-aggregate-service = { module = "org.eclipse.edc:aggregate-service-spi", 
 edc-spi-jsonld = { module = "org.eclipse.edc:json-ld-spi", version.ref = "edc" }
 edc-spi-validator = { module = "org.eclipse.edc:validator-spi", version.ref = "edc" }
 edc-spi-web = { module = "org.eclipse.edc:web-spi", version.ref = "edc" }
+edc-spi-token = { module = "org.eclipse.edc:token-spi", version.ref = "edc" }
 edc-spi-identitytrust = { module = "org.eclipse.edc:identity-trust-spi", version.ref = "edc" }
 edc-core-connector = { module = "org.eclipse.edc:connector-core", version.ref = "edc" }
 edc-core-controlPlane = { module = "org.eclipse.edc:control-plane-core", version.ref = "edc" }
@@ -40,11 +42,11 @@ edc-core-micrometer = { module = "org.eclipse.edc:micrometer-core", version.ref 
 edc-core-api = { module = "org.eclipse.edc:api-core", version.ref = "edc" }
 edc-core-stateMachine = { module = "org.eclipse.edc:state-machine", version.ref = "edc" }
 edc-core-sql = { module = "org.eclipse.edc:sql-core", version.ref = "edc" }
+edc-core-token = { module = "org.eclipse.edc:token-core", version.ref = "edc" }
 edc-core-jersey = { module = "org.eclipse.edc:jersey-core", version.ref = "edc" }
 edc-core-jerseyproviders = { module = "org.eclipse.edc:jersey-providers", version.ref = "edc" }
 edc-core-junit = { module = "org.eclipse.edc:junit", version.ref = "edc" }
 edc-core-transform = { module = "org.eclipse.edc:transform-core", version.ref = "edc" }
-edc-identity-did-crypto = { module = "org.eclipse.edc:identity-did-crypto", version.ref = "edc" }
 edc-identity-did-core = { module = "org.eclipse.edc:identity-did-core", version.ref = "edc" }
 edc-identity-did-web = { module = "org.eclipse.edc:identity-did-web", version.ref = "edc" }
 edc-iatp-service = { module = "org.eclipse.edc:identity-trust-service", version.ref = "edc" }
@@ -74,6 +76,8 @@ postgres = { module = "org.postgresql:postgresql", version.ref = "postgres" }
 restAssured = { module = "io.rest-assured:rest-assured", version.ref = "restAssured" }
 swagger-jaxrs = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-postgres = { module = "org.testcontainers:postgres", version.ref = "testcontainers" }
+
 
 [bundles]
 connector = ["edc-boot", "edc-core-connector", "edc-ext-http", "edc-ext-observability", "edc-ext-jsonld"]

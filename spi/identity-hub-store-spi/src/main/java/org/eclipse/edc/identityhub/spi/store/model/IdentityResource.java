@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.spi.store.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.Clock;
 import java.util.Objects;
 import java.util.UUID;
@@ -28,6 +30,7 @@ public abstract class IdentityResource {
     protected long timestamp;
     protected String issuerId;
     protected String holderId;
+    @JsonIgnore
     protected Clock clock;
 
     public Clock getClock() {
