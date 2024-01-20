@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
+import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -38,9 +39,11 @@ public class ParticipantContextExtension implements ServiceExtension {
     private TransactionContext transactionContext;
     @Inject
     private KeyParserRegistry keyParserRegistry;
+    @Inject
+    private DidDocumentService didDocumentService;
 
     @Provider
     public ParticipantContextService createParticipantService() {
-        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, new Base64StringGenerator(), keyParserRegistry);
+        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, new Base64StringGenerator(), keyParserRegistry, didDocumentService);
     }
 }

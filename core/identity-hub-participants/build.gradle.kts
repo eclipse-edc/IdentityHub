@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
+    api(project(":spi:identity-hub-did-spi"))
     api(project(":spi:identity-hub-store-spi"))
     api(libs.edc.spi.transaction)
     implementation(project(":extensions:common:security"))

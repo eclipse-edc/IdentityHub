@@ -20,6 +20,7 @@ import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.connector.core.security.KeyParserRegistryImpl;
 import org.eclipse.edc.connector.core.security.keyparsers.PemParser;
+import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
@@ -33,16 +34,20 @@ import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -52,16 +57,22 @@ class ParticipantContextServiceImplTest {
     private final Vault vault = mock();
     private final ParticipantContextStore participantContextStore = mock();
     private ParticipantContextServiceImpl participantContextService;
+    private DidDocumentService didDocumentService;
 
     @BeforeEach
     void setUp() {
+        didDocumentService = mock();
+        when(didDocumentService.store(any())).thenReturn(success());
+        when(didDocumentService.publish(anyString())).thenReturn(success());
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), new Base64StringGenerator(), keyParserRegistry);
+        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(),
+                new Base64StringGenerator(), keyParserRegistry, didDocumentService);
     }
 
-    @Test
-    void createParticipantContext_withPublicKeyPem() {
+    @ParameterizedTest(name = "autopublish: {0}")
+    @ValueSource(booleans = {true, false})
+    void createParticipantContext_withPublicKeyPem(boolean autopublish) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
 
         var pem = """
@@ -72,6 +83,7 @@ class ParticipantContextServiceImplTest {
                 """;
 
         var ctx = createManifest()
+                .autoPublish(autopublish)
                 .key(createKey()
                         .publicKeyPem(null)
                         .publicKeyPem(pem)
@@ -80,26 +92,34 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
+        verify(didDocumentService).store(any());
+        verify(didDocumentService, times(autopublish ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
 
-    @Test
-    void createParticipantContext_withPublicKeyJwk() {
+    @ParameterizedTest(name = "autopublish: {0}")
+    @ValueSource(booleans = {true, false})
+    void createParticipantContext_withPublicKeyJwk(boolean autopublish) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
 
-        var ctx = createManifest().build();
+        var ctx = createManifest().autoPublish(autopublish)
+                .build();
         assertThat(participantContextService.createParticipantContext(ctx))
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
+        verify(didDocumentService).store(any());
+        verify(didDocumentService, times(autopublish ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
 
-    @Test
-    void createParticipantContext_withKeyGenParams() {
+    @ParameterizedTest(name = "autopublish: {0}")
+    @ValueSource(booleans = {true, false})
+    void createParticipantContext_withKeyGenParams(boolean autopublish) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
 
         var ctx = createManifest()
+                .autoPublish(autopublish)
                 .key(createKey().publicKeyPem(null).publicKeyJwk(null)
                         .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "ed25519"))
                         .build())
@@ -109,6 +129,8 @@ class ParticipantContextServiceImplTest {
 
         verify(participantContextStore).create(any());
         verify(vault).storeSecret(eq(ctx.getKey().getPrivateKeyAlias()), anyString());
+        verify(didDocumentService).store(any());
+        verify(didDocumentService, times(autopublish ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
 
@@ -274,6 +296,7 @@ class ParticipantContextServiceImplTest {
     private ParticipantManifest.Builder createManifest() {
         return ParticipantManifest.Builder.newInstance()
                 .key(createKey().build())
+                .autoPublish(true)
                 .participantId("test-id");
     }
 

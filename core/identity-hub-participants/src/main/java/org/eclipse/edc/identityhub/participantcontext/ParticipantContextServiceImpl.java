@@ -15,6 +15,9 @@
 package org.eclipse.edc.identityhub.participantcontext;
 
 import com.nimbusds.jose.jwk.JWK;
+import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
+import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identityhub.security.KeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.RandomStringGenerator;
@@ -34,6 +37,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
@@ -53,13 +58,16 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private final TransactionContext transactionContext;
     private final RandomStringGenerator tokenGenerator;
     private final KeyParserRegistry keyParserRegistry;
+    private final DidDocumentService didDocumentService;
 
-    public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore, Vault vault, TransactionContext transactionContext, RandomStringGenerator tokenGenerator, KeyParserRegistry registry) {
+    public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore, Vault vault, TransactionContext transactionContext,
+                                         RandomStringGenerator tokenGenerator, KeyParserRegistry registry, DidDocumentService didDocumentService) {
         this.participantContextStore = participantContextStore;
         this.vault = vault;
         this.transactionContext = transactionContext;
         this.tokenGenerator = tokenGenerator;
         this.keyParserRegistry = registry;
+        this.didDocumentService = didDocumentService;
     }
 
     @Override
@@ -68,7 +76,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             var context = convert(manifest);
             return createParticipantContext(context)
                     .compose(u -> createOrUpdateKey(manifest.getKey()))
-                    .compose(u -> generateDidDocument(context));
+                    .compose(jwk -> generateDidDocument(manifest, jwk));
         });
     }
 
@@ -89,7 +97,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     public ServiceResult<Void> deleteParticipantContext(String participantId) {
         return transactionContext.execute(() -> {
             var res = participantContextStore.deleteById(participantId);
-            return res.succeeded() ? ServiceResult.success() : ServiceResult.fromFailure(res);
+            return res.succeeded() ? success() : fromFailure(res);
         });
     }
 
@@ -103,7 +111,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             var alias = participantContext.getContent().getApiTokenAlias();
 
             var newToken = tokenGenerator.generate();
-            return vault.storeSecret(alias, newToken).map(unused -> ServiceResult.success(newToken)).orElse(f -> ServiceResult.conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
+            return vault.storeSecret(alias, newToken).map(unused -> success(newToken)).orElse(f -> ServiceResult.conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
         });
     }
 
@@ -112,23 +120,31 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         return transactionContext.execute(() -> {
             var participant = findByIdInternal(participantId);
             if (participant == null) {
-                return ServiceResult.notFound("ParticipantContext with ID '%s' not found.".formatted(participantId));
+                return notFound("ParticipantContext with ID '%s' not found.".formatted(participantId));
             }
             modificationFunction.accept(participant);
             var res = participantContextStore.update(participant);
-            return res.succeeded() ? ServiceResult.success() : ServiceResult.fromFailure(res);
+            return res.succeeded() ? success() : fromFailure(res);
         });
 
     }
 
-    private ServiceResult<Void> generateDidDocument(ParticipantContext context) {
-        return ServiceResult.success();
+    private ServiceResult<Void> generateDidDocument(ParticipantManifest manifest, JWK publicKey) {
+        var doc = DidDocument.Builder.newInstance()
+                .id("did:web:" + UUID.randomUUID()) // fixme: how to determine the ID beforehand? let the publisher do it?
+                .service(manifest.getServiceEndpoints().stream().toList())
+                .verificationMethod(List.of(VerificationMethod.Builder.newInstance()
+                        .publicKeyJwk(publicKey.toJSONObject())
+                        .build()))
+                .build();
+        return didDocumentService.store(doc)
+                .compose(u -> manifest.isAutoPublish() ? didDocumentService.publish(doc.getId()) : success());
     }
 
-    private ServiceResult<Void> createOrUpdateKey(KeyDescriptor key) {
+    private ServiceResult<JWK> createOrUpdateKey(KeyDescriptor key) {
         // do we need to generate the key?
         var keyGeneratorParams = key.getKeyGeneratorParams();
-        JWK publicKeyJwk;
+        JWK publicKeyJwk = null;
         if (keyGeneratorParams != null) {
             var kp = KeyPairGenerator.generateKeyPair(keyGeneratorParams);
             if (kp.failed()) {
@@ -149,7 +165,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         }
 
         // todo: create did document
-        return ServiceResult.success();
+        return success(publicKeyJwk);
     }
 
     @NotNull
