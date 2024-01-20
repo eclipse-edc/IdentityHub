@@ -70,9 +70,9 @@ class ParticipantContextServiceImplTest {
                 new Base64StringGenerator(), keyParserRegistry, didDocumentService);
     }
 
-    @ParameterizedTest(name = "autopublish: {0}")
+    @ParameterizedTest(name = "isActive: {0}")
     @ValueSource(booleans = {true, false})
-    void createParticipantContext_withPublicKeyPem(boolean autopublish) {
+    void createParticipantContext_withPublicKeyPem(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
 
         var pem = """
@@ -83,7 +83,7 @@ class ParticipantContextServiceImplTest {
                 """;
 
         var ctx = createManifest()
-                .autoPublish(autopublish)
+                .active(isActive)
                 .key(createKey()
                         .publicKeyPem(null)
                         .publicKeyPem(pem)
@@ -93,33 +93,33 @@ class ParticipantContextServiceImplTest {
 
         verify(participantContextStore).create(any());
         verify(didDocumentService).store(any());
-        verify(didDocumentService, times(autopublish ? 1 : 0)).publish(anyString());
+        verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
 
-    @ParameterizedTest(name = "autopublish: {0}")
+    @ParameterizedTest(name = "isActive: {0}")
     @ValueSource(booleans = {true, false})
-    void createParticipantContext_withPublicKeyJwk(boolean autopublish) {
+    void createParticipantContext_withPublicKeyJwk(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
 
-        var ctx = createManifest().autoPublish(autopublish)
+        var ctx = createManifest().active(isActive)
                 .build();
         assertThat(participantContextService.createParticipantContext(ctx))
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
         verify(didDocumentService).store(any());
-        verify(didDocumentService, times(autopublish ? 1 : 0)).publish(anyString());
+        verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
 
-    @ParameterizedTest(name = "autopublish: {0}")
+    @ParameterizedTest(name = "isActive: {0}")
     @ValueSource(booleans = {true, false})
-    void createParticipantContext_withKeyGenParams(boolean autopublish) {
+    void createParticipantContext_withKeyGenParams(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
 
         var ctx = createManifest()
-                .autoPublish(autopublish)
+                .active(isActive)
                 .key(createKey().publicKeyPem(null).publicKeyJwk(null)
                         .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "ed25519"))
                         .build())
@@ -130,7 +130,7 @@ class ParticipantContextServiceImplTest {
         verify(participantContextStore).create(any());
         verify(vault).storeSecret(eq(ctx.getKey().getPrivateKeyAlias()), anyString());
         verify(didDocumentService).store(any());
-        verify(didDocumentService, times(autopublish ? 1 : 0)).publish(anyString());
+        verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
 
@@ -296,7 +296,7 @@ class ParticipantContextServiceImplTest {
     private ParticipantManifest.Builder createManifest() {
         return ParticipantManifest.Builder.newInstance()
                 .key(createKey().build())
-                .autoPublish(true)
+                .active(true)
                 .participantId("test-id");
     }
 

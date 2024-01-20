@@ -33,7 +33,6 @@ class ParticipantManifestTest {
     void verify_serdes() throws JsonProcessingException {
         var manifest = ParticipantManifest.Builder.newInstance()
                 .serviceEndpoint(new Service("id", "type", "foobar"))
-                .autoPublish(true)
                 .active(true)
                 .participantId("test-id")
                 .key(KeyDescriptor.Builder.newInstance()

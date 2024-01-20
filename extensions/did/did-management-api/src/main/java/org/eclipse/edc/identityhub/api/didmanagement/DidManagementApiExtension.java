@@ -18,10 +18,12 @@ import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identityhub.api.didmanagement.v1.DidManagementApiController;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebServer;
 import org.eclipse.edc.web.spi.WebService;
+import org.eclipse.edc.web.spi.configuration.WebServiceConfiguration;
 import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
 import org.eclipse.edc.web.spi.configuration.WebServiceSettings;
 
@@ -40,7 +42,7 @@ public class DidManagementApiExtension implements ServiceExtension {
             .defaultPath(DEFAULT_DID_PATH)
             .defaultPort(DEFAULT_DID_PORT)
             .useDefaultContext(false)
-            .name("DID Management Endpoint API")
+            .name("IdentityHub Management API")
             .build();
     @Inject
     private WebService webService;
@@ -58,10 +60,13 @@ public class DidManagementApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var webServiceConfiguration = configurer.configure(context, webServer, SETTINGS);
-
         var controller = new DidManagementApiController(didDocumentService);
-        webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
+        webService.registerResource(createManagementApiConfiguration(context).getContextAlias(), controller);
     }
 
+    //todo: move to separate extension
+    @Provider
+    public WebServiceConfiguration createManagementApiConfiguration(ServiceExtensionContext context) {
+        return configurer.configure(context, webServer, SETTINGS);
+    }
 }

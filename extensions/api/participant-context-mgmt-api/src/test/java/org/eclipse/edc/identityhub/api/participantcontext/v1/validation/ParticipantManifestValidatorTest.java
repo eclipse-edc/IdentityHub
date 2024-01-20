@@ -66,7 +66,6 @@ class ParticipantManifestValidatorTest {
     private static ParticipantManifest.Builder createManifest() {
         return ParticipantManifest.Builder.newInstance()
                 .serviceEndpoint(new Service("id", "type", "foobar"))
-                .autoPublish(true)
                 .active(true)
                 .participantId("test-id")
                 .key(createKeyDescriptor().build());

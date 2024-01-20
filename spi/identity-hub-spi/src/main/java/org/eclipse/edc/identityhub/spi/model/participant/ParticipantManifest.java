@@ -26,7 +26,6 @@ import java.util.Set;
 public class ParticipantManifest {
     private Set<Service> serviceEndpoints = new HashSet<>();
     private boolean isActive;
-    private boolean autoPublish;
     private String participantId;
     private KeyDescriptor key;
 
@@ -39,10 +38,6 @@ public class ParticipantManifest {
 
     public boolean isActive() {
         return isActive;
-    }
-
-    public boolean isAutoPublish() {
-        return autoPublish;
     }
 
     public String getParticipantId() {
@@ -74,11 +69,6 @@ public class ParticipantManifest {
 
         public Builder active(boolean isActive) {
             manifest.isActive = isActive;
-            return this;
-        }
-
-        public Builder autoPublish(boolean autoPublish) {
-            manifest.autoPublish = autoPublish;
             return this;
         }
 

@@ -14,15 +14,15 @@
 
 package org.eclipse.edc.identityhub.api.participantcontext;
 
-import org.eclipse.edc.identithub.did.spi.DidDocumentService;
+import org.eclipse.edc.identityhub.api.participantcontext.v1.ParticipantContextApiController;
+import org.eclipse.edc.identityhub.api.participantcontext.v1.validation.ParticipantManifestValidator;
+import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.web.spi.WebServer;
 import org.eclipse.edc.web.spi.WebService;
-import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
-import org.eclipse.edc.web.spi.configuration.WebServiceSettings;
+import org.eclipse.edc.web.spi.configuration.WebServiceConfiguration;
 
 import static org.eclipse.edc.identityhub.api.participantcontext.ParticipantContextManagementApiExtension.NAME;
 
@@ -30,25 +30,12 @@ import static org.eclipse.edc.identityhub.api.participantcontext.ParticipantCont
 public class ParticipantContextManagementApiExtension implements ServiceExtension {
 
     public static final String NAME = "ParticipantContext Management API Extension";
-    private static final String MGMT_CONTEXT_ALIAS = "management";
-    private static final String DEFAULT_DID_PATH = "/api/management";
-    private static final int DEFAULT_DID_PORT = 8182;
-    public static final WebServiceSettings SETTINGS = WebServiceSettings.Builder.newInstance()
-            .apiConfigKey("web.http." + MGMT_CONTEXT_ALIAS)
-            .contextAlias(MGMT_CONTEXT_ALIAS)
-            .defaultPath(DEFAULT_DID_PATH)
-            .defaultPort(DEFAULT_DID_PORT)
-            .useDefaultContext(false)
-            .name(NAME)
-            .build();
     @Inject
     private WebService webService;
     @Inject
-    private DidDocumentService didDocumentService;
+    private ParticipantContextService participantContextService;
     @Inject
-    private WebServiceConfigurer configurer;
-    @Inject
-    private WebServer webServer;
+    private WebServiceConfiguration webServiceConfiguration;
 
     @Override
     public String name() {
@@ -57,9 +44,7 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var webServiceConfiguration = configurer.configure(context, webServer, SETTINGS);
-
+        var controller = new ParticipantContextApiController(new ParticipantManifestValidator(), participantContextService);
 //        webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
     }
-
 }

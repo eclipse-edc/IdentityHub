@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.participantcontext;
 
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKParameterNames;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
@@ -37,6 +38,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.text.ParseException;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -138,7 +140,9 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                         .build()))
                 .build();
         return didDocumentService.store(doc)
-                .compose(u -> manifest.isAutoPublish() ? didDocumentService.publish(doc.getId()) : success());
+                .compose(u -> manifest.isActive() ?
+                        didDocumentService.publish(doc.getId()) :
+                        success());
     }
 
     private ServiceResult<JWK> createOrUpdateKey(KeyDescriptor key) {
@@ -155,17 +159,23 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             publicKeyJwk = CryptoConverter.createJwk(kp.getContent()).toPublicJWK();
         } else if (key.getPublicKeyJwk() != null) {
             publicKeyJwk = CryptoConverter.create(key.getPublicKeyJwk());
-
         } else if (key.getPublicKeyPem() != null) {
             var pubKey = keyParserRegistry.parse(key.getPublicKeyPem());
             if (pubKey.failed()) {
                 return ServiceResult.badRequest("Cannot parse public key from PEM: %s".formatted(pubKey.getFailureDetail()));
             }
             publicKeyJwk = CryptoConverter.createJwk(new KeyPair((PublicKey) pubKey.getContent(), null));
+        } else {
+            return ServiceResult.badRequest("No public key information found in KeyDescriptor.");
         }
-
-        // todo: create did document
-        return success(publicKeyJwk);
+        var json = publicKeyJwk.toJSONObject();
+        json.put(JWKParameterNames.KEY_ID, key.getKeyId());
+        try {
+            publicKeyJwk = JWK.parse(json);
+            return success(publicKeyJwk);
+        } catch (ParseException e) {
+            return ServiceResult.badRequest("Could not create JWK: %s".formatted(e.getMessage()));
+        }
     }
 
     @NotNull
@@ -187,7 +197,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         return ParticipantContext.Builder.newInstance()
                 .participantId(manifest.getParticipantId())
                 .apiTokenAlias(tokenGenerator.generate())
-                .state(ParticipantContextState.CREATED)
+                .state(manifest.isActive() ? ParticipantContextState.ACTIVATED : ParticipantContextState.CREATED)
                 .build();
     }
 }
