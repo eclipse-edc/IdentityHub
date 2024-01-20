@@ -79,6 +79,14 @@ public class ParticipantContext {
         this.lastModifiedDate = Instant.now().toEpochMilli();
     }
 
+    public void activate() {
+        this.state = ParticipantContextState.ACTIVATED.ordinal();
+    }
+
+    public void deactivate() {
+        this.state = ParticipantContextState.DEACTIVATED.ordinal();
+    }
+
     @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder {
         private final ParticipantContext participantContext;

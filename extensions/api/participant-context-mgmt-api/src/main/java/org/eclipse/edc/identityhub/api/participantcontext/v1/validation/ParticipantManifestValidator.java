@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.participantcontext.v1.validation;
 
-import org.eclipse.edc.identityhub.api.participantcontext.v1.model.ParticipantManifest;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
 

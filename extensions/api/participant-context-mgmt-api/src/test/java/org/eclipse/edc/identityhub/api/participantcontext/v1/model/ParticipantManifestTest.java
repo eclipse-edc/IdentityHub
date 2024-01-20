@@ -17,6 +17,8 @@ package org.eclipse.edc.identityhub.api.participantcontext.v1.model;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.did.spi.document.Service;
+import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

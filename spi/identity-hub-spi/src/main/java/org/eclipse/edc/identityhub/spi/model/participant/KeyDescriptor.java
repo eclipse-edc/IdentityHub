@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.participantcontext.v1.model;
+package org.eclipse.edc.identityhub.spi.model.participant;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -26,7 +26,7 @@ public class KeyDescriptor {
     private String privateKeyAlias;
     private Map<String, Object> publicKeyJwk;
     private String publicKeyPem;
-    private Map<String, String> keyGeneratorParams;
+    private Map<String, Object> keyGeneratorParams;
 
     private KeyDescriptor() {
     }
@@ -47,7 +47,7 @@ public class KeyDescriptor {
         return publicKeyPem;
     }
 
-    public Map<String, String> getKeyGeneratorParams() {
+    public Map<String, Object> getKeyGeneratorParams() {
         return keyGeneratorParams;
     }
 
@@ -80,7 +80,7 @@ public class KeyDescriptor {
             return this;
         }
 
-        public Builder keyGeneratorParams(Map<String, String> keyGeneratorParams) {
+        public Builder keyGeneratorParams(Map<String, Object> keyGeneratorParams) {
             keyDescriptor.keyGeneratorParams = keyGeneratorParams;
             return this;
         }

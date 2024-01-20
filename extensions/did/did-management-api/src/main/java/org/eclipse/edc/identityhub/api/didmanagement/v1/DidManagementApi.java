@@ -68,7 +68,7 @@ public interface DidManagementApi {
     @Operation(description = "Query for DID documents..",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The DID document was successfully deleted.",
+                    @ApiResponse(responseCode = "200", description = "The list of DID Documents.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = DidDocument.class)))),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),

@@ -19,6 +19,7 @@ import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -35,9 +36,11 @@ public class ParticipantContextExtension implements ServiceExtension {
     private Vault vault;
     @Inject
     private TransactionContext transactionContext;
+    @Inject
+    private KeyParserRegistry keyParserRegistry;
 
     @Provider
     public ParticipantContextService createParticipantService() {
-        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, new Base64StringGenerator());
+        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, new Base64StringGenerator(), keyParserRegistry);
     }
 }

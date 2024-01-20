@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.participantcontext.v1.validation;
 
-import org.eclipse.edc.identityhub.api.participantcontext.v1.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.util.string.StringUtils;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;

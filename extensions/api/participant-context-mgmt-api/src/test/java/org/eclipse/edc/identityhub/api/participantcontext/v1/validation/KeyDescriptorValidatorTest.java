@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.participantcontext.v1.validation;
 
-import org.eclipse.edc.identityhub.api.participantcontext.v1.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

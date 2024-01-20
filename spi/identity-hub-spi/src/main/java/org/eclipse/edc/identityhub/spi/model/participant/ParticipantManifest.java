@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.participantcontext.v1.model;
+package org.eclipse.edc.identityhub.spi.model.participant;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
