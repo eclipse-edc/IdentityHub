@@ -24,8 +24,8 @@ import org.eclipse.edc.sql.translation.TranslationMapping;
 public class ParticipantContextMapping extends TranslationMapping {
 
     public static final String FIELD_ID = "participantId";
-    public static final String FIELD_CREATE_TIMESTAMP = "createdDate";
-    public static final String FIELD_LASTMODIFIED_TIMESTAMP = "lastModifiedDate";
+    public static final String FIELD_CREATE_TIMESTAMP = "createdAt";
+    public static final String FIELD_LASTMODIFIED_TIMESTAMP = "lastModified";
     public static final String FIELD_STATE = "state";
     public static final String FIELD_API_TOKEN_ALIAS = "apiTokenAlias";
 

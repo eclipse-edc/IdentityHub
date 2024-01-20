@@ -54,7 +54,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @GET
-    @Path("/{participantId}/")
+    @Path("/{participantId}")
     public ParticipantContext getParticipant(@PathParam("participantId") String participantId) {
         return participantContextService.getParticipantContext(participantId).orElseThrow(exceptionMapper(ParticipantContext.class));
     }

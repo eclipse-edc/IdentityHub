@@ -65,8 +65,8 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
                 var stmt = statements.getInsertTemplate();
                 queryExecutor.execute(connection, stmt,
                         participantContext.getParticipantId(),
-                        participantContext.getCreatedDate(),
-                        participantContext.getLastModifiedDate(),
+                        participantContext.getCreatedAt(),
+                        participantContext.getLastModified(),
                         participantContext.getState(),
                         participantContext.getApiTokenAlias());
                 return success();
@@ -101,8 +101,8 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
                     queryExecutor.execute(connection,
                             statements.getUpdateTemplate(),
                             id,
-                            participantContext.getCreatedDate(),
-                            participantContext.getLastModifiedDate(),
+                            participantContext.getCreatedAt(),
+                            participantContext.getLastModified(),
                             participantContext.getState(),
                             participantContext.getApiTokenAlias(),
                             id);
