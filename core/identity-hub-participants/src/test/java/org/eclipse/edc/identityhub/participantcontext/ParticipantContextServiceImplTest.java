@@ -85,7 +85,7 @@ class ParticipantContextServiceImplTest {
         var ctx = createManifest()
                 .active(isActive)
                 .key(createKey()
-                        .publicKeyPem(null)
+                        .publicKeyJwk(null)
                         .publicKeyPem(pem)
                         .build()).build();
         assertThat(participantContextService.createParticipantContext(ctx))

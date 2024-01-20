@@ -34,7 +34,6 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
-import org.jetbrains.annotations.NotNull;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -168,6 +167,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         } else {
             return ServiceResult.badRequest("No public key information found in KeyDescriptor.");
         }
+        // insert the "kid" parameter
         var json = publicKeyJwk.toJSONObject();
         json.put(JWKParameterNames.KEY_ID, key.getKeyId());
         try {
@@ -178,7 +178,6 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         }
     }
 
-    @NotNull
     private ServiceResult<Void> createParticipantContext(ParticipantContext context) {
         var storeRes = participantContextStore.create(context);
         return storeRes.succeeded() ?
