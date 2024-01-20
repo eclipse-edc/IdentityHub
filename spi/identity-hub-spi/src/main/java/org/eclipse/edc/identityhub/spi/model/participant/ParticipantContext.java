@@ -22,6 +22,9 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * Representation of a participant in Identity Hub.
+ */
 @JsonDeserialize(builder = ParticipantContext.Builder.class)
 public class ParticipantContext {
     private String participantId;

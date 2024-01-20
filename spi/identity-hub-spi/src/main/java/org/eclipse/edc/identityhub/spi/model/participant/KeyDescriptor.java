@@ -20,6 +20,15 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.util.Map;
 
+/**
+ * Container object to describe, what security keys should be used when creating a {@link ParticipantContext}.
+ * There are two basic options:
+ * <ol>
+ *     <li>Keys already exist - the public key can be specified using PEM or JWK format. The private key is expected to exist in the {@link org.eclipse.edc.spi.security.Vault} under the alias {@link KeyDescriptor#getPrivateKeyAlias()}</li>
+ *     <li>Keys don't exist - keys are to be generated using the {@link KeyDescriptor#getKeyGeneratorParams()}.</li>
+ * </ol>
+ * Specifying both options - or none - is an error.
+ */
 @JsonDeserialize(builder = KeyDescriptor.Builder.class)
 public class KeyDescriptor {
     private String keyId;

@@ -22,6 +22,9 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Manifest (=recipe) for creating the {@link ParticipantContext}.
+ */
 @JsonDeserialize(builder = ParticipantManifest.Builder.class)
 public class ParticipantManifest {
     private Set<Service> serviceEndpoints = new HashSet<>();
