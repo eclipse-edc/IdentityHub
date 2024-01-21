@@ -147,22 +147,23 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                         .build()))
                 .build();
         return didDocumentService.store(doc)
-                .compose(u -> manifest.isActive() ?
-                        didDocumentService.publish(doc.getId()) :
-                        success());
+                .compose(u -> manifest.isActive() ? didDocumentService.publish(doc.getId()) : success());
     }
 
     private ServiceResult<JWK> createOrUpdateKey(KeyDescriptor key) {
         // do we need to generate the key?
         var keyGeneratorParams = key.getKeyGeneratorParams();
-        JWK publicKeyJwk = null;
+        JWK publicKeyJwk;
         if (keyGeneratorParams != null) {
             var kp = KeyPairGenerator.generateKeyPair(keyGeneratorParams);
             if (kp.failed()) {
                 return badRequest("Could not generate KeyPair from generator params: %s".formatted(kp.getFailureDetail()));
             }
             var alias = key.getPrivateKeyAlias();
-            vault.storeSecret(alias, CryptoConverter.createJwk(kp.getContent()).toJSONString());
+            var storeResult = vault.storeSecret(alias, CryptoConverter.createJwk(kp.getContent()).toJSONString());
+            if (storeResult.failed()) {
+                return badRequest(storeResult.getFailureDetail());
+            }
             publicKeyJwk = CryptoConverter.createJwk(kp.getContent()).toPublicJWK();
         } else if (key.getPublicKeyJwk() != null) {
             publicKeyJwk = CryptoConverter.create(key.getPublicKeyJwk());

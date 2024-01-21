@@ -118,7 +118,7 @@ class ParticipantContextServiceImplTest {
     @ValueSource(booleans = {true, false})
     void createParticipantContext_withKeyGenParams(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
-
+        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
         var ctx = createManifest()
                 .active(isActive)
                 .key(createKey().publicKeyPem(null).publicKeyJwk(null)
