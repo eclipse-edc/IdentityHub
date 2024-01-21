@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -203,7 +204,10 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void deleteParticipantContext() {
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(createContext())));
         when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
+        when(didDocumentService.unpublish(any())).thenReturn(success());
+        when(didDocumentService.deleteById(any())).thenReturn(success());
         assertThat(participantContextService.deleteParticipantContext("test-id")).isSucceeded();
 
         verify(participantContextStore).deleteById(anyString());
@@ -213,8 +217,41 @@ class ParticipantContextServiceImplTest {
     }
 
     @Test
+    void deleteParticipantContext_deleteDidFails() {
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(createContext())));
+        when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
+        when(didDocumentService.unpublish(any())).thenReturn(success());
+        when(didDocumentService.deleteById(any())).thenReturn(badRequest("test-message"));
+        assertThat(participantContextService.deleteParticipantContext("test-id")).isFailed()
+                .detail().isEqualTo("test-message");
+
+        verify(participantContextStore).deleteById(anyString());
+        verify(participantContextStore).query(any());
+        verify(didDocumentService).unpublish(any());
+        verify(didDocumentService).deleteById(any());
+        verifyNoMoreInteractions(vault, didDocumentService, participantContextStore);
+    }
+
+    @Test
+    void deleteParticipantContext_unpublishDidFails() {
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(createContext())));
+        when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
+        when(didDocumentService.unpublish(any())).thenReturn(badRequest("test-message"));
+        assertThat(participantContextService.deleteParticipantContext("test-id")).isFailed()
+                .detail().isEqualTo("test-message");
+
+        verify(participantContextStore).deleteById(anyString());
+        verify(participantContextStore).query(any());
+        verify(didDocumentService).unpublish(any());
+        verifyNoMoreInteractions(vault, didDocumentService, participantContextStore);
+    }
+
+    @Test
     void deleteParticipantContext_whenNotExists() {
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(createContext())));
         when(participantContextStore.deleteById(any())).thenReturn(StoreResult.notFound("foo bar"));
+        when(didDocumentService.unpublish(any())).thenReturn(success());
+        when(didDocumentService.deleteById(any())).thenReturn(success());
         assertThat(participantContextService.deleteParticipantContext("test-id"))
                 .isFailed()
                 .satisfies(f -> {
@@ -313,6 +350,7 @@ class ParticipantContextServiceImplTest {
     private ParticipantContext createContext() {
         return ParticipantContext.Builder.newInstance()
                 .participantId("test-id")
+                .did("did:web:test-id")
                 .state(ParticipantContextState.CREATED)
                 .apiTokenAlias("test-alias")
                 .build();

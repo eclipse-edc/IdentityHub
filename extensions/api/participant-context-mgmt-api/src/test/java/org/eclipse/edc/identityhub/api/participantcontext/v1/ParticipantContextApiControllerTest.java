@@ -220,7 +220,8 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
         return ParticipantManifest.Builder.newInstance()
                 .key(createKey().build())
                 .active(true)
-                .participantId("test-id");
+                .participantId("test-id")
+                .did("did:web:test-id");
     }
 
     @NotNull

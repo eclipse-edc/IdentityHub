@@ -39,8 +39,11 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
+import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
+import static org.eclipse.edc.spi.result.ServiceResult.conflict;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
 import static org.eclipse.edc.spi.result.ServiceResult.notFound;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
@@ -96,8 +99,14 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     @Override
     public ServiceResult<Void> deleteParticipantContext(String participantId) {
         return transactionContext.execute(() -> {
+            var did = Optional.ofNullable(findByIdInternal(participantId)).map(ParticipantContext::getDid);
             var res = participantContextStore.deleteById(participantId);
-            return res.succeeded() ? success() : fromFailure(res);
+            if (res.failed()) {
+                return fromFailure(res);
+            }
+
+            return did.map(d -> didDocumentService.unpublish(d).compose(u -> didDocumentService.deleteById(d)))
+                    .orElseGet(ServiceResult::success);
         });
     }
 
@@ -111,7 +120,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             var alias = participantContext.getContent().getApiTokenAlias();
 
             var newToken = tokenGenerator.generate();
-            return vault.storeSecret(alias, newToken).map(unused -> success(newToken)).orElse(f -> ServiceResult.conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
+            return vault.storeSecret(alias, newToken).map(unused -> success(newToken)).orElse(f -> conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
         });
     }
 
@@ -150,7 +159,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         if (keyGeneratorParams != null) {
             var kp = KeyPairGenerator.generateKeyPair(keyGeneratorParams);
             if (kp.failed()) {
-                return ServiceResult.badRequest("Could not generate KeyPair from generator params: %s".formatted(kp.getFailureDetail()));
+                return badRequest("Could not generate KeyPair from generator params: %s".formatted(kp.getFailureDetail()));
             }
             var alias = key.getPrivateKeyAlias();
             vault.storeSecret(alias, CryptoConverter.createJwk(kp.getContent()).toJSONString());
@@ -160,11 +169,11 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         } else if (key.getPublicKeyPem() != null) {
             var pubKey = keyParserRegistry.parse(key.getPublicKeyPem());
             if (pubKey.failed()) {
-                return ServiceResult.badRequest("Cannot parse public key from PEM: %s".formatted(pubKey.getFailureDetail()));
+                return badRequest("Cannot parse public key from PEM: %s".formatted(pubKey.getFailureDetail()));
             }
             publicKeyJwk = CryptoConverter.createJwk(new KeyPair((PublicKey) pubKey.getContent(), null));
         } else {
-            return ServiceResult.badRequest("No public key information found in KeyDescriptor.");
+            return badRequest("No public key information found in KeyDescriptor.");
         }
         // insert the "kid" parameter
         var json = publicKeyJwk.toJSONObject();
@@ -173,7 +182,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             publicKeyJwk = JWK.parse(json);
             return success(publicKeyJwk);
         } catch (ParseException e) {
-            return ServiceResult.badRequest("Could not create JWK: %s".formatted(e.getMessage()));
+            return badRequest("Could not create JWK: %s".formatted(e.getMessage()));
         }
     }
 

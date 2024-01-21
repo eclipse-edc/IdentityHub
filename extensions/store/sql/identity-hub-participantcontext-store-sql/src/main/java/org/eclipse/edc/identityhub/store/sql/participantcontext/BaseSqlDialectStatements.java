@@ -29,6 +29,7 @@ public class BaseSqlDialectStatements implements ParticipantContextStoreStatemen
                 .column(getLastModifiedTimestampColumn())
                 .column(getStateColumn())
                 .column(getApiTokenAliasColumn())
+                .column(getDidColumn())
                 .insertInto(getParticipantContextTable());
     }
 
@@ -40,6 +41,7 @@ public class BaseSqlDialectStatements implements ParticipantContextStoreStatemen
                 .column(getLastModifiedTimestampColumn())
                 .column(getStateColumn())
                 .column(getApiTokenAliasColumn())
+                .column(getDidColumn())
                 .update(getParticipantContextTable(), getIdColumn());
     }
 

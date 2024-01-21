@@ -28,6 +28,7 @@ public class ParticipantContextMapping extends TranslationMapping {
     public static final String FIELD_LASTMODIFIED_TIMESTAMP = "lastModified";
     public static final String FIELD_STATE = "state";
     public static final String FIELD_API_TOKEN_ALIAS = "apiTokenAlias";
+    public static final String FIELD_DID = "did";
 
     public ParticipantContextMapping(ParticipantContextStoreStatements statements) {
         add(FIELD_ID, statements.getIdColumn());
@@ -35,5 +36,6 @@ public class ParticipantContextMapping extends TranslationMapping {
         add(FIELD_STATE, statements.getStateColumn());
         add(FIELD_LASTMODIFIED_TIMESTAMP, statements.getLastModifiedTimestampColumn());
         add(FIELD_API_TOKEN_ALIAS, statements.getApiTokenAliasColumn());
+        add(FIELD_DID, statements.getDidColumn());
     }
 }

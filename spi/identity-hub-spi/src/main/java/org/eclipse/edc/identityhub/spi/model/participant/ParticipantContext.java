@@ -28,6 +28,7 @@ import java.util.Objects;
 @JsonDeserialize(builder = ParticipantContext.Builder.class)
 public class ParticipantContext {
     private String participantId;
+    private String did;
     private long createdAt;
     private long lastModified;
     private int state; // CREATED, ACTIVATED, DEACTIVATED
@@ -92,6 +93,10 @@ public class ParticipantContext {
         this.state = ParticipantContextState.DEACTIVATED.ordinal();
     }
 
+    public String getDid() {
+        return did;
+    }
+
     @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder {
         private final ParticipantContext participantContext;
@@ -123,6 +128,11 @@ public class ParticipantContext {
 
         public Builder apiTokenAlias(String apiToken) {
             this.participantContext.apiTokenAlias = apiToken;
+            return this;
+        }
+
+        public Builder did(String did) {
+            this.participantContext.did = did;
             return this;
         }
 
