@@ -19,6 +19,7 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identithub.did.spi.DidDocumentPublisherRegistry;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
+import org.eclipse.edc.identithub.did.spi.model.DidState;
 import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -40,6 +41,37 @@ public class DidDocumentServiceImpl implements DidDocumentService {
         this.transactionContext = transactionContext;
         this.didResourceStore = didResourceStore;
         this.registry = registry;
+    }
+
+    @Override
+    public ServiceResult<Void> store(DidDocument document) {
+        return transactionContext.execute(() -> {
+            var res = DidResource.Builder.newInstance()
+                    .document(document)
+                    .did(document.getId())
+                    .build();
+            var result = didResourceStore.save(res);
+            return result.succeeded() ?
+                    ServiceResult.success() :
+                    ServiceResult.fromFailure(result);
+        });
+    }
+
+    @Override
+    public ServiceResult<Void> deleteById(String did) {
+        return transactionContext.execute(() -> {
+            var existing = didResourceStore.findById(did);
+            if (existing == null) {
+                return ServiceResult.notFound(notFoundMessage(did));
+            }
+            if (existing.getState() == DidState.PUBLISHED.code()) {
+                return ServiceResult.conflict("Cannot delete DID '%s' because it is already published. Un-publish first!".formatted(did));
+            }
+            var res = didResourceStore.deleteById(did);
+            return res.succeeded() ?
+                    ServiceResult.success() :
+                    ServiceResult.fromFailure(res);
+        });
     }
 
     @Override
