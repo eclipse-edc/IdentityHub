@@ -19,6 +19,9 @@ import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Map;
 
@@ -55,11 +58,22 @@ class ParticipantManifestValidatorTest {
                 .detail().startsWith("key descriptor is invalid");
     }
 
-    @Test
-    void validate_participantIdNull() {
-        var manifest = createManifest().participantId(null).build();
+    @ParameterizedTest
+    @ValueSource(strings = {"", "  ", "\n"})
+    @NullAndEmptySource
+    void validate_didInvalid(String did) {
+        var manifest = createManifest().did(did).build();
         assertThat(validator.validate(manifest)).isFailed()
-                .detail().isEqualTo("participantId cannot be null.");
+                .detail().isEqualTo("DID cannot be null or empty.");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "  ", "\n"})
+    @NullAndEmptySource
+    void validate_participantIdNull(String participantId) {
+        var manifest = createManifest().participantId(participantId).build();
+        assertThat(validator.validate(manifest)).isFailed()
+                .detail().isEqualTo("participantId cannot be null or empty.");
     }
 
     @NotNull
@@ -67,6 +81,7 @@ class ParticipantManifestValidatorTest {
         return ParticipantManifest.Builder.newInstance()
                 .serviceEndpoint(new Service("id", "type", "foobar"))
                 .active(true)
+                .did("did:web:test-did")
                 .participantId("test-id")
                 .key(createKeyDescriptor().build());
     }

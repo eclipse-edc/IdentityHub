@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.api.participantcontext.v1.validation;
 
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
+import org.eclipse.edc.util.string.StringUtils;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
 
@@ -34,8 +35,11 @@ public class ParticipantManifestValidator implements Validator<ParticipantManife
         if (input.getKey() == null) {
             return failure(violation("key descriptor cannot be null.", "key"));
         }
-        if (input.getParticipantId() == null) {
-            return failure(violation("participantId cannot be null.", "participantId"));
+        if (StringUtils.isNullOrBlank(input.getParticipantId())) {
+            return failure(violation("participantId cannot be null or empty.", "participantId"));
+        }
+        if (StringUtils.isNullOrBlank(input.getDid())) {
+            return failure(violation("DID cannot be null or empty.", "did"));
         }
 
         var keyValidationResult = keyDescriptorValidator.validate(input.getKey());

@@ -92,7 +92,7 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
-        verify(didDocumentService).store(any());
+        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())));
         verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
@@ -108,7 +108,7 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
-        verify(didDocumentService).store(any());
+        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())));
         verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
@@ -129,7 +129,7 @@ class ParticipantContextServiceImplTest {
 
         verify(participantContextStore).create(any());
         verify(vault).storeSecret(eq(ctx.getKey().getPrivateKeyAlias()), anyString());
-        verify(didDocumentService).store(any());
+        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())));
         verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
@@ -207,6 +207,8 @@ class ParticipantContextServiceImplTest {
         assertThat(participantContextService.deleteParticipantContext("test-id")).isSucceeded();
 
         verify(participantContextStore).deleteById(anyString());
+        verify(didDocumentService).unpublish(any());
+        verify(didDocumentService).deleteById(any());
         verifyNoMoreInteractions(vault);
     }
 
@@ -221,7 +223,7 @@ class ParticipantContextServiceImplTest {
                 });
 
         verify(participantContextStore).deleteById(anyString());
-        verifyNoMoreInteractions(vault);
+        verifyNoMoreInteractions(vault, didDocumentService);
     }
 
     @Test
@@ -297,6 +299,7 @@ class ParticipantContextServiceImplTest {
         return ParticipantManifest.Builder.newInstance()
                 .key(createKey().build())
                 .active(true)
+                .did("did:web:test-id")
                 .participantId("test-id");
     }
 

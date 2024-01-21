@@ -39,7 +39,6 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.text.ParseException;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
@@ -132,7 +131,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
 
     private ServiceResult<Void> generateDidDocument(ParticipantManifest manifest, JWK publicKey) {
         var doc = DidDocument.Builder.newInstance()
-                .id("did:web:" + UUID.randomUUID()) // fixme: how to determine the ID beforehand? let the publisher do it?
+                .id(manifest.getDid())
                 .service(manifest.getServiceEndpoints().stream().toList())
                 .verificationMethod(List.of(VerificationMethod.Builder.newInstance()
                         .publicKeyJwk(publicKey.toJSONObject())

@@ -30,6 +30,7 @@ public class ParticipantManifest {
     private Set<Service> serviceEndpoints = new HashSet<>();
     private boolean isActive;
     private String participantId;
+    private String did;
     private KeyDescriptor key;
 
     private ParticipantManifest() {
@@ -49,6 +50,10 @@ public class ParticipantManifest {
 
     public KeyDescriptor getKey() {
         return key;
+    }
+
+    public String getDid() {
+        return did;
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -82,6 +87,11 @@ public class ParticipantManifest {
 
         public Builder key(KeyDescriptor key) {
             manifest.key = key;
+            return this;
+        }
+
+        public Builder did(String did) {
+            manifest.did = did;
             return this;
         }
 
