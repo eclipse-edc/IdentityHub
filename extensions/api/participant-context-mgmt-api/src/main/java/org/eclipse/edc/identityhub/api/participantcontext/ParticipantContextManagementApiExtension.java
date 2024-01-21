@@ -45,6 +45,6 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
     @Override
     public void initialize(ServiceExtensionContext context) {
         var controller = new ParticipantContextApiController(new ParticipantManifestValidator(), participantContextService);
-//        webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
+        webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
     }
 }
