@@ -29,7 +29,6 @@ import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -49,10 +48,6 @@ import static org.mockito.Mockito.when;
 class ParticipantContextApiControllerTest extends RestControllerTestBase {
 
     private final ParticipantContextService participantContextServiceMock = mock();
-
-    @BeforeEach
-    void setUp() {
-    }
 
     @Test
     void getById() {

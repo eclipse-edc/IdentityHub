@@ -45,6 +45,6 @@ class VerifiableCredentialResourceTest {
 
         assertThat(vc.getClock()).isNotNull();
         assertThat(vc.id).isNotNull();
-        assertThat(vc.getState()).isEqualTo(VcState.INITIAL);
+        assertThat(vc.getStateAsEnum()).isEqualTo(VcState.INITIAL);
     }
 }

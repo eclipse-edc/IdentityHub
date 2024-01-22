@@ -50,3 +50,4 @@ include(":version-catalog")
 // test modules
 include(":e2e-tests")
 include(":e2e-tests:api-tests")
+include(":extensions:api:verifiablecredential-management-api")
