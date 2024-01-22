@@ -48,15 +48,16 @@ public class KeyPairGenerator {
     private static final String RSA_PARAM_LENGTH = "length";
     private static final String EC_PARAM_CURVE = "curve";
     private static final String EC_DEFAULT_CURVE = "secp256r1";
+    private static final String ALGORITHM_ENTRY = "algorithm";
 
     /**
      * Generate a Java {@link KeyPair} from an algorithm identifier and generator parameters.
      *
-     * @param algorithm  One of [EC, RSA, EdDSA]. If null, defaults to "EdDSA".
      * @param parameters May contain specific paramters, such as "length" (RSA), or a "curve" (EC and EdDSA). May be empty, not null.
      * @return A {@link KeyPair}, or a failure indicating what went wrong.
      */
-    public static Result<KeyPair> generateKeyPair(String algorithm, Map<String, Object> parameters) {
+    public static Result<KeyPair> generateKeyPair(Map<String, Object> parameters) {
+        var algorithm = parameters.get(ALGORITHM_ENTRY).toString();
         if (StringUtils.isNullOrBlank(algorithm)) {
             return generateEdDsa(CURVE_ED25519);
         }

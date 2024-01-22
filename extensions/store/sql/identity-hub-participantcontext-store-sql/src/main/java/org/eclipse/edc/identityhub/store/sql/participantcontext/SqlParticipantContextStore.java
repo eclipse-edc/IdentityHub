@@ -65,10 +65,12 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
                 var stmt = statements.getInsertTemplate();
                 queryExecutor.execute(connection, stmt,
                         participantContext.getParticipantId(),
-                        participantContext.getCreatedDate(),
-                        participantContext.getLastModifiedDate(),
+                        participantContext.getCreatedAt(),
+                        participantContext.getLastModified(),
                         participantContext.getState(),
-                        participantContext.getApiTokenAlias());
+                        participantContext.getApiTokenAlias(),
+                        participantContext.getDid()
+                );
                 return success();
 
             } catch (SQLException e) {
@@ -101,10 +103,11 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
                     queryExecutor.execute(connection,
                             statements.getUpdateTemplate(),
                             id,
-                            participantContext.getCreatedDate(),
-                            participantContext.getLastModifiedDate(),
+                            participantContext.getCreatedAt(),
+                            participantContext.getLastModified(),
                             participantContext.getState(),
                             participantContext.getApiTokenAlias(),
+                            participantContext.getDid(),
                             id);
                     return StoreResult.success();
                 }
@@ -146,6 +149,7 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
         var lastmodified = resultSet.getLong(statements.getLastModifiedTimestampColumn());
         var state = resultSet.getInt(statements.getStateColumn());
         var tokenAliase = resultSet.getString(statements.getApiTokenAliasColumn());
+        var did = resultSet.getString(statements.getDidColumn());
 
         return ParticipantContext.Builder.newInstance()
                 .participantId(id)
@@ -153,6 +157,7 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
                 .lastModified(lastmodified)
                 .state(ParticipantContextState.values()[state])
                 .apiTokenAlias(tokenAliase)
+                .did(did)
                 .build();
     }
 }

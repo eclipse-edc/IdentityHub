@@ -27,6 +27,19 @@ import java.util.Collection;
  */
 public interface DidDocumentService {
 
+    /**
+     * Stores a DID document in persistent storage. * * @param document the {@link DidDocument} to store
+     *
+     * @return a {@link ServiceResult} to indicate success or failure.
+     */
+    ServiceResult<Void> store(DidDocument document);
+
+    /**
+     * Deletes a DID document if found. * * @param did The ID of the DID document to delete.
+     *
+     * @return A {@link ServiceResult} indicating success or failure.
+     */
+    ServiceResult<Void> deleteById(String did);
 
     /**
      * Publishes an already existing DID document. Returns a failure if the DID document was not found or cannot be published.

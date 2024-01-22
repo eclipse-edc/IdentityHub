@@ -14,13 +14,23 @@
 
 package org.eclipse.edc.identityhub.spi.model.participant;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * Representation of a participant in Identity Hub.
+ */
+@JsonDeserialize(builder = ParticipantContext.Builder.class)
 public class ParticipantContext {
     private String participantId;
-    private long createdDate;
-    private long lastModifiedDate;
+    private String did;
+    private long createdAt;
+    private long lastModified;
     private int state; // CREATED, ACTIVATED, DEACTIVATED
     private String apiTokenAlias; // or apiTokenAlias
 
@@ -37,15 +47,15 @@ public class ParticipantContext {
     /**
      * The POSIX timestamp in ms when this entry was created. Immutable
      */
-    public long getCreatedDate() {
-        return createdDate;
+    public long getCreatedAt() {
+        return createdAt;
     }
 
     /**
      * The POSIX timestamp in ms when this entry was last modified.
      */
-    public long getLastModifiedDate() {
-        return lastModifiedDate;
+    public long getLastModified() {
+        return lastModified;
     }
 
     /**
@@ -55,6 +65,7 @@ public class ParticipantContext {
         return state;
     }
 
+    @JsonIgnore
     public ParticipantContextState getStateAsEnum() {
         return ParticipantContextState.values()[state];
     }
@@ -71,24 +82,43 @@ public class ParticipantContext {
      * Updates the last-modified field.
      */
     public void updateLastModified() {
-        this.lastModifiedDate = Instant.now().toEpochMilli();
+        this.lastModified = Instant.now().toEpochMilli();
     }
 
+    /**
+     * Transitions this participant context to the {@link ParticipantContextState#ACTIVATED} state.
+     */
+    public void activate() {
+        this.state = ParticipantContextState.ACTIVATED.ordinal();
+    }
+
+    /**
+     * Transitions this participant context to the {@link ParticipantContextState#DEACTIVATED} state.
+     */
+    public void deactivate() {
+        this.state = ParticipantContextState.DEACTIVATED.ordinal();
+    }
+
+    public String getDid() {
+        return did;
+    }
+
+    @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder {
         private final ParticipantContext participantContext;
 
         private Builder() {
             participantContext = new ParticipantContext();
-            participantContext.createdDate = Instant.now().toEpochMilli();
+            participantContext.createdAt = Instant.now().toEpochMilli();
         }
 
         public Builder createdAt(long createdAt) {
-            this.participantContext.createdDate = createdAt;
+            this.participantContext.createdAt = createdAt;
             return this;
         }
 
         public Builder lastModified(long lastModified) {
-            this.participantContext.lastModifiedDate = lastModified;
+            this.participantContext.lastModified = lastModified;
             return this;
         }
 
@@ -107,16 +137,22 @@ public class ParticipantContext {
             return this;
         }
 
+        public Builder did(String did) {
+            this.participantContext.did = did;
+            return this;
+        }
+
         public ParticipantContext build() {
             Objects.requireNonNull(participantContext.participantId, "Participant ID cannot be null");
             Objects.requireNonNull(participantContext.apiTokenAlias, "API Token Alias cannot be null");
 
-            if (participantContext.getLastModifiedDate() == 0L) {
-                participantContext.lastModifiedDate = participantContext.getCreatedDate();
+            if (participantContext.getLastModified() == 0L) {
+                participantContext.lastModified = participantContext.getCreatedAt();
             }
             return participantContext;
         }
 
+        @JsonCreator
         public static Builder newInstance() {
             return new Builder();
         }
