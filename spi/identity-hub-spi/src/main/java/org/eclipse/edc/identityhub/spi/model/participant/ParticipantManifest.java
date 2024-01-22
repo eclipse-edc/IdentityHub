@@ -36,22 +36,39 @@ public class ParticipantManifest {
     private ParticipantManifest() {
     }
 
+    /**
+     * An optional list of service endpoints that should get published in the DID document, e.g. resolution endpoints, storage endpoints, etc.
+     */
     public Set<Service> getServiceEndpoints() {
         return serviceEndpoints;
     }
 
+    /**
+     * Indicates whether the participant context should immediately transition to the {@link ParticipantContextState#ACTIVATED} state. This will include
+     * publishing the generated DID document.
+     */
     public boolean isActive() {
         return isActive;
     }
 
+    /**
+     * The DSP {@code participantId} of this participant. This must be a unique and stable ID.
+     */
     public String getParticipantId() {
         return participantId;
     }
 
+    /**
+     * Key material that is to be associated with this participant. May not be null.
+     */
     public KeyDescriptor getKey() {
         return key;
     }
 
+    /**
+     * The DID that is to be used when publishing the participant DID document. This must be specified because there is no reliable way to determine the DID
+     * automatically.
+     */
     public String getDid() {
         return did;
     }

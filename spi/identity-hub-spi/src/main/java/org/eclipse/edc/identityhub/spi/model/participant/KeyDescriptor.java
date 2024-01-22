@@ -41,22 +41,39 @@ public class KeyDescriptor {
     private KeyDescriptor() {
     }
 
+    /**
+     * The ID of the key. Will be used to reference the key that was used for signing, e.g. as "kid" header in JSON Web Tokens
+     */
     public String getKeyId() {
         return keyId;
     }
 
+    /**
+     * Alias under which the private key is stored in the vault. If keys are to be generated, the new private key will get stored
+     * under the that alias.
+     */
     public String getPrivateKeyAlias() {
         return privateKeyAlias;
     }
 
+    /**
+     * Public key in JWK format (JSON string). If this is specified, {@link KeyDescriptor#getPublicKeyPem()} and {@link KeyDescriptor#getKeyGeneratorParams()} MUST be null.
+     */
     public Map<String, Object> getPublicKeyJwk() {
         return publicKeyJwk;
     }
 
+    /**
+     * Public key in PEM format. If this is specified, {@link KeyDescriptor#getPublicKeyJwk()} ()} and {@link KeyDescriptor#getKeyGeneratorParams()} MUST be null.
+     */
     public String getPublicKeyPem() {
         return publicKeyPem;
     }
 
+    /**
+     * Specify only if keys are to be generated. Must contain an "algorithm -> [EC | RSA | EdDSA]" entry, possibly a "curve" parameter. If specified, {@link KeyDescriptor#getPublicKeyPem()} and {@link KeyDescriptor#getPublicKeyJwk()}
+     * MUST be null.
+     */
     public Map<String, Object> getKeyGeneratorParams() {
         return keyGeneratorParams;
     }

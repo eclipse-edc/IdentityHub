@@ -85,10 +85,16 @@ public class ParticipantContext {
         this.lastModified = Instant.now().toEpochMilli();
     }
 
+    /**
+     * Transitions this participant context to the {@link ParticipantContextState#ACTIVATED} state.
+     */
     public void activate() {
         this.state = ParticipantContextState.ACTIVATED.ordinal();
     }
 
+    /**
+     * Transitions this participant context to the {@link ParticipantContextState#DEACTIVATED} state.
+     */
     public void deactivate() {
         this.state = ParticipantContextState.DEACTIVATED.ordinal();
     }
