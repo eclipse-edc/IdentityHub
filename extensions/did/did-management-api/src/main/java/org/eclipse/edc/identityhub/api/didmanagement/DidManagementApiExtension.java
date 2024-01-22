@@ -15,13 +15,13 @@
 package org.eclipse.edc.identityhub.api.didmanagement;
 
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
+import org.eclipse.edc.identityhub.api.configuration.ManagementApiConfiguration;
 import org.eclipse.edc.identityhub.api.didmanagement.v1.DidManagementApiController;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
-import org.eclipse.edc.web.spi.configuration.WebServiceConfiguration;
 
 import static org.eclipse.edc.identityhub.api.didmanagement.DidManagementApiExtension.NAME;
 
@@ -35,7 +35,7 @@ public class DidManagementApiExtension implements ServiceExtension {
     @Inject
     private DidDocumentService didDocumentService;
     @Inject
-    private WebServiceConfiguration webServiceConfiguration;
+    private ManagementApiConfiguration webServiceConfiguration;
 
 
     @Override

@@ -22,7 +22,6 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebServer;
 import org.eclipse.edc.web.spi.WebService;
-import org.eclipse.edc.web.spi.configuration.WebServiceConfiguration;
 import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
 import org.eclipse.edc.web.spi.configuration.WebServiceSettings;
 
@@ -58,7 +57,7 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
     }
 
     @Provider
-    public WebServiceConfiguration createManagementApiConfiguration(ServiceExtensionContext context) {
-        return configurer.configure(context, webServer, SETTINGS);
+    public ManagementApiConfiguration createManagementApiConfiguration(ServiceExtensionContext context) {
+        return new ManagementApiConfiguration(configurer.configure(context, webServer, SETTINGS));
     }
 }
