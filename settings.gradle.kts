@@ -41,7 +41,7 @@ include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:api:management-api-configuration")
 include(":extensions:api:participant-context-mgmt-api")
-include(":extensions:api:verifiablecredential-mgmt-api")
+include(":extensions:api:verifiable-credential-mgmt-api")
 
 include(":extensions:did:did-management-api")
 // other modules

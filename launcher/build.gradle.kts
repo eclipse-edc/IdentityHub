@@ -26,7 +26,7 @@ dependencies {
     runtimeOnly(project(":extensions:did:local-did-publisher"))
     runtimeOnly(project(":extensions:did:did-management-api"))
     runtimeOnly(project(":extensions:api:participant-context-mgmt-api"))
-    runtimeOnly(project(":extensions:api:participant-context-mgmt-api"))
+    runtimeOnly(project(":extensions:api:verifiable-credential-mgmt-api"))
     runtimeOnly(project(":extensions:api:management-api-configuration"))
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
