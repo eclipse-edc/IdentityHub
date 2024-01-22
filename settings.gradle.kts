@@ -41,13 +41,13 @@ include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:api:management-api-configuration")
 include(":extensions:api:participant-context-mgmt-api")
-include(":extensions:did:did-management-api")
+include(":extensions:api:verifiablecredential-mgmt-api")
 
+include(":extensions:did:did-management-api")
 // other modules
 include(":launcher")
-include(":version-catalog")
 
+include(":version-catalog")
 // test modules
 include(":e2e-tests")
 include(":e2e-tests:api-tests")
-include(":extensions:api:verifiablecredential-management-api")
