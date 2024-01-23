@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -60,7 +61,7 @@ class CredentialQueryResolverImplTest {
 
     @Test
     void query_noProverScope_shouldReturnEmpty() {
-        when(storeMock.query(any())).thenReturn(success(Stream.empty()));
+        when(storeMock.query(any())).thenReturn(success(Collections.emptyList()));
         var res = resolver.query(createPresentationQuery(), List.of("foobar"));
         assertThat(res.succeeded()).isFalse();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
@@ -69,7 +70,7 @@ class CredentialQueryResolverImplTest {
 
     @Test
     void query_proverScopeStringInvalid_shouldReturnFailure() {
-        when(storeMock.query(any())).thenReturn(success(Stream.empty()));
+        when(storeMock.query(any())).thenReturn(success(Collections.emptyList()));
         var res = resolver.query(createPresentationQuery("invalid"),
                 List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
         assertThat(res.failed()).isTrue();

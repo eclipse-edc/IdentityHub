@@ -19,7 +19,7 @@ import org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 
-import java.util.stream.Stream;
+import java.util.Collection;
 
 /**
  * The CredentialStore interface represents a store that manages verifiable credentials.
@@ -40,7 +40,7 @@ public interface CredentialStore {
      * @param querySpec The {@link QuerySpec} indicating the criteria for the query.
      * @return A {@link StoreResult} object containing a list of {@link VerifiableCredentialResource} objects that match the query.
      */
-    StoreResult<Stream<VerifiableCredentialResource>> query(QuerySpec querySpec);
+    StoreResult<Collection<VerifiableCredentialResource>> query(QuerySpec querySpec);
 
     /**
      * Updates a verifiable credential resource in the store.

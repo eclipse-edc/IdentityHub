@@ -29,8 +29,8 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.success;
@@ -80,11 +80,11 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
     }
 
     @Override
-    public StoreResult<Stream<ParticipantContext>> query(QuerySpec querySpec) {
+    public StoreResult<Collection<ParticipantContext>> query(QuerySpec querySpec) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 var query = statements.createQuery(querySpec);
-                return success(queryExecutor.query(connection, true, this::mapResultSet, query.getQueryAsString(), query.getParameters()));
+                return success(queryExecutor.query(connection, true, this::mapResultSet, query.getQueryAsString(), query.getParameters()).toList());
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
