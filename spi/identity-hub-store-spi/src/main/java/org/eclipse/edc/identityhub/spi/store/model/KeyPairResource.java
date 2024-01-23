@@ -14,9 +14,12 @@
 
 package org.eclipse.edc.identityhub.spi.store.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
+
+import java.time.Duration;
 
 /**
  * A {@link KeyPairResource} contains key material for a particular {@link ParticipantContext}. The public key is stored in the database in serialized form (JWK or PEM) and the private
@@ -110,6 +113,18 @@ public class KeyPairResource {
         return state;
     }
 
+    @JsonIgnore
+    public void rotate(long duration) {
+        state = KeyPairState.ROTATED.code();
+        rotationDuration = duration;
+        isDefaultPair = false;
+    }
+
+    public void revoke() {
+        state = KeyPairState.REVOKED.code();
+        isDefaultPair = false;
+    }
+
     public static final class Builder {
         private final KeyPairResource keyPairResource;
 
@@ -178,7 +193,9 @@ public class KeyPairResource {
         }
 
         public KeyPairResource build() {
-
+            if (keyPairResource.useDuration == 0) {
+                keyPairResource.useDuration = Duration.ofDays(6 * 30).toMillis();
+            }
             return keyPairResource;
         }
 
