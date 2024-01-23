@@ -56,6 +56,10 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
         return NAME;
     }
 
+    @Override
+    public void initialize(ServiceExtensionContext context) {
+    }
+
     @Provider
     public ManagementApiConfiguration createManagementApiConfiguration(ServiceExtensionContext context) {
         return new ManagementApiConfiguration(configurer.configure(context, webServer, SETTINGS));

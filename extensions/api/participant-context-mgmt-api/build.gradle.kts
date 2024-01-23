@@ -22,7 +22,7 @@ dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:identity-hub-did-spi"))
-    implementation(project(":extensions:api:management-api-configuration"))
+    implementation(project(":extensions:api:identityhub-management-api-configuration"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
     implementation(libs.edc.util)

@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.spi.store.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.policy.model.Policy;
 
@@ -32,7 +33,12 @@ public class VerifiableCredentialResource extends IdentityResource {
 
     }
 
-    public VcState getState() {
+    public int getState() {
+        return state;
+    }
+
+    @JsonIgnore
+    public VcState getStateAsEnum() {
         return VcState.from(state);
     }
 
