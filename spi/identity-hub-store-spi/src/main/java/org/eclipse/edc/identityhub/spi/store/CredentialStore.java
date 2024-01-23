@@ -59,10 +59,10 @@ public interface CredentialStore {
     StoreResult<Void> deleteById(String id);
 
     default String alreadyExistsErrorMessage(String id) {
-        return "A VerifiableCredentialResource with ID %s already exists.".formatted(id);
+        return "A VerifiableCredentialResource with ID '%s' already exists.".formatted(id);
     }
 
     default String notFoundErrorMessage(String id) {
-        return "A VerifiableCredentialResource with ID %s was not found.".formatted(id);
+        return "A VerifiableCredentialResource with ID '%s' does not exist.".formatted(id);
     }
 }

@@ -48,11 +48,11 @@ public abstract class KeyPairResourceStoreTestBase {
     @Test
     void query_byId() {
         range(0, 5)
-                .mapToObj(i -> createKeyPairResource().participantId("id" + i).build())
+                .mapToObj(i -> createKeyPairResource().id("id" + i).build())
                 .forEach(getStore()::create);
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", "id2"))
+                .filter(new Criterion("id", "=", "id2"))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -142,14 +142,14 @@ public abstract class KeyPairResourceStoreTestBase {
         getStore().create(keyPairResource.build());
 
         var updateRes = getStore().update(keyPairResource.state(KeyPairState.ROTATED).id("another-id").build());
-        assertThat(updateRes).isFailed().detail().contains("An entity with ID another-id was not found");
+        assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
     void update_whenNotExists() {
         var context = createKeyPairResource();
         var updateRes = getStore().update(context.state(KeyPairState.ROTATED).participantId("another-id").build());
-        assertThat(updateRes).isFailed().detail().matches("An entity with ID .* was not found");
+        assertThat(updateRes).isFailed().detail().matches(".* with ID .* does not exist.");
     }
 
     @Test
@@ -164,7 +164,7 @@ public abstract class KeyPairResourceStoreTestBase {
     @Test
     void delete_whenNotExists() {
         assertThat(getStore().deleteById("not-exist")).isFailed()
-                .detail().contains("with ID not-exist was not found");
+                .detail().contains("with ID 'not-exist' does not exist.");
     }
 
     protected abstract KeyPairResourceStore getStore();

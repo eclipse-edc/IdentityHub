@@ -85,7 +85,7 @@ abstract class InMemoryEntityStore<T> {
         try {
             var id = getId(newObject);
             if (!store.containsKey(id)) {
-                return notFound("An entity with ID %s was not found".formatted(id));
+                return notFound("An entity with ID '%s' does not exist.".formatted(id));
             }
             store.put(id, newObject);
             return success();
@@ -104,7 +104,7 @@ abstract class InMemoryEntityStore<T> {
         lock.writeLock().lock();
         try {
             if (!store.containsKey(id)) {
-                return notFound("An entity with ID %s was not found".formatted(id));
+                return notFound("An entity with ID '%s' does not exist.".formatted(id));
             }
             store.remove(id);
             return success();
