@@ -51,7 +51,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     public VerifiableCredentialResource findById(@PathParam("credentialId") String id) {
         var result = credentialStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build())
                 .orElseThrow(InvalidRequestException::new);
-        return result.findFirst().orElseThrow(() -> new ObjectNotFoundException(VerifiableCredentialResource.class, id));
+        return result.stream().findFirst().orElseThrow(() -> new ObjectNotFoundException(VerifiableCredentialResource.class, id));
     }
 
     @GET
@@ -61,7 +61,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .filter(new Criterion("verifiableCredential.credential.types", "contains", type))
                 .build();
 
-        return credentialStore.query(query).orElseThrow(InvalidRequestException::new).toList();
+        return credentialStore.query(query).orElseThrow(InvalidRequestException::new);
     }
 
     @DELETE
