@@ -37,8 +37,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
@@ -163,7 +163,7 @@ class ParticipantContextServiceImplTest {
     @Test
     void getParticipantContext() {
         var ctx = createContext();
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(ctx)));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(ctx)));
 
         assertThat(participantContextService.getParticipantContext("test-id"))
                 .isSucceeded()
@@ -176,7 +176,7 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void getParticipantContext_whenNotExists() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of()));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of()));
         assertThat(participantContextService.getParticipantContext("test-id"))
                 .isFailed()
                 .satisfies(f -> {
@@ -204,7 +204,7 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void deleteParticipantContext() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(createContext())));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
         when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
         when(didDocumentService.unpublish(any())).thenReturn(success());
         when(didDocumentService.deleteById(any())).thenReturn(success());
@@ -218,7 +218,7 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void deleteParticipantContext_deleteDidFails() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(createContext())));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
         when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
         when(didDocumentService.unpublish(any())).thenReturn(success());
         when(didDocumentService.deleteById(any())).thenReturn(badRequest("test-message"));
@@ -234,7 +234,7 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void deleteParticipantContext_unpublishDidFails() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(createContext())));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
         when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
         when(didDocumentService.unpublish(any())).thenReturn(badRequest("test-message"));
         assertThat(participantContextService.deleteParticipantContext("test-id")).isFailed()
@@ -248,7 +248,7 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void deleteParticipantContext_whenNotExists() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(createContext())));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
         when(participantContextStore.deleteById(any())).thenReturn(StoreResult.notFound("foo bar"));
         when(didDocumentService.unpublish(any())).thenReturn(success());
         when(didDocumentService.deleteById(any())).thenReturn(success());
@@ -265,7 +265,7 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void regenerateApiToken() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(createContext())));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
         when(vault.storeSecret(eq("test-alias"), anyString())).thenReturn(Result.success());
 
         assertThat(participantContextService.regenerateApiToken("test-id")).isSucceeded().isNotNull();
@@ -276,7 +276,7 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void regenerateApiToken_vaultFails() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(createContext())));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
         when(vault.storeSecret(eq("test-alias"), anyString())).thenReturn(Result.failure("test failure"));
 
         assertThat(participantContextService.regenerateApiToken("test-id")).isFailed().detail().isEqualTo("Could not store new API token: test failure.");
@@ -287,7 +287,7 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void regenerateApiToken_whenNotFound() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of()));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of()));
 
         assertThat(participantContextService.regenerateApiToken("test-id")).isFailed().detail().isEqualTo("No ParticipantContext with ID 'test-id' was found.");
 
@@ -298,7 +298,7 @@ class ParticipantContextServiceImplTest {
     @Test
     void update() {
         var context = createContext();
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(context)));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(context)));
         when(participantContextStore.update(any())).thenReturn(StoreResult.success());
         assertThat(participantContextService.updateParticipant(context.getParticipantId(), ParticipantContext::deactivate)).isSucceeded();
 
@@ -321,7 +321,7 @@ class ParticipantContextServiceImplTest {
     @Test
     void update_whenStoreUpdateFails() {
         var context = createContext();
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(Stream.of(context)));
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(context)));
         when(participantContextStore.update(any())).thenReturn(StoreResult.alreadyExists("test-msg"));
 
         assertThat(participantContextService.updateParticipant(context.getParticipantId(), ParticipantContext::deactivate)).isFailed()

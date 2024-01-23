@@ -15,33 +15,32 @@
 package org.eclipse.edc.identityhub.store.test;
 
 import org.assertj.core.api.Assertions;
-import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.store.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.store.model.KeyPairState;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+import java.util.UUID;
+
 import static java.util.stream.IntStream.range;
-import static org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState.ACTIVATED;
-import static org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState.CREATED;
-import static org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState.DEACTIVATED;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
-public abstract class ParticipantContextStoreTestBase {
-
+public abstract class KeyPairResourceStoreTestBase {
     @Test
     void create() {
-        var result = getStore().create(createParticipantContext());
+        var result = getStore().create(createKeyPairResource().build());
         assertThat(result).isSucceeded();
-
     }
 
     @Test
     void create_whenExists_shouldReturnFailure() {
-        var context = createParticipantContext();
-        var result = getStore().create(context);
+        var keyPairResource = createKeyPairResource().build();
+        var result = getStore().create(keyPairResource);
         assertThat(result).isSucceeded();
-        var result2 = getStore().create(context);
+        var result2 = getStore().create(keyPairResource);
 
         assertThat(result2).isFailed().detail().contains("already exists");
     }
@@ -49,11 +48,11 @@ public abstract class ParticipantContextStoreTestBase {
     @Test
     void query_byId() {
         range(0, 5)
-                .mapToObj(i -> createParticipantContextBuilder().participantId("id" + i).build())
+                .mapToObj(i -> createKeyPairResource().id("id" + i).build())
                 .forEach(getStore()::create);
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", "id2"))
+                .filter(new Criterion("id", "=", "id2"))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -62,24 +61,24 @@ public abstract class ParticipantContextStoreTestBase {
 
     @Test
     void query_byProperty() {
-        var participantContext = createParticipantContextBuilder().state(DEACTIVATED).build();
-        getStore().create(participantContext);
+        var keyPairResource = createKeyPairResource().state(KeyPairState.CREATED).build();
+        getStore().create(keyPairResource);
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("state", "=", 2))
+                .filter(new Criterion("state", "=", KeyPairState.CREATED.code()))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
                 .satisfies(str -> Assertions.assertThat(str)
                         .hasSize(1)
                         .usingRecursiveFieldByFieldElementComparator()
-                        .containsExactly(participantContext));
+                        .containsExactly(keyPairResource));
     }
 
     @Test
     void query_noQuerySpec() {
         var resources = range(0, 5)
-                .mapToObj(i -> createParticipantContextBuilder().participantId("id" + i).build())
+                .mapToObj(i -> createKeyPairResource().participantId("id" + i).build())
                 .toList();
 
         resources.forEach(getStore()::create);
@@ -88,13 +87,13 @@ public abstract class ParticipantContextStoreTestBase {
         assertThat(res).isSucceeded();
         Assertions.assertThat(res.getContent())
                 .usingRecursiveFieldByFieldElementComparator()
-                .containsExactlyInAnyOrder(resources.toArray(new ParticipantContext[0]));
+                .containsExactlyInAnyOrder(resources.toArray(new KeyPairResource[0]));
     }
 
     @Test
     void query_whenNotFound() {
         var resources = range(0, 5)
-                .mapToObj(i -> createParticipantContextBuilder()
+                .mapToObj(i -> createKeyPairResource()
                         .participantId("id" + i)
                         .build())
                 .toList();
@@ -112,7 +111,7 @@ public abstract class ParticipantContextStoreTestBase {
     @Test
     void query_byInvalidField_shouldReturnEmptyList() {
         var resources = range(0, 5)
-                .mapToObj(i -> createParticipantContextBuilder()
+                .mapToObj(i -> createKeyPairResource()
                         .participantId("id" + i)
                         .build())
                 .toList();
@@ -129,36 +128,36 @@ public abstract class ParticipantContextStoreTestBase {
 
     @Test
     void update() {
-        var context = createParticipantContextBuilder();
-        var result = getStore().create(context.build());
+        var keyPairResource = createKeyPairResource();
+        var result = getStore().create(keyPairResource.build());
         assertThat(result).isSucceeded();
 
-        var updateRes = getStore().update(context.state(ACTIVATED).build());
+        var updateRes = getStore().update(keyPairResource.state(KeyPairState.REVOKED).build());
         assertThat(updateRes).isSucceeded();
     }
 
     @Test
     void update_whenIdChanges_fails() {
-        var context = createParticipantContextBuilder();
-        var result = getStore().create(context.build());
+        var keyPairResource = createKeyPairResource();
+        getStore().create(keyPairResource.build());
 
-        var updateRes = getStore().update(context.state(DEACTIVATED).participantId("another-id").build());
+        var updateRes = getStore().update(keyPairResource.state(KeyPairState.ROTATED).id("another-id").build());
         assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
     void update_whenNotExists() {
-        var context = createParticipantContextBuilder();
-        var updateRes = getStore().update(context.state(DEACTIVATED).participantId("another-id").build());
-        assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
+        var context = createKeyPairResource();
+        var updateRes = getStore().update(context.state(KeyPairState.ROTATED).participantId("another-id").build());
+        assertThat(updateRes).isFailed().detail().matches(".* with ID .* does not exist.");
     }
 
     @Test
     void delete() {
-        var context = createParticipantContext();
-        getStore().create(context);
+        var keyPairResource = createKeyPairResource().build();
+        getStore().create(keyPairResource);
 
-        var deleteRes = getStore().deleteById(context.getParticipantId());
+        var deleteRes = getStore().deleteById(keyPairResource.getId());
         assertThat(deleteRes).isSucceeded();
     }
 
@@ -168,20 +167,15 @@ public abstract class ParticipantContextStoreTestBase {
                 .detail().contains("with ID 'not-exist' does not exist.");
     }
 
-    protected abstract ParticipantContextStore getStore();
+    protected abstract KeyPairResourceStore getStore();
 
-    private ParticipantContext createParticipantContext() {
-        return ParticipantContext.Builder.newInstance()
+    private KeyPairResource.Builder createKeyPairResource() {
+        return KeyPairResource.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .keyId("test-key-1")
+                .privateKeyAlias("private-key-alias")
                 .participantId("test-participant")
-                .state(CREATED)
-                .apiTokenAlias("test-alias")
-                .build();
-    }
-
-    private ParticipantContext.Builder createParticipantContextBuilder() {
-        return ParticipantContext.Builder.newInstance()
-                .participantId("test-participant")
-                .state(CREATED)
-                .apiTokenAlias("test-alias");
+                .serializedPublicKey("this-is-a-pem-string")
+                .useDuration(Duration.ofDays(6).toMillis());
     }
 }

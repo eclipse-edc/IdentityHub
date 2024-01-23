@@ -18,7 +18,7 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 
-import java.util.stream.Stream;
+import java.util.Collection;
 
 /**
  * Stores {@link ParticipantContext} objects and provides basic CRUD operations.
@@ -38,7 +38,7 @@ public interface ParticipantContextStore {
      * @param querySpec The {@link QuerySpec} indicating the criteria for the query.
      * @return A {@link StoreResult} object containing a list of {@link ParticipantContext} objects that match the query. If none are found, returns an empty stream.
      */
-    StoreResult<Stream<ParticipantContext>> query(QuerySpec querySpec);
+    StoreResult<Collection<ParticipantContext>> query(QuerySpec querySpec);
 
     /**
      * Updates a ParticipantContext resource in the store.
@@ -57,10 +57,10 @@ public interface ParticipantContextStore {
     StoreResult<Void> deleteById(String id);
 
     default String alreadyExistsErrorMessage(String id) {
-        return "A VerifiableCredentialResource with ID %s already exists.".formatted(id);
+        return "A ParticipantContext with ID '%s' already exists.".formatted(id);
     }
 
     default String notFoundErrorMessage(String id) {
-        return "A VerifiableCredentialResource with ID %s was not found.".formatted(id);
+        return "A ParticipantContext with ID '%s' does not exist.".formatted(id);
     }
 }

@@ -33,9 +33,9 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,7 +51,7 @@ class CredentialQueryResolverImplTest {
 
     @Test
     void query_noResult() {
-        when(storeMock.query(any())).thenAnswer(i -> success(Stream.empty()));
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of()));
         var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"),
                 List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
         assertThat(res.succeeded()).isTrue();
@@ -60,7 +60,7 @@ class CredentialQueryResolverImplTest {
 
     @Test
     void query_noProverScope_shouldReturnEmpty() {
-        when(storeMock.query(any())).thenReturn(success(Stream.empty()));
+        when(storeMock.query(any())).thenReturn(success(Collections.emptyList()));
         var res = resolver.query(createPresentationQuery(), List.of("foobar"));
         assertThat(res.succeeded()).isFalse();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
@@ -69,7 +69,7 @@ class CredentialQueryResolverImplTest {
 
     @Test
     void query_proverScopeStringInvalid_shouldReturnFailure() {
-        when(storeMock.query(any())).thenReturn(success(Stream.empty()));
+        when(storeMock.query(any())).thenReturn(success(Collections.emptyList()));
         var res = resolver.query(createPresentationQuery("invalid"),
                 List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
         assertThat(res.failed()).isTrue();
@@ -88,7 +88,7 @@ class CredentialQueryResolverImplTest {
     @Test
     void query_singleScopeString() {
         var credential = createCredentialResource("TestCredential");
-        when(storeMock.query(any())).thenAnswer(i -> success(Stream.of(credential)));
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential)));
         var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"),
                 List.of("org.eclipse.edc.vc.type:TestCredential:read"));
         assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
@@ -99,7 +99,7 @@ class CredentialQueryResolverImplTest {
     void query_multipleScopeStrings() {
         var credential1 = createCredentialResource("TestCredential");
         var credential2 = createCredentialResource("AnotherCredential");
-        when(storeMock.query(any())).thenAnswer(i -> success(Stream.of(credential1, credential2)));
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential1, credential2)));
 
         var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read",
                         "org.eclipse.edc.vc.type:AnotherCredential:read"),
@@ -120,8 +120,8 @@ class CredentialQueryResolverImplTest {
     void query_requestsTooManyCredentials_shouldReturnFailure() {
         var credential1 = createCredentialResource("TestCredential");
         var credential2 = createCredentialResource("AnotherCredential");
-        when(storeMock.query(any())).thenAnswer(i -> success(Stream.of(credential1, credential2)))
-                .thenAnswer(i -> success(Stream.of(credential1)));
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential1, credential2)))
+                .thenAnswer(i -> success(List.of(credential1)));
 
         var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read",
                         "org.eclipse.edc.vc.type:AnotherCredential:read"),
@@ -135,7 +135,7 @@ class CredentialQueryResolverImplTest {
     @Test
     void query_moreCredentialsAllowed_shouldReturnOnlyRequested() {
         var credential1 = createCredentialResource("TestCredential");
-        when(storeMock.query(any())).thenAnswer(i -> success(Stream.of(credential1)));
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential1)));
 
         var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"),
                 List.of("org.eclipse.edc.vc.type:TestCredential:read", "org.eclipse.edc.vc.type:AnotherCredential:read"));
@@ -147,7 +147,7 @@ class CredentialQueryResolverImplTest {
     @Test
     void query_exactMatchAllowedAndRequestedCredentials() {
         var credential1 = createCredentialResource("TestCredential");
-        when(storeMock.query(any())).thenAnswer(i -> success(Stream.of(credential1)));
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential1)));
 
         var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"),
                 List.of("org.eclipse.edc.vc.type:TestCredential:read"));
@@ -160,8 +160,8 @@ class CredentialQueryResolverImplTest {
     void query_requestedCredentialNotAllowed() {
         var credential1 = createCredentialResource("TestCredential");
         var credential2 = createCredentialResource("AnotherCredential");
-        when(storeMock.query(any())).thenAnswer(i -> success(Stream.of(credential1)))
-                .thenAnswer(i -> success(Stream.of(credential2)));
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential1)))
+                .thenAnswer(i -> success(List.of(credential2)));
 
         var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"),
                 List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
@@ -177,8 +177,8 @@ class CredentialQueryResolverImplTest {
         var credential2 = createCredentialResource("AnotherCredential");
         var credential3 = createCredentialResource("FooCredential");
         var credential4 = createCredentialResource("BarCredential");
-        when(storeMock.query(any())).thenAnswer(i -> success(Stream.of(credential1, credential2)))
-                .thenAnswer(i -> success(Stream.of(credential3, credential4)));
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential1, credential2)))
+                .thenAnswer(i -> success(List.of(credential3, credential4)));
 
         var res = resolver.query(createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read", "org.eclipse.edc.vc.type:AnotherCredential:read"),
                 List.of("org.eclipse.edc.vc.type:FooCredential:read", "org.eclipse.edc.vc.type:BarCredential:read"));

@@ -18,11 +18,11 @@ import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.notFound;
@@ -47,7 +47,7 @@ abstract class InMemoryEntityStore<T> {
         var id = getId(newObject);
         try {
             if (store.containsKey(id)) {
-                return alreadyExists("A VerifiableCredentialResource with ID %s already exists".formatted(id));
+                return alreadyExists("An entity with ID %s already exists".formatted(id));
             }
             store.put(id, newObject);
             return success(null);
@@ -62,13 +62,13 @@ abstract class InMemoryEntityStore<T> {
      * @param querySpec A non-null QuerySpec.
      * @return A (potentially empty) Stream of objects. Callers must close the stream.
      */
-    public StoreResult<Stream<T>> query(QuerySpec querySpec) {
+    public StoreResult<Collection<T>> query(QuerySpec querySpec) {
         lock.readLock().lock();
         try {
             // if no filter is present, we return true
             Predicate<Object> fallback = querySpec.getFilterExpression().isEmpty() ? x -> true : x -> false;
             var result = queryResolver.query(store.values().stream(), querySpec, Predicate::or, fallback);
-            return success(result);
+            return success(result.toList());
         } finally {
             lock.readLock().unlock();
         }
@@ -85,7 +85,7 @@ abstract class InMemoryEntityStore<T> {
         try {
             var id = getId(newObject);
             if (!store.containsKey(id)) {
-                return notFound("A VerifiableCredentialResource with ID %s was not found".formatted(id));
+                return notFound("An entity with ID '%s' does not exist.".formatted(id));
             }
             store.put(id, newObject);
             return success();
@@ -104,7 +104,7 @@ abstract class InMemoryEntityStore<T> {
         lock.writeLock().lock();
         try {
             if (!store.containsKey(id)) {
-                return notFound("A VerifiableCredentialResource with ID %s was not found".formatted(id));
+                return notFound("An entity with ID '%s' does not exist.".formatted(id));
             }
             store.remove(id);
             return success();

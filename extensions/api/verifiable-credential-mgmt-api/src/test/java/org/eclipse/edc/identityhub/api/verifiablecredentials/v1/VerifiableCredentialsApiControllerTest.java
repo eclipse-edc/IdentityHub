@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,7 +48,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     @Test
     void findById() {
         var credential = createCredential("VerifiableCredential").build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(Stream.of(credential)));
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(credential)));
 
         var result = baseRequest()
                 .get("/%s".formatted(CREDENTIAL_ID))
@@ -64,7 +64,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
     @Test
     void findById_whenNotExists_expect404() {
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(Stream.empty()));
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of()));
 
         baseRequest()
                 .get("/%s".formatted(CREDENTIAL_ID))
@@ -80,7 +80,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     void findByType() {
         var credential1 = createCredential("test-type").build();
         var credential2 = createCredential("test-type").build();
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(Stream.of(credential1, credential2)));
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(credential1, credential2)));
 
         var result = baseRequest()
                 .get("?type=test-type")
@@ -96,7 +96,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
     @Test
     void findByType_noResult() {
-        when(credentialStore.query(any())).thenReturn(StoreResult.success(Stream.empty()));
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of()));
 
         var result = baseRequest()
                 .get("?type=test-type")

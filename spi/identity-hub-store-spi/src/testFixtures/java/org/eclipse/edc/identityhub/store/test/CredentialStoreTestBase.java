@@ -367,14 +367,14 @@ public abstract class CredentialStoreTestBase {
         var result = getStore().create(credential.build());
 
         var updateRes = getStore().update(credential.state(VcState.ISSUED).id("another-id").build());
-        assertThat(updateRes).isFailed().detail().contains("with ID another-id was not found");
+        assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
     void update_whenNotExists() {
         var credential = createCredentialBuilder();
         var updateRes = getStore().update(credential.state(VcState.ISSUED).id("another-id").build());
-        assertThat(updateRes).isFailed().detail().contains("with ID another-id was not found");
+        assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
@@ -389,7 +389,7 @@ public abstract class CredentialStoreTestBase {
     @Test
     void delete_whenNotExists() {
         assertThat(getStore().deleteById("not-exist")).isFailed()
-                .detail().contains("with ID not-exist was not found");
+                .detail().contains("with ID 'not-exist' does not exist.");
     }
 
     protected abstract CredentialStore getStore();

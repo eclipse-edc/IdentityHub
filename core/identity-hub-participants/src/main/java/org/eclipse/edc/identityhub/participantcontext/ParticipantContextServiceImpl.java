@@ -88,7 +88,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         return transactionContext.execute(() -> {
             var res = participantContextStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantContext", "=", participantId)).build());
             if (res.succeeded()) {
-                return res.getContent().findFirst()
+                return res.getContent().stream().findFirst()
                         .map(ServiceResult::success)
                         .orElse(notFound("No ParticipantContext with ID '%s' was found.".formatted(participantId)));
             }
@@ -197,7 +197,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private ParticipantContext findByIdInternal(String participantId) {
         var resultStream = participantContextStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantContext", "=", participantId)).build());
         if (resultStream.failed()) return null;
-        return resultStream.getContent().findFirst().orElse(null);
+        return resultStream.getContent().stream().findFirst().orElse(null);
     }
 
 

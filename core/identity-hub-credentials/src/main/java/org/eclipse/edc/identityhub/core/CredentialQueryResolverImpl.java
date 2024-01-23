@@ -71,7 +71,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         }
 
         // the credentials requested by the other party
-        var requestedCredentials = credentialResult.getContent().toList();
+        var requestedCredentials = credentialResult.getContent();
 
         // check that prover scope is not wider than issuer scope
         var issuerQuery = convertToQuerySpec(issuerScopeResult.getContent());
@@ -81,7 +81,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         }
 
         // now narrow down the requested credentials to only contain allowed credentials
-        var content = allowedCred.getContent().toList();
+        var content = allowedCred.getContent();
         var isValidQuery = new HashSet<>(content).containsAll(requestedCredentials);
 
         return isValidQuery ?
