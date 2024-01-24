@@ -17,10 +17,12 @@ package org.eclipse.edc.identityhub;
 import com.apicatalog.ld.signature.SignatureSuite;
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.defaults.InMemoryCredentialStore;
+import org.eclipse.edc.identityhub.defaults.InMemoryKeyPairResourceStore;
 import org.eclipse.edc.identityhub.defaults.InMemoryParticipantContextStore;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.token.rules.ClaimIsPresentRule;
 import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
@@ -73,6 +75,11 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Provider(isDefault = true)
     public ParticipantContextStore createDefaultParticipantContextStore() {
         return new InMemoryParticipantContextStore();
+    }
+
+    @Provider(isDefault = true)
+    public KeyPairResourceStore createDefaultKeyPairResourceStore() {
+        return new InMemoryKeyPairResourceStore();
     }
 
     @Provider(isDefault = true)
