@@ -8,6 +8,7 @@ edc = "0.5.1-SNAPSHOT"
 failsafe = "3.3.2"
 jackson = "2.14.2"
 jakarta-annotation = "2.1.1"
+jersey = "3.1.5"
 jupiter = "5.10.1"
 mockserver = "5.15.0"
 nimbus = "9.37.3"
@@ -79,6 +80,7 @@ swagger-jaxrs = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-postgres = { module = "org.testcontainers:postgres", version.ref = "testcontainers" }
 jakarta-annotation = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
+jersey-common = { module = "org.glassfish.jersey.core:jersey-common", version.ref = "jersey" }
 
 [bundles]
 connector = ["edc-boot", "edc-core-connector", "edc-ext-http", "edc-ext-observability", "edc-ext-jsonld"]

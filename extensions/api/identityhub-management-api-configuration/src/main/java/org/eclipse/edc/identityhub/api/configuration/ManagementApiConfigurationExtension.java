@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.api.configuration;
 
 import org.eclipse.edc.identityhub.api.authentication.filter.RoleBasedAccessFeature;
 import org.eclipse.edc.identityhub.api.authentication.filter.UserAuthenticationFilter;
-import org.eclipse.edc.identityhub.api.authentication.spi.UserService;
+import org.eclipse.edc.identityhub.api.authentication.spi.UserResolver;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -80,8 +80,8 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
         return configuration;
     }
 
-    private UserService createUserService() {
-        return new ParticipantUserService(participantContextService, vault);
+    private UserResolver createUserService() {
+        return new ParticipantUserResolver(participantContextService, vault);
     }
 
 }

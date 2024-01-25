@@ -23,11 +23,17 @@ import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * This filter is registered for controller methods annotated with {@link jakarta.annotation.security.RolesAllowed} and checks, if
+ * the current {@link jakarta.ws.rs.core.SecurityContext} fulfills the role requirement of that method.
+ * <p>
+ * The security context is populated by the {@link UserAuthenticationFilter}.
+ */
 @Priority(Priorities.AUTHORIZATION)
 class RoleBasedAccessFilter implements ContainerRequestFilter {
     private final List<String> allowedRoles;
 
-    RoleBasedAccessFilter(String[] allowedRoles) {
+    RoleBasedAccessFilter(String... allowedRoles) {
         this.allowedRoles = Arrays.asList(allowedRoles);
     }
 

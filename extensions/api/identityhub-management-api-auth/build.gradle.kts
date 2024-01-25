@@ -28,4 +28,5 @@ dependencies {
     implementation(libs.edc.core.jerseyproviders)
     implementation(libs.jakarta.rsApi)
 
+    testRuntimeOnly(libs.jersey.common) // needs the RuntimeDelegate
 }

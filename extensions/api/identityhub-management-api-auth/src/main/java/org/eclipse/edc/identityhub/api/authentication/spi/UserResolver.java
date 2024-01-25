@@ -14,8 +14,13 @@
 
 package org.eclipse.edc.identityhub.api.authentication.spi;
 
-public interface UserService {
-    User findByCredential(String apiKey);
-
-    User findByPrincipal(String principal);
+/**
+ * Resolves {@link User} objects during request ingress.
+ */
+@FunctionalInterface
+public interface UserResolver {
+    /**
+     * resolve the user based on the credential (e.g. API key)
+     */
+    User findByCredential(String credential);
 }

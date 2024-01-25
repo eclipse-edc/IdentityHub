@@ -19,6 +19,11 @@ import jakarta.ws.rs.container.DynamicFeature;
 import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.FeatureContext;
 
+/**
+ * This feature will inspect the {@link ResourceInfo#getResourceMethod()} of a resolved resource (=endpoint) and check if it is
+ * annotated with the {@link RolesAllowed} annotation, and if so, a {@link RoleBasedAccessFilter} is registered for the specific
+ * request context of that endpoint.
+ */
 public class RoleBasedAccessFeature implements DynamicFeature {
 
     @Override

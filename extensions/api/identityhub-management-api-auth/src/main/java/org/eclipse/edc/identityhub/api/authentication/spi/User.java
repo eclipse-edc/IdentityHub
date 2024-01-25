@@ -17,12 +17,24 @@ package org.eclipse.edc.identityhub.api.authentication.spi;
 import java.security.Principal;
 import java.util.List;
 
+/**
+ * A user is a representation of the security principal that executes a request against an HTTP API. It must be resolvable during request pre-matching.
+ */
 public interface User extends Principal {
 
+    /**
+     * The "principal", e.g. the user ID, or a unique user name.
+     */
     String getPrincipal();
 
+    /**
+     * The credential of the user, e.g. an API token or a password.
+     */
     String getCredential();
 
+    /**
+     * The roles that this user possesses. May be empty, never null.
+     */
     List<String> getRoles();
 
     default String getName() {

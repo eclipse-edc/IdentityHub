@@ -45,7 +45,7 @@ public class ApiTokenGenerator {
         byte[] array = new byte[bound];
         secureRandom.nextBytes(array);
         var enc = Base64.getEncoder();
-        return enc.encodeToString(array) + "." + enc.encodeToString(principal.getBytes());
+        return enc.encodeToString(principal.getBytes()) + "." + enc.encodeToString(array);
 
     }
 }

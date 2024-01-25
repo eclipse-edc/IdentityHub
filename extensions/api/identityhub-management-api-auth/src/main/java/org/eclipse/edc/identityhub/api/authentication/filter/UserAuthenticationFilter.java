@@ -21,18 +21,35 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.identityhub.api.authentication.spi.UserService;
+import org.eclipse.edc.identityhub.api.authentication.spi.User;
+import org.eclipse.edc.identityhub.api.authentication.spi.UserResolver;
 
 import java.security.Principal;
 
+/**
+ * This filter takes the x-api-key header and attempts to resolve a {@link User} from it using the {@link UserResolver}.
+ * If there is 1 (and exactly 1!) {@code x-api-key} header, and a user can be resolved, the request is propagated through the filter chain.
+ * <p>
+ * This filter sets the {@link SecurityContext} of the request using the resolved user. Downstream filters can then get the security context:
+ * <pre>
+ *     var securityContext = containerRequestContext.getSecurityContext();
+ *     var principal = securityContext.getPrincipal();
+ *
+ *     if(principal instanceof User user){
+ *         // perform more auth stuff with user.
+ *     }
+ * </pre>
+ * <p>
+ * If no or more than 1 {@code x-api-key} headers were specified, or if a valid user could not be resolved, the request is aborted with HTTP 401.
+ */
 @PreMatching
 @Priority(Priorities.AUTHENTICATION)
 public class UserAuthenticationFilter implements ContainerRequestFilter {
     private static final String API_KEY_HEADER = "x-api-key";
-    private final UserService userService;
+    private final UserResolver userResolver;
 
-    public UserAuthenticationFilter(UserService userService) {
-        this.userService = userService;
+    public UserAuthenticationFilter(UserResolver userResolver) {
+        this.userResolver = userResolver;
     }
 
     @Override
@@ -45,7 +62,7 @@ public class UserAuthenticationFilter implements ContainerRequestFilter {
         } else {
             var apiKey = apiKeyHeader.get(0);
 
-            var user = userService.findByCredential(apiKey);
+            var user = userResolver.findByCredential(apiKey);
             containerRequestContext.setSecurityContext(new SecurityContext() {
                 @Override
                 public Principal getUserPrincipal() {

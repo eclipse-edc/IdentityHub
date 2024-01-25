@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.api.configuration;
 
 import org.eclipse.edc.identityhub.api.authentication.spi.User;
-import org.eclipse.edc.identityhub.api.authentication.spi.UserService;
+import org.eclipse.edc.identityhub.api.authentication.spi.UserResolver;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.spi.security.Vault;
@@ -24,32 +24,44 @@ import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import java.util.Base64;
 import java.util.List;
 
-class ParticipantUserService implements UserService {
+/**
+ * For the purposes of the Management API of the IdentityHub, a {@link User} is represented by a {@link ParticipantContext}. However, the request filter chain ({@link org.eclipse.edc.identityhub.api.authentication.filter.UserAuthenticationFilter}
+ * etc.)
+ * do not need to know about that, they only know about {@link User} and {@link UserResolver}. Thus, this implementation acts as bridge. Other authentication backends like Apache Shiro would call this a _realm_.
+ */
+class ParticipantUserResolver implements UserResolver {
     private final ParticipantContextService participantContextService;
     private final Vault vault;
 
-    ParticipantUserService(ParticipantContextService participantContextService, Vault vault) {
+    ParticipantUserResolver(ParticipantContextService participantContextService, Vault vault) {
         this.participantContextService = participantContextService;
         this.vault = vault;
     }
 
+    /**
+     * Resolves a {@link User} based on their credential (= API key). This cannot be done directly, since the API key is stored in a {@link Vault}. However, the
+     * API key encodes the user's principal, so we first need to decode the token, and then resolve based on the principal.
+     *
+     * @param credential The user's credential (= API key)
+     * @return The user that owns the credential
+     * @throws AuthenticationFailedException if the credential has an invalid structure, or the User cannot be resolved.
+     */
     @Override
-    public User findByCredential(String apiKey) {
-        var tokens = apiKey.split("\\.");
+    public User findByCredential(String credential) {
+        var tokens = credential.split("\\.");
         if (tokens.length != 2) {
             throw new AuthenticationFailedException("Invalid API token");
         }
-        var principalId = Base64.getDecoder().decode(tokens[1]);
+        var principalId = Base64.getDecoder().decode(tokens[0]);
         var user = findByPrincipal(new String(principalId));
-        if (user.getCredential().equals(apiKey)) {
+        if (user.getCredential().equals(credential)) {
             return user;
         }
         throw new AuthenticationFailedException("Invalid API token");
 
     }
 
-    @Override
-    public User findByPrincipal(String principal) {
+    private User findByPrincipal(String principal) {
         return participantContextService.getParticipantContext(principal)
                 .map(this::toUser)
                 .orElseThrow(f -> new AuthenticationFailedException("Invalid Authentication '%s': %s".formatted(principal, f.getFailureDetail())));
