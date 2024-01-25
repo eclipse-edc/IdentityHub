@@ -14,10 +14,14 @@
 
 package org.eclipse.edc.identityhub.api.configuration;
 
+import org.eclipse.edc.identityhub.api.authentication.filter.RoleBasedAccessFeature;
+import org.eclipse.edc.identityhub.api.authentication.filter.UserAuthenticationFilter;
+import org.eclipse.edc.identityhub.api.authentication.spi.UserService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebServer;
@@ -50,6 +54,10 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
     private WebServiceConfigurer configurer;
     @Inject
     private WebServer webServer;
+    @Inject
+    private Vault vault;
+
+    private ManagementApiConfiguration configuration;
 
     @Override
     public String name() {
@@ -58,10 +66,22 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
+        var alias = createApiConfig(context).getContextAlias();
+
+        webService.registerResource(alias, new RoleBasedAccessFeature());
+        webService.registerResource(alias, new UserAuthenticationFilter(createUserService()));
     }
 
     @Provider
-    public ManagementApiConfiguration createManagementApiConfiguration(ServiceExtensionContext context) {
-        return new ManagementApiConfiguration(configurer.configure(context, webServer, SETTINGS));
+    public ManagementApiConfiguration createApiConfig(ServiceExtensionContext context) {
+        if (configuration == null) {
+            configuration = new ManagementApiConfiguration(configurer.configure(context, webServer, SETTINGS));
+        }
+        return configuration;
     }
+
+    private UserService createUserService() {
+        return new ParticipantUserService(participantContextService, vault);
+    }
+
 }

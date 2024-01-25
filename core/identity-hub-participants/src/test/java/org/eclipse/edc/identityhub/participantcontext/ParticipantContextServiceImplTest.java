@@ -67,8 +67,7 @@ class ParticipantContextServiceImplTest {
         when(didDocumentService.publish(anyString())).thenReturn(success());
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(),
-                new Base64StringGenerator(), keyParserRegistry, didDocumentService);
+        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), keyParserRegistry, didDocumentService);
     }
 
     @ParameterizedTest(name = "isActive: {0}")

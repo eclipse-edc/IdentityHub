@@ -32,7 +32,7 @@ public interface ParticipantContextService {
      * @param manifest The new participant context
      * @return success if created, or a failure if already exists.
      */
-    ServiceResult<Void> createParticipantContext(ParticipantManifest manifest);
+    ServiceResult<String> createParticipantContext(ParticipantManifest manifest);
 
     /**
      * Fetches the {@link ParticipantContext} by ID.

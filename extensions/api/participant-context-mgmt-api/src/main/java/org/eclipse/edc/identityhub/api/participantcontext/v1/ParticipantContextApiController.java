@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.participantcontext.v1;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -46,9 +47,10 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @POST
-    public void createParticipant(ParticipantManifest manifest) {
+    @RolesAllowed("admin")
+    public String createParticipant(ParticipantManifest manifest) {
         participantManifestValidator.validate(manifest).orElseThrow(ValidationFailureException::new);
-        participantContextService.createParticipantContext(manifest)
+        return participantContextService.createParticipantContext(manifest)
                 .orElseThrow(exceptionMapper(ParticipantManifest.class, manifest.getParticipantId()));
     }
 
@@ -69,6 +71,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @POST
     @Path("/{participantId}/state")
+    @RolesAllowed("admin")
     public void activateParticipant(@PathParam("participantId") String participantId, @QueryParam("isActive") boolean isActive) {
         if (isActive) {
             participantContextService.updateParticipant(participantId, ParticipantContext::activate);
@@ -80,6 +83,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @DELETE
     @Path("/{participantId}")
+    @RolesAllowed("admin")
     public void deleteParticipant(@PathParam("participantId") String participantId) {
         participantContextService.deleteParticipantContext(participantId).orElseThrow(exceptionMapper(ParticipantContext.class));
     }

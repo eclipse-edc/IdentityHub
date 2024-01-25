@@ -31,6 +31,7 @@ import static org.eclipse.edc.spi.system.ServiceExtensionContext.PARTICIPANT_ID;
 public class IdentityHubRuntimeConfiguration {
 
     private Endpoint resolutionEndpoint;
+    private Endpoint managementEndpoint;
     private String id;
     private String name;
 
@@ -46,6 +47,8 @@ public class IdentityHubRuntimeConfiguration {
                 put("web.http.path", "/api/v1");
                 put("web.http.resolution.port", String.valueOf(resolutionEndpoint.getUrl().getPort()));
                 put("web.http.resolution.path", resolutionEndpoint.getUrl().getPath());
+                put("web.http.management.port", String.valueOf(managementEndpoint.getUrl().getPort()));
+                put("web.http.management.path", managementEndpoint.getUrl().getPath());
                 put("edc.connector.name", name);
                 put("edc.ih.iam.publickey.path", TestUtils.getFileFromResourceName("testkey.pem").getAbsolutePath());
                 put("edc.ih.iam.id", "did:web:consumer");
@@ -53,15 +56,15 @@ public class IdentityHubRuntimeConfiguration {
         };
     }
 
+    public Endpoint getManagementEndpoint() {
+        return managementEndpoint;
+    }
+
     public static final class Builder {
         private final IdentityHubRuntimeConfiguration participant;
 
         private Builder() {
             participant = new IdentityHubRuntimeConfiguration();
-        }
-
-        public static Builder newInstance() {
-            return new Builder();
         }
 
         public Builder id(String id) {
@@ -76,7 +79,12 @@ public class IdentityHubRuntimeConfiguration {
 
         public IdentityHubRuntimeConfiguration build() {
             participant.resolutionEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/v1/resolution"), Map.of());
+            participant.managementEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/management"), Map.of());
             return participant;
+        }
+
+        public static Builder newInstance() {
+            return new Builder();
         }
     }
 

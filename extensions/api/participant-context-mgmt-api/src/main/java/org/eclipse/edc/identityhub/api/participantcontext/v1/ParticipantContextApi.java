@@ -35,7 +35,7 @@ public interface ParticipantContextApi {
     @Operation(description = "Creates a new ParticipantContext object.",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was created successfully"),
+                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was created successfully, its API token is returned in the response body."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -44,7 +44,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void createParticipant(ParticipantManifest manifest);
+    String createParticipant(ParticipantManifest manifest);
 
 
     @Tag(name = "ParticipantContext Management API")

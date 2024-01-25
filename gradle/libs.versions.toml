@@ -7,6 +7,7 @@ awaitility = "4.2.0"
 edc = "0.5.1-SNAPSHOT"
 failsafe = "3.3.2"
 jackson = "2.14.2"
+jakarta-annotation = "2.1.1"
 jupiter = "5.10.1"
 mockserver = "5.15.0"
 nimbus = "9.37.3"
@@ -77,7 +78,7 @@ restAssured = { module = "io.rest-assured:rest-assured", version.ref = "restAssu
 swagger-jaxrs = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-postgres = { module = "org.testcontainers:postgres", version.ref = "testcontainers" }
-
+jakarta-annotation = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
 
 [bundles]
 connector = ["edc-boot", "edc-core-connector", "edc-ext-http", "edc-ext-observability", "edc-ext-jsonld"]

@@ -20,6 +20,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -27,12 +29,13 @@ import java.util.Objects;
  */
 @JsonDeserialize(builder = ParticipantContext.Builder.class)
 public class ParticipantContext {
+    private List<String> roles = new ArrayList<>();
     private String participantId;
     private String did;
     private long createdAt;
     private long lastModified;
     private int state; // CREATED, ACTIVATED, DEACTIVATED
-    private String apiTokenAlias; // or apiTokenAlias
+    private String apiTokenAlias;
 
     private ParticipantContext() {
     }
@@ -103,6 +106,10 @@ public class ParticipantContext {
         return did;
     }
 
+    public List<String> getRoles() {
+        return roles;
+    }
+
     @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder {
         private final ParticipantContext participantContext;
@@ -129,6 +136,11 @@ public class ParticipantContext {
 
         public Builder state(ParticipantContextState state) {
             this.participantContext.state = state.ordinal();
+            return this;
+        }
+
+        public Builder roles(List<String> roles) {
+            this.participantContext.roles = roles;
             return this;
         }
 

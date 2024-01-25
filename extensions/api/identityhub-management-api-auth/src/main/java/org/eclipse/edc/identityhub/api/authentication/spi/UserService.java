@@ -12,12 +12,10 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi;
+package org.eclipse.edc.identityhub.api.authentication.spi;
 
-/**
- * Generates a random string, e.g. a UUID. Actual production implementations sould be more sophisticated, e.g. using seeds/salts and {@link java.security.SecureRandom}
- */
-@FunctionalInterface
-public interface RandomStringGenerator {
-    String generate();
+public interface UserService {
+    User findByCredential(String apiKey);
+
+    User findByPrincipal(String principal);
 }
