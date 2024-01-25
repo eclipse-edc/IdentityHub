@@ -44,7 +44,7 @@ include(":extensions:did:local-did-publisher")
 
 // management APIs
 include(":extensions:api:identityhub-management-api-configuration")
-include(":extensions:api:identityhub-management-api-auth")
+include(":extensions:api:identityhub-api-auth")
 include(":extensions:api:participant-context-mgmt-api")
 include(":extensions:api:verifiable-credential-mgmt-api")
 
