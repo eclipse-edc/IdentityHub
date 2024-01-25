@@ -14,10 +14,14 @@
 
 package org.eclipse.edc.identityhub.spi;
 
+import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
 
 public interface KeyPairService {
 
@@ -61,4 +65,6 @@ public interface KeyPairService {
      * @return success if rotated, a failure indicated the problem otherwise.
      */
     ServiceResult<Void> revokeKey(String id, @Nullable KeyDescriptor newKeySpec);
+
+    ServiceResult<Collection<KeyPairResource>> query(QuerySpec querySpec);
 }

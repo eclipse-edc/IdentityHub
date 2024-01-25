@@ -16,10 +16,10 @@ package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.identityhub.security.KeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
+import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.store.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.store.model.KeyPairState;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -29,6 +29,7 @@ import org.eclipse.edc.spi.security.Vault;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -103,6 +104,11 @@ public class KeyPairServiceImpl implements KeyPairService {
             return addKeyPair(participantId, newKeySpec, wasDefault);
         }
         return ServiceResult.success();
+    }
+
+    @Override
+    public ServiceResult<Collection<KeyPairResource>> query(QuerySpec querySpec) {
+        return ServiceResult.from(keyPairResourceStore.query(querySpec));
     }
 
     private KeyPairResource findById(String oldId) {
