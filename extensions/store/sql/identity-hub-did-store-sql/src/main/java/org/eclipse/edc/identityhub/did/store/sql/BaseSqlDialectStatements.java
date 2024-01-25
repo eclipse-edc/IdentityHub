@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.did.store.sql;
 
 import org.eclipse.edc.identityhub.did.store.sql.schema.postgres.DidResourceMapping;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
@@ -57,7 +58,7 @@ public class BaseSqlDialectStatements implements DidResourceStatements {
     @Override
     public SqlQueryStatement createQuery(QuerySpec querySpec) {
         var select = getSelectStatement();
-        return new SqlQueryStatement(select, querySpec, new DidResourceMapping(this));
+        return new SqlQueryStatement(select, querySpec, new DidResourceMapping(this), new PostgresqlOperatorTranslator());
     }
 
     @Override

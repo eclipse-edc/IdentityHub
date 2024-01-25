@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.did.store.sql.schema.postgres;
 import org.eclipse.edc.identityhub.did.store.sql.BaseSqlDialectStatements;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.dialect.PostgresDialect;
+import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
@@ -35,13 +36,13 @@ public class PostgresDialectStatements extends BaseSqlDialectStatements {
     public SqlQueryStatement createQuery(QuerySpec querySpec) {
         if (querySpec.containsAnyLeftOperand("document.service")) {
             var select = getSelectFromJsonArrayTemplate(getSelectStatement(), "%s -> '%s'".formatted(getDidDocumentColumn(), "service"), DidDocumentMapping.FIELD_SERVICE);
-            return new SqlQueryStatement(select, querySpec, new DidResourceMapping(this));
+            return new SqlQueryStatement(select, querySpec, new DidResourceMapping(this), new PostgresqlOperatorTranslator());
         } else if (querySpec.containsAnyLeftOperand("document.verificationMethod")) {
             var select = getSelectFromJsonArrayTemplate(getSelectStatement(), "%s -> '%s'".formatted(getDidDocumentColumn(), "verificationMethod"), DidDocumentMapping.FIELD_VERIFICATION_METHOD);
-            return new SqlQueryStatement(select, querySpec, new DidResourceMapping(this));
+            return new SqlQueryStatement(select, querySpec, new DidResourceMapping(this), new PostgresqlOperatorTranslator());
         } else if (querySpec.containsAnyLeftOperand("document.authentication")) {
             var select = getSelectFromJsonArrayTextTemplate(getSelectStatement(), "%s -> '%s'".formatted(getDidDocumentColumn(), "authentication"), DidDocumentMapping.FIELD_AUTHENTICATION);
-            return new SqlQueryStatement(select, querySpec, new DidResourceMapping(this));
+            return new SqlQueryStatement(select, querySpec, new DidResourceMapping(this), new PostgresqlOperatorTranslator());
         }
         return super.createQuery(querySpec);
     }

@@ -15,9 +15,9 @@
 package org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres;
 
 import org.eclipse.edc.identityhub.store.sql.credentials.BaseSqlDialectStatements;
-import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.dialect.PostgresDialect;
+import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static org.eclipse.edc.sql.dialect.PostgresDialect.getSelectFromJsonArrayTemplate;
@@ -43,21 +43,9 @@ public class PostgresDialectStatements extends BaseSqlDialectStatements {
             var select = getSelectStatement();
             var stmt = getSelectFromJsonArrayTemplate(select, "%s -> '%s'".formatted(getVerifiableCredentialColumn(), "credentialSubject"), CREDENTIAL_SUBJECT_ALIAS);
 
-            return new SqlQueryStatement(stmt, querySpec, new VerifiableCredentialResourceMapping(this));
+            return new SqlQueryStatement(stmt, querySpec, new VerifiableCredentialResourceMapping(this), new PostgresqlOperatorTranslator());
         }
 
-        //replace the "contains" operator with a JSONB "??" operator
-        var newQuery = QuerySpec.Builder.newInstance()
-                .sortOrder(querySpec.getSortOrder())
-                .limit(querySpec.getLimit())
-                .offset(querySpec.getOffset())
-                // replace all "contains" operations with "??", which means "JSONB-array-contains"
-                .filter(querySpec.getFilterExpression().stream()
-                        .map(c -> new Criterion(c.getOperandLeft(), c.getOperator().replace("contains", "??"), c.getOperandRight()))
-                        .toList())
-                .range(querySpec.getRange())
-                .sortField(querySpec.getSortField())
-                .build();
-        return super.createQuery(newQuery);
+        return super.createQuery(querySpec);
     }
 }
