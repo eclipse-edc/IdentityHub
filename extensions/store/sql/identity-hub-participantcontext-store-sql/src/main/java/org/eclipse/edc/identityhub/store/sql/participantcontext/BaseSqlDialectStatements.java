@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.store.sql.participantcontext;
 
 import org.eclipse.edc.identityhub.store.sql.participantcontext.schema.postgres.ParticipantContextMapping;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
@@ -30,6 +31,7 @@ public class BaseSqlDialectStatements implements ParticipantContextStoreStatemen
                 .column(getStateColumn())
                 .column(getApiTokenAliasColumn())
                 .column(getDidColumn())
+                .jsonColumn(getRolesRolumn())
                 .insertInto(getParticipantContextTable());
     }
 
@@ -42,6 +44,7 @@ public class BaseSqlDialectStatements implements ParticipantContextStoreStatemen
                 .column(getStateColumn())
                 .column(getApiTokenAliasColumn())
                 .column(getDidColumn())
+                .jsonColumn(getRolesRolumn())
                 .update(getParticipantContextTable(), getIdColumn());
     }
 
@@ -59,7 +62,7 @@ public class BaseSqlDialectStatements implements ParticipantContextStoreStatemen
     @Override
     public SqlQueryStatement createQuery(QuerySpec querySpec) {
         var select = getSelectStatement();
-        return new SqlQueryStatement(select, querySpec, new ParticipantContextMapping(this), false);
+        return new SqlQueryStatement(select, querySpec, new ParticipantContextMapping(this), new PostgresqlOperatorTranslator());
     }
 
     @Override

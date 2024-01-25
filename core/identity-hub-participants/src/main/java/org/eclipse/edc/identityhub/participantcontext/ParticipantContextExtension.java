@@ -44,6 +44,6 @@ public class ParticipantContextExtension implements ServiceExtension {
 
     @Provider
     public ParticipantContextService createParticipantService() {
-        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, new Base64StringGenerator(), keyParserRegistry, didDocumentService);
+        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, keyParserRegistry, didDocumentService);
     }
 }

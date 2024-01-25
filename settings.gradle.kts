@@ -41,7 +41,10 @@ include(":extensions:store:sql:identity-hub-credentials-store-sql")
 include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:store:sql:identity-hub-keypair-store-sql")
 include(":extensions:did:local-did-publisher")
+
+// management APIs
 include(":extensions:api:identityhub-management-api-configuration")
+include(":extensions:api:identityhub-api-auth")
 include(":extensions:api:participant-context-mgmt-api")
 include(":extensions:api:verifiable-credential-mgmt-api")
 

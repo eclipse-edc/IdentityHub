@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.store.sql.keypair;
 
 import org.eclipse.edc.identityhub.store.sql.keypair.schema.postgres.KeyPairResourceMapping;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
@@ -69,7 +70,7 @@ public class BaseSqlDialectStatements implements KeyPairResourceStoreStatements 
     @Override
     public SqlQueryStatement createQuery(QuerySpec querySpec) {
         var select = getSelectStatement();
-        return new SqlQueryStatement(select, querySpec, new KeyPairResourceMapping(this), false);
+        return new SqlQueryStatement(select, querySpec, new KeyPairResourceMapping(this), new PostgresqlOperatorTranslator());
     }
 
     @Override

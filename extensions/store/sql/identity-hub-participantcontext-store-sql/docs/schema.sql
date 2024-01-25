@@ -20,7 +20,8 @@ CREATE TABLE participant_context
     last_modified_date BIGINT,                       -- POSIX timestamp of the last modified date
     state              INTEGER             NOT NULL, -- 0 = CREATED, 1 = ACTIVE, 2 = DEACTIVATED
     api_token_alias    VARCHAR             NOT NULL, -- alias under which this PC's api token is stored in the vault
-    did                VARCHAR                       -- the DID with which this participant is identified
+    did                VARCHAR,                      -- the DID with which this participant is identified
+    roles              JSON                          -- JSON array containing all the roles a user has. may be empty
 );
 CREATE UNIQUE INDEX participant_context_participant_id_uindex ON participant_context USING btree (participant_id);
 

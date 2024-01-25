@@ -21,7 +21,6 @@ import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identityhub.security.KeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.RandomStringGenerator;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
@@ -40,6 +39,7 @@ import java.security.PublicKey;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
@@ -49,44 +49,48 @@ import static org.eclipse.edc.spi.result.ServiceResult.notFound;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 /**
- * Default implementation of the {@link ParticipantContextService}. Uses a {@link Vault} to store API tokens and a {@link RandomStringGenerator}
+ * Default implementation of the {@link ParticipantContextService}. Uses a {@link Vault} to store API tokens and a {@link ApiTokenGenerator}
  * to generate API tokens. Please use a generator that produces Strings of a reasonable length.
  * <p>
  * This service is transactional.
  */
 public class ParticipantContextServiceImpl implements ParticipantContextService {
 
+    private static final String API_KEY_ALIAS_SUFFIX = "apikey";
     private final ParticipantContextStore participantContextStore;
     private final Vault vault;
     private final TransactionContext transactionContext;
-    private final RandomStringGenerator tokenGenerator;
+    private final ApiTokenGenerator tokenGenerator;
     private final KeyParserRegistry keyParserRegistry;
     private final DidDocumentService didDocumentService;
 
     public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore, Vault vault, TransactionContext transactionContext,
-                                         RandomStringGenerator tokenGenerator, KeyParserRegistry registry, DidDocumentService didDocumentService) {
+                                         KeyParserRegistry registry, DidDocumentService didDocumentService) {
         this.participantContextStore = participantContextStore;
         this.vault = vault;
         this.transactionContext = transactionContext;
-        this.tokenGenerator = tokenGenerator;
+        this.tokenGenerator = new ApiTokenGenerator();
         this.keyParserRegistry = registry;
         this.didDocumentService = didDocumentService;
     }
 
     @Override
-    public ServiceResult<Void> createParticipantContext(ParticipantManifest manifest) {
+    public ServiceResult<String> createParticipantContext(ParticipantManifest manifest) {
         return transactionContext.execute(() -> {
+            var apiKey = new AtomicReference<String>();
             var context = convert(manifest);
-            return createParticipantContext(context)
-                    .compose(u -> createOrUpdateKey(manifest.getKey()))
+            var res = createParticipantContext(context)
+                    .compose(u -> generateAndStoreToken(context)).onSuccess(apiKey::set)
+                    .compose(ak -> createOrUpdateKey(manifest.getKey()))
                     .compose(jwk -> generateDidDocument(manifest, jwk));
+            return res.map(u -> apiKey.get());
         });
     }
 
     @Override
     public ServiceResult<ParticipantContext> getParticipantContext(String participantId) {
         return transactionContext.execute(() -> {
-            var res = participantContextStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantContext", "=", participantId)).build());
+            var res = participantContextStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build());
             if (res.succeeded()) {
                 return res.getContent().stream().findFirst()
                         .map(ServiceResult::success)
@@ -117,10 +121,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             if (participantContext.failed()) {
                 return participantContext.map(pc -> null);
             }
-            var alias = participantContext.getContent().getApiTokenAlias();
-
-            var newToken = tokenGenerator.generate();
-            return vault.storeSecret(alias, newToken).map(unused -> success(newToken)).orElse(f -> conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
+            return generateAndStoreToken(participantContext.getContent());
         });
     }
 
@@ -136,6 +137,14 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             return res.succeeded() ? success() : fromFailure(res);
         });
 
+    }
+
+    private ServiceResult<String> generateAndStoreToken(ParticipantContext participantContext) {
+        var alias = participantContext.getApiTokenAlias();
+        var newToken = tokenGenerator.generate(participantContext.getParticipantId());
+        return vault.storeSecret(alias, newToken)
+                .map(unused -> success(newToken))
+                .orElse(f -> conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
     }
 
     private ServiceResult<Void> generateDidDocument(ParticipantManifest manifest, JWK publicKey) {
@@ -204,7 +213,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private ParticipantContext convert(ParticipantManifest manifest) {
         return ParticipantContext.Builder.newInstance()
                 .participantId(manifest.getParticipantId())
-                .apiTokenAlias(tokenGenerator.generate())
+                .apiTokenAlias("%s-%s".formatted(manifest.getParticipantId(), API_KEY_ALIAS_SUFFIX))
                 .state(manifest.isActive() ? ParticipantContextState.ACTIVATED : ParticipantContextState.CREATED)
                 .build();
     }
