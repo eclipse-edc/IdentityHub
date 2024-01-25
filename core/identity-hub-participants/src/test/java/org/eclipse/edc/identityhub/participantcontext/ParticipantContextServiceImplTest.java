@@ -74,6 +74,7 @@ class ParticipantContextServiceImplTest {
     @ValueSource(booleans = {true, false})
     void createParticipantContext_withPublicKeyPem(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
 
         var pem = """
                 -----BEGIN PUBLIC KEY-----
@@ -94,6 +95,7 @@ class ParticipantContextServiceImplTest {
         verify(participantContextStore).create(any());
         verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())));
         verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
+        verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
 
@@ -101,6 +103,7 @@ class ParticipantContextServiceImplTest {
     @ValueSource(booleans = {true, false})
     void createParticipantContext_withPublicKeyJwk(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
 
         var ctx = createManifest().active(isActive)
                 .build();
@@ -110,6 +113,7 @@ class ParticipantContextServiceImplTest {
         verify(participantContextStore).create(any());
         verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())));
         verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
+        verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
 
@@ -129,6 +133,8 @@ class ParticipantContextServiceImplTest {
 
         verify(participantContextStore).create(any());
         verify(vault).storeSecret(eq(ctx.getKey().getPrivateKeyAlias()), anyString());
+        verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
+
         verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())));
         verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
@@ -137,12 +143,14 @@ class ParticipantContextServiceImplTest {
     @Test
     void createParticipantContext_storageFails() {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
 
         var ctx = createManifest().build();
         assertThat(participantContextService.createParticipantContext(ctx))
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
+        verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
 

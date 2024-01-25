@@ -56,6 +56,7 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
  */
 public class ParticipantContextServiceImpl implements ParticipantContextService {
 
+    private static final String API_KEY_ALIAS_SUFFIX = "apikey";
     private final ParticipantContextStore participantContextStore;
     private final Vault vault;
     private final TransactionContext transactionContext;
@@ -141,7 +142,9 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private ServiceResult<String> generateAndStoreToken(ParticipantContext participantContext) {
         var alias = participantContext.getApiTokenAlias();
         var newToken = tokenGenerator.generate(participantContext.getParticipantId());
-        return vault.storeSecret(alias, newToken).map(unused -> success(newToken)).orElse(f -> conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
+        return vault.storeSecret(alias, newToken)
+                .map(unused -> success(newToken))
+                .orElse(f -> conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
     }
 
     private ServiceResult<Void> generateDidDocument(ParticipantManifest manifest, JWK publicKey) {
@@ -210,7 +213,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private ParticipantContext convert(ParticipantManifest manifest) {
         return ParticipantContext.Builder.newInstance()
                 .participantId(manifest.getParticipantId())
-                .apiTokenAlias("%s-apitoken".formatted(manifest.getParticipantId()))
+                .apiTokenAlias("%s-%s".formatted(manifest.getParticipantId(), API_KEY_ALIAS_SUFFIX))
                 .state(manifest.isActive() ? ParticipantContextState.ACTIVATED : ParticipantContextState.CREATED)
                 .build();
     }

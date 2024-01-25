@@ -56,10 +56,10 @@ public class ParticipantContextApiEndToEndTest {
                 .did("did:web:superuser")
                 .apiTokenAlias(SUPER_USER_ALIAS)
                 .build();
-        storeParticipant(pc);
+        var apikey = storeParticipant(pc);
 
         var su = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
-                .header(new Header("x-api-key", createTokenFor(SUPER_USER)))
+                .header(new Header("x-api-key", apikey))
                 .get("/v1/participants/" + SUPER_USER)
                 .then()
                 .statusCode(200)

@@ -30,6 +30,7 @@ public class BaseSqlDialectStatements implements ParticipantContextStoreStatemen
                 .column(getStateColumn())
                 .column(getApiTokenAliasColumn())
                 .column(getDidColumn())
+                .jsonColumn(getRolesRolumn())
                 .insertInto(getParticipantContextTable());
     }
 
@@ -42,6 +43,7 @@ public class BaseSqlDialectStatements implements ParticipantContextStoreStatemen
                 .column(getStateColumn())
                 .column(getApiTokenAliasColumn())
                 .column(getDidColumn())
+                .jsonColumn(getRolesRolumn())
                 .update(getParticipantContextTable(), getIdColumn());
     }
 
