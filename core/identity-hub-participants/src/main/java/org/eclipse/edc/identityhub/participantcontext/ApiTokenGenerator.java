@@ -18,8 +18,8 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 /**
- * Generates an API token that encodes the user ID by taking a random byte array of configurable length (default=64), base64-encoding it and the appending the base64-encoded user ID
- * separated by a dot ".": {@code base64(rnd-bytes).base64(userid)}
+ * Generates an API token that encodes the user ID by taking a random byte array of configurable length (default=64), base64-encoding it and the appending it to the base64-encoded user ID
+ * separated by a dot ".": {@code base64(userid).base64(rnd-bytes)}
  */
 public class ApiTokenGenerator {
     private final SecureRandom secureRandom = new SecureRandom();

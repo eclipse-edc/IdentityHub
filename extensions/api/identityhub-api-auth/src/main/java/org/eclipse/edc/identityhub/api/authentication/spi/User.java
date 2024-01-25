@@ -37,6 +37,7 @@ public interface User extends Principal {
      */
     List<String> getRoles();
 
+    @Override
     default String getName() {
         return getPrincipal();
     }
