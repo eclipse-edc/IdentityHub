@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.store.model;
+package org.eclipse.edc.identityhub.spi.model;
 
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 

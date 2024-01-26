@@ -20,6 +20,7 @@ import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.api.participantcontext.v1.validation.ParticipantManifestValidator;
+import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
@@ -29,6 +30,7 @@ import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -38,6 +40,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,6 +51,12 @@ import static org.mockito.Mockito.when;
 class ParticipantContextApiControllerTest extends RestControllerTestBase {
 
     private final ParticipantContextService participantContextServiceMock = mock();
+    private final AuthorizationService authService = mock();
+
+    @BeforeEach
+    void setUp() {
+        when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+    }
 
     @Test
     void getById() {
@@ -193,7 +202,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new ParticipantContextApiController(new ParticipantManifestValidator(), participantContextServiceMock);
+        return new ParticipantContextApiController(new ParticipantManifestValidator(), participantContextServiceMock, authService);
     }
 
     private ParticipantContext.Builder createParticipantContext() {

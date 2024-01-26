@@ -17,7 +17,9 @@ package org.eclipse.edc.identityhub.api.participantcontext;
 import org.eclipse.edc.identityhub.api.configuration.ManagementApiConfiguration;
 import org.eclipse.edc.identityhub.api.participantcontext.v1.ParticipantContextApiController;
 import org.eclipse.edc.identityhub.api.participantcontext.v1.validation.ParticipantManifestValidator;
+import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -25,6 +27,7 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
 
 import static org.eclipse.edc.identityhub.api.participantcontext.ParticipantContextManagementApiExtension.NAME;
+import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
 
 @Extension(value = NAME)
 public class ParticipantContextManagementApiExtension implements ServiceExtension {
@@ -36,6 +39,8 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
     private ParticipantContextService participantContextService;
     @Inject
     private ManagementApiConfiguration webServiceConfiguration;
+    @Inject
+    private AuthorizationService authorizationService;
 
     @Override
     public String name() {
@@ -44,7 +49,8 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var controller = new ParticipantContextApiController(new ParticipantManifestValidator(), participantContextService);
+        authorizationService.getAuthorizationCheckFunctions().put(ParticipantContext.class, s -> participantContextService.getParticipantContext(s).orElseThrow(exceptionMapper(ParticipantContext.class, s)));
+        var controller = new ParticipantContextApiController(new ParticipantManifestValidator(), participantContextService, authorizationService);
         webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
     }
 }

@@ -44,11 +44,12 @@ public class DidDocumentServiceImpl implements DidDocumentService {
     }
 
     @Override
-    public ServiceResult<Void> store(DidDocument document) {
+    public ServiceResult<Void> store(DidDocument document, String participantId) {
         return transactionContext.execute(() -> {
             var res = DidResource.Builder.newInstance()
                     .document(document)
                     .did(document.getId())
+                    .participantId(participantId)
                     .build();
             var result = didResourceStore.save(res);
             return result.succeeded() ?

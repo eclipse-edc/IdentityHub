@@ -15,8 +15,10 @@
 package org.eclipse.edc.identityhub.api.didmanagement;
 
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
+import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.identityhub.api.configuration.ManagementApiConfiguration;
 import org.eclipse.edc.identityhub.api.didmanagement.v1.DidManagementApiController;
+import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -36,7 +38,8 @@ public class DidManagementApiExtension implements ServiceExtension {
     private DidDocumentService didDocumentService;
     @Inject
     private ManagementApiConfiguration webServiceConfiguration;
-
+    @Inject
+    private AuthorizationService authorizationService;
 
     @Override
     public String name() {
@@ -45,8 +48,10 @@ public class DidManagementApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var controller = new DidManagementApiController(didDocumentService);
+        authorizationService.getAuthorizationCheckFunctions().put(DidResource.class, s -> didDocumentService.findById(s));
+        var controller = new DidManagementApiController(didDocumentService, authorizationService);
         webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
+
     }
 
 

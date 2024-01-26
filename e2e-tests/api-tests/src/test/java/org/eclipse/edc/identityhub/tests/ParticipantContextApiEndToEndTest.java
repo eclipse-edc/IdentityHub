@@ -16,21 +16,12 @@ package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
-import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.identityhub.participantcontext.ApiTokenGenerator;
-import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
-import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguration;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
-import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.EdcException;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.anyOf;
@@ -38,25 +29,11 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 @EndToEndTest
-public class ParticipantContextApiEndToEndTest {
-
-    public static final String SUPER_USER = "super-user";
-    public static final String SUPER_USER_ALIAS = "super-alias";
-    protected static final IdentityHubRuntimeConfiguration RUNTIME_CONFIGURATION = IdentityHubRuntimeConfiguration.Builder.newInstance()
-            .name("identity-hub")
-            .id("identity-hub")
-            .build();
-    @RegisterExtension
-    private static final EdcRuntimeExtension RUNTIME = new EdcRuntimeExtension(":launcher", "identity-hub", RUNTIME_CONFIGURATION.controlPlaneConfiguration());
+public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest {
 
     @Test
     void getUserById() {
-        var pc = ParticipantContext.Builder.newInstance()
-                .participantId(SUPER_USER)
-                .did("did:web:superuser")
-                .apiTokenAlias(SUPER_USER_ALIAS)
-                .build();
-        var apikey = storeParticipant(pc);
+        var apikey = getSuperUserApiKey();
 
         var su = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .header(new Header("x-api-key", apikey))
@@ -64,23 +41,45 @@ public class ParticipantContextApiEndToEndTest {
                 .then()
                 .statusCode(200)
                 .extract().body().as(ParticipantContext.class);
-        assertThat(su).usingRecursiveComparison().isEqualTo(pc);
+        assertThat(su.getParticipantId()).isEqualTo(SUPER_USER);
+    }
+
+    @Test
+    void getUserById_notOwner_expect403() {
+        var user1 = "user1";
+        var user1Context = ParticipantContext.Builder.newInstance()
+                .participantId(user1)
+                .did("did:web:" + user1)
+                .apiTokenAlias(user1 + "-alias")
+                .build();
+        var apiToken1 = storeParticipant(user1Context);
+
+        var user2 = "user2";
+        var user2Context = ParticipantContext.Builder.newInstance()
+                .participantId(user2)
+                .did("did:web:" + user2)
+                .apiTokenAlias(user2 + "-alias")
+                .build();
+        var apiToken2 = storeParticipant(user2Context);
+
+        //user1 attempts to read user2 -> fail
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", apiToken1))
+                .contentType(ContentType.JSON)
+                .get("/v1/participants/" + user2)
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403);
     }
 
     @Test
     void createNewUser_principalIsAdmin() {
-        var pc = ParticipantContext.Builder.newInstance()
-                .participantId(SUPER_USER)
-                .did("did:web:superuser")
-                .apiTokenAlias(SUPER_USER_ALIAS)
-                .roles(List.of("admin"))
-                .build();
-        var apiToken = storeParticipant(pc);
+        var apikey = getSuperUserApiKey();
 
         var manifest = createNewParticipant();
 
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
-                .header(new Header("x-api-key", apiToken))
+                .header(new Header("x-api-key", apikey))
                 .contentType(ContentType.JSON)
                 .body(manifest)
                 .post("/v1/participants/")
@@ -92,14 +91,13 @@ public class ParticipantContextApiEndToEndTest {
 
     @Test
     void createNewUser_principalIsNotAdmin_expect403() {
-        var pc = ParticipantContext.Builder.newInstance()
-                .participantId(SUPER_USER)
-                .did("did:web:superuser")
-                .apiTokenAlias(SUPER_USER_ALIAS)
-                .roles(List.of(/*admin role not assigned*/))
+        var principal = "another-user";
+        var anotherUser = ParticipantContext.Builder.newInstance()
+                .participantId(principal)
+                .did("did:web:" + principal)
+                .apiTokenAlias(principal + "-alias")
                 .build();
-        var apiToken = storeParticipant(pc);
-
+        var apiToken = storeParticipant(anotherUser);
         var manifest = createNewParticipant();
 
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
@@ -113,32 +111,45 @@ public class ParticipantContextApiEndToEndTest {
                 .body(notNullValue());
     }
 
-    private String createTokenFor(String userId) {
-        return new ApiTokenGenerator().generate(userId);
+    @Test
+    void createNewUser_principalIsKnown_expect401() {
+        var principal = "another-user";
+
+        var manifest = createNewParticipant();
+
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", createTokenFor(principal)))
+                .contentType(ContentType.JSON)
+                .body(manifest)
+                .post("/v1/participants/")
+                .then()
+                .log().ifError()
+                .statusCode(401)
+                .body(notNullValue());
     }
 
-    private String storeParticipant(ParticipantContext pc) {
-        var store = RUNTIME.getContext().getService(ParticipantContextStore.class);
-
-        var vault = RUNTIME.getContext().getService(Vault.class);
-        var token = createTokenFor(pc.getParticipantId());
-        vault.storeSecret(pc.getApiTokenAlias(), token);
-        store.create(pc).orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
-        return token;
-    }
-
-    private static ParticipantManifest createNewParticipant() {
-        var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId("another-participant")
-                .active(false)
-                .did("did:web:another:participant")
-                .serviceEndpoint(new Service("test-service", "test-service-type", "https://test.com"))
-                .key(KeyDescriptor.Builder.newInstance()
-                        .privateKeyAlias("another-alias")
-                        .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "Ed25519"))
-                        .keyId("another-keyid")
-                        .build())
+    @Test
+    void activateParticipant_principalIsAdmin() {
+        var participantId = "another-user";
+        var anotherUser = ParticipantContext.Builder.newInstance()
+                .participantId(participantId)
+                .did("did:web:" + participantId)
+                .apiTokenAlias(participantId + "-alias")
+                .state(ParticipantContextState.CREATED)
                 .build();
-        return manifest;
+        storeParticipant(anotherUser);
+
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .contentType(ContentType.JSON)
+                .post("/v1/participants/%s/state?isActive=true".formatted(participantId))
+                .then()
+                .log().ifError()
+                .statusCode(204);
+
+        var updatedParticipant = RUNTIME.getContext().getService(ParticipantContextService.class).getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+        assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.ACTIVATED.ordinal());
     }
+
+
 }

@@ -21,6 +21,9 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource;
 import org.eclipse.edc.spi.query.Criterion;
@@ -32,7 +35,7 @@ import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
+import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -40,15 +43,20 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 public class VerifiableCredentialsApiController implements VerifiableCredentialsApi {
 
     private final CredentialStore credentialStore;
+    private final AuthorizationService authorizationService;
 
-    public VerifiableCredentialsApiController(CredentialStore credentialStore) {
+    public VerifiableCredentialsApiController(CredentialStore credentialStore, AuthorizationService authorizationService) {
         this.credentialStore = credentialStore;
+        this.authorizationService = authorizationService;
     }
 
     @GET
     @Path("/{credentialId}")
     @Override
-    public VerifiableCredentialResource findById(@PathParam("credentialId") String id) {
+    public VerifiableCredentialResource findById(@PathParam("credentialId") String id, @Context SecurityContext securityContext) {
+        authorizationService.isAuthorized(securityContext.getUserPrincipal(), id, VerifiableCredentialResource.class)
+                .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
+
         var result = credentialStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build())
                 .orElseThrow(InvalidRequestException::new);
         return result.stream().findFirst().orElseThrow(() -> new ObjectNotFoundException(VerifiableCredentialResource.class, id));
@@ -56,18 +64,23 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
     @GET
     @Override
-    public Collection<VerifiableCredentialResource> findByType(@QueryParam("type") String type) {
+    public Collection<VerifiableCredentialResource> findByType(@QueryParam("type") String type, @Context SecurityContext securityContext) {
         var query = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("verifiableCredential.credential.types", "contains", type))
                 .build();
 
-        return credentialStore.query(query).orElseThrow(InvalidRequestException::new);
+        return credentialStore.query(query)
+                .orElseThrow(InvalidRequestException::new)
+                .stream().filter(vcr -> authorizationService.isAuthorized(securityContext.getUserPrincipal(), vcr.getId(), VerifiableCredentialResource.class).succeeded())
+                .toList();
     }
 
     @DELETE
     @Path("/{credentialId}")
     @Override
-    public void deleteCredential(@PathParam("credentialId") String id) {
+    public void deleteCredential(@PathParam("credentialId") String id, @Context SecurityContext securityContext) {
+        authorizationService.isAuthorized(securityContext.getUserPrincipal(), id, VerifiableCredentialResource.class)
+                .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
         var res = credentialStore.deleteById(id);
         if (res.failed()) {
             throw exceptionMapper(VerifiableCredentialResource.class, id).apply(ServiceResult.fromFailure(res).getFailure());

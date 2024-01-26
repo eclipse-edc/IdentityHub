@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.spi.store.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 
 import java.time.Clock;
 import java.util.Objects;

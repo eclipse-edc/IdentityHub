@@ -17,7 +17,11 @@ package org.eclipse.edc.identityhub.api.configuration;
 import org.eclipse.edc.identityhub.api.authentication.filter.RoleBasedAccessFeature;
 import org.eclipse.edc.identityhub.api.authentication.filter.UserAuthenticationFilter;
 import org.eclipse.edc.identityhub.api.authentication.spi.UserResolver;
+import org.eclipse.edc.identityhub.api.authorization.AuthorizationServiceImpl;
+import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -28,6 +32,9 @@ import org.eclipse.edc.web.spi.WebServer;
 import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
 import org.eclipse.edc.web.spi.configuration.WebServiceSettings;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.eclipse.edc.identityhub.api.configuration.ManagementApiConfigurationExtension.NAME;
 
@@ -70,6 +77,25 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
 
         webService.registerResource(alias, new RoleBasedAccessFeature());
         webService.registerResource(alias, new UserAuthenticationFilter(createUserService()));
+
+        // create super-user
+        participantContextService.createParticipantContext(ParticipantManifest.Builder.newInstance()
+                        .participantId("super-user")
+                        .did("did:web:super-user") // doesn't matter, not intended for resolution
+                        .active(true)
+                        .key(KeyDescriptor.Builder.newInstance()
+                                .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "Ed25519"))
+                                .keyId("super-user-key")
+                                .privateKeyAlias("super-user-alias")
+                                .build())
+                        .roles(List.of("admin"))
+                        .build())
+                .onSuccess(apiKey -> context.getMonitor().info("Created user 'super-user'. Please take a note . API Key: %s".formatted(apiKey)));
+    }
+
+    @Provider
+    public AuthorizationService createAuthService() {
+        return new AuthorizationServiceImpl();
     }
 
     @Provider
