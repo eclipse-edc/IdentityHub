@@ -16,11 +16,14 @@ package org.eclipse.edc.identityhub.spi.store.model;
 
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 
+/**
+ * This is the base class for all resources that are owned by a {@link ParticipantContext}.
+ */
 public abstract class ParticipantResource {
     protected String participantId;
 
     /**
-     * The {@link ParticipantContext} that this KeyPair belongs to.
+     * The {@link ParticipantContext} that this resource belongs to.
      */
     public String getParticipantId() {
         return participantId;
