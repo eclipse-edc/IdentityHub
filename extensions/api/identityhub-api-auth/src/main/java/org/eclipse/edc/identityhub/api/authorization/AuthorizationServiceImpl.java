@@ -29,10 +29,6 @@ import static java.util.Optional.ofNullable;
 public class AuthorizationServiceImpl implements AuthorizationService {
     private final Map<Class<?>, Function<String, ParticipantResource>> authorizationCheckFunctions = new HashMap<>();
 
-    public Map<Class<?>, Function<String, ParticipantResource>> getAuthorizationCheckFunctions() {
-        return authorizationCheckFunctions;
-    }
-
     @Override
     public ServiceResult<Void> isAuthorized(Principal user, String resourceId, Class<?> resourceClass) {
         var function = authorizationCheckFunctions.get(resourceClass);
@@ -46,5 +42,10 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
         return isAuthorized ? ServiceResult.success() : ServiceResult.unauthorized("User '%s' is not authorized to access resource of type %s with ID '%s'.".formatted(user.getName(), resourceClass, resourceId));
 
+    }
+
+    @Override
+    public void addLoookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> lookupFunction) {
+        authorizationCheckFunctions.put(resourceClass, lookupFunction);
     }
 }

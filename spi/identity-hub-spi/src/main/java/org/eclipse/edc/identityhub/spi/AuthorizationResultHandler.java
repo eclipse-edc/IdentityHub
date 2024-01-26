@@ -22,6 +22,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
 
+/**
+ * Extension of the {@link ServiceResultHandler} which also can handle {@link ServiceFailure.Reason#UNAUTHORIZED} failures. All other
+ * failures are delegated back to the {@link ServiceResultHandler}.
+ */
 public class AuthorizationResultHandler {
     public static Function<ServiceFailure, EdcException> exceptionMapper(@NotNull Class<?> clazz, String id) {
         return failure -> {
