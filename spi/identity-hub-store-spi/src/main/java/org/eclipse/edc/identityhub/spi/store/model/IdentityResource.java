@@ -22,10 +22,10 @@ import java.util.UUID;
 
 /**
  * Abstract class representing an Identity Resource.
- * Identity resources have an ID, a timestamp, an issuer ID, a holder ID, and a clock.
+ * Identity entitys have an ID, a timestamp, an issuer ID, a holder ID, and a clock.
  * They can be extended with custom properties and behaviors.
  */
-public abstract class IdentityResource {
+public abstract class IdentityResource extends ParticipantResource {
     protected String id;
     protected long timestamp;
     protected String issuerId;
@@ -53,53 +53,50 @@ public abstract class IdentityResource {
         return holderId;
     }
 
-    public abstract static class Builder<T extends IdentityResource, B extends Builder<T, B>> {
-        protected final T resource;
+    public abstract static class Builder<T extends IdentityResource, B extends Builder<T, B>> extends ParticipantResource.Builder<T, B> {
 
-        protected Builder(T resource) {
-            this.resource = resource;
+        protected Builder(T entity) {
+            super(entity);
         }
 
         public B id(String id) {
-            resource.id = id;
+            entity.id = id;
             return self();
         }
 
         public B timestamp(long timestamp) {
-            resource.timestamp = timestamp;
+            entity.timestamp = timestamp;
             return self();
         }
 
         public B issuerId(String issuerId) {
-            resource.issuerId = issuerId;
+            entity.issuerId = issuerId;
             return self();
         }
 
         public B clock(Clock clock) {
-            resource.clock = clock;
+            entity.clock = clock;
             return self();
         }
 
         public B holderId(String holderId) {
-            resource.holderId = holderId;
+            entity.holderId = holderId;
             return self();
         }
 
-        public abstract B self();
-
         protected T build() {
-            Objects.requireNonNull(resource.issuerId, "Must have an issuer.");
-            Objects.requireNonNull(resource.holderId, "Must have a holder.");
-            resource.clock = Objects.requireNonNullElse(resource.clock, Clock.systemUTC());
+            Objects.requireNonNull(entity.issuerId, "Must have an issuer.");
+            Objects.requireNonNull(entity.holderId, "Must have a holder.");
+            entity.clock = Objects.requireNonNullElse(entity.clock, Clock.systemUTC());
 
-            if (resource.id == null) {
-                resource.id = UUID.randomUUID().toString();
+            if (entity.id == null) {
+                entity.id = UUID.randomUUID().toString();
             }
 
-            if (resource.timestamp == 0) {
-                resource.timestamp = resource.clock.millis();
+            if (entity.timestamp == 0) {
+                entity.timestamp = entity.clock.millis();
             }
-            return resource;
+            return super.build();
         }
     }
 }

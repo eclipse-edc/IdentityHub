@@ -123,6 +123,23 @@ public abstract class CredentialStoreTestBase {
     }
 
     @Test
+    void query_byParticipantId() {
+        range(0, 5)
+                .mapToObj(i -> createCredentialBuilder()
+                        .id("id" + i)
+                        .participantId("participant" + i)
+                        .build())
+                .forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("participantId", "=", "participant2"))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1));
+    }
+
+    @Test
     void query_byVcState() {
         var creds = createCredentials();
         var expectedCred = createCredentialBuilder().state(VcState.REISSUE_REQUESTED).id("id-test").build();
@@ -405,6 +422,7 @@ public abstract class CredentialStoreTestBase {
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .state(VcState.ISSUED)
+                .participantId("test-participant")
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
                 .id("test-id");
     }

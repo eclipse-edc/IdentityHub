@@ -61,7 +61,8 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
                         resource.getState(),
                         resource.getCreateTimestamp(),
                         resource.getStateTimestamp(),
-                        toJson(resource.getDocument()));
+                        toJson(resource.getDocument()),
+                        resource.getParticipantId());
                 return StoreResult.success();
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
@@ -83,6 +84,7 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
                             resource.getCreateTimestamp(),
                             resource.getStateTimestamp(),
                             toJson(resource.getDocument()),
+                            resource.getParticipantId(),
                             did);
                     return StoreResult.success();
                 }
@@ -142,6 +144,7 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
                 .stateTimeStamp(resultSet.getLong(statements.getStateTimestampColumn()))
                 .document(fromJson(resultSet.getString(statements.getDidDocumentColumn()), DidDocument.class))
                 .state(resultSet.getInt(statements.getStateColumn()))
+                .participantId(resultSet.getString(statements.getParticipantId()))
                 .build();
     }
 }

@@ -25,9 +25,8 @@ import java.time.Duration;
  * A {@link KeyPairResource} contains key material for a particular {@link ParticipantContext}. The public key is stored in the database in serialized form (JWK or PEM) and the private
  * key is referenced via an alias, it is actually stored in a {@link Vault}.
  */
-public class KeyPairResource {
+public class KeyPairResource extends ParticipantResource {
     private String id;
-    private String participantId;
     private long timestamp;
     private String keyId;
     private String groupName;
@@ -66,12 +65,6 @@ public class KeyPairResource {
         return keyId;
     }
 
-    /**
-     * The {@link ParticipantContext} that this KeyPair belongs to.
-     */
-    public String getParticipantId() {
-        return participantId;
-    }
 
     /**
      * The alias under which the private key is stored in the vault.
@@ -125,78 +118,77 @@ public class KeyPairResource {
         isDefaultPair = false;
     }
 
-    public static final class Builder {
-        private final KeyPairResource keyPairResource;
+    public static final class Builder extends ParticipantResource.Builder<KeyPairResource, KeyPairResource.Builder> {
 
         private Builder() {
-            keyPairResource = new KeyPairResource();
+            super(new KeyPairResource());
         }
 
         public Builder groupName(String groupName) {
-            keyPairResource.groupName = groupName;
+            entity.groupName = groupName;
             return this;
         }
 
         public Builder id(String id) {
-            keyPairResource.id = id;
+            entity.id = id;
             return this;
         }
 
-        public Builder participantId(String participantId) {
-            keyPairResource.participantId = participantId;
+        @Override
+        public Builder self() {
             return this;
         }
 
         public Builder timestamp(long timestamp) {
-            keyPairResource.timestamp = timestamp;
+            entity.timestamp = timestamp;
             return this;
         }
 
         public Builder keyId(String keyId) {
-            keyPairResource.keyId = keyId;
+            entity.keyId = keyId;
             return this;
         }
 
         public Builder isDefaultPair(boolean isDefaultPair) {
-            keyPairResource.isDefaultPair = isDefaultPair;
+            entity.isDefaultPair = isDefaultPair;
             return this;
         }
 
         public Builder useDuration(long useDuration) {
-            keyPairResource.useDuration = useDuration;
+            entity.useDuration = useDuration;
             return this;
         }
 
         public Builder rotationDuration(long rotationDuration) {
-            keyPairResource.rotationDuration = rotationDuration;
+            entity.rotationDuration = rotationDuration;
             return this;
         }
 
         public Builder serializedPublicKey(String serializedPublicKey) {
-            keyPairResource.serializedPublicKey = serializedPublicKey;
+            entity.serializedPublicKey = serializedPublicKey;
             return this;
         }
 
         public Builder privateKeyAlias(String privateKeyAlias) {
-            keyPairResource.privateKeyAlias = privateKeyAlias;
+            entity.privateKeyAlias = privateKeyAlias;
             return this;
         }
 
         public Builder state(int state) {
-            keyPairResource.state = state;
+            entity.state = state;
             return this;
         }
 
         public Builder state(KeyPairState state) {
-            keyPairResource.state = state.code();
+            entity.state = state.code();
             return this;
         }
 
         public KeyPairResource build() {
-            if (keyPairResource.useDuration == 0) {
-                keyPairResource.useDuration = Duration.ofDays(6 * 30).toMillis();
+            if (entity.useDuration == 0) {
+                entity.useDuration = Duration.ofDays(6 * 30).toMillis();
             }
-            return keyPairResource;
+            return super.build();
         }
 
         public static Builder newInstance() {

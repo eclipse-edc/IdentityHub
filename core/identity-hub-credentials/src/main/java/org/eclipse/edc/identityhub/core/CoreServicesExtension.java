@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.core;
 
+import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.core.creators.JwtPresentationGenerator;
 import org.eclipse.edc.identityhub.core.creators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
@@ -31,7 +32,6 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
-import org.eclipse.edc.spi.iam.PublicKeyResolver;
 import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.PrivateKeyResolver;
 import org.eclipse.edc.spi.security.Vault;
@@ -83,7 +83,7 @@ public class CoreServicesExtension implements ServiceExtension {
     private PresentationCreatorRegistryImpl presentationCreatorRegistry;
 
     @Inject
-    private PublicKeyResolver publicKeyResolver;
+    private DidPublicKeyResolver publicKeyResolver;
     @Inject
     private JsonLd jsonLd;
     @Inject

@@ -16,6 +16,7 @@ package org.eclipse.edc.identithub.did.spi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.identityhub.spi.store.model.ParticipantResource;
 
 import java.time.Clock;
 import java.util.Objects;
@@ -23,7 +24,7 @@ import java.util.Objects;
 /**
  * This class wraps a {@link org.eclipse.edc.iam.did.spi.document.DidDocument} and represents its lifecycle in the identity hub.
  */
-public class DidResource {
+public class DidResource extends ParticipantResource {
     @JsonIgnore
     private Clock clock = Clock.systemUTC();
     private String did;
@@ -65,56 +66,60 @@ public class DidResource {
         this.state = newState.code();
     }
 
-    public static final class Builder {
-        private final DidResource resource;
+    public static final class Builder extends ParticipantResource.Builder<DidResource, DidResource.Builder> {
 
         private Builder() {
-            resource = new DidResource();
+            super(new DidResource());
         }
 
         public Builder did(String did) {
-            this.resource.did = did;
+            this.entity.did = did;
             return this;
         }
 
         public Builder state(DidState state) {
-            this.resource.state = state.code();
+            this.entity.state = state.code();
             return this;
         }
 
         public Builder stateTimeStamp(long timestamp) {
-            this.resource.stateTimestamp = timestamp;
+            this.entity.stateTimestamp = timestamp;
             return this;
         }
 
         public Builder clock(Clock clock) {
-            this.resource.clock = clock;
+            this.entity.clock = clock;
             return this;
         }
 
         public Builder document(DidDocument document) {
-            this.resource.document = document;
+            this.entity.document = document;
             return this;
         }
 
         public Builder createTimestamp(long createdAt) {
-            this.resource.createTimestamp = createdAt;
+            this.entity.createTimestamp = createdAt;
+            return this;
+        }
+
+        @Override
+        public Builder self() {
             return this;
         }
 
         public DidResource build() {
-            Objects.requireNonNull(resource.did, "Must have an identifier");
-            if (resource.stateTimestamp <= 0) {
-                resource.stateTimestamp = resource.clock.millis();
+            Objects.requireNonNull(entity.did, "Must have an identifier");
+            if (entity.stateTimestamp <= 0) {
+                entity.stateTimestamp = entity.clock.millis();
             }
-            if (resource.createTimestamp <= 0) {
-                resource.createTimestamp = resource.clock.millis();
+            if (entity.createTimestamp <= 0) {
+                entity.createTimestamp = entity.clock.millis();
             }
-            return resource;
+            return super.build();
         }
 
         public Builder state(int code) {
-            this.resource.state = code;
+            this.entity.state = code;
             return this;
         }
 

@@ -217,6 +217,7 @@ class CredentialQueryResolverImplTest {
                 .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.JSON_LD, cred))
                 .holderId("test-holder")
                 .issuerId("test-issuer")
+                .participantId("test-participant")
                 .build();
     }
 }
