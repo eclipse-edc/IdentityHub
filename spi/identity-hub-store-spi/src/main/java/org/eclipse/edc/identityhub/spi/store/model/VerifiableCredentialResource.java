@@ -61,22 +61,22 @@ public class VerifiableCredentialResource extends IdentityResource {
         }
 
         public Builder state(VcState state) {
-            resource.state = state.code();
+            entity.state = state.code();
             return self();
         }
 
         public Builder issuancePolicy(Policy issuancePolicy) {
-            resource.issuancePolicy = issuancePolicy;
+            entity.issuancePolicy = issuancePolicy;
             return self();
         }
 
         public Builder reissuancePolicy(Policy reissuancePolicy) {
-            resource.reissuancePolicy = reissuancePolicy;
+            entity.reissuancePolicy = reissuancePolicy;
             return self();
         }
 
         public Builder credential(VerifiableCredentialContainer credential) {
-            resource.verifiableCredential = credential;
+            entity.verifiableCredential = credential;
             return self();
         }
 
@@ -87,8 +87,8 @@ public class VerifiableCredentialResource extends IdentityResource {
 
         @Override
         public VerifiableCredentialResource build() {
-            if (resource.state == 0) {
-                resource.state = VcState.INITIAL.code();
+            if (entity.state == 0) {
+                entity.state = VcState.INITIAL.code();
             }
             return super.build();
         }

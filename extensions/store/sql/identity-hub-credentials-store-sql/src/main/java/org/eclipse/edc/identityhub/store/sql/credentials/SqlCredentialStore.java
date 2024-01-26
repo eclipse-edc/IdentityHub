@@ -72,7 +72,8 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                         toJson(credentialResource.getReissuancePolicy()),
                         credentialResource.getVerifiableCredential().format().ordinal(),
                         credentialResource.getVerifiableCredential().rawVc(),
-                        toJson(credentialResource.getVerifiableCredential().credential()));
+                        toJson(credentialResource.getVerifiableCredential().credential()),
+                        credentialResource.getParticipantId());
                 return success();
 
             } catch (SQLException e) {
@@ -113,6 +114,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                             credentialResource.getVerifiableCredential().format().ordinal(),
                             credentialResource.getVerifiableCredential().rawVc(),
                             toJson(credentialResource.getVerifiableCredential().credential()),
+                            credentialResource.getParticipantId(),
                             id);
                     return StoreResult.success();
                 }
@@ -164,6 +166,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                 .issuancePolicy(fromJson(resultSet.getString(statements.getIssuancePolicyColumn()), Policy.class))
                 .reissuancePolicy(fromJson(resultSet.getString(statements.getReissuancePolicyColumn()), Policy.class))
                 .credential(vcc)
+                .participantId(resultSet.getString(statements.getParticipantIdColumn()))
                 .build();
     }
 }

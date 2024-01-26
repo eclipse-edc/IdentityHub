@@ -66,6 +66,10 @@ public interface CredentialStoreStatements extends SqlStatements {
         return "verifiable_credential";
     }
 
+    default String getParticipantIdColumn() {
+        return "participant_id";
+    }
+
     String getInsertTemplate();
 
     String getUpdateTemplate();

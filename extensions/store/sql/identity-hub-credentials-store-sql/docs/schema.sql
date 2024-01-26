@@ -24,7 +24,8 @@ CREATE TABLE credential_resource
     reissuance_policy     JSON,
     raw_vc                VARCHAR             NOT NULL, -- Representation of the VC exactly as it was received by the issuer. Can be JWT or JSON(-LD)
     vc_format             INTEGER             NOT NULL, -- 0 = JSON-LD, 1 = JWT
-    verifiable_credential JSON                NOT NULL  -- JSON-representation of the verifiable credential
+    verifiable_credential JSON                NOT NULL, -- JSON-representation of the verifiable credential
+    participant_id        VARCHAR                       -- ID of the ParticipantContext that owns this credentisl
 );
 CREATE UNIQUE INDEX credential_resource_credential_id_uindex ON credential_resource USING btree (id);
 COMMENT ON COLUMN credential_resource.id IS 'ID of the VC, duplicated here for indexing purposes';

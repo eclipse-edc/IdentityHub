@@ -20,5 +20,6 @@ CREATE TABLE IF NOT EXISTS did_resources
     state_timestamp  BIGINT  NOT NULL,
     state            INT     NOT NULL,
     did_document     JSON    NOT NULL,
+    participant_id   VARCHAR,
     PRIMARY KEY (did)
 );
