@@ -33,7 +33,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     public ServiceResult<Void> isAuthorized(Principal user, String resourceId, Class<?> resourceClass) {
         var function = authorizationCheckFunctions.get(resourceClass);
         if (function == null) {
-            return ServiceResult.success();
+            return ServiceResult.unauthorized("User access for '%s' to resource ID '%s' of type '%s' cannot be verified".formatted(user.getName(), resourceClass, resourceClass));
         }
 
         var isAuthorized = ofNullable(function.apply(resourceId))
