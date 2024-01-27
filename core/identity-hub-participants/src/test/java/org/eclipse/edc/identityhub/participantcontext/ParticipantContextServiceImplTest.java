@@ -63,7 +63,7 @@ class ParticipantContextServiceImplTest {
     @BeforeEach
     void setUp() {
         didDocumentService = mock();
-        when(didDocumentService.store(any())).thenReturn(success());
+        when(didDocumentService.store(any(), anyString())).thenReturn(success());
         when(didDocumentService.publish(anyString())).thenReturn(success());
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
@@ -93,7 +93,7 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
-        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())));
+        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())), anyString());
         verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
@@ -111,7 +111,7 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
-        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())));
+        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())), anyString());
         verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
@@ -135,7 +135,7 @@ class ParticipantContextServiceImplTest {
         verify(vault).storeSecret(eq(ctx.getKey().getPrivateKeyAlias()), anyString());
         verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
 
-        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())));
+        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())), anyString());
         verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
     }

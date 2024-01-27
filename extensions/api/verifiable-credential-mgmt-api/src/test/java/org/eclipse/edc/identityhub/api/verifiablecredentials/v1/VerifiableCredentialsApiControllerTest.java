@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
 
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
@@ -22,8 +23,10 @@ import org.eclipse.edc.identitytrust.model.CredentialSubject;
 import org.eclipse.edc.identitytrust.model.Issuer;
 import org.eclipse.edc.identitytrust.model.VerifiableCredential;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -34,6 +37,7 @@ import java.util.Map;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -44,6 +48,12 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
     private static final String CREDENTIAL_ID = "test-credential-id";
     private final CredentialStore credentialStore = mock();
+    private final AuthorizationService authorizationService = mock();
+
+    @BeforeEach
+    void setUp() {
+        when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+    }
 
     @Test
     void findById() {
@@ -60,6 +70,19 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         assertThat(result).usingRecursiveComparison().ignoringFields("clock").isEqualTo(credential);
         verify(credentialStore).query(any());
         verifyNoMoreInteractions(credentialStore);
+    }
+
+
+    @Test
+    void findById_unauthorized403() {
+        when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test-message"));
+        baseRequest()
+                .get("/%s".formatted(CREDENTIAL_ID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403);
+        verify(authorizationService).isAuthorized(any(), anyString(), eq(VerifiableCredentialResource.class));
+        verifyNoMoreInteractions(credentialStore, authorizationService);
     }
 
     @Test
@@ -95,6 +118,25 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    void findByType_unauthorized403() {
+        var credential1 = createCredential("test-type").build();
+        var credential2 = createCredential("test-type").build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(credential1, credential2)));
+        when(authorizationService.isAuthorized(any(), eq(credential1.getId()), any())).thenReturn(ServiceResult.unauthorized("test-message"));
+
+        var result = baseRequest()
+                .get("?type=test-type")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(VerifiableCredentialResource[].class);
+
+        assertThat(result).usingRecursiveFieldByFieldElementComparatorIgnoringFields("clock").containsExactlyInAnyOrder(credential2);
+        verify(credentialStore).query(any());
+        verifyNoMoreInteractions(credentialStore);
+    }
+
+    @Test
     void findByType_noResult() {
         when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of()));
 
@@ -125,6 +167,19 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    void deleteCredential_unauthorized403() {
+        when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test-message"));
+
+        baseRequest()
+                .delete("/%s".formatted(CREDENTIAL_ID))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403);
+        verify(authorizationService).isAuthorized(any(), anyString(), eq(VerifiableCredentialResource.class));
+        verifyNoMoreInteractions(credentialStore, authorizationService);
+    }
+
+    @Test
     void deleteCredential_whenNotExists() {
         when(credentialStore.deleteById(CREDENTIAL_ID)).thenReturn(StoreResult.notFound("test-message"));
 
@@ -140,7 +195,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new VerifiableCredentialsApiController(credentialStore);
+        return new VerifiableCredentialsApiController(credentialStore, authorizationService);
     }
 
     private VerifiableCredentialResource.Builder createCredential(String... types) {

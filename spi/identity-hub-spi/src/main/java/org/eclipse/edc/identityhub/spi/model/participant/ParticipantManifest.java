@@ -19,7 +19,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.iam.did.spi.document.Service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -27,6 +29,7 @@ import java.util.Set;
  */
 @JsonDeserialize(builder = ParticipantManifest.Builder.class)
 public class ParticipantManifest {
+    private List<String> roles = new ArrayList<>();
     private Set<Service> serviceEndpoints = new HashSet<>();
     private boolean isActive;
     private String participantId;
@@ -73,6 +76,10 @@ public class ParticipantManifest {
         return did;
     }
 
+    public List<String> getRoles() {
+        return roles;
+    }
+
     @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder {
 
@@ -104,6 +111,11 @@ public class ParticipantManifest {
 
         public Builder key(KeyDescriptor key) {
             manifest.key = key;
+            return this;
+        }
+
+        public Builder roles(List<String> roles) {
+            manifest.roles = roles;
             return this;
         }
 

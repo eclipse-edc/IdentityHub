@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
@@ -47,7 +48,7 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    VerifiableCredentialResource findById(String id);
+    VerifiableCredentialResource findById(String id, SecurityContext securityContext);
 
 
     @Tag(name = "VerifiableCredentials Management API")
@@ -61,7 +62,7 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             }
     )
-    Collection<VerifiableCredentialResource> findByType(String type);
+    Collection<VerifiableCredentialResource> findByType(String type, SecurityContext securityContext);
 
     @Tag(name = "VerifiableCredentials Management API")
     @Operation(description = "Delete a VerifiableCredential.",
@@ -76,5 +77,5 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void deleteCredential(String id);
+    void deleteCredential(String id, SecurityContext securityContext);
 }

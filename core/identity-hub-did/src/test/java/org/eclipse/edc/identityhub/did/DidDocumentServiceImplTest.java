@@ -60,14 +60,14 @@ class DidDocumentServiceImplTest {
     void store() {
         var doc = createDidDocument().build();
         when(storeMock.save(argThat(dr -> dr.getDocument().equals(doc)))).thenReturn(StoreResult.success());
-        assertThat(service.store(doc)).isSucceeded();
+        assertThat(service.store(doc, "test-participant")).isSucceeded();
     }
 
     @Test
     void store_alreadyExists() {
         var doc = createDidDocument().build();
         when(storeMock.save(argThat(dr -> dr.getDocument().equals(doc)))).thenReturn(StoreResult.alreadyExists("foo"));
-        assertThat(service.store(doc)).isFailed().detail().isEqualTo("foo");
+        assertThat(service.store(doc, "test-participant")).isFailed().detail().isEqualTo("foo");
         verify(storeMock).save(any());
         verifyNoInteractions(publisherMock);
     }

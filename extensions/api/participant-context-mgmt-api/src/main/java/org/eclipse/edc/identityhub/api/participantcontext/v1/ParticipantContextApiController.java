@@ -23,14 +23,17 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.api.participantcontext.v1.validation.ParticipantManifestValidator;
+import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
+import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -39,10 +42,12 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     private final ParticipantManifestValidator participantManifestValidator;
     private final ParticipantContextService participantContextService;
+    private final AuthorizationService authorizationService;
 
-    public ParticipantContextApiController(ParticipantManifestValidator participantManifestValidator, ParticipantContextService participantContextService) {
+    public ParticipantContextApiController(ParticipantManifestValidator participantManifestValidator, ParticipantContextService participantContextService, AuthorizationService authorizationService) {
         this.participantManifestValidator = participantManifestValidator;
         this.participantContextService = participantContextService;
+        this.authorizationService = authorizationService;
     }
 
     @Override
@@ -57,15 +62,19 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @GET
     @Path("/{participantId}")
-    public ParticipantContext getParticipant(@PathParam("participantId") String participantId) {
-        return participantContextService.getParticipantContext(participantId).orElseThrow(exceptionMapper(ParticipantContext.class));
+    public ParticipantContext getParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+        return authorizationService.isAuthorized(securityContext.getUserPrincipal(), participantId, ParticipantContext.class)
+                .compose(u -> participantContextService.getParticipantContext(participantId))
+                .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
 
     @Override
     @POST
     @Path("/{participantId}/token")
-    public String regenerateToken(@PathParam("participantId") String participantId) {
-        return participantContextService.regenerateApiToken(participantId).orElseThrow(exceptionMapper(ParticipantContext.class));
+    public String regenerateToken(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+        return authorizationService.isAuthorized(securityContext.getUserPrincipal(), participantId, ParticipantContext.class)
+                .compose(u -> participantContextService.regenerateApiToken(participantId))
+                .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
 
     @Override
@@ -78,14 +87,17 @@ public class ParticipantContextApiController implements ParticipantContextApi {
         } else {
             participantContextService.updateParticipant(participantId, ParticipantContext::deactivate);
         }
+
     }
 
     @Override
     @DELETE
     @Path("/{participantId}")
     @RolesAllowed("admin")
-    public void deleteParticipant(@PathParam("participantId") String participantId) {
-        participantContextService.deleteParticipantContext(participantId).orElseThrow(exceptionMapper(ParticipantContext.class));
+    public void deleteParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+        authorizationService.isAuthorized(securityContext.getUserPrincipal(), participantId, ParticipantContext.class)
+                .compose(u -> participantContextService.deleteParticipantContext(participantId))
+                .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
 
 }

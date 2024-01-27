@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -28,9 +29,8 @@ import java.util.Objects;
  * Representation of a participant in Identity Hub.
  */
 @JsonDeserialize(builder = ParticipantContext.Builder.class)
-public class ParticipantContext {
+public class ParticipantContext extends ParticipantResource {
     private List<String> roles = new ArrayList<>();
-    private String participantId;
     private String did;
     private long createdAt;
     private long lastModified;
@@ -38,13 +38,6 @@ public class ParticipantContext {
     private String apiTokenAlias;
 
     private ParticipantContext() {
-    }
-
-    /**
-     * Participant IDs must be stable and globally unique (i.e. per dataspace). They will be visible in contracts, negotiations, etc.
-     */
-    public String getParticipantId() {
-        return participantId;
     }
 
     /**
@@ -111,57 +104,61 @@ public class ParticipantContext {
     }
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static final class Builder {
-        private final ParticipantContext participantContext;
+    public static final class Builder extends ParticipantResource.Builder<ParticipantContext, Builder> {
 
         private Builder() {
-            participantContext = new ParticipantContext();
-            participantContext.createdAt = Instant.now().toEpochMilli();
+            super(new ParticipantContext());
+            entity.createdAt = Instant.now().toEpochMilli();
         }
 
         public Builder createdAt(long createdAt) {
-            this.participantContext.createdAt = createdAt;
+            this.entity.createdAt = createdAt;
             return this;
         }
 
         public Builder lastModified(long lastModified) {
-            this.participantContext.lastModified = lastModified;
+            this.entity.lastModified = lastModified;
+            return this;
+        }
+
+        @Override
+        public Builder self() {
             return this;
         }
 
         public Builder participantId(String participantId) {
-            this.participantContext.participantId = participantId;
+            this.entity.participantId = participantId;
             return this;
         }
 
         public Builder state(ParticipantContextState state) {
-            this.participantContext.state = state.ordinal();
+            this.entity.state = state.ordinal();
             return this;
         }
 
         public Builder roles(List<String> roles) {
-            this.participantContext.roles = roles;
+            this.entity.roles = roles;
             return this;
         }
 
         public Builder apiTokenAlias(String apiToken) {
-            this.participantContext.apiTokenAlias = apiToken;
+            this.entity.apiTokenAlias = apiToken;
             return this;
         }
 
         public Builder did(String did) {
-            this.participantContext.did = did;
+            this.entity.did = did;
             return this;
         }
 
         public ParticipantContext build() {
-            Objects.requireNonNull(participantContext.participantId, "Participant ID cannot be null");
-            Objects.requireNonNull(participantContext.apiTokenAlias, "API Token Alias cannot be null");
+            Objects.requireNonNull(entity.participantId, "Participant ID cannot be null");
+            Objects.requireNonNull(entity.apiTokenAlias, "API Token Alias cannot be null");
 
-            if (participantContext.getLastModified() == 0L) {
-                participantContext.lastModified = participantContext.getCreatedAt();
+            if (entity.getLastModified() == 0L) {
+                entity.lastModified = entity.getCreatedAt();
             }
-            return participantContext;
+            return super.build();
         }
 
         @JsonCreator

@@ -38,10 +38,10 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.text.ParseException;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
 import static org.eclipse.edc.spi.result.ServiceResult.conflict;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
@@ -103,7 +103,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     @Override
     public ServiceResult<Void> deleteParticipantContext(String participantId) {
         return transactionContext.execute(() -> {
-            var did = Optional.ofNullable(findByIdInternal(participantId)).map(ParticipantContext::getDid);
+            var did = ofNullable(findByIdInternal(participantId)).map(ParticipantContext::getDid);
             var res = participantContextStore.deleteById(participantId);
             if (res.failed()) {
                 return fromFailure(res);
@@ -155,7 +155,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                         .publicKeyJwk(publicKey.toJSONObject())
                         .build()))
                 .build();
-        return didDocumentService.store(doc)
+        return didDocumentService.store(doc, manifest.getParticipantId())
                 .compose(u -> manifest.isActive() ? didDocumentService.publish(doc.getId()) : success());
     }
 
@@ -204,7 +204,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     private ParticipantContext findByIdInternal(String participantId) {
-        var resultStream = participantContextStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantContext", "=", participantId)).build());
+        var resultStream = participantContextStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build());
         if (resultStream.failed()) return null;
         return resultStream.getContent().stream().findFirst().orElse(null);
     }
@@ -213,6 +213,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private ParticipantContext convert(ParticipantManifest manifest) {
         return ParticipantContext.Builder.newInstance()
                 .participantId(manifest.getParticipantId())
+                .roles(manifest.getRoles())
                 .apiTokenAlias("%s-%s".formatted(manifest.getParticipantId(), API_KEY_ALIAS_SUFFIX))
                 .state(manifest.isActive() ? ParticipantContextState.ACTIVATED : ParticipantContextState.CREATED)
                 .build();

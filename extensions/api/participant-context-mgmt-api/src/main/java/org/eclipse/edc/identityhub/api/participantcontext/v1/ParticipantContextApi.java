@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
@@ -61,7 +62,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    ParticipantContext getParticipant(String participantId);
+    ParticipantContext getParticipant(String participantId, SecurityContext securityContext);
 
     @Tag(name = "ParticipantContext Management API")
     @Operation(description = "Regenerates the API token for a ParticipantContext and returns the new token.",
@@ -76,7 +77,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    String regenerateToken(String participantId);
+    String regenerateToken(String participantId, SecurityContext securityContext);
 
     @Tag(name = "ParticipantContext Management API")
     @Operation(description = "Activates a ParticipantContext. This operation is idempotent, i.e. activating an already active ParticipantContext is a NOOP.",
@@ -107,5 +108,5 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void deleteParticipant(String participantId);
+    void deleteParticipant(String participantId, SecurityContext securityContext);
 }
