@@ -15,8 +15,6 @@
 package org.eclipse.edc.identityhub.spi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.edc.identityhub.spi.model.KeyPairState;
-import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;

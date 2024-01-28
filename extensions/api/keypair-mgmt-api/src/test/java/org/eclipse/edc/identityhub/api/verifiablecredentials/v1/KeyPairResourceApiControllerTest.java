@@ -34,7 +34,10 @@ import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -43,7 +46,7 @@ import static org.mockito.Mockito.when;
 class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
     private final KeyPairService keyPairService = mock();
-    private final AuthorizationService authService= mock();
+    private final AuthorizationService authService = mock();
 
 
     @BeforeEach

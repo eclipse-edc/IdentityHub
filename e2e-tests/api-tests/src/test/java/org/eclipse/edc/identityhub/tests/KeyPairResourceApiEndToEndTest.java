@@ -22,7 +22,6 @@ import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.EdcException;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -30,7 +29,7 @@ import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.notNullValue;
 
 @EndToEndTest
 public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {

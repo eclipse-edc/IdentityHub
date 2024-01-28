@@ -35,7 +35,6 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 
 import java.util.Collection;
-import java.util.Objects;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
