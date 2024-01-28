@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
@@ -47,7 +48,7 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    KeyPairResource findById(String id);
+    KeyPairResource findById(String id, SecurityContext securityContext);
 
     @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Finds all KeyPairResources for a particular ParticipantContext.",
@@ -63,7 +64,7 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Collection<KeyPairResource> findForParticipant(String participantId);
+    Collection<KeyPairResource> findForParticipant(String participantId, SecurityContext securityContext);
 
     @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Adds a new key pair to a ParticipantContext. Note that the key pair is either generated, or the private key is expected to be found in the vault.",
@@ -80,7 +81,7 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void addKeyPair(String participantId, KeyDescriptor keyDescriptor, boolean makeDefault);
+    void addKeyPair(String participantId, KeyDescriptor keyDescriptor, boolean makeDefault, SecurityContext securityContext);
 
     @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Rotates (=retires) a particular key pair, identified by their ID and create a new successor key.",
@@ -97,7 +98,7 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void rotateKeyPair(String id, KeyDescriptor newKey, long duration);
+    void rotateKeyPair(String id, KeyDescriptor newKey, long duration, SecurityContext securityContext);
 
     @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Revokes (=removes) a particular key pair, identified by their ID and create a new successor key.",
@@ -113,5 +114,5 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void revokeKey(String id, KeyDescriptor newKey);
+    void revokeKey(String id, KeyDescriptor newKey, SecurityContext securityContext);
 }

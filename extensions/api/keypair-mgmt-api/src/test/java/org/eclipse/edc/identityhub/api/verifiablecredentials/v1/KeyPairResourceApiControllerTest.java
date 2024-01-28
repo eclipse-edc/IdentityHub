@@ -16,12 +16,14 @@ package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
 
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -32,9 +34,7 @@ import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -43,6 +43,13 @@ import static org.mockito.Mockito.when;
 class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
     private final KeyPairService keyPairService = mock();
+    private final AuthorizationService authService= mock();
+
+
+    @BeforeEach
+    void setUp() {
+        when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+    }
 
     @Test
     void findById() {
@@ -223,7 +230,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new KeyPairResourceApiController(keyPairService);
+        return new KeyPairResourceApiController(authService, keyPairService);
     }
 
     private KeyPairResource.Builder createKeyPair() {
