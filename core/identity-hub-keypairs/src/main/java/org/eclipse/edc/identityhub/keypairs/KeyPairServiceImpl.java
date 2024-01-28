@@ -51,6 +51,7 @@ public class KeyPairServiceImpl implements KeyPairService {
         }
 
         var newResource = KeyPairResource.Builder.newInstance()
+                .id(keyDescriptor.getKeyId())
                 .keyId(keyDescriptor.getKeyId())
                 .state(KeyPairState.CREATED)
                 .isDefaultPair(makeDefault)
