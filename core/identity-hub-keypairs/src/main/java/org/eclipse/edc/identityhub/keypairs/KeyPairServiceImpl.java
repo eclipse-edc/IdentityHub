@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.identityhub.security.KeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
+import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
@@ -45,11 +46,13 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     private final KeyPairResourceStore keyPairResourceStore;
     private final Vault vault;
     private final Monitor monitor;
+    private final KeyPairObservable observable;
 
-    public KeyPairServiceImpl(KeyPairResourceStore keyPairResourceStore, Vault vault, Monitor monitor) {
+    public KeyPairServiceImpl(KeyPairResourceStore keyPairResourceStore, Vault vault, Monitor monitor, KeyPairObservable observable) {
         this.keyPairResourceStore = keyPairResourceStore;
         this.vault = vault;
         this.monitor = monitor;
+        this.observable = observable;
     }
 
     @Override
@@ -71,7 +74,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                 .participantId(participantId)
                 .build();
 
-        return ServiceResult.from(keyPairResourceStore.create(newResource));
+        return ServiceResult.from(keyPairResourceStore.create(newResource)).onSuccess(v -> observable.invokeForEach(l -> l.added(newResource)));
     }
 
     @Override
@@ -89,13 +92,14 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
         var oldAlias = oldKey.getPrivateKeyAlias();
         vault.deleteSecret(oldAlias);
         oldKey.rotate(duration);
-        keyPairResourceStore.update(oldKey);
+        var updateResult = ServiceResult.from(keyPairResourceStore.update(oldKey))
+                .onSuccess(v -> observable.invokeForEach(l -> l.rotated(oldKey)));
 
         if (newKeySpec != null) {
-            return addKeyPair(participantId, newKeySpec, wasDefault);
+            return updateResult.compose(v -> addKeyPair(participantId, newKeySpec, wasDefault));
         }
         monitor.warning("Rotating keys without a successor key may leave the participant without an active keypair.");
-        return ServiceResult.success();
+        return updateResult;
     }
 
     @Override
@@ -112,14 +116,14 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
         var oldAlias = oldKey.getPrivateKeyAlias();
         vault.deleteSecret(oldAlias);
         oldKey.revoke();
-        keyPairResourceStore.update(oldKey);
-        //todo: emit event for the did service, which should update the did document
+        var updateResult = ServiceResult.from(keyPairResourceStore.update(oldKey))
+                .onSuccess(v -> observable.invokeForEach(l -> l.revoked(oldKey)));
 
         if (newKeySpec != null) {
-            return addKeyPair(participantId, newKeySpec, wasDefault);
+            return updateResult.compose(v -> addKeyPair(participantId, newKeySpec, wasDefault));
         }
         monitor.warning("Revoking keys without a successor key may leave the participant without an active keypair.");
-        return ServiceResult.success();
+        return updateResult;
     }
 
     @Override

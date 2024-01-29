@@ -17,10 +17,12 @@ package org.eclipse.edc.identityhub.keypairs;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
+import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -39,15 +41,17 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class KeyPairServiceImplTest {
 
-    private final KeyPairResourceStore keyPairResourceStore = mock();
+    private final KeyPairResourceStore keyPairResourceStore = mock(i -> StoreResult.success());
     private final Vault vault = mock();
-    private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault, mock());
+    private final KeyPairObservable observableMock = mock();
+    private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault, mock(), observableMock);
 
 
     @ParameterizedTest(name = "make default: {0}")
@@ -60,7 +64,8 @@ class KeyPairServiceImplTest {
         assertThat(keyPairService.addKeyPair("some-participant", key, makeDefault)).isSucceeded();
 
         verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantId().equals("some-participant")));
-        verifyNoMoreInteractions(keyPairResourceStore, vault);
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @ParameterizedTest(name = "make default: {0}")
@@ -77,7 +82,8 @@ class KeyPairServiceImplTest {
 
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
         verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantId().equals("some-participant")));
-        verifyNoMoreInteractions(keyPairResourceStore, vault);
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @Test
@@ -101,7 +107,8 @@ class KeyPairServiceImplTest {
         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
         verify(keyPairResourceStore).create(any());
         verify(vault).deleteSecret(eq(oldKey.getPrivateKeyAlias())); //deletes old private key
-        verifyNoMoreInteractions(vault, keyPairResourceStore);
+        verify(observableMock, times(2)).invokeForEach(any()); // 1 for rotate, 1 for add
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @Test
@@ -117,7 +124,8 @@ class KeyPairServiceImplTest {
         verify(keyPairResourceStore).query(any());
         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
         verify(vault).deleteSecret(eq(oldKey.getPrivateKeyAlias())); //deletes old private key
-        verifyNoMoreInteractions(vault, keyPairResourceStore);
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @Test
@@ -140,7 +148,8 @@ class KeyPairServiceImplTest {
         verify(keyPairResourceStore).create(any());
         verify(vault).deleteSecret(eq(oldKey.getPrivateKeyAlias())); //deletes old private key
         verify(vault).storeSecret(eq(newKey.getPrivateKeyAlias()), anyString());
-        verifyNoMoreInteractions(vault, keyPairResourceStore);
+        verify(observableMock, times(2)).invokeForEach(any()); // 1 for rotate, 1 for add
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @Test
@@ -163,7 +172,8 @@ class KeyPairServiceImplTest {
         verify(keyPairResourceStore).create(argThat(KeyPairResource::isDefaultPair));
         verify(vault).deleteSecret(eq(oldKey.getPrivateKeyAlias())); //deletes old private key
         verify(vault).storeSecret(eq(newKey.getPrivateKeyAlias()), anyString());
-        verifyNoMoreInteractions(vault, keyPairResourceStore);
+        verify(observableMock, times(2)).invokeForEach(any()); //1 for revoke, 1 for add
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @Test
@@ -177,7 +187,7 @@ class KeyPairServiceImplTest {
                 .detail().isEqualTo("A KeyPairResource with ID 'not-exist' does not exist.");
 
         verify(keyPairResourceStore).query(any());
-        verifyNoMoreInteractions(vault, keyPairResourceStore);
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @Test
@@ -208,7 +218,8 @@ class KeyPairServiceImplTest {
         verify(keyPairResourceStore).query(any());
         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
         verify(vault).deleteSecret(oldKey.getPrivateKeyAlias());
-        verifyNoMoreInteractions(vault, keyPairResourceStore);
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @Test
@@ -225,7 +236,8 @@ class KeyPairServiceImplTest {
         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
         verify(vault).deleteSecret(oldKey.getPrivateKeyAlias());
         verify(keyPairResourceStore).create(argThat(KeyPairResource::isDefaultPair));
-        verifyNoMoreInteractions(vault, keyPairResourceStore);
+        verify(observableMock, times(2)).invokeForEach(any()); // 1 for revoke, 1 for add
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @Test
@@ -239,7 +251,8 @@ class KeyPairServiceImplTest {
         verify(keyPairResourceStore).query(any());
         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
         verify(vault).deleteSecret(oldKey.getPrivateKeyAlias());
-        verifyNoMoreInteractions(vault, keyPairResourceStore);
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @Test
@@ -252,7 +265,7 @@ class KeyPairServiceImplTest {
                 .detail().isEqualTo("A KeyPairResource with ID 'not-exist' does not exist.");
 
         verify(keyPairResourceStore).query(any());
-        verifyNoMoreInteractions(vault, keyPairResourceStore);
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     private KeyPairResource.Builder createKeyPairResource() {
