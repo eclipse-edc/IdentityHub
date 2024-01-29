@@ -14,17 +14,12 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.JWKParameterNames;
-import org.eclipse.edc.identityhub.security.KeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.events.ParticipantContextObservable;
-import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
-import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -32,13 +27,9 @@ import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import java.security.KeyPair;
-import java.security.PublicKey;
-import java.text.ParseException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
 import static org.eclipse.edc.spi.result.ServiceResult.conflict;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
 import static org.eclipse.edc.spi.result.ServiceResult.notFound;
@@ -147,42 +138,6 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                 .orElse(f -> conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
     }
 
-    private ServiceResult<JWK> createOrUpdateKey(KeyDescriptor key) {
-        // do we need to generate the key?
-        var keyGeneratorParams = key.getKeyGeneratorParams();
-        JWK publicKeyJwk;
-        if (keyGeneratorParams != null) {
-            var kp = KeyPairGenerator.generateKeyPair(keyGeneratorParams);
-            if (kp.failed()) {
-                return badRequest("Could not generate KeyPair from generator params: %s".formatted(kp.getFailureDetail()));
-            }
-            var alias = key.getPrivateKeyAlias();
-            var storeResult = vault.storeSecret(alias, CryptoConverter.createJwk(kp.getContent()).toJSONString());
-            if (storeResult.failed()) {
-                return badRequest(storeResult.getFailureDetail());
-            }
-            publicKeyJwk = CryptoConverter.createJwk(kp.getContent()).toPublicJWK();
-        } else if (key.getPublicKeyJwk() != null) {
-            publicKeyJwk = CryptoConverter.create(key.getPublicKeyJwk());
-        } else if (key.getPublicKeyPem() != null) {
-            var pubKey = keyParserRegistry.parse(key.getPublicKeyPem());
-            if (pubKey.failed()) {
-                return badRequest("Cannot parse public key from PEM: %s".formatted(pubKey.getFailureDetail()));
-            }
-            publicKeyJwk = CryptoConverter.createJwk(new KeyPair((PublicKey) pubKey.getContent(), null));
-        } else {
-            return badRequest("No public key information found in KeyDescriptor.");
-        }
-        // insert the "kid" parameter
-        var json = publicKeyJwk.toJSONObject();
-        json.put(JWKParameterNames.KEY_ID, key.getKeyId());
-        try {
-            publicKeyJwk = JWK.parse(json);
-            return success(publicKeyJwk);
-        } catch (ParseException e) {
-            return badRequest("Could not create JWK: %s".formatted(e.getMessage()));
-        }
-    }
 
     private ServiceResult<Void> createParticipantContext(ParticipantContext context) {
         var storeRes = participantContextStore.create(context);

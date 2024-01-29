@@ -16,24 +16,32 @@ package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.identityhub.security.KeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
+import org.eclipse.edc.identityhub.spi.events.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
+import org.eclipse.edc.spi.event.Event;
+import org.eclipse.edc.spi.event.EventEnvelope;
+import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
-public class KeyPairServiceImpl implements KeyPairService {
+public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     private final KeyPairResourceStore keyPairResourceStore;
     private final Vault vault;
     private final Monitor monitor;
@@ -119,6 +127,42 @@ public class KeyPairServiceImpl implements KeyPairService {
         return ServiceResult.from(keyPairResourceStore.query(querySpec));
     }
 
+    @Override
+    public <E extends Event> void on(EventEnvelope<E> eventEnvelope) {
+        var payload = eventEnvelope.getPayload();
+        if (payload instanceof ParticipantContextCreated created) {
+            created(created);
+        } else if (payload instanceof ParticipantContextDeleted deleted) {
+            deleted(deleted);
+        } else {
+            monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
+        }
+    }
+
+    private void created(ParticipantContextCreated event) {
+        addKeyPair(event.getParticipantId(), event.getManifest().getKey(), true)
+                .onFailure(f -> monitor.warning("Adding the key pair to a new ParticipantContext failed: %s".formatted(f.getFailureDetail())));
+    }
+
+    private void deleted(ParticipantContextDeleted event) {
+        //hard-delete all keypairs that are associated with the deleted participant
+        var query = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", event.getParticipantId())).build();
+        keyPairResourceStore.query(query)
+                .compose(list -> {
+                    var x = list.stream().map(r -> keyPairResourceStore.deleteById(r.getId()))
+                            .filter(StoreResult::failed)
+                            .map(AbstractResult::getFailureDetail)
+                            .collect(Collectors.joining(","));
+
+                    if (x.isEmpty()) {
+                        return StoreResult.success();
+                    }
+                    // not-found is not necessarily correct, but we only care about the error message
+                    return StoreResult.notFound("An error occurred when deleting KeyPairResources: %s".formatted(x));
+                })
+                .onFailure(f -> monitor.warning("Removing key pairs from a deleted ParticipantContext failed: %s".formatted(f.getFailureDetail())));
+    }
+
     private KeyPairResource findById(String oldId) {
         var q = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("id", "=", oldId)).build();
@@ -143,4 +187,41 @@ public class KeyPairServiceImpl implements KeyPairService {
         }
         return Result.success(publicKeySerialized);
     }
+
+    //    private ServiceResult<JWK> createOrUpdateKey(KeyDescriptor key) {
+    //        // do we need to generate the key?
+    //        var keyGeneratorParams = key.getKeyGeneratorParams();
+    //        JWK publicKeyJwk;
+    //        if (keyGeneratorParams != null) {
+    //            var kp = KeyPairGenerator.generateKeyPair(keyGeneratorParams);
+    //            if (kp.failed()) {
+    //                return badRequest("Could not generate KeyPair from generator params: %s".formatted(kp.getFailureDetail()));
+    //            }
+    //            var alias = key.getPrivateKeyAlias();
+    //            var storeResult = vault.storeSecret(alias, CryptoConverter.createJwk(kp.getContent()).toJSONString());
+    //            if (storeResult.failed()) {
+    //                return badRequest(storeResult.getFailureDetail());
+    //            }
+    //            publicKeyJwk = CryptoConverter.createJwk(kp.getContent()).toPublicJWK();
+    //        } else if (key.getPublicKeyJwk() != null) {
+    //            publicKeyJwk = CryptoConverter.create(key.getPublicKeyJwk());
+    //        } else if (key.getPublicKeyPem() != null) {
+    //            var pubKey = keyParserRegistry.parse(key.getPublicKeyPem());
+    //            if (pubKey.failed()) {
+    //                return badRequest("Cannot parse public key from PEM: %s".formatted(pubKey.getFailureDetail()));
+    //            }
+    //            publicKeyJwk = CryptoConverter.createJwk(new KeyPair((PublicKey) pubKey.getContent(), null));
+    //        } else {
+    //            return badRequest("No public key information found in KeyDescriptor.");
+    //        }
+    //        // insert the "kid" parameter
+    //        var json = publicKeyJwk.toJSONObject();
+    //        json.put(JWKParameterNames.KEY_ID, key.getKeyId());
+    //        try {
+    //            publicKeyJwk = JWK.parse(json);
+    //            return success(publicKeyJwk);
+    //        } catch (ParseException e) {
+    //            return badRequest("Could not create JWK: %s".formatted(e.getMessage()));
+    //        }
+    //    }
 }

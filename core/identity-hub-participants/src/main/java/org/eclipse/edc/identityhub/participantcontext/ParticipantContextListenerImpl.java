@@ -39,6 +39,7 @@ public class ParticipantContextListenerImpl implements ParticipantContextListene
     public void created(ParticipantContext newContext, ParticipantManifest manifest) {
         var event = ParticipantContextCreated.Builder.newInstance()
                 .participantId(newContext.getParticipantId())
+                .manifest(manifest)
                 .build();
         publish(event);
     }

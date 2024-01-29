@@ -16,11 +16,18 @@ package org.eclipse.edc.identityhub.spi.events;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 
 public class ParticipantContextCreated extends ParticipantContextEvent {
+    private ParticipantManifest manifest;
+
     @Override
     public String name() {
         return "participantcontext.created";
+    }
+
+    public ParticipantManifest getManifest() {
+        return manifest;
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -32,6 +39,11 @@ public class ParticipantContextCreated extends ParticipantContextEvent {
 
         @Override
         public Builder self() {
+            return this;
+        }
+
+        public Builder manifest(ParticipantManifest manifest) {
+            this.event.manifest = manifest;
             return this;
         }
 

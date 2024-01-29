@@ -23,6 +23,7 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.junit.jupiter.api.Test;
 
@@ -82,7 +83,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
     @Test
     void createNewUser_principalIsAdmin() {
         var subscriber = mock(EventSubscriber.class);
-        getEventRouter().registerSync(ParticipantContextCreated.class, subscriber);
+        getService(EventRouter.class).registerSync(ParticipantContextCreated.class, subscriber);
         var apikey = getSuperUserApiKey();
 
         var manifest = createNewParticipant();
@@ -98,12 +99,15 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .body(notNullValue());
 
         verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
+
+        assertThat(getKeyPairsForParticipant(manifest)).hasSize(1);
     }
+
 
     @Test
     void createNewUser_principalIsNotAdmin_expect403() {
         var subscriber = mock(EventSubscriber.class);
-        getEventRouter().registerSync(ParticipantContextCreated.class, subscriber);
+        getService(EventRouter.class).registerSync(ParticipantContextCreated.class, subscriber);
 
         var principal = "another-user";
         var anotherUser = ParticipantContext.Builder.newInstance()
@@ -125,12 +129,13 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .body(notNullValue());
         verifyNoInteractions(subscriber);
 
+        assertThat(getKeyPairsForParticipant(manifest)).isEmpty();
     }
 
     @Test
     void createNewUser_principalIsKnown_expect401() {
         var subscriber = mock(EventSubscriber.class);
-        getEventRouter().registerSync(ParticipantContextCreated.class, subscriber);
+        getService(EventRouter.class).registerSync(ParticipantContextCreated.class, subscriber);
         var principal = "another-user";
 
         var manifest = createNewParticipant();
@@ -145,12 +150,13 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .statusCode(401)
                 .body(notNullValue());
         verifyNoInteractions(subscriber);
+        assertThat(getKeyPairsForParticipant(manifest)).isEmpty();
     }
 
     @Test
     void activateParticipant_principalIsAdmin() {
         var subscriber = mock(EventSubscriber.class);
-        getEventRouter().registerSync(ParticipantContextUpdated.class, subscriber);
+        getService(EventRouter.class).registerSync(ParticipantContextUpdated.class, subscriber);
 
         var participantId = "another-user";
         var anotherUser = ParticipantContext.Builder.newInstance()
@@ -175,7 +181,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
             var evt = (ParticipantContextUpdated) env.getPayload();
             return evt.getParticipantId().equals(participantId);
         }));
-
+        
     }
 
 

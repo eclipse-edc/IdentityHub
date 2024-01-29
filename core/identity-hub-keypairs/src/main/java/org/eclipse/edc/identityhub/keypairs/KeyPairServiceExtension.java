@@ -15,10 +15,12 @@
 package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.identityhub.spi.KeyPairService;
+import org.eclipse.edc.identityhub.spi.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -33,9 +35,13 @@ public class KeyPairServiceExtension implements ServiceExtension {
     private Vault vault;
     @Inject
     private KeyPairResourceStore keyPairResourceStore;
+    @Inject
+    private EventRouter eventRouter;
 
     @Provider
     public KeyPairService createParticipantService(ServiceExtensionContext context) {
-        return new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor());
+        var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor());
+        eventRouter.registerSync(ParticipantContextCreated.class, service);
+        return service;
     }
 }
