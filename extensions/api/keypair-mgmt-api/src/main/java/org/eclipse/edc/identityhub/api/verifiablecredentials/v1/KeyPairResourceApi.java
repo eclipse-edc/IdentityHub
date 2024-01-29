@@ -84,7 +84,7 @@ public interface KeyPairResourceApi {
     void addKeyPair(String participantId, KeyDescriptor keyDescriptor, boolean makeDefault, SecurityContext securityContext);
 
     @Tag(name = "KeyPairResources Management API")
-    @Operation(description = "Rotates (=retires) a particular key pair, identified by their ID and create a new successor key.",
+    @Operation(description = "Rotates (=retires) a particular key pair, identified by their ID and optionally create a new successor key.",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = KeyDescriptor.class), mediaType = "application/json")),
             parameters = @Parameter(name = "duration", description = "Indicates for how long the public key of the rotated/retired key pair should still be available "),
             responses = {

@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -97,8 +98,8 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
             return criterion.getOperandLeft().equals("participantId") &&
-                    criterion.getOperator().equals("=") &&
-                    criterion.getOperandRight().equals("test-participant");
+                   criterion.getOperator().equals("=") &&
+                   criterion.getOperandRight().equals("test-participant");
         }));
     }
 
@@ -119,8 +120,8 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
             return criterion.getOperandLeft().equals("participantId") &&
-                    criterion.getOperator().equals("=") &&
-                    criterion.getOperandRight().equals("test-participant");
+                   criterion.getOperator().equals("=") &&
+                   criterion.getOperandRight().equals("test-participant");
         }));
     }
 
@@ -137,8 +138,8 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
             return criterion.getOperandLeft().equals("participantId") &&
-                    criterion.getOperator().equals("=") &&
-                    criterion.getOperandRight().equals("test-participant");
+                   criterion.getOperator().equals("=") &&
+                   criterion.getOperandRight().equals("test-participant");
         }));
     }
 
@@ -194,6 +195,22 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
                 .statusCode(404);
 
         verify(keyPairService).rotateKeyPair(eq("old-id"), argThat(d -> d.getKeyId().equals(descriptor.getKeyId())), eq(duration));
+        verifyNoMoreInteractions(keyPairService);
+    }
+
+    @Test
+    void rotate_withoutSuccessor() {
+        var duration = Duration.ofDays(100).toMillis();
+        when(keyPairService.rotateKeyPair(eq("old-id"), any(), eq(duration))).thenReturn(ServiceResult.success());
+
+        baseRequest()
+                .contentType(ContentType.JSON)
+                .post("/old-id/rotate?duration=" + duration)
+                .then()
+                .log().ifError()
+                .statusCode(204);
+
+        verify(keyPairService).rotateKeyPair(eq("old-id"), isNull(), eq(duration));
         verifyNoMoreInteractions(keyPairService);
     }
 

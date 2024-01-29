@@ -33,6 +33,7 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -93,7 +94,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @POST
     @Path("/{keyPairId}/rotate")
     @Override
-    public void rotateKeyPair(@PathParam("keyPairId") String id, KeyDescriptor newKey, @QueryParam("duration") long duration, @Context SecurityContext securityContext) {
+    public void rotateKeyPair(@PathParam("keyPairId") String id, @Nullable KeyDescriptor newKey, @QueryParam("duration") long duration, @Context SecurityContext securityContext) {
         authorizationService.isAuthorized(securityContext.getUserPrincipal(), id, KeyPairResource.class)
                 .compose(u -> keyPairService.rotateKeyPair(id, newKey, duration))
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));
