@@ -18,14 +18,19 @@ import org.eclipse.edc.identithub.did.spi.DidConstants;
 import org.eclipse.edc.identithub.did.spi.DidDocumentPublisherRegistry;
 import org.eclipse.edc.identithub.did.spi.DidWebParser;
 import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentObservable;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebServer;
 import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
 import org.eclipse.edc.web.spi.configuration.WebServiceSettings;
+
+import java.time.Clock;
 
 import static org.eclipse.edc.identityhub.publisher.did.local.LocalDidPublisherExtension.NAME;
 
@@ -59,6 +64,11 @@ public class LocalDidPublisherExtension implements ServiceExtension {
      */
     @Inject(required = false)
     private DidWebParser didWebParser;
+    @Inject
+    private Clock clock;
+    @Inject
+    private EventRouter eventRouter;
+    private DidDocumentObservableImpl observable;
 
     @Override
     public String name() {
@@ -68,11 +78,19 @@ public class LocalDidPublisherExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         var webServiceConfiguration = configurator.configure(context, webServer, SETTINGS);
-        var localPublisher = new LocalDidPublisher(didResourceStore, context.getMonitor());
+        var localPublisher = new LocalDidPublisher(didDocumentObservable(), didResourceStore, context.getMonitor());
         registry.addPublisher(DidConstants.DID_WEB_METHOD, localPublisher);
         webService.registerResource(webServiceConfiguration.getContextAlias(), new DidWebController(context.getMonitor(), didResourceStore, getDidParser()));
     }
 
+    @Provider
+    public DidDocumentObservable didDocumentObservable(){
+        if(observable == null){
+            observable = new DidDocumentObservableImpl();
+            observable.registerListener(new DidDocumentListenerImpl(clock, eventRouter));
+        }
+        return observable;
+    }
     private DidWebParser getDidParser() {
         return didWebParser != null ? didWebParser : new DidWebParser();
     }
