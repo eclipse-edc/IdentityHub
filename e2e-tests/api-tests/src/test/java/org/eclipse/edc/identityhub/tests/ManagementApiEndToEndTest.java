@@ -24,6 +24,7 @@ import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguration;
 import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -74,6 +75,10 @@ public abstract class ManagementApiEndToEndTest {
 
     protected String createTokenFor(String userId) {
         return new ApiTokenGenerator().generate(userId);
+    }
+
+    protected EventRouter getEventRouter() {
+        return RUNTIME.getContext().getService(EventRouter.class);
     }
 
     protected static ParticipantManifest createNewParticipant() {

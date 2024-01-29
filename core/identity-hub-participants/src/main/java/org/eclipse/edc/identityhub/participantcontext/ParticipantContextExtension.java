@@ -16,14 +16,18 @@ package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+
+import java.time.Clock;
 
 import static org.eclipse.edc.identityhub.participantcontext.ParticipantContextExtension.NAME;
 
@@ -41,9 +45,24 @@ public class ParticipantContextExtension implements ServiceExtension {
     private KeyParserRegistry keyParserRegistry;
     @Inject
     private DidDocumentService didDocumentService;
+    @Inject
+    private Clock clock;
+    @Inject
+    private EventRouter eventRouter;
+
+    private ParticipantContextObservable participantContextObservable;
 
     @Provider
     public ParticipantContextService createParticipantService() {
-        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, keyParserRegistry, didDocumentService);
+        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, keyParserRegistry, didDocumentService, participantContextObservable());
+    }
+
+    @Provider
+    public ParticipantContextObservable participantContextObservable() {
+        if (participantContextObservable == null) {
+            participantContextObservable = new ParticipantContextObservableImpl();
+            participantContextObservable.registerListener(new ParticipantContextListenerImpl(clock, eventRouter));
+        }
+        return participantContextObservable;
     }
 }

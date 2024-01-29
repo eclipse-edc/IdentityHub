@@ -21,6 +21,7 @@ import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identityhub.security.KeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
@@ -63,12 +64,14 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private final ApiTokenGenerator tokenGenerator;
     private final KeyParserRegistry keyParserRegistry;
     private final DidDocumentService didDocumentService;
+    private final ParticipantContextObservable observable;
 
     public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore, Vault vault, TransactionContext transactionContext,
-                                         KeyParserRegistry registry, DidDocumentService didDocumentService) {
+                                         KeyParserRegistry registry, DidDocumentService didDocumentService, ParticipantContextObservable observable) {
         this.participantContextStore = participantContextStore;
         this.vault = vault;
         this.transactionContext = transactionContext;
+        this.observable = observable;
         this.tokenGenerator = new ApiTokenGenerator();
         this.keyParserRegistry = registry;
         this.didDocumentService = didDocumentService;
@@ -82,7 +85,8 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             var res = createParticipantContext(context)
                     .compose(u -> generateAndStoreToken(context)).onSuccess(apiKey::set)
                     .compose(ak -> createOrUpdateKey(manifest.getKey()))
-                    .compose(jwk -> generateDidDocument(manifest, jwk));
+                    .compose(jwk -> generateDidDocument(manifest, jwk))
+                    .onSuccess(u -> observable.invokeForEach(l -> l.created(context)));
             return res.map(u -> apiKey.get());
         });
     }
@@ -133,7 +137,8 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                 return notFound("ParticipantContext with ID '%s' not found.".formatted(participantId));
             }
             modificationFunction.accept(participant);
-            var res = participantContextStore.update(participant);
+            var res = participantContextStore.update(participant)
+                    .onSuccess(u -> observable.invokeForEach(l -> l.updated(participant)));
             return res.succeeded() ? success() : fromFailure(res);
         });
 

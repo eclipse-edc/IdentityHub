@@ -21,6 +21,7 @@ import org.assertj.core.api.Assertions;
 import org.eclipse.edc.connector.core.security.KeyParserRegistryImpl;
 import org.eclipse.edc.connector.core.security.keyparsers.PemParser;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
+import org.eclipse.edc.identityhub.spi.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
@@ -59,6 +60,7 @@ class ParticipantContextServiceImplTest {
     private final ParticipantContextStore participantContextStore = mock();
     private ParticipantContextServiceImpl participantContextService;
     private DidDocumentService didDocumentService;
+    private final ParticipantContextObservable observableMock = mock();
 
     @BeforeEach
     void setUp() {
@@ -67,7 +69,7 @@ class ParticipantContextServiceImplTest {
         when(didDocumentService.publish(anyString())).thenReturn(success());
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), keyParserRegistry, didDocumentService);
+        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), keyParserRegistry, didDocumentService, observableMock);
     }
 
     @ParameterizedTest(name = "isActive: {0}")
