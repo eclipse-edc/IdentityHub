@@ -84,13 +84,14 @@ public class LocalDidPublisherExtension implements ServiceExtension {
     }
 
     @Provider
-    public DidDocumentObservable didDocumentObservable(){
-        if(observable == null){
+    public DidDocumentObservable didDocumentObservable() {
+        if (observable == null) {
             observable = new DidDocumentObservableImpl();
             observable.registerListener(new DidDocumentListenerImpl(clock, eventRouter));
         }
         return observable;
     }
+
     private DidWebParser getDidParser() {
         return didWebParser != null ? didWebParser : new DidWebParser();
     }

@@ -83,7 +83,7 @@ public class LocalDidPublisher implements DidDocumentPublisher {
         return didResourceStore.update(existingDocument)
                 .map(v -> success())
                 .orElse(f -> failure(f.getFailureDetail()))
-                .onSuccess(v -> observable.invokeForEach(l -> l.unpublished(existingDocument.getDocument(), existingDocument.getParticipantId() )));
+                .onSuccess(v -> observable.invokeForEach(l -> l.unpublished(existingDocument.getDocument(), existingDocument.getParticipantId())));
 
     }
 

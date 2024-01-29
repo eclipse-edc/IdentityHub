@@ -17,7 +17,6 @@ package org.eclipse.edc.identityhub.tests;
 import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentPublished;
 import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentUnpublished;
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.event.EventRouter;
@@ -26,7 +25,12 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.http.ContentType.JSON;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @EndToEndTest
 public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
@@ -93,12 +97,13 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
         // verify that the publish event was fired twice
         verify(subscriber, times(2)).on(argThat(env -> {
-            if(env.getPayload() instanceof DidDocumentPublished event){
+            if (env.getPayload() instanceof DidDocumentPublished event) {
                 return event.getDid().equals("did:web:test-user");
             }
             return false;
         }));
     }
+
     @Test
     void unpublishDid_notOwner_expect403() {
         var subscriber = mock(EventSubscriber.class);
@@ -136,6 +141,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
         verifyNoInteractions(subscriber);
     }
+
     @Test
     void unpublishDid() {
 
@@ -160,12 +166,13 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
         // verify that the publish event was fired twice
         verify(subscriber).on(argThat(env -> {
-            if(env.getPayload() instanceof DidDocumentUnpublished event){
+            if (env.getPayload() instanceof DidDocumentUnpublished event) {
                 return event.getDid().equals("did:web:test-user");
             }
             return false;
         }));
     }
+
     @Test
     void getState_nowOwner_expect403() {
         var user1 = "user1";
