@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.spi.events;
 
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.spi.observe.Observable;
 
 /**
@@ -23,7 +24,14 @@ import org.eclipse.edc.spi.observe.Observable;
  */
 public interface ParticipantContextListener {
 
-    default void created(ParticipantContext newContext) {
+    /**
+     * Notifies about the fact that a new {@link ParticipantContext} has been created, and further action, such as creating keypairs or updating DID documents
+     * can now happen.
+     *
+     * @param newContext The newly created (already persisted) participant context
+     * @param manifest   The original manifest based on which the context was created
+     */
+    default void created(ParticipantContext newContext, ParticipantManifest manifest) {
 
     }
 

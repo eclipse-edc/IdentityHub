@@ -20,6 +20,7 @@ import org.eclipse.edc.identityhub.spi.events.ParticipantContextEvent;
 import org.eclipse.edc.identityhub.spi.events.ParticipantContextListener;
 import org.eclipse.edc.identityhub.spi.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventRouter;
 
@@ -35,7 +36,7 @@ public class ParticipantContextListenerImpl implements ParticipantContextListene
     }
 
     @Override
-    public void created(ParticipantContext newContext) {
+    public void created(ParticipantContext newContext, ParticipantManifest manifest) {
         var event = ParticipantContextCreated.Builder.newInstance()
                 .participantId(newContext.getParticipantId())
                 .build();
