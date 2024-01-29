@@ -12,39 +12,26 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.events;
+package org.eclipse.edc.identityhub.spi.events.participant;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 
-public class ParticipantContextUpdated extends ParticipantContextEvent {
-
-    private ParticipantContextState newState;
-
+public class ParticipantContextDeleted extends ParticipantContextEvent {
     @Override
     public String name() {
-        return "participantcontext.updated";
-    }
-
-    public ParticipantContextState getNewState() {
-        return newState;
+        return "participantcontext.deleted";
     }
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder extends ParticipantContextEvent.Builder<ParticipantContextUpdated, Builder> {
+    public static class Builder extends ParticipantContextEvent.Builder<ParticipantContextDeleted, Builder> {
 
         private Builder() {
-            super(new ParticipantContextUpdated());
+            super(new ParticipantContextDeleted());
         }
 
         @Override
         public Builder self() {
-            return this;
-        }
-
-        public Builder newState(ParticipantContextState state) {
-            this.event.newState = state;
             return this;
         }
 

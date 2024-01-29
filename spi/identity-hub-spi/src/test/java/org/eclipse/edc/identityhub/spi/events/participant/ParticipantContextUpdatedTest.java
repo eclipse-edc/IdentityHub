@@ -12,22 +12,20 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.model.participant;
+package org.eclipse.edc.identityhub.spi.events.participant;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextDeleted;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ParticipantContextDeletedTest {
-
+class ParticipantContextUpdatedTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
     void verify_serDes() throws JsonProcessingException {
-        var evt = ParticipantContextDeleted.Builder.newInstance()
+        var evt = ParticipantContextUpdated.Builder.newInstance()
                 .participantId("test-participantId")
                 .build();
 
@@ -35,6 +33,6 @@ class ParticipantContextDeletedTest {
 
         assertThat(json).isNotNull();
 
-        assertThat(mapper.readValue(json, ParticipantContextDeleted.class)).usingRecursiveComparison().isEqualTo(evt);
+        assertThat(mapper.readValue(json, ParticipantContextUpdated.class)).usingRecursiveComparison().isEqualTo(evt);
     }
 }

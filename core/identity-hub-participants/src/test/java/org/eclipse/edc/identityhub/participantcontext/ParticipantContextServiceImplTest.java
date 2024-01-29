@@ -20,7 +20,7 @@ import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.connector.core.security.KeyParserRegistryImpl;
 import org.eclipse.edc.connector.core.security.keyparsers.PemParser;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextObservable;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;

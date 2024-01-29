@@ -12,26 +12,38 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.events;
+package org.eclipse.edc.identityhub.spi.events.participant;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 
-public class ParticipantContextDeleted extends ParticipantContextEvent {
+public class ParticipantContextCreated extends ParticipantContextEvent {
+    private ParticipantManifest manifest;
+
     @Override
     public String name() {
-        return "participantcontext.deleted";
+        return "participantcontext.created";
+    }
+
+    public ParticipantManifest getManifest() {
+        return manifest;
     }
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder extends ParticipantContextEvent.Builder<ParticipantContextDeleted, Builder> {
+    public static class Builder extends ParticipantContextEvent.Builder<ParticipantContextCreated, Builder> {
 
         private Builder() {
-            super(new ParticipantContextDeleted());
+            super(new ParticipantContextCreated());
         }
 
         @Override
         public Builder self() {
+            return this;
+        }
+
+        public Builder manifest(ParticipantManifest manifest) {
+            this.event.manifest = manifest;
             return this;
         }
 

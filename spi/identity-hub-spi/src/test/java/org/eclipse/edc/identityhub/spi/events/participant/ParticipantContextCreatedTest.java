@@ -12,11 +12,10 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.model.participant;
+package org.eclipse.edc.identityhub.spi.events.participant;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextCreated;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

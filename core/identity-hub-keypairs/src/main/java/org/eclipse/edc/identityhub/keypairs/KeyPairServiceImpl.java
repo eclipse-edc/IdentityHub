@@ -16,8 +16,8 @@ package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.identityhub.security.KeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextCreated;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextDeleted;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;

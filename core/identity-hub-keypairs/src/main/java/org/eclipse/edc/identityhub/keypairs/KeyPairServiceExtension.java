@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.identityhub.spi.KeyPairService;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextCreated;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextDeleted;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;

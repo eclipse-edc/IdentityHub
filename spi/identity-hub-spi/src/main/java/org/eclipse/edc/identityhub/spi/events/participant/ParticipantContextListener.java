@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.events;
+package org.eclipse.edc.identityhub.spi.events.participant;
 
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;

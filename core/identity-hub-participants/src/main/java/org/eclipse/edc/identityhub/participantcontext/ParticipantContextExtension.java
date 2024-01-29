@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextObservable;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;

@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextObservable;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;

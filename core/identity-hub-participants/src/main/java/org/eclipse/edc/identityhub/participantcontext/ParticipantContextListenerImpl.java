@@ -14,11 +14,11 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextCreated;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextDeleted;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextEvent;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextListener;
-import org.eclipse.edc.identityhub.spi.events.ParticipantContextUpdated;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextDeleted;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextEvent;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextListener;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.spi.event.EventEnvelope;
