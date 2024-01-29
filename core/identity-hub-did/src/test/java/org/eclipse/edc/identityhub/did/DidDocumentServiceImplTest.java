@@ -53,7 +53,7 @@ class DidDocumentServiceImplTest {
         var trx = new NoopTransactionContext();
         when(publisherRegistry.getPublisher(startsWith("did:web:"))).thenReturn(publisherMock);
 
-        service = new DidDocumentServiceImpl(trx, storeMock, publisherRegistry);
+        service = new DidDocumentServiceImpl(trx, storeMock, publisherRegistry, mock());
     }
 
     @Test

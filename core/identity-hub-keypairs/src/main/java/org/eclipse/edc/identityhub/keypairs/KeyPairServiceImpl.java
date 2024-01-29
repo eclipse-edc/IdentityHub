@@ -135,7 +135,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
         } else if (payload instanceof ParticipantContextDeleted deleted) {
             deleted(deleted);
         } else {
-            monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
+            monitor.warning("KeyPairServiceImpl Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }
     }
 

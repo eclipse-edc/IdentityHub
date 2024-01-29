@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.events.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -42,6 +43,7 @@ public class KeyPairServiceExtension implements ServiceExtension {
     public KeyPairService createParticipantService(ServiceExtensionContext context) {
         var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor());
         eventRouter.registerSync(ParticipantContextCreated.class, service);
+        eventRouter.registerSync(ParticipantContextDeleted.class, service);
         return service;
     }
 }

@@ -56,6 +56,7 @@ public class ParticipantContextListenerImpl implements ParticipantContextListene
     public void updated(ParticipantContext updatedContext) {
         var event = ParticipantContextUpdated.Builder.newInstance()
                 .participantId(updatedContext.getParticipantId())
+                .newState(updatedContext.getStateAsEnum())
                 .build();
         publish(event);
     }

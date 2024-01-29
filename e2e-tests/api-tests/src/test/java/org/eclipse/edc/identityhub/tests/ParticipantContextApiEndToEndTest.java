@@ -101,6 +101,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
 
         assertThat(getKeyPairsForParticipant(manifest)).hasSize(1);
+        assertThat(getDidForParticipant(manifest.getParticipantId())).hasSize(1);
     }
 
 
@@ -177,12 +178,30 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
         var updatedParticipant = RUNTIME.getContext().getService(ParticipantContextService.class).getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
         assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.ACTIVATED.ordinal());
+        // verify the correct event was emitted
         verify(subscriber).on(argThat(env -> {
             var evt = (ParticipantContextUpdated) env.getPayload();
-            return evt.getParticipantId().equals(participantId);
+            return evt.getParticipantId().equals(participantId) && evt.getNewState() == ParticipantContextState.ACTIVATED;
         }));
-        
+
     }
 
+    @Test
+    void deleteParticipant() {
+        var participantId = "another-user";
+        createParticipant(participantId);
+
+        assertThat(getDidForParticipant(participantId)).hasSize(1);
+
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .contentType(ContentType.JSON)
+                .delete("/v1/participants/%s".formatted(participantId))
+                .then()
+                .log().ifError()
+                .statusCode(204);
+
+        assertThat(getDidForParticipant(participantId)).isEmpty();
+    }
 
 }

@@ -95,8 +95,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Path("/{participantId}")
     @RolesAllowed("admin")
     public void deleteParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), participantId, ParticipantContext.class)
-                .compose(u -> participantContextService.deleteParticipantContext(participantId))
+        participantContextService.deleteParticipantContext(participantId)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
 
