@@ -19,7 +19,7 @@ import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponse;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponseMessage;
 import org.eclipse.edc.identitytrust.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
@@ -60,7 +60,7 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
      * @return A Result object wrapping the PresentationResponse.
      */
     @Override
-    public Result<PresentationResponse> createPresentation(List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition, @Nullable String audience) {
+    public Result<PresentationResponseMessage> createPresentation(List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition, @Nullable String audience) {
 
         if (presentationDefinition != null) {
             monitor.warning("A PresentationDefinition was submitted, but is currently ignored by the generator.");
@@ -92,7 +92,7 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
             vpToken.add(registry.createPresentation(credentials, CredentialFormat.JWT, additionalData));
         }
 
-        var presentationResponse = new PresentationResponse(vpToken.toArray(new Object[0]), null);
+        var presentationResponse = PresentationResponseMessage.Builder.newinstance().presentation(vpToken).build();
         return Result.success(presentationResponse);
     }
 }

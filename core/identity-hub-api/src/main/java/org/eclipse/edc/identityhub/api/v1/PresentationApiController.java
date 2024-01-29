@@ -25,7 +25,7 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
@@ -42,7 +42,7 @@ import java.util.Optional;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery.PRESENTATION_QUERY_TYPE_PROPERTY;
+import static org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -74,9 +74,9 @@ public class PresentationApiController implements PresentationApi {
         if (token == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
-        validatorRegistry.validate(PRESENTATION_QUERY_TYPE_PROPERTY, query).orElseThrow(ValidationFailureException::new);
+        validatorRegistry.validate(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY, query).orElseThrow(ValidationFailureException::new);
 
-        var presentationQuery = transformerRegistry.transform(query, PresentationQuery.class).orElseThrow(InvalidRequestException::new);
+        var presentationQuery = transformerRegistry.transform(query, PresentationQueryMessage.class).orElseThrow(InvalidRequestException::new);
 
         if (presentationQuery.getPresentationDefinition() != null) {
             monitor.warning("DIF Presentation Queries are not supported yet. This will get implemented in future iterations.");

@@ -17,7 +17,7 @@ package org.eclipse.edc.identityhub.api.validation;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
@@ -27,7 +27,7 @@ import static org.eclipse.edc.validator.spi.ValidationResult.success;
 import static org.eclipse.edc.validator.spi.Violation.violation;
 
 /**
- * Validates, that a JsonObject representing a {@link PresentationQuery} contains <em>either</em> a {@code scope} property,
+ * Validates, that a JsonObject representing a {@link PresentationQueryMessage} contains <em>either</em> a {@code scope} property,
  * <em>or</em> a {@code presentationDefinition} query.
  */
 public class PresentationQueryValidator implements Validator<JsonObject> {
@@ -36,9 +36,9 @@ public class PresentationQueryValidator implements Validator<JsonObject> {
         if (input == null) {
             return failure(violation("Presentation query was null", "."));
         }
-        var scope = input.get(PresentationQuery.PRESENTATION_QUERY_SCOPE_PROPERTY);
+        var scope = input.get(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_SCOPE_PROPERTY);
 
-        var presentationDef = input.get(PresentationQuery.PRESENTATION_QUERY_DEFINITION_PROPERTY);
+        var presentationDef = input.get(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_DEFINITION_PROPERTY);
 
         if (isNullObject(scope) && isNullObject(presentationDef)) {
             return failure(violation("Must contain either a 'scope' or a 'presentationDefinition' property.", null));

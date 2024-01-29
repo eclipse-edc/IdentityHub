@@ -22,7 +22,7 @@ import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguration;
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
 import org.eclipse.edc.identitytrust.model.credentialservice.InputDescriptorMapping;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponse;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponseMessage;
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationSubmission;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
@@ -54,7 +54,7 @@ public class ResolutionApiComponentTest {
                 "https://identity.foundation/presentation-exchange/submission/v1",
                 "https://w3id.org/tractusx-trust/v0.8"
               ],
-              "@type": "Query",
+              "@type": "PresentationQueryMessage",
               "scope":[
                 "test-scope1"
               ]
@@ -122,7 +122,7 @@ public class ResolutionApiComponentTest {
                     "https://identity.foundation/presentation-exchange/submission/v1",
                     "https://w3id.org/tractusx-trust/v0.8"
                   ],
-                  "@type": "Query",
+                  "@type": "PresentationQueryMessage",
                   "presentationDefinition":{
                   }
                 }
@@ -204,13 +204,16 @@ public class ResolutionApiComponentTest {
                 .then()
                 .statusCode(200)
                 .log().ifValidationFails()
-                .extract().body().as(PresentationResponse.class);
+                .extract().body().as(PresentationResponseMessage.class);
 
     }
 
-    private PresentationResponse createPresentationResponse() {
+    private PresentationResponseMessage createPresentationResponse() {
         var submission = new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("input-id", "ldp-vp", "foo")));
-        return new PresentationResponse(new Object[] {TestData.VP_EXAMPLE}, submission);
+        return PresentationResponseMessage.Builder.newinstance()
+                .presentation(List.of(TestData.VP_EXAMPLE))
+                .presentationSubmission(submission)
+                .build();
     }
 
 
