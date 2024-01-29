@@ -17,10 +17,10 @@ package org.eclipse.edc.identityhub.keypairs;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
+import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.store.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.store.model.KeyPairState;
 import org.eclipse.edc.spi.security.Vault;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -47,7 +47,7 @@ class KeyPairServiceImplTest {
 
     private final KeyPairResourceStore keyPairResourceStore = mock();
     private final Vault vault = mock();
-    private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault);
+    private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault, mock());
 
 
     @ParameterizedTest(name = "make default: {0}")
@@ -100,6 +100,22 @@ class KeyPairServiceImplTest {
         verify(keyPairResourceStore).query(any());
         verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
         verify(keyPairResourceStore).create(any());
+        verify(vault).deleteSecret(eq(oldKey.getPrivateKeyAlias())); //deletes old private key
+        verifyNoMoreInteractions(vault, keyPairResourceStore);
+    }
+
+    @Test
+    void rotateKeyPair_withoutNewKey() {
+        var oldId = "old-id";
+        var oldKey = createKeyPairResource().id(oldId).build();
+
+        when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+        when(keyPairResourceStore.create(any())).thenReturn(success());
+
+        assertThat(keyPairService.rotateKeyPair(oldId, null, Duration.ofDays(100).toMillis())).isSucceeded();
+
+        verify(keyPairResourceStore).query(any());
+        verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId)));
         verify(vault).deleteSecret(eq(oldKey.getPrivateKeyAlias())); //deletes old private key
         verifyNoMoreInteractions(vault, keyPairResourceStore);
     }

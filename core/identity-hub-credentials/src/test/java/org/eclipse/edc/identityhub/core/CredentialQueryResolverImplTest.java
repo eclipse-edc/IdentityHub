@@ -16,15 +16,15 @@ package org.eclipse.edc.identityhub.core;
 
 
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.resolution.QueryFailure;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.CredentialSubject;
 import org.eclipse.edc.identitytrust.model.Issuer;
 import org.eclipse.edc.identitytrust.model.VerifiableCredential;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
 import org.eclipse.edc.identitytrust.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.jetbrains.annotations.Nullable;
@@ -110,7 +110,7 @@ class CredentialQueryResolverImplTest {
 
     @Test
     void query_presentationDefinition_unsupported() {
-        var q = PresentationQuery.Builder.newinstance().presentationDefinition(PresentationDefinition.Builder.newInstance().id("test-pd").build()).build();
+        var q = PresentationQueryMessage.Builder.newinstance().presentationDefinition(PresentationDefinition.Builder.newInstance().id("test-pd").build()).build();
         assertThatThrownBy(() -> resolver.query(q, List.of("org.eclipse.edc.vc.type:SomeCredential:read")))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Querying with a DIF Presentation Exchange definition is not yet supported.");
@@ -201,9 +201,9 @@ class CredentialQueryResolverImplTest {
         assertThat(res.getFailureDetail()).isEqualTo("test-failure");
     }
 
-    private PresentationQuery createPresentationQuery(@Nullable String... scope) {
+    private PresentationQueryMessage createPresentationQuery(@Nullable String... scope) {
         var scopes = new ArrayList<>(Arrays.asList(scope));
-        return PresentationQuery.Builder.newinstance().scopes(scopes).build();
+        return PresentationQueryMessage.Builder.newinstance().scopes(scopes).build();
     }
 
     private VerifiableCredentialResource createCredentialResource(String... type) {

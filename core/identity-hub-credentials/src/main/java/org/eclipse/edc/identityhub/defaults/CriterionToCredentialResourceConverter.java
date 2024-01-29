@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.defaults;
 
 import org.eclipse.edc.connector.core.store.CriterionToPredicateConverterImpl;
-import org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource;
+import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.spi.query.CriterionToPredicateConverter;
 import org.eclipse.edc.spi.types.PathItem;
 import org.eclipse.edc.util.reflection.ReflectionUtil;

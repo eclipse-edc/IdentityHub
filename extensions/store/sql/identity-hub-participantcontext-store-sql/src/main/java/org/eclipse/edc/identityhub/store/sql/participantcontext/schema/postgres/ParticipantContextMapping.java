@@ -14,12 +14,13 @@
 
 package org.eclipse.edc.identityhub.store.sql.participantcontext.schema.postgres;
 
+import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.store.sql.participantcontext.ParticipantContextStoreStatements;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
 
 /**
- * Provides a mapping from the canonical format to SQL column names for a {@link org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource}
+ * Provides a mapping from the canonical format to SQL column names for a {@link VerifiableCredentialResource}
  */
 public class ParticipantContextMapping extends TranslationMapping {
 

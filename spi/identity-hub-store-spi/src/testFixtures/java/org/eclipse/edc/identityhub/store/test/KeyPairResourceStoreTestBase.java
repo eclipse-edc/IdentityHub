@@ -15,9 +15,9 @@
 package org.eclipse.edc.identityhub.store.test;
 
 import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.store.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.store.model.KeyPairState;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;

@@ -12,10 +12,9 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.store.model;
+package org.eclipse.edc.identityhub.spi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
@@ -31,7 +30,7 @@ public class KeyPairResource extends ParticipantResource {
     private long timestamp;
     private String keyId;
     private String groupName;
-    private boolean isDefaultPair;
+    private boolean defaultPair;
     private long useDuration;
     private long rotationDuration;
     private String serializedPublicKey;
@@ -56,7 +55,7 @@ public class KeyPairResource extends ParticipantResource {
      * Whether this KeyPair is the default for a {@link ParticipantContext}.
      */
     public boolean isDefaultPair() {
-        return isDefaultPair;
+        return defaultPair;
     }
 
     /**
@@ -111,12 +110,12 @@ public class KeyPairResource extends ParticipantResource {
     public void rotate(long duration) {
         state = KeyPairState.ROTATED.code();
         rotationDuration = duration;
-        isDefaultPair = false;
+        defaultPair = false;
     }
 
     public void revoke() {
         state = KeyPairState.REVOKED.code();
-        isDefaultPair = false;
+        defaultPair = false;
     }
 
     public static final class Builder extends ParticipantResource.Builder<KeyPairResource, KeyPairResource.Builder> {
@@ -151,7 +150,7 @@ public class KeyPairResource extends ParticipantResource {
         }
 
         public Builder isDefaultPair(boolean isDefaultPair) {
-            entity.isDefaultPair = isDefaultPair;
+            entity.defaultPair = isDefaultPair;
             return this;
         }
 

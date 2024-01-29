@@ -15,12 +15,13 @@
 package org.eclipse.edc.identityhub.spi.resolution;
 
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponseMessage;
 
 import java.util.List;
 
 /**
- * Resolves a list of {@link VerifiableCredentialContainer} objects based on an incoming {@link PresentationQuery} and a list of scope strings.
+ * Resolves a list of {@link VerifiableCredentialContainer} objects based on an incoming {@link PresentationResponseMessage} and a list of scope strings.
  */
 public interface CredentialQueryResolver {
 
@@ -32,5 +33,5 @@ public interface CredentialQueryResolver {
      * @param query        The representation of the query to be executed.
      * @param issuerScopes The list of issuer scopes to be considered during the query processing.
      */
-    QueryResult query(PresentationQuery query, List<String> issuerScopes);
+    QueryResult query(PresentationQueryMessage query, List<String> issuerScopes);
 }

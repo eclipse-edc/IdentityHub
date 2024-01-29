@@ -22,8 +22,8 @@ import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identitytrust.model.credentialservice.InputDescriptorMapping;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponse;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponseMessage;
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationSubmission;
 import org.eclipse.edc.identitytrust.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.junit.annotations.ApiTest;
@@ -51,7 +51,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.identityhub.spi.resolution.QueryResult.success;
-import static org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery.PRESENTATION_QUERY_TYPE_PROPERTY;
+import static org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY;
 import static org.eclipse.edc.validator.spi.ValidationResult.failure;
 import static org.eclipse.edc.validator.spi.ValidationResult.success;
 import static org.eclipse.edc.validator.spi.Violation.violation;
@@ -84,7 +84,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Test
     void query_validationError_shouldReturn400() {
-        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_TYPE_PROPERTY), any())).thenReturn(failure(violation("foo", "bar")));
+        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(failure(violation("foo", "bar")));
 
         assertThatThrownBy(() -> controller().queryPresentation(createObjectBuilder().build(), generateJwt()))
                 .isInstanceOf(ValidationFailureException.class)
@@ -93,8 +93,8 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Test
     void query_transformationError_shouldReturn400() {
-        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_TYPE_PROPERTY), any())).thenReturn(success());
-        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.failure("cannot transform"));
+        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
+        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.failure("cannot transform"));
 
         assertThatThrownBy(() -> controller().queryPresentation(createObjectBuilder().build(), generateJwt()))
                 .isInstanceOf(InvalidRequestException.class)
@@ -104,10 +104,10 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Test
     void query_withPresentationDefinition_shouldReturn501() {
-        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_TYPE_PROPERTY), any())).thenReturn(success());
+        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder()
                 .presentationDefinition(PresentationDefinition.Builder.newInstance().id(UUID.randomUUID().toString()).build());
-        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.success(presentationQueryBuilder.build()));
+        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder.build()));
 
         var response = controller().queryPresentation(createObjectBuilder().build(), generateJwt());
         assertThat(response.getStatus()).isEqualTo(503);
@@ -121,9 +121,9 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Test
     void query_tokenVerificationFails_shouldReturn401() {
-        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_TYPE_PROPERTY), any())).thenReturn(success());
+        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
-        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.success(presentationQueryBuilder));
+        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.failure("test-failure"));
 
         assertThatThrownBy(() -> controller().queryPresentation(createObjectBuilder().build(), generateJwt()))
@@ -134,9 +134,9 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Test
     void query_queryResolutionFails_shouldReturn403() {
-        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_TYPE_PROPERTY), any())).thenReturn(success());
+        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
-        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.success(presentationQueryBuilder));
+        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(QueryResult.unauthorized("test-failure"));
 
@@ -148,9 +148,9 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Test
     void query_presentationGenerationFails_shouldReturn500() {
-        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_TYPE_PROPERTY), any())).thenReturn(success());
+        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
-        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.success(presentationQueryBuilder));
+        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
@@ -163,13 +163,15 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Test
     void query_success() {
-        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_TYPE_PROPERTY), any())).thenReturn(success());
+        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
-        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQuery.class))).thenReturn(Result.success(presentationQueryBuilder));
+        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
-        var pres = new PresentationResponse(new Object[] {generateJwt()}, new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("id", "ldp_vp", "$.verifiableCredentials[0]"))));
+        var pres = PresentationResponseMessage.Builder.newinstance().presentation(List.of(generateJwt()))
+                .presentationSubmission(new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("id", "ldp_vp", "$.verifiableCredentials[0]"))))
+                .build();
         when(generator.createPresentation(anyList(), any(), any())).thenReturn(Result.success(pres));
 
         var response = controller().queryPresentation(createObjectBuilder().build(), generateJwt());
@@ -195,8 +197,8 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         return jwt.serialize();
     }
 
-    private PresentationQuery.Builder createPresentationQueryBuilder() {
-        return PresentationQuery.Builder.newinstance()
+    private PresentationQueryMessage.Builder createPresentationQueryBuilder() {
+        return PresentationQueryMessage.Builder.newinstance()
                 .scopes(List.of("test-scope1", "test-scope2"));
     }
 }

@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.store.sql.keypair;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.store.model.KeyPairResource;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;

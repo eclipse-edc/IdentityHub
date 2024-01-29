@@ -35,4 +35,13 @@ public class AuthorizationResultHandler {
             return ServiceResultHandler.exceptionMapper(clazz, id).apply(failure);
         };
     }
+
+    public static Function<ServiceFailure, EdcException> exceptionMapper(@NotNull Class<?> clazz) {
+        return failure -> {
+            if (failure.getReason() == ServiceFailure.Reason.UNAUTHORIZED) {
+                return new NotAuthorizedException(failure.getFailureDetail());
+            }
+            return ServiceResultHandler.exceptionMapper(clazz).apply(failure);
+        };
+    }
 }

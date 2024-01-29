@@ -21,6 +21,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
+import org.eclipse.edc.spi.system.ServiceExtensionContext;
 
 import static org.eclipse.edc.identityhub.keypairs.KeyPairServiceExtension.NAME;
 
@@ -34,7 +35,7 @@ public class KeyPairServiceExtension implements ServiceExtension {
     private KeyPairResourceStore keyPairResourceStore;
 
     @Provider
-    public KeyPairService createParticipantService() {
-        return new KeyPairServiceImpl(keyPairResourceStore, vault);
+    public KeyPairService createParticipantService(ServiceExtensionContext context) {
+        return new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor());
     }
 }
