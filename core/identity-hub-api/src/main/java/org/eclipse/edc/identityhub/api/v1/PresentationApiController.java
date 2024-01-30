@@ -92,6 +92,7 @@ public class PresentationApiController implements PresentationApi {
         // package the credentials in a VP and sign
         var audience = getAudience(token);
         var presentationResponse = verifiablePresentationService.createPresentation(credentials.toList(), presentationQuery.getPresentationDefinition(), audience)
+                .compose(presentation -> transformerRegistry.transform(presentation, JsonObject.class))
                 .orElseThrow(failure -> new EdcException("Error creating VerifiablePresentation: %s".formatted(failure.getFailureDetail())));
         return Response.ok()
                 .entity(presentationResponse)

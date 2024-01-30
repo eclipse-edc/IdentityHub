@@ -16,12 +16,11 @@ package org.eclipse.edc.identityhub.spi.resolution;
 
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponseMessage;
 
 import java.util.List;
 
 /**
- * Resolves a list of {@link VerifiableCredentialContainer} objects based on an incoming {@link PresentationResponseMessage} and a list of scope strings.
+ * Resolves a list of {@link VerifiableCredentialContainer} objects based on an incoming {@link PresentationQueryMessage} and a list of scope strings.
  */
 public interface CredentialQueryResolver {
 

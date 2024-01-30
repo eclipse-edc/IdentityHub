@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import com.nimbusds.jose.jwk.ECKey;
+import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
@@ -35,6 +36,7 @@ import java.util.stream.Stream;
 
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.generateSiToken;
 import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.spi.result.Result.failure;
@@ -100,7 +102,7 @@ public class ResolutionApiComponentTest {
                     "https://identity.foundation/presentation-exchange/submission/v1",
                     "https://w3id.org/tractusx-trust/v0.8"
                   ],
-                  "@type": "Query"
+                  "@type": "PresentationQueryMessage"
                 }
                 """;
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
@@ -196,7 +198,7 @@ public class ResolutionApiComponentTest {
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
         when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(success(createPresentationResponse()));
 
-        var resp = IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
+        var response = IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
@@ -204,7 +206,9 @@ public class ResolutionApiComponentTest {
                 .then()
                 .statusCode(200)
                 .log().ifValidationFails()
-                .extract().body().as(PresentationResponseMessage.class);
+                .extract().body().as(JsonObject.class);
+
+        assertThat(response).containsKeys("presentation", "@context");
 
     }
 
