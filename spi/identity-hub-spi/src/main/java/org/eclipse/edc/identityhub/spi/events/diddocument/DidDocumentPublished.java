@@ -17,6 +17,9 @@ package org.eclipse.edc.identityhub.spi.events.diddocument;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
+/**
+ * Event that signals that a DID document was published.
+ */
 public class DidDocumentPublished extends DidDocumentEvent {
     @Override
     public String name() {

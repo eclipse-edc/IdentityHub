@@ -34,7 +34,7 @@ public interface ParticipantContextListener {
     default void created(ParticipantContext newContext, ParticipantManifest manifest) {
 
     }
-
+    
     default void updated(ParticipantContext updatedContext) {
 
     }

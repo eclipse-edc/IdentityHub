@@ -17,6 +17,9 @@ package org.eclipse.edc.identityhub.spi.events.keypair;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
+/**
+ * Event that signals that a KeyPair was rotated.
+ */
 public class KeyPairRotated extends KeyPairEvent {
     @Override
     public String name() {

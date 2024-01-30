@@ -30,17 +30,18 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     private final Map<Class<?>, Function<String, ParticipantResource>> authorizationCheckFunctions = new HashMap<>();
 
     @Override
-    public ServiceResult<Void> isAuthorized(Principal user, String resourceId, Class<?> resourceClass) {
+    public ServiceResult<Void> isAuthorized(Principal principal, String resourceId, Class<?> resourceClass) {
+
         var function = authorizationCheckFunctions.get(resourceClass);
         if (function == null) {
-            return ServiceResult.unauthorized("User access for '%s' to resource ID '%s' of type '%s' cannot be verified".formatted(user.getName(), resourceClass, resourceClass));
+            return ServiceResult.unauthorized("User access for '%s' to resource ID '%s' of type '%s' cannot be verified".formatted(principal.getName(), resourceClass, resourceClass));
         }
 
         var isAuthorized = ofNullable(function.apply(resourceId))
-                .map(pr -> Objects.equals(pr.getParticipantId(), user.getName()))
+                .map(pr -> Objects.equals(pr.getParticipantId(), principal.getName()))
                 .orElse(false);
 
-        return isAuthorized ? ServiceResult.success() : ServiceResult.unauthorized("User '%s' is not authorized to access resource of type %s with ID '%s'.".formatted(user.getName(), resourceClass, resourceId));
+        return isAuthorized ? ServiceResult.success() : ServiceResult.unauthorized("User '%s' is not authorized to access resource of type %s with ID '%s'.".formatted(principal.getName(), resourceClass, resourceId));
 
     }
 

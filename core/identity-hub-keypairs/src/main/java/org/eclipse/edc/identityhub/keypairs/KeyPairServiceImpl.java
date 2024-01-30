@@ -191,41 +191,4 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
         }
         return Result.success(publicKeySerialized);
     }
-
-    //    private ServiceResult<JWK> createOrUpdateKey(KeyDescriptor key) {
-    //        // do we need to generate the key?
-    //        var keyGeneratorParams = key.getKeyGeneratorParams();
-    //        JWK publicKeyJwk;
-    //        if (keyGeneratorParams != null) {
-    //            var kp = KeyPairGenerator.generateKeyPair(keyGeneratorParams);
-    //            if (kp.failed()) {
-    //                return badRequest("Could not generate KeyPair from generator params: %s".formatted(kp.getFailureDetail()));
-    //            }
-    //            var alias = key.getPrivateKeyAlias();
-    //            var storeResult = vault.storeSecret(alias, CryptoConverter.createJwk(kp.getContent()).toJSONString());
-    //            if (storeResult.failed()) {
-    //                return badRequest(storeResult.getFailureDetail());
-    //            }
-    //            publicKeyJwk = CryptoConverter.createJwk(kp.getContent()).toPublicJWK();
-    //        } else if (key.getPublicKeyJwk() != null) {
-    //            publicKeyJwk = CryptoConverter.create(key.getPublicKeyJwk());
-    //        } else if (key.getPublicKeyPem() != null) {
-    //            var pubKey = keyParserRegistry.parse(key.getPublicKeyPem());
-    //            if (pubKey.failed()) {
-    //                return badRequest("Cannot parse public key from PEM: %s".formatted(pubKey.getFailureDetail()));
-    //            }
-    //            publicKeyJwk = CryptoConverter.createJwk(new KeyPair((PublicKey) pubKey.getContent(), null));
-    //        } else {
-    //            return badRequest("No public key information found in KeyDescriptor.");
-    //        }
-    //        // insert the "kid" parameter
-    //        var json = publicKeyJwk.toJSONObject();
-    //        json.put(JWKParameterNames.KEY_ID, key.getKeyId());
-    //        try {
-    //            publicKeyJwk = JWK.parse(json);
-    //            return success(publicKeyJwk);
-    //        } catch (ParseException e) {
-    //            return badRequest("Could not create JWK: %s".formatted(e.getMessage()));
-    //        }
-    //    }
 }

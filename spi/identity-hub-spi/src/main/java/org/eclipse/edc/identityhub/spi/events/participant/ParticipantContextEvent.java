@@ -18,6 +18,9 @@ import org.eclipse.edc.spi.event.Event;
 
 import java.util.Objects;
 
+/**
+ * Base class for all events related to state changes and actions of {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext}s
+ */
 public abstract class ParticipantContextEvent extends Event {
     protected String participantId;
 

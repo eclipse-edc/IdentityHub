@@ -18,14 +18,23 @@ import org.eclipse.edc.spi.event.Event;
 
 import java.util.Objects;
 
+/**
+ * Base class for all events that relate to state changes or actions regarding KeyPairs
+ */
 public abstract class KeyPairEvent extends Event {
     protected String participantId;
     protected String keyPairResourceId;
 
+    /**
+     * The ID of the {@link org.eclipse.edc.identityhub.spi.model.KeyPairResource}
+     */
     public String getKeyPairResourceId() {
         return keyPairResourceId;
     }
 
+    /**
+     * The ID of the {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext} that owns the KeyPair resource.
+     */
     public String getParticipantId() {
         return participantId;
     }
