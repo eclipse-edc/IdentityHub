@@ -15,14 +15,14 @@
 package org.eclipse.edc.identityhub.spi.events.participant;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ParticipantContextDeletedTest {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final TypeManager manager = new TypeManager();
 
     @Test
     void verify_serDes() throws JsonProcessingException {
@@ -30,10 +30,10 @@ class ParticipantContextDeletedTest {
                 .participantId("test-participantId")
                 .build();
 
-        var json = mapper.writeValueAsString(evt);
+        var json = manager.writeValueAsString(evt);
 
         assertThat(json).isNotNull();
 
-        assertThat(mapper.readValue(json, ParticipantContextDeleted.class)).usingRecursiveComparison().isEqualTo(evt);
+        assertThat(manager.readValue(json, ParticipantContextDeleted.class)).usingRecursiveComparison().isEqualTo(evt);
     }
 }

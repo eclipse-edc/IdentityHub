@@ -15,19 +15,21 @@
 package org.eclipse.edc.identityhub.spi.events.diddocument;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 /**
  * Event that signals that a DID document was un-published.
  */
+@JsonDeserialize(builder = DidDocumentUnpublished.Builder.class)
 public class DidDocumentUnpublished extends DidDocumentEvent {
     @Override
     public String name() {
-        return null;
+        return "diddocument.unpublished";
     }
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder extends DidDocumentEvent.Builder<DidDocumentUnpublished, DidDocumentUnpublished.Builder> {
+    public static class Builder extends DidDocumentEvent.Builder<DidDocumentUnpublished, Builder> {
 
         private Builder() {
             super(new DidDocumentUnpublished());

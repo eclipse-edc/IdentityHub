@@ -15,19 +15,21 @@
 package org.eclipse.edc.identityhub.spi.events.diddocument;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 /**
  * Event that signals that a DID document was published.
  */
+@JsonDeserialize(builder = DidDocumentPublished.Builder.class)
 public class DidDocumentPublished extends DidDocumentEvent {
     @Override
     public String name() {
-        return null;
+        return "diddocument.published";
     }
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder extends DidDocumentEvent.Builder<DidDocumentPublished, DidDocumentPublished.Builder> {
+    public static class Builder extends DidDocumentEvent.Builder<DidDocumentPublished, Builder> {
 
         private Builder() {
             super(new DidDocumentPublished());

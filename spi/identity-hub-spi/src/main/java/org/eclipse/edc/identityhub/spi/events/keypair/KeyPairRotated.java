@@ -15,11 +15,13 @@
 package org.eclipse.edc.identityhub.spi.events.keypair;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 /**
  * Event that signals that a KeyPair was rotated.
  */
+@JsonDeserialize(builder = KeyPairRotated.Builder.class)
 public class KeyPairRotated extends KeyPairEvent {
     @Override
     public String name() {
@@ -27,7 +29,7 @@ public class KeyPairRotated extends KeyPairEvent {
     }
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder extends KeyPairEvent.Builder<KeyPairRotated, KeyPairRotated.Builder> {
+    public static class Builder extends KeyPairEvent.Builder<KeyPairRotated, Builder> {
 
         private Builder() {
             super(new KeyPairRotated());

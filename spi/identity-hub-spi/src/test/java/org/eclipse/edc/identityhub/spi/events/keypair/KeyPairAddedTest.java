@@ -15,14 +15,14 @@
 package org.eclipse.edc.identityhub.spi.events.keypair;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class KeyPairAddedTest {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final TypeManager typeManager = new TypeManager();
 
     @Test
     void verify_serDes() throws JsonProcessingException {
@@ -30,9 +30,9 @@ class KeyPairAddedTest {
                 .participantId("participant-id")
                 .build();
 
-        var json = mapper.writeValueAsString(evt);
+        var json = typeManager.writeValueAsString(evt);
         assertThat(json).isNotNull();
 
-        assertThat(mapper.readValue(json, KeyPairAdded.class)).usingRecursiveComparison().isEqualTo(evt);
+        assertThat(typeManager.readValue(json, KeyPairAdded.class)).usingRecursiveComparison().isEqualTo(evt);
     }
 }

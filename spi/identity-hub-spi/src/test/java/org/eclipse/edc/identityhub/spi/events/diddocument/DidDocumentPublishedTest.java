@@ -12,27 +12,29 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.events.keypair;
+package org.eclipse.edc.identityhub.spi.events.diddocument;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class KeyPairRevokedTest {
 
-    private final TypeManager typeManager = new TypeManager();
+class DidDocumentPublishedTest {
+
+    private final TypeManager manager = new TypeManager();
 
     @Test
-    void verify_serDes() throws JsonProcessingException {
-        var evt = KeyPairRevoked.Builder.newInstance().keyPairResourceId("resource-id")
-                .participantId("participant-id")
+    void verify_serDes() {
+
+        var event = DidDocumentPublished.Builder.newInstance()
+                .did("did:web:test")
+                .participantId("test-id")
                 .build();
 
-        var json = typeManager.writeValueAsString(evt);
+        var json = manager.writeValueAsString(event);
         assertThat(json).isNotNull();
 
-        assertThat(typeManager.readValue(json, KeyPairRevoked.class)).usingRecursiveComparison().isEqualTo(evt);
+        assertThat(manager.readValue(json, DidDocumentPublished.class)).usingRecursiveComparison().isEqualTo(event);
     }
 }

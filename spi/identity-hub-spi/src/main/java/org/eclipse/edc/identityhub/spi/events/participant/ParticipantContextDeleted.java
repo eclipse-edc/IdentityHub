@@ -15,11 +15,13 @@
 package org.eclipse.edc.identityhub.spi.events.participant;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 /**
  * Event that signals that a {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext} was deleted
  */
+@JsonDeserialize(builder = ParticipantContextDeleted.Builder.class)
 public class ParticipantContextDeleted extends ParticipantContextEvent {
     @Override
     public String name() {

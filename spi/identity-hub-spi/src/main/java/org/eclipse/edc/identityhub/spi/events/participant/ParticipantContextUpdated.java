@@ -15,12 +15,14 @@
 package org.eclipse.edc.identityhub.spi.events.participant;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 
 /**
  * Event that signals that a {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext} was updated
  */
+@JsonDeserialize(builder = ParticipantContextUpdated.Builder.class)
 public class ParticipantContextUpdated extends ParticipantContextEvent {
 
     private ParticipantContextState newState;

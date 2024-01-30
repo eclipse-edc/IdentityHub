@@ -15,11 +15,13 @@
 package org.eclipse.edc.identityhub.spi.events.keypair;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 /**
  * Event that signals that a key pair was added for a particular participant
  */
+@JsonDeserialize(builder = KeyPairAdded.Builder.class)
 public class KeyPairAdded extends KeyPairEvent {
     @Override
     public String name() {
@@ -27,7 +29,7 @@ public class KeyPairAdded extends KeyPairEvent {
     }
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder extends KeyPairEvent.Builder<KeyPairAdded, KeyPairAdded.Builder> {
+    public static class Builder extends KeyPairEvent.Builder<KeyPairAdded, Builder> {
 
         private Builder() {
             super(new KeyPairAdded());
