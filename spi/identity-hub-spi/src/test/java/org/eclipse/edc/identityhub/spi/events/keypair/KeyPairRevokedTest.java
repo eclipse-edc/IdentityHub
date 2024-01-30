@@ -26,7 +26,7 @@ class KeyPairRevokedTest {
 
     @Test
     void verify_serDes() throws JsonProcessingException {
-        var evt = KeyPairRevoked.Builder.newInstance().keyPairResourceId("resource-id")
+        var evt = KeyPairRevoked.Builder.newInstance().keyId("resource-id")
                 .participantId("participant-id")
                 .build();
 

@@ -38,7 +38,8 @@ public class KeyPairEventListenerImpl implements KeyPairEventListener {
     public void added(KeyPairResource keyPair) {
         var event = KeyPairAdded.Builder.newInstance()
                 .participantId(keyPair.getParticipantId())
-                .keyPairResourceId(keyPair.getId())
+                .keyId(keyPair.getId())
+                .publicKey(keyPair.getSerializedPublicKey())
                 .build();
         publish(event);
     }
@@ -47,7 +48,7 @@ public class KeyPairEventListenerImpl implements KeyPairEventListener {
     public void revoked(KeyPairResource keyPair) {
         var event = KeyPairRevoked.Builder.newInstance()
                 .participantId(keyPair.getParticipantId())
-                .keyPairResourceId(keyPair.getId())
+                .keyId(keyPair.getId())
                 .build();
         publish(event);
     }
@@ -56,7 +57,7 @@ public class KeyPairEventListenerImpl implements KeyPairEventListener {
     public void rotated(KeyPairResource keyPair) {
         var event = KeyPairRotated.Builder.newInstance()
                 .participantId(keyPair.getParticipantId())
-                .keyPairResourceId(keyPair.getId())
+                .keyId(keyPair.getId())
                 .build();
         publish(event);
     }

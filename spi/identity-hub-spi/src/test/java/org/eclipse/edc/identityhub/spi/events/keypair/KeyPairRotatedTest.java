@@ -26,7 +26,7 @@ class KeyPairRotatedTest {
 
     @Test
     void verify_serDes() throws JsonProcessingException {
-        var evt = KeyPairRotated.Builder.newInstance().keyPairResourceId("resource-id")
+        var evt = KeyPairRotated.Builder.newInstance().keyId("resource-id")
                 .participantId("participant-id")
                 .build();
 

@@ -161,7 +161,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .body(notNullValue());
         verify(subscriber).on(argThat(env -> {
             var evt = (KeyPairAdded) env.getPayload();
-            return evt.getParticipantId().equals(user1) && evt.getKeyPairResourceId().equals(keyDesc.getKeyId());
+            return evt.getParticipantId().equals(user1) && evt.getKeyId().equals(keyDesc.getKeyId());
         }));
     }
 
@@ -191,7 +191,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
         verify(subscriber, never()).on(argThat(env -> {
             if (env.getPayload() instanceof KeyPairAdded evt) {
-                return evt.getKeyPairResourceId().equals(keyDesc.getKeyId());
+                return evt.getKeyId().equals(keyDesc.getKeyId());
             }
             return false;
         }));
@@ -230,7 +230,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         // verify that the correct "added" event fired
         verify(subscriber).on(argThat(env -> {
             if (env.getPayload() instanceof KeyPairAdded evt) {
-                return evt.getKeyPairResourceId().equals(keyDesc.getKeyId());
+                return evt.getKeyId().equals(keyDesc.getKeyId());
             }
             return false;
         }));
@@ -264,7 +264,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         // make sure that the event to add the _new_ keypair was never fired
         verify(subscriber, never()).on(argThat(env -> {
             if (env.getPayload() instanceof KeyPairRotated evt) {
-                return evt.getParticipantId().equals(user1) && evt.getKeyPairResourceId().equals(keyDesc.getKeyId());
+                return evt.getParticipantId().equals(user1) && evt.getKeyId().equals(keyDesc.getKeyId());
             }
             return false;
         }));
@@ -286,6 +286,9 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .log().ifValidationFails()
                 .statusCode(204)
                 .body(notNullValue());
+
+        assertThat(getDidForParticipant(user1)).hasSize(1)
+                .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyId)));
     }
 
     @Test

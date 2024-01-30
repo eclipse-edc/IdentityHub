@@ -101,7 +101,8 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
 
         assertThat(getKeyPairsForParticipant(manifest)).hasSize(1);
-        assertThat(getDidForParticipant(manifest.getParticipantId())).hasSize(1);
+        assertThat(getDidForParticipant(manifest.getParticipantId())).hasSize(1)
+                .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
     }
 
 

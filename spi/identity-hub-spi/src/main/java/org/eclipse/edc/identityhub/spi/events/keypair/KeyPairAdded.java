@@ -23,9 +23,15 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
  */
 @JsonDeserialize(builder = KeyPairAdded.Builder.class)
 public class KeyPairAdded extends KeyPairEvent {
+    private String publicKeySerialized;
+
     @Override
     public String name() {
         return "keypair.added";
+    }
+
+    public String getPublicKeySerialized() {
+        return publicKeySerialized;
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -37,6 +43,11 @@ public class KeyPairAdded extends KeyPairEvent {
 
         @Override
         public KeyPairAdded.Builder self() {
+            return this;
+        }
+
+        public Builder publicKey(String publicKey) {
+            event.publicKeySerialized = publicKey;
             return this;
         }
 
