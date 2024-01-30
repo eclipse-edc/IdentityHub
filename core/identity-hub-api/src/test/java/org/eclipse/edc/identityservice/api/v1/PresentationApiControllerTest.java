@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityservice.api.v1;
 
 import com.nimbusds.jwt.JWTClaimsSet;
+import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
@@ -172,12 +173,15 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         var pres = PresentationResponseMessage.Builder.newinstance().presentation(List.of(generateJwt()))
                 .presentationSubmission(new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("id", "ldp_vp", "$.verifiableCredentials[0]"))))
                 .build();
+
+        var jsonResponse = Json.createObjectBuilder().build();
+        when(typeTransformerRegistry.transform(eq(pres), eq(JsonObject.class))).thenReturn(Result.success(jsonResponse));
         when(generator.createPresentation(anyList(), any(), any())).thenReturn(Result.success(pres));
 
         var response = controller().queryPresentation(createObjectBuilder().build(), generateJwt());
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getEntity()).isEqualTo(pres);
+        assertThat(response.getEntity()).isEqualTo(jsonResponse);
 
     }
 

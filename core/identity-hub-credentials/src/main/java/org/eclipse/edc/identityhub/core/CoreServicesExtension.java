@@ -28,10 +28,12 @@ import org.eclipse.edc.identityhub.token.verification.AccessTokenVerifierImpl;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.jsonld.spi.JsonLd;
+import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.security.signature.jws2020.JwsSignature2020Suite;
 import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.PrivateKeyResolver;
 import org.eclipse.edc.spi.security.Vault;
@@ -74,7 +76,7 @@ public class CoreServicesExtension implements ServiceExtension {
     @Setting(value = "Public key in PEM format")
     public static final String PUBLIC_KEY_PEM = "edc.ih.iam.publickey.pem";
     public static final String PRESENTATION_EXCHANGE_V_1_JSON = "presentation-exchange.v1.json";
-    public static final String PRESENTATION_QUERY_V_08_JSON = "presentation-query.v08.json";
+    public static final String PRESENTATION_QUERY_V_08_JSON = "iatp.v08.json";
     public static final String PRESENTATION_SUBMISSION_V1_JSON = "presentation-submission.v1.json";
     public static final String DID_JSON = "did.json";
     public static final String JWS_2020_JSON = "jws2020.json";
@@ -107,6 +109,9 @@ public class CoreServicesExtension implements ServiceExtension {
     @Inject
     private KeyParserRegistry keyParserRegistry;
 
+    @Inject
+    private SignatureSuiteRegistry suiteRegistry;
+
     @Override
     public String name() {
         return NAME;
@@ -116,6 +121,8 @@ public class CoreServicesExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         // Setup API
         cacheContextDocuments(getClass().getClassLoader());
+        suiteRegistry.register(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, new JwsSignature2020Suite(JacksonJsonLd.createObjectMapper()));
+
     }
 
     @Provider
