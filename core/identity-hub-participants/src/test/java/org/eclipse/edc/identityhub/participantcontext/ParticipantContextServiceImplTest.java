@@ -20,7 +20,7 @@ import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.connector.core.security.KeyParserRegistryImpl;
 import org.eclipse.edc.connector.core.security.keyparsers.PemParser;
-import org.eclipse.edc.identithub.did.spi.DidDocumentService;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
@@ -41,14 +41,11 @@ import java.util.List;
 import java.util.Map;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
-import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
-import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -57,17 +54,14 @@ class ParticipantContextServiceImplTest {
 
     private final Vault vault = mock();
     private final ParticipantContextStore participantContextStore = mock();
+    private final ParticipantContextObservable observableMock = mock();
     private ParticipantContextServiceImpl participantContextService;
-    private DidDocumentService didDocumentService;
 
     @BeforeEach
     void setUp() {
-        didDocumentService = mock();
-        when(didDocumentService.store(any(), anyString())).thenReturn(success());
-        when(didDocumentService.publish(anyString())).thenReturn(success());
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), keyParserRegistry, didDocumentService);
+        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), keyParserRegistry, observableMock);
     }
 
     @ParameterizedTest(name = "isActive: {0}")
@@ -93,11 +87,11 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
-        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())), anyString());
-        verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
+        verify(observableMock).invokeForEach(any());
     }
+
 
     @ParameterizedTest(name = "isActive: {0}")
     @ValueSource(booleans = {true, false})
@@ -111,10 +105,9 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
-        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())), anyString());
-        verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
         verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
+        verify(observableMock).invokeForEach(any());
     }
 
     @ParameterizedTest(name = "isActive: {0}")
@@ -132,26 +125,23 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
-        verify(vault).storeSecret(eq(ctx.getKey().getPrivateKeyAlias()), anyString());
         verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
 
-        verify(didDocumentService).store(argThat(dd -> dd.getId().equals(ctx.getDid())), anyString());
-        verify(didDocumentService, times(isActive ? 1 : 0)).publish(anyString());
+        verify(observableMock).invokeForEach(any());
         verifyNoMoreInteractions(vault, participantContextStore);
     }
 
     @Test
     void createParticipantContext_storageFails() {
-        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(participantContextStore.create(any())).thenReturn(StoreResult.duplicateKeys("foobar"));
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
 
         var ctx = createManifest().build();
         assertThat(participantContextService.createParticipantContext(ctx))
-                .isSucceeded();
+                .isFailed();
 
         verify(participantContextStore).create(any());
-        verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
-        verifyNoMoreInteractions(vault, participantContextStore);
+        verifyNoMoreInteractions(vault, participantContextStore, observableMock);
     }
 
     @Test
@@ -163,7 +153,7 @@ class ParticipantContextServiceImplTest {
                 .isFailed()
                 .satisfies(f -> Assertions.assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT));
         verify(participantContextStore).create(any());
-        verifyNoMoreInteractions(vault, participantContextStore);
+        verifyNoMoreInteractions(vault, participantContextStore, observableMock);
 
     }
 
@@ -188,7 +178,7 @@ class ParticipantContextServiceImplTest {
                 .isFailed()
                 .satisfies(f -> {
                     Assertions.assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
-                    Assertions.assertThat(f.getFailureDetail()).isEqualTo("No ParticipantContext with ID 'test-id' was found.");
+                    Assertions.assertThat(f.getFailureDetail()).isEqualTo("ParticipantContext with ID 'test-id' does not exist.");
                 });
 
         verify(participantContextStore).query(any());
@@ -213,52 +203,18 @@ class ParticipantContextServiceImplTest {
     void deleteParticipantContext() {
         when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
         when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
-        when(didDocumentService.unpublish(any())).thenReturn(success());
-        when(didDocumentService.deleteById(any())).thenReturn(success());
         assertThat(participantContextService.deleteParticipantContext("test-id")).isSucceeded();
 
         verify(participantContextStore).deleteById(anyString());
-        verify(didDocumentService).unpublish(any());
-        verify(didDocumentService).deleteById(any());
-        verifyNoMoreInteractions(vault);
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(vault, observableMock);
     }
 
-    @Test
-    void deleteParticipantContext_deleteDidFails() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
-        when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
-        when(didDocumentService.unpublish(any())).thenReturn(success());
-        when(didDocumentService.deleteById(any())).thenReturn(badRequest("test-message"));
-        assertThat(participantContextService.deleteParticipantContext("test-id")).isFailed()
-                .detail().isEqualTo("test-message");
-
-        verify(participantContextStore).deleteById(anyString());
-        verify(participantContextStore).query(any());
-        verify(didDocumentService).unpublish(any());
-        verify(didDocumentService).deleteById(any());
-        verifyNoMoreInteractions(vault, didDocumentService, participantContextStore);
-    }
-
-    @Test
-    void deleteParticipantContext_unpublishDidFails() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
-        when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
-        when(didDocumentService.unpublish(any())).thenReturn(badRequest("test-message"));
-        assertThat(participantContextService.deleteParticipantContext("test-id")).isFailed()
-                .detail().isEqualTo("test-message");
-
-        verify(participantContextStore).deleteById(anyString());
-        verify(participantContextStore).query(any());
-        verify(didDocumentService).unpublish(any());
-        verifyNoMoreInteractions(vault, didDocumentService, participantContextStore);
-    }
 
     @Test
     void deleteParticipantContext_whenNotExists() {
         when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
         when(participantContextStore.deleteById(any())).thenReturn(StoreResult.notFound("foo bar"));
-        when(didDocumentService.unpublish(any())).thenReturn(success());
-        when(didDocumentService.deleteById(any())).thenReturn(success());
         assertThat(participantContextService.deleteParticipantContext("test-id"))
                 .isFailed()
                 .satisfies(f -> {
@@ -267,7 +223,7 @@ class ParticipantContextServiceImplTest {
                 });
 
         verify(participantContextStore).deleteById(anyString());
-        verifyNoMoreInteractions(vault, didDocumentService);
+        verifyNoMoreInteractions(vault, observableMock);
     }
 
     @Test
@@ -296,7 +252,7 @@ class ParticipantContextServiceImplTest {
     void regenerateApiToken_whenNotFound() {
         when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of()));
 
-        assertThat(participantContextService.regenerateApiToken("test-id")).isFailed().detail().isEqualTo("No ParticipantContext with ID 'test-id' was found.");
+        assertThat(participantContextService.regenerateApiToken("test-id")).isFailed().detail().isEqualTo("ParticipantContext with ID 'test-id' does not exist.");
 
         verify(participantContextStore).query(any());
         verifyNoMoreInteractions(participantContextStore, vault);
@@ -311,7 +267,7 @@ class ParticipantContextServiceImplTest {
 
         verify(participantContextStore).query(any());
         verify(participantContextStore).update(any());
-
+        verify(observableMock).invokeForEach(any());
     }
 
     @Test
@@ -322,7 +278,7 @@ class ParticipantContextServiceImplTest {
                 .detail().isEqualTo("ParticipantContext with ID 'test-id' not found.");
 
         verify(participantContextStore).query(any());
-        verifyNoMoreInteractions(participantContextStore);
+        verifyNoMoreInteractions(participantContextStore, observableMock);
     }
 
     @Test
@@ -336,7 +292,7 @@ class ParticipantContextServiceImplTest {
 
         verify(participantContextStore).query(any());
         verify(participantContextStore).update(any());
-        verifyNoMoreInteractions(participantContextStore);
+        verifyNoMoreInteractions(participantContextStore, observableMock);
     }
 
     private ParticipantManifest.Builder createManifest() {

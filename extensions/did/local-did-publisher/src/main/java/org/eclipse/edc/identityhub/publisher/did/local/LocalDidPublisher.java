@@ -18,6 +18,7 @@ import org.eclipse.edc.identithub.did.spi.DidDocumentPublisher;
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.identithub.did.spi.model.DidState;
 import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentObservable;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 
@@ -32,10 +33,12 @@ import static org.eclipse.edc.spi.result.Result.success;
  */
 public class LocalDidPublisher implements DidDocumentPublisher {
 
+    private final DidDocumentObservable observable;
     private final DidResourceStore didResourceStore;
     private final Monitor monitor;
 
-    public LocalDidPublisher(DidResourceStore didResourceStore, Monitor monitor) {
+    public LocalDidPublisher(DidDocumentObservable observable, DidResourceStore didResourceStore, Monitor monitor) {
+        this.observable = observable;
         this.didResourceStore = didResourceStore;
         this.monitor = monitor;
     }
@@ -60,7 +63,8 @@ public class LocalDidPublisher implements DidDocumentPublisher {
 
         return didResourceStore.update(existingDocument)
                 .map(v -> success())
-                .orElse(f -> failure(f.getFailureDetail()));
+                .orElse(f -> failure(f.getFailureDetail()))
+                .onSuccess(v -> observable.invokeForEach(l -> l.published(existingDocument.getDocument(), existingDocument.getParticipantId())));
     }
 
     @Override
@@ -78,7 +82,8 @@ public class LocalDidPublisher implements DidDocumentPublisher {
         existingDocument.transitionState(DidState.UNPUBLISHED);
         return didResourceStore.update(existingDocument)
                 .map(v -> success())
-                .orElse(f -> failure(f.getFailureDetail()));
+                .orElse(f -> failure(f.getFailureDetail()))
+                .onSuccess(v -> observable.invokeForEach(l -> l.unpublished(existingDocument.getDocument(), existingDocument.getParticipantId())));
 
     }
 

@@ -15,13 +15,19 @@
 package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.identityhub.spi.KeyPairService;
+import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairObservable;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+
+import java.time.Clock;
 
 import static org.eclipse.edc.identityhub.keypairs.KeyPairServiceExtension.NAME;
 
@@ -33,9 +39,27 @@ public class KeyPairServiceExtension implements ServiceExtension {
     private Vault vault;
     @Inject
     private KeyPairResourceStore keyPairResourceStore;
+    @Inject
+    private EventRouter eventRouter;
+    @Inject
+    private Clock clock;
+
+    private KeyPairObservable observable;
 
     @Provider
     public KeyPairService createParticipantService(ServiceExtensionContext context) {
-        return new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor());
+        var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor(), keyPairObservable());
+        eventRouter.registerSync(ParticipantContextCreated.class, service);
+        eventRouter.registerSync(ParticipantContextDeleted.class, service);
+        return service;
+    }
+
+    @Provider
+    public KeyPairObservable keyPairObservable() {
+        if (observable == null) {
+            observable = new KeyPairObservableImpl();
+            observable.registerListener(new KeyPairEventListenerImpl(clock, eventRouter));
+        }
+        return observable;
     }
 }

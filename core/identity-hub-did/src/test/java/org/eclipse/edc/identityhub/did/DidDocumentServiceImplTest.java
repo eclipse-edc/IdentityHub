@@ -14,6 +14,10 @@
 
 package org.eclipse.edc.identityhub.did;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.edc.connector.core.security.KeyParserRegistryImpl;
+import org.eclipse.edc.connector.core.security.keyparsers.JwkParser;
+import org.eclipse.edc.connector.core.security.keyparsers.PemParser;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
@@ -53,7 +57,10 @@ class DidDocumentServiceImplTest {
         var trx = new NoopTransactionContext();
         when(publisherRegistry.getPublisher(startsWith("did:web:"))).thenReturn(publisherMock);
 
-        service = new DidDocumentServiceImpl(trx, storeMock, publisherRegistry);
+        var registry = new KeyParserRegistryImpl();
+        registry.register(new JwkParser(new ObjectMapper(), mock()));
+        registry.register(new PemParser(mock()));
+        service = new DidDocumentServiceImpl(trx, storeMock, publisherRegistry, mock(), registry);
     }
 
     @Test

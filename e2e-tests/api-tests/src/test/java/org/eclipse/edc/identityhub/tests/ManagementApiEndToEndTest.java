@@ -14,19 +14,26 @@
 
 package org.eclipse.edc.identityhub.tests;
 
+import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
+import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identityhub.participantcontext.ApiTokenGenerator;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
+import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguration;
 import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -74,6 +81,22 @@ public abstract class ManagementApiEndToEndTest {
 
     protected String createTokenFor(String userId) {
         return new ApiTokenGenerator().generate(userId);
+    }
+
+    protected <T> T getService(Class<T> type) {
+        return RUNTIME.getContext().getService(type);
+    }
+
+    protected Collection<KeyPairResource> getKeyPairsForParticipant(ParticipantManifest manifest) {
+        return getService(KeyPairResourceStore.class).query(QuerySpec.Builder.newInstance()
+                .filter(new Criterion("participantId", "=", manifest.getParticipantId()))
+                .build()).getContent();
+    }
+
+    protected Collection<DidDocument> getDidForParticipant(String participantId) {
+        return getService(DidDocumentService.class).queryDocuments(QuerySpec.Builder.newInstance()
+                .filter(new Criterion("participantId", "=", participantId))
+                .build()).getContent();
     }
 
     protected static ParticipantManifest createNewParticipant() {

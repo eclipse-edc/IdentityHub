@@ -17,11 +17,15 @@ package org.eclipse.edc.identityhub.tests;
 import com.nimbusds.jose.jwk.Curve;
 import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
+import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairAdded;
+import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.event.EventRouter;
+import org.eclipse.edc.spi.event.EventSubscriber;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -30,6 +34,10 @@ import java.util.UUID;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @EndToEndTest
 public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
@@ -133,6 +141,9 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
     @Test
     void addKeyPair() {
+        var subscriber = mock(EventSubscriber.class);
+        getService(EventRouter.class).registerSync(KeyPairAdded.class, subscriber);
+
         var user1 = "user1";
         var token = createParticipant(user1);
 
@@ -148,10 +159,17 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .log().ifValidationFails()
                 .statusCode(204)
                 .body(notNullValue());
+        verify(subscriber).on(argThat(env -> {
+            var evt = (KeyPairAdded) env.getPayload();
+            return evt.getParticipantId().equals(user1) && evt.getKeyId().equals(keyDesc.getKeyId());
+        }));
     }
 
     @Test
     void addKeyPair_notAuthorized() {
+        var subscriber = mock(EventSubscriber.class);
+        getService(EventRouter.class).registerSync(KeyPairAdded.class, subscriber);
+
         var user1 = "user1";
         var token = createParticipant(user1);
 
@@ -170,10 +188,21 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .log().ifValidationFails()
                 .statusCode(403)
                 .body(notNullValue());
+
+        verify(subscriber, never()).on(argThat(env -> {
+            if (env.getPayload() instanceof KeyPairAdded evt) {
+                return evt.getKeyId().equals(keyDesc.getKeyId());
+            }
+            return false;
+        }));
     }
 
     @Test
     void rotate() {
+        var subscriber = mock(EventSubscriber.class);
+        getService(EventRouter.class).registerSync(KeyPairRotated.class, subscriber);
+        getService(EventRouter.class).registerSync(KeyPairAdded.class, subscriber);
+
         var user1 = "user1";
         var token = createParticipant(user1);
 
@@ -190,10 +219,28 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .log().ifValidationFails()
                 .statusCode(204)
                 .body(notNullValue());
+
+        // verify that the "rotated" event fired once
+        verify(subscriber).on(argThat(env -> {
+            if (env.getPayload() instanceof KeyPairRotated evt) {
+                return evt.getParticipantId().equals(user1);
+            }
+            return false;
+        }));
+        // verify that the correct "added" event fired
+        verify(subscriber).on(argThat(env -> {
+            if (env.getPayload() instanceof KeyPairAdded evt) {
+                return evt.getKeyId().equals(keyDesc.getKeyId());
+            }
+            return false;
+        }));
     }
 
     @Test
     void rotate_notAuthorized() {
+        var subscriber = mock(EventSubscriber.class);
+        getService(EventRouter.class).registerSync(KeyPairRotated.class, subscriber);
+
         var user1 = "user1";
         var token = createParticipant(user1);
 
@@ -213,6 +260,14 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .log().ifValidationFails()
                 .statusCode(403)
                 .body(notNullValue());
+
+        // make sure that the event to add the _new_ keypair was never fired
+        verify(subscriber, never()).on(argThat(env -> {
+            if (env.getPayload() instanceof KeyPairRotated evt) {
+                return evt.getParticipantId().equals(user1) && evt.getKeyId().equals(keyDesc.getKeyId());
+            }
+            return false;
+        }));
     }
 
     @Test
@@ -231,6 +286,9 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .log().ifValidationFails()
                 .statusCode(204)
                 .body(notNullValue());
+
+        assertThat(getDidForParticipant(user1)).hasSize(1)
+                .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyId)));
     }
 
     @Test

@@ -14,19 +14,12 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.JWKParameterNames;
-import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
-import org.eclipse.edc.identithub.did.spi.DidDocumentService;
-import org.eclipse.edc.identityhub.security.KeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
-import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -34,15 +27,9 @@ import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import java.security.KeyPair;
-import java.security.PublicKey;
-import java.text.ParseException;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static java.util.Optional.ofNullable;
-import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
 import static org.eclipse.edc.spi.result.ServiceResult.conflict;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
 import static org.eclipse.edc.spi.result.ServiceResult.notFound;
@@ -62,16 +49,16 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private final TransactionContext transactionContext;
     private final ApiTokenGenerator tokenGenerator;
     private final KeyParserRegistry keyParserRegistry;
-    private final DidDocumentService didDocumentService;
+    private final ParticipantContextObservable observable;
 
     public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore, Vault vault, TransactionContext transactionContext,
-                                         KeyParserRegistry registry, DidDocumentService didDocumentService) {
+                                         KeyParserRegistry registry, ParticipantContextObservable observable) {
         this.participantContextStore = participantContextStore;
         this.vault = vault;
         this.transactionContext = transactionContext;
+        this.observable = observable;
         this.tokenGenerator = new ApiTokenGenerator();
         this.keyParserRegistry = registry;
-        this.didDocumentService = didDocumentService;
     }
 
     @Override
@@ -80,9 +67,8 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             var apiKey = new AtomicReference<String>();
             var context = convert(manifest);
             var res = createParticipantContext(context)
-                    .compose(u -> generateAndStoreToken(context)).onSuccess(apiKey::set)
-                    .compose(ak -> createOrUpdateKey(manifest.getKey()))
-                    .compose(jwk -> generateDidDocument(manifest, jwk));
+                    .compose(u -> createTokenAndStoreInVault(context)).onSuccess(apiKey::set)
+                    .onSuccess(apiToken -> observable.invokeForEach(l -> l.created(context, manifest)));
             return res.map(u -> apiKey.get());
         });
     }
@@ -94,7 +80,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             if (res.succeeded()) {
                 return res.getContent().stream().findFirst()
                         .map(ServiceResult::success)
-                        .orElse(notFound("No ParticipantContext with ID '%s' was found.".formatted(participantId)));
+                        .orElse(notFound("ParticipantContext with ID '%s' does not exist.".formatted(participantId)));
             }
             return fromFailure(res);
         });
@@ -103,14 +89,18 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     @Override
     public ServiceResult<Void> deleteParticipantContext(String participantId) {
         return transactionContext.execute(() -> {
-            var did = ofNullable(findByIdInternal(participantId)).map(ParticipantContext::getDid);
+            var participantContext = findByIdInternal(participantId);
+            if (participantContext == null) {
+                return ServiceResult.notFound("A ParticipantContext with ID '%s' does not exist.");
+            }
+
             var res = participantContextStore.deleteById(participantId);
             if (res.failed()) {
                 return fromFailure(res);
             }
 
-            return did.map(d -> didDocumentService.unpublish(d).compose(u -> didDocumentService.deleteById(d)))
-                    .orElseGet(ServiceResult::success);
+            observable.invokeForEach(l -> l.deleted(participantContext));
+            return ServiceResult.success();
         });
     }
 
@@ -121,7 +111,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             if (participantContext.failed()) {
                 return participantContext.map(pc -> null);
             }
-            return generateAndStoreToken(participantContext.getContent());
+            return createTokenAndStoreInVault(participantContext.getContent());
         });
     }
 
@@ -133,13 +123,14 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                 return notFound("ParticipantContext with ID '%s' not found.".formatted(participantId));
             }
             modificationFunction.accept(participant);
-            var res = participantContextStore.update(participant);
+            var res = participantContextStore.update(participant)
+                    .onSuccess(u -> observable.invokeForEach(l -> l.updated(participant)));
             return res.succeeded() ? success() : fromFailure(res);
         });
 
     }
 
-    private ServiceResult<String> generateAndStoreToken(ParticipantContext participantContext) {
+    private ServiceResult<String> createTokenAndStoreInVault(ParticipantContext participantContext) {
         var alias = participantContext.getApiTokenAlias();
         var newToken = tokenGenerator.generate(participantContext.getParticipantId());
         return vault.storeSecret(alias, newToken)
@@ -147,54 +138,6 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                 .orElse(f -> conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
     }
 
-    private ServiceResult<Void> generateDidDocument(ParticipantManifest manifest, JWK publicKey) {
-        var doc = DidDocument.Builder.newInstance()
-                .id(manifest.getDid())
-                .service(manifest.getServiceEndpoints().stream().toList())
-                .verificationMethod(List.of(VerificationMethod.Builder.newInstance()
-                        .publicKeyJwk(publicKey.toJSONObject())
-                        .build()))
-                .build();
-        return didDocumentService.store(doc, manifest.getParticipantId())
-                .compose(u -> manifest.isActive() ? didDocumentService.publish(doc.getId()) : success());
-    }
-
-    private ServiceResult<JWK> createOrUpdateKey(KeyDescriptor key) {
-        // do we need to generate the key?
-        var keyGeneratorParams = key.getKeyGeneratorParams();
-        JWK publicKeyJwk;
-        if (keyGeneratorParams != null) {
-            var kp = KeyPairGenerator.generateKeyPair(keyGeneratorParams);
-            if (kp.failed()) {
-                return badRequest("Could not generate KeyPair from generator params: %s".formatted(kp.getFailureDetail()));
-            }
-            var alias = key.getPrivateKeyAlias();
-            var storeResult = vault.storeSecret(alias, CryptoConverter.createJwk(kp.getContent()).toJSONString());
-            if (storeResult.failed()) {
-                return badRequest(storeResult.getFailureDetail());
-            }
-            publicKeyJwk = CryptoConverter.createJwk(kp.getContent()).toPublicJWK();
-        } else if (key.getPublicKeyJwk() != null) {
-            publicKeyJwk = CryptoConverter.create(key.getPublicKeyJwk());
-        } else if (key.getPublicKeyPem() != null) {
-            var pubKey = keyParserRegistry.parse(key.getPublicKeyPem());
-            if (pubKey.failed()) {
-                return badRequest("Cannot parse public key from PEM: %s".formatted(pubKey.getFailureDetail()));
-            }
-            publicKeyJwk = CryptoConverter.createJwk(new KeyPair((PublicKey) pubKey.getContent(), null));
-        } else {
-            return badRequest("No public key information found in KeyDescriptor.");
-        }
-        // insert the "kid" parameter
-        var json = publicKeyJwk.toJSONObject();
-        json.put(JWKParameterNames.KEY_ID, key.getKeyId());
-        try {
-            publicKeyJwk = JWK.parse(json);
-            return success(publicKeyJwk);
-        } catch (ParseException e) {
-            return badRequest("Could not create JWK: %s".formatted(e.getMessage()));
-        }
-    }
 
     private ServiceResult<Void> createParticipantContext(ParticipantContext context) {
         var storeRes = participantContextStore.create(context);
