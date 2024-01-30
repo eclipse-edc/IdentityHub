@@ -19,7 +19,7 @@ import org.eclipse.edc.spi.event.Event;
 import java.util.Objects;
 
 /**
- * Base class for all events related to activites and state changes of DID documents
+ * Base class for all events related to DID document activites and state changes.
  */
 public abstract class DidDocumentEvent extends Event {
     protected String did;
