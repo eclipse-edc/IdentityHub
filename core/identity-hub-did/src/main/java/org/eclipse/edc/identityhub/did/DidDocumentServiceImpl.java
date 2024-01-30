@@ -210,7 +210,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         } else if (payload instanceof ParticipantContextDeleted event) {
             deleted(event);
         } else {
-            monitor.warning("KeyPairServiceImpl Received event with unexpected payload type: %s".formatted(payload.getClass()));
+            monitor.warning("KeyPairServiceImpl Received an event with unexpected payload type: %s".formatted(payload.getClass()));
         }
     }
 
@@ -229,7 +229,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                 .collect(Collectors.joining(", "));
 
         if (!errors.isEmpty()) {
-            monitor.warning("Updating DID documents subsequent to updating a ParticipantContext failed: %s".formatted(errors));
+            monitor.warning("Updating DID documents after updating a ParticipantContext failed: %s".formatted(errors));
         }
     }
 
@@ -244,7 +244,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                 .collect(Collectors.joining(", "));
 
         if (!errors.isEmpty()) {
-            monitor.warning("Unpublishing/deleting DID documents subsequent to deleting a ParticipantContext failed: %s".formatted(errors));
+            monitor.warning("Unpublishing/deleting DID documents after deleting a ParticipantContext failed: %s".formatted(errors));
         }
     }
 
@@ -265,6 +265,6 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                 .build();
         store(doc, manifest.getParticipantId())
                 .compose(u -> manifest.isActive() ? publish(doc.getId()) : success())
-                .onFailure(f -> monitor.warning("Creating a DID document subsequent to a ParticipantContext creation failed: %s".formatted(f.getFailureDetail())));
+                .onFailure(f -> monitor.warning("Creating a DID document after creating a ParticipantContext creation failed: %s".formatted(f.getFailureDetail())));
     }
 }
