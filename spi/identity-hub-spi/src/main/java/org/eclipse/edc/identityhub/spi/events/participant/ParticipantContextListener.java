@@ -34,11 +34,23 @@ public interface ParticipantContextListener {
     default void created(ParticipantContext newContext, ParticipantManifest manifest) {
 
     }
-    
+
+    /**
+     * Notifies about the fact that a {@link ParticipantContext} has been updated, and further action, such as creating keypairs or updating DID documents
+     * can now happen.
+     *
+     * @param updatedContext The updated (already persisted) participant context
+     */
     default void updated(ParticipantContext updatedContext) {
 
     }
 
+    /**
+     * Notifies about the fact that a {@link ParticipantContext} has been deleted, and further action, such as deleting keypairs or updating DID documents
+     * can now happen.
+     *
+     * @param deletedContext The updated (already persisted) participant context
+     */
     default void deleted(ParticipantContext deletedContext) {
 
     }
