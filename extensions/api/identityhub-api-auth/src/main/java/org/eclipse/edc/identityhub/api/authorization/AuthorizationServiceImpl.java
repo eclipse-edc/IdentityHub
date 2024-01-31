@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.authorization;
 
+import org.eclipse.edc.identityhub.api.authentication.spi.User;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -48,5 +49,13 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     @Override
     public void addLoookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> lookupFunction) {
         authorizationCheckFunctions.put(resourceClass, lookupFunction);
+    }
+
+    @Override
+    public boolean hasElevatedPrivilege(Principal userPrincipal) {
+        if (userPrincipal instanceof User user) {
+            return user.getRoles().contains(User.ROLE_ADMIN);
+        }
+        return false;
     }
 }

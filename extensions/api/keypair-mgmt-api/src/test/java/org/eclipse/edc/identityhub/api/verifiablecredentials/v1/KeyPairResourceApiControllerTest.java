@@ -31,6 +31,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -246,6 +247,25 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
         verify(keyPairService).revokeKey(eq("old-id"), argThat(d -> d.getKeyId().equals(descriptor.getKeyId())));
         verifyNoMoreInteractions(keyPairService);
+    }
+
+    @Test
+    void getAll() {
+        when(authService.hasElevatedPrivilege(any())).thenReturn(true);
+
+        var pairs = IntStream.range(0, 100)
+                .mapToObj(i -> createKeyPair().id("kid" + i).build())
+                .toList();
+
+        when(keyPairService.query(any())).thenReturn(ServiceResult.success(pairs));
+
+        var found = baseRequest()
+                .get("/")
+                .then()
+                .statusCode(200)
+                .log().ifError()
+                .extract().body().as(KeyPairResource[].class);
+        assertThat(found).hasSize(100);
     }
 
     @Override

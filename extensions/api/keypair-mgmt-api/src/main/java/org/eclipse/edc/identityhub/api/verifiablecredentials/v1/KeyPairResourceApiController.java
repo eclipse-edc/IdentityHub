@@ -32,6 +32,7 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.web.spi.exception.NotAuthorizedException;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 import org.jetbrains.annotations.Nullable;
 
@@ -75,6 +76,15 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @GET
     @Override
     public Collection<KeyPairResource> findForParticipant(@QueryParam("participantId") String participantId, @Context SecurityContext securityContext) {
+
+        if (participantId == null) {
+            if (authorizationService.hasElevatedPrivilege(securityContext.getUserPrincipal())) {
+                return keyPairService.query(QuerySpec.max()).orElseThrow(exceptionMapper(KeyPairResource.class));
+            }
+            throw new NotAuthorizedException("Not authorized to get all keypairs.");
+        }
+
+
         var query = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build();
         return keyPairService.query(query)
                 .orElseThrow(exceptionMapper(KeyPairResource.class, participantId))
@@ -108,4 +118,5 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
                 .compose(u -> keyPairService.revokeKey(id, newKey))
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));
     }
+
 }

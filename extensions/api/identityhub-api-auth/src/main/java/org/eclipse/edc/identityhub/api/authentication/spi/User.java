@@ -22,6 +22,8 @@ import java.util.List;
  */
 public interface User extends Principal {
 
+    String ROLE_ADMIN = "admin";
+
     /**
      * The "principal", e.g. the user ID, or a unique user name.
      */

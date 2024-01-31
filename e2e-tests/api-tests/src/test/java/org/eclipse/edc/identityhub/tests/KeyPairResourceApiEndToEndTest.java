@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -312,6 +313,52 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .body(notNullValue());
     }
 
+    @Test
+    void getAll() {
+        IntStream.range(0, 20)
+                .forEach(i -> {
+                    var u = "user" + i;
+                    var token = createParticipant(u);
+                    var key1 = createKeyPair(u);
+                });
+
+        // attempt to publish user1's DID document, which should fail
+        var keypairs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .get("/v1/keypairs/")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(KeyPairResource[].class);
+
+        assertThat(keypairs).hasSize(20 * 2 + 1); // 2 keys per user, 20 users, plus the super-user
+    }
+
+    @Test
+    void getAll_notAdmin() {
+
+        var unauthorizedToken = createParticipant("forbidden-user");
+
+        IntStream.range(0, 20)
+                .forEach(i -> {
+                    var u = "user" + i;
+                    var token = createParticipant(u);
+                    var key1 = createKeyPair(u);
+                });
+
+        // attempt to publish user1's DID document, which should fail
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", unauthorizedToken))
+                .get("/v1/keypairs/")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403);
+
+    }
+
+
     private String createKeyPair(String participantId) {
 
         var descriptor = createKeyDescriptor(participantId).build();
@@ -323,10 +370,11 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
     }
 
     private static KeyDescriptor.Builder createKeyDescriptor(String participantId) {
+        var id = UUID.randomUUID().toString();
         return KeyDescriptor.Builder.newInstance()
-                .keyId(UUID.randomUUID().toString())
+                .keyId(id)
                 .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
-                .privateKeyAlias(participantId + "-alias");
+                .privateKeyAlias("%s-%s-alias".formatted(participantId, id));
     }
 
 }

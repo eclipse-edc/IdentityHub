@@ -41,4 +41,13 @@ public interface AuthorizationService {
      * authorization, registers a lookup function for the type of resource.
      */
     void addLoookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> checkFunction);
+
+    /**
+     * Determines whether the given {@link Principal} has elevated user permissions (e.g. "admin" role), etc. It is up to the implementation to
+     * determine what constitutes "elevated privileges".
+     *
+     * @param userPrincipal The principal that was authenticated during request ingress.
+     * @return true if has elevated privileges, false otherwise.
+     */
+    boolean hasElevatedPrivilege(Principal userPrincipal);
 }
