@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -56,6 +57,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
     @BeforeEach
     void setUp() {
         when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(authService.hasElevatedPrivilege(any())).thenReturn(false);
     }
 
     @Test
@@ -198,6 +200,25 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
                 .then()
                 .statusCode(404);
         verify(participantContextServiceMock).deleteParticipantContext(eq("test-participant"));
+    }
+
+    @Test
+    void getAll() {
+        when(authService.hasElevatedPrivilege(any())).thenReturn(true);
+        var participants = IntStream.range(0, 100)
+                .mapToObj(i -> createParticipantContext().participantId("participant" + i).build())
+                .toList();
+        when(participantContextServiceMock.query(any())).thenReturn(ServiceResult.success(participants));
+
+        var participantContext = baseRequest()
+                .get("/")
+                .then()
+                .statusCode(200)
+                .log().ifError()
+                .extract().body().as(ParticipantContext[].class);
+
+        assertThat(participantContext).hasSize(100);
+        verify(participantContextServiceMock).query(any());
     }
 
     @Override

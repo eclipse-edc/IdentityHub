@@ -27,6 +27,8 @@ import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.junit.jupiter.api.Test;
 
+import java.util.stream.IntStream;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -185,6 +187,36 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
             return evt.getParticipantId().equals(participantId) && evt.getNewState() == ParticipantContextState.ACTIVATED;
         }));
 
+    }
+
+    @Test
+    void getAll() {
+        var apikey = getSuperUserApiKey();
+
+        IntStream.range(0, 20)
+                .forEach(i -> createParticipant("participant-" + i));
+
+        var su = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", apikey))
+                .get("/v1/participants")
+                .then()
+                .statusCode(200)
+                .extract().body().as(ParticipantContext[].class);
+        assertThat(su).hasSize(21); // 20 users plus the super user
+    }
+
+    @Test
+    void getAll_notAdmin() {
+        var forbiddenToken = createParticipant("forbidden-user");
+
+        IntStream.range(0, 20)
+                .forEach(i -> createParticipant("participant-" + i));
+
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", forbiddenToken))
+                .get("/v1/participants")
+                .then()
+                .statusCode(403);
     }
 
     @Test

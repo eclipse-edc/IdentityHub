@@ -29,6 +29,8 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
+import java.util.Collection;
+
 @OpenAPIDefinition(info = @Info(description = "This is the Management API for ParticipantContexts", title = "ParticipantContext Management API", version = "1"))
 public interface ParticipantContextApi {
 
@@ -109,4 +111,16 @@ public interface ParticipantContextApi {
             }
     )
     void deleteParticipant(String participantId, SecurityContext securityContext);
+
+    @Tag(name = "ParticipantContext Management API")
+    @Operation(description = "Gets all ParticipantContexts.",
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The list of ParticipantContexts.",
+                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    Collection<ParticipantContext> getAll();
 }

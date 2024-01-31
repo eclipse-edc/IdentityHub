@@ -25,12 +25,16 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.identityhub.api.authentication.spi.User;
 import org.eclipse.edc.identityhub.api.participantcontext.v1.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
+
+import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
@@ -52,7 +56,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @POST
-    @RolesAllowed("admin")
+    @RolesAllowed(User.ROLE_ADMIN)
     public String createParticipant(ParticipantManifest manifest) {
         participantManifestValidator.validate(manifest).orElseThrow(ValidationFailureException::new);
         return participantContextService.createParticipantContext(manifest)
@@ -80,7 +84,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @POST
     @Path("/{participantId}/state")
-    @RolesAllowed("admin")
+    @RolesAllowed(User.ROLE_ADMIN)
     public void activateParticipant(@PathParam("participantId") String participantId, @QueryParam("isActive") boolean isActive) {
         if (isActive) {
             participantContextService.updateParticipant(participantId, ParticipantContext::activate);
@@ -93,10 +97,18 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @DELETE
     @Path("/{participantId}")
-    @RolesAllowed("admin")
+    @RolesAllowed(User.ROLE_ADMIN)
     public void deleteParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
         participantContextService.deleteParticipantContext(participantId)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
+    }
+
+    @GET
+    @RolesAllowed(User.ROLE_ADMIN)
+    @Override
+    public Collection<ParticipantContext> getAll() {
+        return participantContextService.query(QuerySpec.max())
+                .orElseThrow(exceptionMapper(ParticipantContext.class));
     }
 
 }

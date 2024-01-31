@@ -100,7 +100,7 @@ public abstract class ManagementApiEndToEndTest {
     }
 
     protected static ParticipantManifest createNewParticipant() {
-        var manifest = ParticipantManifest.Builder.newInstance()
+        return ParticipantManifest.Builder.newInstance()
                 .participantId("another-participant")
                 .active(false)
                 .did("did:web:another:participant")
@@ -111,6 +111,5 @@ public abstract class ManagementApiEndToEndTest {
                         .keyId("another-keyid")
                         .build())
                 .build();
-        return manifest;
     }
 }

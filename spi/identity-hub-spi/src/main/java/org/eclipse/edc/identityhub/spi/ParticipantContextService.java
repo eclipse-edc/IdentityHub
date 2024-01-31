@@ -16,8 +16,10 @@ package org.eclipse.edc.identityhub.spi;
 
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 
+import java.util.Collection;
 import java.util.function.Consumer;
 
 /**
@@ -68,4 +70,9 @@ public interface ParticipantContextService {
      * @return success if the update could be performed, a failure otherwise
      */
     ServiceResult<Void> updateParticipant(String participantId, Consumer<ParticipantContext> modificationFunction);
+
+    /**
+     * Returns a list of participant contexts based on a query. Can be empty, never null.
+     */
+    ServiceResult<Collection<ParticipantContext>> query(QuerySpec spec);
 }

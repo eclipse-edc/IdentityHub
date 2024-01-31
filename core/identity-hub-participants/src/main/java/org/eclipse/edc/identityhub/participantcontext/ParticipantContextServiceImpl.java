@@ -23,10 +23,10 @@ import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -48,17 +48,15 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private final Vault vault;
     private final TransactionContext transactionContext;
     private final ApiTokenGenerator tokenGenerator;
-    private final KeyParserRegistry keyParserRegistry;
     private final ParticipantContextObservable observable;
 
     public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore, Vault vault, TransactionContext transactionContext,
-                                         KeyParserRegistry registry, ParticipantContextObservable observable) {
+                                         ParticipantContextObservable observable) {
         this.participantContextStore = participantContextStore;
         this.vault = vault;
         this.transactionContext = transactionContext;
         this.observable = observable;
         this.tokenGenerator = new ApiTokenGenerator();
-        this.keyParserRegistry = registry;
     }
 
     @Override
@@ -128,6 +126,14 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             return res.succeeded() ? success() : fromFailure(res);
         });
 
+    }
+
+    @Override
+    public ServiceResult<Collection<ParticipantContext>> query(QuerySpec spec) {
+        return transactionContext.execute(() -> {
+            var res = participantContextStore.query(spec);
+            return ServiceResult.from(res);
+        });
     }
 
     private ServiceResult<String> createTokenAndStoreInVault(ParticipantContext participantContext) {
