@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.api.configuration;
 
 import org.eclipse.edc.identityhub.api.authentication.filter.RoleBasedAccessFeature;
 import org.eclipse.edc.identityhub.api.authentication.filter.UserAuthenticationFilter;
-import org.eclipse.edc.identityhub.api.authentication.spi.UserResolver;
 import org.eclipse.edc.identityhub.api.authorization.AuthorizationServiceImpl;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
@@ -76,7 +75,7 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
         var alias = createApiConfig(context).getContextAlias();
 
         webService.registerResource(alias, new RoleBasedAccessFeature());
-        webService.registerResource(alias, new UserAuthenticationFilter(createUserService()));
+        webService.registerResource(alias, new UserAuthenticationFilter(new ParticipantUserResolver(participantContextService, vault)));
 
         // create super-user
         participantContextService.createParticipantContext(ParticipantManifest.Builder.newInstance()
@@ -106,8 +105,5 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
         return configuration;
     }
 
-    private UserResolver createUserService() {
-        return new ParticipantUserResolver(participantContextService, vault);
-    }
 
 }
