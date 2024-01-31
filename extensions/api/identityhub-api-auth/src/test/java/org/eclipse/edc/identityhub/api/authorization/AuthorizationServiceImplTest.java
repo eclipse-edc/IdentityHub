@@ -14,10 +14,13 @@
 
 package org.eclipse.edc.identityhub.api.authorization;
 
+import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identityhub.api.authentication.spi.User;
 import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.junit.jupiter.api.Test;
 
 import java.security.Principal;
+import java.util.List;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -63,4 +66,27 @@ class AuthorizationServiceImplTest {
         assertThat(authorizationService.isAuthorized(principal, "test-resource-id", String.class))
                 .isFailed();
     }
+
+    @Test
+    void hasElevatedPrivilege_whenAdmin() {
+        var principal = mock(User.class);
+        when(principal.getRoles()).thenReturn(List.of("foo", "bar", User.ROLE_ADMIN));
+        Assertions.assertThat(authorizationService.hasElevatedPrivilege(principal)).isTrue();
+    }
+
+    @Test
+    void hasElevatedPrivilege_whenNotAdmin() {
+        var principal = mock(User.class);
+        when(principal.getRoles()).thenReturn(List.of("foo", "bar"));
+        Assertions.assertThat(authorizationService.hasElevatedPrivilege(principal)).isFalse();
+    }
+
+
+    @Test
+    void hasElevatedPrivilege_whenNotUser() {
+        var principal = mock(Principal.class);
+        Assertions.assertThat(authorizationService.hasElevatedPrivilege(principal)).isFalse();
+    }
+
+    
 }
