@@ -24,9 +24,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
-import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
@@ -39,7 +37,7 @@ public interface VerifiableCredentialsApi {
     @Operation(description = "Finds a VerifiableCredential by ID.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "The VerifiableCredential.",
-                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = VerifiableCredentialResource.class)))),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -48,14 +46,14 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    VerifiableCredentialResource findById(String id, SecurityContext securityContext);
+    Collection<VerifiableCredentialResource> findById(String id, SecurityContext securityContext);
 
 
     @Tag(name = "VerifiableCredentials Management API")
     @Operation(description = "Query VerifiableCredentials by type.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of VerifiableCredentials.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = DidDocument.class)))),
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = VerifiableCredentialResource.class)))),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "The query was malformed or was not understood by the server.",

@@ -30,6 +30,7 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
+import org.eclipse.edc.web.spi.exception.NotAuthorizedException;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 
 import java.util.Collection;
@@ -53,13 +54,27 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @GET
     @Path("/{credentialId}")
     @Override
-    public VerifiableCredentialResource findById(@PathParam("credentialId") String id, @Context SecurityContext securityContext) {
+    public Collection<VerifiableCredentialResource> findById(@PathParam("credentialId") String id, @Context SecurityContext securityContext) {
+
+        if (id == null) {
+            if (authorizationService.hasElevatedPrivilege(securityContext.getUserPrincipal())) {
+                return ServiceResult.from(credentialStore.query(QuerySpec.max()))
+                        .orElseThrow(exceptionMapper(VerifiableCredentialResource.class));
+            }
+            throw new NotAuthorizedException("Not authorized to get all keypairs.");
+
+        }
+
+
         authorizationService.isAuthorized(securityContext.getUserPrincipal(), id, VerifiableCredentialResource.class)
                 .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
 
         var result = credentialStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build())
                 .orElseThrow(InvalidRequestException::new);
-        return result.stream().findFirst().orElseThrow(() -> new ObjectNotFoundException(VerifiableCredentialResource.class, id));
+        if (result.isEmpty()) {
+            throw new ObjectNotFoundException(VerifiableCredentialResource.class, id);
+        }
+        return result;
     }
 
     @GET

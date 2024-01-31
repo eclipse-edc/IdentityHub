@@ -65,13 +65,13 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
-                .extract().body().as(VerifiableCredentialResource.class);
+                .extract().body().as(VerifiableCredentialResource[].class);
 
-        assertThat(result).usingRecursiveComparison().ignoringFields("clock").isEqualTo(credential);
+        assertThat(result)
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("clock").containsExactly(credential);
         verify(credentialStore).query(any());
         verifyNoMoreInteractions(credentialStore);
     }
-
 
     @Test
     void findById_unauthorized403() {
@@ -190,6 +190,28 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                 .statusCode(404);
 
         verify(credentialStore).deleteById(eq(CREDENTIAL_ID));
+        verifyNoMoreInteractions(credentialStore);
+    }
+
+    @Test
+    void getAll() {
+        var list = List.of(
+                createCredential("VerifiableCredential").build(),
+                createCredential("VerifiableCredential").build());
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(list
+        ));
+
+        var result = baseRequest()
+                .get("/")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(VerifiableCredentialResource[].class);
+
+        assertThat(result).hasSize(2)
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("clock")
+                .containsExactlyInAnyOrderElementsOf(list);
+        verify(credentialStore).query(any());
         verifyNoMoreInteractions(credentialStore);
     }
 
