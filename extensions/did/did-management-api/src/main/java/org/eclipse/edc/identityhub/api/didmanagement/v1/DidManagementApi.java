@@ -48,7 +48,7 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void publishDidFromBody(DidRequestPayload didRequestPayload, SecurityContext securityContext);
+    void publishDid(String participantContextId, DidRequestPayload didRequestPayload, SecurityContext securityContext);
 
     @Tag(name = "DID Management API")
     @Operation(description = "Un-Publish an (existing) DID document. The DID is expected to exist in the database.",

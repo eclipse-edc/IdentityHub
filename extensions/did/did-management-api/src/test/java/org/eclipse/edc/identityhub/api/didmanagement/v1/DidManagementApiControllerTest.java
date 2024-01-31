@@ -75,7 +75,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + "/v1/dids")
+                .baseUri("http://localhost:" + port + "/v1/participants/test-participant/dids")
                 .when();
     }
 
