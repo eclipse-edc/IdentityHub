@@ -88,7 +88,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(keyPair)));
 
         var found = baseRequest()
-                .get("?participantId=test-participant")
+                .get("")
                 .then()
                 .statusCode(200)
                 .log().ifError()
@@ -110,7 +110,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of()));
 
         var found = baseRequest()
-                .get("?participantId=test-participant")
+                .get("")
                 .then()
                 .statusCode(200)
                 .log().ifError()
@@ -130,7 +130,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         when(keyPairService.query(any())).thenReturn(ServiceResult.notFound("test-message"));
 
         baseRequest()
-                .get("?participantId=test-participant")
+                .get("")
                 .then()
                 .statusCode(404)
                 .log().ifError();
@@ -265,7 +265,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + "/v1/keypairs")
+                .baseUri("http://localhost:" + port + "/v1/participants/test-participant/keypairs")
                 .when();
     }
 
