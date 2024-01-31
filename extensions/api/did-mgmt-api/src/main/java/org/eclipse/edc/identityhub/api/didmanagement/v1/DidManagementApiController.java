@@ -55,7 +55,7 @@ public class DidManagementApiController implements DidManagementApi {
     @Override
     @POST
     @Path("/publish")
-    public void publishDid(@PathParam("participantContextId") String participantContextId, DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
+    public void publishDid(DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
         authorizationService.isAuthorized(securityContext.getUserPrincipal(), didRequestPayload.did(), DidResource.class)
                 .compose(u -> documentService.publish(didRequestPayload.did()))
                 .orElseThrow(exceptionMapper(DidResource.class, didRequestPayload.did()));
