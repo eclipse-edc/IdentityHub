@@ -21,13 +21,13 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.identityhub.api.authentication.spi.User;
-import org.eclipse.edc.identityhub.api.authentication.spi.UserResolver;
+import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipal;
+import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipalResolver;
 
 import java.security.Principal;
 
 /**
- * This filter takes the x-api-key header and attempts to resolve a {@link User} from it using the {@link UserResolver}.
+ * This filter takes the x-api-key header and attempts to resolve a {@link ServicePrincipal} from it using the {@link ServicePrincipalResolver}.
  * If there is 1 (and exactly 1!) {@code x-api-key} header, and a user can be resolved, the request is propagated through the filter chain.
  * <p>
  * This filter sets the {@link SecurityContext} of the request using the resolved user. Downstream filters can then get the security context:
@@ -44,12 +44,12 @@ import java.security.Principal;
  */
 @PreMatching
 @Priority(Priorities.AUTHENTICATION)
-public class UserAuthenticationFilter implements ContainerRequestFilter {
+public class ServicePrincipalAuthenticationFilter implements ContainerRequestFilter {
     private static final String API_KEY_HEADER = "x-api-key";
-    private final UserResolver userResolver;
+    private final ServicePrincipalResolver servicePrincipalResolver;
 
-    public UserAuthenticationFilter(UserResolver userResolver) {
-        this.userResolver = userResolver;
+    public ServicePrincipalAuthenticationFilter(ServicePrincipalResolver servicePrincipalResolver) {
+        this.servicePrincipalResolver = servicePrincipalResolver;
     }
 
     @Override
@@ -62,16 +62,16 @@ public class UserAuthenticationFilter implements ContainerRequestFilter {
         } else {
             var apiKey = apiKeyHeader.get(0);
 
-            var user = userResolver.findByCredential(apiKey);
+            var servicePrincipal = servicePrincipalResolver.findByCredential(apiKey);
             containerRequestContext.setSecurityContext(new SecurityContext() {
                 @Override
                 public Principal getUserPrincipal() {
-                    return user;
+                    return servicePrincipal;
                 }
 
                 @Override
                 public boolean isUserInRole(String s) {
-                    return user.getRoles().contains(s);
+                    return servicePrincipal.getRoles().contains(s);
                 }
 
                 @Override

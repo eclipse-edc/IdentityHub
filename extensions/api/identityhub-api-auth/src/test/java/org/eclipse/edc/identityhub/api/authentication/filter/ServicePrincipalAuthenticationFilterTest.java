@@ -17,8 +17,8 @@ package org.eclipse.edc.identityhub.api.authentication.filter;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
-import org.eclipse.edc.identityhub.api.authentication.spi.User;
-import org.eclipse.edc.identityhub.api.authentication.spi.UserResolver;
+import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipal;
+import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipalResolver;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.junit.jupiter.api.Test;
 
@@ -32,21 +32,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class UserAuthenticationFilterTest {
+class ServicePrincipalAuthenticationFilterTest {
 
-    private final UserResolver userResolver = mock();
-    private final UserAuthenticationFilter filter = new UserAuthenticationFilter(userResolver);
+    private final ServicePrincipalResolver servicePrincipalResolver = mock();
+    private final ServicePrincipalAuthenticationFilter filter = new ServicePrincipalAuthenticationFilter(servicePrincipalResolver);
 
     @Test
     void filter_success() {
         var request = mock(ContainerRequestContext.class);
 
         when(request.getHeaders()).thenReturn(headers(Map.of("x-api-key", "test-token")));
-        when(userResolver.findByCredential(eq("test-token"))).thenReturn(mock(User.class));
+        when(servicePrincipalResolver.findByCredential(eq("test-token"))).thenReturn(mock(ServicePrincipal.class));
 
         filter.filter(request);
 
-        verify(request).setSecurityContext(argThat(sc -> sc.getUserPrincipal() instanceof User));
+        verify(request).setSecurityContext(argThat(sc -> sc.getUserPrincipal() instanceof ServicePrincipal));
     }
 
     @Test
@@ -66,7 +66,7 @@ class UserAuthenticationFilterTest {
         var headers = new MultivaluedHashMap<String, String>();
         headers.put("x-api-key", List.of("key1", "key2"));
         when(request.getHeaders()).thenReturn(headers);
-        when(userResolver.findByCredential(eq("test-token"))).thenReturn(mock(User.class));
+        when(servicePrincipalResolver.findByCredential(eq("test-token"))).thenReturn(mock(ServicePrincipal.class));
 
         filter.filter(request);
         verify(request).abortWith(argThat(response -> response.getStatus() == 401));
@@ -77,7 +77,7 @@ class UserAuthenticationFilterTest {
         var request = mock(ContainerRequestContext.class);
 
         when(request.getHeaders()).thenReturn(headers(Map.of("x-api-key", "test-token")));
-        when(userResolver.findByCredential(eq("test-token"))).thenThrow(new AuthenticationFailedException("test-message"));
+        when(servicePrincipalResolver.findByCredential(eq("test-token"))).thenThrow(new AuthenticationFailedException("test-message"));
 
         assertThatThrownBy(() -> filter.filter(request)).isInstanceOf(AuthenticationFailedException.class);
     }

@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
 
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;

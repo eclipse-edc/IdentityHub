@@ -15,12 +15,12 @@
 package org.eclipse.edc.identityhub.api.authentication.spi;
 
 /**
- * Resolves {@link User} objects during request ingress.
+ * Resolves {@link ServicePrincipal} objects during request ingress.
  */
 @FunctionalInterface
-public interface UserResolver {
+public interface ServicePrincipalResolver {
     /**
      * resolve the user based on the credential (e.g. API key)
      */
-    User findByCredential(String credential);
+    ServicePrincipal findByCredential(String credential);
 }

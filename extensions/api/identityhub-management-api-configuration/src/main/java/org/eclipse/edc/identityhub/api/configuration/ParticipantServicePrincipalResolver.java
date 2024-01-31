@@ -14,8 +14,9 @@
 
 package org.eclipse.edc.identityhub.api.configuration;
 
-import org.eclipse.edc.identityhub.api.authentication.spi.User;
-import org.eclipse.edc.identityhub.api.authentication.spi.UserResolver;
+import org.eclipse.edc.identityhub.api.authentication.filter.ServicePrincipalAuthenticationFilter;
+import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipal;
+import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipalResolver;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.spi.security.Vault;
@@ -25,21 +26,21 @@ import java.util.Base64;
 import java.util.List;
 
 /**
- * For the purposes of the Management API of the IdentityHub, a {@link User} is represented by a {@link ParticipantContext}. However, the request filter chain ({@link org.eclipse.edc.identityhub.api.authentication.filter.UserAuthenticationFilter}
+ * For the purposes of the Management API of the IdentityHub, a {@link ServicePrincipal} is represented by a {@link ParticipantContext}. However, the request filter chain ({@link ServicePrincipalAuthenticationFilter}
  * etc.)
- * do not need to know about that, they only know about {@link User} and {@link UserResolver}. Thus, this implementation acts as bridge. Other authentication backends like Apache Shiro would call this a _realm_.
+ * do not need to know about that, they only know about {@link ServicePrincipal} and {@link ServicePrincipalResolver}. Thus, this implementation acts as bridge. Other authentication backends like Apache Shiro would call this a _realm_.
  */
-class ParticipantUserResolver implements UserResolver {
+class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
     private final ParticipantContextService participantContextService;
     private final Vault vault;
 
-    ParticipantUserResolver(ParticipantContextService participantContextService, Vault vault) {
+    ParticipantServicePrincipalResolver(ParticipantContextService participantContextService, Vault vault) {
         this.participantContextService = participantContextService;
         this.vault = vault;
     }
 
     /**
-     * Resolves a {@link User} based on their credential (= API key). This cannot be done directly, since the API key is stored in a {@link Vault}. However, the
+     * Resolves a {@link ServicePrincipal} based on their credential (= API key). This cannot be done directly, since the API key is stored in a {@link Vault}. However, the
      * API key encodes the user's principal, so we first need to decode the token, and then resolve based on the principal.
      *
      * @param credential The user's credential (= API key)
@@ -47,7 +48,7 @@ class ParticipantUserResolver implements UserResolver {
      * @throws AuthenticationFailedException if the credential has an invalid structure, or the User cannot be resolved.
      */
     @Override
-    public User findByCredential(String credential) {
+    public ServicePrincipal findByCredential(String credential) {
         var tokens = credential.split("\\.");
         if (tokens.length != 2) {
             throw new AuthenticationFailedException("Invalid API token");
@@ -61,16 +62,16 @@ class ParticipantUserResolver implements UserResolver {
 
     }
 
-    private User findByPrincipal(String principal) {
+    private ServicePrincipal findByPrincipal(String principal) {
         return participantContextService.getParticipantContext(principal)
                 .map(this::toUser)
                 .orElseThrow(f -> new AuthenticationFailedException("Invalid Authentication '%s': %s".formatted(principal, f.getFailureDetail())));
     }
 
-    private User toUser(ParticipantContext participantContext) {
+    private ServicePrincipal toUser(ParticipantContext participantContext) {
         var credential = vault.resolveSecret(participantContext.getApiTokenAlias());
         var participantId = participantContext.getParticipantId();
-        return new User() {
+        return new ServicePrincipal() {
             @Override
             public String getPrincipal() {
                 return participantId;
