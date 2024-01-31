@@ -140,4 +140,15 @@ public interface DidManagementApi {
             }
     )
     void removeEndpoint(String did, String serviceId, boolean autoPublish, SecurityContext securityContext);
+
+    @Tag(name = "DID Management API")
+    @Operation(description = "Gets all DidDocument resources.",
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    Collection<DidDocument> getAll();
 }

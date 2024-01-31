@@ -524,4 +524,25 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             verifyNoMoreInteractions(didDocumentServiceMock);
         }
     }
+
+    @Nested
+    class GetAll {
+        @Test
+        void getAll() {
+            var resultList = List.of(createDidDocument().build(), createDidDocument().build());
+            when(didDocumentServiceMock.queryDocuments(any())).thenReturn(ServiceResult.success(resultList));
+
+            var docList = baseRequest()
+                    .get("/")
+                    .then()
+                    .log().ifError()
+                    .statusCode(200)
+                    .extract().body().as(DidDocument[].class);
+
+            assertThat(docList).isNotEmpty().hasSize(2)
+                    .usingRecursiveFieldByFieldElementComparator()
+                    .containsAll(resultList);
+            verify(didDocumentServiceMock).queryDocuments(eq(QuerySpec.max()));
+        }
+    }
 }

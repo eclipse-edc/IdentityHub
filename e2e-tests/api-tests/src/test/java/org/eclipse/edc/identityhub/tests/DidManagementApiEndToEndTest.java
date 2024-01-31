@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.Header;
+import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentPublished;
 import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentUnpublished;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
@@ -24,7 +25,10 @@ import org.eclipse.edc.spi.event.EventSubscriber;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import java.util.stream.IntStream;
+
 import static io.restassured.http.ContentType.JSON;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -193,6 +197,42 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);
+    }
+
+    @Test
+    void getAll_notAdmin() {
+
+        var user1 = "user1";
+        var forbiddenToken = createParticipant(user1);
+
+        IntStream.range(0, 10)
+                .forEach(i -> createParticipant("participant-" + i));
+
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", forbiddenToken))
+                .contentType(JSON)
+                .get("/v1/dids")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403);
+    }
+
+    @Test
+    void getAll() {
+
+
+        IntStream.range(0, 10)
+                .forEach(i -> createParticipant("participant-" + i));
+
+        var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .contentType(JSON)
+                .get("/v1/dids")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(DidDocument[].class);
+        assertThat(docs).hasSize(11); // 10 users plus super user
     }
 
 }

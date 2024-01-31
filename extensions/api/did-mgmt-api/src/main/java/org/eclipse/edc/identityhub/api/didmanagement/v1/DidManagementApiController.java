@@ -14,8 +14,10 @@
 
 package org.eclipse.edc.identityhub.api.didmanagement.v1;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -29,6 +31,7 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.identithub.did.spi.model.DidState;
+import org.eclipse.edc.identityhub.api.authentication.spi.User;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -124,4 +127,11 @@ public class DidManagementApiController implements DidManagementApi {
                 .orElseThrow(exceptionMapper(Service.class, did));
     }
 
+    @GET
+    @RolesAllowed(User.ROLE_ADMIN)
+    @Override
+    public Collection<DidDocument> getAll() {
+        return documentService.queryDocuments(QuerySpec.max())
+                .orElseThrow(exceptionMapper(DidDocument.class));
+    }
 }
