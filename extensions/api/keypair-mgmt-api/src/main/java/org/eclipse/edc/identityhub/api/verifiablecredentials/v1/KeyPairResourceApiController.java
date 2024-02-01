@@ -85,7 +85,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @PUT
     @Override
-    public void addKeyPair(@QueryParam("participantId") String participantId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault,
+    public void addKeyPair(@PathParam("participantId") String participantId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault,
                            @Context SecurityContext securityContext) {
         authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .compose(u -> keyPairService.addKeyPair(participantId, keyDescriptor, makeDefault))

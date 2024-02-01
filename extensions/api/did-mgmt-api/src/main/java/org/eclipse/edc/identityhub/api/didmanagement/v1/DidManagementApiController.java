@@ -40,7 +40,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/participants/{participantContextId}/dids")
+@Path("/v1/participants/{participantId}/dids")
 public class DidManagementApiController implements DidManagementApi {
 
     private final DidDocumentService documentService;
