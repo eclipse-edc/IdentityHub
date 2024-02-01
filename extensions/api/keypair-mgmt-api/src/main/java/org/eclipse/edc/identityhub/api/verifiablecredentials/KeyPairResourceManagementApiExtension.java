@@ -45,6 +45,11 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
     private AuthorizationService authorizationService;
 
     @Override
+    public String name() {
+        return NAME;
+    }
+
+    @Override
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(KeyPairResource.class, this::findById);
         var controller = new KeyPairResourceApiController(authorizationService, keyPairService);

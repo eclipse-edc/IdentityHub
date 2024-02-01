@@ -46,6 +46,11 @@ public class KeyPairServiceExtension implements ServiceExtension {
 
     private KeyPairObservable observable;
 
+    @Override
+    public String name() {
+        return NAME;
+    }
+
     @Provider
     public KeyPairService createParticipantService(ServiceExtensionContext context) {
         var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor(), keyPairObservable());

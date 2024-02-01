@@ -41,6 +41,11 @@ public class ApiAuthenticationExtension implements ServiceExtension {
     private Vault vault;
 
     @Override
+    public String name() {
+        return NAME;
+    }
+
+    @Override
     public void initialize(ServiceExtensionContext context) {
         var alias = apiConfig.getContextAlias();
         webService.registerResource(alias, new RoleBasedAccessFeature());

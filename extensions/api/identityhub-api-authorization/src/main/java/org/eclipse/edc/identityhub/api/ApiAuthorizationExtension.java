@@ -27,6 +27,11 @@ public class ApiAuthorizationExtension implements ServiceExtension {
 
     public static final String NAME = "Management API Authorization Extension";
 
+    @Override
+    public String name() {
+        return NAME;
+    }
+
     @Provider
     public AuthorizationService createAuthService() {
         return new AuthorizationServiceImpl();

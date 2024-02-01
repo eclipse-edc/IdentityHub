@@ -45,6 +45,11 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
     private AuthorizationService authorizationService;
 
     @Override
+    public String name() {
+        return NAME;
+    }
+
+    @Override
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(VerifiableCredentialResource.class, this::queryById);
         var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService);
