@@ -36,7 +36,7 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
     public static final String NAME = "KeyPairResource Management API Extension";
 
     @Inject
-    private ManagementApiConfiguration apiConfiguration;
+    private ManagementApiConfiguration managementApiConfiguration;
     @Inject
     private WebService webService;
     @Inject
@@ -48,7 +48,7 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(KeyPairResource.class, this::findById);
         var controller = new KeyPairResourceApiController(authorizationService, keyPairService);
-        webService.registerResource(apiConfiguration.getContextAlias(), controller);
+        webService.registerResource(managementApiConfiguration.getContextAlias(), controller);
     }
 
     private ParticipantResource findById(String keyPairId) {

@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.api.configuration;
 
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
@@ -93,7 +94,7 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
 
 
     @Provider
-    public ManagementApiConfigurationImpl createApiConfig(ServiceExtensionContext context) {
+    public ManagementApiConfiguration createApiConfig(ServiceExtensionContext context) {
         if (configuration == null) {
             configuration = new ManagementApiConfigurationImpl(configurer.configure(context, webServer, SETTINGS));
         }

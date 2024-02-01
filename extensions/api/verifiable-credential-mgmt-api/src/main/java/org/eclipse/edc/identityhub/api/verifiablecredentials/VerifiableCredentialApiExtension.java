@@ -36,7 +36,7 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
     public static final String NAME = "VerifiableCredentials Management API Extension";
 
     @Inject
-    private ManagementApiConfiguration apiConfiguration;
+    private ManagementApiConfiguration managementApiConfiguration;
     @Inject
     private WebService webService;
     @Inject
@@ -48,7 +48,7 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(VerifiableCredentialResource.class, this::queryById);
         var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService);
-        webService.registerResource(apiConfiguration.getContextAlias(), controller);
+        webService.registerResource(managementApiConfiguration.getContextAlias(), controller);
     }
 
     private ParticipantResource queryById(String credentialId) {
