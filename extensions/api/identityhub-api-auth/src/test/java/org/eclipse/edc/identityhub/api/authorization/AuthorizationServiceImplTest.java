@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.authorization;
 
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +39,9 @@ class AuthorizationServiceImplTest {
 
         var principal = mock(Principal.class);
         when(principal.getName()).thenReturn("test-id");
-        assertThat(authorizationService.isAuthorized(principal, "test-resource-id", String.class))
+        var securityContext = mock(SecurityContext.class);
+        when(securityContext.getUserPrincipal()).thenReturn(principal);
+        assertThat(authorizationService.isAuthorized(securityContext, "test-resource-id", TestResource.class))
                 .isSucceeded();
     }
 
@@ -46,7 +49,9 @@ class AuthorizationServiceImplTest {
     void isAuthorized_whenNoLookupFunction() {
         var principal = mock(Principal.class);
         when(principal.getName()).thenReturn("test-id");
-        assertThat(authorizationService.isAuthorized(principal, "test-resource-id", String.class))
+        var securityContext = mock(SecurityContext.class);
+        when(securityContext.getUserPrincipal()).thenReturn(principal);
+        assertThat(authorizationService.isAuthorized(securityContext, "test-resource-id", TestResource.class))
                 .isFailed();
     }
 
@@ -60,7 +65,13 @@ class AuthorizationServiceImplTest {
         });
         var principal = mock(Principal.class);
         when(principal.getName()).thenReturn("test-id");
-        assertThat(authorizationService.isAuthorized(principal, "test-resource-id", String.class))
+        var securityContext = mock(SecurityContext.class);
+        when(securityContext.getUserPrincipal()).thenReturn(principal);
+        assertThat(authorizationService.isAuthorized(securityContext, "test-resource-id", TestResource.class))
                 .isFailed();
+    }
+
+    private static class TestResource extends ParticipantResource {
+
     }
 }

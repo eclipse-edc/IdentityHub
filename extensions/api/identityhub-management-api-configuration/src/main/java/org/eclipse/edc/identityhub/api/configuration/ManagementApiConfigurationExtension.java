@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.configuration;
 
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
@@ -32,7 +33,6 @@ import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
 import org.eclipse.edc.web.spi.configuration.WebServiceSettings;
 
-import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -108,7 +108,7 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
 
     private static class AllowAllAuthorizationService implements AuthorizationService {
         @Override
-        public ServiceResult<Void> isAuthorized(Principal user, String resourceId, Class<?> resourceClass) {
+        public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<? extends ParticipantResource> resourceClass) {
             return ServiceResult.success();
         }
 

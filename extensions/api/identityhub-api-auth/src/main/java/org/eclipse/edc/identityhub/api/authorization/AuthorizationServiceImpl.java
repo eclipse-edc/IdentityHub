@@ -14,11 +14,11 @@
 
 package org.eclipse.edc.identityhub.api.authorization;
 
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.spi.result.ServiceResult;
 
-import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -30,10 +30,9 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     private final Map<Class<?>, Function<String, ParticipantResource>> authorizationCheckFunctions = new HashMap<>();
 
     @Override
-    public ServiceResult<Void> isAuthorized(Principal principal, String resourceId, Class<?> resourceClass) {
-
+    public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<? extends ParticipantResource> resourceClass) {
         var function = authorizationCheckFunctions.get(resourceClass);
-        var name = principal.getName();
+        var name = securityContext.getUserPrincipal().getName();
         if (function == null) {
             return ServiceResult.unauthorized("User access for '%s' to resource ID '%s' of type '%s' cannot be verified".formatted(name, resourceClass, resourceClass));
         }

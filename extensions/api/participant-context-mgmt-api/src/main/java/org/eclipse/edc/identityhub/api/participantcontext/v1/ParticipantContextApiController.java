@@ -64,7 +64,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @GET
     @Path("/{participantId}")
     public ParticipantContext getParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        return authorizationService.isAuthorized(securityContext.getUserPrincipal(), participantId, ParticipantContext.class)
+        return authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .compose(u -> participantContextService.getParticipantContext(participantId))
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
@@ -73,7 +73,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @POST
     @Path("/{participantId}/token")
     public String regenerateToken(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        return authorizationService.isAuthorized(securityContext.getUserPrincipal(), participantId, ParticipantContext.class)
+        return authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .compose(u -> participantContextService.regenerateApiToken(participantId))
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
