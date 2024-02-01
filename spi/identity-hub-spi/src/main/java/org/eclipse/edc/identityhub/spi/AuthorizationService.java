@@ -40,5 +40,5 @@ public interface AuthorizationService {
      * Register a function, that can lookup a particular resource type by ID. Typically, every resource that should be protected with
      * authorization, registers a lookup function for the type of resource.
      */
-    void addLoookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> checkFunction);
+    void addLookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> checkFunction);
 }

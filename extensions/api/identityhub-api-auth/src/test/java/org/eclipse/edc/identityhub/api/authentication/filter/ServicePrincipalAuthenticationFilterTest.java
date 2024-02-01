@@ -17,8 +17,8 @@ package org.eclipse.edc.identityhub.api.authentication.filter;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
-import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipal;
-import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipalResolver;
+import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
+import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.junit.jupiter.api.Test;
 

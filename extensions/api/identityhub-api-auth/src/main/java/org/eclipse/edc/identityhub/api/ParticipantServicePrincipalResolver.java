@@ -12,12 +12,12 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.configuration;
+package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.identityhub.api.authentication.filter.ServicePrincipalAuthenticationFilter;
-import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipal;
-import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipalResolver;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
+import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;

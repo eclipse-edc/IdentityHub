@@ -33,20 +33,21 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     public ServiceResult<Void> isAuthorized(Principal principal, String resourceId, Class<?> resourceClass) {
 
         var function = authorizationCheckFunctions.get(resourceClass);
+        var name = principal.getName();
         if (function == null) {
-            return ServiceResult.unauthorized("User access for '%s' to resource ID '%s' of type '%s' cannot be verified".formatted(principal.getName(), resourceClass, resourceClass));
+            return ServiceResult.unauthorized("User access for '%s' to resource ID '%s' of type '%s' cannot be verified".formatted(name, resourceClass, resourceClass));
         }
 
         var isAuthorized = ofNullable(function.apply(resourceId))
-                .map(pr -> Objects.equals(pr.getParticipantId(), principal.getName()))
+                .map(pr -> Objects.equals(pr.getParticipantId(), name))
                 .orElse(false);
 
-        return isAuthorized ? ServiceResult.success() : ServiceResult.unauthorized("User '%s' is not authorized to access resource of type %s with ID '%s'.".formatted(principal.getName(), resourceClass, resourceId));
+        return isAuthorized ? ServiceResult.success() : ServiceResult.unauthorized("User '%s' is not authorized to access resource of type %s with ID '%s'.".formatted(name, resourceClass, resourceId));
 
     }
 
     @Override
-    public void addLoookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> lookupFunction) {
+    public void addLookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> lookupFunction) {
         authorizationCheckFunctions.put(resourceClass, lookupFunction);
     }
 }

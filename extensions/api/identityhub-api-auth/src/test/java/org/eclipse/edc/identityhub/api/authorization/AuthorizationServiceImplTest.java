@@ -29,7 +29,7 @@ class AuthorizationServiceImplTest {
 
     @Test
     void isAuthorized_whenAuthorized() {
-        authorizationService.addLoookupFunction(String.class, s -> new ParticipantResource() {
+        authorizationService.addLookupFunction(String.class, s -> new ParticipantResource() {
             @Override
             public String getParticipantId() {
                 return "test-id";
@@ -52,7 +52,7 @@ class AuthorizationServiceImplTest {
 
     @Test
     void isAuthorized_whenNotAuthorized() {
-        authorizationService.addLoookupFunction(String.class, s -> new ParticipantResource() {
+        authorizationService.addLookupFunction(String.class, s -> new ParticipantResource() {
             @Override
             public String getParticipantId() {
                 return "another-test-id";

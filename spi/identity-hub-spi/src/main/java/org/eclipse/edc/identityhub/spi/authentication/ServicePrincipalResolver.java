@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.authentication.spi;
+package org.eclipse.edc.identityhub.spi.authentication;
 
 /**
  * Resolves {@link ServicePrincipal} objects during request ingress.

@@ -21,8 +21,8 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipal;
-import org.eclipse.edc.identityhub.api.authentication.spi.ServicePrincipalResolver;
+import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
+import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
 
 import java.security.Principal;
 

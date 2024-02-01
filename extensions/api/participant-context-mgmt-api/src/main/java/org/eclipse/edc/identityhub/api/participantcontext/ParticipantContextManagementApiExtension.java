@@ -49,7 +49,7 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        authorizationService.addLoookupFunction(ParticipantContext.class, s -> participantContextService.getParticipantContext(s).orElseThrow(exceptionMapper(ParticipantContext.class, s)));
+        authorizationService.addLookupFunction(ParticipantContext.class, s -> participantContextService.getParticipantContext(s).orElseThrow(exceptionMapper(ParticipantContext.class, s)));
         var controller = new ParticipantContextApiController(new ParticipantManifestValidator(), participantContextService, authorizationService);
         webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
     }

@@ -48,7 +48,7 @@ public class DidManagementApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        authorizationService.addLoookupFunction(DidResource.class, s -> didDocumentService.findById(s));
+        authorizationService.addLookupFunction(DidResource.class, s -> didDocumentService.findById(s));
         var controller = new DidManagementApiController(didDocumentService, authorizationService);
         webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
 

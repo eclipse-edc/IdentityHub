@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.authentication.spi;
+package org.eclipse.edc.identityhub.spi.authentication;
 
 import java.security.Principal;
 import java.util.List;
@@ -22,8 +22,10 @@ import java.util.List;
  */
 public interface ServicePrincipal extends Principal {
 
+    String ROLE_ADMIN = "admin";
+
     /**
-     * The "principal", e.g. the user ID, or a unique user name.
+     * The "principal", e.g. the user ID, or a unique service identifier.
      */
     String getPrincipal();
 
