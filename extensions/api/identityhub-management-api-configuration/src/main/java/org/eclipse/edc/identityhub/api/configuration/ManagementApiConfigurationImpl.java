@@ -14,19 +14,20 @@
 
 package org.eclipse.edc.identityhub.api.configuration;
 
+import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
 import org.eclipse.edc.web.spi.configuration.WebServiceConfiguration;
 
 /**
  * Marker class specifically made for the configuration of all our Management APIs
  */
-public class ManagementApiConfiguration extends WebServiceConfiguration {
+class ManagementApiConfigurationImpl extends ManagementApiConfiguration {
 
-    public ManagementApiConfiguration(String contextAlias) {
+    ManagementApiConfigurationImpl(String contextAlias) {
         super();
         this.contextAlias = contextAlias;
     }
 
-    public ManagementApiConfiguration(WebServiceConfiguration webServiceConfiguration) {
+    ManagementApiConfigurationImpl(WebServiceConfiguration webServiceConfiguration) {
         this.contextAlias = webServiceConfiguration.getContextAlias();
         this.path = webServiceConfiguration.getPath();
         this.port = webServiceConfiguration.getPort();

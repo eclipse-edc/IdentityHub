@@ -28,8 +28,10 @@ dependencies {
     runtimeOnly(project(":extensions:api:did-mgmt-api"))
     runtimeOnly(project(":extensions:api:participant-context-mgmt-api"))
     runtimeOnly(project(":extensions:api:verifiable-credential-mgmt-api"))
-    runtimeOnly(project(":extensions:api:identityhub-management-api-configuration"))
     runtimeOnly(project(":extensions:api:keypair-mgmt-api"))
+    runtimeOnly(project(":extensions:api:identityhub-management-api-configuration"))
+    runtimeOnly(project(":extensions:api:identityhub-api-authentication"))
+    runtimeOnly(project(":extensions:api:identityhub-api-authorization"))
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
 

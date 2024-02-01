@@ -16,26 +16,23 @@ package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.identityhub.api.authentication.filter.RoleBasedAccessFeature;
 import org.eclipse.edc.identityhub.api.authentication.filter.ServicePrincipalAuthenticationFilter;
-import org.eclipse.edc.identityhub.api.authorization.AuthorizationServiceImpl;
-import org.eclipse.edc.identityhub.spi.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
-import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
-import org.eclipse.edc.web.spi.configuration.WebServiceConfiguration;
 
 import static org.eclipse.edc.identityhub.api.ApiAuthenticationExtension.NAME;
 
 @Extension(NAME)
 public class ApiAuthenticationExtension implements ServiceExtension {
 
-    public static final String NAME = "Management API Auth Extension";
+    public static final String NAME = "Management API Authentication Extension";
     @Inject
-    private WebServiceConfiguration apiConfig;
+    private ManagementApiConfiguration apiConfig;
     @Inject
     private WebService webService;
     @Inject
@@ -48,10 +45,5 @@ public class ApiAuthenticationExtension implements ServiceExtension {
         var alias = apiConfig.getContextAlias();
         webService.registerResource(alias, new RoleBasedAccessFeature());
         webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(new ParticipantServicePrincipalResolver(participantContextService, vault)));
-    }
-
-    @Provider
-    public AuthorizationService createAuthService() {
-        return new AuthorizationServiceImpl();
     }
 }

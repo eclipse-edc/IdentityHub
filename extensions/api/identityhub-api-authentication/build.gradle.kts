@@ -22,11 +22,11 @@ dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:identity-hub-did-spi"))
-    api(libs.jakarta.annotation)
 
     implementation(libs.edc.spi.web)
     implementation(libs.edc.core.jerseyproviders)
     implementation(libs.jakarta.rsApi)
+    implementation(libs.jakarta.annotation)
 
     testImplementation(libs.edc.junit)
     testRuntimeOnly(libs.jersey.common) // needs the RuntimeDelegate

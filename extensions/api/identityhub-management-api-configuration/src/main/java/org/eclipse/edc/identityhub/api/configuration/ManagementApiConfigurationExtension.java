@@ -65,7 +65,7 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
     @Inject
     private Vault vault;
 
-    private ManagementApiConfiguration configuration;
+    private ManagementApiConfigurationImpl configuration;
 
     @Override
     public String name() {
@@ -93,9 +93,9 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
 
 
     @Provider
-    public ManagementApiConfiguration createApiConfig(ServiceExtensionContext context) {
+    public ManagementApiConfigurationImpl createApiConfig(ServiceExtensionContext context) {
         if (configuration == null) {
-            configuration = new ManagementApiConfiguration(configurer.configure(context, webServer, SETTINGS));
+            configuration = new ManagementApiConfigurationImpl(configurer.configure(context, webServer, SETTINGS));
         }
         return configuration;
     }
