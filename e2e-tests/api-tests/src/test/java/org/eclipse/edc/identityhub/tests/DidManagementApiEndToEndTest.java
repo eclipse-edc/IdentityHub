@@ -64,7 +64,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:user1"
                         }
                         """)
-                .post("/v1/dids/publish")
+                .post("/v1/participants/%s/dids/publish".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -89,7 +89,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:test-user"
                         }
                         """)
-                .post("/v1/dids/publish")
+                .post("/v1/participants/%s/dids/publish".formatted(user))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(204)
@@ -133,7 +133,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:user1"
                         }
                         """)
-                .post("/v1/dids/unpublish")
+                .post("/v1/participants/%s/dids/unpublish".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -158,7 +158,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:test-user"
                         }
                         """)
-                .post("/v1/dids/unpublish")
+                .post("/v1/participants/%s/dids/unpublish".formatted(user))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(204)
@@ -189,7 +189,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:user1"
                         }
                         """)
-                .post("/v1/dids/state")
+                .post("/v1/participants/%s/dids/state".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);

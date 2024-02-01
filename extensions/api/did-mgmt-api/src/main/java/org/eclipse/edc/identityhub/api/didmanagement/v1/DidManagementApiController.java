@@ -40,7 +40,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/dids")
+@Path("/v1/participants/{participantContextId}/dids")
 public class DidManagementApiController implements DidManagementApi {
 
     private final DidDocumentService documentService;
@@ -55,7 +55,7 @@ public class DidManagementApiController implements DidManagementApi {
     @Override
     @POST
     @Path("/publish")
-    public void publishDidFromBody(DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
+    public void publishDid(DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
         authorizationService.isAuthorized(securityContext.getUserPrincipal(), didRequestPayload.did(), DidResource.class)
                 .compose(u -> documentService.publish(didRequestPayload.did()))
                 .orElseThrow(exceptionMapper(DidResource.class, didRequestPayload.did()));

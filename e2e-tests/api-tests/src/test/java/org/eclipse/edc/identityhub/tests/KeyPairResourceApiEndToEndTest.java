@@ -63,7 +63,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", user2Token))
-                .get("/v1/keypairs/" + key)
+                .get("/v1/participants/%s/keypairs/%s".formatted(user1, key))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -82,7 +82,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
-                .get("/v1/keypairs/" + key)
+                .get("/v1/participants/%s/keypairs/%s".formatted(user1, key))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -110,7 +110,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var res = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", user2Token))
-                .get("/v1/keypairs?participantId=" + user1)
+                .get("/v1/participants/%s/keypairs".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -132,7 +132,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
-                .get("/v1/keypairs?participantId=" + user1)
+                .get("/v1/participants/%s/keypairs".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -154,7 +154,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
                 .body(keyDesc)
-                .put("/v1/keypairs?participantId=" + user1)
+                .put("/v1/participants/%s/keypairs?participantId=%s".formatted(user1, user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(204)
@@ -183,7 +183,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .contentType(JSON)
                 .header(new Header("x-api-key", token2))
                 .body(keyDesc)
-                .put("/v1/keypairs?participantId=" + user1)
+                .put("/v1/participants/%s/keypairs?participantId=%s".formatted(user1, user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -214,7 +214,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
                 .body(keyDesc)
-                .post("/v1/keypairs/%s/rotate".formatted(keyId))
+                .post("/v1/participants/%s/keypairs/%s/rotate".formatted(user1, keyId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(204)
@@ -255,7 +255,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .contentType(JSON)
                 .header(new Header("x-api-key", token2))
                 .body(keyDesc)
-                .post("/v1/keypairs/%s/rotate".formatted(keyId))
+                .post("/v1/participants/%s/keypairs/%s/rotate".formatted(user1, keyId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -281,7 +281,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
-                .post("/v1/keypairs/%s/revoke".formatted(keyId))
+                .post("/v1/participants/%s/keypairs/%s/revoke".formatted(user1, keyId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(204)
@@ -305,7 +305,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token2))
-                .post("/v1/keypairs/%s/revoke".formatted(keyId))
+                .post("/v1/participants/%s/keypairs/%s/revoke".formatted(user1, keyId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -323,10 +323,11 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
     }
 
     private static KeyDescriptor.Builder createKeyDescriptor(String participantId) {
+        var id = UUID.randomUUID().toString();
         return KeyDescriptor.Builder.newInstance()
-                .keyId(UUID.randomUUID().toString())
+                .keyId(id)
                 .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
-                .privateKeyAlias(participantId + "-alias");
+                .privateKeyAlias("%s-%s-alias".formatted(participantId, id));
     }
 
 }

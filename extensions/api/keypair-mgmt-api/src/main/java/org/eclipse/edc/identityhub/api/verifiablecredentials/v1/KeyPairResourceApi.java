@@ -52,7 +52,6 @@ public interface KeyPairResourceApi {
 
     @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Finds all KeyPairResources for a particular ParticipantContext.",
-            parameters = @Parameter(name = "participantId", description = "ID of the participant context for which to list the keys. May need elevated rights."),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The KeyPairResource.",
                             content = @Content(schema = @Schema(implementation = ParticipantContext.class))),

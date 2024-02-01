@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * A user is a representation of the security principal that executes a request against an HTTP API. It must be resolvable during request pre-matching.
  */
-public interface User extends Principal {
+public interface ServicePrincipal extends Principal {
 
     /**
      * The "principal", e.g. the user ID, or a unique user name.

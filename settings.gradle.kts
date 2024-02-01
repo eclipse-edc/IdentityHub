@@ -47,9 +47,9 @@ include(":extensions:api:identityhub-management-api-configuration")
 include(":extensions:api:identityhub-api-auth")
 include(":extensions:api:participant-context-mgmt-api")
 include(":extensions:api:verifiable-credential-mgmt-api")
-include(":extensions:api:keypair-mgmt-api")
+include(":extensions:api:did-mgmt-api")
 
-include(":extensions:did:did-management-api")
+include(":extensions:api:keypair-mgmt-api")
 // other modules
 include(":launcher")
 

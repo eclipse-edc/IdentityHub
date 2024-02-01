@@ -42,7 +42,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/keypairs")
+@Path("/v1/participants/{participantId}/keypairs")
 public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     private final AuthorizationService authorizationService;
@@ -74,7 +74,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @GET
     @Override
-    public Collection<KeyPairResource> findForParticipant(@QueryParam("participantId") String participantId, @Context SecurityContext securityContext) {
+    public Collection<KeyPairResource> findForParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+
         var query = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build();
         return keyPairService.query(query)
                 .orElseThrow(exceptionMapper(KeyPairResource.class, participantId))
