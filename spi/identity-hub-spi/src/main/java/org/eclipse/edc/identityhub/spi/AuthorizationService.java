@@ -29,16 +29,16 @@ public interface AuthorizationService {
     /**
      * Checks whether the principal is authorized to access a particular resource.
      *
-     * @param user          The {@link Principal}, typically obtained via {@link SecurityContext#getUserPrincipal()}.
-     * @param resourceId    The database ID of the resource. The resource must be of type {@link ParticipantResource}.
-     * @param resourceClass The concrete type of the resource.
+     * @param securityContext The {@link SecurityContext} that was obtained during the authentication phase of the request. Not null.
+     * @param resourceId      The ID of the resource. The resource must be of type {@link ParticipantResource}.
+     * @param resourceClass   The concrete type of the resource.
      * @return success if authorized, {@link ServiceResult#unauthorized(String)} if not authorized
      */
-    ServiceResult<Void> isAuthorized(Principal user, String resourceId, Class<?> resourceClass);
+    ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<? extends ParticipantResource> resourceClass);
 
     /**
      * Register a function, that can lookup a particular resource type by ID. Typically, every resource that should be protected with
      * authorization, registers a lookup function for the type of resource.
      */
-    void addLoookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> checkFunction);
+    void addLookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> checkFunction);
 }

@@ -28,6 +28,7 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.api.participantcontext.v1.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
@@ -52,7 +53,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @POST
-    @RolesAllowed("admin")
+    @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     public String createParticipant(ParticipantManifest manifest) {
         participantManifestValidator.validate(manifest).orElseThrow(ValidationFailureException::new);
         return participantContextService.createParticipantContext(manifest)
@@ -63,7 +64,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @GET
     @Path("/{participantId}")
     public ParticipantContext getParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        return authorizationService.isAuthorized(securityContext.getUserPrincipal(), participantId, ParticipantContext.class)
+        return authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .compose(u -> participantContextService.getParticipantContext(participantId))
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
@@ -72,7 +73,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @POST
     @Path("/{participantId}/token")
     public String regenerateToken(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        return authorizationService.isAuthorized(securityContext.getUserPrincipal(), participantId, ParticipantContext.class)
+        return authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .compose(u -> participantContextService.regenerateApiToken(participantId))
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
@@ -80,7 +81,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @POST
     @Path("/{participantId}/state")
-    @RolesAllowed("admin")
+    @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     public void activateParticipant(@PathParam("participantId") String participantId, @QueryParam("isActive") boolean isActive) {
         if (isActive) {
             participantContextService.updateParticipant(participantId, ParticipantContext::activate);
@@ -93,7 +94,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @DELETE
     @Path("/{participantId}")
-    @RolesAllowed("admin")
+    @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     public void deleteParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
         participantContextService.deleteParticipantContext(participantId)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));

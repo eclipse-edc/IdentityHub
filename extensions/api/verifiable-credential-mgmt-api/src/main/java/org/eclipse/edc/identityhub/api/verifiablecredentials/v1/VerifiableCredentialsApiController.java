@@ -54,7 +54,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @Path("/{credentialId}")
     @Override
     public VerifiableCredentialResource findById(@PathParam("credentialId") String id, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), id, VerifiableCredentialResource.class)
+        authorizationService.isAuthorized(securityContext, id, VerifiableCredentialResource.class)
                 .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
 
         var result = credentialStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build())
@@ -71,7 +71,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
         return credentialStore.query(query)
                 .orElseThrow(InvalidRequestException::new)
-                .stream().filter(vcr -> authorizationService.isAuthorized(securityContext.getUserPrincipal(), vcr.getId(), VerifiableCredentialResource.class).succeeded())
+                .stream().filter(vcr -> authorizationService.isAuthorized(securityContext, vcr.getId(), VerifiableCredentialResource.class).succeeded())
                 .toList();
     }
 
@@ -79,7 +79,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @Path("/{credentialId}")
     @Override
     public void deleteCredential(@PathParam("credentialId") String id, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), id, VerifiableCredentialResource.class)
+        authorizationService.isAuthorized(securityContext, id, VerifiableCredentialResource.class)
                 .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
         var res = credentialStore.deleteById(id);
         if (res.failed()) {

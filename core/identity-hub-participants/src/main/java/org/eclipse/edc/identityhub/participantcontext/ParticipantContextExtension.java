@@ -52,6 +52,11 @@ public class ParticipantContextExtension implements ServiceExtension {
 
     private ParticipantContextObservable participantContextObservable;
 
+    @Override
+    public String name() {
+        return NAME;
+    }
+
     @Provider
     public ParticipantContextService createParticipantService() {
         return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, keyParserRegistry, participantContextObservable());

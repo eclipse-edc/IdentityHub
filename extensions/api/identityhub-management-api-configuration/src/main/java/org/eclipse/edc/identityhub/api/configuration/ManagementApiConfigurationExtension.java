@@ -14,16 +14,18 @@
 
 package org.eclipse.edc.identityhub.api.configuration;
 
-import org.eclipse.edc.identityhub.api.authentication.filter.RoleBasedAccessFeature;
-import org.eclipse.edc.identityhub.api.authentication.filter.ServicePrincipalAuthenticationFilter;
-import org.eclipse.edc.identityhub.api.authorization.AuthorizationServiceImpl;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -34,6 +36,7 @@ import org.eclipse.edc.web.spi.configuration.WebServiceSettings;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import static org.eclipse.edc.identityhub.api.configuration.ManagementApiConfigurationExtension.NAME;
 
@@ -63,7 +66,7 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
     @Inject
     private Vault vault;
 
-    private ManagementApiConfiguration configuration;
+    private ManagementApiConfigurationImpl configuration;
 
     @Override
     public String name() {
@@ -72,10 +75,7 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var alias = createApiConfig(context).getContextAlias();
 
-        webService.registerResource(alias, new RoleBasedAccessFeature());
-        webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(new ParticipantServicePrincipalResolver(participantContextService, vault)));
 
         // create super-user
         participantContextService.createParticipantContext(ParticipantManifest.Builder.newInstance()
@@ -87,23 +87,35 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
                                 .keyId("super-user-key")
                                 .privateKeyAlias("super-user-alias")
                                 .build())
-                        .roles(List.of("admin"))
+                        .roles(List.of(ServicePrincipal.ROLE_ADMIN))
                         .build())
                 .onSuccess(apiKey -> context.getMonitor().info("Created user 'super-user'. Please take a note . API Key: %s".formatted(apiKey)));
     }
 
-    @Provider
-    public AuthorizationService createAuthService() {
-        return new AuthorizationServiceImpl();
-    }
 
     @Provider
     public ManagementApiConfiguration createApiConfig(ServiceExtensionContext context) {
         if (configuration == null) {
-            configuration = new ManagementApiConfiguration(configurer.configure(context, webServer, SETTINGS));
+            configuration = new ManagementApiConfigurationImpl(configurer.configure(context, webServer, SETTINGS));
         }
         return configuration;
     }
 
+    @Provider(isDefault = true)
+    public AuthorizationService authorizationService() {
+        return new AllowAllAuthorizationService();
+    }
 
+
+    private static class AllowAllAuthorizationService implements AuthorizationService {
+        @Override
+        public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<? extends ParticipantResource> resourceClass) {
+            return ServiceResult.success();
+        }
+
+        @Override
+        public void addLookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> checkFunction) {
+
+        }
+    }
 }

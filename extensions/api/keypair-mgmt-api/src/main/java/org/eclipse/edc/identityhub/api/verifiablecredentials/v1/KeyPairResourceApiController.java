@@ -58,7 +58,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Override
     public KeyPairResource findById(@PathParam("keyPairId") String id, @Context SecurityContext securityContext) {
 
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), id, KeyPairResource.class)
+        authorizationService.isAuthorized(securityContext, id, KeyPairResource.class)
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));
 
         var query = QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build();
@@ -79,15 +79,15 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
         var query = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build();
         return keyPairService.query(query)
                 .orElseThrow(exceptionMapper(KeyPairResource.class, participantId))
-                .stream().filter(kpr -> authorizationService.isAuthorized(securityContext.getUserPrincipal(), kpr.getId(), KeyPairResource.class).succeeded())
+                .stream().filter(kpr -> authorizationService.isAuthorized(securityContext, kpr.getId(), KeyPairResource.class).succeeded())
                 .toList();
     }
 
     @PUT
     @Override
-    public void addKeyPair(@QueryParam("participantId") String participantId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault,
+    public void addKeyPair(@PathParam("participantId") String participantId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault,
                            @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), participantId, ParticipantContext.class)
+        authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .compose(u -> keyPairService.addKeyPair(participantId, keyDescriptor, makeDefault))
                 .orElseThrow(exceptionMapper(KeyPairResource.class));
     }
@@ -96,7 +96,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Path("/{keyPairId}/rotate")
     @Override
     public void rotateKeyPair(@PathParam("keyPairId") String id, @Nullable KeyDescriptor newKey, @QueryParam("duration") long duration, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), id, KeyPairResource.class)
+        authorizationService.isAuthorized(securityContext, id, KeyPairResource.class)
                 .compose(u -> keyPairService.rotateKeyPair(id, newKey, duration))
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));
     }
@@ -105,7 +105,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Path("/{keyPairId}/revoke")
     @Override
     public void revokeKey(@PathParam("keyPairId") String id, KeyDescriptor newKey, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), id, KeyPairResource.class)
+        authorizationService.isAuthorized(securityContext, id, KeyPairResource.class)
                 .compose(u -> keyPairService.revokeKey(id, newKey))
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));
     }

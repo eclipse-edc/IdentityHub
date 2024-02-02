@@ -40,7 +40,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/participants/{participantContextId}/dids")
+@Path("/v1/participants/{participantId}/dids")
 public class DidManagementApiController implements DidManagementApi {
 
     private final DidDocumentService documentService;
@@ -56,7 +56,7 @@ public class DidManagementApiController implements DidManagementApi {
     @POST
     @Path("/publish")
     public void publishDid(DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), didRequestPayload.did(), DidResource.class)
+        authorizationService.isAuthorized(securityContext, didRequestPayload.did(), DidResource.class)
                 .compose(u -> documentService.publish(didRequestPayload.did()))
                 .orElseThrow(exceptionMapper(DidResource.class, didRequestPayload.did()));
     }
@@ -65,7 +65,7 @@ public class DidManagementApiController implements DidManagementApi {
     @POST
     @Path("/unpublish")
     public void unpublishDidFromBody(DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), didRequestPayload.did(), DidResource.class)
+        authorizationService.isAuthorized(securityContext, didRequestPayload.did(), DidResource.class)
                 .compose(u -> documentService.unpublish(didRequestPayload.did()))
                 .orElseThrow(exceptionMapper(DidDocument.class, didRequestPayload.did()));
     }
@@ -77,7 +77,7 @@ public class DidManagementApiController implements DidManagementApi {
     public Collection<DidDocument> queryDid(QuerySpec querySpec, @Context SecurityContext securityContext) {
         return documentService.queryDocuments(querySpec)
                 .orElseThrow(exceptionMapper(DidDocument.class, null))
-                .stream().filter(dd -> authorizationService.isAuthorized(securityContext.getUserPrincipal(), dd.getId(), DidResource.class).succeeded())
+                .stream().filter(dd -> authorizationService.isAuthorized(securityContext, dd.getId(), DidResource.class).succeeded())
                 .toList();
     }
 
@@ -85,7 +85,7 @@ public class DidManagementApiController implements DidManagementApi {
     @POST
     @Path("/state")
     public String getState(DidRequestPayload request, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), request.did(), DidResource.class)
+        authorizationService.isAuthorized(securityContext, request.did(), DidResource.class)
                 .orElseThrow(exceptionMapper(DidResource.class, request.did()));
         var byId = documentService.findById(request.did());
         return byId != null ? DidState.from(byId.getState()).toString() : null;
@@ -96,7 +96,7 @@ public class DidManagementApiController implements DidManagementApi {
     @Path("/{did}/endpoints")
     public void addEndpoint(@PathParam("did") String did, Service service, @QueryParam("autoPublish") boolean autoPublish,
                             @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), did, DidResource.class)
+        authorizationService.isAuthorized(securityContext, did, DidResource.class)
                 .compose(u -> documentService.addService(did, service))
                 .compose(v -> autoPublish ? documentService.publish(did) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, did));
@@ -107,7 +107,7 @@ public class DidManagementApiController implements DidManagementApi {
     @Path("/{did}/endpoints")
     public void replaceEndpoint(@PathParam("did") String did, Service service, @QueryParam("autoPublish") boolean autoPublish,
                                 @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), did, DidResource.class)
+        authorizationService.isAuthorized(securityContext, did, DidResource.class)
                 .compose(u -> documentService.replaceService(did, service))
                 .compose(v -> autoPublish ? documentService.publish(did) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, did));
@@ -118,7 +118,7 @@ public class DidManagementApiController implements DidManagementApi {
     @Path("/{did}/endpoints")
     public void removeEndpoint(@PathParam("did") String did, @QueryParam("serviceId") String serviceId, @QueryParam("autoPublish") boolean autoPublish,
                                @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext.getUserPrincipal(), did, DidResource.class)
+        authorizationService.isAuthorized(securityContext, did, DidResource.class)
                 .compose(u -> documentService.removeService(did, serviceId))
                 .compose(v -> autoPublish ? documentService.publish(did) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, did));

@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.identityhub.api.verifiablecredentials;
 
-import org.eclipse.edc.identityhub.api.configuration.ManagementApiConfiguration;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.KeyPairResourceApiController;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
+import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -36,7 +36,7 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
     public static final String NAME = "KeyPairResource Management API Extension";
 
     @Inject
-    private ManagementApiConfiguration apiConfiguration;
+    private ManagementApiConfiguration managementApiConfiguration;
     @Inject
     private WebService webService;
     @Inject
@@ -45,10 +45,15 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
     private AuthorizationService authorizationService;
 
     @Override
+    public String name() {
+        return NAME;
+    }
+
+    @Override
     public void initialize(ServiceExtensionContext context) {
-        authorizationService.addLoookupFunction(KeyPairResource.class, this::findById);
+        authorizationService.addLookupFunction(KeyPairResource.class, this::findById);
         var controller = new KeyPairResourceApiController(authorizationService, keyPairService);
-        webService.registerResource(apiConfiguration.getContextAlias(), controller);
+        webService.registerResource(managementApiConfiguration.getContextAlias(), controller);
     }
 
     private ParticipantResource findById(String keyPairId) {
