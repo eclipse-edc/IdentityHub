@@ -27,11 +27,11 @@ import java.util.function.Function;
 import static java.util.Optional.ofNullable;
 
 public class AuthorizationServiceImpl implements AuthorizationService {
-    private final Map<Class<?>, Function<String, ParticipantResource>> authorizationCheckFunctions = new HashMap<>();
+    private final Map<Class<?>, Function<String, ParticipantResource>> resourceLookupFunctions = new HashMap<>();
 
     @Override
     public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<? extends ParticipantResource> resourceClass) {
-        var function = authorizationCheckFunctions.get(resourceClass);
+        var function = resourceLookupFunctions.get(resourceClass);
         var name = securityContext.getUserPrincipal().getName();
         if (function == null) {
             return ServiceResult.unauthorized("User access for '%s' to resource ID '%s' of type '%s' cannot be verified".formatted(name, resourceClass, resourceClass));
@@ -47,6 +47,6 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
     @Override
     public void addLookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> lookupFunction) {
-        authorizationCheckFunctions.put(resourceClass, lookupFunction);
+        resourceLookupFunctions.put(resourceClass, lookupFunction);
     }
 }
