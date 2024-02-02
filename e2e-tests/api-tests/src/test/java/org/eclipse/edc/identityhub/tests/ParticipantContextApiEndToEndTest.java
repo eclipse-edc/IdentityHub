@@ -27,6 +27,8 @@ import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -203,6 +205,23 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .statusCode(204);
 
         assertThat(getDidForParticipant(participantId)).isEmpty();
+    }
+
+    @Test
+    void regenerateToken() {
+
+        var participantId = "another-user";
+        var userToken = createParticipant(participantId);
+
+        assertThat(Arrays.asList(userToken, getSuperUserApiKey()))
+                .allSatisfy(t -> RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                        .header(new Header("x-api-key", t))
+                        .contentType(ContentType.JSON)
+                        .post("/v1/participants/%s/token".formatted(participantId))
+                        .then()
+                        .log().ifError()
+                        .statusCode(200)
+                        .body(notNullValue()));
     }
 
 }

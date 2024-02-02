@@ -24,11 +24,13 @@ import org.eclipse.edc.spi.event.EventSubscriber;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+
 import static io.restassured.http.ContentType.JSON;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -81,27 +83,34 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
         var user = "test-user";
         var token = createParticipant(user);
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
-                .contentType(JSON)
-                .header(new Header("x-api-key", token))
-                .body("""
-                        {
-                           "did": "did:web:test-user"
-                        }
-                        """)
-                .post("/v1/participants/%s/dids/publish".formatted(user))
-                .then()
-                .log().ifValidationFails()
-                .statusCode(204)
-                .body(Matchers.notNullValue());
 
-        // verify that the publish event was fired twice
-        verify(subscriber, times(2)).on(argThat(env -> {
-            if (env.getPayload() instanceof DidDocumentPublished event) {
-                return event.getDid().equals("did:web:test-user");
-            }
-            return false;
-        }));
+        assertThat(Arrays.asList(token, getSuperUserApiKey()))
+                .allSatisfy(t -> {
+                    reset(subscriber);
+                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                            .contentType(JSON)
+                            .header(new Header("x-api-key", t))
+                            .body("""
+                                    {
+                                       "did": "did:web:test-user"
+                                    }
+                                    """)
+                            .post("/v1/participants/%s/dids/publish".formatted(user))
+                            .then()
+                            .log().ifValidationFails()
+                            .statusCode(204)
+                            .body(Matchers.notNullValue());
+
+                    // verify that the publish event was fired twice
+                    verify(subscriber).on(argThat(env -> {
+                        if (env.getPayload() instanceof DidDocumentPublished event) {
+                            return event.getDid().equals("did:web:test-user");
+                        }
+                        return false;
+                    }));
+
+                });
+
     }
 
     @Test
@@ -150,27 +159,33 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
         var user = "test-user";
         var token = createParticipant(user);
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
-                .contentType(JSON)
-                .header(new Header("x-api-key", token))
-                .body("""
-                        {
-                           "did": "did:web:test-user"
-                        }
-                        """)
-                .post("/v1/participants/%s/dids/unpublish".formatted(user))
-                .then()
-                .log().ifValidationFails()
-                .statusCode(204)
-                .body(Matchers.notNullValue());
 
-        // verify that the publish event was fired twice
-        verify(subscriber).on(argThat(env -> {
-            if (env.getPayload() instanceof DidDocumentUnpublished event) {
-                return event.getDid().equals("did:web:test-user");
-            }
-            return false;
-        }));
+        assertThat(Arrays.asList(token, getSuperUserApiKey()))
+                .allSatisfy(t -> {
+                    reset(subscriber);
+                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                            .contentType(JSON)
+                            .header(new Header("x-api-key", t))
+                            .body("""
+                                    {
+                                       "did": "did:web:test-user"
+                                    }
+                                    """)
+                            .post("/v1/participants/%s/dids/unpublish".formatted(user))
+                            .then()
+                            .log().ifValidationFails()
+                            .statusCode(204)
+                            .body(Matchers.notNullValue());
+
+                    // verify that the publish event was fired twice
+                    verify(subscriber).on(argThat(env -> {
+                        if (env.getPayload() instanceof DidDocumentUnpublished event) {
+                            return event.getDid().equals("did:web:test-user");
+                        }
+                        return false;
+                    }));
+                });
+
     }
 
     @Test
