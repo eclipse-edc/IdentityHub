@@ -27,4 +27,6 @@ dependencies {
     implementation(libs.edc.core.jerseyproviders)
     implementation(libs.jakarta.rsApi)
 
+    testImplementation(libs.edc.junit)
+
 }
