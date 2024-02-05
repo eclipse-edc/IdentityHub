@@ -18,6 +18,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
+import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
@@ -75,6 +76,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     private final CredentialQueryResolver queryResolver = mock();
     private final AccessTokenVerifier accessTokenVerifier = mock();
     private final VerifiablePresentationService generator = mock();
+    private final ParticipantContextService participantContextService = mock();
 
     @Test
     void query_tokenNotPresent_shouldReturn401() {
@@ -139,7 +141,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
-        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(QueryResult.unauthorized("test-failure"));
+        when(queryResolver.query(anyString(), any(), eq(List.of("test-scope1")))).thenReturn(QueryResult.unauthorized("test-failure"));
 
         assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
                 .isInstanceOf(NotAuthorizedException.class)
@@ -153,7 +155,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
-        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
+        when(queryResolver.query(anyString(), any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
         when(generator.createPresentation(anyList(), any(), any())).thenReturn(Result.failure("test-failure"));
 
@@ -168,7 +170,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
-        when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
+        when(queryResolver.query(anyString(), any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
         var pres = PresentationResponseMessage.Builder.newinstance().presentation(List.of(generateJwt()))
                 .presentationSubmission(new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("id", "ldp_vp", "$.verifiableCredentials[0]"))))
@@ -187,7 +189,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected PresentationApiController controller() {
-        return new PresentationApiController(validatorRegistryMock, typeTransformerRegistry, queryResolver, accessTokenVerifier, generator, mock());
+        return new PresentationApiController(validatorRegistryMock, typeTransformerRegistry, queryResolver, accessTokenVerifier, generator, mock(), participantContextService);
     }
 
     private String generateJwt() {

@@ -164,7 +164,7 @@ public class ResolutionApiComponentTest {
     void query_queryResolutionFails_shouldReturn403() {
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
-        when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.unauthorized("scope mismatch!"));
+        when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.unauthorized("scope mismatch!"));
 
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
@@ -182,7 +182,7 @@ public class ResolutionApiComponentTest {
     void query_presentationGenerationFails_shouldReturn500() {
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
-        when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
+        when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
         when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(failure("generator test error"));
 
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
@@ -199,7 +199,7 @@ public class ResolutionApiComponentTest {
     void query_success() throws JOSEException {
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
-        when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
+        when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
         when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(success(createPresentationResponse()));
 
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(JwtCreationUtil.CONSUMER_KEY.toPublicKey()));

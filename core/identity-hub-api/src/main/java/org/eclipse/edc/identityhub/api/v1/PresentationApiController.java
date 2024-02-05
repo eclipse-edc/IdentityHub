@@ -23,7 +23,9 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
@@ -44,6 +46,7 @@ import java.util.Optional;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY;
+import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -56,15 +59,17 @@ public class PresentationApiController implements PresentationApi {
     private final AccessTokenVerifier accessTokenVerifier;
     private final VerifiablePresentationService verifiablePresentationService;
     private final Monitor monitor;
+    private final ParticipantContextService participantContextService;
 
     public PresentationApiController(JsonObjectValidatorRegistry validatorRegistry, TypeTransformerRegistry transformerRegistry, CredentialQueryResolver queryResolver,
-                                     AccessTokenVerifier accessTokenVerifier, VerifiablePresentationService verifiablePresentationService, Monitor monitor) {
+                                     AccessTokenVerifier accessTokenVerifier, VerifiablePresentationService verifiablePresentationService, Monitor monitor, ParticipantContextService participantContextService) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
         this.queryResolver = queryResolver;
         this.accessTokenVerifier = accessTokenVerifier;
         this.verifiablePresentationService = verifiablePresentationService;
         this.monitor = monitor;
+        this.participantContextService = participantContextService;
     }
 
 
@@ -87,8 +92,11 @@ public class PresentationApiController implements PresentationApi {
         // verify and validate the requestor's SI token
         var issuerScopes = accessTokenVerifier.verify(token, participantContextId).orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
+        var participantContext = participantContextService.getParticipantContext(participantContextId)
+                .orElseThrow(exceptionMapper(ParticipantContext.class, participantContextId));
+
         // query the database
-        var credentials = queryResolver.query(presentationQuery, issuerScopes).orElseThrow(f -> new NotAuthorizedException(f.getFailureDetail()));
+        var credentials = queryResolver.query(participantContextId, presentationQuery, issuerScopes).orElseThrow(f -> new NotAuthorizedException(f.getFailureDetail()));
 
         // package the credentials in a VP and sign
         var audience = getAudience(token);
