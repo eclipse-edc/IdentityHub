@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.api.authorization;
 
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.spi.result.ServiceResult;
 
@@ -31,6 +32,11 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
     @Override
     public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<? extends ParticipantResource> resourceClass) {
+
+        if (securityContext.isUserInRole(ServicePrincipal.ROLE_ADMIN)) {
+            return ServiceResult.success();
+        }
+
         var function = resourceLookupFunctions.get(resourceClass);
         var name = securityContext.getUserPrincipal().getName();
         if (function == null) {

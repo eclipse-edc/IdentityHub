@@ -21,7 +21,10 @@ import org.junit.jupiter.api.Test;
 import java.security.Principal;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class AuthorizationServiceImplTest {
@@ -69,6 +72,19 @@ class AuthorizationServiceImplTest {
         when(securityContext.getUserPrincipal()).thenReturn(principal);
         assertThat(authorizationService.isAuthorized(securityContext, "test-resource-id", TestResource.class))
                 .isFailed();
+    }
+
+    @Test
+    void isAuthorized_whenSuperUser() {
+
+        var securityContext = mock(SecurityContext.class);
+        when(securityContext.isUserInRole(eq("admin"))).thenReturn(true);
+
+        assertThat(authorizationService.isAuthorized(securityContext, "test-resource-id", TestResource.class))
+                .isSucceeded();
+
+        verify(securityContext).isUserInRole(eq("admin"));
+        verifyNoMoreInteractions(securityContext);
     }
 
     private static class TestResource extends ParticipantResource {
