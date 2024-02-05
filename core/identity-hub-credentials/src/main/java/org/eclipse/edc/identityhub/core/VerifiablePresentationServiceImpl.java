@@ -54,13 +54,14 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
      * all JWT-VCs in the list will be packaged in a separate JWT VP, because LDP-VPs cannot contain JWT-VCs.
      * <em>Note: submitting a {@link PresentationDefinition} is not supported at the moment, and it will be ignored after logging a warning. </em>
      *
+     * @param participantContextId   The ID of the {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext} for which the VP is to be generated
      * @param credentials            The list of verifiable credentials to include in the presentation.
      * @param presentationDefinition The optional presentation definition. <em>Not supported at the moment!</em>
      * @param audience               The Participant ID of the entity who the VP is intended for. May be null for some VP formats.
      * @return A Result object wrapping the PresentationResponse.
      */
     @Override
-    public Result<PresentationResponseMessage> createPresentation(List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition, @Nullable String audience) {
+    public Result<PresentationResponseMessage> createPresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition, @Nullable String audience) {
 
         if (presentationDefinition != null) {
             monitor.warning("A PresentationDefinition was submitted, but is currently ignored by the generator.");

@@ -89,18 +89,20 @@ public class PresentationApiController implements PresentationApi {
             return notImplemented();
         }
 
+        // verify that the participant actually exists
+        participantContextService.getParticipantContext(participantContextId)
+                .orElseThrow(exceptionMapper(ParticipantContext.class, participantContextId));
+
+
         // verify and validate the requestor's SI token
         var issuerScopes = accessTokenVerifier.verify(token, participantContextId).orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
-
-        var participantContext = participantContextService.getParticipantContext(participantContextId)
-                .orElseThrow(exceptionMapper(ParticipantContext.class, participantContextId));
 
         // query the database
         var credentials = queryResolver.query(participantContextId, presentationQuery, issuerScopes).orElseThrow(f -> new NotAuthorizedException(f.getFailureDetail()));
 
         // package the credentials in a VP and sign
         var audience = getAudience(token);
-        var presentationResponse = verifiablePresentationService.createPresentation(credentials.toList(), presentationQuery.getPresentationDefinition(), audience)
+        var presentationResponse = verifiablePresentationService.createPresentation(participantContextId, credentials.toList(), presentationQuery.getPresentationDefinition(), audience)
                 .compose(presentation -> transformerRegistry.transform(presentation, JsonObject.class))
                 .orElseThrow(failure -> new EdcException("Error creating VerifiablePresentation: %s".formatted(failure.getFailureDetail())));
         return Response.ok()

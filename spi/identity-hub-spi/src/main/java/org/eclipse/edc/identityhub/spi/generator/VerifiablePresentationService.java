@@ -31,10 +31,11 @@ public interface VerifiablePresentationService {
     /**
      * Creates a presentation based on a list of verifiable credentials and an optional presentation definition.
      *
+     * @param participantContextId
      * @param credentials            The list of verifiable credentials to include in the presentation.
      * @param presentationDefinition The optional presentation definition.
      * @param audience               The Participant ID of the party who the presentation is intended for. May not be relevant for all VP formats
      * @return A Result object containing a PresentationResponse if the presentation creation is successful, or a failure message if it fails.
      */
-    Result<PresentationResponseMessage> createPresentation(List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition, @Nullable String audience);
+    Result<PresentationResponseMessage> createPresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition, @Nullable String audience);
 }

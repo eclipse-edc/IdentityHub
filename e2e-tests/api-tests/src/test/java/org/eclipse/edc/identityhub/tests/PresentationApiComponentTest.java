@@ -18,7 +18,10 @@ import com.nimbusds.jose.JOSEException;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil;
+import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
+import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
@@ -35,6 +38,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentMatchers;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static io.restassured.http.ContentType.JSON;
@@ -52,7 +56,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
-public class ResolutionApiComponentTest {
+public class PresentationApiComponentTest {
     public static final String VALID_QUERY_WITH_SCOPE = """
             {
               "@context": [
@@ -69,6 +73,7 @@ public class ResolutionApiComponentTest {
             .name("identity-hub")
             .id("identity-hub")
             .build();
+    private static final String TEST_PARTICIPANT_CONTEXT_ID = "test-participant";
     // todo: these mocks should be replaced, once their respective implementations exist!
     private static final CredentialQueryResolver CREDENTIAL_QUERY_RESOLVER = mock();
     private static final VerifiablePresentationService PRESENTATION_GENERATOR = mock();
@@ -84,12 +89,12 @@ public class ResolutionApiComponentTest {
         runtime.registerServiceMock(VerifiablePresentationService.class, PRESENTATION_GENERATOR);
         runtime.registerServiceMock(AccessTokenVerifier.class, ACCESS_TOKEN_VERIFIER);
         runtime.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
-
     }
 
 
     @Test
     void query_tokenNotPresent_shouldReturn401() {
+        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType("application/json")
                 .post("/participants/test-participant/presentation/query")
@@ -100,6 +105,7 @@ public class ResolutionApiComponentTest {
 
     @Test
     void query_validationError_shouldReturn400() {
+        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         var query = """
                 {
                   "@context": [
@@ -122,6 +128,7 @@ public class ResolutionApiComponentTest {
 
     @Test
     void query_withPresentationDefinition_shouldReturn503() {
+        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         var query = """
                 {
                   "@context": [
@@ -146,6 +153,7 @@ public class ResolutionApiComponentTest {
 
     @Test
     void query_tokenVerificationFails_shouldReturn401() {
+        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(failure("token not verified"));
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
@@ -162,6 +170,7 @@ public class ResolutionApiComponentTest {
 
     @Test
     void query_queryResolutionFails_shouldReturn403() {
+        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.unauthorized("scope mismatch!"));
@@ -180,10 +189,11 @@ public class ResolutionApiComponentTest {
 
     @Test
     void query_presentationGenerationFails_shouldReturn500() {
+        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
-        when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(failure("generator test error"));
+        when(PRESENTATION_GENERATOR.createPresentation(anyString(), anyList(), eq(null), any())).thenReturn(failure("generator test error"));
 
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
@@ -197,10 +207,11 @@ public class ResolutionApiComponentTest {
 
     @Test
     void query_success() throws JOSEException {
+        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
-        when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(success(createPresentationResponse()));
+        when(PRESENTATION_GENERATOR.createPresentation(anyString(), anyList(), eq(null), any())).thenReturn(success(createPresentationResponse()));
 
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(JwtCreationUtil.CONSUMER_KEY.toPublicKey()));
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(JwtCreationUtil.PROVIDER_KEY.toPublicKey()));
@@ -229,5 +240,20 @@ public class ResolutionApiComponentTest {
                 .build();
     }
 
+    private void createParticipant(String participantId) {
+        var service = runtime.getContext().getService(ParticipantContextService.class);
+        var manifest = ParticipantManifest.Builder.newInstance()
+                .participantId(participantId)
+                .did("did:web:%s".formatted(participantId))
+                .active(true)
+                .key(KeyDescriptor.Builder.newInstance()
+                        .keyGeneratorParams(Map.of("algorithm", "EC"))
+                        .privateKeyAlias("%s-privatekey-alias".formatted(participantId))
+                        .keyId("key-1")
+                        .build())
+                .build();
+        service.createParticipantContext(manifest)
+                .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
+    }
 
 }
