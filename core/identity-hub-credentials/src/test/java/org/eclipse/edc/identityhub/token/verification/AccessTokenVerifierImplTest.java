@@ -59,7 +59,7 @@ class AccessTokenVerifierImplTest {
     void verify_validSiToken_validAccessToken() {
         when(tokenValidationSerivce.validate(anyString(), any(), anyList()))
                 .thenReturn(Result.success(idToken));
-        assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID)))
+        assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant"))
                 .isSucceeded()
                 .satisfies(strings -> Assertions.assertThat(strings).containsOnly(TEST_SCOPE));
         verify(tokenValidationSerivce, times(2)).validate(anyString(), any(PublicKeyResolver.class), anyList());
@@ -70,7 +70,7 @@ class AccessTokenVerifierImplTest {
     void verify_siTokenValidationFails() {
         when(tokenValidationSerivce.validate(anyString(), any(), anyList()))
                 .thenReturn(Result.failure("test-failure"));
-        assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID))).isFailed()
+        assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant")).isFailed()
                 .detail().contains("test-failure");
     }
 
@@ -79,7 +79,7 @@ class AccessTokenVerifierImplTest {
         when(tokenValidationSerivce.validate(anyString(), any(PublicKeyResolver.class), anyList()))
                 .thenReturn(Result.failure("no access token"));
 
-        assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID))).isFailed()
+        assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant")).isFailed()
                 .detail().contains("no access token");
         verify(tokenValidationSerivce).validate(anyString(), any(PublicKeyResolver.class), anyList());
     }
@@ -91,7 +91,7 @@ class AccessTokenVerifierImplTest {
         var siToken = generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "access_token", accessToken), PROVIDER_KEY);
 
         when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.failure("test-failure"));
-        assertThat(verifier.verify(siToken)).isFailed()
+        assertThat(verifier.verify(siToken, "did:web:test_participant")).isFailed()
                 .detail().isEqualTo("test-failure");
     }
 
@@ -108,7 +108,7 @@ class AccessTokenVerifierImplTest {
         when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.success(idToken));
         when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.failure("test-failure"));
 
-        assertThat(verifier.verify(siToken))
+        assertThat(verifier.verify(siToken, "did:web:test_participant"))
                 .isFailed()
                 .detail().contains("test-failure");
     }

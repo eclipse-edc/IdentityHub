@@ -46,6 +46,7 @@ import static org.eclipse.edc.spi.result.Result.success;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -146,7 +147,7 @@ public class ResolutionApiComponentTest {
     @Test
     void query_tokenVerificationFails_shouldReturn401() {
         var token = generateSiToken();
-        when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(failure("token not verified"));
+        when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(failure("token not verified"));
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
@@ -162,7 +163,7 @@ public class ResolutionApiComponentTest {
     @Test
     void query_queryResolutionFails_shouldReturn403() {
         var token = generateSiToken();
-        when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
+        when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.unauthorized("scope mismatch!"));
 
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
@@ -180,7 +181,7 @@ public class ResolutionApiComponentTest {
     @Test
     void query_presentationGenerationFails_shouldReturn500() {
         var token = generateSiToken();
-        when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
+        when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
         when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(failure("generator test error"));
 
@@ -197,7 +198,7 @@ public class ResolutionApiComponentTest {
     @Test
     void query_success() throws JOSEException {
         var token = generateSiToken();
-        when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
+        when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
         when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(success(createPresentationResponse()));
 

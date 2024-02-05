@@ -125,7 +125,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
-        when(accessTokenVerifier.verify(anyString())).thenReturn(Result.failure("test-failure"));
+        when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.failure("test-failure"));
 
         assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
@@ -138,7 +138,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
-        when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
+        when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(QueryResult.unauthorized("test-failure"));
 
         assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
@@ -152,7 +152,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
-        when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
+        when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
         when(generator.createPresentation(anyList(), any(), any())).thenReturn(Result.failure("test-failure"));
@@ -167,7 +167,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
-        when(accessTokenVerifier.verify(anyString())).thenReturn(Result.success(List.of("test-scope1")));
+        when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(any(), eq(List.of("test-scope1")))).thenReturn(success(Stream.empty()));
 
         var pres = PresentationResponseMessage.Builder.newinstance().presentation(List.of(generateJwt()))

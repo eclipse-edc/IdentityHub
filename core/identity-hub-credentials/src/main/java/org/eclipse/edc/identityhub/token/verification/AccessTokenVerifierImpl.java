@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static com.nimbusds.jwt.JWTClaimNames.SUBJECT;
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.ACCESS_TOKEN_CLAIM;
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.ACCESS_TOKEN_SCOPE_CLAIM;
@@ -59,7 +60,8 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
     }
 
     @Override
-    public Result<List<String>> verify(String token) {
+    public Result<List<String>> verify(String token, String participantId) {
+        Objects.requireNonNull(participantId, "Participant ID is mandatory.");
         var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(IATP_SELF_ISSUED_TOKEN_CONTEXT));
         if (res.failed()) {
             return res.mapTo();
@@ -68,6 +70,14 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         var claimToken = res.getContent();
         var accessTokenString = claimToken.getStringClaim(ACCESS_TOKEN_CLAIM);
         var subClaim = claimToken.getStringClaim(SUBJECT);
+
+        TokenValidationRule audMustMatchParticipantIdRule = (at, additional) -> {
+            var aud = at.getListClaim(AUDIENCE);
+            if (aud == null || aud.isEmpty()) {
+                return Result.failure("Mandatory claim 'aud' on 'access_token' was null.");
+            }
+            return aud.contains(participantId) ? Result.success() : Result.failure("Participant Context ID must match 'aud' claim in 'access_token'");
+        };
 
         TokenValidationRule subClaimsMatch = (at, additional) -> {
             var atSub = at.getStringClaim(SUBJECT);
@@ -82,6 +92,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         // verify the correctness of the 'access_token'
         var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(IATP_ACCESS_TOKEN_CONTEXT));
         rules.add(subClaimsMatch);
+        rules.add(audMustMatchParticipantIdRule);
         var result = tokenValidationService.validate(accessTokenString, id -> Result.success(stsPublicKey.get()), rules);
         if (result.failed()) {
             return result.mapTo();
