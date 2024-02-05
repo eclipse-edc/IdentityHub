@@ -14,11 +14,16 @@
 
 package org.eclipse.edc.identityhub.core;
 
+import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
+import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.query.Criterion;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +34,11 @@ import static java.util.Optional.ofNullable;
 public class PresentationCreatorRegistryImpl implements PresentationCreatorRegistry {
 
     private final Map<CredentialFormat, PresentationGenerator<?>> creators = new HashMap<>();
-    private final Map<String, CredentialFormat> keyIds = new HashMap<>();
+    private final KeyPairService keyPairService;
+
+    public PresentationCreatorRegistryImpl(KeyPairService keyPairService) {
+        this.keyPairService = keyPairService;
+    }
 
     @Override
     public void addCreator(PresentationGenerator<?> creator, CredentialFormat format) {
@@ -38,22 +47,24 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> T createPresentation(List<VerifiableCredentialContainer> credentials, CredentialFormat format, Map<String, Object> additionalData) {
+    public <T> T createPresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, CredentialFormat format, Map<String, Object> additionalData) {
         var creator = ofNullable(creators.get(format)).orElseThrow(() -> new EdcException("No PresentationCreator was found for CredentialFormat %s".formatted(format)));
 
-        var keyid = additionalData.getOrDefault("keyId", null);
-        if (keyid == null) {
-            throw new EdcException("No key ID was specified when creating presentation. 'additionalData' must contain an entry 'keyId' containing the fully-qualified key ID.");
+        var query = ParticipantResource.queryByParticipantId(participantContextId)
+                .filter(new Criterion("state", "=", KeyPairState.ACTIVE.code()))
+                .build();
+
+        var keyPairResult = keyPairService.query(query)
+                .orElseThrow(f -> new EdcException("Error obtaining private key for participant '%s': %s".formatted(participantContextId, f.getFailureDetail())));
+
+        // check if there is a default key pair
+        var keyPair = keyPairResult.stream().filter(KeyPairResource::isDefaultPair).findAny()
+                .orElseGet(() -> keyPairResult.stream().findFirst().orElse(null));
+
+        if (keyPair == null) {
+            throw new EdcException("No active key pair found for participant '%s'".formatted(participantContextId));
         }
 
-        var keyId = ofNullable(keyIds.get(format)).orElseThrow(() -> new EdcException("No key ID was registered for CredentialFormat %s".formatted(format)));
-
-        return (T) creator.generatePresentation(credentials, null, additionalData);
+        return (T) creator.generatePresentation(credentials, keyPair.getKeyId(), additionalData);
     }
-
-    @Override
-    public void addKeyId(String keyId, CredentialFormat format) {
-        keyIds.put(keyId, format);
-    }
-
 }

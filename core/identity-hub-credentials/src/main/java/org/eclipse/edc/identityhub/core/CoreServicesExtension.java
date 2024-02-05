@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.core;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.core.creators.JwtPresentationGenerator;
 import org.eclipse.edc.identityhub.core.creators.LdpPresentationGenerator;
+import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
@@ -108,9 +109,10 @@ public class CoreServicesExtension implements ServiceExtension {
     private Vault vault;
     @Inject
     private KeyParserRegistry keyParserRegistry;
-
     @Inject
     private SignatureSuiteRegistry suiteRegistry;
+    @Inject
+    private KeyPairService keyPairService;
 
     @Override
     public String name() {
@@ -139,7 +141,7 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public PresentationCreatorRegistry presentationCreatorRegistry(ServiceExtensionContext context) {
         if (presentationCreatorRegistry == null) {
-            presentationCreatorRegistry = new PresentationCreatorRegistryImpl();
+            presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService);
             presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(privateKeyResolver, clock, getOwnDid(context), new JwtGenerationService()), CredentialFormat.JWT);
 
             var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(context.getMonitor()).build();

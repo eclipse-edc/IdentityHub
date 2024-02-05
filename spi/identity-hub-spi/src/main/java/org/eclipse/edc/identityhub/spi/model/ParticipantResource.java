@@ -15,6 +15,8 @@
 package org.eclipse.edc.identityhub.spi.model;
 
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 
 /**
  * This is the base class for all resources that are owned by a {@link ParticipantContext}.
@@ -25,8 +27,13 @@ public abstract class ParticipantResource {
     /**
      * The {@link ParticipantContext} that this resource belongs to.
      */
+
     public String getParticipantId() {
         return participantId;
+    }
+
+    public static QuerySpec.Builder queryByParticipantId(String participantId) {
+        return QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId));
     }
 
     public abstract static class Builder<T extends ParticipantResource, B extends ParticipantResource.Builder<T, B>> {
