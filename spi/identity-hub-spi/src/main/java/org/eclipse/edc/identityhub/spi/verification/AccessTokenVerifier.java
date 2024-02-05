@@ -33,7 +33,7 @@ public interface AccessTokenVerifier {
      * </ul>
      *
      * @param token         The token to be verified. Must be a JWT in base64 encoding.
-     * @param participantId
+     * @param participantId The ID of the {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext} who is supposed to present their credentials
      * @return A {@code Result} containing a {@code List} of scope strings.
      */
     Result<List<String>> verify(String token, String participantId);

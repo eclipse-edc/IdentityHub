@@ -31,7 +31,7 @@ public interface VerifiablePresentationService {
     /**
      * Creates a presentation based on a list of verifiable credentials and an optional presentation definition.
      *
-     * @param participantContextId
+     * @param participantContextId   The ID or the {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext} for whom a VerifiablePresentation is to be created
      * @param credentials            The list of verifiable credentials to include in the presentation.
      * @param presentationDefinition The optional presentation definition.
      * @param audience               The Participant ID of the party who the presentation is intended for. May not be relevant for all VP formats

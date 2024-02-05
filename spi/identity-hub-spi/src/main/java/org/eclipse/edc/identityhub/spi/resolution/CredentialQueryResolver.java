@@ -29,7 +29,7 @@ public interface CredentialQueryResolver {
      * If a failure is returned, that means that the given query does not match the given issuer scopes, which would be equivalent to an unauthorized access (c.f. HTTP 403 error).
      * The Result could also contain information about any errors or issues the occurred during the query execution.
      *
-     * @param participantContextId
+     * @param participantContextId The ID of the {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext} whose credentials are to be obtained.
      * @param query                The representation of the query to be executed.
      * @param issuerScopes         The list of issuer scopes to be considered during the query processing.
      */
