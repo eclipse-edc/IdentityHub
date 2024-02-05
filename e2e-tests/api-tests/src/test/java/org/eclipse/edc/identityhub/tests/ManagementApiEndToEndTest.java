@@ -99,6 +99,12 @@ public abstract class ManagementApiEndToEndTest {
                 .build()).getContent();
     }
 
+    protected ParticipantContext getParticipant(String participantId) {
+        return getService(ParticipantContextService.class)
+                .getParticipantContext(participantId)
+                .orElseThrow(f -> new EdcException(f.getFailureDetail()));
+    }
+
     protected static ParticipantManifest createNewParticipant() {
         var manifest = ParticipantManifest.Builder.newInstance()
                 .participantId("another-participant")

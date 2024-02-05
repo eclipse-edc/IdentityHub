@@ -29,6 +29,8 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
+import java.util.List;
+
 @OpenAPIDefinition(info = @Info(description = "This is the Management API for ParticipantContexts", title = "ParticipantContext Management API", version = "1"))
 public interface ParticipantContextApi {
 
@@ -109,4 +111,19 @@ public interface ParticipantContextApi {
             }
     )
     void deleteParticipant(String participantId, SecurityContext securityContext);
+
+    @Tag(name = "ParticipantContext Management API")
+    @Operation(description = "Updates a ParticipantContext's roles. Note that this is an absolute update, that means all roles that the Participant should have must be submitted in the body. Requires elevated privileges.",
+            requestBody = @RequestBody(content = @Content(array = @ArraySchema(schema = @Schema(implementation = List.class)))),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was updated successfully"),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "404", description = "A ParticipantContext with the given ID does not exist.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    void updateRoles(String participantId, List<String> roles);
 }

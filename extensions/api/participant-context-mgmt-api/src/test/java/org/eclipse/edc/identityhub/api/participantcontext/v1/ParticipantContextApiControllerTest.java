@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -198,6 +200,38 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
                 .then()
                 .statusCode(404);
         verify(participantContextServiceMock).deleteParticipantContext(eq("test-participant"));
+    }
+
+    @Test
+    void updateRoles() {
+        when(participantContextServiceMock.updateParticipant(anyString(), any())).thenReturn(ServiceResult.success());
+
+        baseRequest()
+                .body(List.of("role1", "role2"))
+                .put("/test-participant/roles")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(204);
+
+        verify(participantContextServiceMock).updateParticipant(anyString(), argThat(con -> {
+            var pc = createParticipantContext().build();
+            con.accept(pc);
+            return pc.getRoles().containsAll(List.of("role1", "role2"));
+        }));
+
+    }
+
+    @Test
+    void updateRoles_notFound() {
+        when(participantContextServiceMock.updateParticipant(anyString(), any())).thenReturn(ServiceResult.notFound("foobar"));
+
+        baseRequest()
+                .body(List.of("role1", "role2"))
+                .put("/test-participant/roles")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(404);
+        verify(participantContextServiceMock).updateParticipant(anyString(), any());
     }
 
     @Override

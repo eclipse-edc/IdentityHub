@@ -26,8 +26,11 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.anyOf;
@@ -83,7 +86,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
     }
 
     @Test
-    void createNewUser_principalIsAdmin() {
+    void createNewUser_principalIsSuperser() {
         var subscriber = mock(EventSubscriber.class);
         getService(EventRouter.class).registerSync(ParticipantContextCreated.class, subscriber);
         var apikey = getSuperUserApiKey();
@@ -109,7 +112,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
 
     @Test
-    void createNewUser_principalIsNotAdmin_expect403() {
+    void createNewUser_principalIsNotSuperser_expect403() {
         var subscriber = mock(EventSubscriber.class);
         getService(EventRouter.class).registerSync(ParticipantContextCreated.class, subscriber);
 
@@ -158,7 +161,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
     }
 
     @Test
-    void activateParticipant_principalIsAdmin() {
+    void activateParticipant_principalIsSuperser() {
         var subscriber = mock(EventSubscriber.class);
         getService(EventRouter.class).registerSync(ParticipantContextUpdated.class, subscriber);
 
@@ -222,6 +225,39 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                         .log().ifError()
                         .statusCode(200)
                         .body(notNullValue()));
+    }
+
+    @Test
+    void updateRoles() {
+        var participantId = "some-user";
+        createParticipant(participantId);
+
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .contentType(ContentType.JSON)
+                .body(List.of("role1", "role2", "admin"))
+                .put("/v1/participants/%s/roles".formatted(participantId))
+                .then()
+                .log().ifError()
+                .statusCode(204);
+
+        assertThat(getParticipant(participantId).getRoles()).containsExactlyInAnyOrder("role1", "role2", "admin");
+    }
+
+    @ParameterizedTest(name = "Expect 403, role = {0}")
+    @ValueSource(strings = {"some-role", "admin"})
+    void updateRoles_whenNotSuperuser(String role) {
+        var participantId = "some-user";
+        var userToken = createParticipant(participantId);
+
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", userToken))
+                .contentType(ContentType.JSON)
+                .body(List.of(role))
+                .put("/v1/participants/%s/roles".formatted(participantId))
+                .then()
+                .log().ifError()
+                .statusCode(403);
     }
 
 }
