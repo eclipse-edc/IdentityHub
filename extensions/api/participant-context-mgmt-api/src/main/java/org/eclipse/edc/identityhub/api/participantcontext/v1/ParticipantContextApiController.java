@@ -108,10 +108,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Path("/{participantId}/roles")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     public void updateRoles(@PathParam("participantId") String participantId, List<String> roles) {
-        participantContextService.updateParticipant(participantId, participantContext -> {
-            participantContext.getRoles().clear();
-            participantContext.getRoles().addAll(roles);
-        }).orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
+        participantContextService.updateParticipant(participantId, participantContext -> participantContext.setRoles(roles)).orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
 
 }
