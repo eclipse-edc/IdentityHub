@@ -22,6 +22,7 @@ import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -100,7 +101,11 @@ public class ParticipantContext extends ParticipantResource {
     }
 
     public List<String> getRoles() {
-        return roles;
+        return Collections.unmodifiableList(roles);
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
     }
 
     @JsonPOJOBuilder(withPrefix = "")
