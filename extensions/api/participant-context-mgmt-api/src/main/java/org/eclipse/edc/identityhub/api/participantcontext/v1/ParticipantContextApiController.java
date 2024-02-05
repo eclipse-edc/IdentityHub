@@ -19,6 +19,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -32,6 +33,8 @@ import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
+
+import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
@@ -98,6 +101,17 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     public void deleteParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
         participantContextService.deleteParticipantContext(participantId)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
+    }
+
+    @Override
+    @PUT
+    @Path("/{participantId}/roles")
+    @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
+    public void updateRoles(@PathParam("participantId") String participantId, List<String> roles) {
+        participantContextService.updateParticipant(participantId, participantContext -> {
+            participantContext.getRoles().clear();
+            participantContext.getRoles().addAll(roles);
+        }).orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
 
 }
