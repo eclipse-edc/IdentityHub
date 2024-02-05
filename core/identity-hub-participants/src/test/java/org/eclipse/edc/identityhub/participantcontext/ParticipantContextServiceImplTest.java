@@ -61,7 +61,7 @@ class ParticipantContextServiceImplTest {
     void setUp() {
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), keyParserRegistry, observableMock);
+        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), observableMock);
     }
 
     @ParameterizedTest(name = "isActive: {0}")

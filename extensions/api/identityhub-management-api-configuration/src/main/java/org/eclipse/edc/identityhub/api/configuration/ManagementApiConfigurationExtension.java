@@ -25,6 +25,8 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -38,12 +40,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.api.configuration.ManagementApiConfigurationExtension.NAME;
 
 @Extension(value = NAME)
 public class ManagementApiConfigurationExtension implements ServiceExtension {
 
+    @Setting(value = "Explicitly set the initial API key for the Super-User")
+    public static final String SUPERUSER_APIKEY_PROPERTY = "edc.ih.api.superuser.key";
     public static final String NAME = "Management API Extension";
+    public static final String SUPER_USER_PARTICIPANT_ID = "super-user";
     private static final String MGMT_CONTEXT_ALIAS = "management";
     private static final String DEFAULT_DID_PATH = "/api/management";
     private static final int DEFAULT_DID_PORT = 8182;
@@ -76,20 +82,36 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
 
-
         // create super-user
         participantContextService.createParticipantContext(ParticipantManifest.Builder.newInstance()
-                        .participantId("super-user")
-                        .did("did:web:super-user") // doesn't matter, not intended for resolution
+                        .participantId(SUPER_USER_PARTICIPANT_ID)
+                        .did("did:web:%s".formatted(SUPER_USER_PARTICIPANT_ID)) // doesn't matter, not intended for resolution
                         .active(true)
                         .key(KeyDescriptor.Builder.newInstance()
                                 .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "Ed25519"))
-                                .keyId("super-user-key")
-                                .privateKeyAlias("super-user-alias")
+                                .keyId("%s-key".formatted(SUPER_USER_PARTICIPANT_ID))
+                                .privateKeyAlias("%s-alias".formatted(SUPER_USER_PARTICIPANT_ID))
                                 .build())
                         .roles(List.of(ServicePrincipal.ROLE_ADMIN))
                         .build())
-                .onSuccess(apiKey -> context.getMonitor().info("Created user 'super-user'. Please take a note . API Key: %s".formatted(apiKey)));
+                .onSuccess(generatedKey -> {
+                    var monitor = context.getMonitor();
+                    var apiKey = ofNullable(context.getSetting(SUPERUSER_APIKEY_PROPERTY, null))
+                            .map(key -> {
+                                if (!key.contains(".")) {
+                                    monitor.warning("Super-user key override: this key appears to have an invalid format, you may be unable to access some APIs. It must follow the structure: 'base64(<participantId>).<random-string>'");
+                                }
+                                participantContextService.getParticipantContext(SUPER_USER_PARTICIPANT_ID)
+                                        .onSuccess(pc -> vault.storeSecret(pc.getApiTokenAlias(), key)
+                                                .onSuccess(u -> monitor.debug("Super-user key override successful"))
+                                                .onFailure(f -> monitor.warning("Error storing API key in vault: %s".formatted(f.getFailureDetail()))))
+                                        .onFailure(f -> monitor.warning("Error overriding API key for '%s': %s".formatted(SUPER_USER_PARTICIPANT_ID, f.getFailureDetail())));
+                                return key;
+                            })
+                            .orElse(generatedKey);
+                    monitor.info("Created user 'super-user'. Please take note of the API Key: %s".formatted(apiKey));
+                })
+                .orElseThrow(f -> new EdcException("Error creating Super-User: " + f.getFailureDetail()));
     }
 
 
