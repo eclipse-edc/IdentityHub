@@ -72,7 +72,7 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
 
         var vpToken = new ArrayList<>();
 
-        Map<String, Object> additionalData = audience != null ? Map.of("aud", "audience") : Map.of();
+        Map<String, Object> additionalData = audience != null ? Map.of("aud", audience) : Map.of();
 
         if (defaultFormatVp == JSON_LD) { // LDP-VPs cannot contain JWT VCs
             if (!ldpVcs.isEmpty()) {

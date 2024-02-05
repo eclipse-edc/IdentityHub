@@ -48,6 +48,7 @@ public interface PresentationCreatorRegistry {
 
     /**
      * Specify, which key ID is to be used for which {@link CredentialFormat}. It is recommended to use a separate key for every format.
+     * The keyId must be the fully qualified ID, for example in DIDs one would have to pass {@code did:web:some-identifier#key-1}.
      *
      * @param keyId  the Key ID of the private key. Typically, the related public key has to be resolvable through a public method, e.g. DID:WEB
      * @param format the {@link CredentialFormat} for which the key should be used.

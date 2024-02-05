@@ -29,23 +29,31 @@ import static java.util.Optional.ofNullable;
 public class PresentationCreatorRegistryImpl implements PresentationCreatorRegistry {
 
     private final Map<CredentialFormat, PresentationGenerator<?>> creators = new HashMap<>();
-    private final Map<CredentialFormat, String> keyIds = new HashMap<>();
+    private final Map<String, CredentialFormat> keyIds = new HashMap<>();
 
     @Override
     public void addCreator(PresentationGenerator<?> creator, CredentialFormat format) {
         creators.put(format, creator);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T createPresentation(List<VerifiableCredentialContainer> credentials, CredentialFormat format, Map<String, Object> additionalData) {
         var creator = ofNullable(creators.get(format)).orElseThrow(() -> new EdcException("No PresentationCreator was found for CredentialFormat %s".formatted(format)));
+
+        var keyid = additionalData.getOrDefault("keyId", null);
+        if (keyid == null) {
+            throw new EdcException("No key ID was specified when creating presentation. 'additionalData' must contain an entry 'keyId' containing the fully-qualified key ID.");
+        }
+
         var keyId = ofNullable(keyIds.get(format)).orElseThrow(() -> new EdcException("No key ID was registered for CredentialFormat %s".formatted(format)));
 
-        return (T) creator.generatePresentation(credentials, keyId, additionalData);
+        return (T) creator.generatePresentation(credentials, null, additionalData);
     }
 
     @Override
     public void addKeyId(String keyId, CredentialFormat format) {
-        keyIds.put(format, keyId);
+        keyIds.put(keyId, format);
     }
+
 }

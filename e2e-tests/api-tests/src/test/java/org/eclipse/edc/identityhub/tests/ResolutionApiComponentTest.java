@@ -14,8 +14,10 @@
 
 package org.eclipse.edc.identityhub.tests;
 
-import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.JOSEException;
 import jakarta.json.JsonObject;
+import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
+import org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
@@ -27,6 +29,7 @@ import org.eclipse.edc.identitytrust.model.credentialservice.PresentationRespons
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationSubmission;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
+import org.eclipse.edc.spi.result.Result;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentMatchers;
@@ -38,7 +41,6 @@ import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.generateSiToken;
-import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
 import static org.hamcrest.Matchers.equalTo;
@@ -70,6 +72,7 @@ public class ResolutionApiComponentTest {
     private static final CredentialQueryResolver CREDENTIAL_QUERY_RESOLVER = mock();
     private static final VerifiablePresentationService PRESENTATION_GENERATOR = mock();
     private static final AccessTokenVerifier ACCESS_TOKEN_VERIFIER = mock();
+    private static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
 
     @RegisterExtension
     static EdcRuntimeExtension runtime;
@@ -79,16 +82,16 @@ public class ResolutionApiComponentTest {
         runtime.registerServiceMock(CredentialQueryResolver.class, CREDENTIAL_QUERY_RESOLVER);
         runtime.registerServiceMock(VerifiablePresentationService.class, PRESENTATION_GENERATOR);
         runtime.registerServiceMock(AccessTokenVerifier.class, ACCESS_TOKEN_VERIFIER);
+        runtime.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
+
     }
 
-    private final ECKey consumerKey = generateEcKey();
-    private final ECKey providerKey = generateEcKey();
 
     @Test
     void query_tokenNotPresent_shouldReturn401() {
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType("application/json")
-                .post("/presentation/query")
+                .post("/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(401)
                 .extract().body().asString();
@@ -99,7 +102,7 @@ public class ResolutionApiComponentTest {
         var query = """
                 {
                   "@context": [
-                    "https://identity.foundation/presentation-exchange/submission/v1",
+                    "https://identity.foundation/participants/test-participant/presentation-exchange/submission/v1",
                     "https://w3id.org/tractusx-trust/v0.8"
                   ],
                   "@type": "PresentationQueryMessage"
@@ -109,7 +112,7 @@ public class ResolutionApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, generateSiToken())
                 .body(query)
-                .post("/presentation/query")
+                .post("/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(400)
                 .extract().body().asString();
@@ -133,7 +136,7 @@ public class ResolutionApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, generateSiToken())
                 .body(query)
-                .post("/presentation/query")
+                .post("/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(503)
                 .extract().body().asString();
@@ -148,7 +151,7 @@ public class ResolutionApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/presentation/query")
+                .post("/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(401)
                 .log().ifValidationFails()
@@ -166,7 +169,7 @@ public class ResolutionApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/presentation/query")
+                .post("/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(403)
                 .log().ifValidationFails()
@@ -185,30 +188,35 @@ public class ResolutionApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/presentation/query")
+                .post("/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(500)
                 .log().ifValidationFails();
     }
 
     @Test
-    void query_success() {
+    void query_success() throws JOSEException {
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token))).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
         when(PRESENTATION_GENERATOR.createPresentation(anyList(), eq(null), any())).thenReturn(success(createPresentationResponse()));
 
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(JwtCreationUtil.CONSUMER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(JwtCreationUtil.PROVIDER_KEY.toPublicKey()));
+
         var response = IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/presentation/query")
+                .post("/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(200)
                 .log().ifValidationFails()
                 .extract().body().as(JsonObject.class);
 
-        assertThat(response).containsKeys("presentation", "@context");
+        assertThat(response)
+                .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(2));
 
     }
 

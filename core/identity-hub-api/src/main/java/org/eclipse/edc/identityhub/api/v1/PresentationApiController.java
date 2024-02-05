@@ -20,6 +20,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
@@ -46,7 +47,7 @@ import static org.eclipse.edc.identitytrust.model.credentialservice.Presentation
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/presentation")
+@Path("/participants/{participantId}/presentation")
 public class PresentationApiController implements PresentationApi {
 
     private final JsonObjectValidatorRegistry validatorRegistry;
@@ -70,7 +71,7 @@ public class PresentationApiController implements PresentationApi {
     @POST
     @Path("/query")
     @Override
-    public Response queryPresentation(JsonObject query, @HeaderParam(AUTHORIZATION) String token) {
+    public Response queryPresentation(@PathParam("participantId") String participantContextId, JsonObject query, @HeaderParam(AUTHORIZATION) String token) {
         if (token == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }

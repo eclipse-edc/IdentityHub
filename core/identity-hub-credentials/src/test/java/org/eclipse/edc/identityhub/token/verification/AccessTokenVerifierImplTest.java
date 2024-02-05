@@ -86,7 +86,7 @@ class AccessTokenVerifierImplTest {
 
     @Test
     void verify_accessTokenValidationFails() {
-        var spoofedKey = generateEcKey();
+        var spoofedKey = generateEcKey("spoofed-key");
         var accessToken = generateJwt(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, Map.of("scope", TEST_SCOPE), spoofedKey);
         var siToken = generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "access_token", accessToken), PROVIDER_KEY);
 
