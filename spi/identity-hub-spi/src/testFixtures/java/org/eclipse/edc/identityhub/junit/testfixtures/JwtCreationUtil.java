@@ -30,8 +30,8 @@ import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentia
  */
 public class JwtCreationUtil {
     public static final String TEST_SCOPE = "org.eclipse.edc.vc.type:SomeTestCredential:read";
-    public static final ECKey CONSUMER_KEY = generateEcKey();
-    public static final ECKey PROVIDER_KEY = generateEcKey();
+    public static final ECKey CONSUMER_KEY = generateEcKey("did:web:consumer#key1");
+    public static final ECKey PROVIDER_KEY = generateEcKey("did:web:provider#key1");
 
     /**
      * Generates a self-issued token.

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 
 import static java.util.stream.IntStream.range;
@@ -63,6 +64,7 @@ public abstract class CredentialStoreTestBase {
               }
             }
             """;
+    public static final String TEST_PARTICIPANT_CONTEXT_ID = "test-participant";
     private static final String EXAMPLE_VC = """
             {
               "@context": [
@@ -140,6 +142,30 @@ public abstract class CredentialStoreTestBase {
     }
 
     @Test
+    void query_byParticipantIdAndType() {
+        var cred1 = createCredentialBuilder()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                        .type("UniversityDegreeCredential")
+                        .build()))
+                .participantId(TEST_PARTICIPANT_CONTEXT_ID).build();
+        var cred2 = createCredentialBuilder().participantId("participant-context2").build();
+        var cred3 = createCredentialBuilder().participantId("participant-context3").build();
+
+        Arrays.asList(cred1, cred2, cred3).forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("participantId", "=", TEST_PARTICIPANT_CONTEXT_ID))
+                .filter(new Criterion("verifiableCredential.credential.types", "contains", "UniversityDegreeCredential"))
+                .build();
+
+        var result = getStore().query(query);
+        assertThat(result).isSucceeded()
+                .satisfies(resources -> {
+                    Assertions.assertThat(resources).hasSize(1);
+                });
+    }
+
+    @Test
     void query_byVcState() {
         var creds = createCredentials();
         var expectedCred = createCredentialBuilder().state(VcState.REISSUE_REQUESTED).id("id-test").build();
@@ -175,6 +201,7 @@ public abstract class CredentialStoreTestBase {
                         .usingRecursiveFieldByFieldElementComparator()
                         .containsExactly(expectedCred));
     }
+
 
     @Test
     void query_byVcFormat() {
@@ -422,7 +449,7 @@ public abstract class CredentialStoreTestBase {
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .state(VcState.ISSUED)
-                .participantId("test-participant")
+                .participantId(TEST_PARTICIPANT_CONTEXT_ID)
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
                 .id("test-id");
     }

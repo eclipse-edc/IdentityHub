@@ -32,8 +32,9 @@ public interface AccessTokenVerifier {
      *     <li>that the access_token contains >1 scope strings</li>
      * </ul>
      *
-     * @param token The token to be verified. Must be a JWT in base64 encoding.
+     * @param token         The token to be verified. Must be a JWT in base64 encoding.
+     * @param participantId The ID of the {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext} who is supposed to present their credentials
      * @return A {@code Result} containing a {@code List} of scope strings.
      */
-    Result<List<String>> verify(String token);
+    Result<List<String>> verify(String token, String participantId);
 }

@@ -38,9 +38,9 @@ public class VerifiableCredentialTestUtil {
     }
 
 
-    public static ECKey generateEcKey() {
+    public static ECKey generateEcKey(String kid) {
         try {
-            return EC_KEY_GENERATOR.keyUse(KeyUse.SIGNATURE).generate();
+            return EC_KEY_GENERATOR.keyUse(KeyUse.SIGNATURE).keyID(kid).generate();
         } catch (JOSEException e) {
             throw new RuntimeException(e);
         }
@@ -49,7 +49,9 @@ public class VerifiableCredentialTestUtil {
 
     public static SignedJWT buildSignedJwt(JWTClaimsSet claims, ECKey jwk) {
         try {
-            var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).build();
+            var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256)
+                    .keyID(jwk.getKeyID())
+                    .build();
             var jws = new SignedJWT(jwsHeader, claims);
 
             var jwsSigner = new ECDSASigner(jwk.toECPrivateKey());

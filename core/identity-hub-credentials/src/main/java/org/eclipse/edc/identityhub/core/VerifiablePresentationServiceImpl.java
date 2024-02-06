@@ -54,13 +54,14 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
      * all JWT-VCs in the list will be packaged in a separate JWT VP, because LDP-VPs cannot contain JWT-VCs.
      * <em>Note: submitting a {@link PresentationDefinition} is not supported at the moment, and it will be ignored after logging a warning. </em>
      *
+     * @param participantContextId   The ID of the {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext} for which the VP is to be generated
      * @param credentials            The list of verifiable credentials to include in the presentation.
      * @param presentationDefinition The optional presentation definition. <em>Not supported at the moment!</em>
      * @param audience               The Participant ID of the entity who the VP is intended for. May be null for some VP formats.
      * @return A Result object wrapping the PresentationResponse.
      */
     @Override
-    public Result<PresentationResponseMessage> createPresentation(List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition, @Nullable String audience) {
+    public Result<PresentationResponseMessage> createPresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, @Nullable PresentationDefinition presentationDefinition, @Nullable String audience) {
 
         if (presentationDefinition != null) {
             monitor.warning("A PresentationDefinition was submitted, but is currently ignored by the generator.");
@@ -72,24 +73,24 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
 
         var vpToken = new ArrayList<>();
 
-        Map<String, Object> additionalData = audience != null ? Map.of("aud", "audience") : Map.of();
+        Map<String, Object> additionalDataJwt = audience != null ? Map.of("aud", audience) : Map.of();
 
         if (defaultFormatVp == JSON_LD) { // LDP-VPs cannot contain JWT VCs
             if (!ldpVcs.isEmpty()) {
 
                 // todo: once we support PresentationDefinition, the types list could be dynamic
-                JsonObject ldpVp = registry.createPresentation(ldpVcs, CredentialFormat.JSON_LD, Map.of("types", List.of("VerifiablePresentation")));
+                JsonObject ldpVp = registry.createPresentation(participantContextId, ldpVcs, CredentialFormat.JSON_LD, Map.of("types", List.of("VerifiablePresentation")));
                 vpToken.add(ldpVp);
             }
 
             if (!jwtVcs.isEmpty()) {
                 monitor.warning("The VP was requested in %s format, but the request yielded %s JWT-VCs, which cannot be transported in a LDP-VP. A second VP will be returned, containing JWT-VCs".formatted(JSON_LD, jwtVcs.size()));
-                String jwtVp = registry.createPresentation(jwtVcs, CredentialFormat.JWT, additionalData);
+                String jwtVp = registry.createPresentation(participantContextId, jwtVcs, CredentialFormat.JWT, additionalDataJwt);
                 vpToken.add(jwtVp);
             }
 
         } else { //defaultFormatVp == JWT
-            vpToken.add(registry.createPresentation(credentials, CredentialFormat.JWT, additionalData));
+            vpToken.add(registry.createPresentation(participantContextId, credentials, CredentialFormat.JWT, additionalDataJwt));
         }
 
         var presentationResponse = PresentationResponseMessage.Builder.newinstance().presentation(vpToken).build();

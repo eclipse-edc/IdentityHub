@@ -25,6 +25,7 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
     }
 
     @Override
-    public QueryResult query(PresentationQueryMessage query, List<String> issuerScopes) {
+    public QueryResult query(String participantContextId, PresentationQueryMessage query, List<String> issuerScopes) {
         if (query.getPresentationDefinition() != null) {
             throw new UnsupportedOperationException("Querying with a DIF Presentation Exchange definition is not yet supported.");
         }
@@ -64,7 +65,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         }
 
         // query storage for requested credentials
-        var queryspec = convertToQuerySpec(proverScopeResult.getContent());
+        var queryspec = convertToQuerySpec(proverScopeResult.getContent(), participantContextId);
         var credentialResult = credentialStore.query(queryspec);
         if (credentialResult.failed()) {
             return QueryResult.storageFailure(credentialResult.getFailureMessages());
@@ -74,7 +75,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         var requestedCredentials = credentialResult.getContent();
 
         // check that prover scope is not wider than issuer scope
-        var issuerQuery = convertToQuerySpec(issuerScopeResult.getContent());
+        var issuerQuery = convertToQuerySpec(issuerScopeResult.getContent(), participantContextId);
         var allowedCred = credentialStore.query(issuerQuery);
         if (allowedCred.failed()) {
             return QueryResult.invalidScope(allowedCred.getFailureMessages());
@@ -108,9 +109,12 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         return success(transformResult.stream().map(AbstractResult::getContent).toList());
     }
 
-    private QuerySpec convertToQuerySpec(List<Criterion> criteria) {
+    private QuerySpec convertToQuerySpec(List<Criterion> criteria, String participantContextId) {
+        var filterByParticipant = new Criterion("participantId", "=", participantContextId);
+        var allCriteria = new ArrayList<>(criteria);
+        allCriteria.add(filterByParticipant);
         return QuerySpec.Builder.newInstance()
-                .filter(criteria)
+                .filter(allCriteria)
                 .build();
     }
 }
