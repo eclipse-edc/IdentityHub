@@ -14,12 +14,13 @@
 
 package org.eclipse.edc.identityhub.did.defaults;
 
+import org.eclipse.edc.connector.core.store.CriterionOperatorRegistryImpl;
 import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
 import org.eclipse.edc.identityhub.did.store.test.DidResourceStoreTestBase;
 
 class InMemoryDidResourceStoreTest extends DidResourceStoreTestBase {
 
-    private final DidResourceStore store = new InMemoryDidResourceStore();
+    private final DidResourceStore store = new InMemoryDidResourceStore(CriterionOperatorRegistryImpl.ofDefaults());
 
     @Override
     protected DidResourceStore getStore() {

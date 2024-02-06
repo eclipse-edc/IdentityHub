@@ -31,6 +31,7 @@ public class InMemoryCredentialStore extends InMemoryEntityStore<VerifiableCrede
 
     @Override
     protected QueryResolver<VerifiableCredentialResource> createQueryResolver() {
-        return new ReflectionBasedQueryResolver<>(VerifiableCredentialResource.class, new CriterionToCredentialResourceConverter());
+        criterionOperatorRegistry.registerPropertyLookup(new CredentialResourceLookup());
+        return new ReflectionBasedQueryResolver<>(VerifiableCredentialResource.class, criterionOperatorRegistry);
     }
 }

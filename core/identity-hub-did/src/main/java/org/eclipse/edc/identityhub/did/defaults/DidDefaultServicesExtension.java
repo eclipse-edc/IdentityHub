@@ -16,7 +16,9 @@ package org.eclipse.edc.identityhub.did.defaults;
 
 import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
+import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.system.ServiceExtension;
 
 import static org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension.NAME;
@@ -25,6 +27,9 @@ import static org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtensi
 public class DidDefaultServicesExtension implements ServiceExtension {
     public static final String NAME = "DID Default Services Extension";
 
+    @Inject
+    private CriterionOperatorRegistry criterionOperatorRegistry;
+
     @Override
     public String name() {
         return NAME;
@@ -32,6 +37,6 @@ public class DidDefaultServicesExtension implements ServiceExtension {
 
     @Provider(isDefault = true)
     public DidResourceStore createInMemoryDidResourceStore() {
-        return new InMemoryDidResourceStore();
+        return new InMemoryDidResourceStore(criterionOperatorRegistry);
     }
 }

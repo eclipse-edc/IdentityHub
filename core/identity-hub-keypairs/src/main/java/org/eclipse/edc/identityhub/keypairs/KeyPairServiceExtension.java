@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.identityhub.spi.KeyPairService;
+import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentPublished;
 import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextDeleted;
@@ -56,6 +57,7 @@ public class KeyPairServiceExtension implements ServiceExtension {
         var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor(), keyPairObservable());
         eventRouter.registerSync(ParticipantContextCreated.class, service);
         eventRouter.registerSync(ParticipantContextDeleted.class, service);
+        eventRouter.registerSync(DidDocumentPublished.class, service);
         return service;
     }
 
