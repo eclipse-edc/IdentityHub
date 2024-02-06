@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Metaform Systems, Inc.
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -14,27 +14,26 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import org.eclipse.edc.connector.core.store.CriterionToPredicateConverterImpl;
+import org.eclipse.edc.connector.core.store.ReflectionPropertyLookup;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
-import org.eclipse.edc.spi.query.CriterionToPredicateConverter;
+import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.spi.types.PathItem;
 import org.eclipse.edc.util.reflection.ReflectionUtil;
 
 import java.time.Instant;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 
 /**
- * This converts a Criterion to a Predicate, that can be used to query a {@link Stream} of {@link VerifiableCredentialResource} objects.
- * <p>
- * Since the object graph of a {@link org.eclipse.edc.identitytrust.model.VerifiableCredential} is quite open, some special handling is required, e.g. for the
- * {@code credentialSubject} object.
+ * This class performs the lookup of properties in a {@link VerifiableCredentialResource}.
+ * There is some special handling for raw JSON properties like the {@link VerifiableCredentialContainer#rawVc()} and the {@code credentialSubject}, as the latter is
+ * basically schema-less.
  */
-public class CriterionToCredentialResourceConverter extends CriterionToPredicateConverterImpl implements CriterionToPredicateConverter {
+public class CredentialResourceLookup extends ReflectionPropertyLookup {
     @Override
-    protected Object property(String key, Object object) {
-        var fieldValue = super.property(key, object);
+    public Object getProperty(String key, Object object) {
+        var fieldValue = super.getProperty(key, object);
         if (fieldValue instanceof Instant) {
             fieldValue = fieldValue.toString();
         }

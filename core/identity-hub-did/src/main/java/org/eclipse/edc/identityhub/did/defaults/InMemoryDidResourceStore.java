@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.did.defaults;
 import org.eclipse.edc.connector.core.store.ReflectionBasedQueryResolver;
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -32,8 +33,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class InMemoryDidResourceStore implements DidResourceStore {
     private final Map<String, DidResource> store = new HashMap<>();
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final QueryResolver<DidResource> queryResolver = new ReflectionBasedQueryResolver<>(DidResource.class);
+    private final QueryResolver<DidResource> queryResolver;
 
+    public InMemoryDidResourceStore(CriterionOperatorRegistry criterionOperatorRegistry) {
+        queryResolver = new ReflectionBasedQueryResolver<>(DidResource.class, criterionOperatorRegistry);
+    }
 
     @Override
     public StoreResult<Void> save(DidResource resource) {

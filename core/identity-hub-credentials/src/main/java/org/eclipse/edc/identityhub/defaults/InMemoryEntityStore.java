@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
+import org.eclipse.edc.connector.core.store.CriterionOperatorRegistryImpl;
+import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -34,7 +36,13 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
 abstract class InMemoryEntityStore<T> {
     protected final Map<String, T> store = new HashMap<>();
     protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
-    protected final QueryResolver<T> queryResolver = createQueryResolver();
+    protected final QueryResolver<T> queryResolver;
+    protected final CriterionOperatorRegistry criterionOperatorRegistry;
+
+    protected InMemoryEntityStore() {
+        criterionOperatorRegistry = CriterionOperatorRegistryImpl.ofDefaults();
+        queryResolver = createQueryResolver();
+    }
 
     /**
      * Creates a new entity if none exists.

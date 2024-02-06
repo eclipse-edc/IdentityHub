@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import org.eclipse.edc.connector.core.store.CriterionToPredicateConverterImpl;
 import org.eclipse.edc.connector.core.store.ReflectionBasedQueryResolver;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
@@ -31,6 +30,6 @@ public class InMemoryParticipantContextStore extends InMemoryEntityStore<Partici
 
     @Override
     protected QueryResolver<ParticipantContext> createQueryResolver() {
-        return new ReflectionBasedQueryResolver<>(ParticipantContext.class, new CriterionToPredicateConverterImpl());
+        return new ReflectionBasedQueryResolver<>(ParticipantContext.class, criterionOperatorRegistry);
     }
 }
