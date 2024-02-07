@@ -65,7 +65,7 @@ public class KeyPairServiceExtension implements ServiceExtension {
     public KeyPairObservable keyPairObservable() {
         if (observable == null) {
             observable = new KeyPairObservableImpl();
-            observable.registerListener(new KeyPairEventListenerImpl(clock, eventRouter));
+            observable.registerListener(new KeyPairEventPublisher(clock, eventRouter));
         }
         return observable;
     }

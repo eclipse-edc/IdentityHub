@@ -66,7 +66,7 @@ public class ParticipantContextExtension implements ServiceExtension {
     public ParticipantContextObservable participantContextObservable() {
         if (participantContextObservable == null) {
             participantContextObservable = new ParticipantContextObservableImpl();
-            participantContextObservable.registerListener(new ParticipantContextListenerImpl(clock, eventRouter));
+            participantContextObservable.registerListener(new ParticipantContextEventPublisher(clock, eventRouter));
         }
         return participantContextObservable;
     }
