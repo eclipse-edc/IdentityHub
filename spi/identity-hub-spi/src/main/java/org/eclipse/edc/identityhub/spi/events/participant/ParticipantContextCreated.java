@@ -26,6 +26,9 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 public class ParticipantContextCreated extends ParticipantContextEvent {
     private ParticipantManifest manifest;
 
+    private ParticipantContextCreated() {
+    }
+
     @Override
     public String name() {
         return "participantcontext.created";

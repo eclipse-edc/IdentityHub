@@ -25,11 +25,11 @@ import org.eclipse.edc.spi.event.EventRouter;
 
 import java.time.Clock;
 
-public class KeyPairEventListenerImpl implements KeyPairEventListener {
+public class KeyPairEventPublisher implements KeyPairEventListener {
     private final Clock clock;
     private final EventRouter eventRouter;
 
-    public KeyPairEventListenerImpl(Clock clock, EventRouter eventRouter) {
+    public KeyPairEventPublisher(Clock clock, EventRouter eventRouter) {
         this.clock = clock;
         this.eventRouter = eventRouter;
     }

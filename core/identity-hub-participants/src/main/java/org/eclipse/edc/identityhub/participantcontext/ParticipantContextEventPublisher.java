@@ -26,11 +26,11 @@ import org.eclipse.edc.spi.event.EventRouter;
 
 import java.time.Clock;
 
-public class ParticipantContextListenerImpl implements ParticipantContextListener {
+public class ParticipantContextEventPublisher implements ParticipantContextListener {
     private final Clock clock;
     private final EventRouter eventRouter;
 
-    public ParticipantContextListenerImpl(Clock clock, EventRouter eventRouter) {
+    public ParticipantContextEventPublisher(Clock clock, EventRouter eventRouter) {
         this.clock = clock;
         this.eventRouter = eventRouter;
     }

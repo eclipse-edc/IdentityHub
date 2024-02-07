@@ -213,9 +213,8 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public <E extends Event> void on(EventEnvelope<E> eventEnvelope) {
         var payload = eventEnvelope.getPayload();
-        if (payload instanceof ParticipantContextCreated event) {
-            created(event);
-        } else if (payload instanceof ParticipantContextUpdated event) {
+        monitor.debug("Received a [%s] event".formatted(payload.getClass().getSimpleName()));
+        if (payload instanceof ParticipantContextUpdated event) {
             updated(event);
         } else if (payload instanceof ParticipantContextDeleted event) {
             deleted(event);
@@ -224,7 +223,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         } else if (payload instanceof KeyPairRevoked event) {
             keypairRevoked(event);
         } else {
-            monitor.warning("KeyPairServiceImpl Received an event with unexpected payload type: %s".formatted(payload.getClass()));
+            monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }
     }
 
@@ -246,6 +245,10 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
     private void keypairAdded(KeyPairAdded event) {
         var didResources = findByParticipantId(event.getParticipantId());
+        if (didResources.isEmpty()) {
+            monitor.warning("No DidResources were found for participant '%s'. No updated will be performed.".formatted(event.getParticipantId()));
+            return;
+        }
         var serialized = event.getPublicKeySerialized();
         var publicKey = keyParserRegistry.parse(serialized);
 
