@@ -38,8 +38,8 @@ public abstract class ParticipantContextEvent extends Event {
 
         public abstract B self();
 
-        public B participantId(String assetId) {
-            event.participantId = assetId;
+        public B participantId(String participantId) {
+            event.participantId = participantId;
             return self();
         }
 

@@ -112,7 +112,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
 
     @Test
-    void createNewUser_principalIsNotSuperser_expect403() {
+    void createNewUser_principalIsNotSuperuser_expect403() {
         var subscriber = mock(EventSubscriber.class);
         getService(EventRouter.class).registerSync(ParticipantContextCreated.class, subscriber);
 
