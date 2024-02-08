@@ -43,6 +43,7 @@ include(":extensions:store:sql:identity-hub-keypair-store-sql")
 include(":extensions:did:local-did-publisher")
 
 // management APIs
+include(":extensions:api:identityhub-management-api-validators")
 include(":extensions:api:identityhub-management-api-configuration")
 include(":extensions:api:identityhub-api-authentication")
 include(":extensions:api:identityhub-api-authorization")

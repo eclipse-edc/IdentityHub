@@ -12,9 +12,10 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.verifiablecredentials;
+package org.eclipse.edc.identityhub.api.keypair;
 
-import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.KeyPairResourceApiController;
+import org.eclipse.edc.identityhub.api.keypair.v1.KeyPairResourceApiController;
+import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
@@ -23,13 +24,14 @@ import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
 
-import static org.eclipse.edc.identityhub.api.verifiablecredentials.KeyPairResourceManagementApiExtension.NAME;
+import static org.eclipse.edc.identityhub.api.keypair.KeyPairResourceManagementApiExtension.NAME;
 
 @Extension(NAME)
 public class KeyPairResourceManagementApiExtension implements ServiceExtension {
@@ -43,6 +45,8 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
     private KeyPairService keyPairService;
     @Inject
     private AuthorizationService authorizationService;
+    @Inject
+    private Monitor monitor;
 
     @Override
     public String name() {
@@ -52,7 +56,7 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(KeyPairResource.class, this::findById);
-        var controller = new KeyPairResourceApiController(authorizationService, keyPairService);
+        var controller = new KeyPairResourceApiController(authorizationService, keyPairService, new KeyDescriptorValidator(monitor));
         webService.registerResource(managementApiConfiguration.getContextAlias(), controller);
     }
 

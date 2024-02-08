@@ -35,11 +35,11 @@ public class KeyPairEventPublisher implements KeyPairEventListener {
     }
 
     @Override
-    public void added(KeyPairResource keyPair) {
+    public void added(KeyPairResource keyPair, String type) {
         var event = KeyPairAdded.Builder.newInstance()
                 .participantId(keyPair.getParticipantId())
                 .keyId(keyPair.getId())
-                .publicKey(keyPair.getSerializedPublicKey())
+                .publicKey(keyPair.getSerializedPublicKey(), type)
                 .build();
         publish(event);
     }

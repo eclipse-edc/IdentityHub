@@ -12,11 +12,12 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.participantcontext.v1.validation;
+package org.eclipse.edc.identityhub.api.v1.validation;
 
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
+import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,7 +30,25 @@ import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 class ParticipantManifestValidatorTest {
 
-    private final ParticipantManifestValidator validator = new ParticipantManifestValidator();
+    private final ParticipantManifestValidator validator = new ParticipantManifestValidator(new ConsoleMonitor());
+
+    @NotNull
+    private static ParticipantManifest.Builder createManifest() {
+        return ParticipantManifest.Builder.newInstance()
+                .serviceEndpoint(new Service("id", "type", "foobar"))
+                .active(true)
+                .did("did:web:test-did")
+                .participantId("test-id")
+                .key(createKeyDescriptor().build());
+    }
+
+    @NotNull
+    private static KeyDescriptor.Builder createKeyDescriptor() {
+        return KeyDescriptor.Builder.newInstance()
+                .keyId("key-id")
+                .privateKeyAlias("alias")
+                .publicKeyJwk(Map.of("foo", "bar"));
+    }
 
     @Test
     void validate_success() {
@@ -74,23 +93,5 @@ class ParticipantManifestValidatorTest {
         var manifest = createManifest().participantId(participantId).build();
         assertThat(validator.validate(manifest)).isFailed()
                 .detail().isEqualTo("participantId cannot be null or empty.");
-    }
-
-    @NotNull
-    private static ParticipantManifest.Builder createManifest() {
-        return ParticipantManifest.Builder.newInstance()
-                .serviceEndpoint(new Service("id", "type", "foobar"))
-                .active(true)
-                .did("did:web:test-did")
-                .participantId("test-id")
-                .key(createKeyDescriptor().build());
-    }
-
-    @NotNull
-    private static KeyDescriptor.Builder createKeyDescriptor() {
-        return KeyDescriptor.Builder.newInstance()
-                .keyId("key-id")
-                .privateKeyAlias("alias")
-                .publicKeyJwk(Map.of("foo", "bar"));
     }
 }

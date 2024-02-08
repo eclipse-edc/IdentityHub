@@ -28,13 +28,14 @@ public interface KeyPairEventListener {
      * by simply adding a keypair, or after a keypair was revoked, and a successor was specified.
      *
      * @param keypair The new (added) key pair
+     * @param type    Verification type specifying the cryptographic context in which the public key is used, e.g. JsonWebKey2020...
      */
-    default void added(KeyPairResource keypair) {
+    default void added(KeyPairResource keypair, String type) {
 
     }
 
     /**
-     * A {@link KeyPairResource} was rotated (=phased out). If the rotation was done with a successor keypair, this would be communicated using the {@link KeyPairEventListener#added(KeyPairResource)}
+     * A {@link KeyPairResource} was rotated (=phased out). If the rotation was done with a successor keypair, this would be communicated using the {@link KeyPairEventListener#added(KeyPairResource, String)}
      * callback.
      *
      * @param keyPair the old (outgoing) {@link KeyPairResource}
@@ -44,7 +45,7 @@ public interface KeyPairEventListener {
     }
 
     /**
-     * A {@link KeyPairResource} was revoked (=deleted). If the revocation was done with a successor keypair, this would be communicated using the {@link KeyPairEventListener#added(KeyPairResource)}
+     * A {@link KeyPairResource} was revoked (=deleted). If the revocation was done with a successor keypair, this would be communicated using the {@link KeyPairEventListener#added(KeyPairResource, String)}
      * callback.
      *
      * @param keyPair the old (outgoing) {@link KeyPairResource}

@@ -44,6 +44,14 @@ import static org.mockito.Mockito.verify;
 @EndToEndTest
 public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
+    private static KeyDescriptor.Builder createKeyDescriptor(String participantId) {
+        var id = UUID.randomUUID().toString();
+        return KeyDescriptor.Builder.newInstance()
+                .keyId(id)
+                .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
+                .privateKeyAlias("%s-%s-alias".formatted(participantId, id));
+    }
+
     @Test
     void findById_notAuthorized() {
         var user1 = "user1";
@@ -288,9 +296,11 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
         assertThat(Arrays.asList(token, getSuperUserApiKey()))
                 .allSatisfy(t -> {
+                    var keyDesc = createKeyDescriptor(user1).build();
                     RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
+                            .body(keyDesc)
                             .post("/v1/participants/%s/keypairs/%s/revoke".formatted(user1, keyId))
                             .then()
                             .log().ifValidationFails()
@@ -313,9 +323,11 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var keyId = createKeyPair(user1);
 
         // attempt to publish user1's DID document, which should fail
+        var keyDesc = createKeyDescriptor(user1).build();
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token2))
+                .body(keyDesc)
                 .post("/v1/participants/%s/keypairs/%s/revoke".formatted(user1, keyId))
                 .then()
                 .log().ifValidationFails()
@@ -331,14 +343,6 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         service.addKeyPair(participantId, descriptor, true)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
         return descriptor.getKeyId();
-    }
-
-    private static KeyDescriptor.Builder createKeyDescriptor(String participantId) {
-        var id = UUID.randomUUID().toString();
-        return KeyDescriptor.Builder.newInstance()
-                .keyId(id)
-                .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
-                .privateKeyAlias("%s-%s-alias".formatted(participantId, id));
     }
 
 }

@@ -15,13 +15,14 @@
 package org.eclipse.edc.identityhub.api.participantcontext;
 
 import org.eclipse.edc.identityhub.api.participantcontext.v1.ParticipantContextApiController;
-import org.eclipse.edc.identityhub.api.participantcontext.v1.validation.ParticipantManifestValidator;
+import org.eclipse.edc.identityhub.api.v1.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
@@ -41,6 +42,8 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
     private ManagementApiConfiguration webServiceConfiguration;
     @Inject
     private AuthorizationService authorizationService;
+    @Inject
+    private Monitor monitor;
 
     @Override
     public String name() {
@@ -50,7 +53,7 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
     @Override
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(ParticipantContext.class, s -> participantContextService.getParticipantContext(s).orElseThrow(exceptionMapper(ParticipantContext.class, s)));
-        var controller = new ParticipantContextApiController(new ParticipantManifestValidator(), participantContextService, authorizationService);
+        var controller = new ParticipantContextApiController(new ParticipantManifestValidator(monitor), participantContextService, authorizationService);
         webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
     }
 }

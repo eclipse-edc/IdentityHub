@@ -12,9 +12,11 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.participantcontext.v1.validation;
+package org.eclipse.edc.identityhub.api.v1.validation;
 
+import org.eclipse.edc.iam.did.spi.document.DidConstants;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.util.string.StringUtils;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
@@ -22,6 +24,7 @@ import org.eclipse.edc.validator.spi.Validator;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import static java.lang.String.format;
 import static org.eclipse.edc.validator.spi.ValidationResult.failure;
 import static org.eclipse.edc.validator.spi.ValidationResult.success;
 import static org.eclipse.edc.validator.spi.Violation.violation;
@@ -37,6 +40,13 @@ import static org.eclipse.edc.validator.spi.Violation.violation;
  * </ul>
  */
 public class KeyDescriptorValidator implements Validator<KeyDescriptor> {
+
+    private final Monitor monitor;
+
+    public KeyDescriptorValidator(Monitor monitor) {
+        this.monitor = monitor;
+    }
+
     @Override
     public ValidationResult validate(KeyDescriptor input) {
         if (input == null) {
@@ -45,6 +55,10 @@ public class KeyDescriptorValidator implements Validator<KeyDescriptor> {
 
         if (StringUtils.isNullOrBlank(input.getKeyId())) {
             return failure(violation("keyId cannot be null.", "keyId"));
+        }
+
+        if (!DidConstants.ALLOWED_VERIFICATION_TYPES.contains(input.getType())) {
+            monitor.warning(format("Provided type %s is not supported.", input.getType()));
         }
 
         if (StringUtils.isNullOrBlank(input.getPrivateKeyAlias())) {
