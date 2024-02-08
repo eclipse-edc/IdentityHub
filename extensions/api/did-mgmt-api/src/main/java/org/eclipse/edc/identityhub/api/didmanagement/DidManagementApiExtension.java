@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.api.didmanagement;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.identityhub.api.didmanagement.v1.DidManagementApiController;
+import org.eclipse.edc.identityhub.api.didmanagement.v1.GetAllDidsApiController;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -50,6 +51,9 @@ public class DidManagementApiExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(DidResource.class, s -> didDocumentService.findById(s));
         var controller = new DidManagementApiController(didDocumentService, authorizationService);
+        var getAllController = new GetAllDidsApiController(didDocumentService);
         webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
+        webService.registerResource(webServiceConfiguration.getContextAlias(), getAllController);
     }
+
 }

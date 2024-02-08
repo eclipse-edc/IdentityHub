@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static java.util.Collections.emptyList;
@@ -246,6 +247,23 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(404);
         verify(participantContextServiceMock).updateParticipant(anyString(), any());
+    }
+
+    @Test
+    void getAll() {
+        var list = IntStream.range(0, 10).mapToObj(i -> createParticipantContext().participantId("participant" + i).build()).toList();
+        when(participantContextServiceMock.query(any())).thenReturn(ServiceResult.success(list));
+
+        var participantContexts = baseRequest()
+                .get("/")
+                .then()
+                .statusCode(200)
+                .log().ifError()
+                .extract().body().as(ParticipantContext[].class);
+
+        assertThat(participantContexts).usingRecursiveFieldByFieldElementComparator()
+                .containsExactlyInAnyOrderElementsOf(list);
+        verify(participantContextServiceMock).query(any());
     }
 
     @Override

@@ -14,11 +14,9 @@
 
 package org.eclipse.edc.identityhub.api.didmanagement.v1;
 
-import io.restassured.common.mapper.TypeRef;
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
@@ -35,6 +33,7 @@ import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.identityhub.api.didmanagement.v1.TestFunctions.createDidDocument;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,16 +59,6 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
     @Override
     protected DidManagementApiController controller() {
         return new DidManagementApiController(didDocumentServiceMock, authService);
-    }
-
-    private DidDocument.Builder createDidDocument() {
-        return DidDocument.Builder.newInstance()
-                .id("did:web:testdid")
-                .service(List.of(new Service("test-service", "test-service", "https://test.service.com/")))
-                .verificationMethod(List.of(VerificationMethod.Builder.newInstance()
-                        .id("did:web:testdid#key-1")
-                        .publicKeyMultibase("saflasjdflaskjdflasdkfj")
-                        .build()));
     }
 
     private RequestSpecification baseRequest() {
@@ -340,19 +329,17 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.queryDocuments(any())).thenReturn(ServiceResult.success(resultList));
             var q = QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", "foobar")).build();
 
-            var docListType = new TypeRef<List<DidDocument>>() {
-            };
             var docList = baseRequest()
                     .body(q)
                     .post("/query")
                     .then()
                     .log().ifError()
                     .statusCode(200)
-                    .extract().body().as(docListType);
+                    .extract().body().as(DidDocument[].class);
 
             assertThat(docList).isNotEmpty().hasSize(1)
                     .usingRecursiveFieldByFieldElementComparator()
-                    .isEqualTo(resultList);
+                    .containsExactlyInAnyOrderElementsOf(resultList);
             verify(didDocumentServiceMock).queryDocuments(eq(q));
         }
 

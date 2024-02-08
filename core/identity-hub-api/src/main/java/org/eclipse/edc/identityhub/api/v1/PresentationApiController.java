@@ -50,7 +50,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/participants/{participantId}/presentation")
+@Path("/v1/participants/{participantId}/presentation")
 public class PresentationApiController implements PresentationApi {
 
     private final JsonObjectValidatorRegistry validatorRegistry;

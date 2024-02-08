@@ -26,6 +26,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -124,6 +125,11 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             return res.succeeded() ? success() : fromFailure(res);
         });
 
+    }
+
+    @Override
+    public ServiceResult<Collection<ParticipantContext>> query(QuerySpec querySpec) {
+        return transactionContext.execute(() -> ServiceResult.from(participantContextStore.query(querySpec)));
     }
 
     private ServiceResult<String> createTokenAndStoreInVault(ParticipantContext participantContext) {

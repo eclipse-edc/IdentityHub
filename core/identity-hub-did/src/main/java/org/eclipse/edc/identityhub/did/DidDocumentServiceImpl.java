@@ -213,7 +213,6 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public <E extends Event> void on(EventEnvelope<E> eventEnvelope) {
         var payload = eventEnvelope.getPayload();
-        monitor.debug("Received a [%s] event".formatted(payload.getClass().getSimpleName()));
         if (payload instanceof ParticipantContextUpdated event) {
             updated(event);
         } else if (payload instanceof ParticipantContextDeleted event) {

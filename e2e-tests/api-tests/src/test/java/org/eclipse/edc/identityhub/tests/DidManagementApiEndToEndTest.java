@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.Header;
+import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentPublished;
 import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentUnpublished;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 
 import static io.restassured.http.ContentType.JSON;
+import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
@@ -210,4 +212,65 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                 .statusCode(403);
     }
 
+    @Test
+    void getAll() {
+        range(0, 20).forEach(i -> createParticipant("user-" + i));
+
+        var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .get("/v1/dids")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(DidDocument[].class);
+
+        assertThat(docs).hasSize(21); //includes the super-user's DID doc
+    }
+
+    @Test
+    void getAll_withDefaultPaging() {
+        range(0, 70).forEach(i -> createParticipant("user-" + i));
+
+        var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .get("/v1/dids")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(DidDocument[].class);
+
+        assertThat(docs).hasSize(50); //includes the super-user's DID doc
+    }
+
+    @Test
+    void getAll_withPaging() {
+        range(0, 20).forEach(i -> createParticipant("user-" + i));
+
+        var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .get("/v1/dids?offset=5&limit=10")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(DidDocument[].class);
+
+        assertThat(docs).hasSize(10);
+    }
+
+    @Test
+    void getAll_notAuthorized() {
+
+        var attackerToken = createParticipant("attacker");
+
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", attackerToken))
+                .get("/v1/dids")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403);
+    }
 }

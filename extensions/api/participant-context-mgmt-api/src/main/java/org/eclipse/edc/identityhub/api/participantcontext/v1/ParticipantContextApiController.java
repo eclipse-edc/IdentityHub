@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.api.participantcontext.v1;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -32,8 +33,10 @@ import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
+import java.util.Collection;
 import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -109,6 +112,15 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     public void updateRoles(@PathParam("participantId") String participantId, List<String> roles) {
         participantContextService.updateParticipant(participantId, participantContext -> participantContext.setRoles(roles)).orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
+    }
+
+    @GET
+    @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
+    @Override
+    public Collection<ParticipantContext> getAll(@DefaultValue("0") @QueryParam("offset") Integer offset,
+                                                 @DefaultValue("50") @QueryParam("limit") Integer limit) {
+        return participantContextService.query(QuerySpec.Builder.newInstance().offset(offset).limit(limit).build())
+                .orElseThrow(exceptionMapper(ParticipantContext.class));
     }
 
 }

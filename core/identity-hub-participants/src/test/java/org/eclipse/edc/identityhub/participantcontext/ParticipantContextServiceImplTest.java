@@ -26,6 +26,7 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -293,6 +294,22 @@ class ParticipantContextServiceImplTest {
         verify(participantContextStore).query(any());
         verify(participantContextStore).update(any());
         verifyNoMoreInteractions(participantContextStore, observableMock);
+    }
+
+    @Test
+    void query() {
+        var ctx = createContext();
+        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(
+                createContext(),
+                createContext(),
+                createContext())));
+
+        assertThat(participantContextService.query(QuerySpec.max()))
+                .isSucceeded()
+                .satisfies(res -> Assertions.assertThat(res).hasSize(3));
+
+        verify(participantContextStore).query(any());
+        verifyNoMoreInteractions(vault);
     }
 
     private ParticipantManifest.Builder createManifest() {

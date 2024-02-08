@@ -135,7 +135,6 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     @Override
     public <E extends Event> void on(EventEnvelope<E> eventEnvelope) {
         var payload = eventEnvelope.getPayload();
-        monitor.debug("Received a [%s] event".formatted(payload.getClass().getSimpleName()));
         if (payload instanceof ParticipantContextDeleted deleted) {
             deleted(deleted);
         } else {
