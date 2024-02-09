@@ -40,7 +40,9 @@ import org.eclipse.edc.web.spi.exception.NotAuthorizedException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.util.Base64;
 import java.util.Optional;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -50,7 +52,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/participants/{participantId}/presentation")
+@Path("/participants/{encodedParticipantId}/presentation")
 public class PresentationApiController implements PresentationApi {
 
     private final JsonObjectValidatorRegistry validatorRegistry;
@@ -76,11 +78,12 @@ public class PresentationApiController implements PresentationApi {
     @POST
     @Path("/query")
     @Override
-    public Response queryPresentation(@PathParam("participantId") String participantContextId, JsonObject query, @HeaderParam(AUTHORIZATION) String token) {
+    public Response queryPresentation(@PathParam("encodedParticipantId") String encodedParticipantId, JsonObject query, @HeaderParam(AUTHORIZATION) String token) {
         if (token == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
         validatorRegistry.validate(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY, query).orElseThrow(ValidationFailureException::new);
+        var participantContextId = decodeParticipantId(encodedParticipantId);
 
         var presentationQuery = transformerRegistry.transform(query, PresentationQueryMessage.class).orElseThrow(InvalidRequestException::new);
 
@@ -110,11 +113,20 @@ public class PresentationApiController implements PresentationApi {
                 .build();
     }
 
+
     private @Nullable String getAudience(String token) {
         try {
             return Optional.ofNullable(SignedJWT.parse(token).getJWTClaimsSet().getClaim("client_id")).map(Object::toString).orElse(null);
         } catch (ParseException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private String decodeParticipantId(String encoded) {
+        try {
+            return new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidRequestException(e.getMessage());
         }
     }
 

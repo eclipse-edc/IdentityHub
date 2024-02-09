@@ -39,7 +39,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/participants/{participantId}/credentials")
+@Path("/v1/participants/{encodedParticipantId}/credentials")
 public class VerifiableCredentialsApiController implements VerifiableCredentialsApi {
 
     private final CredentialStore credentialStore;

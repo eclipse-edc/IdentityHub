@@ -44,8 +44,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
         var user1 = "user1";
         createParticipant(user1);
-
-
+        
         // create second user
         var user2 = "user2";
         var user2Context = ParticipantContext.Builder.newInstance()

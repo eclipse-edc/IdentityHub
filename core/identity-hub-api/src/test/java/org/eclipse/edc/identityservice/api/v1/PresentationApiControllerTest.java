@@ -65,6 +65,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -73,6 +74,7 @@ import static org.mockito.Mockito.when;
 class PresentationApiControllerTest extends RestControllerTestBase {
 
     private static final String PARTICIPANT_ID = "participant-id";
+    private static final String PARTICIPANT_ID_ENCODED = "cGFydGljaXBhbnQtaWQ";
     private final JsonObjectValidatorRegistry validatorRegistryMock = mock();
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final CredentialQueryResolver queryResolver = mock();
@@ -85,7 +87,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Test
     void query_tokenNotPresent_shouldReturn401() {
-        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), null))
+        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID_ENCODED, createObjectBuilder().build(), null))
                 .isInstanceOf(AuthenticationFailedException.class)
                 .hasMessage("Authorization header missing");
     }
@@ -94,9 +96,19 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     void query_validationError_shouldReturn400() {
         when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(failure(violation("foo", "bar")));
 
-        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
+        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID_ENCODED, createObjectBuilder().build(), generateJwt()))
                 .isInstanceOf(ValidationFailureException.class)
                 .hasMessage("foo");
+    }
+
+    @Test
+    void query_participantIdNotBase64Url_shouldReturn400() {
+        when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
+
+        assertThatThrownBy(() -> controller().queryPresentation("user-test", createObjectBuilder().build(), generateJwt()))
+                .isInstanceOf(InvalidRequestException.class);
+
+        verifyNoInteractions(accessTokenVerifier, queryResolver, generator);
     }
 
     @Test
@@ -104,9 +116,8 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.failure("cannot transform"));
 
-        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
-                .isInstanceOf(InvalidRequestException.class)
-                .hasMessage("cannot transform");
+        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID_ENCODED, createObjectBuilder().build(), generateJwt()))
+                .isInstanceOf(InvalidRequestException.class);
         verifyNoInteractions(accessTokenVerifier, queryResolver, generator);
     }
 
@@ -117,7 +128,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
                 .presentationDefinition(PresentationDefinition.Builder.newInstance().id(UUID.randomUUID().toString()).build());
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder.build()));
 
-        var response = controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt());
+        var response = controller().queryPresentation(PARTICIPANT_ID_ENCODED, createObjectBuilder().build(), generateJwt());
         assertThat(response.getStatus()).isEqualTo(503);
         assertThat(response.getEntity()).extracting(o -> (ApiErrorDetail) o).satisfies(ed -> {
             assertThat(ed.getMessage()).isEqualTo("Not implemented.");
@@ -134,7 +145,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
         when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.failure("test-failure"));
 
-        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
+        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID_ENCODED, createObjectBuilder().build(), generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessage("ID token verification failed: test-failure");
         verifyNoInteractions(queryResolver, generator);
@@ -148,7 +159,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(anyString(), any(), eq(List.of("test-scope1")))).thenReturn(QueryResult.unauthorized("test-failure"));
 
-        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
+        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID_ENCODED, createObjectBuilder().build(), generateJwt()))
                 .isInstanceOf(NotAuthorizedException.class)
                 .hasMessage("test-failure");
         verifyNoInteractions(generator);
@@ -164,7 +175,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
         when(generator.createPresentation(anyString(), anyList(), any(), any())).thenReturn(Result.failure("test-failure"));
 
-        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
+        assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID_ENCODED, createObjectBuilder().build(), generateJwt()))
                 .isExactlyInstanceOf(EdcException.class)
                 .hasMessage("Error creating VerifiablePresentation: test-failure");
     }
@@ -185,11 +196,11 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(typeTransformerRegistry.transform(eq(pres), eq(JsonObject.class))).thenReturn(Result.success(jsonResponse));
         when(generator.createPresentation(anyString(), anyList(), any(), any())).thenReturn(Result.success(pres));
 
-        var response = controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt());
+        var response = controller().queryPresentation(PARTICIPANT_ID_ENCODED, createObjectBuilder().build(), generateJwt());
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(response.getEntity()).isEqualTo(jsonResponse);
-
+        verify(participantContextService).getParticipantContext(PARTICIPANT_ID);
     }
 
     @Override

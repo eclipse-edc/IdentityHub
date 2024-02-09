@@ -34,6 +34,8 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -65,8 +67,9 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @GET
-    @Path("/{participantId}")
-    public ParticipantContext getParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+    @Path("/{encodedParticipantId}")
+    public ParticipantContext getParticipant(@PathParam("encodedParticipantId") String encodedParticipantId, @Context SecurityContext securityContext) {
+        var participantId = decodeParticipantId(encodedParticipantId);
         return authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .compose(u -> participantContextService.getParticipantContext(participantId))
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
@@ -74,8 +77,9 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @POST
-    @Path("/{participantId}/token")
-    public String regenerateToken(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+    @Path("/{encodedParticipantId}/token")
+    public String regenerateToken(@PathParam("encodedParticipantId") String encodedParticipantId, @Context SecurityContext securityContext) {
+        var participantId = decodeParticipantId(encodedParticipantId);
         return authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .compose(u -> participantContextService.regenerateApiToken(participantId))
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
@@ -83,9 +87,10 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @POST
-    @Path("/{participantId}/state")
+    @Path("/{encodedParticipantId}/state")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-    public void activateParticipant(@PathParam("participantId") String participantId, @QueryParam("isActive") boolean isActive) {
+    public void activateParticipant(@PathParam("encodedParticipantId") String encodedParticipantId, @QueryParam("isActive") boolean isActive) {
+        var participantId = decodeParticipantId(encodedParticipantId);
         if (isActive) {
             participantContextService.updateParticipant(participantId, ParticipantContext::activate);
         } else {
@@ -96,19 +101,31 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @DELETE
-    @Path("/{participantId}")
+    @Path("/{encodedParticipantId}")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-    public void deleteParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+    public void deleteParticipant(@PathParam("encodedParticipantId") String encodedParticipantId, @Context SecurityContext securityContext) {
+        var participantId = decodeParticipantId(encodedParticipantId);
         participantContextService.deleteParticipantContext(participantId)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
 
     @Override
     @PUT
-    @Path("/{participantId}/roles")
+    @Path("/{encodedParticipantId}/roles")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-    public void updateRoles(@PathParam("participantId") String participantId, List<String> roles) {
-        participantContextService.updateParticipant(participantId, participantContext -> participantContext.setRoles(roles)).orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
+    public void updateRoles(@PathParam("encodedParticipantId") String encodedParticipantId, List<String> roles) {
+        var participantId = decodeParticipantId(encodedParticipantId);
+        participantContextService.updateParticipant(participantId, participantContext -> participantContext.setRoles(roles))
+                .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
     }
 
+    /**
+     * Decode the base64-url encoded participantId
+     *
+     * @param encoded participantId encoded in base64 url
+     * @return participantId
+     */
+    private String decodeParticipantId(String encoded) {
+        return new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
+    }
 }

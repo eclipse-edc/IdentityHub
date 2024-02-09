@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
+import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -53,6 +54,9 @@ import static org.mockito.Mockito.when;
 
 @ApiTest
 class ParticipantContextApiControllerTest extends RestControllerTestBase {
+
+    private static final String PARTICIPANT_ID = "participant-test";
+    private static final String PARTICIPANT_ID_ENCODED = "cGFydGljaXBhbnQtdGVzdA";
 
     private final ParticipantContextService participantContextServiceMock = mock();
     private final AuthorizationService authService = mock();
@@ -69,7 +73,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
         when(participantContextServiceMock.getParticipantContext(any())).thenReturn(ServiceResult.success(pc));
 
         var participantContext = baseRequest()
-                .get("/%s".formatted(pc.getParticipantId()))
+                .get("/%s".formatted(PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(200)
                 .log().ifError()
@@ -84,7 +88,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
         when(participantContextServiceMock.getParticipantContext(any())).thenReturn(ServiceResult.notFound("foo bar"));
 
         baseRequest()
-                .get("/not-exist")
+                .get("/YW5vdGhlclBhcnRpY2lwYW50")
                 .then()
                 .statusCode(404)
                 .log().ifError();
@@ -102,6 +106,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
                 .post()
                 .then()
                 .statusCode(204);
+        
         verify(participantContextServiceMock).createParticipantContext(any(ParticipantManifest.class));
     }
 
@@ -159,61 +164,61 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
     void regenerateToken() {
         when(participantContextServiceMock.regenerateApiToken(any())).thenReturn(ServiceResult.success("new-api-token"));
         baseRequest()
-                .post("/test-participant/token")
+                .post(format("/%s/token", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(200)
                 .body(equalTo("new-api-token"));
-        verify(participantContextServiceMock).regenerateApiToken(eq("test-participant"));
+        verify(participantContextServiceMock).regenerateApiToken(eq(PARTICIPANT_ID));
     }
 
     @Test
     void regenerateToken_notFound() {
         when(participantContextServiceMock.regenerateApiToken(any())).thenReturn(ServiceResult.notFound("foo-bar"));
         baseRequest()
-                .post("/test-participant/token")
+                .post(format("/%s/token", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(404);
-        verify(participantContextServiceMock).regenerateApiToken(eq("test-participant"));
+        verify(participantContextServiceMock).regenerateApiToken(eq(PARTICIPANT_ID));
     }
 
     @Test
     void activateParticipant() {
         when(participantContextServiceMock.updateParticipant(any(), any())).thenReturn(ServiceResult.success());
         baseRequest()
-                .post("/test-participant/state?isActive=true")
+                .post(format("/%s/state?isActive=true", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(204);
-        verify(participantContextServiceMock).updateParticipant(eq("test-participant"), any());
+        verify(participantContextServiceMock).updateParticipant(eq(PARTICIPANT_ID), any());
     }
 
     @Test
     void deactivateParticipant() {
         when(participantContextServiceMock.updateParticipant(any(), any())).thenReturn(ServiceResult.success());
         baseRequest()
-                .post("/test-participant/state?isActive=false")
+                .post(format("/%s/state?isActive=false", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(204);
-        verify(participantContextServiceMock).updateParticipant(eq("test-participant"), any());
+        verify(participantContextServiceMock).updateParticipant(eq(PARTICIPANT_ID), any());
     }
 
     @Test
     void delete() {
         when(participantContextServiceMock.deleteParticipantContext(any())).thenReturn(ServiceResult.success());
         baseRequest()
-                .delete("/test-participant")
+                .delete("/" + PARTICIPANT_ID_ENCODED)
                 .then()
                 .statusCode(204);
-        verify(participantContextServiceMock).deleteParticipantContext(eq("test-participant"));
+        verify(participantContextServiceMock).deleteParticipantContext(PARTICIPANT_ID);
     }
 
     @Test
     void delete_notFound() {
         when(participantContextServiceMock.deleteParticipantContext(any())).thenReturn(ServiceResult.notFound("foo bar"));
         baseRequest()
-                .delete("/test-participant")
+                .delete("/" + PARTICIPANT_ID_ENCODED)
                 .then()
                 .statusCode(404);
-        verify(participantContextServiceMock).deleteParticipantContext(eq("test-participant"));
+        verify(participantContextServiceMock).deleteParticipantContext(PARTICIPANT_ID);
     }
 
     @Test
@@ -222,7 +227,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
 
         baseRequest()
                 .body(List.of("role1", "role2"))
-                .put("/test-participant/roles")
+                .put(format("/%s/roles", PARTICIPANT_ID_ENCODED))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(204);
@@ -241,7 +246,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
 
         baseRequest()
                 .body(List.of("role1", "role2"))
-                .put("/test-participant/roles")
+                .put(format("/%s/roles", PARTICIPANT_ID_ENCODED))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(404);
@@ -272,7 +277,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
         return ParticipantManifest.Builder.newInstance()
                 .key(createKey().build())
                 .active(true)
-                .participantId("test-id")
+                .participantId(PARTICIPANT_ID)
                 .did("did:web:test-id");
     }
 

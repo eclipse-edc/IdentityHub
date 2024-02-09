@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.generateSiToken;
 import static org.eclipse.edc.spi.result.Result.failure;
@@ -57,6 +58,7 @@ import static org.mockito.Mockito.when;
 
 @ComponentTest
 public class PresentationApiComponentTest {
+
     public static final String VALID_QUERY_WITH_SCOPE = """
             {
               "@context": [
@@ -73,7 +75,8 @@ public class PresentationApiComponentTest {
             .name("identity-hub")
             .id("identity-hub")
             .build();
-    private static final String TEST_PARTICIPANT_CONTEXT_ID = "test-participant";
+    private static final String PARTICIPANT_ID = "participant-test";
+    private static final String PARTICIPANT_ID_ENCODED = "cGFydGljaXBhbnQtdGVzdA";
     // todo: these mocks should be replaced, once their respective implementations exist!
     private static final CredentialQueryResolver CREDENTIAL_QUERY_RESOLVER = mock();
     private static final VerifiablePresentationService PRESENTATION_GENERATOR = mock();
@@ -94,10 +97,10 @@ public class PresentationApiComponentTest {
 
     @Test
     void query_tokenNotPresent_shouldReturn401() {
-        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
+        createParticipant(PARTICIPANT_ID);
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType("application/json")
-                .post("/participants/test-participant/presentation/query")
+                .post(format("/participants/%s/presentation/query", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(401)
                 .extract().body().asString();
@@ -105,7 +108,7 @@ public class PresentationApiComponentTest {
 
     @Test
     void query_validationError_shouldReturn400() {
-        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
+        createParticipant(PARTICIPANT_ID);
         var query = """
                 {
                   "@context": [
@@ -119,7 +122,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, generateSiToken())
                 .body(query)
-                .post("/participants/test-participant/presentation/query")
+                .post(format("/participants/%s/presentation/query", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(400)
                 .extract().body().asString();
@@ -128,7 +131,7 @@ public class PresentationApiComponentTest {
 
     @Test
     void query_withPresentationDefinition_shouldReturn503() {
-        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
+        createParticipant(PARTICIPANT_ID);
         var query = """
                 {
                   "@context": [
@@ -144,7 +147,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, generateSiToken())
                 .body(query)
-                .post("/participants/test-participant/presentation/query")
+                .post(format("/participants/%s/presentation/query", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(503)
                 .extract().body().asString();
@@ -153,14 +156,14 @@ public class PresentationApiComponentTest {
 
     @Test
     void query_tokenVerificationFails_shouldReturn401() {
-        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
+        createParticipant(PARTICIPANT_ID);
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(failure("token not verified"));
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/participants/test-participant/presentation/query")
+                .post(format("/participants/%s/presentation/query", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(401)
                 .log().ifValidationFails()
@@ -170,7 +173,7 @@ public class PresentationApiComponentTest {
 
     @Test
     void query_queryResolutionFails_shouldReturn403() {
-        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
+        createParticipant(PARTICIPANT_ID);
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.unauthorized("scope mismatch!"));
@@ -179,7 +182,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/participants/test-participant/presentation/query")
+                .post(format("/participants/%s/presentation/query", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(403)
                 .log().ifValidationFails()
@@ -189,7 +192,7 @@ public class PresentationApiComponentTest {
 
     @Test
     void query_presentationGenerationFails_shouldReturn500() {
-        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
+        createParticipant(PARTICIPANT_ID);
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
@@ -199,7 +202,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/participants/test-participant/presentation/query")
+                .post(format("/participants/%s/presentation/query", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(500)
                 .log().ifValidationFails();
@@ -207,7 +210,7 @@ public class PresentationApiComponentTest {
 
     @Test
     void query_success() throws JOSEException {
-        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
+        createParticipant(PARTICIPANT_ID);
         var token = generateSiToken();
         when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
         when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
@@ -220,7 +223,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/participants/test-participant/presentation/query")
+                .post(format("/participants/%s/presentation/query", PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(200)
                 .log().ifValidationFails()

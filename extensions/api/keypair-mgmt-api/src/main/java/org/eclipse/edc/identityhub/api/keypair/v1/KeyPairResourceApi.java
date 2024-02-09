@@ -63,7 +63,7 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Collection<KeyPairResource> findForParticipant(String participantId, SecurityContext securityContext);
+    Collection<KeyPairResource> findForParticipant(String encodedParticipantId, SecurityContext securityContext);
 
     @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Adds a new key pair to a ParticipantContext. Note that the key pair is either generated, or the private key is expected to be found in the vault.",
@@ -80,7 +80,7 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void addKeyPair(String participantId, KeyDescriptor keyDescriptor, boolean makeDefault, SecurityContext securityContext);
+    void addKeyPair(String encodedParticipantId, KeyDescriptor keyDescriptor, boolean makeDefault, SecurityContext securityContext);
 
     @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Rotates (=retires) a particular key pair, identified by their ID and optionally create a new successor key.",

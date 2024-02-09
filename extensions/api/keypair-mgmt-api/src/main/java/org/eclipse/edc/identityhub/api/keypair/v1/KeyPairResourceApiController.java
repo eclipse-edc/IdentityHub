@@ -37,6 +37,8 @@ import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -44,7 +46,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/participants/{participantId}/keypairs")
+@Path("/v1/participants/{encodedParticipantId}/keypairs")
 public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     private final AuthorizationService authorizationService;
@@ -77,7 +79,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @GET
     @Override
-    public Collection<KeyPairResource> findForParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+    public Collection<KeyPairResource> findForParticipant(@PathParam("encodedParticipantId") String encodedParticipantId, @Context SecurityContext securityContext) {
+        var participantId = decodeParticipantId(encodedParticipantId);
         var query = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build();
         return keyPairService.query(query)
                 .orElseThrow(exceptionMapper(KeyPairResource.class, participantId))
@@ -87,8 +90,9 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @PUT
     @Override
-    public void addKeyPair(@PathParam("participantId") String participantId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault,
+    public void addKeyPair(@PathParam("encodedParticipantId") String encodedParticipantId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault,
                            @Context SecurityContext securityContext) {
+        var participantId = decodeParticipantId(encodedParticipantId);
         keyDescriptorValidator.validate(keyDescriptor).orElseThrow(ValidationFailureException::new);
         authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .compose(u -> keyPairService.addKeyPair(participantId, keyDescriptor, makeDefault))
@@ -113,5 +117,15 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
         authorizationService.isAuthorized(securityContext, id, KeyPairResource.class)
                 .compose(u -> keyPairService.revokeKey(id, newKey))
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));
+    }
+
+    /**
+     * Decode the base64-url encoded participantId
+     *
+     * @param encoded participantId encoded in base64 url
+     * @return participantId
+     */
+    private String decodeParticipantId(String encoded) {
+        return new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
     }
 }
