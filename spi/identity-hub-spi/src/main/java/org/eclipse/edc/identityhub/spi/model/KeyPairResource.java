@@ -51,6 +51,7 @@ public class KeyPairResource extends ParticipantResource {
         return id;
     }
 
+
     /**
      * Whether this KeyPair is the default for a {@link ParticipantContext}.
      */
@@ -124,6 +125,10 @@ public class KeyPairResource extends ParticipantResource {
             super(new KeyPairResource());
         }
 
+        public static Builder newInstance() {
+            return new Builder();
+        }
+
         public Builder groupName(String groupName) {
             entity.groupName = groupName;
             return this;
@@ -189,10 +194,6 @@ public class KeyPairResource extends ParticipantResource {
                 entity.useDuration = Duration.ofDays(6 * 30).toMillis();
             }
             return super.build();
-        }
-
-        public static Builder newInstance() {
-            return new Builder();
         }
     }
 }

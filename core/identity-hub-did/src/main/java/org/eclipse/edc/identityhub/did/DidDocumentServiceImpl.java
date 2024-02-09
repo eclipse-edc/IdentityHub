@@ -264,6 +264,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                         .id(event.getKeyId())
                         .publicKeyJwk(jwk.toJSONObject())
                         .controller(dd.getDocument().getId())
+                        .type(event.getType())
                         .build()))
                 .map(didResourceStore::update)
                 .filter(StoreResult::failed)

@@ -12,9 +12,10 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.participantcontext.v1.validation;
+package org.eclipse.edc.identityhub.api.v1.validation;
 
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -23,7 +24,7 @@ import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 class KeyDescriptorValidatorTest {
 
-    private final KeyDescriptorValidator validator = new KeyDescriptorValidator();
+    private final KeyDescriptorValidator validator = new KeyDescriptorValidator(new ConsoleMonitor());
 
     @Test
     void validate_success() {
@@ -110,6 +111,5 @@ class KeyDescriptorValidatorTest {
         assertThat(validator.validate(descriptor)).isFailed()
                 .detail().isEqualTo("Either the public key is specified (PEM or JWK), or the generator params are provided, not both.");
     }
-
-
+    
 }

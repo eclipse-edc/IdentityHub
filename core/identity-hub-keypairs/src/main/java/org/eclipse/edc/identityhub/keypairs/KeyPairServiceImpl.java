@@ -74,7 +74,8 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                 .participantId(participantId)
                 .build();
 
-        return ServiceResult.from(keyPairResourceStore.create(newResource)).onSuccess(v -> observable.invokeForEach(l -> l.added(newResource)));
+        return ServiceResult.from(keyPairResourceStore.create(newResource))
+                .onSuccess(v -> observable.invokeForEach(l -> l.added(newResource, keyDescriptor.getType())));
     }
 
     @Override

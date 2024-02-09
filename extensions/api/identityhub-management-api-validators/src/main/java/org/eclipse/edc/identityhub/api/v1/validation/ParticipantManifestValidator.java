@@ -12,9 +12,10 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.participantcontext.v1.validation;
+package org.eclipse.edc.identityhub.api.v1.validation;
 
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.util.string.StringUtils;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
@@ -24,7 +25,11 @@ import static org.eclipse.edc.validator.spi.ValidationResult.success;
 import static org.eclipse.edc.validator.spi.Violation.violation;
 
 public class ParticipantManifestValidator implements Validator<ParticipantManifest> {
-    private final KeyDescriptorValidator keyDescriptorValidator = new KeyDescriptorValidator();
+    private final KeyDescriptorValidator keyDescriptorValidator;
+
+    public ParticipantManifestValidator(Monitor monitor) {
+        this.keyDescriptorValidator = new KeyDescriptorValidator(monitor);
+    }
 
     @Override
     public ValidationResult validate(ParticipantManifest input) {

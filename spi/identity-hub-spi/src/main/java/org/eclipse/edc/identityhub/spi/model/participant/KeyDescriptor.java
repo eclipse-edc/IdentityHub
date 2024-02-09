@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.spi.model.participant;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.eclipse.edc.iam.did.spi.document.DidConstants;
 import org.eclipse.edc.spi.security.Vault;
 
 import java.util.Map;
@@ -33,6 +34,7 @@ import java.util.Map;
 @JsonDeserialize(builder = KeyDescriptor.Builder.class)
 public class KeyDescriptor {
     private String keyId;
+    private String type;
     private String privateKeyAlias;
     private Map<String, Object> publicKeyJwk;
     private String publicKeyPem;
@@ -46,6 +48,14 @@ public class KeyDescriptor {
      */
     public String getKeyId() {
         return keyId;
+    }
+
+    /**
+     * The type of the verification method associated with this key.
+     * It specifies in which cryptographic context the key will be used.
+     */
+    public String getType() {
+        return type;
     }
 
     /**
@@ -87,8 +97,18 @@ public class KeyDescriptor {
             keyDescriptor = new KeyDescriptor();
         }
 
+        @JsonCreator
+        public static Builder newInstance() {
+            return new Builder();
+        }
+
         public Builder keyId(String keyId) {
             keyDescriptor.keyId = keyId;
+            return this;
+        }
+
+        public Builder type(String type) {
+            keyDescriptor.type = type;
             return this;
         }
 
@@ -113,12 +133,10 @@ public class KeyDescriptor {
         }
 
         public KeyDescriptor build() {
+            if (keyDescriptor.type == null) {
+                keyDescriptor.type = DidConstants.JSON_WEB_KEY_2020;
+            }
             return keyDescriptor;
-        }
-
-        @JsonCreator
-        public static Builder newInstance() {
-            return new Builder();
         }
     }
 }

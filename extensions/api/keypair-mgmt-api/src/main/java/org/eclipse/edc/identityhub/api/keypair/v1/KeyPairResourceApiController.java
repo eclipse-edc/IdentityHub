@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
+package org.eclipse.edc.identityhub.api.keypair.v1;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -24,6 +24,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
@@ -33,6 +34,7 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
+import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -47,17 +49,18 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     private final AuthorizationService authorizationService;
     private final KeyPairService keyPairService;
+    private final KeyDescriptorValidator keyDescriptorValidator;
 
-    public KeyPairResourceApiController(AuthorizationService authorizationService, KeyPairService keyPairService) {
+    public KeyPairResourceApiController(AuthorizationService authorizationService, KeyPairService keyPairService, KeyDescriptorValidator keyDescriptorValidator) {
         this.authorizationService = authorizationService;
         this.keyPairService = keyPairService;
+        this.keyDescriptorValidator = keyDescriptorValidator;
     }
 
     @GET
     @Path("/{keyPairId}")
     @Override
     public KeyPairResource findById(@PathParam("keyPairId") String id, @Context SecurityContext securityContext) {
-
         authorizationService.isAuthorized(securityContext, id, KeyPairResource.class)
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));
 
@@ -75,7 +78,6 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @GET
     @Override
     public Collection<KeyPairResource> findForParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-
         var query = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build();
         return keyPairService.query(query)
                 .orElseThrow(exceptionMapper(KeyPairResource.class, participantId))
@@ -87,6 +89,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Override
     public void addKeyPair(@PathParam("participantId") String participantId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault,
                            @Context SecurityContext securityContext) {
+        keyDescriptorValidator.validate(keyDescriptor).orElseThrow(ValidationFailureException::new);
         authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .compose(u -> keyPairService.addKeyPair(participantId, keyDescriptor, makeDefault))
                 .orElseThrow(exceptionMapper(KeyPairResource.class));
@@ -96,6 +99,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Path("/{keyPairId}/rotate")
     @Override
     public void rotateKeyPair(@PathParam("keyPairId") String id, @Nullable KeyDescriptor newKey, @QueryParam("duration") long duration, @Context SecurityContext securityContext) {
+        keyDescriptorValidator.validate(newKey).orElseThrow(ValidationFailureException::new);
         authorizationService.isAuthorized(securityContext, id, KeyPairResource.class)
                 .compose(u -> keyPairService.rotateKeyPair(id, newKey, duration))
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));
@@ -105,6 +109,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Path("/{keyPairId}/revoke")
     @Override
     public void revokeKey(@PathParam("keyPairId") String id, KeyDescriptor newKey, @Context SecurityContext securityContext) {
+        keyDescriptorValidator.validate(newKey).orElseThrow(ValidationFailureException::new);
         authorizationService.isAuthorized(securityContext, id, KeyPairResource.class)
                 .compose(u -> keyPairService.revokeKey(id, newKey))
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));

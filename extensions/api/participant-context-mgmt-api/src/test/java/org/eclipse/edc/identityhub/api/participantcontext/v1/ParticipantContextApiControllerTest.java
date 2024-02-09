@@ -19,7 +19,7 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import org.eclipse.edc.identityhub.api.participantcontext.v1.validation.ParticipantManifestValidator;
+import org.eclipse.edc.identityhub.api.v1.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
@@ -28,6 +28,7 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,6 +56,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
 
     private final ParticipantContextService participantContextServiceMock = mock();
     private final AuthorizationService authService = mock();
+    private final ParticipantManifestValidator participantManifestValidator = mock();
 
     @BeforeEach
     void setUp() {
@@ -90,7 +93,9 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
     @Test
     void createParticipant_success() {
         when(participantContextServiceMock.createParticipantContext(any())).thenReturn(ServiceResult.success());
+        when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.success());
         var manifest = createManifest().build();
+
         baseRequest()
                 .contentType(ContentType.JSON)
                 .body(manifest)
@@ -105,12 +110,15 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
         var manifest = createManifest()
                 .participantId(null)
                 .build();
+        when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.failure(emptyList()));
+
         baseRequest()
                 .contentType(ContentType.JSON)
                 .body(manifest)
                 .post()
                 .then()
                 .statusCode(400);
+
         verifyNoInteractions(participantContextServiceMock);
     }
 
@@ -119,12 +127,15 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
         var manifest = createManifest()
                 .key(createKey().publicKeyPem(null).publicKeyJwk(null).keyGeneratorParams(null).build())
                 .build();
+        when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.failure(emptyList()));
+
         baseRequest()
                 .contentType(ContentType.JSON)
                 .body(manifest)
                 .post()
                 .then()
                 .statusCode(400);
+
         verifyNoInteractions(participantContextServiceMock);
     }
 
@@ -132,12 +143,15 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
     void createParticipant_alreadyExists() {
         when(participantContextServiceMock.createParticipantContext(any())).thenReturn(ServiceResult.conflict("already exists"));
         var manifest = createManifest().build();
+        when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.success());
+
         baseRequest()
                 .contentType(ContentType.JSON)
                 .body(manifest)
                 .post()
                 .then()
                 .statusCode(409);
+
         verify(participantContextServiceMock).createParticipantContext(any(ParticipantManifest.class));
     }
 
@@ -236,7 +250,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new ParticipantContextApiController(new ParticipantManifestValidator(), participantContextServiceMock, authService);
+        return new ParticipantContextApiController(participantManifestValidator, participantContextServiceMock, authService);
     }
 
     private ParticipantContext.Builder createParticipantContext() {

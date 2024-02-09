@@ -12,15 +12,17 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
+package org.eclipse.edc.identityhub.api.keypair.v1;
 
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -41,6 +44,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -48,7 +52,14 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
     private final KeyPairService keyPairService = mock();
     private final AuthorizationService authService = mock();
+    private final KeyDescriptorValidator validator = mock();
 
+    @NotNull
+    private static KeyDescriptor.Builder createKeyDescriptor() {
+        return KeyDescriptor.Builder.newInstance()
+                .keyId("new-key-id")
+                .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"));
+    }
 
     @BeforeEach
     void setUp() {
@@ -98,8 +109,8 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
             return criterion.getOperandLeft().equals("participantId") &&
-                   criterion.getOperator().equals("=") &&
-                   criterion.getOperandRight().equals("test-participant");
+                    criterion.getOperator().equals("=") &&
+                    criterion.getOperandRight().equals("test-participant");
         }));
     }
 
@@ -120,8 +131,8 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
             return criterion.getOperandLeft().equals("participantId") &&
-                   criterion.getOperator().equals("=") &&
-                   criterion.getOperandRight().equals("test-participant");
+                    criterion.getOperator().equals("=") &&
+                    criterion.getOperandRight().equals("test-participant");
         }));
     }
 
@@ -138,8 +149,8 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
             return criterion.getOperandLeft().equals("participantId") &&
-                   criterion.getOperator().equals("=") &&
-                   criterion.getOperandRight().equals("test-participant");
+                    criterion.getOperator().equals("=") &&
+                    criterion.getOperandRight().equals("test-participant");
         }));
     }
 
@@ -148,6 +159,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     void addKeyPair(boolean makeDefault) {
         var descriptor = createKeyDescriptor()
                 .build();
+        when(validator.validate(any())).thenReturn(ValidationResult.success());
         when(keyPairService.addKeyPair(eq("test-participant"), any(), eq(makeDefault))).thenReturn(ServiceResult.success());
 
         baseRequest()
@@ -163,8 +175,26 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    void addKeyPair_invalidInput() {
+        var descriptor = createKeyDescriptor()
+                .build();
+        when(validator.validate(any())).thenReturn(ValidationResult.failure(emptyList()));
+
+        baseRequest()
+                .contentType(ContentType.JSON)
+                .body(descriptor)
+                .put("?participantId=%s&makeDefault=%s".formatted("test-participant", true))
+                .then()
+                .log().ifError()
+                .statusCode(400);
+
+        verifyNoInteractions(keyPairService);
+    }
+
+    @Test
     void rotate() {
         var duration = Duration.ofDays(100).toMillis();
+        when(validator.validate(any())).thenReturn(ValidationResult.success());
         when(keyPairService.rotateKeyPair(eq("old-id"), any(), eq(duration))).thenReturn(ServiceResult.success());
 
         var descriptor = createKeyDescriptor().build();
@@ -181,8 +211,26 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    void rotate_invalidInput() {
+        var duration = Duration.ofDays(100).toMillis();
+        when(validator.validate(any())).thenReturn(ValidationResult.failure(emptyList()));
+
+        var descriptor = createKeyDescriptor().build();
+        baseRequest()
+                .contentType(ContentType.JSON)
+                .body(descriptor)
+                .post("/old-id/rotate?duration=" + duration)
+                .then()
+                .log().ifError()
+                .statusCode(400);
+
+        verifyNoInteractions(keyPairService);
+    }
+
+    @Test
     void rotate_idNotFound() {
         var duration = Duration.ofDays(100).toMillis();
+        when(validator.validate(any())).thenReturn(ValidationResult.success());
         when(keyPairService.rotateKeyPair(eq("old-id"), any(), eq(duration))).thenReturn(ServiceResult.notFound("test-message"));
 
         var descriptor = createKeyDescriptor().build();
@@ -201,6 +249,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     @Test
     void rotate_withoutSuccessor() {
         var duration = Duration.ofDays(100).toMillis();
+        when(validator.validate(any())).thenReturn(ValidationResult.success());
         when(keyPairService.rotateKeyPair(eq("old-id"), any(), eq(duration))).thenReturn(ServiceResult.success());
 
         baseRequest()
@@ -216,6 +265,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
     @Test
     void revoke() {
+        when(validator.validate(any())).thenReturn(ValidationResult.success());
         when(keyPairService.revokeKey(eq("old-id"), any())).thenReturn(ServiceResult.success());
 
         var descriptor = createKeyDescriptor().build();
@@ -232,7 +282,24 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    void revoke_invalidInput() {
+        when(validator.validate(any())).thenReturn(ValidationResult.failure(emptyList()));
+
+        var descriptor = createKeyDescriptor().build();
+        baseRequest()
+                .contentType(ContentType.JSON)
+                .body(descriptor)
+                .post("/old-id/revoke")
+                .then()
+                .log().ifError()
+                .statusCode(400);
+
+        verifyNoInteractions(keyPairService);
+    }
+
+    @Test
     void revoke_notFound() {
+        when(validator.validate(any())).thenReturn(ValidationResult.success());
         when(keyPairService.revokeKey(eq("old-id"), any())).thenReturn(ServiceResult.notFound("test-message"));
 
         var descriptor = createKeyDescriptor().build();
@@ -250,7 +317,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new KeyPairResourceApiController(authService, keyPairService);
+        return new KeyPairResourceApiController(authService, keyPairService, validator);
     }
 
     private KeyPairResource.Builder createKeyPair() {
@@ -267,12 +334,5 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
                 .contentType("application/json")
                 .baseUri("http://localhost:" + port + "/v1/participants/test-participant/keypairs")
                 .when();
-    }
-
-    @NotNull
-    private static KeyDescriptor.Builder createKeyDescriptor() {
-        return KeyDescriptor.Builder.newInstance()
-                .keyId("new-key-id")
-                .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"));
     }
 }
