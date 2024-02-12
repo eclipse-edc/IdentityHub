@@ -18,9 +18,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
-import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
-import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
@@ -32,7 +30,6 @@ import org.eclipse.edc.identitytrust.model.presentationdefinition.PresentationDe
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
@@ -78,10 +75,6 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     private final CredentialQueryResolver queryResolver = mock();
     private final AccessTokenVerifier accessTokenVerifier = mock();
     private final VerifiablePresentationService generator = mock();
-    private final ParticipantContextService participantContextService = mock(a -> ServiceResult.success(ParticipantContext.Builder.newInstance()
-            .participantId(a.getArgument(0).toString())
-            .apiTokenAlias("test-alias")
-            .build()));
 
     @Test
     void query_tokenNotPresent_shouldReturn401() {
@@ -194,7 +187,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected PresentationApiController controller() {
-        return new PresentationApiController(validatorRegistryMock, typeTransformerRegistry, queryResolver, accessTokenVerifier, generator, mock(), participantContextService);
+        return new PresentationApiController(validatorRegistryMock, typeTransformerRegistry, queryResolver, accessTokenVerifier, generator, mock());
     }
 
     private String generateJwt() {

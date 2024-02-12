@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.token.verification;
 
+import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.spi.iam.PublicKeyResolver;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -31,6 +32,7 @@ import java.util.function.Supplier;
 
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static com.nimbusds.jwt.JWTClaimNames.SUBJECT;
+import static java.lang.String.format;
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.ACCESS_TOKEN_CLAIM;
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.ACCESS_TOKEN_SCOPE_CLAIM;
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.IATP_ACCESS_TOKEN_CONTEXT;
@@ -50,10 +52,16 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
     private final Monitor monitor;
     private final PublicKeyResolver publicKeyResolver;
 
-    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, Supplier<PublicKey> publicKeySupplier, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
+    private final ParticipantContextService participantContextService;
+
+    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, Supplier<PublicKey> publicKeySupplier,
+                                   TokenValidationRulesRegistry tokenValidationRulesRegistry,
+                                   ParticipantContextService participantContextService,
+                                   Monitor monitor,
                                    PublicKeyResolver publicKeyResolver) {
         this.tokenValidationService = tokenValidationService;
         this.tokenValidationRulesRegistry = tokenValidationRulesRegistry;
+        this.participantContextService = participantContextService;
         this.monitor = monitor;
         this.stsPublicKey = publicKeySupplier;
         this.publicKeyResolver = publicKeyResolver;
@@ -62,6 +70,15 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
     @Override
     public Result<List<String>> verify(String token, String participantId) {
         Objects.requireNonNull(participantId, "Participant ID is mandatory.");
+
+        var participantResult = participantContextService.getParticipantContext(participantId);
+
+        if (participantResult.failed()) {
+            return Result.failure(format("Participant with id: %s not found", participantId));
+        }
+
+        var participant = participantResult.getContent();
+
         var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(IATP_SELF_ISSUED_TOKEN_CONTEXT));
         if (res.failed()) {
             return res.mapTo();
@@ -76,7 +93,11 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
             if (aud == null || aud.isEmpty()) {
                 return Result.failure("Mandatory claim 'aud' on 'access_token' was null.");
             }
-            return aud.contains(participantId) ? Result.success() : Result.failure("Participant Context ID must match 'aud' claim in 'access_token'");
+            if (aud.contains(participant.getParticipantId()) || aud.contains(participant.getDid())) {
+                return Result.success();
+            } else {
+                return Result.failure("Participant Context ID or DID must match 'aud' claim in 'access_token'");
+            }
         };
 
         TokenValidationRule subClaimsMatch = (at, additional) -> {

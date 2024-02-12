@@ -18,6 +18,7 @@ import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.core.creators.JwtPresentationGenerator;
 import org.eclipse.edc.identityhub.core.creators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
+import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
@@ -114,6 +115,9 @@ public class CoreServicesExtension implements ServiceExtension {
     @Inject
     private KeyPairService keyPairService;
 
+    @Inject
+    private ParticipantContextService participantContextService;
+
     @Override
     public String name() {
         return NAME;
@@ -129,7 +133,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public AccessTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
-        return new AccessTokenVerifierImpl(tokenValidationService, createPublicKey(context), tokenValidationRulesRegistry, context.getMonitor(), publicKeyResolver);
+        return new AccessTokenVerifierImpl(tokenValidationService, createPublicKey(context), tokenValidationRulesRegistry, participantContextService, context.getMonitor(), publicKeyResolver);
     }
 
 
