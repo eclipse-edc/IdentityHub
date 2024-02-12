@@ -97,7 +97,7 @@ public class PresentationApiComponentTest {
         createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType("application/json")
-                .post("/participants/test-participant/presentation/query")
+                .post("/v1/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(401)
                 .extract().body().asString();
@@ -119,7 +119,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, generateSiToken())
                 .body(query)
-                .post("/participants/test-participant/presentation/query")
+                .post("/v1/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(400)
                 .extract().body().asString();
@@ -144,7 +144,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, generateSiToken())
                 .body(query)
-                .post("/participants/test-participant/presentation/query")
+                .post("/v1/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(503)
                 .extract().body().asString();
@@ -160,7 +160,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/participants/test-participant/presentation/query")
+                .post("/v1/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(401)
                 .log().ifValidationFails()
@@ -179,7 +179,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/participants/test-participant/presentation/query")
+                .post("/v1/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(403)
                 .log().ifValidationFails()
@@ -199,7 +199,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/participants/test-participant/presentation/query")
+                .post("/v1/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(500)
                 .log().ifValidationFails();
@@ -220,7 +220,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/participants/test-participant/presentation/query")
+                .post("/v1/participants/test-participant/presentation/query")
                 .then()
                 .statusCode(200)
                 .log().ifValidationFails()

@@ -51,7 +51,6 @@ public class DidManagementApiController implements DidManagementApi {
         this.authorizationService = authorizationService;
     }
 
-
     @Override
     @POST
     @Path("/publish")

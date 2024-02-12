@@ -31,7 +31,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
+import static io.restassured.http.ContentType.JSON;
+import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -260,4 +263,75 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .statusCode(403);
     }
 
+    @Test
+    void getAll() {
+        range(0, 10)
+                .forEach(i -> {
+                    var participantId = "user" + i;
+                    createParticipant(participantId);
+                });
+        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .get("/v1/participants")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(ParticipantContext[].class);
+        assertThat(found).hasSize(11); //10 + 1 for the super user
+    }
+
+    @Test
+    void getAll_withPaging() {
+        range(0, 10)
+                .forEach(i -> {
+                    var participantId = "user" + i;
+                    createParticipant(participantId); // implicitly creates a keypair
+                });
+        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .get("/v1/participants?offset=2&limit=4")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(ParticipantContext[].class);
+        assertThat(found).hasSize(4);
+    }
+
+    @Test
+    void getAll_withDefaultPaging() {
+        IntStream.range(0, 70)
+                .forEach(i -> {
+                    var participantId = "user" + i;
+                    createParticipant(participantId); // implicitly creates a keypair
+                });
+        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .get("/v1/participants")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(ParticipantContext[].class);
+        assertThat(found).hasSize(50);
+    }
+
+    @Test
+    void getAll_notAuthorized() {
+        var attackerToken = createParticipant("attacker");
+
+        range(0, 10)
+                .forEach(i -> {
+                    var participantId = "user" + i;
+                    createParticipant(participantId); // implicitly creates a keypair
+                });
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", attackerToken))
+                .get("/v1/participants")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403);
+    }
 }

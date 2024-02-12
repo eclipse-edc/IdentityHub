@@ -140,4 +140,5 @@ public interface DidManagementApi {
             }
     )
     void removeEndpoint(String did, String serviceId, boolean autoPublish, SecurityContext securityContext);
+
 }

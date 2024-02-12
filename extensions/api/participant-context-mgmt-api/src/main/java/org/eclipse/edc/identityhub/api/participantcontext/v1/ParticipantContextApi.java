@@ -29,6 +29,7 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
+import java.util.Collection;
 import java.util.List;
 
 @OpenAPIDefinition(info = @Info(description = "This is the Management API for ParticipantContexts", title = "ParticipantContext Management API", version = "1"))
@@ -126,4 +127,20 @@ public interface ParticipantContextApi {
             }
     )
     void updateRoles(String participantId, List<String> roles);
+
+    @Tag(name = "ParticipantContext Management API")
+    @Operation(description = "Get all DID documents across all Participant Contexts. Requires elevated access.",
+            parameters = {
+                    @Parameter(name = "offset", description = "the paging offset. defaults to 0"),
+                    @Parameter(name = "limit", description = "the page size. defaults to 50")},
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The list of ParticipantContexts.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ParticipantContext.class)))),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "400", description = "The query was malformed or was not understood by the server.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+            }
+    )
+    Collection<ParticipantContext> getAll(Integer offset, Integer limit);
 }

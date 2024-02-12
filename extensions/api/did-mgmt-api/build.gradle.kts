@@ -28,6 +28,7 @@ dependencies {
     implementation(libs.edc.spi.web)
     implementation(libs.edc.core.jerseyproviders)
     implementation(libs.jakarta.rsApi)
+    implementation(libs.jakarta.annotation)
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.ext.jsonld)

@@ -31,8 +31,10 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static io.restassured.http.ContentType.JSON;
+import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -333,6 +335,78 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .log().ifValidationFails()
                 .statusCode(403)
                 .body(notNullValue());
+    }
+
+    @Test
+    void getAll() {
+        range(0, 10)
+                .forEach(i -> {
+                    var participantId = "user" + i;
+                    createParticipant(participantId); // implicitly creates a keypair
+                });
+        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .get("/v1/keypairs")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(KeyPairResource[].class);
+        assertThat(found).hasSize(11); //10 + 1 for the super user
+    }
+
+    @Test
+    void getAll_withPaging() {
+        range(0, 10)
+                .forEach(i -> {
+                    var participantId = "user" + i;
+                    createParticipant(participantId); // implicitly creates a keypair
+                });
+        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .get("/v1/keypairs?offset=2&limit=4")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(KeyPairResource[].class);
+        assertThat(found).hasSize(4);
+    }
+
+    @Test
+    void getAll_withDefaultPaging() {
+        IntStream.range(0, 70)
+                .forEach(i -> {
+                    var participantId = "user" + i;
+                    createParticipant(participantId); // implicitly creates a keypair
+                });
+        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .get("/v1/keypairs")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .extract().body().as(KeyPairResource[].class);
+        assertThat(found).hasSize(50);
+    }
+
+    @Test
+    void getAll_notAuthorized() {
+        var attackerToken = createParticipant("attacker");
+
+        range(0, 10)
+                .forEach(i -> {
+                    var participantId = "user" + i;
+                    createParticipant(participantId); // implicitly creates a keypair
+                });
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", attackerToken))
+                .get("/v1/keypairs")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403);
     }
 
     private String createKeyPair(String participantId) {

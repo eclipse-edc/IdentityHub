@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.keypair;
 
+import org.eclipse.edc.identityhub.api.keypair.v1.GetAllKeyPairsApiController;
 import org.eclipse.edc.identityhub.api.keypair.v1.KeyPairResourceApiController;
 import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
@@ -32,6 +33,7 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
 
 import static org.eclipse.edc.identityhub.api.keypair.KeyPairResourceManagementApiExtension.NAME;
+
 
 @Extension(NAME)
 public class KeyPairResourceManagementApiExtension implements ServiceExtension {
@@ -56,8 +58,10 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(KeyPairResource.class, this::findById);
-        var controller = new KeyPairResourceApiController(authorizationService, keyPairService, new KeyDescriptorValidator(monitor));
-        webService.registerResource(managementApiConfiguration.getContextAlias(), controller);
+        var api = new KeyPairResourceApiController(authorizationService, keyPairService, new KeyDescriptorValidator(context.getMonitor()));
+        var getAllApi = new GetAllKeyPairsApiController(keyPairService);
+        webService.registerResource(managementApiConfiguration.getContextAlias(), api);
+        webService.registerResource(managementApiConfiguration.getContextAlias(), getAllApi);
     }
 
     private ParticipantResource findById(String keyPairId) {
