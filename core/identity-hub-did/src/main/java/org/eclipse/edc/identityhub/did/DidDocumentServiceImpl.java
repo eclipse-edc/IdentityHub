@@ -260,7 +260,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
         var errors = didResources.stream()
                 .peek(dd -> dd.getDocument().getVerificationMethod().add(VerificationMethod.Builder.newInstance()
-                        .id(event.getKeyId())
+                        .id(dd.getDocument().getId() + "#" + event.getKeyId())
                         .publicKeyJwk(jwk.toJSONObject())
                         .controller(dd.getDocument().getId())
                         .type(event.getType())

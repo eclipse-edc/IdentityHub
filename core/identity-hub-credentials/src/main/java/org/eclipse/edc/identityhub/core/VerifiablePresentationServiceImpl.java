@@ -79,7 +79,9 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
             if (!ldpVcs.isEmpty()) {
 
                 // todo: once we support PresentationDefinition, the types list could be dynamic
-                JsonObject ldpVp = registry.createPresentation(participantContextId, ldpVcs, CredentialFormat.JSON_LD, Map.of("types", List.of("VerifiablePresentation")));
+                JsonObject ldpVp = registry.createPresentation(participantContextId, ldpVcs, CredentialFormat.JSON_LD, Map.of(
+                        "types", List.of("VerifiablePresentation"),
+                        "controller", participantContextId));
                 vpToken.add(ldpVp);
             }
 
