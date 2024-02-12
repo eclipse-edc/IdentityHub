@@ -18,7 +18,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EmptySource;
-import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.security.AlgorithmParameters;
@@ -37,7 +36,7 @@ class KeyPairGeneratorTest {
 
     @Test
     void generateKeyPair_rsa_defaultLength() {
-        var rsaResult = KeyPairGenerator.generateKeyPair("RSA", Map.of());
+        var rsaResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "RSA"));
         assertThat(rsaResult).isSucceeded()
                 .extracting(KeyPair::getPrivate)
                 .isInstanceOf(RSAPrivateKey.class);
@@ -48,7 +47,7 @@ class KeyPairGeneratorTest {
 
     @Test
     void generateKeyPair_rsa_withLength() {
-        var rsaResult = KeyPairGenerator.generateKeyPair("RSA", Map.of("length", 4096));
+        var rsaResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "RSA", "length", 4096));
         assertThat(rsaResult).isSucceeded()
                 .extracting(KeyPair::getPrivate)
                 .isInstanceOf(RSAPrivateKey.class);
@@ -60,12 +59,12 @@ class KeyPairGeneratorTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, -1, Integer.MAX_VALUE})
     void generateKeyPair_rsa_withInvalidLength(int invalidLength) {
-        Assertions.assertThatThrownBy(() -> KeyPairGenerator.generateKeyPair("RSA", Map.of("length", invalidLength))).isInstanceOf(InvalidParameterException.class);
+        Assertions.assertThatThrownBy(() -> KeyPairGenerator.generateKeyPair(Map.of("algorithm", "RSA", "length", invalidLength))).isInstanceOf(InvalidParameterException.class);
     }
 
     @Test
     void generateKeyPair_ec_defaultCurve() throws InvalidParameterSpecException, NoSuchAlgorithmException {
-        var ecResult = KeyPairGenerator.generateKeyPair("EC", Map.of());
+        var ecResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EC"));
         assertThat(ecResult).isSucceeded()
                 .extracting(KeyPair::getPrivate)
                 .isInstanceOf(ECPrivateKey.class);
@@ -80,7 +79,7 @@ class KeyPairGeneratorTest {
     @ParameterizedTest()
     @ValueSource(strings = {"secp256r1", "secp384r1", "secp521r1", "SECP256R1", "SecP521R1"})
     void generateKeyPair_ec_withCurve(String curve) {
-        var ecResult = KeyPairGenerator.generateKeyPair("EC", Map.of("curve", curve));
+        var ecResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EC", "curve", curve));
         assertThat(ecResult).isSucceeded()
                 .extracting(KeyPair::getPrivate)
                 .isInstanceOf(ECPrivateKey.class);
@@ -90,7 +89,7 @@ class KeyPairGeneratorTest {
     @ValueSource(strings = {"secp256k1", "foobar"})
     @EmptySource
     void generateKeyPair_ec_withInvalidCurve(String curve) {
-        var ecResult = KeyPairGenerator.generateKeyPair("EC", Map.of("curve", curve));
+        var ecResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EC", "curve", curve));
         assertThat(ecResult).isFailed()
                 .detail().contains("not a valid or supported EC curve std name");
     }
@@ -98,7 +97,7 @@ class KeyPairGeneratorTest {
 
     @Test
     void generateKeyPair_edDsa() {
-        var edDsaResult = KeyPairGenerator.generateKeyPair("EdDSA", Map.of());
+        var edDsaResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EdDSA"));
         assertThat(edDsaResult).isSucceeded()
                 .extracting(KeyPair::getPrivate)
                 .satisfies(k -> Assertions.assertThat(k.getClass().getName()).isEqualTo("sun.security.ec.ed.EdDSAPrivateKeyImpl")); // not available at compile time
@@ -107,7 +106,7 @@ class KeyPairGeneratorTest {
     @ParameterizedTest
     @ValueSource(strings = {"Ed25519", "X25519", "ed25519", "x25519", "ED25519"})
     void generateKeyPair_edDsa_withValidCurve(String curve) {
-        var edDsaResult = KeyPairGenerator.generateKeyPair("EdDSA", Map.of("curve", curve));
+        var edDsaResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EdDSA", "curve", curve));
         assertThat(edDsaResult).isSucceeded()
                 .extracting(KeyPair::getPrivate)
                 .satisfies(k -> Assertions.assertThat(k.getClass().getName()).startsWith("sun.security.ec.")); // not available at compile time
@@ -116,16 +115,14 @@ class KeyPairGeneratorTest {
     @ParameterizedTest
     @ValueSource(strings = {"Ed448", "x448", "foobar"})
     void generateKeyPair_edDsa_withInvalidCurve(String invalidCurve) {
-        var edDsaResult = KeyPairGenerator.generateKeyPair("EdDSA", Map.of("curve", invalidCurve));
+        var edDsaResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EdDSA", "curve", invalidCurve));
         assertThat(edDsaResult).isFailed()
                 .detail().contains("Unsupported EdDSA Curve: %s. Currently only these are supported: ed25519,x25519.".formatted(invalidCurve.toLowerCase()));
     }
 
-    @ParameterizedTest
-    @NullSource
-    @EmptySource
-    void generateKeyPair_noAlgorithm(String nullOrEmpty) {
-        var result = KeyPairGenerator.generateKeyPair(nullOrEmpty, Map.of("foo", "bar"));
+    @Test
+    void generateKeyPair_noAlgorithm() {
+        var result = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "", "foo", "bar"));
         assertThat(result).isSucceeded()
                 .extracting(KeyPair::getPrivate)
                 .satisfies(k -> Assertions.assertThat(k.getClass().getName()).isEqualTo("sun.security.ec.ed.EdDSAPrivateKeyImpl")); // not available at compile time
@@ -133,7 +130,7 @@ class KeyPairGeneratorTest {
 
     @Test
     void generateKeyPair_unknownAlgorithm() {
-        assertThat(KeyPairGenerator.generateKeyPair("foobar", Map.of())).isFailed()
+        assertThat(KeyPairGenerator.generateKeyPair(Map.of("algorithm", "foobar"))).isFailed()
                 .detail().matches("Could not generate key pair for algorithm '.*'. Currently only the following algorithms are supported: .*.");
     }
 }

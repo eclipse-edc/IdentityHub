@@ -149,6 +149,23 @@ public abstract class DidResourceStoreTestBase {
     }
 
     @Test
+    void query_byParticipantId() {
+        var dids = new ArrayList<>(range(0, 50)
+                .mapToObj(i -> createDidResource(DID + i).build())
+                .toList());
+
+        var expected = createDidResource(DID + "69").participantId("the-odd-one-out").build();
+        dids.add(expected);
+        dids.forEach(getStore()::save);
+
+        var q = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", expected.getParticipantId())).build();
+        Assertions.assertThat(getStore().query(q))
+                .hasSize(1)
+                .usingRecursiveFieldByFieldElementComparator()
+                .containsExactly(expected);
+    }
+
+    @Test
     void query_byComplexProperty_service() {
         var dids = new ArrayList<>(range(0, 50)
                 .mapToObj(i -> createDidResource(DID + i).build())
@@ -261,6 +278,7 @@ public abstract class DidResourceStoreTestBase {
     private DidResource.Builder createDidResource(String did) {
         return DidResource.Builder.newInstance()
                 .did(did)
+                .participantId("test-participant")
                 .document(DidDocument.Builder.newInstance()
                         .id(did)
                         .build())

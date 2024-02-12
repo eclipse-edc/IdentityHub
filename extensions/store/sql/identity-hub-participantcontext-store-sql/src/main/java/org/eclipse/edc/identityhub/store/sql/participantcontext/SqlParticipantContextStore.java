@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.store.sql.participantcontext;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
@@ -29,8 +30,9 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.success;
@@ -41,6 +43,8 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
  */
 public class SqlParticipantContextStore extends AbstractSqlStore implements ParticipantContextStore {
 
+    private static final TypeReference<List<String>> LIST_REF = new TypeReference<>() {
+    };
     private final ParticipantContextStoreStatements statements;
 
     public SqlParticipantContextStore(DataSourceRegistry dataSourceRegistry,
@@ -65,10 +69,13 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
                 var stmt = statements.getInsertTemplate();
                 queryExecutor.execute(connection, stmt,
                         participantContext.getParticipantId(),
-                        participantContext.getCreatedDate(),
-                        participantContext.getLastModifiedDate(),
+                        participantContext.getCreatedAt(),
+                        participantContext.getLastModified(),
                         participantContext.getState(),
-                        participantContext.getApiTokenAlias());
+                        participantContext.getApiTokenAlias(),
+                        participantContext.getDid(),
+                        toJson(participantContext.getRoles())
+                );
                 return success();
 
             } catch (SQLException e) {
@@ -78,11 +85,11 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
     }
 
     @Override
-    public StoreResult<Stream<ParticipantContext>> query(QuerySpec querySpec) {
+    public StoreResult<Collection<ParticipantContext>> query(QuerySpec querySpec) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 var query = statements.createQuery(querySpec);
-                return success(queryExecutor.query(connection, true, this::mapResultSet, query.getQueryAsString(), query.getParameters()));
+                return success(queryExecutor.query(connection, true, this::mapResultSet, query.getQueryAsString(), query.getParameters()).toList());
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -101,10 +108,12 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
                     queryExecutor.execute(connection,
                             statements.getUpdateTemplate(),
                             id,
-                            participantContext.getCreatedDate(),
-                            participantContext.getLastModifiedDate(),
+                            participantContext.getCreatedAt(),
+                            participantContext.getLastModified(),
                             participantContext.getState(),
                             participantContext.getApiTokenAlias(),
+                            participantContext.getDid(),
+                            toJson(participantContext.getRoles()),
                             id);
                     return StoreResult.success();
                 }
@@ -146,6 +155,8 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
         var lastmodified = resultSet.getLong(statements.getLastModifiedTimestampColumn());
         var state = resultSet.getInt(statements.getStateColumn());
         var tokenAliase = resultSet.getString(statements.getApiTokenAliasColumn());
+        var did = resultSet.getString(statements.getDidColumn());
+        var roles = fromJson(resultSet.getString(statements.getRolesRolumn()), LIST_REF);
 
         return ParticipantContext.Builder.newInstance()
                 .participantId(id)
@@ -153,6 +164,8 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
                 .lastModified(lastmodified)
                 .state(ParticipantContextState.values()[state])
                 .apiTokenAlias(tokenAliase)
+                .did(did)
+                .roles(roles)
                 .build();
     }
 }

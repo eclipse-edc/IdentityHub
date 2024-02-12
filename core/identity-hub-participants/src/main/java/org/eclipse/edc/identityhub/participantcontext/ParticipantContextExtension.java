@@ -14,14 +14,23 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
+import org.eclipse.edc.identithub.did.spi.DidDocumentService;
+import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.event.EventRouter;
+import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
+import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+
+import java.time.Clock;
 
 import static org.eclipse.edc.identityhub.participantcontext.ParticipantContextExtension.NAME;
 
@@ -35,9 +44,43 @@ public class ParticipantContextExtension implements ServiceExtension {
     private Vault vault;
     @Inject
     private TransactionContext transactionContext;
+    @Inject
+    private KeyParserRegistry keyParserRegistry;
+    @Inject
+    private DidDocumentService didDocumentService;
+    @Inject
+    private KeyPairService keyPairService;
+    @Inject
+    private Clock clock;
+    @Inject
+    private EventRouter eventRouter;
+
+    private ParticipantContextObservable participantContextObservable;
+
+    @Override
+    public String name() {
+        return NAME;
+    }
+
+    @Override
+    public void initialize(ServiceExtensionContext context) {
+        var coordinator = new ParticipantContextEventCoordinator(context.getMonitor().withPrefix("ParticipantContextEventCoordinator"),
+                didDocumentService, keyPairService);
+
+        eventRouter.registerSync(ParticipantContextCreated.class, coordinator);
+    }
 
     @Provider
     public ParticipantContextService createParticipantService() {
-        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, new Base64StringGenerator());
+        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, participantContextObservable());
+    }
+
+    @Provider
+    public ParticipantContextObservable participantContextObservable() {
+        if (participantContextObservable == null) {
+            participantContextObservable = new ParticipantContextObservableImpl();
+            participantContextObservable.registerListener(new ParticipantContextEventPublisher(clock, eventRouter));
+        }
+        return participantContextObservable;
     }
 }

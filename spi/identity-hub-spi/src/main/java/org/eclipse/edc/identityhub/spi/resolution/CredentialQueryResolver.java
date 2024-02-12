@@ -15,12 +15,12 @@
 package org.eclipse.edc.identityhub.spi.resolution;
 
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
 
 import java.util.List;
 
 /**
- * Resolves a list of {@link VerifiableCredentialContainer} objects based on an incoming {@link PresentationQuery} and a list of scope strings.
+ * Resolves a list of {@link VerifiableCredentialContainer} objects based on an incoming {@link PresentationQueryMessage} and a list of scope strings.
  */
 public interface CredentialQueryResolver {
 
@@ -29,8 +29,9 @@ public interface CredentialQueryResolver {
      * If a failure is returned, that means that the given query does not match the given issuer scopes, which would be equivalent to an unauthorized access (c.f. HTTP 403 error).
      * The Result could also contain information about any errors or issues the occurred during the query execution.
      *
-     * @param query        The representation of the query to be executed.
-     * @param issuerScopes The list of issuer scopes to be considered during the query processing.
+     * @param participantContextId The ID of the {@link org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext} whose credentials are to be obtained.
+     * @param query                The representation of the query to be executed.
+     * @param issuerScopes         The list of issuer scopes to be considered during the query processing.
      */
-    QueryResult query(PresentationQuery query, List<String> issuerScopes);
+    QueryResult query(String participantContextId, PresentationQueryMessage query, List<String> issuerScopes);
 }

@@ -14,6 +14,10 @@
 
 package org.eclipse.edc.identityhub.did;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.edc.connector.core.security.KeyParserRegistryImpl;
+import org.eclipse.edc.connector.core.security.keyparsers.JwkParser;
+import org.eclipse.edc.connector.core.security.keyparsers.PemParser;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
@@ -33,10 +37,12 @@ import java.util.List;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -51,7 +57,68 @@ class DidDocumentServiceImplTest {
         var trx = new NoopTransactionContext();
         when(publisherRegistry.getPublisher(startsWith("did:web:"))).thenReturn(publisherMock);
 
-        service = new DidDocumentServiceImpl(trx, storeMock, publisherRegistry);
+        var registry = new KeyParserRegistryImpl();
+        registry.register(new JwkParser(new ObjectMapper(), mock()));
+        registry.register(new PemParser(mock()));
+        service = new DidDocumentServiceImpl(trx, storeMock, publisherRegistry, mock(), registry);
+    }
+
+    @Test
+    void store() {
+        var doc = createDidDocument().build();
+        when(storeMock.save(argThat(dr -> dr.getDocument().equals(doc)))).thenReturn(StoreResult.success());
+        assertThat(service.store(doc, "test-participant")).isSucceeded();
+    }
+
+    @Test
+    void store_alreadyExists() {
+        var doc = createDidDocument().build();
+        when(storeMock.save(argThat(dr -> dr.getDocument().equals(doc)))).thenReturn(StoreResult.alreadyExists("foo"));
+        assertThat(service.store(doc, "test-participant")).isFailed().detail().isEqualTo("foo");
+        verify(storeMock).save(any());
+        verifyNoInteractions(publisherMock);
+    }
+
+    @Test
+    void deleteById() {
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.UNPUBLISHED).document(doc).build());
+        when(storeMock.deleteById(any())).thenReturn(StoreResult.success());
+
+        assertThat(service.deleteById(did)).isSucceeded();
+
+        verify(storeMock).findById(did);
+        verify(storeMock).deleteById(did);
+        verifyNoMoreInteractions(publisherMock, storeMock, publisherRegistry);
+    }
+
+    @Test
+    void deleteById_alreadyPublished() {
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
+
+        assertThat(service.deleteById(did)).isFailed()
+                .detail()
+                .isEqualTo("Cannot delete DID '%s' because it is already published. Un-publish first!".formatted(did));
+
+        verify(storeMock).findById(did);
+        verifyNoMoreInteractions(publisherMock, storeMock, publisherRegistry);
+    }
+
+    @Test
+    void deleteById_notExists() {
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        when(storeMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.UNPUBLISHED).document(doc).build());
+        when(storeMock.deleteById(any())).thenReturn(StoreResult.notFound("test-message"));
+
+        assertThat(service.deleteById(did)).isFailed().detail().isEqualTo("test-message");
+
+        verify(storeMock).findById(did);
+        verify(storeMock).deleteById(did);
+        verifyNoMoreInteractions(publisherMock, storeMock, publisherRegistry);
     }
 
     @Test

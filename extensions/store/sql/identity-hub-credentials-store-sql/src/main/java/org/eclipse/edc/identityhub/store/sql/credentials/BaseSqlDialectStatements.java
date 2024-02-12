@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.store.sql.credentials;
 
 import org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres.VerifiableCredentialResourceMapping;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 import static java.lang.String.format;
@@ -34,6 +35,7 @@ public class BaseSqlDialectStatements implements CredentialStoreStatements {
                 .column(getVcFormatColumn())
                 .column(getRawVcColumn())
                 .jsonColumn(getVerifiableCredentialColumn())
+                .column(getParticipantIdColumn())
                 .insertInto(getCredentialResourceTable());
     }
 
@@ -50,6 +52,7 @@ public class BaseSqlDialectStatements implements CredentialStoreStatements {
                 .column(getVcFormatColumn())
                 .column(getRawVcColumn())
                 .jsonColumn(getVerifiableCredentialColumn())
+                .column(getParticipantIdColumn())
                 .update(getCredentialResourceTable(), getIdColumn());
     }
 
@@ -67,7 +70,7 @@ public class BaseSqlDialectStatements implements CredentialStoreStatements {
     @Override
     public SqlQueryStatement createQuery(QuerySpec querySpec) {
         var select = getSelectStatement();
-        return new SqlQueryStatement(select, querySpec, new VerifiableCredentialResourceMapping(this), false);
+        return new SqlQueryStatement(select, querySpec, new VerifiableCredentialResourceMapping(this), new PostgresqlOperatorTranslator());
     }
 
     @Override

@@ -14,12 +14,13 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres;
 
+import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.store.sql.credentials.CredentialStoreStatements;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
 
 /**
- * Provides a mapping from the canonical format to SQL column names for a {@link org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource}
+ * Provides a mapping from the canonical format to SQL column names for a {@link VerifiableCredentialResource}
  */
 public class VerifiableCredentialResourceMapping extends TranslationMapping {
 
@@ -31,6 +32,7 @@ public class VerifiableCredentialResourceMapping extends TranslationMapping {
     public static final String FIELD_ISSUANCE_POLICY = "issuancePolicy";
     public static final String FIELD_REISSUANCE_POLICY = "reissuancePolicy";
     public static final String FIELD_VERIFIABLE_CREDENTIAL = "verifiableCredential";
+    public static final String FIELD_PARTICIPANT_ID = "participantId";
 
     public VerifiableCredentialResourceMapping(CredentialStoreStatements statements) {
         add(FIELD_ID, statements.getIdColumn());
@@ -41,5 +43,6 @@ public class VerifiableCredentialResourceMapping extends TranslationMapping {
         add(FIELD_ISSUANCE_POLICY, statements.getIssuancePolicyColumn());
         add(FIELD_REISSUANCE_POLICY, statements.getReissuancePolicyColumn());
         add(FIELD_VERIFIABLE_CREDENTIAL, new VerifiableCredentialContainerMapping(statements));
+        add(FIELD_PARTICIPANT_ID, statements.getParticipantIdColumn());
     }
 }

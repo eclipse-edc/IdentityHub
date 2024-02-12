@@ -148,7 +148,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         jld.registerCachedDocument(DID_CONTEXT_URL, TestUtils.getResource("did.json"));
         jld.registerCachedDocument(JWS_2020_URL, TestUtils.getResource("jws2020.json"));
         jld.registerCachedDocument(W3C_CREDENTIALS_URL, TestUtils.getResource("credentials.v1.json"));
-        jld.registerCachedDocument(IATP_CONTEXT_URL, TestUtils.getResource("presentation-query.v08.json"));
+        jld.registerCachedDocument(IATP_CONTEXT_URL, TestUtils.getResource("iatp.v08.json"));
         jld.registerCachedDocument(PRESENTATION_EXCHANGE_URL, TestUtils.getResource("presentation-exchange.v1.json"));
         jld.registerCachedDocument("https://www.w3.org/2018/credentials/examples/v1", TestUtils.getResource("examples.v1.json"));
         return jld;

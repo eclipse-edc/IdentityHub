@@ -46,6 +46,10 @@ public interface DidResourceStatements extends SqlStatements {
         return "did_document";
     }
 
+    default String getParticipantId() {
+        return "participant_id";
+    }
+
     String getInsertTemplate();
 
     String getUpdateTemplate();

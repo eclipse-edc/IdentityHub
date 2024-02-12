@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.spi.store.model;
 
+import org.eclipse.edc.identityhub.spi.model.VcState;
+import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,10 +43,11 @@ class VerifiableCredentialResourceTest {
         var vc = VerifiableCredentialResource.Builder.newInstance()
                 .issuerId("test-issuer")
                 .holderId("test-holder")
+                .participantId("test-participant")
                 .build();
 
         assertThat(vc.getClock()).isNotNull();
-        assertThat(vc.id).isNotNull();
-        assertThat(vc.getState()).isEqualTo(VcState.INITIAL);
+        assertThat(vc.getId()).isNotNull();
+        assertThat(vc.getStateAsEnum()).isEqualTo(VcState.INITIAL);
     }
 }

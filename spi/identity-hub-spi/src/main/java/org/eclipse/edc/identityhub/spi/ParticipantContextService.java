@@ -15,20 +15,26 @@
 package org.eclipse.edc.identityhub.spi;
 
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
+
+import java.util.Collection;
+import java.util.function.Consumer;
 
 /**
  * Handles {@link ParticipantContext} objects, their lifecycle and their authentication tokens.
  */
 public interface ParticipantContextService {
 
+
     /**
-     * Creates a new participant context. If one with the same ID exists, a failure is returned
+     * Creates a new participant context from a manifest. If one with the same ID exists, a failure is returned.
      *
-     * @param context The new participant context
+     * @param manifest The new participant context
      * @return success if created, or a failure if already exists.
      */
-    ServiceResult<Void> createParticipantContext(ParticipantContext context);
+    ServiceResult<String> createParticipantContext(ParticipantManifest manifest);
 
     /**
      * Fetches the {@link ParticipantContext} by ID.
@@ -55,4 +61,18 @@ public interface ParticipantContextService {
      * @return the new API token, or a failure
      */
     ServiceResult<String> regenerateApiToken(String participantId);
+
+    /**
+     * Applies a modification function to the {@link ParticipantContext} and persists the changed object in the database.
+     *
+     * @param participantId        The ID of the participant to modify
+     * @param modificationFunction A modification function that is applied to the participant context
+     * @return success if the update could be performed, a failure otherwise
+     */
+    ServiceResult<Void> updateParticipant(String participantId, Consumer<ParticipantContext> modificationFunction);
+
+    /**
+     * Returns a collection of {@link ParticipantContext} objects that match the specified query.
+     */
+    ServiceResult<Collection<ParticipantContext>> query(QuerySpec querySpec);
 }

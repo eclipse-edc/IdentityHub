@@ -47,6 +47,14 @@ public interface ParticipantContextStoreStatements extends SqlStatements {
         return "api_token_alias";
     }
 
+    default String getDidColumn() {
+        return "did";
+    }
+
+    default String getRolesRolumn() {
+        return "roles";
+    }
+
     String getInsertTemplate();
 
     String getUpdateTemplate();

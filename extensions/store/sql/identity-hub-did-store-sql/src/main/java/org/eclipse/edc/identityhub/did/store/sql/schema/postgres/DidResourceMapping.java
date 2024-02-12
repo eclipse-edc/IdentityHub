@@ -28,6 +28,8 @@ public class DidResourceMapping extends TranslationMapping {
     public static final String FIELD_CREATE_TIMESTAMP = "create_timestamp";
     public static final String FIELD_STATE_TIMESTAMP = "state_timestamp";
     public static final String FIELD_DOCUMENT = "document";
+    public static final String FIELD_PARTICIPANT_ID = "participantId";
+
 
     public DidResourceMapping(DidResourceStatements statements) {
         add(FIELD_DID, statements.getIdColumn());
@@ -35,5 +37,6 @@ public class DidResourceMapping extends TranslationMapping {
         add(FIELD_CREATE_TIMESTAMP, statements.getCreateTimestampColumn());
         add(FIELD_STATE_TIMESTAMP, statements.getStateTimestampColumn());
         add(FIELD_DOCUMENT, new DidDocumentMapping(statements));
+        add(FIELD_PARTICIPANT_ID, statements.getParticipantId());
     }
 }

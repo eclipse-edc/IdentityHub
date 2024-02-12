@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.publisher.did.local;
 
 import org.eclipse.edc.identithub.did.spi.model.DidState;
 import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentObservable;
 import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -40,11 +41,12 @@ class LocalDidPublisherTest {
     private final DidResourceStore storeMock = mock();
     private LocalDidPublisher publisher;
     private Monitor monitor;
+    private final DidDocumentObservable observableMock = mock();
 
     @BeforeEach
     void setUp() {
         monitor = mock();
-        publisher = new LocalDidPublisher(storeMock, monitor);
+        publisher = new LocalDidPublisher(observableMock, storeMock, monitor);
     }
 
 
@@ -69,7 +71,8 @@ class LocalDidPublisherTest {
 
         verify(storeMock).findById(anyString());
         verify(storeMock).update(argThat(dr -> dr.getState() == DidState.PUBLISHED.code()));
-        verifyNoMoreInteractions(storeMock);
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(storeMock, observableMock);
     }
 
     @Test
@@ -81,7 +84,7 @@ class LocalDidPublisherTest {
                 .isEqualTo("A DID Resource with the ID 'did:web:foo' was not found.");
 
         verify(storeMock).findById(anyString());
-        verifyNoMoreInteractions(storeMock);
+        verifyNoMoreInteractions(storeMock, observableMock);
     }
 
     @Test
@@ -96,7 +99,8 @@ class LocalDidPublisherTest {
         verify(storeMock).findById(anyString());
         verify(storeMock).update(any());
         verify(monitor).warning("DID 'did:web:test' is already published - this action will overwrite it.");
-        verifyNoMoreInteractions(storeMock);
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(storeMock, observableMock);
     }
 
     @Test
@@ -110,7 +114,7 @@ class LocalDidPublisherTest {
 
         verify(storeMock).findById(anyString());
         verify(storeMock).update(any());
-        verifyNoMoreInteractions(storeMock);
+        verifyNoMoreInteractions(storeMock, observableMock);
     }
 
     @Test
@@ -124,7 +128,8 @@ class LocalDidPublisherTest {
 
         verify(storeMock).findById(anyString());
         verify(storeMock).update(argThat(dr -> dr.getState() == DidState.UNPUBLISHED.code()));
-        verifyNoMoreInteractions(storeMock);
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(storeMock, observableMock);
     }
 
     @Test
@@ -136,7 +141,7 @@ class LocalDidPublisherTest {
                 .contains("A DID Resource with the ID 'did:web:test' was not found.");
 
         verify(storeMock).findById(anyString());
-        verifyNoMoreInteractions(storeMock);
+        verifyNoMoreInteractions(storeMock, observableMock);
     }
 
     @Test
@@ -150,7 +155,8 @@ class LocalDidPublisherTest {
 
         verify(storeMock).findById(anyString());
         verify(storeMock).update(any());
-        verifyNoMoreInteractions(storeMock);
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(storeMock, observableMock);
         verify(monitor).info("Un-publish DID Resource 'did:web:test': not published -> NOOP.");
     }
 
@@ -167,6 +173,6 @@ class LocalDidPublisherTest {
 
         verify(storeMock).findById(anyString());
         verify(storeMock).update(any());
-        verifyNoMoreInteractions(storeMock);
+        verifyNoMoreInteractions(storeMock, observableMock);
     }
 }

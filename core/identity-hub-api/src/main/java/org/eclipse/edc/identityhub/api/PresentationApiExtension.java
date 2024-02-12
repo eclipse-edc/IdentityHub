@@ -18,10 +18,11 @@ import org.eclipse.edc.core.transform.transformer.to.JsonValueToGenericTypeTrans
 import org.eclipse.edc.iam.identitytrust.transform.to.JsonObjectToPresentationQueryTransformer;
 import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
 import org.eclipse.edc.identityhub.api.validation.PresentationQueryValidator;
+import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -35,6 +36,7 @@ import org.eclipse.edc.web.jersey.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
 import static org.eclipse.edc.identityhub.api.PresentationApiExtension.NAME;
+import static org.eclipse.edc.identitytrust.VcConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.spi.CoreConstants.JSON_LD;
 
 @Extension(value = NAME)
@@ -59,6 +61,8 @@ public class PresentationApiExtension implements ServiceExtension {
     private JsonLd jsonLd;
     @Inject
     private TypeManager typeManager;
+    @Inject
+    private ParticipantContextService participantContextService;
 
     @Override
     public String name() {
@@ -68,15 +72,17 @@ public class PresentationApiExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         // setup validator
-        validatorRegistry.register(PresentationQuery.PRESENTATION_QUERY_TYPE_PROPERTY, new PresentationQueryValidator());
+        validatorRegistry.register(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY, new PresentationQueryValidator());
 
 
-        var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, accessTokenVerifier, verifiablePresentationService, context.getMonitor());
+        var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, accessTokenVerifier, verifiablePresentationService, context.getMonitor(), participantContextService);
 
         var jsonLdMapper = typeManager.getMapper(JSON_LD);
         webService.registerResource(RESOLUTION_CONTEXT, new ObjectMapperProvider(jsonLdMapper));
         webService.registerResource(RESOLUTION_CONTEXT, new JerseyJsonLdInterceptor(jsonLd, jsonLdMapper, RESOLUTION_SCOPE));
         webService.registerResource(RESOLUTION_CONTEXT, controller);
+
+        jsonLd.registerContext(IATP_CONTEXT_URL, RESOLUTION_SCOPE);
 
         // register transformer -- remove once registration is handled in EDC
         typeTransformer.register(new JsonObjectToPresentationQueryTransformer(jsonLdMapper));

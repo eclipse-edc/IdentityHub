@@ -29,7 +29,7 @@ class ParticipantContextTest {
                 .apiTokenAlias("foo-token")
                 .build();
 
-        assertThat(context.getCreatedDate()).isNotZero().isLessThanOrEqualTo(Instant.now().toEpochMilli());
+        assertThat(context.getCreatedAt()).isNotZero().isLessThanOrEqualTo(Instant.now().toEpochMilli());
 
         var context2 = ParticipantContext.Builder.newInstance()
                 .participantId("test-id")
@@ -37,7 +37,7 @@ class ParticipantContextTest {
                 .createdAt(42)
                 .build();
 
-        assertThat(context2.getCreatedDate()).isEqualTo(42);
+        assertThat(context2.getCreatedAt()).isEqualTo(42);
     }
 
     @Test
@@ -47,7 +47,7 @@ class ParticipantContextTest {
                 .apiTokenAlias("foo-token")
                 .build();
 
-        assertThat(context.getLastModifiedDate()).isNotZero().isEqualTo(context.getCreatedDate());
+        assertThat(context.getLastModified()).isNotZero().isEqualTo(context.getCreatedAt());
 
         var context2 = ParticipantContext.Builder.newInstance()
                 .participantId("test-id")
@@ -55,7 +55,7 @@ class ParticipantContextTest {
                 .lastModified(42)
                 .build();
 
-        assertThat(context2.getLastModifiedDate()).isEqualTo(42);
+        assertThat(context2.getLastModified()).isEqualTo(42);
     }
 
     @Test

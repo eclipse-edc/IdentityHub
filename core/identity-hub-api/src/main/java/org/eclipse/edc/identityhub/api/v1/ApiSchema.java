@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.api.v1;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.json.JsonObject;
 
 import java.util.List;
 
@@ -41,7 +42,7 @@ public interface ApiSchema {
                 """;
     }
 
-    @Schema(name = "PresentationQuerySchema", example = PresentationQuerySchema.PRESENTATION_QUERY_EXAMPLE)
+    @Schema(name = "PresentationQueryMessage", example = PresentationQuerySchema.PRESENTATION_QUERY_EXAMPLE)
     record PresentationQuerySchema(
             @Schema(name = CONTEXT, requiredMode = REQUIRED)
             Object context,
@@ -56,10 +57,10 @@ public interface ApiSchema {
         public static final String PRESENTATION_QUERY_EXAMPLE = """
                 {
                   "@context": [
-                    "https://w3id.org/yourdataspace/2023/cs/v1",
+                    "https://w3id.org/tractusx-trust/v0.8",
                     "https://identity.foundation/presentation-exchange/submission/v1"
                   ],
-                  "@type": "Query",
+                  "@type": "PresentationQueryMessage",
                   "presentationDefinition": null,
                   "scope": [
                     "org.eclipse.edc.vc.type:SomeCredential_0.3.5:write,
@@ -70,10 +71,22 @@ public interface ApiSchema {
                 """;
     }
 
-    @Schema(name = "PresentationResponse", example = PresentationResponse.RESPONSE_EXAMPLE)
-    record PresentationResponse() {
+    @Schema(name = "PresentationResponseMessage", example = PresentationResponseSchema.RESPONSE_EXAMPLE)
+    record PresentationResponseSchema(
+            @Schema(name = CONTEXT, requiredMode = REQUIRED)
+            Object context,
+            @Schema(name = "presentation", requiredMode = REQUIRED, anyOf = { String.class, JsonObject.class })
+            List<Object> presentation
+    ) {
 
         public static final String RESPONSE_EXAMPLE = """
+                {
+                  "@context": [
+                    "https://w3id.org/tractusx-trust/v0.8"
+                  ],
+                  "@type": "PresentationResponseMessage",
+                  "presentation": ["dsJdh...UMetV"]
+                }
                 """;
     }
 

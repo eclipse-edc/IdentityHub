@@ -21,6 +21,8 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static java.util.stream.IntStream.range;
 import static org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState.ACTIVATED;
 import static org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState.CREATED;
@@ -31,9 +33,12 @@ public abstract class ParticipantContextStoreTestBase {
 
     @Test
     void create() {
-        var result = getStore().create(createParticipantContext());
+        var participantContext = createParticipantContext();
+        var result = getStore().create(participantContext);
         assertThat(result).isSucceeded();
-
+        var query = getStore().query(QuerySpec.max());
+        assertThat(query).isSucceeded();
+        Assertions.assertThat(query.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(participantContext);
     }
 
     @Test
@@ -143,14 +148,14 @@ public abstract class ParticipantContextStoreTestBase {
         var result = getStore().create(context.build());
 
         var updateRes = getStore().update(context.state(DEACTIVATED).participantId("another-id").build());
-        assertThat(updateRes).isFailed().detail().contains("with ID another-id was not found");
+        assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
     void update_whenNotExists() {
         var context = createParticipantContextBuilder();
         var updateRes = getStore().update(context.state(DEACTIVATED).participantId("another-id").build());
-        assertThat(updateRes).isFailed().detail().contains("with ID another-id was not found");
+        assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
@@ -165,7 +170,7 @@ public abstract class ParticipantContextStoreTestBase {
     @Test
     void delete_whenNotExists() {
         assertThat(getStore().deleteById("not-exist")).isFailed()
-                .detail().contains("with ID not-exist was not found");
+                .detail().contains("with ID 'not-exist' does not exist.");
     }
 
     protected abstract ParticipantContextStore getStore();
@@ -173,6 +178,7 @@ public abstract class ParticipantContextStoreTestBase {
     private ParticipantContext createParticipantContext() {
         return ParticipantContext.Builder.newInstance()
                 .participantId("test-participant")
+                .roles(List.of("role1", "role2"))
                 .state(CREATED)
                 .apiTokenAlias("test-alias")
                 .build();
@@ -182,6 +188,7 @@ public abstract class ParticipantContextStoreTestBase {
         return ParticipantContext.Builder.newInstance()
                 .participantId("test-participant")
                 .state(CREATED)
+                .roles(List.of("role1", "role2"))
                 .apiTokenAlias("test-alias");
     }
 }

@@ -14,38 +14,45 @@
 
 package org.eclipse.edc.identityhub.spi.model.participant;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
+
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
-public class ParticipantContext {
-    private String participantId;
-    private long createdDate;
-    private long lastModifiedDate;
+/**
+ * Representation of a participant in Identity Hub.
+ */
+@JsonDeserialize(builder = ParticipantContext.Builder.class)
+public class ParticipantContext extends ParticipantResource {
+    private List<String> roles = new ArrayList<>();
+    private String did;
+    private long createdAt;
+    private long lastModified;
     private int state; // CREATED, ACTIVATED, DEACTIVATED
-    private String apiTokenAlias; // or apiTokenAlias
+    private String apiTokenAlias;
 
     private ParticipantContext() {
     }
 
     /**
-     * Participant IDs must be stable and globally unique (i.e. per dataspace). They will be visible in contracts, negotiations, etc.
-     */
-    public String getParticipantId() {
-        return participantId;
-    }
-
-    /**
      * The POSIX timestamp in ms when this entry was created. Immutable
      */
-    public long getCreatedDate() {
-        return createdDate;
+    public long getCreatedAt() {
+        return createdAt;
     }
 
     /**
      * The POSIX timestamp in ms when this entry was last modified.
      */
-    public long getLastModifiedDate() {
-        return lastModifiedDate;
+    public long getLastModified() {
+        return lastModified;
     }
 
     /**
@@ -55,6 +62,7 @@ public class ParticipantContext {
         return state;
     }
 
+    @JsonIgnore
     public ParticipantContextState getStateAsEnum() {
         return ParticipantContextState.values()[state];
     }
@@ -71,52 +79,94 @@ public class ParticipantContext {
      * Updates the last-modified field.
      */
     public void updateLastModified() {
-        this.lastModifiedDate = Instant.now().toEpochMilli();
+        this.lastModified = Instant.now().toEpochMilli();
     }
 
-    public static final class Builder {
-        private final ParticipantContext participantContext;
+    /**
+     * Transitions this participant context to the {@link ParticipantContextState#ACTIVATED} state.
+     */
+    public void activate() {
+        this.state = ParticipantContextState.ACTIVATED.ordinal();
+    }
+
+    /**
+     * Transitions this participant context to the {@link ParticipantContextState#DEACTIVATED} state.
+     */
+    public void deactivate() {
+        this.state = ParticipantContextState.DEACTIVATED.ordinal();
+    }
+
+    public String getDid() {
+        return did;
+    }
+
+    public List<String> getRoles() {
+        return Collections.unmodifiableList(roles);
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
+    }
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static final class Builder extends ParticipantResource.Builder<ParticipantContext, Builder> {
 
         private Builder() {
-            participantContext = new ParticipantContext();
-            participantContext.createdDate = Instant.now().toEpochMilli();
+            super(new ParticipantContext());
+            entity.createdAt = Instant.now().toEpochMilli();
         }
 
         public Builder createdAt(long createdAt) {
-            this.participantContext.createdDate = createdAt;
+            this.entity.createdAt = createdAt;
             return this;
         }
 
         public Builder lastModified(long lastModified) {
-            this.participantContext.lastModifiedDate = lastModified;
+            this.entity.lastModified = lastModified;
+            return this;
+        }
+
+        @Override
+        public Builder self() {
             return this;
         }
 
         public Builder participantId(String participantId) {
-            this.participantContext.participantId = participantId;
+            this.entity.participantId = participantId;
             return this;
         }
 
         public Builder state(ParticipantContextState state) {
-            this.participantContext.state = state.ordinal();
+            this.entity.state = state.ordinal();
+            return this;
+        }
+
+        public Builder roles(List<String> roles) {
+            this.entity.roles = roles;
             return this;
         }
 
         public Builder apiTokenAlias(String apiToken) {
-            this.participantContext.apiTokenAlias = apiToken;
+            this.entity.apiTokenAlias = apiToken;
+            return this;
+        }
+
+        public Builder did(String did) {
+            this.entity.did = did;
             return this;
         }
 
         public ParticipantContext build() {
-            Objects.requireNonNull(participantContext.participantId, "Participant ID cannot be null");
-            Objects.requireNonNull(participantContext.apiTokenAlias, "API Token Alias cannot be null");
+            Objects.requireNonNull(entity.participantId, "Participant ID cannot be null");
+            Objects.requireNonNull(entity.apiTokenAlias, "API Token Alias cannot be null");
 
-            if (participantContext.getLastModifiedDate() == 0L) {
-                participantContext.lastModifiedDate = participantContext.getCreatedDate();
+            if (entity.getLastModified() == 0L) {
+                entity.lastModified = entity.getCreatedAt();
             }
-            return participantContext;
+            return super.build();
         }
 
+        @JsonCreator
         public static Builder newInstance() {
             return new Builder();
         }

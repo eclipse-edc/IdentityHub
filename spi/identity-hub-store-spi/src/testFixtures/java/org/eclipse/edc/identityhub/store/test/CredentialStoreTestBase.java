@@ -15,9 +15,9 @@
 package org.eclipse.edc.identityhub.store.test;
 
 import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identityhub.spi.model.VcState;
+import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identityhub.spi.store.model.VcState;
-import org.eclipse.edc.identityhub.spi.store.model.VerifiableCredentialResource;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.CredentialSubject;
 import org.eclipse.edc.identitytrust.model.Issuer;
@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 
 import static java.util.stream.IntStream.range;
@@ -63,6 +64,7 @@ public abstract class CredentialStoreTestBase {
               }
             }
             """;
+    public static final String TEST_PARTICIPANT_CONTEXT_ID = "test-participant";
     private static final String EXAMPLE_VC = """
             {
               "@context": [
@@ -123,6 +125,47 @@ public abstract class CredentialStoreTestBase {
     }
 
     @Test
+    void query_byParticipantId() {
+        range(0, 5)
+                .mapToObj(i -> createCredentialBuilder()
+                        .id("id" + i)
+                        .participantId("participant" + i)
+                        .build())
+                .forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("participantId", "=", "participant2"))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1));
+    }
+
+    @Test
+    void query_byParticipantIdAndType() {
+        var cred1 = createCredentialBuilder()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                        .type("UniversityDegreeCredential")
+                        .build()))
+                .participantId(TEST_PARTICIPANT_CONTEXT_ID).build();
+        var cred2 = createCredentialBuilder().participantId("participant-context2").build();
+        var cred3 = createCredentialBuilder().participantId("participant-context3").build();
+
+        Arrays.asList(cred1, cred2, cred3).forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("participantId", "=", TEST_PARTICIPANT_CONTEXT_ID))
+                .filter(new Criterion("verifiableCredential.credential.types", "contains", "UniversityDegreeCredential"))
+                .build();
+
+        var result = getStore().query(query);
+        assertThat(result).isSucceeded()
+                .satisfies(resources -> {
+                    Assertions.assertThat(resources).hasSize(1);
+                });
+    }
+
+    @Test
     void query_byVcState() {
         var creds = createCredentials();
         var expectedCred = createCredentialBuilder().state(VcState.REISSUE_REQUESTED).id("id-test").build();
@@ -158,6 +201,7 @@ public abstract class CredentialStoreTestBase {
                         .usingRecursiveFieldByFieldElementComparator()
                         .containsExactly(expectedCred));
     }
+
 
     @Test
     void query_byVcFormat() {
@@ -367,14 +411,14 @@ public abstract class CredentialStoreTestBase {
         var result = getStore().create(credential.build());
 
         var updateRes = getStore().update(credential.state(VcState.ISSUED).id("another-id").build());
-        assertThat(updateRes).isFailed().detail().contains("with ID another-id was not found");
+        assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
     void update_whenNotExists() {
         var credential = createCredentialBuilder();
         var updateRes = getStore().update(credential.state(VcState.ISSUED).id("another-id").build());
-        assertThat(updateRes).isFailed().detail().contains("with ID another-id was not found");
+        assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
@@ -389,7 +433,7 @@ public abstract class CredentialStoreTestBase {
     @Test
     void delete_whenNotExists() {
         assertThat(getStore().deleteById("not-exist")).isFailed()
-                .detail().contains("with ID not-exist was not found");
+                .detail().contains("with ID 'not-exist' does not exist.");
     }
 
     protected abstract CredentialStore getStore();
@@ -405,6 +449,7 @@ public abstract class CredentialStoreTestBase {
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .state(VcState.ISSUED)
+                .participantId(TEST_PARTICIPANT_CONTEXT_ID)
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
                 .id("test-id");
     }

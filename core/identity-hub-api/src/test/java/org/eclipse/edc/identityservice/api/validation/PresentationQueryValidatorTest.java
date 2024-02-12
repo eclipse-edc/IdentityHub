@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.api.validation.PresentationQueryValidator;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQuery;
+import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
 import org.eclipse.edc.identitytrust.model.presentationdefinition.Constraints;
 import org.eclipse.edc.identitytrust.model.presentationdefinition.Field;
 import org.eclipse.edc.identitytrust.model.presentationdefinition.InputDescriptor;
@@ -48,7 +48,7 @@ class PresentationQueryValidatorTest {
     @Test
     void validate_withScope_success() {
         var jo = createObjectBuilder()
-                .add(PresentationQuery.PRESENTATION_QUERY_SCOPE_PROPERTY, createScopeArray())
+                .add(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_SCOPE_PROPERTY, createScopeArray())
                 .build();
 
         assertThat(validator.validate(jo)).isSucceeded();
@@ -61,7 +61,7 @@ class PresentationQueryValidatorTest {
                 .inputDescriptors(List.of(InputDescriptor.Builder.newInstance().id(UUID.randomUUID().toString()).constraints(new Constraints(List.of(Field.Builder.newInstance().build()))).build()))
                 .build();
         var jo = createObjectBuilder()
-                .add(PresentationQuery.PRESENTATION_QUERY_DEFINITION_PROPERTY, createPresentationDefArray(presDef))
+                .add(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_DEFINITION_PROPERTY, createPresentationDefArray(presDef))
                 .build();
 
         assertThat(validator.validate(jo)).isSucceeded();
@@ -81,8 +81,8 @@ class PresentationQueryValidatorTest {
                 .inputDescriptors(List.of(InputDescriptor.Builder.newInstance().id(UUID.randomUUID().toString()).constraints(new Constraints(List.of(Field.Builder.newInstance().build()))).build()))
                 .build();
         var jo = createObjectBuilder()
-                .add(PresentationQuery.PRESENTATION_QUERY_SCOPE_PROPERTY, createScopeArray())
-                .add(PresentationQuery.PRESENTATION_QUERY_DEFINITION_PROPERTY, createPresentationDefArray(presDef))
+                .add(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_SCOPE_PROPERTY, createScopeArray())
+                .add(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_DEFINITION_PROPERTY, createPresentationDefArray(presDef))
                 .build();
 
         assertThat(validator.validate(jo)).isFailed().detail().contains("Must contain either a 'scope' or a 'presentationDefinition', not both.");
