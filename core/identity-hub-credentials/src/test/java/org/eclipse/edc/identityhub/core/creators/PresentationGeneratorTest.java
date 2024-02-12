@@ -29,7 +29,7 @@ import java.util.Map;
 
 abstract class PresentationGeneratorTest {
 
-    public static final String KEY_ID = "https://test.com/test-keys#key-1";
+    public static final String KEY_ID = "key-1";
 
     @Test
     @DisplayName("Verify succesful creation of a JWT_VP")

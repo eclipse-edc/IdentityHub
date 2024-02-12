@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.core.creators;
 
 import com.apicatalog.ld.signature.SignatureSuite;
-import com.apicatalog.ld.signature.method.VerificationMethod;
 import com.apicatalog.vc.integrity.DataIntegrityProofOptions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -104,8 +103,9 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         if (!additionalData.containsKey("types")) {
             throw new IllegalArgumentException("Must provide additional data: 'types'");
         }
-
-        var keyIdUri = URI.create(keyId);
+        if (!additionalData.containsKey("controller")) {
+            throw new IllegalArgumentException("Must provide additional data: 'controller'");
+        }
 
         var suiteIdentifier = additionalData.getOrDefault("suite", defaultSignatureSuite).toString();
         var suite = signatureSuiteRegistry.getForId(suiteIdentifier);
@@ -130,7 +130,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
                 .add(VERIFIABLE_CREDENTIAL_PROPERTY, toJsonArray(credentials))
                 .build();
 
-        return signPresentation(presentationObject, suite, pk, keyIdUri);
+        return signPresentation(presentationObject, suite, pk, keyId, additionalData.get("controller").toString());
     }
 
     @NotNull
@@ -149,20 +149,19 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         return array.build();
     }
 
-    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, PrivateKey pk, URI keyId) {
+    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, PrivateKey pk, String keyId, String controller) {
+        var keyIdUri = URI.create(keyId);
+        var controllerUri = URI.create(controller);
+
         var type = URI.create(suite.getId().toString());
         var jwk = CryptoConverter.createJwk(new KeyPair(null, pk));
-        var keypair = new JwkMethod(keyId, type, null, jwk);
+        var keypair = new JwkMethod(keyIdUri, type, controllerUri, jwk);
 
         var options = (DataIntegrityProofOptions) suite.createOptions();
         options.purpose(URI.create("https://w3id.org/security#assertionMethod"));
-        options.verificationMethod(getVerificationMethod(keyId));
+        options.verificationMethod(new JwkMethod(URI.create(controller + "#" + keyId), null, controllerUri, null));
         return ldpIssuer.signDocument(presentationObject, keypair, options)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
-    }
-
-    private VerificationMethod getVerificationMethod(URI keyId) {
-        return new JwkMethod(keyId, null, null, null);
     }
 
     private JsonArrayBuilder stringArray(Collection<?> values) {

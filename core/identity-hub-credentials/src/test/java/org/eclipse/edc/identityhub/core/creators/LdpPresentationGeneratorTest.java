@@ -54,7 +54,8 @@ import static org.mockito.Mockito.when;
 class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
 
     private final PrivateKeyResolver resolverMock = mock();
-    private final Map<String, Object> types = Map.of("types", List.of("VerifiablePresentation", "SomeOtherPresentationType"));
+    private final Map<String, Object> additionalArgs = Map.of("types", List.of("VerifiablePresentation", "SomeOtherPresentationType"),
+            "controller", "did:web:test");
     private LdpPresentationGenerator creator;
 
     @BeforeEach
@@ -81,7 +82,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
 
-        var result = creator.generatePresentation(List.of(vcc), KEY_ID, types);
+        var result = creator.generatePresentation(List.of(vcc), KEY_ID, additionalArgs);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }
@@ -96,7 +97,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, Map.of("vc", TestConstants.VC_CONTENT_DEGREE_EXAMPLE));
         var vcc2 = new VerifiableCredentialContainer(jwtVc, CredentialFormat.JWT, createDummyCredential());
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc, vcc2), KEY_ID, types))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc, vcc2), KEY_ID, additionalArgs))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("One or more VerifiableCredentials cannot be represented in the desired format %s".formatted(CredentialFormat.JSON_LD));
     }
@@ -104,7 +105,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Override
     @Test
     public void create_whenVcsEmpty_shouldReturnEmptyVp() {
-        var result = creator.generatePresentation(List.of(), KEY_ID, types);
+        var result = creator.generatePresentation(List.of(), KEY_ID, additionalArgs);
         assertThat(result).isNotNull();
     }
 
@@ -114,7 +115,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exists", types))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exists", additionalArgs))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -136,7 +137,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Override
     void create_whenEmptyList() {
 
-        var result = creator.generatePresentation(List.of(), KEY_ID, types);
+        var result = creator.generatePresentation(List.of(), KEY_ID, additionalArgs);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }
