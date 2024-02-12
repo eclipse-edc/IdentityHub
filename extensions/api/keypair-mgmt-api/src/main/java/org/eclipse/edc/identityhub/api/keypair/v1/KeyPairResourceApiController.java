@@ -33,6 +33,7 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +42,7 @@ import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
+import static org.eclipse.edc.identityhub.spi.ParticipantContextId.onEncoded;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -78,11 +80,15 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @GET
     @Override
     public Collection<KeyPairResource> findForParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        var query = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build();
-        return keyPairService.query(query)
-                .orElseThrow(exceptionMapper(KeyPairResource.class, participantId))
-                .stream().filter(kpr -> authorizationService.isAuthorized(securityContext, kpr.getId(), KeyPairResource.class).succeeded())
-                .toList();
+        return onEncoded(participantId)
+                .map(decoded -> {
+                    var query = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", decoded)).build();
+                    return keyPairService.query(query)
+                            .orElseThrow(exceptionMapper(KeyPairResource.class, decoded))
+                            .stream().filter(kpr -> authorizationService.isAuthorized(securityContext, kpr.getId(), KeyPairResource.class).succeeded())
+                            .toList();
+                })
+                .orElseThrow(InvalidRequestException::new);
     }
 
     @PUT
@@ -90,9 +96,11 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     public void addKeyPair(@PathParam("participantId") String participantId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault,
                            @Context SecurityContext securityContext) {
         keyDescriptorValidator.validate(keyDescriptor).orElseThrow(ValidationFailureException::new);
-        authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
-                .compose(u -> keyPairService.addKeyPair(participantId, keyDescriptor, makeDefault))
-                .orElseThrow(exceptionMapper(KeyPairResource.class));
+        onEncoded(participantId)
+                .onSuccess(decoded -> authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
+                        .compose(u -> keyPairService.addKeyPair(decoded, keyDescriptor, makeDefault))
+                        .orElseThrow(exceptionMapper(KeyPairResource.class)))
+                .orElseThrow(InvalidRequestException::new);
     }
 
     @POST

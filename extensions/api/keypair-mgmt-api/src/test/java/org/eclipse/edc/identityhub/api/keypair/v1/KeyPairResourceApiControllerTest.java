@@ -21,6 +21,7 @@ import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
@@ -31,6 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -48,7 +50,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+@ApiTest
 class KeyPairResourceApiControllerTest extends RestControllerTestBase {
+
+    private static final String PARTICIPANT_ID = "test-participant";
+    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
 
     private final KeyPairService keyPairService = mock();
     private final AuthorizationService authService = mock();
@@ -85,7 +91,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     void findById_notExist() {
         when(keyPairService.query(any())).thenReturn(ServiceResult.notFound("tst-msg"));
 
-        var found = baseRequest()
+        baseRequest()
                 .get("/test-keypairId")
                 .then()
                 .log().ifValidationFails()
@@ -110,7 +116,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
             var criterion = q.getFilterExpression().get(0);
             return criterion.getOperandLeft().equals("participantId") &&
                     criterion.getOperator().equals("=") &&
-                    criterion.getOperandRight().equals("test-participant");
+                    criterion.getOperandRight().equals(PARTICIPANT_ID);
         }));
     }
 
@@ -132,7 +138,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
             var criterion = q.getFilterExpression().get(0);
             return criterion.getOperandLeft().equals("participantId") &&
                     criterion.getOperator().equals("=") &&
-                    criterion.getOperandRight().equals("test-participant");
+                    criterion.getOperandRight().equals(PARTICIPANT_ID);
         }));
     }
 
@@ -150,7 +156,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
             var criterion = q.getFilterExpression().get(0);
             return criterion.getOperandLeft().equals("participantId") &&
                     criterion.getOperator().equals("=") &&
-                    criterion.getOperandRight().equals("test-participant");
+                    criterion.getOperandRight().equals(PARTICIPANT_ID);
         }));
     }
 
@@ -160,17 +166,17 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         var descriptor = createKeyDescriptor()
                 .build();
         when(validator.validate(any())).thenReturn(ValidationResult.success());
-        when(keyPairService.addKeyPair(eq("test-participant"), any(), eq(makeDefault))).thenReturn(ServiceResult.success());
+        when(keyPairService.addKeyPair(eq(PARTICIPANT_ID), any(), eq(makeDefault))).thenReturn(ServiceResult.success());
 
         baseRequest()
                 .contentType(ContentType.JSON)
                 .body(descriptor)
-                .put("?participantId=%s&makeDefault=%s".formatted("test-participant", makeDefault))
+                .put("?makeDefault=%s".formatted(makeDefault))
                 .then()
                 .log().ifError()
                 .statusCode(204);
 
-        verify(keyPairService).addKeyPair(eq("test-participant"), argThat(d -> d.getKeyId().equals(descriptor.getKeyId())), eq(makeDefault));
+        verify(keyPairService).addKeyPair(eq(PARTICIPANT_ID), argThat(d -> d.getKeyId().equals(descriptor.getKeyId())), eq(makeDefault));
         verifyNoMoreInteractions(keyPairService);
     }
 
@@ -183,7 +189,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
         baseRequest()
                 .contentType(ContentType.JSON)
                 .body(descriptor)
-                .put("?participantId=%s&makeDefault=%s".formatted("test-participant", true))
+                .put("?makeDefault=%s".formatted(true))
                 .then()
                 .log().ifError()
                 .statusCode(400);
@@ -323,7 +329,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     private KeyPairResource.Builder createKeyPair() {
         return KeyPairResource.Builder.newInstance()
                 .id("test-keypair")
-                .participantId("test-participant")
+                .participantId(PARTICIPANT_ID)
                 .isDefaultPair(true)
                 .privateKeyAlias("test-alias")
                 .useDuration(Duration.ofDays(365).toMillis());
@@ -332,7 +338,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + "/v1/participants/test-participant/keypairs")
+                .baseUri("http://localhost:" + port + "/v1/participants/%s/keypairs".formatted(PARTICIPANT_ID_ENCODED))
                 .when();
     }
 }

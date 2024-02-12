@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentMatchers;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -57,7 +58,8 @@ import static org.mockito.Mockito.when;
 
 @ComponentTest
 public class PresentationApiComponentTest {
-    public static final String VALID_QUERY_WITH_SCOPE = """
+
+    private static final String VALID_QUERY_WITH_SCOPE = """
             {
               "@context": [
                 "https://identity.foundation/presentation-exchange/submission/v1",
@@ -74,6 +76,7 @@ public class PresentationApiComponentTest {
             .id("identity-hub")
             .build();
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "test-participant";
+    private static final String TEST_PARTICIPANT_CONTEXT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(TEST_PARTICIPANT_CONTEXT_ID.getBytes());
     // todo: these mocks should be replaced, once their respective implementations exist!
     private static final CredentialQueryResolver CREDENTIAL_QUERY_RESOLVER = mock();
     private static final VerifiablePresentationService PRESENTATION_GENERATOR = mock();
@@ -97,7 +100,7 @@ public class PresentationApiComponentTest {
         createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType("application/json")
-                .post("/v1/participants/test-participant/presentation/query")
+                .post("/v1/participants/%s/presentation/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                 .then()
                 .statusCode(401)
                 .extract().body().asString();
@@ -119,7 +122,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, generateSiToken())
                 .body(query)
-                .post("/v1/participants/test-participant/presentation/query")
+                .post("/v1/participants/%s/presentation/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                 .then()
                 .statusCode(400)
                 .extract().body().asString();
@@ -144,7 +147,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, generateSiToken())
                 .body(query)
-                .post("/v1/participants/test-participant/presentation/query")
+                .post("/v1/participants/%s/presentation/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                 .then()
                 .statusCode(503)
                 .extract().body().asString();
@@ -160,7 +163,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/v1/participants/test-participant/presentation/query")
+                .post("/v1/participants/%s/presentation/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                 .then()
                 .statusCode(401)
                 .log().ifValidationFails()
@@ -179,7 +182,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/v1/participants/test-participant/presentation/query")
+                .post("/v1/participants/%s/presentation/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                 .then()
                 .statusCode(403)
                 .log().ifValidationFails()
@@ -199,7 +202,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/v1/participants/test-participant/presentation/query")
+                .post("/v1/participants/%s/presentation/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                 .then()
                 .statusCode(500)
                 .log().ifValidationFails();
@@ -220,7 +223,7 @@ public class PresentationApiComponentTest {
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
                 .body(VALID_QUERY_WITH_SCOPE)
-                .post("/v1/participants/test-participant/presentation/query")
+                .post("/v1/participants/%s/presentation/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                 .then()
                 .statusCode(200)
                 .log().ifValidationFails()
