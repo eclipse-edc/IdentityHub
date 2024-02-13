@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.verifiablecredentials;
 
+import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.GetAllCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.VerifiableCredentialsApiController;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
@@ -53,7 +54,9 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(VerifiableCredentialResource.class, this::queryById);
         var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService);
+        var getAllController = new GetAllCredentialsApiController(credentialStore);
         webService.registerResource(managementApiConfiguration.getContextAlias(), controller);
+        webService.registerResource(managementApiConfiguration.getContextAlias(), getAllController);
     }
 
     private ParticipantResource queryById(String credentialId) {

@@ -16,9 +16,11 @@ package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
@@ -43,7 +45,8 @@ public class GetAllCredentialsApiController implements GetAllCredentialsApi {
     @GET
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     @Override
-    public Collection<VerifiableCredentialResource> getAll(Integer offset, Integer limit) {
+    public Collection<VerifiableCredentialResource> getAll(@DefaultValue("0") @QueryParam("offset") Integer offset,
+                                                           @DefaultValue("50") @QueryParam("limit") Integer limit) {
         var res = credentialStore.query(QuerySpec.Builder.newInstance().limit(limit).offset(offset).build());
         return ServiceResult.from(res).orElseThrow(exceptionMapper(VerifiableCredentialResource.class));
     }
