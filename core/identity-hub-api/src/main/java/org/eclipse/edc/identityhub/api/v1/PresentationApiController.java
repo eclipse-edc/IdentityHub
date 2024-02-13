@@ -45,6 +45,7 @@ import java.util.Optional;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.eclipse.edc.identityhub.spi.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
@@ -82,6 +83,7 @@ public class PresentationApiController implements PresentationApi {
         }
         validatorRegistry.validate(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY, query).orElseThrow(ValidationFailureException::new);
 
+        participantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
         var presentationQuery = transformerRegistry.transform(query, PresentationQueryMessage.class).orElseThrow(InvalidRequestException::new);
 
         if (presentationQuery.getPresentationDefinition() != null) {

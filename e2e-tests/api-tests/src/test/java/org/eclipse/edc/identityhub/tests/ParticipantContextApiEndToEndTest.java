@@ -30,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -53,7 +54,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
         var su = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .header(new Header("x-api-key", apikey))
-                .get("/v1/participants/" + SUPER_USER)
+                .get("/v1/participants/" + toBase64(SUPER_USER))
                 .then()
                 .statusCode(200)
                 .extract().body().as(ParticipantContext.class);
@@ -82,7 +83,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .header(new Header("x-api-key", apiToken1))
                 .contentType(ContentType.JSON)
-                .get("/v1/participants/" + user2)
+                .get("/v1/participants/" + toBase64(user2))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);
@@ -180,7 +181,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .header(new Header("x-api-key", getSuperUserApiKey()))
                 .contentType(ContentType.JSON)
-                .post("/v1/participants/%s/state?isActive=true".formatted(participantId))
+                .post("/v1/participants/%s/state?isActive=true".formatted(toBase64(participantId)))
                 .then()
                 .log().ifError()
                 .statusCode(204);
@@ -205,7 +206,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .header(new Header("x-api-key", getSuperUserApiKey()))
                 .contentType(ContentType.JSON)
-                .delete("/v1/participants/%s".formatted(participantId))
+                .delete("/v1/participants/%s".formatted(toBase64(participantId)))
                 .then()
                 .log().ifError()
                 .statusCode(204);
@@ -215,7 +216,6 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
     @Test
     void regenerateToken() {
-
         var participantId = "another-user";
         var userToken = createParticipant(participantId);
 
@@ -223,7 +223,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .allSatisfy(t -> RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                         .header(new Header("x-api-key", t))
                         .contentType(ContentType.JSON)
-                        .post("/v1/participants/%s/token".formatted(participantId))
+                        .post("/v1/participants/%s/token".formatted(toBase64(participantId)))
                         .then()
                         .log().ifError()
                         .statusCode(200)
@@ -239,7 +239,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .header(new Header("x-api-key", getSuperUserApiKey()))
                 .contentType(ContentType.JSON)
                 .body(List.of("role1", "role2", "admin"))
-                .put("/v1/participants/%s/roles".formatted(participantId))
+                .put("/v1/participants/%s/roles".formatted(toBase64(participantId)))
                 .then()
                 .log().ifError()
                 .statusCode(204);
@@ -257,7 +257,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .header(new Header("x-api-key", userToken))
                 .contentType(ContentType.JSON)
                 .body(List.of(role))
-                .put("/v1/participants/%s/roles".formatted(participantId))
+                .put("/v1/participants/%s/roles".formatted(toBase64(participantId)))
                 .then()
                 .log().ifError()
                 .statusCode(403);
@@ -333,5 +333,9 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);
+    }
+
+    private String toBase64(String s) {
+        return Base64.getUrlEncoder().encodeToString(s.getBytes());
     }
 }
