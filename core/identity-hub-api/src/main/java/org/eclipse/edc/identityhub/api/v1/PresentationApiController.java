@@ -29,6 +29,7 @@ import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
+import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
@@ -114,7 +115,9 @@ public class PresentationApiController implements PresentationApi {
 
     private @Nullable String getAudience(String token) {
         try {
-            return Optional.ofNullable(SignedJWT.parse(token).getJWTClaimsSet().getClaim("client_id")).map(Object::toString).orElse(null);
+            return Optional.ofNullable(SignedJWT.parse(token).getJWTClaimsSet().getClaim(JwtRegisteredClaimNames.ISSUER))
+                    .map(Object::toString)
+                    .orElse(null);
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
