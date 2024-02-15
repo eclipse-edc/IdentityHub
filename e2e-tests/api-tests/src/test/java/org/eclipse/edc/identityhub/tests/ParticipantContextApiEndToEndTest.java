@@ -50,7 +50,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
     @Test
     void getUserById() {
-        var apikey = getSuperUserApiKey();
+        var apikey = createSuperUser();
 
         var su = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .header(new Header("x-api-key", apikey))
@@ -93,7 +93,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
     void createNewUser_principalIsSuperser() {
         var subscriber = mock(EventSubscriber.class);
         getService(EventRouter.class).registerSync(ParticipantContextCreated.class, subscriber);
-        var apikey = getSuperUserApiKey();
+        var apikey = createSuperUser();
 
         var manifest = createNewParticipant();
 
@@ -166,6 +166,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
     @Test
     void activateParticipant_principalIsSuperser() {
+        var superUserKey = createSuperUser();
         var subscriber = mock(EventSubscriber.class);
         getService(EventRouter.class).registerSync(ParticipantContextUpdated.class, subscriber);
 
@@ -179,7 +180,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         storeParticipant(anotherUser);
 
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
-                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .header(new Header("x-api-key", superUserKey))
                 .contentType(ContentType.JSON)
                 .post("/v1/participants/%s/state?isActive=true".formatted(toBase64(participantId)))
                 .then()
@@ -198,13 +199,14 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
     @Test
     void deleteParticipant() {
+        var superUserKey = createSuperUser();
         var participantId = "another-user";
         createParticipant(participantId);
 
         assertThat(getDidForParticipant(participantId)).hasSize(1);
 
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
-                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .header(new Header("x-api-key", superUserKey))
                 .contentType(ContentType.JSON)
                 .delete("/v1/participants/%s".formatted(toBase64(participantId)))
                 .then()
@@ -216,10 +218,11 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
     @Test
     void regenerateToken() {
+        var superUserKey = createSuperUser();
         var participantId = "another-user";
         var userToken = createParticipant(participantId);
 
-        assertThat(Arrays.asList(userToken, getSuperUserApiKey()))
+        assertThat(Arrays.asList(userToken, superUserKey))
                 .allSatisfy(t -> RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                         .header(new Header("x-api-key", t))
                         .contentType(ContentType.JSON)
@@ -232,11 +235,12 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
     @Test
     void updateRoles() {
+        var superUserKey = createSuperUser();
         var participantId = "some-user";
         createParticipant(participantId);
 
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
-                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .header(new Header("x-api-key", superUserKey))
                 .contentType(ContentType.JSON)
                 .body(List.of("role1", "role2", "admin"))
                 .put("/v1/participants/%s/roles".formatted(toBase64(participantId)))
@@ -248,7 +252,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
     }
 
     @ParameterizedTest(name = "Expect 403, role = {0}")
-    @ValueSource(strings = {"some-role", "admin"})
+    @ValueSource(strings = { "some-role", "admin" })
     void updateRoles_whenNotSuperuser(String role) {
         var participantId = "some-user";
         var userToken = createParticipant(participantId);
@@ -265,6 +269,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
     @Test
     void getAll() {
+        var superUserKey = createSuperUser();
         range(0, 10)
                 .forEach(i -> {
                     var participantId = "user" + i;
@@ -272,7 +277,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 });
         var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
-                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .header(new Header("x-api-key", superUserKey))
                 .get("/v1/participants")
                 .then()
                 .log().ifValidationFails()
@@ -283,6 +288,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
     @Test
     void getAll_withPaging() {
+        var superUserKey = createSuperUser();
         range(0, 10)
                 .forEach(i -> {
                     var participantId = "user" + i;
@@ -290,7 +296,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 });
         var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
-                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .header(new Header("x-api-key", superUserKey))
                 .get("/v1/participants?offset=2&limit=4")
                 .then()
                 .log().ifValidationFails()
@@ -301,6 +307,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
     @Test
     void getAll_withDefaultPaging() {
+        var superUserKey = createSuperUser();
         IntStream.range(0, 70)
                 .forEach(i -> {
                     var participantId = "user" + i;
@@ -308,7 +315,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 });
         var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
-                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .header(new Header("x-api-key", superUserKey))
                 .get("/v1/participants")
                 .then()
                 .log().ifValidationFails()
