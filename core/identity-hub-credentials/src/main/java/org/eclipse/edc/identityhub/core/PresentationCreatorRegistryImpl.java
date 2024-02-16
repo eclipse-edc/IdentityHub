@@ -65,6 +65,6 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
             throw new EdcException("No active key pair found for participant '%s'".formatted(participantContextId));
         }
 
-        return (T) creator.generatePresentation(credentials, keyPair.getKeyId(), additionalData);
+        return (T) creator.generatePresentation(credentials, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), additionalData);
     }
 }

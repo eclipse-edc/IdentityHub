@@ -29,7 +29,8 @@ import java.util.Map;
 
 abstract class PresentationGeneratorTest {
 
-    public static final String KEY_ID = "key-1";
+    public static final String PRIVATE_KEY_ALIAS = "private-key";
+    public static final String PUBLIC_KEY_ID = "key-1";
 
     @Test
     @DisplayName("Verify succesful creation of a JWT_VP")
@@ -45,7 +46,7 @@ abstract class PresentationGeneratorTest {
 
     @Test
     @DisplayName("Should throw an exception if no key is found for a key-id")
-    abstract void create_whenKeyNotFound();
+    abstract void create_whenPrivateKeyNotFound();
 
     @Test
     @DisplayName("Should throw an exception if the required additional data is missing")
