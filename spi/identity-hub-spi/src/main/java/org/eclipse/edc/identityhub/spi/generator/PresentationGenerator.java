@@ -26,23 +26,6 @@ import java.util.Map;
  */
 @FunctionalInterface
 public interface PresentationGenerator<T> {
-    /**
-     * Generates a Verifiable Presentation based on a list of Verifiable Credential Containers and a key ID. Implementors must
-     * use the key ID to resolve the private key used for signing. Recipients of the VP must use the key ID to resolve the public
-     * key for verification. How the public key is made available is out-of-scope here, but a popular method is DID documents.
-     * <p>
-     * Implementors must check whether all VCs can be represented in one <em>one</em> VP, and if not, must throw a {@link IllegalArgumentException}.
-     * <p>
-     * The concrete return type of the VP depends on the implementation, for example JWT VPs are represented as String, LDP VPs are represented
-     * as {@link jakarta.json.JsonObject}.
-     *
-     * @param credentials The list of Verifiable Credential Containers to include in the presentation.
-     * @param keyId       The key ID of the private key to be used for generating the presentation.
-     * @return The generated Verifiable Presentation. The concrete return type depends on the implementation.
-     * @throws IllegalArgumentException      If not all VCs can be represented in one VP.
-     * @throws UnsupportedOperationException If additional data is required by the implementation, or if specified key is not suitable for signing.
-     */
-    T generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId);
 
     /**
      * Generates a Verifiable Presentation based on a list of Verifiable Credential Containers and a key ID. Implementors must
@@ -54,12 +37,33 @@ public interface PresentationGenerator<T> {
      * The concrete return type of the VP depends on the implementation, for example JWT VPs are represented as String, LDP VPs are represented
      * as {@link jakarta.json.JsonObject}.
      *
-     * @param credentials The list of Verifiable Credential Containers to include in the presentation.
-     * @param keyId       The key ID of the private key to be used for generating the presentation.
+     * @param credentials     The list of Verifiable Credential Containers to include in the presentation.
+     * @param privateKeyAlias The alias of the private key to be used for generating the presentation.
+     * @param publicKeyId     The ID used by the counterparty to resolve the public key for verifying the VP.
+     * @return The generated Verifiable Presentation. The concrete return type depends on the implementation.
+     * @throws IllegalArgumentException      If not all VCs can be represented in one VP.
+     * @throws UnsupportedOperationException If additional data is required by the implementation, or if specified key is not suitable for signing.
+     */
+    T generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId);
+
+    /**
+     * Generates a Verifiable Presentation based on a list of Verifiable Credential Containers and a key ID. Implementors must
+     * use the key ID to resolve the private key used for signing. Recipients of the VP must use the key ID to resolve the public
+     * key for verification. How the public key is made available is out-of-scope here, but a popular method is DID documents.
+     * <p>
+     * Implementors must check whether all VCs can be represented in one <em>one</em> VP, and if not, must throw a {@link IllegalArgumentException}.
+     * <p>
+     * The concrete return type of the VP depends on the implementation, for example JWT VPs are represented as String, LDP VPs are represented
+     * as {@link jakarta.json.JsonObject}.
+     *
+     * @param credentials     The list of Verifiable Credential Containers to include in the presentation.
+     * @param privateKeyAlias The alias of the private key to be used for generating the presentation.
+     * @param publicKeyId     The ID used by the counterparty to resolve the public key for verifying the VP.
+     * @param additionalData  Additional data used for validation.
      * @return The generated Verifiable Presentation. The concrete return type depends on the implementation.
      * @throws IllegalArgumentException If not all VCs can be represented in one VP, mandatory additional information was not given, or the specified key is not suitable for signing.
      */
-    default T generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId, Map<String, Object> additionalData) {
-        return generatePresentation(credentials, keyId);
+    default T generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, Map<String, Object> additionalData) {
+        return generatePresentation(credentials, privateKeyAlias, publicKeyId);
     }
 }

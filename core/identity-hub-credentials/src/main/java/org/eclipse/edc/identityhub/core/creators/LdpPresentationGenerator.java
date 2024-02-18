@@ -41,6 +41,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
+import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
+import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.VP_TYPE_PROPERTY;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;
@@ -53,9 +56,9 @@ import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.CONTEXT;
 public class LdpPresentationGenerator implements PresentationGenerator<JsonObject> {
 
     public static final String ID_PROPERTY = "id";
-    public static final String TYPE_PROPERTY = "type";
+
+    public static final String TYPE_ADDITIONAL_DATA = "types";
     public static final String HOLDER_PROPERTY = "holder";
-    public static final String VERIFIABLE_CREDENTIAL_PROPERTY = "verifiableCredential";
     private final PrivateKeyResolver privateKeyResolver;
     private final String issuerId;
     private final SignatureSuiteRegistry signatureSuiteRegistry;
@@ -75,11 +78,11 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
     /**
      * Will always throw an {@link UnsupportedOperationException}.
-     * Please use {@link LdpPresentationGenerator#generatePresentation(List, String, Map)} instead.
+     * Please use {@link LdpPresentationGenerator#generatePresentation(List, String, String, Map)} instead.
      */
     @Override
-    public JsonObject generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId) {
-        throw new UnsupportedOperationException("Must provide additional data: 'types'");
+    public JsonObject generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String privateKeyId) {
+        throw new UnsupportedOperationException("Must provide additional data: '%s' and '%s'".formatted(TYPE_ADDITIONAL_DATA, CONTROLLER_ADDITIONAL_DATA));
 
     }
 
@@ -87,11 +90,12 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
      * Creates a presentation with the given credentials, key ID, and additional data. Note that JWT-VCs cannot be represented in LDP-VPs - while the spec would allow that
      * the JSON schema does not.
      *
-     * @param credentials    The list of Verifiable Credential Containers to include in the presentation.
-     * @param keyId          The key ID of the private key to be used for generating the presentation. Must be a URI.
-     * @param additionalData The additional data to be included in the presentation.
-     *                       It must contain a "types" field and optionally, a "suite" field to indicate the desired signature suite.
-     *                       If the "suite" parameter is specified, it must be a W3C identifier for signature suites.
+     * @param credentials     The list of Verifiable Credential Containers to include in the presentation.
+     * @param privateKeyAlias The alias of the private key to be used for generating the presentation.
+     * @param publicKeyId     The ID used by the counterparty to resolve the public key for verifying the VP.
+     * @param additionalData  The additional data to be included in the presentation.
+     *                        It must contain a "types" field and optionally, a "suite" field to indicate the desired signature suite.
+     *                        If the "suite" parameter is specified, it must be a W3C identifier for signature suites.
      * @return The created presentation as a JsonObject.
      * @throws IllegalArgumentException If the additional data does not contain "types",
      *                                  if no {@link SignatureSuite} is found for the provided suite identifier,
@@ -99,12 +103,12 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
      *                                  or if one or more VerifiableCredentials cannot be represented in the JSON-LD format.
      */
     @Override
-    public JsonObject generatePresentation(List<VerifiableCredentialContainer> credentials, String keyId, Map<String, Object> additionalData) {
-        if (!additionalData.containsKey("types")) {
-            throw new IllegalArgumentException("Must provide additional data: 'types'");
+    public JsonObject generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, Map<String, Object> additionalData) {
+        if (!additionalData.containsKey(TYPE_ADDITIONAL_DATA)) {
+            throw new IllegalArgumentException("Must provide additional data: '%s'".formatted(TYPE_ADDITIONAL_DATA));
         }
-        if (!additionalData.containsKey("controller")) {
-            throw new IllegalArgumentException("Must provide additional data: 'controller'");
+        if (!additionalData.containsKey(CONTROLLER_ADDITIONAL_DATA)) {
+            throw new IllegalArgumentException("Must provide additional data: '%s'".formatted(CONTROLLER_ADDITIONAL_DATA));
         }
 
         var suiteIdentifier = additionalData.getOrDefault("suite", defaultSignatureSuite).toString();
@@ -118,19 +122,19 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         }
 
         // check if private key can be resolved
-        var pk = privateKeyResolver.resolvePrivateKey(keyId)
+        var pk = privateKeyResolver.resolvePrivateKey(privateKeyAlias)
                 .orElseThrow(f -> new IllegalArgumentException(f.getFailureDetail()));
 
-        var types = (List) additionalData.get("types");
+        var types = (List) additionalData.get(TYPE_ADDITIONAL_DATA);
         var presentationObject = Json.createObjectBuilder()
                 .add(CONTEXT, stringArray(List.of(W3C_CREDENTIALS_URL, PRESENTATION_EXCHANGE_URL)))
                 .add(ID_PROPERTY, IATP_CONTEXT_URL + "/id/" + UUID.randomUUID())
-                .add(TYPE_PROPERTY, stringArray(types))
+                .add(VP_TYPE_PROPERTY, stringArray(types))
                 .add(HOLDER_PROPERTY, issuerId)
                 .add(VERIFIABLE_CREDENTIAL_PROPERTY, toJsonArray(credentials))
                 .build();
 
-        return signPresentation(presentationObject, suite, pk, keyId, additionalData.get("controller").toString());
+        return signPresentation(presentationObject, suite, pk, publicKeyId, additionalData.get(CONTROLLER_ADDITIONAL_DATA).toString());
     }
 
     @NotNull
@@ -149,8 +153,8 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         return array.build();
     }
 
-    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, PrivateKey pk, String keyId, String controller) {
-        var keyIdUri = URI.create(keyId);
+    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, PrivateKey pk, String publicKeyId, String controller) {
+        var keyIdUri = URI.create(publicKeyId);
         var controllerUri = URI.create(controller);
 
         var type = URI.create(suite.getId().toString());
@@ -159,7 +163,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
         var options = (DataIntegrityProofOptions) suite.createOptions();
         options.purpose(URI.create("https://w3id.org/security#assertionMethod"));
-        options.verificationMethod(new JwkMethod(URI.create(controller + "#" + keyId), null, controllerUri, null));
+        options.verificationMethod(new JwkMethod(URI.create(controller + "#" + publicKeyId), null, controllerUri, null));
         return ldpIssuer.signDocument(presentationObject, keypair, options)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
