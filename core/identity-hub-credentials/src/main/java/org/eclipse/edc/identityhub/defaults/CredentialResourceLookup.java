@@ -59,11 +59,9 @@ public class CredentialResourceLookup extends ReflectionPropertyLookup {
                 .collect(Collectors.joining("."));
         var subjects = credentialResource.getVerifiableCredential().credential().getCredentialSubject();
 
-        var claims = subjects.stream().map(subj -> ReflectionUtil.getFieldValue("claims." + credentialSubjectPath, subj))
+        return subjects.stream().map(subj -> ReflectionUtil.getFieldValue("claims." + credentialSubjectPath, subj))
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
-
-        return claims;
     }
 }

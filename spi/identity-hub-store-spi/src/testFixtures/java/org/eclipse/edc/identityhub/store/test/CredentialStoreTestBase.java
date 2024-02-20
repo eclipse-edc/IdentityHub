@@ -155,7 +155,7 @@ public abstract class CredentialStoreTestBase {
 
         var query = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("participantId", "=", TEST_PARTICIPANT_CONTEXT_ID))
-                .filter(new Criterion("verifiableCredential.credential.types", "contains", "UniversityDegreeCredential"))
+                .filter(new Criterion("verifiableCredential.credential.type", "contains", "UniversityDegreeCredential"))
                 .build();
 
         var result = getStore().query(query);
@@ -236,7 +236,7 @@ public abstract class CredentialStoreTestBase {
         creds.forEach(getStore()::create);
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("verifiableCredential.credential.types", "contains", "TestType"))
+                .filter(new Criterion("verifiableCredential.credential.type", "contains", "TestType"))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
