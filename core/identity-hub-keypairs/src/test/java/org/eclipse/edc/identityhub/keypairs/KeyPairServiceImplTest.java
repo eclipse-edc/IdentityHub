@@ -30,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -41,6 +42,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -55,7 +57,7 @@ class KeyPairServiceImplTest {
 
 
     @ParameterizedTest(name = "make default: {0}")
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     void addKeyPair_publicKeyGiven(boolean makeDefault) {
 
         when(keyPairResourceStore.create(any())).thenReturn(success());
@@ -69,7 +71,7 @@ class KeyPairServiceImplTest {
     }
 
     @ParameterizedTest(name = "make default: {0}")
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     void addKeyPair_shouldGenerate_storesInVault(boolean makeDefault) {
         when(keyPairResourceStore.create(any())).thenReturn(success());
 
@@ -81,7 +83,34 @@ class KeyPairServiceImplTest {
         assertThat(keyPairService.addKeyPair("some-participant", key, makeDefault)).isSucceeded();
 
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantId().equals("some-participant")));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault &&
+                kpr.getParticipantId().equals("some-participant") &&
+                kpr.getState() == KeyPairState.ACTIVE.code()));
+        verify(observableMock).invokeForEach(any());
+        verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
+    }
+
+    @ParameterizedTest(name = "make active: {0}")
+    @ValueSource(booleans = { true, false })
+    void addKeyPair_assertActiveState(boolean isActive) {
+        when(keyPairResourceStore.query(any())).thenReturn(success(Collections.emptySet()));
+        when(keyPairResourceStore.create(any())).thenReturn(success());
+
+        var key = createKey().publicKeyJwk(null).publicKeyPem(null)
+                .active(isActive)
+                .keyGeneratorParams(Map.of(
+                        "algorithm", "EdDSA",
+                        "curve", "Ed25519"
+                )).build();
+
+        assertThat(keyPairService.addKeyPair("some-participant", key, true)).isSucceeded();
+
+        verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
+        //expect the query for other active keys at least once, if the new key is inactive
+        verify(keyPairResourceStore, isActive ? never() : times(1)).query(any());
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() &&
+                kpr.getParticipantId().equals("some-participant") &&
+                kpr.getState() == (isActive ? KeyPairState.ACTIVE.code() : KeyPairState.CREATED.code())));
         verify(observableMock).invokeForEach(any());
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
@@ -266,6 +295,46 @@ class KeyPairServiceImplTest {
 
         verify(keyPairResourceStore).query(any());
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
+    }
+
+    @ParameterizedTest(name = "Valid state = {0}")
+    // cannot use enum literals and the .code() method -> needs to be compile constant
+    @ValueSource(ints = { 100, 200 })
+    void activate(int validState) {
+        var oldId = "old-id";
+        var oldKey = createKeyPairResource().id(oldId).state(validState).build();
+
+        when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+        when(keyPairResourceStore.update(any())).thenReturn(success());
+
+        assertThat(keyPairService.activate(oldId)).isSucceeded();
+    }
+
+    @ParameterizedTest(name = "Valid state = {0}")
+    // cannot use enum literals and the .code() method -> needs to be compile constant
+    @ValueSource(ints = { 0, 30, 400, -10 })
+    void activate_invalidState(int validState) {
+        var oldId = "old-id";
+        var oldKey = createKeyPairResource().id(oldId).state(validState).build();
+
+        when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+        when(keyPairResourceStore.update(any())).thenReturn(success());
+
+        assertThat(keyPairService.activate(oldId))
+                .isFailed()
+                .detail()
+                .isEqualTo("The key pair resource is expected to be in [200, 100], but was %s".formatted(validState));
+    }
+
+    @Test
+    void activate_notExists() {
+
+        when(keyPairResourceStore.query(any())).thenReturn(success(List.of()));
+
+        assertThat(keyPairService.activate("notexists"))
+                .isFailed()
+                .detail()
+                .isEqualTo("A KeyPairResource with ID 'notexists' does not exist.");
     }
 
     private KeyPairResource.Builder createKeyPairResource() {

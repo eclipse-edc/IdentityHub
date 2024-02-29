@@ -19,6 +19,7 @@ import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextUpdated;
+import org.eclipse.edc.identityhub.spi.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -32,6 +33,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static io.restassured.http.ContentType.JSON;
@@ -95,7 +97,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         getService(EventRouter.class).registerSync(ParticipantContextCreated.class, subscriber);
         var apikey = createSuperUser();
 
-        var manifest = createNewParticipant();
+        var manifest = createNewParticipant().build();
 
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .header(new Header("x-api-key", apikey))
@@ -109,9 +111,42 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
         verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
 
-        assertThat(getKeyPairsForParticipant(manifest)).hasSize(1);
+        assertThat(getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1);
         assertThat(getDidForParticipant(manifest.getParticipantId())).hasSize(1)
                 .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
+    }
+
+    @ParameterizedTest(name = "Create participant with key pair active = {0}")
+    @ValueSource(booleans = { true, false })
+    void createNewUser_verifyKeyPairActive(boolean isActive) {
+        var subscriber = mock(EventSubscriber.class);
+        getService(EventRouter.class).registerSync(ParticipantContextCreated.class, subscriber);
+        var apikey = createSuperUser();
+
+        var participantId = UUID.randomUUID().toString();
+        var manifest = createNewParticipant()
+                .participantId(participantId)
+                .did("did:web:" + participantId)
+                .key(createKeyDescriptor().active(isActive).build())
+                .build();
+
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .header(new Header("x-api-key", apikey))
+                .contentType(ContentType.JSON)
+                .body(manifest)
+                .post("/v1/participants/")
+                .then()
+                .log().ifError()
+                .statusCode(anyOf(equalTo(200), equalTo(204)))
+                .body(notNullValue());
+
+        verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
+
+        assertThat(getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1)
+                .allSatisfy(kpr -> assertThat(kpr.getState()).isEqualTo(isActive ? KeyPairState.ACTIVE.code() : KeyPairState.CREATED.code()));
+        assertThat(getDidForParticipant(manifest.getParticipantId())).hasSize(1)
+                .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
+
     }
 
 
@@ -127,7 +162,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .apiTokenAlias(principal + "-alias")
                 .build();
         var apiToken = storeParticipant(anotherUser);
-        var manifest = createNewParticipant();
+        var manifest = createNewParticipant().build();
 
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .header(new Header("x-api-key", apiToken))
@@ -140,7 +175,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .body(notNullValue());
         verifyNoInteractions(subscriber);
 
-        assertThat(getKeyPairsForParticipant(manifest)).isEmpty();
+        assertThat(getKeyPairsForParticipant(manifest.getParticipantId())).isEmpty();
     }
 
     @Test
@@ -149,7 +184,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         getService(EventRouter.class).registerSync(ParticipantContextCreated.class, subscriber);
         var principal = "another-user";
 
-        var manifest = createNewParticipant();
+        var manifest = createNewParticipant().build();
 
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .header(new Header("x-api-key", createTokenFor(principal)))
@@ -161,7 +196,7 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .statusCode(401)
                 .body(notNullValue());
         verifyNoInteractions(subscriber);
-        assertThat(getKeyPairsForParticipant(manifest)).isEmpty();
+        assertThat(getKeyPairsForParticipant(manifest.getParticipantId())).isEmpty();
     }
 
     @Test

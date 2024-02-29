@@ -82,6 +82,22 @@ public interface KeyPairResourceApi {
     )
     void addKeyPair(String participantId, KeyDescriptor keyDescriptor, boolean makeDefault, SecurityContext securityContext);
 
+
+    @Tag(name = "KeyPairResources Management API")
+    @Operation(description = "Sets a KeyPairResource to the ACTIVE state. Will fail if the current state is anything other than ACTIVE or CREATED.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource.",
+                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "404", description = "A KeyPairResource with the given ID does not exist.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    void setActive(String keyPairResourceId, SecurityContext securityContext);
+
     @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Rotates (=retires) a particular key pair, identified by their ID and optionally create a new successor key.",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = KeyDescriptor.class), mediaType = "application/json")),

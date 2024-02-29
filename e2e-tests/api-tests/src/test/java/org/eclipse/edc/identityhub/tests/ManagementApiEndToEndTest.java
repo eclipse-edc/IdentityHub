@@ -32,6 +32,7 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Collection;
@@ -50,23 +51,26 @@ public abstract class ManagementApiEndToEndTest {
     @RegisterExtension
     protected static final EdcRuntimeExtension RUNTIME = new EdcRuntimeExtension(":launcher", "identity-hub", RUNTIME_CONFIGURATION.controlPlaneConfiguration());
 
-    protected static ParticipantManifest createNewParticipant() {
+    protected static ParticipantManifest.Builder createNewParticipant() {
         var manifest = ParticipantManifest.Builder.newInstance()
                 .participantId("another-participant")
                 .active(false)
                 .did("did:web:another:participant")
                 .serviceEndpoint(new Service("test-service", "test-service-type", "https://test.com"))
-                .key(KeyDescriptor.Builder.newInstance()
-                        .privateKeyAlias("another-alias")
-                        .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "Ed25519"))
-                        .keyId("another-keyid")
-                        .build())
-                .build();
+                .key(createKeyDescriptor().build());
         return manifest;
     }
 
+    @NotNull
+    public static KeyDescriptor.Builder createKeyDescriptor() {
+        return KeyDescriptor.Builder.newInstance()
+                .privateKeyAlias("another-alias")
+                .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "Ed25519"))
+                .keyId("another-keyid");
+    }
+
     protected String createSuperUser() {
-        return createParticipant("super-user", List.of(ServicePrincipal.ROLE_ADMIN));
+        return createParticipant(SUPER_USER, List.of(ServicePrincipal.ROLE_ADMIN));
     }
 
     protected String storeParticipant(ParticipantContext pc) {
@@ -91,9 +95,9 @@ public abstract class ManagementApiEndToEndTest {
         return RUNTIME.getContext().getService(type);
     }
 
-    protected Collection<KeyPairResource> getKeyPairsForParticipant(ParticipantManifest manifest) {
+    protected Collection<KeyPairResource> getKeyPairsForParticipant(String participantId) {
         return getService(KeyPairResourceStore.class).query(QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", manifest.getParticipantId()))
+                .filter(new Criterion("participantId", "=", participantId))
                 .build()).getContent();
     }
 

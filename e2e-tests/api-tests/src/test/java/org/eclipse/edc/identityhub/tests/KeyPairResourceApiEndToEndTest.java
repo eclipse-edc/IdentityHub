@@ -20,6 +20,7 @@ import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -411,6 +412,78 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);
+    }
+
+    @Test
+    void activate() {
+        var superUserKey = createSuperUser();
+        var user1 = "user1";
+        var token = createParticipant(user1);
+        var keyId = createKeyPair(user1);
+
+        assertThat(Arrays.asList(token, superUserKey))
+                .allSatisfy(t -> {
+                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                            .contentType(JSON)
+                            .header(new Header("x-api-key", t))
+                            .post("/v1/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
+                            .then()
+                            .log().ifValidationFails()
+                            .statusCode(204)
+                            .body(notNullValue());
+
+                    assertThat(getDidForParticipant(user1))
+                            .hasSize(1)
+                            .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyId)));
+                });
+    }
+
+    @Test
+    void activate_notAuthorized() {
+        var user1 = "user1";
+        createParticipant(user1);
+        var keyId = createKeyPair(user1);
+        var attackerToken = createParticipant("attacker");
+
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", attackerToken))
+                .post("/v1/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403)
+                .body(notNullValue());
+
+        assertThat(getKeyPairsForParticipant(user1))
+                .hasSize(2)
+                .allMatch(keyPairResource -> keyPairResource.getState() == KeyPairState.ACTIVE.code());
+    }
+
+    @Test
+    void activate_illegalState() {
+        var user1 = "user1";
+        var token = createParticipant(user1);
+        var keyId = createKeyPair(user1);
+
+        // first revoke the key, which puts it in the REVOKED state
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", token))
+                .post("/v1/participants/%s/keypairs/%s/revoke".formatted(toBase64(user1), keyId))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(204)
+                .body(notNullValue());
+
+        // now attempt to activate
+        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(new Header("x-api-key", token))
+                .post("/v1/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400)
+                .body(notNullValue());
     }
 
     private String createKeyPair(String participantId) {

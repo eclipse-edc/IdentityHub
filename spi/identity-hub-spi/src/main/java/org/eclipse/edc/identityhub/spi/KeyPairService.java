@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.spi;
 
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -67,4 +68,12 @@ public interface KeyPairService {
     ServiceResult<Void> revokeKey(String id, @Nullable KeyDescriptor newKeySpec);
 
     ServiceResult<Collection<KeyPairResource>> query(QuerySpec querySpec);
+
+    /**
+     * Sets a key pair to the {@link KeyPairState#ACTIVE} state.
+     *
+     * @param keyPairResourceId The ID of the {@link KeyPairResource}
+     * @return return a failure if the key pair resource is not in either {@link KeyPairState#CREATED} or {@link KeyPairState#ACTIVE}
+     */
+    ServiceResult<Void> activate(String keyPairResourceId);
 }
