@@ -39,6 +39,7 @@ public class KeyDescriptor {
     private Map<String, Object> publicKeyJwk;
     private String publicKeyPem;
     private Map<String, Object> keyGeneratorParams;
+    private boolean isActive = true;
 
     private KeyDescriptor() {
     }
@@ -88,6 +89,15 @@ public class KeyDescriptor {
         return keyGeneratorParams;
     }
 
+    /**
+     * Determines whether the new key should be set to {@link org.eclipse.edc.identityhub.spi.model.KeyPairState#ACTIVE}.
+     * If this is set to {@code false}, the key pair will be created in the {@link org.eclipse.edc.identityhub.spi.model.KeyPairState#CREATED} state.
+     * Defaults to {@code true}.
+     */
+    public boolean isActive() {
+        return isActive;
+    }
+
 
     @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder {
@@ -129,6 +139,11 @@ public class KeyDescriptor {
 
         public Builder keyGeneratorParams(Map<String, Object> keyGeneratorParams) {
             keyDescriptor.keyGeneratorParams = keyGeneratorParams;
+            return this;
+        }
+
+        public Builder active(boolean isActive) {
+            keyDescriptor.isActive = isActive;
             return this;
         }
 

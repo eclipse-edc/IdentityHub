@@ -39,6 +39,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -63,10 +65,23 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             return ServiceResult.badRequest(key.getFailureDetail());
         }
 
+        // check if the new key is not active, and no other active key exists
+        if (!keyDescriptor.isActive()) {
+            var hasActiveKeys = keyPairResourceStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build())
+                    .orElse(failure -> Collections.emptySet())
+                    .stream().filter(kpr -> kpr.getState() == KeyPairState.ACTIVE.code())
+                    .findAny()
+                    .isEmpty();
+
+            if (!hasActiveKeys) {
+                monitor.warning("Participant '%s' has no active key pairs, and adding an inactive one will prevent the participant from becoming operational.");
+            }
+        }
+
         var newResource = KeyPairResource.Builder.newInstance()
                 .id(keyDescriptor.getKeyId())
                 .keyId(keyDescriptor.getKeyId())
-                .state(KeyPairState.CREATED)
+                .state(keyDescriptor.isActive() ? KeyPairState.ACTIVE : KeyPairState.CREATED)
                 .isDefaultPair(makeDefault)
                 .privateKeyAlias(keyDescriptor.getPrivateKeyAlias())
                 .serializedPublicKey(key.getContent())
@@ -130,6 +145,23 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     @Override
     public ServiceResult<Collection<KeyPairResource>> query(QuerySpec querySpec) {
         return ServiceResult.from(keyPairResourceStore.query(querySpec));
+    }
+
+    @Override
+    public ServiceResult<Void> activate(String keyPairResourceId) {
+        var oldKey = findById(keyPairResourceId);
+        if (oldKey == null) {
+            return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(keyPairResourceId));
+        }
+
+        var allowedStates = List.of(KeyPairState.ACTIVE.code(), KeyPairState.CREATED.code());
+        if (!allowedStates.contains(oldKey.getState())) {
+            return ServiceResult.badRequest("The key pair resource is expected to be in %s, but was %s".formatted(allowedStates, oldKey.getState()));
+        }
+
+        oldKey.activate();
+
+        return ServiceResult.from(keyPairResourceStore.update(oldKey));
     }
 
     @Override
