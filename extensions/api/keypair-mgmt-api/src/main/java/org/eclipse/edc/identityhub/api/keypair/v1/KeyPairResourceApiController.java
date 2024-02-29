@@ -28,6 +28,7 @@ import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.spi.EdcException;
@@ -80,7 +81,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Override
     public Collection<KeyPairResource> findForParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
         return onEncoded(participantId).map(decoded -> {
-            var query = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", decoded)).build();
+            var query = ParticipantResource.queryByParticipantId(decoded).build();
             return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, decoded)).stream().filter(kpr -> authorizationService.isAuthorized(securityContext, kpr.getId(), KeyPairResource.class).succeeded()).toList();
         }).orElseThrow(InvalidRequestException::new);
     }

@@ -21,6 +21,7 @@ import org.eclipse.edc.identityhub.participantcontext.ApiTokenGenerator;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
@@ -96,9 +97,8 @@ public abstract class ManagementApiEndToEndTest {
     }
 
     protected Collection<KeyPairResource> getKeyPairsForParticipant(String participantId) {
-        return getService(KeyPairResourceStore.class).query(QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", participantId))
-                .build()).getContent();
+        return getService(KeyPairResourceStore.class).query(ParticipantResource.queryByParticipantId(participantId).build())
+                .getContent();
     }
 
     protected Collection<DidDocument> getDidForParticipant(String participantId) {

@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.store.test;
 
 import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.model.VcState;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
@@ -133,8 +134,7 @@ public abstract class CredentialStoreTestBase {
                         .build())
                 .forEach(getStore()::create);
 
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", "participant2"))
+        var query = ParticipantResource.queryByParticipantId("participant2")
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -153,8 +153,7 @@ public abstract class CredentialStoreTestBase {
 
         Arrays.asList(cred1, cred2, cred3).forEach(getStore()::create);
 
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", TEST_PARTICIPANT_CONTEXT_ID))
+        var query = ParticipantResource.queryByParticipantId(TEST_PARTICIPANT_CONTEXT_ID)
                 .filter(new Criterion("verifiableCredential.credential.type", "contains", "UniversityDegreeCredential"))
                 .build();
 

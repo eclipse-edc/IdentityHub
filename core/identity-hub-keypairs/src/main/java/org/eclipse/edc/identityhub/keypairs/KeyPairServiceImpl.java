@@ -21,6 +21,7 @@ import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCrea
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
@@ -67,7 +68,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
 
         // check if the new key is not active, and no other active key exists
         if (!keyDescriptor.isActive()) {
-            var hasActiveKeys = keyPairResourceStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build())
+            var hasActiveKeys = keyPairResourceStore.query(ParticipantResource.queryByParticipantId(participantId).build())
                     .orElse(failure -> Collections.emptySet())
                     .stream().filter(kpr -> kpr.getState() == KeyPairState.ACTIVE.code())
                     .findAny()
@@ -181,7 +182,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
 
     private void deleted(ParticipantContextDeleted event) {
         //hard-delete all keypairs that are associated with the deleted participant
-        var query = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", event.getParticipantId())).build();
+        var query = ParticipantResource.queryByParticipantId(event.getParticipantId()).build();
         keyPairResourceStore.query(query)
                 .compose(list -> {
                     var x = list.stream().map(r -> keyPairResourceStore.deleteById(r.getId()))
