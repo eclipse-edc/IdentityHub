@@ -16,18 +16,18 @@ package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
@@ -37,6 +37,9 @@ public interface VerifiableCredentialsApi {
 
     @Tag(name = "VerifiableCredentials Management API")
     @Operation(description = "Finds a VerifiableCredential by ID.",
+            parameters = {
+                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
+            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The VerifiableCredential.",
                             content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
@@ -53,6 +56,9 @@ public interface VerifiableCredentialsApi {
 
     @Tag(name = "VerifiableCredentials Management API")
     @Operation(description = "Query VerifiableCredentials by type.",
+            parameters = {
+                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of VerifiableCredentials.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = DidDocument.class)))),
@@ -66,7 +72,9 @@ public interface VerifiableCredentialsApi {
 
     @Tag(name = "VerifiableCredentials Management API")
     @Operation(description = "Delete a VerifiableCredential.",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
+            parameters = {
+                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
+            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The VerifiableCredential was deleted successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",

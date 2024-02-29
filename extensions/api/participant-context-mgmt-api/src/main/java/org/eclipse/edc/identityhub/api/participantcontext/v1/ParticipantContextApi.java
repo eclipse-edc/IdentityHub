@@ -53,7 +53,6 @@ public interface ParticipantContextApi {
 
     @Tag(name = "ParticipantContext Management API")
     @Operation(description = "Gets ParticipantContexts by ID.",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of ParticipantContexts.",
                             content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
@@ -100,7 +99,6 @@ public interface ParticipantContextApi {
 
     @Tag(name = "ParticipantContext Management API")
     @Operation(description = "Delete a ParticipantContext.",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The ParticipantContext was deleted successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",

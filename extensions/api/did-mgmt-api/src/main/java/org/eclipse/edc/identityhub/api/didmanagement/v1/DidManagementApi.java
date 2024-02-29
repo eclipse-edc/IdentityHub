@@ -18,6 +18,7 @@ package org.eclipse.edc.identityhub.api.didmanagement.v1;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -39,6 +40,7 @@ public interface DidManagementApi {
 
     @Tag(name = "DID Management API")
     @Operation(description = "Publish an (existing) DID document. The DID is expected to exist in the database.",
+            parameters = {@Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully published."),
@@ -52,6 +54,7 @@ public interface DidManagementApi {
 
     @Tag(name = "DID Management API")
     @Operation(description = "Un-Publish an (existing) DID document. The DID is expected to exist in the database.",
+            parameters = {@Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully un-published."),
@@ -67,6 +70,7 @@ public interface DidManagementApi {
 
     @Tag(name = "DID Management API")
     @Operation(description = "Query for DID documents..",
+            parameters = {@Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of DID Documents.",
@@ -81,6 +85,7 @@ public interface DidManagementApi {
 
     @Tag(name = "DID Management API")
     @Operation(description = "Get state of a DID document",
+            parameters = {@Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID state was successfully obtained"),
@@ -95,7 +100,10 @@ public interface DidManagementApi {
     @Tag(name = "DID Management API")
     @Operation(description = "Adds a service endpoint to a particular DID document.",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
-            parameters = {@Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false.")},
+            parameters = {
+                    @Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false."),
+                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -111,7 +119,10 @@ public interface DidManagementApi {
     @Tag(name = "DID Management API")
     @Operation(description = "Replaces a service endpoint of a particular DID document.",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
-            parameters = {@Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false.")},
+            parameters = {
+                    @Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false."),
+                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -126,9 +137,11 @@ public interface DidManagementApi {
 
     @Tag(name = "DID Management API")
     @Operation(description = "Removes a service endpoint from a particular DID document.",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
-            parameters = {@Parameter(name = "serviceId", description = "The ID of the service that should get removed"), @Parameter(name = "autoPublish", description = "Whether the DID should " +
-                                                                                                                                                                        "get republished after the removal. Defaults to false.")},
+            parameters = {
+                    @Parameter(name = "serviceId", description = "The ID of the service that should get removed"),
+                    @Parameter(name = "autoPublish", description = "Whether the DID should " + "get republished after the removal. Defaults to false."),
+                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",

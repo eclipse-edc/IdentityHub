@@ -41,19 +41,19 @@ public interface PresentationApi {
 
     @Tag(name = "Resolution API")
     @Operation(description = "Issues a new presentation query, that contains either a DIF presentation definition, or a list of scopes",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ApiSchema.PresentationQuerySchema.class), mediaType = "application/ld+json")),
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ApiSchema.PresentationQuerySchema.class))),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The query was successfully processed, the response contains the VerifiablePresentation",
-                            content = @Content(schema = @Schema(implementation = ApiSchema.PresentationResponseSchema.class), mediaType = "application/ld+json")),
+                            content = @Content(schema = @Schema(implementation = ApiSchema.PresentationResponseSchema.class))),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, for example when both scope and presentationDefinition are given",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)), mediaType = "application/json")),
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)))),
                     @ApiResponse(responseCode = "401", description = "No Authorization header was given.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)), mediaType = "application/json")),
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)))),
                     @ApiResponse(responseCode = "403", description = "The given authentication token could not be validated. This can happen, when the request body " +
-                                                                     "calls for a broader query scope than the granted scope in the auth token",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)), mediaType = "application/json")),
+                            "calls for a broader query scope than the granted scope in the auth token",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)))),
                     @ApiResponse(responseCode = "501", description = "When the request contained a presentationDefinition object, but the implementation does not support it.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)), mediaType = "application/json"))
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class))))
             }
     )
     Response queryPresentation(String participantContextId, JsonObject query, String authHeader);
