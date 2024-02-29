@@ -39,3 +39,9 @@ dependencies {
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.restAssured)
 }
+
+edcBuild {
+    swagger {
+        apiGroup.set("ih-management-api")
+    }
+}

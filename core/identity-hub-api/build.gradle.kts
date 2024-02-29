@@ -35,3 +35,9 @@ dependencies {
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(libs.nimbus.jwt)
 }
+
+edcBuild {
+    swagger {
+        apiGroup.set("ih-resolution-api")
+    }
+}

@@ -63,9 +63,9 @@ public interface ApiSchema {
                   "@type": "PresentationQueryMessage",
                   "presentationDefinition": null,
                   "scope": [
-                    "org.eclipse.edc.vc.type:SomeCredential_0.3.5:write,
-                    "org.eclipse.edc.vc.type:SomeOtherCredential:read,
-                    "org.eclipse.edc.vc.type:ThirdCredential:*,
+                    "org.eclipse.edc.vc.type:SomeCredential_0.3.5:write",
+                    "org.eclipse.edc.vc.type:SomeOtherCredential:read",
+                    "org.eclipse.edc.vc.type:ThirdCredential:*"
                   ]
                 }
                 """;
@@ -75,7 +75,7 @@ public interface ApiSchema {
     record PresentationResponseSchema(
             @Schema(name = CONTEXT, requiredMode = REQUIRED)
             Object context,
-            @Schema(name = "presentation", requiredMode = REQUIRED, anyOf = { String.class, JsonObject.class })
+            @Schema(name = "presentation", requiredMode = REQUIRED, anyOf = {String.class, JsonObject.class})
             List<Object> presentation
     ) {
 
