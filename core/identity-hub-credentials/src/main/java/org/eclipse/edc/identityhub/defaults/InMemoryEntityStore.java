@@ -74,8 +74,7 @@ abstract class InMemoryEntityStore<T> {
         lock.readLock().lock();
         try {
             // if no filter is present, we return true
-            Predicate<Object> fallback = querySpec.getFilterExpression().isEmpty() ? x -> true : x -> false;
-            var result = queryResolver.query(store.values().stream(), querySpec, Predicate::or, fallback);
+            var result = queryResolver.query(store.values().stream(), querySpec, Predicate::and, x -> true);
             return success(result.toList());
         } finally {
             lock.readLock().unlock();

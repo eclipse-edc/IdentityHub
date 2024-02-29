@@ -16,11 +16,11 @@ package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextObservable;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
-import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
@@ -73,7 +73,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     @Override
     public ServiceResult<ParticipantContext> getParticipantContext(String participantId) {
         return transactionContext.execute(() -> {
-            var res = participantContextStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build());
+            var res = participantContextStore.query(ParticipantResource.queryByParticipantId(participantId).build());
             if (res.succeeded()) {
                 return res.getContent().stream().findFirst()
                         .map(ServiceResult::success)
@@ -149,7 +149,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     private ParticipantContext findByIdInternal(String participantId) {
-        var resultStream = participantContextStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build());
+        var resultStream = participantContextStore.query(ParticipantResource.queryByParticipantId(participantId).build());
         if (resultStream.failed()) return null;
         return resultStream.getContent().stream().findFirst().orElse(null);
     }

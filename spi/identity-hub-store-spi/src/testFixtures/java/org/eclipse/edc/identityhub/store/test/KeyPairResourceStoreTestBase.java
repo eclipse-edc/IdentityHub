@@ -17,12 +17,14 @@ package org.eclipse.edc.identityhub.store.test;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
@@ -100,8 +102,7 @@ public abstract class KeyPairResourceStoreTestBase {
 
         resources.forEach(getStore()::create);
 
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", "id7"))
+        var query = ParticipantResource.queryByParticipantId("id7")
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
@@ -124,6 +125,27 @@ public abstract class KeyPairResourceStoreTestBase {
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
         Assertions.assertThat(res.getContent()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void query_byIdAndState() {
+        var kp1 = createKeyPairResource().id("id1").state(KeyPairState.ACTIVE).build();
+        var kp2 = createKeyPairResource().id("id2").state(KeyPairState.CREATED).build();
+        var kp3 = createKeyPairResource().id("id3").state(KeyPairState.REVOKED).build();
+        var kp4 = createKeyPairResource().id("id4").state(KeyPairState.ROTATED).build();
+
+        List.of(kp1, kp2, kp3, kp4).forEach(getStore()::create);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("id", "=", "id3"))
+                .filter(new Criterion("state", "=", KeyPairState.REVOKED.code()))
+                .build();
+
+        assertThat(getStore().query(query))
+                .isSucceeded()
+                .satisfies(keyPairResources -> Assertions.assertThat(keyPairResources)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(kp3));
     }
 
     @Test
