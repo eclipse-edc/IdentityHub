@@ -14,8 +14,10 @@
 
 package org.eclipse.edc.identityhub.api.keypair.v1;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,10 +28,14 @@ import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
 
+
+@OpenAPIDefinition(info = @Info(description = "This is the Management API for KeyPairResources", title = "KeyPairResources Management API", version = "1"))
+@Tag(name = "Key Pairs")
 public interface GetAllKeyPairsApi {
 
-    @Tag(name = "KeyPairResources Management API")
+
     @Operation(description = "Get all KeyPair resources across all Participant Contexts. Requires elevated access.",
+            operationId = "getAllKeyPairs",
             parameters = {
                     @Parameter(name = "offset", description = "the paging offset. defaults to 0"),
                     @Parameter(name = "limit", description = "the page size. defaults to 50")},
@@ -42,5 +48,5 @@ public interface GetAllKeyPairsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             }
     )
-    Collection<KeyPairResource> getAll(Integer offset, Integer limit);
+    Collection<KeyPairResource> getAllKeyPairs(Integer offset, Integer limit);
 }

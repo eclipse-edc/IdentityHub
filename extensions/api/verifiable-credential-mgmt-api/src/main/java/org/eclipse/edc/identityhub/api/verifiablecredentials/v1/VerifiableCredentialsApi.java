@@ -33,10 +33,12 @@ import org.eclipse.edc.web.spi.ApiErrorDetail;
 import java.util.Collection;
 
 @OpenAPIDefinition(info = @Info(description = "This is the Management API for VerifiableCredentials", title = "VerifiableCredentials Management API", version = "1"))
+@Tag(name = "Verifiable Credentials")
 public interface VerifiableCredentialsApi {
 
-    @Tag(name = "VerifiableCredentials Management API")
+
     @Operation(description = "Finds a VerifiableCredential by ID.",
+            operationId = "getCredential",
             parameters = {
                     @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
             },
@@ -51,11 +53,11 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    VerifiableCredentialResource findById(String id, SecurityContext securityContext);
+    VerifiableCredentialResource getCredential(String id, SecurityContext securityContext);
 
 
-    @Tag(name = "VerifiableCredentials Management API")
     @Operation(description = "Query VerifiableCredentials by type.",
+            operationId = "queryCredentialsByType",
             parameters = {
                     @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
@@ -68,10 +70,10 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             }
     )
-    Collection<VerifiableCredentialResource> findByType(String type, SecurityContext securityContext);
+    Collection<VerifiableCredentialResource> queryCredentialsByType(String type, SecurityContext securityContext);
 
-    @Tag(name = "VerifiableCredentials Management API")
     @Operation(description = "Delete a VerifiableCredential.",
+            operationId = "deleteCredential",
             parameters = {
                     @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
             },

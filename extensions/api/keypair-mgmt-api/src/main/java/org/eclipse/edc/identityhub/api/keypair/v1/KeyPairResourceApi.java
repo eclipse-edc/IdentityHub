@@ -34,10 +34,11 @@ import org.eclipse.edc.web.spi.ApiErrorDetail;
 import java.util.Collection;
 
 @OpenAPIDefinition(info = @Info(description = "This is the Management API for KeyPairResources", title = "KeyPairResources Management API", version = "1"))
+@Tag(name = "Key Pairs")
 public interface KeyPairResourceApi {
 
-    @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Finds a KeyPairResource by ID.",
+            operationId = "getKeyPair",
             parameters = {
                     @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
@@ -52,10 +53,10 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    KeyPairResource findById(String id, SecurityContext securityContext);
+    KeyPairResource getKeyPair(String id, SecurityContext securityContext);
 
-    @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Finds all KeyPairResources for a particular ParticipantContext.",
+            operationId = "queryKeyPairByParticipantId",
             responses = {
                     @ApiResponse(responseCode = "200", description = "The KeyPairResource.",
                             content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
@@ -67,10 +68,10 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Collection<KeyPairResource> findForParticipant(String participantId, SecurityContext securityContext);
+    Collection<KeyPairResource> queryKeyPairByParticipantId(String participantId, SecurityContext securityContext);
 
-    @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Adds a new key pair to a ParticipantContext. Note that the key pair is either generated, or the private key is expected to be found in the vault.",
+            operationId = "addKeyPair",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = KeyDescriptor.class), mediaType = "application/json")),
             parameters = @Parameter(name = "makeDefault", description = "Make the new key pair the default key pair"),
             responses = {
@@ -87,8 +88,8 @@ public interface KeyPairResourceApi {
     void addKeyPair(String participantId, KeyDescriptor keyDescriptor, boolean makeDefault, SecurityContext securityContext);
 
 
-    @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Sets a KeyPairResource to the ACTIVE state. Will fail if the current state is anything other than ACTIVE or CREATED.",
+            operationId = "activateKeyPair",
             parameters = {
                     @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
@@ -103,10 +104,10 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void setActive(String keyPairResourceId, SecurityContext securityContext);
+    void activateKeyPair(String keyPairResourceId, SecurityContext securityContext);
 
-    @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Rotates (=retires) a particular key pair, identified by their ID and optionally create a new successor key.",
+            operationId = "rotateKeyPair",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = KeyDescriptor.class), mediaType = "application/json")),
             parameters = {
                     @Parameter(name = "duration", description = "Indicates for how long the public key of the rotated/retired key pair should still be available "),
@@ -125,8 +126,8 @@ public interface KeyPairResourceApi {
     )
     void rotateKeyPair(String id, KeyDescriptor newKey, long duration, SecurityContext securityContext);
 
-    @Tag(name = "KeyPairResources Management API")
     @Operation(description = "Revokes (=removes) a particular key pair, identified by their ID and create a new successor key.",
+            operationId = "revokeKeyPair",
             parameters = {
                     @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
@@ -142,7 +143,7 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void revokeKey(String id, KeyDescriptor newKey, SecurityContext securityContext);
+    void revokeKeyPair(String id, KeyDescriptor newKey, SecurityContext securityContext);
 
 
 }

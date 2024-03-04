@@ -82,7 +82,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @POST
     @Path("/{participantId}/token")
-    public String regenerateToken(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+    public String regenerateParticipantToken(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
         return onEncoded(participantId)
                 .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
                         .compose(u -> participantContextService.regenerateApiToken(decoded))
@@ -116,7 +116,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @PUT
     @Path("/{participantId}/roles")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-    public void updateRoles(@PathParam("participantId") String participantId, List<String> roles) {
+    public void updateParticipantRoles(@PathParam("participantId") String participantId, List<String> roles) {
         onEncoded(participantId)
                 .onSuccess(decoded -> participantContextService.updateParticipant(decoded, participantContext -> participantContext.setRoles(roles))
                         .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
@@ -126,8 +126,8 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @GET
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     @Override
-    public Collection<ParticipantContext> getAll(@DefaultValue("0") @QueryParam("offset") Integer offset,
-                                                 @DefaultValue("50") @QueryParam("limit") Integer limit) {
+    public Collection<ParticipantContext> getAllParticipants(@DefaultValue("0") @QueryParam("offset") Integer offset,
+                                                             @DefaultValue("50") @QueryParam("limit") Integer limit) {
         return participantContextService.query(QuerySpec.Builder.newInstance().offset(offset).limit(limit).build())
                 .orElseThrow(exceptionMapper(ParticipantContext.class));
     }

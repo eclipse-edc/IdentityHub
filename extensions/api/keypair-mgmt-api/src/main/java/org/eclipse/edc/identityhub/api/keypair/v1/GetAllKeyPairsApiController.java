@@ -45,8 +45,8 @@ public class GetAllKeyPairsApiController implements GetAllKeyPairsApi {
     @GET
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     @Override
-    public Collection<KeyPairResource> getAll(@DefaultValue("0") @QueryParam("offset") Integer offset,
-                                              @DefaultValue("50") @QueryParam("limit") Integer limit) {
+    public Collection<KeyPairResource> getAllKeyPairs(@DefaultValue("0") @QueryParam("offset") Integer offset,
+                                                      @DefaultValue("50") @QueryParam("limit") Integer limit) {
         return keyPairService.query(QuerySpec.Builder.newInstance().offset(offset).limit(limit).build())
                 .orElseThrow(exceptionMapper(KeyPairResource.class));
     }
