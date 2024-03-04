@@ -45,8 +45,8 @@ public class GetAllCredentialsApiController implements GetAllCredentialsApi {
     @GET
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     @Override
-    public Collection<VerifiableCredentialResource> getAll(@DefaultValue("0") @QueryParam("offset") Integer offset,
-                                                           @DefaultValue("50") @QueryParam("limit") Integer limit) {
+    public Collection<VerifiableCredentialResource> getAllCredentials(@DefaultValue("0") @QueryParam("offset") Integer offset,
+                                                                      @DefaultValue("50") @QueryParam("limit") Integer limit) {
         var res = credentialStore.query(QuerySpec.Builder.newInstance().limit(limit).offset(offset).build());
         return ServiceResult.from(res).orElseThrow(exceptionMapper(VerifiableCredentialResource.class));
     }

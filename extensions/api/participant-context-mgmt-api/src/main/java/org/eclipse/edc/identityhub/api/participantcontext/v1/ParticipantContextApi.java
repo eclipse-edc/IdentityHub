@@ -33,10 +33,12 @@ import java.util.Collection;
 import java.util.List;
 
 @OpenAPIDefinition(info = @Info(description = "This is the Management API for ParticipantContexts", title = "ParticipantContext Management API", version = "1"))
+@Tag(name = "Participant Context")
 public interface ParticipantContextApi {
 
-    @Tag(name = "ParticipantContext Management API")
+
     @Operation(description = "Creates a new ParticipantContext object.",
+            operationId = "createParticipant",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The ParticipantContext was created successfully, its API token is returned in the response body."),
@@ -51,8 +53,8 @@ public interface ParticipantContextApi {
     String createParticipant(ParticipantManifest manifest);
 
 
-    @Tag(name = "ParticipantContext Management API")
     @Operation(description = "Gets ParticipantContexts by ID.",
+            operationId = "getParticipant",
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of ParticipantContexts.",
                             content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
@@ -66,8 +68,8 @@ public interface ParticipantContextApi {
     )
     ParticipantContext getParticipant(String participantId, SecurityContext securityContext);
 
-    @Tag(name = "ParticipantContext Management API")
     @Operation(description = "Regenerates the API token for a ParticipantContext and returns the new token.",
+            operationId = "regenerateParticipantToken",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The API token was regenerated successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
@@ -79,10 +81,10 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    String regenerateToken(String participantId, SecurityContext securityContext);
+    String regenerateParticipantToken(String participantId, SecurityContext securityContext);
 
-    @Tag(name = "ParticipantContext Management API")
     @Operation(description = "Activates a ParticipantContext. This operation is idempotent, i.e. activating an already active ParticipantContext is a NOOP.",
+            operationId = "activateParticipant",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
             parameters = {@Parameter(name = "isActive", description = "Whether the participantContext should be activated or deactivated. Defaults to 'false'")},
             responses = {
@@ -97,8 +99,8 @@ public interface ParticipantContextApi {
     )
     void activateParticipant(String participantId, boolean isActive);
 
-    @Tag(name = "ParticipantContext Management API")
     @Operation(description = "Delete a ParticipantContext.",
+            operationId = "deleteParticipant",
             responses = {
                     @ApiResponse(responseCode = "200", description = "The ParticipantContext was deleted successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
@@ -111,8 +113,8 @@ public interface ParticipantContextApi {
     )
     void deleteParticipant(String participantId, SecurityContext securityContext);
 
-    @Tag(name = "ParticipantContext Management API")
     @Operation(description = "Updates a ParticipantContext's roles. Note that this is an absolute update, that means all roles that the Participant should have must be submitted in the body. Requires elevated privileges.",
+            operationId = "updateParticipantRoles",
             requestBody = @RequestBody(content = @Content(array = @ArraySchema(schema = @Schema(implementation = List.class)))),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The ParticipantContext was updated successfully"),
@@ -124,10 +126,10 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void updateRoles(String participantId, List<String> roles);
+    void updateParticipantRoles(String participantId, List<String> roles);
 
-    @Tag(name = "ParticipantContext Management API")
     @Operation(description = "Get all DID documents across all Participant Contexts. Requires elevated access.",
+            operationId = "getAllParticipants",
             parameters = {
                     @Parameter(name = "offset", description = "the paging offset. defaults to 0"),
                     @Parameter(name = "limit", description = "the page size. defaults to 50")},
@@ -140,5 +142,5 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             }
     )
-    Collection<ParticipantContext> getAll(Integer offset, Integer limit);
+    Collection<ParticipantContext> getAllParticipants(Integer offset, Integer limit);
 }

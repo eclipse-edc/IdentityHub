@@ -63,7 +63,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @GET
     @Path("/{keyPairId}")
     @Override
-    public KeyPairResource findById(@PathParam("keyPairId") String id, @Context SecurityContext securityContext) {
+    public KeyPairResource getKeyPair(@PathParam("keyPairId") String id, @Context SecurityContext securityContext) {
         authorizationService.isAuthorized(securityContext, id, KeyPairResource.class).orElseThrow(exceptionMapper(KeyPairResource.class, id));
 
         var query = QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build();
@@ -79,7 +79,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @GET
     @Override
-    public Collection<KeyPairResource> findForParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+    public Collection<KeyPairResource> queryKeyPairByParticipantId(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
         return onEncoded(participantId).map(decoded -> {
             var query = ParticipantResource.queryByParticipantId(decoded).build();
             return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, decoded)).stream().filter(kpr -> authorizationService.isAuthorized(securityContext, kpr.getId(), KeyPairResource.class).succeeded()).toList();
@@ -101,7 +101,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @POST
     @Path("/{keyPairId}/activate")
     @Override
-    public void setActive(@PathParam("keyPairId") String keyPairResourceId, @Context SecurityContext context) {
+    public void activateKeyPair(@PathParam("keyPairId") String keyPairResourceId, @Context SecurityContext context) {
         authorizationService.isAuthorized(context, keyPairResourceId, KeyPairResource.class).compose(u -> keyPairService.activate(keyPairResourceId)).orElseThrow(exceptionMapper(KeyPairResource.class, keyPairResourceId));
 
     }
@@ -119,7 +119,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @POST
     @Path("/{keyPairId}/revoke")
     @Override
-    public void revokeKey(@PathParam("keyPairId") String id, KeyDescriptor newKey, @Context SecurityContext securityContext) {
+    public void revokeKeyPair(@PathParam("keyPairId") String id, KeyDescriptor newKey, @Context SecurityContext securityContext) {
         if (newKey != null) {
             keyDescriptorValidator.validate(newKey).orElseThrow(ValidationFailureException::new);
         }
