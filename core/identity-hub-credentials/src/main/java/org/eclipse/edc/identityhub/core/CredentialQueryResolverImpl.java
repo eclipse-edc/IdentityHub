@@ -25,9 +25,10 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
@@ -65,8 +66,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         }
 
         // query storage for requested credentials
-        var queryspec = convertToQuerySpec(proverScopeResult.getContent(), participantContextId);
-        var credentialResult = credentialStore.query(queryspec);
+        var credentialResult = queryCredentials(proverScopeResult.getContent(), participantContextId);
         if (credentialResult.failed()) {
             return QueryResult.storageFailure(credentialResult.getFailureMessages());
         }
@@ -75,8 +75,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         var requestedCredentials = credentialResult.getContent();
 
         // check that prover scope is not wider than issuer scope
-        var issuerQuery = convertToQuerySpec(issuerScopeResult.getContent(), participantContextId);
-        var allowedCred = credentialStore.query(issuerQuery);
+        var allowedCred = queryCredentials(issuerScopeResult.getContent(), participantContextId);
         if (allowedCred.failed()) {
             return QueryResult.invalidScope(allowedCred.getFailureMessages());
         }
@@ -105,16 +104,29 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         if (transformResult.stream().anyMatch(AbstractResult::failed)) {
             return failure(transformResult.stream().flatMap(r -> r.getFailureMessages().stream()).toList());
         }
-
         return success(transformResult.stream().map(AbstractResult::getContent).toList());
     }
 
-    private QuerySpec convertToQuerySpec(List<Criterion> criteria, String participantContextId) {
+
+    private Result<Collection<VerifiableCredentialResource>> queryCredentials(List<Criterion> criteria, String participantContextId) {
+        var results = criteria.stream()
+                .map(criterion -> convertToQuerySpec(criterion, participantContextId))
+                .map(credentialStore::query)
+                .toList();
+
+        if (results.stream().anyMatch(AbstractResult::failed)) {
+            return Result.failure(results.stream().flatMap(r -> r.getFailureMessages().stream()).toList());
+        }
+        return Result.success(results.stream()
+                .flatMap(result -> result.getContent().stream())
+                .collect(Collectors.toList()));
+    }
+
+    private QuerySpec convertToQuerySpec(Criterion criteria, String participantContextId) {
         var filterByParticipant = new Criterion("participantId", "=", participantContextId);
-        var allCriteria = new ArrayList<>(criteria);
-        allCriteria.add(filterByParticipant);
         return QuerySpec.Builder.newInstance()
-                .filter(allCriteria)
+                .filter(List.of(criteria, filterByParticipant))
                 .build();
     }
+
 }
