@@ -26,6 +26,7 @@ import org.eclipse.edc.identitytrust.model.VerifiableCredential;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
 import org.eclipse.edc.identitytrust.model.presentationdefinition.PresentationDefinition;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -110,7 +111,12 @@ class CredentialQueryResolverImplTest {
     void query_multipleScopeStrings() {
         var credential1 = createCredentialResource("TestCredential");
         var credential2 = createCredentialResource("AnotherCredential");
-        when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential1, credential2)));
+        var mapping = Map.of("TestCredential", credential1, "AnotherCredential", credential2);
+
+        when(storeMock.query(any())).thenAnswer(i -> {
+            QuerySpec querySpec = i.getArgument(0);
+            return success(List.of(mapping.get(querySpec.getFilterExpression().get(0).getOperandRight().toString())));
+        });
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read",
