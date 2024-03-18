@@ -6,7 +6,7 @@ info:
 servers:
 - url: /
 paths:
-  /v1/participants/{participantId}/presentation/query:
+  /v1/participants/{participantId}/presentations/query:
     post:
       tags:
       - Resolution API
