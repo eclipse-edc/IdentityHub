@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres;
 
-import org.eclipse.edc.spi.types.PathItem;
 import org.eclipse.edc.sql.translation.JsonFieldTranslator;
+import org.eclipse.edc.util.reflection.PathItem;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +43,7 @@ public class CredentialJsonMapping extends JsonFieldTranslator {
         if (path.stream().allMatch(p -> p.toString().equals("types"))) {
             return "(%s)::jsonb".formatted(stmt).replace("->>", "->");
         }
-        
+
         if (path.size() == 1) {
             return stmt;
         }
