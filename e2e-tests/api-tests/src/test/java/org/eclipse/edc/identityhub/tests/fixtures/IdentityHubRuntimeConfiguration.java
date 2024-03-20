@@ -22,8 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
+import static org.eclipse.edc.boot.BootServicesExtension.PARTICIPANT_ID;
 import static org.eclipse.edc.junit.testfixtures.TestUtils.getFreePort;
-import static org.eclipse.edc.spi.system.ServiceExtensionContext.PARTICIPANT_ID;
 
 /**
  * The IdentityHubRuntimeConfiguration class represents an IdentityHub Runtime configuration and provides various information, such as API endpoints
@@ -67,6 +67,10 @@ public class IdentityHubRuntimeConfiguration {
             participant = new IdentityHubRuntimeConfiguration();
         }
 
+        public static Builder newInstance() {
+            return new Builder();
+        }
+
         public Builder id(String id) {
             this.participant.id = id;
             return this;
@@ -81,10 +85,6 @@ public class IdentityHubRuntimeConfiguration {
             participant.resolutionEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/v1/resolution"), Map.of());
             participant.managementEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/management"), Map.of());
             return participant;
-        }
-
-        public static Builder newInstance() {
-            return new Builder();
         }
     }
 
