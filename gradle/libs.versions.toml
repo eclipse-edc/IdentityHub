@@ -17,6 +17,7 @@ restAssured = "5.4.0"
 swagger = "2.2.18"
 rsApi = "3.1.0"
 testcontainers = "1.19.3"
+tink = "1.12.0"
 
 [libraries]
 edc-util = { module = "org.eclipse.edc:util", version.ref = "edc" }
@@ -82,6 +83,7 @@ testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.re
 testcontainers-postgres = { module = "org.testcontainers:postgres", version.ref = "testcontainers" }
 jakarta-annotation = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
 jersey-common = { module = "org.glassfish.jersey.core:jersey-common", version.ref = "jersey" }
+tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
 
 [bundles]
 connector = ["edc-boot", "edc-core-connector", "edc-ext-http", "edc-ext-observability", "edc-ext-jsonld"]

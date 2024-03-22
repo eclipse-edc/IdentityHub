@@ -13,7 +13,7 @@
  */
 
 -- only intended for and tested with Postgres!
-CREATE TABLE credential_resource
+CREATE TABLE IF NOT EXISTS credential_resource
 (
     id                    VARCHAR PRIMARY KEY NOT NULL, -- ID of the VC, duplicated here for indexing purposes
     create_timestamp      BIGINT              NOT NULL, -- POSIX timestamp of the creation of the VC
@@ -27,7 +27,7 @@ CREATE TABLE credential_resource
     verifiable_credential JSON                NOT NULL, -- JSON-representation of the verifiable credential
     participant_id        VARCHAR                       -- ID of the ParticipantContext that owns this credentisl
 );
-CREATE UNIQUE INDEX credential_resource_credential_id_uindex ON credential_resource USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS credential_resource_credential_id_uindex ON credential_resource USING btree (id);
 COMMENT ON COLUMN credential_resource.id IS 'ID of the VC, duplicated here for indexing purposes';
 COMMENT ON COLUMN credential_resource.raw_vc IS 'Representation of the VC exactly as it was received by the issuer. Can be JWT or JSON(-LD) ';
 COMMENT ON COLUMN credential_resource.vc_format IS '0 = JSON-LD, 1 = JWT';

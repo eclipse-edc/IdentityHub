@@ -13,7 +13,7 @@
  */
 
 -- only intended for and tested with Postgres!
-CREATE TABLE keypair_resource
+CREATE TABLE IF NOT EXISTS keypair_resource
 (
     id                    VARCHAR PRIMARY KEY NOT NULL,               -- primary key
     participant_id        VARCHAR,                                    -- ID of the owning ParticipantContext. this is a loose business key, not a FK!
