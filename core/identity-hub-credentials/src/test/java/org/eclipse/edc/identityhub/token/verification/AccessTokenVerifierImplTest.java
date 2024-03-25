@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.token.verification;
 
 import org.assertj.core.api.Assertions;
+import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.ClaimToken;
-import org.eclipse.edc.spi.iam.PublicKeyResolver;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;

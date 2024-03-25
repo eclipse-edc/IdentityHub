@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.identityhub.core;
 
+import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
 import org.jetbrains.annotations.Nullable;
 
@@ -107,6 +107,10 @@ public class LocalPublicKeySupplier implements Supplier<PublicKey> {
             this.instance = new LocalPublicKeySupplier();
         }
 
+        public static Builder newInstance() {
+            return new Builder();
+        }
+
         public Builder vaultAlias(@Nullable String vaultAlias) {
             this.instance.vaultAlias = vaultAlias;
             return this;
@@ -144,10 +148,6 @@ public class LocalPublicKeySupplier implements Supplier<PublicKey> {
         public Builder vault(Vault vault) {
             this.instance.vault = vault;
             return this;
-        }
-
-        public static Builder newInstance() {
-            return new Builder();
         }
     }
 }

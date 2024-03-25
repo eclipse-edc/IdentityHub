@@ -15,9 +15,6 @@
 package org.eclipse.edc.identityhub.did;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.edc.connector.core.security.KeyParserRegistryImpl;
-import org.eclipse.edc.connector.core.security.keyparsers.JwkParser;
-import org.eclipse.edc.connector.core.security.keyparsers.PemParser;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
@@ -26,6 +23,9 @@ import org.eclipse.edc.identithub.did.spi.DidDocumentPublisherRegistry;
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.identithub.did.spi.model.DidState;
 import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.keys.KeyParserRegistryImpl;
+import org.eclipse.edc.keys.keyparsers.JwkParser;
+import org.eclipse.edc.keys.keyparsers.PemParser;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
