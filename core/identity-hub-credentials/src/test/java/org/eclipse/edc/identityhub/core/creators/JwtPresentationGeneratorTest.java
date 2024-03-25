@@ -40,13 +40,15 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.eclipse.edc.identityhub.core.creators.JwtPresentationGenerator.VERIFIABLE_PRESENTATION_CLAIM;
+import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
-    public static final List<String> REQUIRED_CLAIMS = asList("aud", "exp", "iat", "vp");
+    public static final List<String> REQUIRED_CLAIMS = asList("aud", "exp", "iat", VERIFIABLE_PRESENTATION_CLAIM);
     private static final Map<String, Object> ADDITIONAL_DATA = Map.of(
             "aud", "did:web:test-audience",
             "controller", "did:web:test"
@@ -75,9 +77,13 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThatNoException().isThrownBy(() -> SignedJWT.parse(vpJwt));
         var claims = extractJwtClaims(vpJwt);
 
-        REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim)
-                .isNotNull());
-        assertThat(extractJwtHeader(vpJwt).getKeyID()).isEqualTo("did:web:test#%s".formatted(PUBLIC_KEY_ID));
+        REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
+        assertThat(claims.getClaim(VERIFIABLE_PRESENTATION_CLAIM)).isInstanceOfSatisfying(Map.class, vpClaim -> {
+            assertThat(vpClaim.get(VERIFIABLE_CREDENTIAL_PROPERTY))
+                    .isNotNull()
+                    .isInstanceOfSatisfying(List.class, vcs -> assertThat(vcs).containsExactly(jwtVc));
+            assertThat(extractJwtHeader(vpJwt).getKeyID()).isEqualTo("did:web:test#%s".formatted(PUBLIC_KEY_ID));
+        });
     }
 
     @Test
