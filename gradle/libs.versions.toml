@@ -65,6 +65,10 @@ edc-configuration-filesystem = { module = "org.eclipse.edc:configuration-filesys
 edc-vault-filesystem = { module = "org.eclipse.edc:vault-filesystem", version.ref = "edc" }
 edc-testfixtures-managementapi = { module = "org.eclipse.edc:management-api-test-fixtures", version.ref = "edc" }
 
+# EDC libs
+edc-lib-keys = { "module" = "org.eclipse.edc:keys-lib", version.ref = "edc" }
+
+
 
 # Third party libs
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }

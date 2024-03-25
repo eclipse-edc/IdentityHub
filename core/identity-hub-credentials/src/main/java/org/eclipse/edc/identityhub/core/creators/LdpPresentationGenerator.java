@@ -26,10 +26,10 @@ import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identitytrust.model.CredentialFormat;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
+import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.security.signature.jws2020.JwkMethod;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.spi.security.PrivateKeyResolver;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 import org.jetbrains.annotations.NotNull;
 

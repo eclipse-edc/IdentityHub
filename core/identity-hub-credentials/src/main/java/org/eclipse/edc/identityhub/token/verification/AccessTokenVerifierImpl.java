@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.token.verification;
 
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
-import org.eclipse.edc.spi.iam.PublicKeyResolver;
+import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.TokenValidationRule;
