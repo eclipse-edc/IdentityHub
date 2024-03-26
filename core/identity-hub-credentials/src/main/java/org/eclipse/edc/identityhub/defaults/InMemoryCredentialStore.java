@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import org.eclipse.edc.connector.core.store.ReflectionBasedQueryResolver;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.spi.query.QueryResolver;
+import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 
 /**
  * In-memory variant of the {@link CredentialStore} that is thread-safe.
