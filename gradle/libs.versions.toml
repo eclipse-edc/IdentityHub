@@ -67,6 +67,9 @@ edc-testfixtures-managementapi = { module = "org.eclipse.edc:management-api-test
 
 # EDC libs
 edc-lib-keys = { "module" = "org.eclipse.edc:keys-lib", version.ref = "edc" }
+edc-lib-query = { "module" = "org.eclipse.edc:query-lib", version.ref = "edc" }
+edc-lib-jsonld = { "module" = "org.eclipse.edc:json-ld-lib", version.ref = "edc" }
+edc-lib-store = { "module" = "org.eclipse.edc:store-lib", version.ref = "edc" }
 
 
 

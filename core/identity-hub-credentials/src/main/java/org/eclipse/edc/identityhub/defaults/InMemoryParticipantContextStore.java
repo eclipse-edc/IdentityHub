@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import org.eclipse.edc.connector.core.store.ReflectionBasedQueryResolver;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.QueryResolver;
+import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 
 /**
  * In-memory variant of the {@link ParticipantContextStore} that is thread-safe.

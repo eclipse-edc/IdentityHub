@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import org.eclipse.edc.connector.core.store.ReflectionBasedQueryResolver;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.spi.query.QueryResolver;
+import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 
 public class InMemoryKeyPairResourceStore extends InMemoryEntityStore<KeyPairResource> implements KeyPairResourceStore {
     @Override
