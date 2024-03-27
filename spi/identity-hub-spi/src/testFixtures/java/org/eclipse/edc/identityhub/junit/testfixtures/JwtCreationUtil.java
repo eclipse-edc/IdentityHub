@@ -53,7 +53,7 @@ public class JwtCreationUtil {
      */
     public static String generateSiToken(String consumerIdentifier, String consumerDid, String providerIdentifier, String providerDid) {
         var accessToken = generateJwt(consumerDid, consumerDid, providerIdentifier, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
-        return generateJwt(consumerIdentifier, providerDid, providerDid, Map.of("client_id", providerIdentifier, "access_token", accessToken), PROVIDER_KEY);
+        return generateJwt(consumerIdentifier, providerDid, providerDid, Map.of("client_id", providerIdentifier, "token", accessToken), PROVIDER_KEY);
     }
 
     /**

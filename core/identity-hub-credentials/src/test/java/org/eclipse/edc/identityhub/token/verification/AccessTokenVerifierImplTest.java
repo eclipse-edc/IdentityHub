@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.token.verification;
 
 import org.assertj.core.api.Assertions;
+import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.ClaimToken;
-import org.eclipse.edc.spi.iam.PublicKeyResolver;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
@@ -51,7 +51,7 @@ class AccessTokenVerifierImplTest {
     private final PublicKeyResolver pkResolver = mock();
     private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, publicKeySupplier, tokenValidationRulesRegistry, mock(), pkResolver);
     private final ClaimToken idToken = ClaimToken.Builder.newInstance()
-            .claim("access_token", "test-at")
+            .claim("token", "test-at")
             .claim("scope", "org.eclipse.edc.vc.type:SomeTestCredential:read")
             .build();
 

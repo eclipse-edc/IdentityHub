@@ -21,6 +21,7 @@ import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
 import org.eclipse.edc.identithub.did.spi.model.DidResource;
 import org.eclipse.edc.identithub.did.spi.model.DidState;
 import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.spi.message.Range;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -158,7 +159,7 @@ public abstract class DidResourceStoreTestBase {
         dids.add(expected);
         dids.forEach(getStore()::save);
 
-        var q = QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", expected.getParticipantId())).build();
+        var q = ParticipantResource.queryByParticipantId(expected.getParticipantId()).build();
         Assertions.assertThat(getStore().query(q))
                 .hasSize(1)
                 .usingRecursiveFieldByFieldElementComparator()

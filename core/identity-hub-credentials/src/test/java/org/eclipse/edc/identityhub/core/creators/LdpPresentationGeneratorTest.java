@@ -23,9 +23,9 @@ import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
+import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.security.signature.jws2020.JwsSignature2020Suite;
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.spi.security.PrivateKeyResolver;
 import org.eclipse.edc.verifiablecredentials.jwt.JwtCreationUtils;
 import org.eclipse.edc.verifiablecredentials.jwt.TestConstants;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
@@ -52,9 +52,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
+    private static final Map<String, Object> ADDITIONAL_DATA = Map.of(
+            "types", List.of("VerifiablePresentation", "SomeOtherPresentationType"),
+            "controller", "did:web:test"
+    );
 
-    private final PrivateKeyResolver resolverMock = mock();
-    private final Map<String, Object> types = Map.of("types", List.of("VerifiablePresentation", "SomeOtherPresentationType"));
+    private final PrivateKeyResolver privateKeyResolver = mock();
+
     private LdpPresentationGenerator creator;
 
     @BeforeEach
@@ -63,15 +67,15 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
                 .generateKeyPair()
                 .getPrivate();
 
-        when(resolverMock.resolvePrivateKey(any())).thenReturn(Result.failure("no key found"));
-        when(resolverMock.resolvePrivateKey(eq(KEY_ID))).thenReturn(Result.success(vpSigningKey));
+        when(privateKeyResolver.resolvePrivateKey(any())).thenReturn(Result.failure("no key found"));
+        when(privateKeyResolver.resolvePrivateKey(eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(vpSigningKey));
         var signatureSuiteRegistryMock = mock(SignatureSuiteRegistry.class);
         when(signatureSuiteRegistryMock.getForId(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE)).thenReturn(new JwsSignature2020Suite(new ObjectMapper()));
         var ldpIssuer = LdpIssuer.Builder.newInstance()
                 .jsonLd(initializeJsonLd())
                 .monitor(mock())
                 .build();
-        creator = new LdpPresentationGenerator(resolverMock, "did:web:test-issuer", signatureSuiteRegistryMock, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer,
+        creator = new LdpPresentationGenerator(privateKeyResolver, "did:web:test-issuer", signatureSuiteRegistryMock, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer,
                 JacksonJsonLd.createObjectMapper());
     }
 
@@ -81,7 +85,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
 
-        var result = creator.generatePresentation(List.of(vcc), KEY_ID, types);
+        var result = creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }
@@ -96,7 +100,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, Map.of("vc", TestConstants.VC_CONTENT_DEGREE_EXAMPLE));
         var vcc2 = new VerifiableCredentialContainer(jwtVc, CredentialFormat.JWT, createDummyCredential());
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc, vcc2), KEY_ID, types))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc, vcc2), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, ADDITIONAL_DATA))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("One or more VerifiableCredentials cannot be represented in the desired format %s".formatted(CredentialFormat.JSON_LD));
     }
@@ -104,17 +108,17 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Override
     @Test
     public void create_whenVcsEmpty_shouldReturnEmptyVp() {
-        var result = creator.generatePresentation(List.of(), KEY_ID, types);
+        var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
     }
 
     @Override
     @Test
-    public void create_whenKeyNotFound() {
+    public void create_whenPrivateKeyNotFound() {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exists", types))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exists", PUBLIC_KEY_ID, ADDITIONAL_DATA))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -123,12 +127,16 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     public void create_whenRequiredAdditionalDataMissing_throwsIllegalArgumentException() {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), KEY_ID)).isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Must provide additional data: 'types'");
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID)).isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Must provide additional data: 'types' and 'controller'");
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), KEY_ID, Map.of("some-key", "some-value")))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, Map.of("some-key", "some-value")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Must provide additional data: 'types'");
+
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, Map.of("types", "some-value")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Must provide additional data: 'controller'");
     }
 
     @Test
@@ -136,7 +144,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Override
     void create_whenEmptyList() {
 
-        var result = creator.generatePresentation(List.of(), KEY_ID, types);
+        var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }

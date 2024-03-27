@@ -38,4 +38,11 @@ dependencies {
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.restAssured)
+    testImplementation(libs.tink)
+}
+
+edcBuild {
+    swagger {
+        apiGroup.set("ih-management-api")
+    }
 }

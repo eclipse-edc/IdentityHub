@@ -10,5 +10,7 @@ dependencies {
     implementation(project(":extensions:common:security"))
     implementation(libs.edc.common.crypto)
     implementation(libs.edc.core.connector)
+
+    testImplementation(libs.edc.lib.keys)
     testImplementation(libs.edc.junit)
 }

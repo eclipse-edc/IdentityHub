@@ -29,10 +29,12 @@ import org.eclipse.edc.web.spi.ApiErrorDetail;
 import java.util.Collection;
 
 @OpenAPIDefinition(info = @Info(description = "This is the Management API for VerifiableCredentials", title = "VerifiableCredentials Management API", version = "1"))
+@Tag(name = "Verifiable Credentials")
 public interface GetAllCredentialsApi {
 
-    @Tag(name = "VerifiableCredentials Management API")
+
     @Operation(description = "Get all VerifiableCredentials across all Participant Contexts. Requires elevated access.",
+            operationId = "getAllCredentials",
             parameters = {
                     @Parameter(name = "offset", description = "the paging offset. defaults to 0"),
                     @Parameter(name = "limit", description = "the page size. defaults to 50")},
@@ -45,5 +47,5 @@ public interface GetAllCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             }
     )
-    Collection<VerifiableCredentialResource> getAll(Integer offset, Integer limit);
+    Collection<VerifiableCredentialResource> getAllCredentials(Integer offset, Integer limit);
 }

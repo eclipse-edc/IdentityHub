@@ -20,6 +20,7 @@ plugins {
 
 dependencies {
     api(libs.edc.spi.jsonld)
+    api(libs.edc.spi.jwt)
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
     implementation(libs.edc.spi.validator)
@@ -33,4 +34,10 @@ dependencies {
     testImplementation(testFixtures(libs.edc.core.jersey))
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(libs.nimbus.jwt)
+}
+
+edcBuild {
+    swagger {
+        apiGroup.set("ih-resolution-api")
+    }
 }

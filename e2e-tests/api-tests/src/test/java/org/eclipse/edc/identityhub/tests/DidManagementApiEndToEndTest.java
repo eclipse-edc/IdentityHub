@@ -79,14 +79,14 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
     @Test
     void publishDid() {
-
+        var superUserKey = createSuperUser();
         var subscriber = mock(EventSubscriber.class);
         getService(EventRouter.class).registerSync(DidDocumentPublished.class, subscriber);
 
         var user = "test-user";
         var token = createParticipant(user);
 
-        assertThat(Arrays.asList(token, getSuperUserApiKey()))
+        assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     reset(subscriber);
                     RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
@@ -155,14 +155,14 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
     @Test
     void unpublishDid() {
-
+        var superUserKey = createSuperUser();
         var subscriber = mock(EventSubscriber.class);
         getService(EventRouter.class).registerSync(DidDocumentUnpublished.class, subscriber);
 
         var user = "test-user";
         var token = createParticipant(user);
 
-        assertThat(Arrays.asList(token, getSuperUserApiKey()))
+        assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     reset(subscriber);
                     RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
@@ -214,11 +214,12 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
     @Test
     void getAll() {
+        var superUserKey = createSuperUser();
         range(0, 20).forEach(i -> createParticipant("user-" + i));
 
         var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
-                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .header(new Header("x-api-key", superUserKey))
                 .get("/v1/dids")
                 .then()
                 .log().ifValidationFails()
@@ -230,11 +231,12 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
     @Test
     void getAll_withDefaultPaging() {
+        var superUserKey = createSuperUser();
         range(0, 70).forEach(i -> createParticipant("user-" + i));
 
         var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
-                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .header(new Header("x-api-key", superUserKey))
                 .get("/v1/dids")
                 .then()
                 .log().ifValidationFails()
@@ -246,11 +248,12 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
     @Test
     void getAll_withPaging() {
+        var superUserKey = createSuperUser();
         range(0, 20).forEach(i -> createParticipant("user-" + i));
 
         var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
-                .header(new Header("x-api-key", getSuperUserApiKey()))
+                .header(new Header("x-api-key", superUserKey))
                 .get("/v1/dids?offset=5&limit=10")
                 .then()
                 .log().ifValidationFails()

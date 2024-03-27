@@ -27,17 +27,17 @@ import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextUpdated;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
+import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
-import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
-import org.eclipse.edc.spi.security.KeyParserRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.security.KeyPair;
@@ -260,7 +260,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
         var errors = didResources.stream()
                 .peek(dd -> dd.getDocument().getVerificationMethod().add(VerificationMethod.Builder.newInstance()
-                        .id(event.getKeyId())
+                        .id(dd.getDocument().getId() + "#" + event.getKeyId())
                         .publicKeyJwk(jwk.toJSONObject())
                         .controller(dd.getDocument().getId())
                         .type(event.getType())
@@ -311,7 +311,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     }
 
     private Collection<DidResource> findByParticipantId(String participantId) {
-        return didResourceStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId)).build());
+        return didResourceStore.query(ParticipantResource.queryByParticipantId(participantId).build());
     }
 
 

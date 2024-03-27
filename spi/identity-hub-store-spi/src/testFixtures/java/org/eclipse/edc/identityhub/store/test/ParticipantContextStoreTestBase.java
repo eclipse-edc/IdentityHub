@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.store.test;
 
 import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.Criterion;
@@ -57,8 +58,7 @@ public abstract class ParticipantContextStoreTestBase {
                 .mapToObj(i -> createParticipantContextBuilder().participantId("id" + i).build())
                 .forEach(getStore()::create);
 
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", "id2"))
+        var query = ParticipantResource.queryByParticipantId("id2")
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -106,8 +106,7 @@ public abstract class ParticipantContextStoreTestBase {
 
         resources.forEach(getStore()::create);
 
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", "id7"))
+        var query = ParticipantResource.queryByParticipantId("id7")
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();

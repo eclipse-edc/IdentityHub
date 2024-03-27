@@ -34,6 +34,7 @@ import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
 import java.util.Collection;
@@ -41,6 +42,7 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
+import static org.eclipse.edc.identityhub.spi.ParticipantContextId.onEncoded;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -70,18 +72,22 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @GET
     @Path("/{participantId}")
     public ParticipantContext getParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        return authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
-                .compose(u -> participantContextService.getParticipantContext(participantId))
-                .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
+        return onEncoded(participantId)
+                .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
+                        .compose(u -> participantContextService.getParticipantContext(decoded))
+                        .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
+                .orElseThrow(InvalidRequestException::new);
     }
 
     @Override
     @POST
     @Path("/{participantId}/token")
-    public String regenerateToken(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        return authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
-                .compose(u -> participantContextService.regenerateApiToken(participantId))
-                .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
+    public String regenerateParticipantToken(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
+        return onEncoded(participantId)
+                .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
+                        .compose(u -> participantContextService.regenerateApiToken(decoded))
+                        .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
+                .orElseThrow(InvalidRequestException::new);
     }
 
     @Override
@@ -89,12 +95,10 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Path("/{participantId}/state")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     public void activateParticipant(@PathParam("participantId") String participantId, @QueryParam("isActive") boolean isActive) {
-        if (isActive) {
-            participantContextService.updateParticipant(participantId, ParticipantContext::activate);
-        } else {
-            participantContextService.updateParticipant(participantId, ParticipantContext::deactivate);
-        }
-
+        onEncoded(participantId)
+                .onSuccess(decoded -> participantContextService.updateParticipant(decoded, isActive ? ParticipantContext::activate : ParticipantContext::deactivate)
+                        .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
+                .orElseThrow(InvalidRequestException::new);
     }
 
     @Override
@@ -102,23 +106,28 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Path("/{participantId}")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     public void deleteParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        participantContextService.deleteParticipantContext(participantId)
-                .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
+        onEncoded(participantId)
+                .onSuccess(decoded -> participantContextService.deleteParticipantContext(decoded)
+                        .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
+                .orElseThrow(InvalidRequestException::new);
     }
 
     @Override
     @PUT
     @Path("/{participantId}/roles")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-    public void updateRoles(@PathParam("participantId") String participantId, List<String> roles) {
-        participantContextService.updateParticipant(participantId, participantContext -> participantContext.setRoles(roles)).orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
+    public void updateParticipantRoles(@PathParam("participantId") String participantId, List<String> roles) {
+        onEncoded(participantId)
+                .onSuccess(decoded -> participantContextService.updateParticipant(decoded, participantContext -> participantContext.setRoles(roles))
+                        .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
+                .orElseThrow(InvalidRequestException::new);
     }
 
     @GET
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
     @Override
-    public Collection<ParticipantContext> getAll(@DefaultValue("0") @QueryParam("offset") Integer offset,
-                                                 @DefaultValue("50") @QueryParam("limit") Integer limit) {
+    public Collection<ParticipantContext> getAllParticipants(@DefaultValue("0") @QueryParam("offset") Integer offset,
+                                                             @DefaultValue("50") @QueryParam("limit") Integer limit) {
         return participantContextService.query(QuerySpec.Builder.newInstance().offset(offset).limit(limit).build())
                 .orElseThrow(exceptionMapper(ParticipantContext.class));
     }

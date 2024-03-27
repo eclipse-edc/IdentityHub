@@ -2,11 +2,12 @@
 
 ## 1. Definition of terms
 
-- _Service principal_: the identifier for the entity that owns a resource. In IdentityHub, this is the ID of
-  the `ParticipantContext`. Not that this is **not** a user! Also referred to as: principal
+- _Service principal_ (also referred as _principal_): the identifier for the entity that owns a resource. In
+  IdentityHub, this is the ID of
+  the `ParticipantContext`. Note that this is **not** a user!
 - _User_: a physical entity that may be able to perform different operations on a resource belonging to a service
   principal. While a participant (context) would be analogous to a company or an organization, a user would be one
-  single individual within that company / participant. Invidual users don't exist as first-level concept in
+  single individual within that company / participant. **Individual users don't exist as first-level concept in
   IdentityHub!**
 - _Participant context_: this is the unit of management, that owns all resources. Its identifier must be equal to
   the `participantId` that is defined

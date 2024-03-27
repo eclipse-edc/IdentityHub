@@ -38,7 +38,7 @@ import static org.eclipse.edc.spi.result.Result.success;
  * <em>Do NOT use this in production code!</em>
  */
 public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransformer {
-    public static final String TYPE_OPERAND = "verifiableCredential.credential.types";
+    public static final String TYPE_OPERAND = "verifiableCredential.credential.type";
     public static final String ALIAS_LITERAL = "org.eclipse.edc.vc.type";
     public static final String LIKE_OPERATOR = "like";
     public static final String CONTAINS_OPERATOR = "contains";

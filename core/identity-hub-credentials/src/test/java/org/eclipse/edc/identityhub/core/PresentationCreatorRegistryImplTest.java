@@ -54,7 +54,7 @@ class PresentationCreatorRegistryImplTest {
         var generator = mock(PresentationGenerator.class);
         registry.addCreator(generator, CredentialFormat.JWT);
         assertThatNoException().isThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.JWT, Map.of()));
-        verify(generator).generatePresentation(anyList(), eq(keyPair.getKeyId()), anyMap());
+        verify(generator).generatePresentation(anyList(), eq(keyPair.getPrivateKeyAlias()), eq(keyPair.getKeyId()), anyMap());
     }
 
     @Test
@@ -78,7 +78,10 @@ class PresentationCreatorRegistryImplTest {
         var generator = mock(PresentationGenerator.class);
         registry.addCreator(generator, CredentialFormat.JWT);
         assertThatNoException().isThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.JWT, Map.of()));
-        verify(generator).generatePresentation(anyList(), argThat(s -> s.equals("key-1") || s.equals("key-2")), anyMap());
+        verify(generator).generatePresentation(anyList(),
+                argThat(s -> s.equals(keyPair1.getPrivateKeyAlias()) || s.equals(keyPair2.getPrivateKeyAlias())),
+                argThat(s -> s.equals(keyPair1.getKeyId()) || s.equals(keyPair2.getKeyId())),
+                anyMap());
     }
 
 
@@ -92,7 +95,7 @@ class PresentationCreatorRegistryImplTest {
         var generator = mock(PresentationGenerator.class);
         registry.addCreator(generator, CredentialFormat.JWT);
         assertThatNoException().isThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.JWT, Map.of()));
-        verify(generator).generatePresentation(anyList(), eq("key-2"), anyMap());
+        verify(generator).generatePresentation(anyList(), eq(keyPair2.getPrivateKeyAlias()), eq(keyPair2.getKeyId()), anyMap());
     }
 
     @Test
@@ -113,6 +116,6 @@ class PresentationCreatorRegistryImplTest {
                 .keyId(keyId)
                 .state(KeyPairState.ACTIVE)
                 .isDefaultPair(true)
-                .privateKeyAlias(participantId + "-alias");
+                .privateKeyAlias("%s-%s-alias".formatted(participantId, keyId));
     }
 }

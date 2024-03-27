@@ -30,10 +30,12 @@ import java.util.Collection;
 
 @OpenAPIDefinition(
         info = @Info(description = "This is the Management API for DID documents", title = "DID Management API", version = "1"))
+@Tag(name = "DID")
 public interface GetAllDidsApi {
 
-    @Tag(name = "DID Management API")
+
     @Operation(description = "Get all DID documents across all Participant Contexts. Requires elevated access.",
+            operationId = "getAllDids",
             parameters = {
                     @Parameter(name = "offset", description = "the paging offset. defaults to 0"),
                     @Parameter(name = "limit", description = "the page size. defaults to 50")},
@@ -46,5 +48,5 @@ public interface GetAllDidsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             }
     )
-    Collection<DidDocument> getAll(Integer offset, Integer limit);
+    Collection<DidDocument> getAllDids(Integer offset, Integer limit);
 }

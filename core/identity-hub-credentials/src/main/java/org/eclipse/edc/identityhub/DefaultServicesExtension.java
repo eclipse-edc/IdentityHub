@@ -40,7 +40,7 @@ public class DefaultServicesExtension implements ServiceExtension {
     public static final String NAME = "IdentityHub Default Services Extension";
     public static final String IATP_SELF_ISSUED_TOKEN_CONTEXT = "iatp-si";
     public static final String IATP_ACCESS_TOKEN_CONTEXT = "iatp-access-token";
-    public static final String ACCESS_TOKEN_CLAIM = "access_token";
+    public static final String TOKEN_CLAIM = "token";
     public static final String ACCESS_TOKEN_SCOPE_CLAIM = "scope";
 
     @Inject
@@ -54,7 +54,7 @@ public class DefaultServicesExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var accessTokenRule = new ClaimIsPresentRule(ACCESS_TOKEN_CLAIM);
+        var accessTokenRule = new ClaimIsPresentRule(TOKEN_CLAIM);
         registry.addRule(IATP_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);

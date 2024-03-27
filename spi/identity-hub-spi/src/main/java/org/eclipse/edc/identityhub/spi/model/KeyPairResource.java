@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.spi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
-import org.eclipse.edc.spi.security.KeyParserRegistry;
+import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.spi.security.Vault;
 
 import java.time.Duration;
@@ -119,6 +119,10 @@ public class KeyPairResource extends ParticipantResource {
         defaultPair = false;
     }
 
+    public void activate() {
+        state = KeyPairState.ACTIVE.code();
+    }
+
     public static final class Builder extends ParticipantResource.Builder<KeyPairResource, KeyPairResource.Builder> {
 
         private Builder() {
@@ -142,6 +146,13 @@ public class KeyPairResource extends ParticipantResource {
         @Override
         public Builder self() {
             return this;
+        }
+
+        public KeyPairResource build() {
+            if (entity.useDuration == 0) {
+                entity.useDuration = Duration.ofDays(6 * 30).toMillis();
+            }
+            return super.build();
         }
 
         public Builder timestamp(long timestamp) {
@@ -187,13 +198,6 @@ public class KeyPairResource extends ParticipantResource {
         public Builder state(KeyPairState state) {
             entity.state = state.code();
             return this;
-        }
-
-        public KeyPairResource build() {
-            if (entity.useDuration == 0) {
-                entity.useDuration = Duration.ofDays(6 * 30).toMillis();
-            }
-            return super.build();
         }
     }
 }

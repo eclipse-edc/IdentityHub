@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import org.eclipse.edc.connector.core.store.CriterionOperatorRegistryImpl;
+import org.eclipse.edc.query.CriterionOperatorRegistryImpl;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -74,8 +74,7 @@ abstract class InMemoryEntityStore<T> {
         lock.readLock().lock();
         try {
             // if no filter is present, we return true
-            Predicate<Object> fallback = querySpec.getFilterExpression().isEmpty() ? x -> true : x -> false;
-            var result = queryResolver.query(store.values().stream(), querySpec, Predicate::or, fallback);
+            var result = queryResolver.query(store.values().stream(), querySpec, Predicate::and, x -> true);
             return success(result.toList());
         } finally {
             lock.readLock().unlock();

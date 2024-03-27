@@ -13,7 +13,10 @@ dependencies {
     implementation(libs.edc.jws2020)
     implementation(libs.edc.vc.ldp)
     implementation(libs.edc.util)
+    implementation(libs.edc.lib.store)
     implementation(libs.nimbus.jwt)
+    implementation(libs.edc.lib.jsonld)
+    implementation(libs.edc.lib.query)
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.ext.jsonld)

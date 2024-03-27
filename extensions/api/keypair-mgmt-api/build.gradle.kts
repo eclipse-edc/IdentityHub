@@ -19,3 +19,9 @@ dependencies {
     testImplementation(libs.restAssured)
     testImplementation(testFixtures(libs.edc.core.jersey))
 }
+
+edcBuild {
+    swagger {
+        apiGroup.set("ih-management-api")
+    }
+}

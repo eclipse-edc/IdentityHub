@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -54,6 +55,9 @@ import static org.mockito.Mockito.when;
 
 @ApiTest
 class ParticipantContextApiControllerTest extends RestControllerTestBase {
+
+    private static final String PARTICIPANT_ID = "test-participant";
+    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
 
     private final ParticipantContextService participantContextServiceMock = mock();
     private final AuthorizationService authService = mock();
@@ -85,7 +89,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
         when(participantContextServiceMock.getParticipantContext(any())).thenReturn(ServiceResult.notFound("foo bar"));
 
         baseRequest()
-                .get("/not-exist")
+                .get("/unknown")
                 .then()
                 .statusCode(404)
                 .log().ifError();
@@ -160,61 +164,61 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
     void regenerateToken() {
         when(participantContextServiceMock.regenerateApiToken(any())).thenReturn(ServiceResult.success("new-api-token"));
         baseRequest()
-                .post("/test-participant/token")
+                .post("/%s/token".formatted(PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(200)
                 .body(equalTo("new-api-token"));
-        verify(participantContextServiceMock).regenerateApiToken(eq("test-participant"));
+        verify(participantContextServiceMock).regenerateApiToken(PARTICIPANT_ID);
     }
 
     @Test
     void regenerateToken_notFound() {
         when(participantContextServiceMock.regenerateApiToken(any())).thenReturn(ServiceResult.notFound("foo-bar"));
         baseRequest()
-                .post("/test-participant/token")
+                .post("/%s/token".formatted(PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(404);
-        verify(participantContextServiceMock).regenerateApiToken(eq("test-participant"));
+        verify(participantContextServiceMock).regenerateApiToken(PARTICIPANT_ID);
     }
 
     @Test
     void activateParticipant() {
         when(participantContextServiceMock.updateParticipant(any(), any())).thenReturn(ServiceResult.success());
         baseRequest()
-                .post("/test-participant/state?isActive=true")
+                .post("/%s/state?isActive=true".formatted(PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(204);
-        verify(participantContextServiceMock).updateParticipant(eq("test-participant"), any());
+        verify(participantContextServiceMock).updateParticipant(eq(PARTICIPANT_ID), any());
     }
 
     @Test
     void deactivateParticipant() {
         when(participantContextServiceMock.updateParticipant(any(), any())).thenReturn(ServiceResult.success());
         baseRequest()
-                .post("/test-participant/state?isActive=false")
+                .post("/%s/state?isActive=false".formatted(PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(204);
-        verify(participantContextServiceMock).updateParticipant(eq("test-participant"), any());
+        verify(participantContextServiceMock).updateParticipant(eq(PARTICIPANT_ID), any());
     }
 
     @Test
     void delete() {
         when(participantContextServiceMock.deleteParticipantContext(any())).thenReturn(ServiceResult.success());
         baseRequest()
-                .delete("/test-participant")
+                .delete("/%s".formatted(PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(204);
-        verify(participantContextServiceMock).deleteParticipantContext(eq("test-participant"));
+        verify(participantContextServiceMock).deleteParticipantContext(PARTICIPANT_ID);
     }
 
     @Test
     void delete_notFound() {
         when(participantContextServiceMock.deleteParticipantContext(any())).thenReturn(ServiceResult.notFound("foo bar"));
         baseRequest()
-                .delete("/test-participant")
+                .delete("/%s".formatted(PARTICIPANT_ID_ENCODED))
                 .then()
                 .statusCode(404);
-        verify(participantContextServiceMock).deleteParticipantContext(eq("test-participant"));
+        verify(participantContextServiceMock).deleteParticipantContext(PARTICIPANT_ID);
     }
 
     @Test

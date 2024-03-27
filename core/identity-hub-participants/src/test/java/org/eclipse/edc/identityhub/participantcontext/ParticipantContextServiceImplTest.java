@@ -18,14 +18,14 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.assertj.core.api.Assertions;
-import org.eclipse.edc.connector.core.security.KeyParserRegistryImpl;
-import org.eclipse.edc.connector.core.security.keyparsers.PemParser;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.keys.KeyParserRegistryImpl;
+import org.eclipse.edc.keys.keyparsers.PemParser;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
@@ -66,7 +66,7 @@ class ParticipantContextServiceImplTest {
     }
 
     @ParameterizedTest(name = "isActive: {0}")
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     void createParticipantContext_withPublicKeyPem(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
@@ -95,7 +95,7 @@ class ParticipantContextServiceImplTest {
 
 
     @ParameterizedTest(name = "isActive: {0}")
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     void createParticipantContext_withPublicKeyJwk(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
@@ -112,7 +112,7 @@ class ParticipantContextServiceImplTest {
     }
 
     @ParameterizedTest(name = "isActive: {0}")
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     void createParticipantContext_withKeyGenParams(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());

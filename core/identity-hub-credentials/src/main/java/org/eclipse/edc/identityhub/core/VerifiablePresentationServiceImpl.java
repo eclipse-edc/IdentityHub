@@ -26,11 +26,16 @@ import org.eclipse.edc.spi.result.Result;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identityhub.core.creators.LdpPresentationGenerator.TYPE_ADDITIONAL_DATA;
+import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
+import static org.eclipse.edc.identitytrust.VcConstants.VERIFIABLE_PRESENTATION_TYPE;
 import static org.eclipse.edc.identitytrust.model.CredentialFormat.JSON_LD;
 
 public class VerifiablePresentationServiceImpl implements VerifiablePresentationService {
@@ -73,13 +78,17 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
 
         var vpToken = new ArrayList<>();
 
-        Map<String, Object> additionalDataJwt = audience != null ? Map.of("aud", audience) : Map.of();
+        var additionalDataJwt = new HashMap<String, Object>();
+        ofNullable(audience).ifPresent(aud -> additionalDataJwt.put(AUDIENCE, audience));
+        additionalDataJwt.put(CONTROLLER_ADDITIONAL_DATA, participantContextId);
 
         if (defaultFormatVp == JSON_LD) { // LDP-VPs cannot contain JWT VCs
             if (!ldpVcs.isEmpty()) {
 
                 // todo: once we support PresentationDefinition, the types list could be dynamic
-                JsonObject ldpVp = registry.createPresentation(participantContextId, ldpVcs, CredentialFormat.JSON_LD, Map.of("types", List.of("VerifiablePresentation")));
+                JsonObject ldpVp = registry.createPresentation(participantContextId, ldpVcs, CredentialFormat.JSON_LD, Map.of(
+                        TYPE_ADDITIONAL_DATA, List.of(VERIFIABLE_PRESENTATION_TYPE),
+                        CONTROLLER_ADDITIONAL_DATA, participantContextId));
                 vpToken.add(ldpVp);
             }
 

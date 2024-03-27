@@ -19,7 +19,9 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identithub.did.spi.DidDocumentService;
 import org.eclipse.edc.identityhub.participantcontext.ApiTokenGenerator;
 import org.eclipse.edc.identityhub.spi.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
@@ -31,9 +33,11 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,9 +52,26 @@ public abstract class ManagementApiEndToEndTest {
     @RegisterExtension
     protected static final EdcRuntimeExtension RUNTIME = new EdcRuntimeExtension(":launcher", "identity-hub", RUNTIME_CONFIGURATION.controlPlaneConfiguration());
 
-    protected String getSuperUserApiKey() {
-        var vault = RUNTIME.getContext().getService(Vault.class);
-        return vault.resolveSecret("super-user-apikey");
+    protected static ParticipantManifest.Builder createNewParticipant() {
+        var manifest = ParticipantManifest.Builder.newInstance()
+                .participantId("another-participant")
+                .active(false)
+                .did("did:web:another:participant")
+                .serviceEndpoint(new Service("test-service", "test-service-type", "https://test.com"))
+                .key(createKeyDescriptor().build());
+        return manifest;
+    }
+
+    @NotNull
+    public static KeyDescriptor.Builder createKeyDescriptor() {
+        return KeyDescriptor.Builder.newInstance()
+                .privateKeyAlias("another-alias")
+                .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "Ed25519"))
+                .keyId("another-keyid");
+    }
+
+    protected String createSuperUser() {
+        return createParticipant(SUPER_USER, List.of(ServicePrincipal.ROLE_ADMIN));
     }
 
     protected String storeParticipant(ParticipantContext pc) {
@@ -64,19 +85,7 @@ public abstract class ManagementApiEndToEndTest {
     }
 
     protected String createParticipant(String participantId) {
-        var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId(participantId)
-                .active(true)
-                .serviceEndpoint(new Service("test-service-id", "test-type", "http://foo.bar.com"))
-                .did("did:web:" + participantId)
-                .key(KeyDescriptor.Builder.newInstance()
-                        .privateKeyAlias(participantId + "-alias")
-                        .keyId(participantId + "-key")
-                        .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"))
-                        .build())
-                .build();
-        var srv = RUNTIME.getContext().getService(ParticipantContextService.class);
-        return srv.createParticipantContext(manifest).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+        return createParticipant(participantId, List.of());
     }
 
     protected String createTokenFor(String userId) {
@@ -87,10 +96,9 @@ public abstract class ManagementApiEndToEndTest {
         return RUNTIME.getContext().getService(type);
     }
 
-    protected Collection<KeyPairResource> getKeyPairsForParticipant(ParticipantManifest manifest) {
-        return getService(KeyPairResourceStore.class).query(QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", manifest.getParticipantId()))
-                .build()).getContent();
+    protected Collection<KeyPairResource> getKeyPairsForParticipant(String participantId) {
+        return getService(KeyPairResourceStore.class).query(ParticipantResource.queryByParticipantId(participantId).build())
+                .getContent();
     }
 
     protected Collection<DidDocument> getDidForParticipant(String participantId) {
@@ -105,18 +113,20 @@ public abstract class ManagementApiEndToEndTest {
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 
-    protected static ParticipantManifest createNewParticipant() {
+    private String createParticipant(String participantId, List<String> roles) {
         var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId("another-participant")
-                .active(false)
-                .did("did:web:another:participant")
-                .serviceEndpoint(new Service("test-service", "test-service-type", "https://test.com"))
+                .participantId(participantId)
+                .active(true)
+                .roles(roles)
+                .serviceEndpoint(new Service("test-service-id", "test-type", "http://foo.bar.com"))
+                .did("did:web:" + participantId)
                 .key(KeyDescriptor.Builder.newInstance()
-                        .privateKeyAlias("another-alias")
-                        .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "Ed25519"))
-                        .keyId("another-keyid")
+                        .privateKeyAlias(participantId + "-alias")
+                        .keyId(participantId + "-key")
+                        .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"))
                         .build())
                 .build();
-        return manifest;
+        var srv = RUNTIME.getContext().getService(ParticipantContextService.class);
+        return srv.createParticipantContext(manifest).orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 }

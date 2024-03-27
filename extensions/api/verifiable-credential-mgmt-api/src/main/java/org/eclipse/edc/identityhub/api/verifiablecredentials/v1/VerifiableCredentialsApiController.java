@@ -53,7 +53,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @GET
     @Path("/{credentialId}")
     @Override
-    public VerifiableCredentialResource findById(@PathParam("credentialId") String id, @Context SecurityContext securityContext) {
+    public VerifiableCredentialResource getCredential(@PathParam("credentialId") String id, @Context SecurityContext securityContext) {
         authorizationService.isAuthorized(securityContext, id, VerifiableCredentialResource.class)
                 .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
 
@@ -64,7 +64,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
     @GET
     @Override
-    public Collection<VerifiableCredentialResource> findByType(@QueryParam("type") String type, @Context SecurityContext securityContext) {
+    public Collection<VerifiableCredentialResource> queryCredentialsByType(@QueryParam("type") String type, @Context SecurityContext securityContext) {
         var query = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("verifiableCredential.credential.types", "contains", type))
                 .build();

@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.api;
 
-import org.eclipse.edc.core.transform.transformer.to.JsonValueToGenericTypeTransformer;
+import org.eclipse.edc.core.transform.transformer.edc.to.JsonValueToGenericTypeTransformer;
 import org.eclipse.edc.iam.identitytrust.transform.to.JsonObjectToPresentationQueryTransformer;
 import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
 import org.eclipse.edc.identityhub.api.validation.PresentationQueryValidator;

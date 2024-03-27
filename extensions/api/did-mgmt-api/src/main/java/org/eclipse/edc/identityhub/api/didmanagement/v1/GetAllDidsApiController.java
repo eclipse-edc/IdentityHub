@@ -45,8 +45,8 @@ public class GetAllDidsApiController implements GetAllDidsApi {
     @Override
     @GET
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-    public Collection<DidDocument> getAll(@DefaultValue("0") @QueryParam("offset") Integer offset,
-                                          @DefaultValue("50") @QueryParam("limit") Integer limit) {
+    public Collection<DidDocument> getAllDids(@DefaultValue("0") @QueryParam("offset") Integer offset,
+                                              @DefaultValue("50") @QueryParam("limit") Integer limit) {
         if (offset < 0 || limit < 0) {
             throw new InvalidRequestException("offset and limit must be > 0");
         }

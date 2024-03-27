@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import org.eclipse.edc.connector.core.store.ReflectionPropertyLookup;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
-import org.eclipse.edc.spi.types.PathItem;
+import org.eclipse.edc.query.ReflectionPropertyLookup;
+import org.eclipse.edc.util.reflection.PathItem;
 import org.eclipse.edc.util.reflection.ReflectionUtil;
 
 import java.time.Instant;
@@ -59,11 +59,9 @@ public class CredentialResourceLookup extends ReflectionPropertyLookup {
                 .collect(Collectors.joining("."));
         var subjects = credentialResource.getVerifiableCredential().credential().getCredentialSubject();
 
-        var claims = subjects.stream().map(subj -> ReflectionUtil.getFieldValue("claims." + credentialSubjectPath, subj))
+        return subjects.stream().map(subj -> ReflectionUtil.getFieldValue("claims." + credentialSubjectPath, subj))
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
-
-        return claims;
     }
 }
