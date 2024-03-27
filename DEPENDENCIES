@@ -245,7 +245,6 @@ maven/mavencentral/org.eclipse.edc/contract-spi/0.5.2-SNAPSHOT, Apache-2.0, appr
 maven/mavencentral/org.eclipse.edc/control-plane-spi/0.5.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/core-spi/0.5.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/crypto-common-lib/0.5.2-SNAPSHOT, Apache-2.0, approved, technology.edc
-maven/mavencentral/org.eclipse.edc/crypto-common/0.5.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/http-lib/0.5.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/http-spi/0.5.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/http/0.5.2-SNAPSHOT, Apache-2.0, approved, technology.edc
