@@ -48,7 +48,7 @@ edc-core-stateMachine = { module = "org.eclipse.edc:state-machine", version.ref 
 edc-core-sql = { module = "org.eclipse.edc:sql-core", version.ref = "edc" }
 edc-core-token = { module = "org.eclipse.edc:token-core", version.ref = "edc" }
 edc-core-jersey = { module = "org.eclipse.edc:jersey-core", version.ref = "edc" }
-edc-core-jerseyproviders = { module = "org.eclipse.edc:jersey-providers", version.ref = "edc" }
+edc-core-jerseyproviders = { module = "org.eclipse.edc:jersey-providers-lib", version.ref = "edc" }
 edc-core-junit = { module = "org.eclipse.edc:junit", version.ref = "edc" }
 edc-core-transform = { module = "org.eclipse.edc:transform-core", version.ref = "edc" }
 edc-identity-did-core = { module = "org.eclipse.edc:identity-did-core", version.ref = "edc" }
