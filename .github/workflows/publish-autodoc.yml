@@ -1,4 +1,4 @@
-name: publish openapi ui
+name: publish autodoc
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
 
 jobs:
   publish:
-    uses: eclipse-edc/.github/.github/workflows/publish-openapi-ui.yml@main
+    uses: eclipse-edc/.github/.github/workflows/publish-autodoc.yml@main
     secrets: inherit
     with:
       version: ${{ github.event.inputs.version }}
