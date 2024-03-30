@@ -43,7 +43,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/VerifiableCredentialResource'
+                  $ref: "#/components/schemas/VerifiableCredentialResource"
         "400":
           description: The query was malformed or was not understood by the server.
           content:
@@ -52,7 +52,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -62,7 +62,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/dids:
     get:
       tags:
@@ -100,7 +100,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/DidDocument'
+                  $ref: "#/components/schemas/DidDocument"
         "400":
           description: The query was malformed or was not understood by the server.
           content:
@@ -109,7 +109,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -119,7 +119,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/keypairs:
     get:
       tags:
@@ -157,7 +157,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/KeyPairResource'
+                  $ref: "#/components/schemas/KeyPairResource"
         "400":
           description: The query was malformed or was not understood by the server.
           content:
@@ -166,7 +166,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -176,7 +176,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants:
     get:
       tags:
@@ -214,7 +214,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ParticipantContext'
+                  $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: The query was malformed or was not understood by the server.
           content:
@@ -223,7 +223,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -233,7 +233,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
     post:
       tags:
       - Participant Context
@@ -243,7 +243,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParticipantManifest'
+              $ref: "#/components/schemas/ParticipantManifest"
       responses:
         "200":
           description: "The ParticipantContext was created successfully, its API token\
@@ -256,7 +256,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -266,7 +266,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "409":
           description: "Can't create the ParticipantContext, because a object with\
             \ the same ID already exists"
@@ -276,7 +276,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}:
     get:
       tags:
@@ -298,7 +298,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantContext'
+                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -307,7 +307,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -317,7 +317,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A ParticipantContext with the given ID does not exist.
           content:
@@ -326,7 +326,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
     delete:
       tags:
       - Participant Context
@@ -357,7 +357,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -367,7 +367,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A ParticipantContext with the given ID does not exist.
           content:
@@ -376,7 +376,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/credentials:
     get:
       tags:
@@ -410,7 +410,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/DidDocument'
+                  $ref: "#/components/schemas/DidDocument"
         "400":
           description: The query was malformed or was not understood by the server.
           content:
@@ -419,7 +419,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -429,7 +429,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/credentials/{credentialId}:
     get:
       tags:
@@ -460,7 +460,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantContext'
+                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -469,7 +469,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -479,7 +479,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A VerifiableCredential with the given ID does not exist.
           content:
@@ -488,7 +488,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
     delete:
       tags:
       - Verifiable Credentials
@@ -528,7 +528,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -538,7 +538,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A VerifiableCredential with the given ID does not exist.
           content:
@@ -547,7 +547,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/dids/publish:
     post:
       tags:
@@ -569,7 +569,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DidRequestPayload'
+              $ref: "#/components/schemas/DidRequestPayload"
       responses:
         "200":
           description: The DID document was successfully published.
@@ -582,7 +582,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: The DID could not be published because it does not exist.
           content:
@@ -591,7 +591,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/dids/query:
     post:
       tags:
@@ -612,7 +612,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/QuerySpec'
+              $ref: "#/components/schemas/QuerySpec"
       responses:
         "200":
           description: The list of DID Documents.
@@ -622,7 +622,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/DidDocument'
+                  $ref: "#/components/schemas/DidDocument"
         "400":
           description: The query was malformed or was not understood by the server.
           content:
@@ -631,7 +631,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -641,7 +641,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/dids/state:
     post:
       tags:
@@ -662,7 +662,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DidRequestPayload'
+              $ref: "#/components/schemas/DidRequestPayload"
       responses:
         "200":
           description: The DID state was successfully obtained
@@ -675,7 +675,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: The DID does not exist.
           content:
@@ -684,7 +684,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/dids/unpublish:
     post:
       tags:
@@ -706,7 +706,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DidRequestPayload'
+              $ref: "#/components/schemas/DidRequestPayload"
       responses:
         "200":
           description: The DID document was successfully un-published.
@@ -719,7 +719,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -729,7 +729,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: The DID could not be un-published because it does not exist.
           content:
@@ -738,7 +738,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/dids/{did}/endpoints:
     post:
       tags:
@@ -775,7 +775,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Service'
+              $ref: "#/components/schemas/Service"
       responses:
         "200":
           description: The DID document was successfully updated.
@@ -788,7 +788,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: The service endpoint could not be added because the DID does
             not exist.
@@ -798,7 +798,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "409":
           description: "The DID document could not be updated, because a service endpoint\
             \ with the same ID already exists."
@@ -808,7 +808,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
     delete:
       tags:
       - DID
@@ -860,7 +860,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -870,7 +870,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: The service endpoint could not be added because the DID does
             not exist.
@@ -880,7 +880,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
     patch:
       tags:
       - DID
@@ -916,7 +916,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Service'
+              $ref: "#/components/schemas/Service"
       responses:
         "200":
           description: The DID document was successfully updated.
@@ -929,7 +929,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -939,7 +939,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: The service endpoint could not be replaced because the DID
             does not exist.
@@ -949,7 +949,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/keypairs:
     get:
       tags:
@@ -971,7 +971,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantContext'
+                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -980,7 +980,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -990,7 +990,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A KeyPairResource with the given ID does not exist.
           content:
@@ -999,7 +999,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
     put:
       tags:
       - Key Pairs
@@ -1028,7 +1028,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/KeyDescriptor'
+              $ref: "#/components/schemas/KeyDescriptor"
       responses:
         "200":
           description: The KeyPairResource was successfully created and linked to
@@ -1036,7 +1036,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantContext'
+                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1045,7 +1045,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -1055,7 +1055,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A KeyPairResource with the given ID does not exist.
           content:
@@ -1064,7 +1064,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/keypairs/{keyPairId}:
     get:
       tags:
@@ -1095,7 +1095,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantContext'
+                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1104,7 +1104,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -1114,7 +1114,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A KeyPairResource with the given ID does not exist.
           content:
@@ -1123,7 +1123,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/keypairs/{keyPairId}/activate:
     post:
       tags:
@@ -1155,7 +1155,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantContext'
+                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed."
           content:
@@ -1164,7 +1164,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -1174,7 +1174,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A KeyPairResource with the given ID does not exist.
           content:
@@ -1183,7 +1183,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/keypairs/{keyPairId}/revoke:
     post:
       tags:
@@ -1213,7 +1213,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/KeyDescriptor'
+              $ref: "#/components/schemas/KeyDescriptor"
       responses:
         "200":
           description: The KeyPairResource was successfully rotated and linked to
@@ -1221,7 +1221,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantContext'
+                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1230,7 +1230,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -1240,7 +1240,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A KeyPairResource with the given ID does not exist.
           content:
@@ -1249,7 +1249,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/keypairs/{keyPairId}/rotate:
     post:
       tags:
@@ -1288,7 +1288,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/KeyDescriptor'
+              $ref: "#/components/schemas/KeyDescriptor"
       responses:
         "200":
           description: The KeyPairResource was successfully rotated and linked to
@@ -1296,7 +1296,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ParticipantContext'
+                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1305,7 +1305,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -1315,7 +1315,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A KeyPairResource with the given ID does not exist.
           content:
@@ -1324,7 +1324,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/roles:
     put:
       tags:
@@ -1362,7 +1362,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -1372,7 +1372,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A ParticipantContext with the given ID does not exist.
           content:
@@ -1381,7 +1381,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/state:
     post:
       tags:
@@ -1410,7 +1410,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParticipantManifest'
+              $ref: "#/components/schemas/ParticipantManifest"
       responses:
         "200":
           description: The ParticipantContext was activated/deactivated successfully
@@ -1427,7 +1427,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -1437,7 +1437,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A ParticipantContext with the given ID does not exist.
           content:
@@ -1446,7 +1446,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1/participants/{participantId}/token:
     post:
       tags:
@@ -1467,7 +1467,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParticipantManifest'
+              $ref: "#/components/schemas/ParticipantManifest"
       responses:
         "200":
           description: The API token was regenerated successfully
@@ -1484,7 +1484,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -1494,7 +1494,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A ParticipantContext with the given ID does not exist.
           content:
@@ -1503,14 +1503,14 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
 components:
   schemas:
     Action:
       type: object
       properties:
         constraint:
-          $ref: '#/components/schemas/Constraint'
+          $ref: "#/components/schemas/Constraint"
         includedIn:
           type: string
           example: null
@@ -1603,12 +1603,12 @@ components:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Service'
+            $ref: "#/components/schemas/Service"
         verificationMethod:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/VerificationMethod'
+            $ref: "#/components/schemas/VerificationMethod"
       example: null
     DidRequestPayload:
       type: object
@@ -1621,16 +1621,16 @@ components:
       type: object
       properties:
         action:
-          $ref: '#/components/schemas/Action'
+          $ref: "#/components/schemas/Action"
         consequence:
-          $ref: '#/components/schemas/Duty'
+          $ref: "#/components/schemas/Duty"
         constraints:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Constraint'
+            $ref: "#/components/schemas/Constraint"
         parentPermission:
-          $ref: '#/components/schemas/Permission'
+          $ref: "#/components/schemas/Permission"
       example: null
     Issuer:
       type: object
@@ -1758,7 +1758,7 @@ components:
           type: string
           example: null
         key:
-          $ref: '#/components/schemas/KeyDescriptor'
+          $ref: "#/components/schemas/KeyDescriptor"
         participantId:
           type: string
           example: null
@@ -1773,23 +1773,23 @@ components:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Service'
+            $ref: "#/components/schemas/Service"
       example: null
     Permission:
       type: object
       properties:
         action:
-          $ref: '#/components/schemas/Action'
+          $ref: "#/components/schemas/Action"
         constraints:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Constraint'
+            $ref: "#/components/schemas/Constraint"
         duties:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Duty'
+            $ref: "#/components/schemas/Duty"
       example: null
     Policy:
       type: object
@@ -1820,17 +1820,17 @@ components:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Duty'
+            $ref: "#/components/schemas/Duty"
         permissions:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Permission'
+            $ref: "#/components/schemas/Permission"
         prohibitions:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Prohibition'
+            $ref: "#/components/schemas/Prohibition"
         target:
           type: string
           example: null
@@ -1839,17 +1839,17 @@ components:
       type: object
       properties:
         action:
-          $ref: '#/components/schemas/Action'
+          $ref: "#/components/schemas/Action"
         constraints:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Constraint'
+            $ref: "#/components/schemas/Constraint"
         remedies:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Duty'
+            $ref: "#/components/schemas/Duty"
       example: null
     QuerySpec:
       type: object
@@ -1858,7 +1858,7 @@ components:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/Criterion'
+            $ref: "#/components/schemas/Criterion"
         limit:
           type: integer
           format: int32
@@ -1894,12 +1894,12 @@ components:
       type: object
       properties:
         credentialStatus:
-          $ref: '#/components/schemas/CredentialStatus'
+          $ref: "#/components/schemas/CredentialStatus"
         credentialSubject:
           type: array
           example: null
           items:
-            $ref: '#/components/schemas/CredentialSubject'
+            $ref: "#/components/schemas/CredentialSubject"
         description:
           type: string
           example: null
@@ -1915,7 +1915,7 @@ components:
           format: date-time
           example: null
         issuer:
-          $ref: '#/components/schemas/Issuer'
+          $ref: "#/components/schemas/Issuer"
         name:
           type: string
           example: null
@@ -1930,7 +1930,7 @@ components:
       type: object
       properties:
         credential:
-          $ref: '#/components/schemas/VerifiableCredential'
+          $ref: "#/components/schemas/VerifiableCredential"
         format:
           type: string
           example: null
@@ -1951,7 +1951,7 @@ components:
           type: string
           example: null
         issuancePolicy:
-          $ref: '#/components/schemas/Policy'
+          $ref: "#/components/schemas/Policy"
         issuerId:
           type: string
           example: null
@@ -1959,7 +1959,7 @@ components:
           type: string
           example: null
         reissuancePolicy:
-          $ref: '#/components/schemas/Policy'
+          $ref: "#/components/schemas/Policy"
         state:
           type: integer
           format: int32
@@ -1969,7 +1969,7 @@ components:
           format: int64
           example: null
         verifiableCredential:
-          $ref: '#/components/schemas/VerifiableCredentialContainer'
+          $ref: "#/components/schemas/VerifiableCredentialContainer"
       example: null
     VerificationMethod:
       type: object

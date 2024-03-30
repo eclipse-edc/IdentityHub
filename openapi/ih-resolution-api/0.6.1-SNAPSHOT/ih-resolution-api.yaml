@@ -34,7 +34,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PresentationQueryMessage'
+              $ref: "#/components/schemas/PresentationQueryMessage"
       responses:
         "200":
           description: "The query was successfully processed, the response contains\
@@ -42,7 +42,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PresentationResponseMessage'
+                $ref: "#/components/schemas/PresentationResponseMessage"
         "400":
           description: "Request body was malformed, for example when both scope and\
             \ presentationDefinition are given"
@@ -52,7 +52,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "401":
           description: No Authorization header was given.
           content:
@@ -61,7 +61,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "403":
           description: "The given authentication token could not be validated. This\
             \ can happen, when the request body calls for a broader query scope than\
@@ -72,7 +72,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
         "501":
           description: "When the request contained a presentationDefinition object,\
             \ but the implementation does not support it."
@@ -82,7 +82,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: '#/components/schemas/ApiErrorDetail'
+                  $ref: "#/components/schemas/ApiErrorDetail"
 components:
   schemas:
     ApiErrorDetail:
@@ -123,7 +123,7 @@ components:
           - "FALSE"
           - "NULL"
       additionalProperties:
-        $ref: '#/components/schemas/JsonValue'
+        $ref: "#/components/schemas/JsonValue"
       example: null
     JsonValue:
       type: object
@@ -182,7 +182,7 @@ components:
           type: string
           example: null
         presentationDefinition:
-          $ref: '#/components/schemas/PresentationDefinitionSchema'
+          $ref: "#/components/schemas/PresentationDefinitionSchema"
         scope:
           type: array
           example: null
@@ -217,7 +217,7 @@ components:
             anyOf:
             - type: string
               example: null
-            - $ref: '#/components/schemas/JsonObject'
+            - $ref: "#/components/schemas/JsonObject"
       example:
         '@context':
         - https://w3id.org/tractusx-trust/v0.8
