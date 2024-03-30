@@ -56,7 +56,7 @@ import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.JWS_202
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_SUBMISSION_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;
-import static org.eclipse.edc.spi.CoreConstants.JSON_LD;
+import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
 /**
  * This extension provides core services for the IdentityHub that are not intended to be user-replaceable.

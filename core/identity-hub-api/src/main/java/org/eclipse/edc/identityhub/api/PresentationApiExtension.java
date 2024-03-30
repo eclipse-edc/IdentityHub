@@ -37,7 +37,7 @@ import org.eclipse.edc.web.spi.WebService;
 
 import static org.eclipse.edc.identityhub.api.PresentationApiExtension.NAME;
 import static org.eclipse.edc.identitytrust.VcConstants.IATP_CONTEXT_URL;
-import static org.eclipse.edc.spi.CoreConstants.JSON_LD;
+import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
 @Extension(value = NAME)
 public class PresentationApiExtension implements ServiceExtension {
