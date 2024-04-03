@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.query.ReflectionPropertyLookup;
 import org.eclipse.edc.util.reflection.PathItem;

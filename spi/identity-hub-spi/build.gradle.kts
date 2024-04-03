@@ -23,6 +23,7 @@ val swagger: String by project
 dependencies {
 
     api(libs.edc.spi.identitytrust)
+    api(libs.edc.spi.vc)
     api(libs.edc.spi.web)
     implementation(libs.jackson.databind)
     implementation(libs.nimbus.jwt)

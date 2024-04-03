@@ -15,10 +15,10 @@
 package org.eclipse.edc.identityhub.core;
 
 import jakarta.json.JsonObject;
-import org.eclipse.edc.iam.identitytrust.spi.model.CredentialFormat;
-import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredentialContainer;
-import org.eclipse.edc.iam.identitytrust.spi.model.credentialservice.PresentationResponseMessage;
-import org.eclipse.edc.iam.identitytrust.spi.model.presentationdefinition.PresentationDefinition;
+import org.eclipse.edc.iam.identitytrust.spi.model.PresentationResponseMessage;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -33,8 +33,8 @@ import java.util.stream.Collectors;
 
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static java.util.Optional.ofNullable;
-import static org.eclipse.edc.iam.identitytrust.spi.VcConstants.VERIFIABLE_PRESENTATION_TYPE;
-import static org.eclipse.edc.iam.identitytrust.spi.model.CredentialFormat.JSON_LD;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.VERIFIABLE_PRESENTATION_TYPE;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.JSON_LD;
 import static org.eclipse.edc.identityhub.core.creators.LdpPresentationGenerator.TYPE_ADDITIONAL_DATA;
 import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
 

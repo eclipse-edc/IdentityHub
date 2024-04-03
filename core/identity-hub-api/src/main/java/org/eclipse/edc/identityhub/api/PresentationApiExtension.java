@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.core.transform.transformer.edc.to.JsonValueToGenericTypeTransformer;
-import org.eclipse.edc.iam.identitytrust.spi.model.credentialservice.PresentationQueryMessage;
+import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.iam.identitytrust.transform.to.JsonObjectToPresentationQueryTransformer;
 import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
 import org.eclipse.edc.identityhub.api.validation.PresentationQueryValidator;
@@ -35,7 +35,7 @@ import org.eclipse.edc.web.jersey.providers.jsonld.JerseyJsonLdInterceptor;
 import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
-import static org.eclipse.edc.iam.identitytrust.spi.VcConstants.IATP_CONTEXT_URL;
+import static org.eclipse.edc.iam.identitytrust.spi.IatpConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.api.PresentationApiExtension.NAME;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
