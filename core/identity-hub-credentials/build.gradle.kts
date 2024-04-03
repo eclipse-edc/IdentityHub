@@ -6,6 +6,7 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:identity-hub-store-spi"))
     implementation(libs.edc.spi.token)
+    implementation(libs.edc.spi.vc)
     implementation(libs.edc.core.token) // for Jwt generation service, token validation service and rule registry impl
     implementation(libs.edc.core.connector) // for the CriterionToPredicateConverterImpl
     implementation(libs.edc.common.crypto) // for the crypto converter

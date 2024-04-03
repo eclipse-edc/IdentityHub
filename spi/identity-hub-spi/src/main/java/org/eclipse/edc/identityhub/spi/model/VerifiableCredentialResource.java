@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.spi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.policy.model.Policy;
 
 /**

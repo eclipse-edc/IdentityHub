@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.spi.model;
 
 
-import org.eclipse.edc.iam.identitytrust.spi.VcConstants;
+import org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants;
 
 public interface IdentityHubConstants extends VcConstants {
 }

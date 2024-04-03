@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.spi.resolution;
 
-import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

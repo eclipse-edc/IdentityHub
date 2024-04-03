@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.core;
 
-import org.eclipse.edc.iam.identitytrust.spi.model.credentialservice.PresentationQueryMessage;
+import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;

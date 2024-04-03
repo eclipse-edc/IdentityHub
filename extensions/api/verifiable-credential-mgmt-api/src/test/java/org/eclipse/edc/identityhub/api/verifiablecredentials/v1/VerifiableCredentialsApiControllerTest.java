@@ -15,11 +15,11 @@
 package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
 
 import io.restassured.specification.RequestSpecification;
-import org.eclipse.edc.iam.identitytrust.spi.model.CredentialFormat;
-import org.eclipse.edc.iam.identitytrust.spi.model.CredentialSubject;
-import org.eclipse.edc.iam.identitytrust.spi.model.Issuer;
-import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredential;
-import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
