@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.core.transform.transformer.edc.to.JsonValueToGenericTypeTransformer;
+import org.eclipse.edc.iam.identitytrust.spi.model.credentialservice.PresentationQueryMessage;
 import org.eclipse.edc.iam.identitytrust.transform.to.JsonObjectToPresentationQueryTransformer;
 import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
 import org.eclipse.edc.identityhub.api.validation.PresentationQueryValidator;
@@ -22,7 +23,6 @@ import org.eclipse.edc.identityhub.spi.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -31,12 +31,12 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
-import org.eclipse.edc.web.jersey.jsonld.JerseyJsonLdInterceptor;
-import org.eclipse.edc.web.jersey.jsonld.ObjectMapperProvider;
+import org.eclipse.edc.web.jersey.providers.jsonld.JerseyJsonLdInterceptor;
+import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
+import static org.eclipse.edc.iam.identitytrust.spi.VcConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.api.PresentationApiExtension.NAME;
-import static org.eclipse.edc.identitytrust.VcConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
 @Extension(value = NAME)

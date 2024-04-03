@@ -15,14 +15,14 @@
 package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
 
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.iam.identitytrust.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.identitytrust.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.identitytrust.spi.model.Issuer;
+import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredential;
+import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identitytrust.model.CredentialFormat;
-import org.eclipse.edc.identitytrust.model.CredentialSubject;
-import org.eclipse.edc.identitytrust.model.Issuer;
-import org.eclipse.edc.identitytrust.model.VerifiableCredential;
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;

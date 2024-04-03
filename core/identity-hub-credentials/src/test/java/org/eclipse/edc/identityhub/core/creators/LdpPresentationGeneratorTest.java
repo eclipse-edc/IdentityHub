@@ -16,10 +16,10 @@ package org.eclipse.edc.identityhub.core.creators;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.Curve;
+import org.eclipse.edc.iam.identitytrust.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
-import org.eclipse.edc.identitytrust.model.CredentialFormat;
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.testfixtures.TestUtils;

@@ -15,12 +15,12 @@
 package org.eclipse.edc.identityhub.store.sql.credentials;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.edc.iam.identitytrust.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredential;
+import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.model.VcState;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identitytrust.model.CredentialFormat;
-import org.eclipse.edc.identitytrust.model.VerifiableCredential;
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.policy.model.Policy;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.QuerySpec;

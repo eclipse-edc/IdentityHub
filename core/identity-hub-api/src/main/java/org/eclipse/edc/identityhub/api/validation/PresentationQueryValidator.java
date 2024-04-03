@@ -17,7 +17,7 @@ package org.eclipse.edc.identityhub.api.validation;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
+import org.eclipse.edc.iam.identitytrust.spi.model.credentialservice.PresentationQueryMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
