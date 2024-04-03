@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.sql.translation.JsonFieldTranslator;
 import org.eclipse.edc.util.reflection.PathItem;
 
@@ -23,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Maps the canonical format of a {@link org.eclipse.edc.identitytrust.model.VerifiableCredential} onto its JSON representation
+ * Maps the canonical format of a {@link VerifiableCredential} onto its JSON representation
  * and generates query statements for Postgres.
  */
 public class CredentialJsonMapping extends JsonFieldTranslator {
