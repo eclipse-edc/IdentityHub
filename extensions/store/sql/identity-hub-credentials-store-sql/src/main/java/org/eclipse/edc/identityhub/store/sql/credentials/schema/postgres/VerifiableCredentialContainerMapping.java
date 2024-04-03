@@ -14,11 +14,12 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.store.sql.credentials.CredentialStoreStatements;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
 /**
- * Maps the canonical format of a {@link org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer} to SQL column names
+ * Maps the canonical format of a {@link VerifiableCredentialContainer} to SQL column names
  */
 public class VerifiableCredentialContainerMapping extends TranslationMapping {
     public VerifiableCredentialContainerMapping(CredentialStoreStatements statements) {
