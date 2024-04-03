@@ -15,6 +15,8 @@
 package org.eclipse.edc.identityhub.core;
 
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
+import org.eclipse.edc.iam.identitytrust.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.identityhub.core.creators.JwtPresentationGenerator;
 import org.eclipse.edc.identityhub.core.creators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
@@ -26,8 +28,6 @@ import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identityhub.token.verification.AccessTokenVerifierImpl;
-import org.eclipse.edc.identitytrust.model.CredentialFormat;
-import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;

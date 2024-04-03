@@ -14,14 +14,14 @@
 
 package org.eclipse.edc.identityhub.core;
 
+import org.eclipse.edc.iam.identitytrust.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.identitytrust.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
-import org.eclipse.edc.identitytrust.model.CredentialFormat;
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 

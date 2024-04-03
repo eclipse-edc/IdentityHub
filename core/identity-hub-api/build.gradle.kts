@@ -25,6 +25,7 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
+    implementation(libs.edc.spi.identitytrust)
     implementation(libs.edc.core.jerseyproviders)
     implementation(libs.edc.core.transform)
     implementation(libs.edc.iatp.transform)
