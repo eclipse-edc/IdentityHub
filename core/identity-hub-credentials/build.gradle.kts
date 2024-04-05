@@ -11,9 +11,9 @@ dependencies {
     implementation(libs.edc.core.connector) // for the CriterionToPredicateConverterImpl
     implementation(libs.edc.common.crypto) // for the crypto converter
     implementation(libs.edc.ext.jsonld) // for the JSON-LD mapper
-    implementation(libs.edc.jws2020)
+    implementation(libs.edc.lib.jws2020)
     implementation(libs.edc.vc.ldp)
-    implementation(libs.edc.util)
+    implementation(libs.edc.lib.util)
     implementation(libs.edc.lib.store)
     implementation(libs.nimbus.jwt)
     implementation(libs.edc.lib.jsonld)
