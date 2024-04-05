@@ -27,7 +27,7 @@ dependencies {
     implementation(libs.edc.spi.web)
     implementation(libs.edc.spi.identitytrust)
     implementation(libs.edc.core.jerseyproviders)
-    implementation(libs.edc.core.transform)
+    implementation(libs.edc.lib.transform)
     implementation(libs.edc.iatp.transform)
     implementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.junit)

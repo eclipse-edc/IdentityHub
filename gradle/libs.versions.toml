@@ -43,7 +43,6 @@ edc-core-sql = { module = "org.eclipse.edc:sql-core", version.ref = "edc" }
 edc-core-token = { module = "org.eclipse.edc:token-core", version.ref = "edc" }
 edc-core-jersey = { module = "org.eclipse.edc:jersey-core", version.ref = "edc" }
 edc-core-junit = { module = "org.eclipse.edc:junit", version.ref = "edc" }
-edc-core-transform = { module = "org.eclipse.edc:transform-core", version.ref = "edc" }
 edc-identity-did-core = { module = "org.eclipse.edc:identity-did-core", version.ref = "edc" }
 edc-identity-did-web = { module = "org.eclipse.edc:identity-did-web", version.ref = "edc" }
 edc-iatp-service = { module = "org.eclipse.edc:identity-trust-service", version.ref = "edc" }
@@ -61,6 +60,7 @@ edc-lib-keys = { "module" = "org.eclipse.edc:keys-lib", version.ref = "edc" }
 edc-lib-query = { "module" = "org.eclipse.edc:query-lib", version.ref = "edc" }
 edc-lib-jsonld = { "module" = "org.eclipse.edc:json-ld-lib", version.ref = "edc" }
 edc-lib-store = { "module" = "org.eclipse.edc:store-lib", version.ref = "edc" }
+edc-lib-transform = { module = "org.eclipse.edc:transform-lib", version.ref = "edc" }
 edc-common-crypto = { module = "org.eclipse.edc:crypto-common-lib", version.ref = "edc" }
 edc-core-jerseyproviders = { module = "org.eclipse.edc:jersey-providers-lib", version.ref = "edc" }
 
