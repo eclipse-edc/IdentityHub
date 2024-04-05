@@ -20,7 +20,7 @@ dependencies {
     api(project(":spi:identity-hub-store-spi"))
     implementation(libs.edc.core.sql) // for the SqlStatements
     implementation(libs.edc.spi.transaction.datasource)
-    implementation(libs.edc.util)
+    implementation(libs.edc.lib.util)
 
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
     testImplementation(testFixtures(libs.edc.core.sql))

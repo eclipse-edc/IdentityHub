@@ -26,7 +26,7 @@ dependencies {
     implementation(project(":extensions:api:identityhub-management-api-validators"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
-    implementation(libs.edc.util)
+    implementation(libs.edc.lib.util)
     implementation(libs.edc.core.jerseyproviders)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
