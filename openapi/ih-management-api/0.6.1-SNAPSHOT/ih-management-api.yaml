@@ -1622,8 +1622,6 @@ components:
       properties:
         action:
           $ref: "#/components/schemas/Action"
-        consequence:
-          $ref: "#/components/schemas/Duty"
         constraints:
           type: array
           example: null
@@ -1894,7 +1892,10 @@ components:
       type: object
       properties:
         credentialStatus:
-          $ref: "#/components/schemas/CredentialStatus"
+          type: array
+          example: null
+          items:
+            $ref: "#/components/schemas/CredentialStatus"
         credentialSubject:
           type: array
           example: null
