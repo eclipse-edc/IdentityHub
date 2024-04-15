@@ -19,8 +19,8 @@ import org.eclipse.edc.identityhub.store.sql.participantcontext.ParticipantConte
 import org.eclipse.edc.identityhub.store.sql.participantcontext.SqlParticipantContextStore;
 import org.eclipse.edc.identityhub.store.sql.participantcontext.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.identityhub.store.test.ParticipantContextStoreTestBase;
+import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.ComponentTest;
-import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
@@ -40,7 +40,7 @@ class SqlParticipantContextStoreTest extends ParticipantContextStoreTestBase {
 
     @BeforeEach
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) throws IOException {
-        var typeManager = new TypeManager();
+        var typeManager = new JacksonTypeManager();
         store = new SqlParticipantContextStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
                 extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements);
 

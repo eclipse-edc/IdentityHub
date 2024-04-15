@@ -15,13 +15,14 @@
 package org.eclipse.edc.identityhub.spi.events.participant;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ParticipantContextUpdatedTest {
-    private final TypeManager manager = new TypeManager();
+    private final TypeManager manager = new JacksonTypeManager();
 
     @Test
     void verify_serDes() throws JsonProcessingException {

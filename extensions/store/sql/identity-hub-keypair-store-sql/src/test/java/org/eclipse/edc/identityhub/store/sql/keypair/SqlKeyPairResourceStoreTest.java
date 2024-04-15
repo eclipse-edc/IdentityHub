@@ -17,8 +17,8 @@ package org.eclipse.edc.identityhub.store.sql.keypair;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.store.sql.keypair.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.identityhub.store.test.KeyPairResourceStoreTestBase;
+import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.ComponentTest;
-import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +37,7 @@ class SqlKeyPairResourceStoreTest extends KeyPairResourceStoreTestBase {
 
     @BeforeEach
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) throws IOException {
-        var typeManager = new TypeManager();
+        var typeManager = new JacksonTypeManager();
         store = new SqlKeyPairResourceStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
                 extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements);
 

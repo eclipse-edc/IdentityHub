@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.spi.events.diddocument;
 
+import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class DidDocumentUnpublishedTest {
 
-    private final TypeManager manager = new TypeManager();
+    private final TypeManager manager = new JacksonTypeManager();
 
     @Test
     void verify_serDes() {
