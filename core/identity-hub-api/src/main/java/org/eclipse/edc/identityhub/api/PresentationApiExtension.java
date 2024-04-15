@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
+import org.eclipse.edc.iam.identitytrust.transform.from.JsonObjectFromPresentationResponseMessageTransformer;
 import org.eclipse.edc.iam.identitytrust.transform.to.JsonObjectToPresentationQueryTransformer;
 import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
 import org.eclipse.edc.identityhub.api.validation.PresentationQueryValidator;
@@ -87,6 +88,7 @@ public class PresentationApiExtension implements ServiceExtension {
         // register transformer -- remove once registration is handled in EDC
         typeTransformer.register(new JsonObjectToPresentationQueryTransformer(jsonLdMapper));
         typeTransformer.register(new JsonValueToGenericTypeTransformer(jsonLdMapper));
+        typeTransformer.register(new JsonObjectFromPresentationResponseMessageTransformer());
     }
 
 
