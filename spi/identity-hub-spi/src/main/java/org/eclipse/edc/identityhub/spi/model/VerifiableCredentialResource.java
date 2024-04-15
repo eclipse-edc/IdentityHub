@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.spi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.policy.model.Policy;
 
 /**
@@ -60,6 +60,10 @@ public class VerifiableCredentialResource extends IdentityResource {
             super(resource);
         }
 
+        public static Builder newInstance() {
+            return new Builder(new VerifiableCredentialResource());
+        }
+
         public Builder state(VcState state) {
             entity.state = state.code();
             return self();
@@ -91,10 +95,6 @@ public class VerifiableCredentialResource extends IdentityResource {
                 entity.state = VcState.INITIAL.code();
             }
             return super.build();
-        }
-
-        public static Builder newInstance() {
-            return new Builder(new VerifiableCredentialResource());
         }
     }
 }

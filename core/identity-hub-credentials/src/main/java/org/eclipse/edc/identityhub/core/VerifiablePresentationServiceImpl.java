@@ -15,12 +15,12 @@
 package org.eclipse.edc.identityhub.core;
 
 import jakarta.json.JsonObject;
+import org.eclipse.edc.iam.identitytrust.spi.model.PresentationResponseMessage;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
-import org.eclipse.edc.identitytrust.model.CredentialFormat;
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationResponseMessage;
-import org.eclipse.edc.identitytrust.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.jetbrains.annotations.Nullable;
@@ -33,10 +33,10 @@ import java.util.stream.Collectors;
 
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.VERIFIABLE_PRESENTATION_TYPE;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.JSON_LD;
 import static org.eclipse.edc.identityhub.core.creators.LdpPresentationGenerator.TYPE_ADDITIONAL_DATA;
 import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
-import static org.eclipse.edc.identitytrust.VcConstants.VERIFIABLE_PRESENTATION_TYPE;
-import static org.eclipse.edc.identitytrust.model.CredentialFormat.JSON_LD;
 
 public class VerifiablePresentationServiceImpl implements VerifiablePresentationService {
     private final CredentialFormat defaultFormatVp;
@@ -86,7 +86,7 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
             if (!ldpVcs.isEmpty()) {
 
                 // todo: once we support PresentationDefinition, the types list could be dynamic
-                JsonObject ldpVp = registry.createPresentation(participantContextId, ldpVcs, CredentialFormat.JSON_LD, Map.of(
+                JsonObject ldpVp = registry.createPresentation(participantContextId, ldpVcs, JSON_LD, Map.of(
                         TYPE_ADDITIONAL_DATA, List.of(VERIFIABLE_PRESENTATION_TYPE),
                         CONTROLLER_ADDITIONAL_DATA, participantContextId));
                 vpToken.add(ldpVp);

@@ -21,6 +21,15 @@ jobs:
       - name: Run Checkstyle
         run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures
 
+  Javadoc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: eclipse-edc/.github/.github/actions/setup-build@main
+
+      - name: Run Javadoc
+        run: ./gradlew javadoc
+
   Verify-Launcher:
     runs-on: ubuntu-latest
     steps:

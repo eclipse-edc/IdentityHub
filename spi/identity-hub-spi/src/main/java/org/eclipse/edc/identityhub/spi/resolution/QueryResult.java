@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.spi.resolution;
 
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,18 +32,6 @@ import static org.eclipse.edc.identityhub.spi.resolution.QueryFailure.Reason.UNA
 public class QueryResult extends AbstractResult<Stream<VerifiableCredentialContainer>, QueryFailure, QueryResult> {
     protected QueryResult(Stream<VerifiableCredentialContainer> content, QueryFailure failure) {
         super(content, failure);
-    }
-
-    public QueryFailure.Reason reason() {
-        return getFailure().getReason();
-    }
-
-    @Override
-    protected <R1 extends AbstractResult<C1, QueryFailure, R1>, C1> @NotNull R1 newInstance(@Nullable C1 content, @Nullable QueryFailure failure) {
-        if (content instanceof Stream) {
-            return (R1) new QueryResult((Stream) content, failure);
-        }
-        return (R1) new QueryResult(null, failure);
     }
 
     /**
@@ -79,6 +67,18 @@ public class QueryResult extends AbstractResult<Stream<VerifiableCredentialConta
      */
     public static QueryResult success(Stream<VerifiableCredentialContainer> credentials) {
         return new QueryResult(credentials, null);
+    }
+
+    public QueryFailure.Reason reason() {
+        return getFailure().getReason();
+    }
+
+    @Override
+    protected <R1 extends AbstractResult<C1, QueryFailure, R1>, C1> @NotNull R1 newInstance(@Nullable C1 content, @Nullable QueryFailure failure) {
+        if (content instanceof Stream) {
+            return (R1) new QueryResult((Stream) content, failure);
+        }
+        return (R1) new QueryResult(null, failure);
     }
 
 }

@@ -14,7 +14,8 @@
 
 package org.eclipse.edc.identityhub.spi.generator;
 
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
+
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 
 import java.util.List;
 import java.util.Map;

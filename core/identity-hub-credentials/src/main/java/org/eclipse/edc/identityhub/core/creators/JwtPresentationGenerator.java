@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.core.creators;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
@@ -33,10 +33,10 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static org.eclipse.edc.iam.identitytrust.spi.IatpConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
 import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
 import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.VP_TYPE_PROPERTY;
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.VERIFIABLE_PRESENTATION_TYPE;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;

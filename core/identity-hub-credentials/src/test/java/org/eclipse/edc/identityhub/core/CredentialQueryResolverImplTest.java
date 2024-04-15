@@ -14,18 +14,17 @@
 
 package org.eclipse.edc.identityhub.core;
 
-
+import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.resolution.QueryFailure;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identitytrust.model.CredentialFormat;
-import org.eclipse.edc.identitytrust.model.CredentialSubject;
-import org.eclipse.edc.identitytrust.model.Issuer;
-import org.eclipse.edc.identitytrust.model.VerifiableCredential;
-import org.eclipse.edc.identitytrust.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identitytrust.model.credentialservice.PresentationQueryMessage;
-import org.eclipse.edc.identitytrust.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.jetbrains.annotations.Nullable;

@@ -15,6 +15,8 @@
 package org.eclipse.edc.identityhub.core;
 
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
+import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.core.creators.JwtPresentationGenerator;
 import org.eclipse.edc.identityhub.core.creators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
@@ -26,8 +28,6 @@ import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.identityhub.token.verification.AccessTokenVerifierImpl;
-import org.eclipse.edc.identitytrust.model.CredentialFormat;
-import org.eclipse.edc.identitytrust.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
@@ -49,14 +49,14 @@ import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 import java.net.URISyntaxException;
 import java.time.Clock;
 
+import static org.eclipse.edc.iam.identitytrust.spi.IatpConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.core.CoreServicesExtension.NAME;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.DID_CONTEXT_URL;
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.IATP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.JWS_2020_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_SUBMISSION_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;
-import static org.eclipse.edc.spi.CoreConstants.JSON_LD;
+import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
 /**
  * This extension provides core services for the IdentityHub that are not intended to be user-replaceable.
