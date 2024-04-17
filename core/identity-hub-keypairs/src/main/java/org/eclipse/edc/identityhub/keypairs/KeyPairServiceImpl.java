@@ -219,7 +219,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             // either take the public key from the JWK structure or the PEM field
             publicKeySerialized = Optional.ofNullable(keyDescriptor.getPublicKeyJwk())
                     .map(m -> CryptoConverter.create(m).toJSONString())
-                    .orElseGet(keyDescriptor::getPublicKeyPem);
+                    .orElseGet(() -> keyDescriptor.getPublicKeyPem().replace("\\n", "\n"));
         }
         return Result.success(publicKeySerialized);
     }
