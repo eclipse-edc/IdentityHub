@@ -19,7 +19,7 @@ jobs:
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: Run Checkstyle
-        run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures
+        run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures --refresh-dependencies
 
   Javadoc:
     runs-on: ubuntu-latest
@@ -28,7 +28,7 @@ jobs:
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: Run Javadoc
-        run: ./gradlew javadoc
+        run: ./gradlew javadoc --refresh-dependencies
 
   Verify-Launcher:
     runs-on: ubuntu-latest
@@ -37,7 +37,7 @@ jobs:
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: 'Build launcher'
-        run: ./gradlew :launcher:shadowJar
+        run: ./gradlew :launcher:shadowJar --refresh-dependencies
 
       - name: 'Build Docker image'
         run: docker build -t identity-hub ./launcher
@@ -76,7 +76,7 @@ jobs:
       - name: 'Unit and system tests'
         uses: eclipse-edc/.github/.github/actions/run-tests@main
         with:
-          command: ./gradlew test
+          command: ./gradlew test --refresh-dependencies
         timeout-minutes: 10
         env:
           INTEGRATION_TEST: true
@@ -100,7 +100,7 @@ jobs:
       - name: Component Tests
         uses: eclipse-edc/.github/.github/actions/run-tests@main
         with:
-          command: ./gradlew compileJava compileTestJava test -DincludeTags="ComponentTest,ApiTest,EndToEndTest"
+          command: ./gradlew compileJava compileTestJava test -DincludeTags="ComponentTest,ApiTest,EndToEndTest" --refresh-dependencies
 
   Upload-Coverage-Report-To-Codecov:
     needs:
