@@ -24,7 +24,7 @@ import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
-import org.eclipse.edc.security.signature.jws2020.JwsSignature2020Suite;
+import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.verifiablecredentials.jwt.JwtCreationUtils;
 import org.eclipse.edc.verifiablecredentials.jwt.TestConstants;
@@ -70,7 +70,10 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         when(privateKeyResolver.resolvePrivateKey(any())).thenReturn(Result.failure("no key found"));
         when(privateKeyResolver.resolvePrivateKey(eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(vpSigningKey));
         var signatureSuiteRegistryMock = mock(SignatureSuiteRegistry.class);
-        when(signatureSuiteRegistryMock.getForId(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE)).thenReturn(new JwsSignature2020Suite(new ObjectMapper()));
+        var suite = new Jws2020SignatureSuite(new ObjectMapper());
+        when(signatureSuiteRegistryMock.getForId(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE)).thenReturn(suite);
+        when(signatureSuiteRegistryMock.getAllSuites()).thenReturn(List.of(suite));
+
         var ldpIssuer = LdpIssuer.Builder.newInstance()
                 .jsonLd(initializeJsonLd())
                 .monitor(mock())
