@@ -14,8 +14,7 @@
 
 package org.eclipse.edc.identityhub.core.creators;
 
-import com.apicatalog.ld.signature.SignatureSuite;
-import com.apicatalog.vc.integrity.DataIntegrityProofOptions;
+import com.apicatalog.vc.suite.SignatureSuite;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.Json;
@@ -27,7 +26,8 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
-import org.eclipse.edc.security.signature.jws2020.JwkMethod;
+import org.eclipse.edc.security.signature.jws2020.JsonWebKeyPair;
+import org.eclipse.edc.security.signature.jws2020.Jws2020ProofDraft;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import java.net.URI;
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
     public static final String TYPE_ADDITIONAL_DATA = "types";
     public static final String HOLDER_PROPERTY = "holder";
+    public static final URI ASSERTION_METHOD = URI.create("https://w3id.org/security#assertionMethod");
     private final PrivateKeyResolver privateKeyResolver;
     private final String issuerId;
     private final SignatureSuiteRegistry signatureSuiteRegistry;
@@ -134,7 +136,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
                 .add(VERIFIABLE_CREDENTIAL_PROPERTY, toJsonArray(credentials))
                 .build();
 
-        return signPresentation(presentationObject, suite, pk, publicKeyId, additionalData.get(CONTROLLER_ADDITIONAL_DATA).toString());
+        return signPresentation(presentationObject, suite, suiteIdentifier, pk, publicKeyId, additionalData.get(CONTROLLER_ADDITIONAL_DATA).toString());
     }
 
     @NotNull
@@ -153,18 +155,23 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         return array.build();
     }
 
-    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, PrivateKey pk, String publicKeyId, String controller) {
+    private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, String suiteIdentifier, PrivateKey pk, String publicKeyId, String controller) {
         var keyIdUri = URI.create(publicKeyId);
         var controllerUri = URI.create(controller);
+        var verificationMethodType = URI.create(suiteIdentifier);
 
-        var type = URI.create(suite.getId().toString());
         var jwk = CryptoConverter.createJwk(new KeyPair(null, pk));
-        var keypair = new JwkMethod(keyIdUri, type, controllerUri, jwk);
 
-        var options = (DataIntegrityProofOptions) suite.createOptions();
-        options.purpose(URI.create("https://w3id.org/security#assertionMethod"));
-        options.verificationMethod(new JwkMethod(URI.create(controller + "#" + publicKeyId), null, controllerUri, null));
-        return ldpIssuer.signDocument(presentationObject, keypair, options)
+        var keypair = new JsonWebKeyPair(keyIdUri, verificationMethodType, controllerUri, jwk);
+
+        var proofDraft = Jws2020ProofDraft.Builder.newInstance()
+                .proofPurpose(ASSERTION_METHOD)
+                .verificationMethod(new JsonWebKeyPair(URI.create(controller + "#" + publicKeyId), verificationMethodType, controllerUri, null))
+                .created(Instant.now())
+                .mapper(mapper)
+                .build();
+
+        return ldpIssuer.signDocument(suite, presentationObject, keypair, proofDraft)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 

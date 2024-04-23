@@ -36,7 +36,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
-import org.eclipse.edc.security.signature.jws2020.JwsSignature2020Suite;
+import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -123,7 +123,7 @@ public class CoreServicesExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         // Setup API
         cacheContextDocuments(getClass().getClassLoader());
-        suiteRegistry.register(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, new JwsSignature2020Suite(JacksonJsonLd.createObjectMapper()));
+        suiteRegistry.register(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, new Jws2020SignatureSuite(JacksonJsonLd.createObjectMapper()));
 
     }
 
