@@ -59,11 +59,4 @@ allprojects {
         configDirectory.set(rootProject.file("resources"))
     }
 
-
-}
-
-configurations.all {
-    // Check for updates every build
-    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
-    resolutionStrategy.cacheDynamicVersionsFor(0, "seconds")
 }
