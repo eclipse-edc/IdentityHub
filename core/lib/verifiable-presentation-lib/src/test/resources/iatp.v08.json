@@ -1,7 +1,7 @@
 {
   "@context": {
     "@version": 1.1,
-    "@protected": false,
+    "@protected": true,
     "iatp": "https://w3id.org/tractusx-trust/v0.8/",
     "cred": "https://www.w3.org/2018/credentials/",
     "xsd": "http://www.w3.org/2001/XMLSchema/",
@@ -86,8 +86,28 @@
     "PresentationQueryMessage": {
       "@id": "iatp:PresentationQueryMessage",
       "@context": {
-        "presentationDefinition": "iatp:presentationDefinition",
-        "scope": "iatp:scope"
+        "presentationDefinition": {
+          "@id": "iatp:presentationDefinition",
+          "@type": "@json"
+        },
+        "scope": {
+          "@id": "iatp:scope",
+          "@type": "xsd:string",
+          "@container": "@set"
+        }
+      }
+    },
+    "PresentationResponseMessage": {
+      "@id": "iatp:PresentationResponseMessage",
+      "@context": {
+        "presentation": {
+          "@id": "iatp:presentation",
+          "@type": "@json"
+        },
+        "presentationSubmission": {
+          "@id": "iatp:presentationSubmission",
+          "@type": "@json"
+        }
       }
     },
     "credentials": {
@@ -101,15 +121,6 @@
     "format": {
       "@id": "iatp:format",
       "@type": "xsd:string"
-    },
-    "presentationDefinition": {
-      "@id": "iatp:presentationDefinition",
-      "@type": "@json"
-    },
-    "scope": {
-      "@id": "iatp:scope",
-      "@type": "xsd:string",
-      "@container": "@set"
     },
     "type": "@type"
   }

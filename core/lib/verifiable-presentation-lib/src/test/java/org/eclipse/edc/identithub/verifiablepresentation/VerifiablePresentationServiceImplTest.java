@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,11 +8,11 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Metaform Systems, Inc. - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityhub.core;
+package org.eclipse.edc.identithub.verifiablepresentation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,9 +35,9 @@ import java.util.Map;
 
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.JSON_LD;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.JWT;
-import static org.eclipse.edc.identityhub.core.creators.TestData.EMPTY_LDP_VP;
-import static org.eclipse.edc.identityhub.core.creators.TestData.JWT_VP;
-import static org.eclipse.edc.identityhub.core.creators.TestData.LDP_VP_WITH_PROOF;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.TestData.EMPTY_LDP_VP;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.TestData.JWT_VP;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.TestData.LDP_VP_WITH_PROOF;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;

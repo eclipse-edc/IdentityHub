@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.core;
+package org.eclipse.edc.identithub.verifiablepresentation;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.spi.KeyPairService;

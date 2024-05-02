@@ -34,6 +34,12 @@ include(":core:identity-hub-participants")
 include(":core:identity-hub-keypairs")
 include(":core:identity-hub-did")
 
+// lib modules
+include(":core:lib:verifiable-presentation-lib")
+include(":core:lib:keypair-lib")
+include(":core:lib:accesstoken-lib")
+include(":core:lib:credential-query-lib")
+
 // extension modules
 include(":extensions:common:security")
 include(":extensions:store:sql:identity-hub-did-store-sql")

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,14 +8,18 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Metaform Systems, Inc. - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityhub.core.creators;
+package org.eclipse.edc.identithub.verifiablepresentation.generators;
 
+import org.eclipse.edc.iam.identitytrust.spi.IatpConstants;
+import org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
+import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
+import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
@@ -33,20 +37,9 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static org.eclipse.edc.iam.identitytrust.spi.IatpConstants.IATP_CONTEXT_URL;
-import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
-import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
-import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.VP_TYPE_PROPERTY;
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.VERIFIABLE_PRESENTATION_TYPE;
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;
-import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.CONTEXT;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.JWT_ID;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.NOT_BEFORE;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.VP_TYPE_PROPERTY;
 
 /**
  * JwtPresentationCreator is an implementation of the PresentationCreator interface that generates Verifiable Presentations in JWT format.
@@ -80,7 +73,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
      */
     @Override
     public String generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId) {
-        throw new UnsupportedOperationException("Must provide additional data: '%s' and '%s'".formatted(AUDIENCE, CONTROLLER_ADDITIONAL_DATA));
+        throw new UnsupportedOperationException("Must provide additional data: '%s' and '%s'".formatted(JwtRegisteredClaimNames.AUDIENCE, CONTROLLER_ADDITIONAL_DATA));
     }
 
     /**
@@ -99,8 +92,8 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
     public String generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, Map<String, Object> additionalData) {
 
         // check if expected data is there
-        if (!additionalData.containsKey(AUDIENCE)) {
-            throw new IllegalArgumentException("Must provide additional data: '%s'".formatted(AUDIENCE));
+        if (!additionalData.containsKey(JwtRegisteredClaimNames.AUDIENCE)) {
+            throw new IllegalArgumentException("Must provide additional data: '%s'".formatted(JwtRegisteredClaimNames.AUDIENCE));
         }
 
         if (!additionalData.containsKey(CONTROLLER_ADDITIONAL_DATA)) {
@@ -121,18 +114,18 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
 
     private TokenDecorator vpDecorator(List<String> rawVcs) {
         var now = Date.from(clock.instant());
-        return tp -> tp.claims(ISSUER, issuerId)
-                .claims(ISSUED_AT, now)
-                .claims(NOT_BEFORE, now)
-                .claims(JWT_ID, UUID.randomUUID().toString())
+        return tp -> tp.claims(JwtRegisteredClaimNames.ISSUER, issuerId)
+                .claims(JwtRegisteredClaimNames.ISSUED_AT, now)
+                .claims(JwtRegisteredClaimNames.NOT_BEFORE, now)
+                .claims(JwtRegisteredClaimNames.JWT_ID, UUID.randomUUID().toString())
                 .claims(VERIFIABLE_PRESENTATION_CLAIM, createVpClaim(rawVcs))
-                .claims(EXPIRATION_TIME, Date.from(Instant.now().plusSeconds(60)));
+                .claims(JwtRegisteredClaimNames.EXPIRATION_TIME, Date.from(Instant.now().plusSeconds(60)));
     }
 
     private Map<String, Object> createVpClaim(List<String> rawVcs) {
         return Map.of(
-                CONTEXT, List.of(IATP_CONTEXT_URL, W3C_CREDENTIALS_URL, PRESENTATION_EXCHANGE_URL),
-                VP_TYPE_PROPERTY, VERIFIABLE_PRESENTATION_TYPE,
+                JsonLdKeywords.CONTEXT, List.of(IatpConstants.IATP_CONTEXT_URL, VcConstants.W3C_CREDENTIALS_URL, VcConstants.PRESENTATION_EXCHANGE_URL),
+                VP_TYPE_PROPERTY, VcConstants.VERIFIABLE_PRESENTATION_TYPE,
                 VERIFIABLE_CREDENTIAL_PROPERTY, rawVcs
         );
     }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,11 +8,11 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Metaform Systems, Inc. - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityhub.core.creators;
+package org.eclipse.edc.identithub.verifiablepresentation.generators;
 
 import com.apicatalog.vc.suite.SignatureSuite;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -21,10 +21,13 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
+import org.eclipse.edc.iam.identitytrust.spi.IatpConstants;
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
+import org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.generator.PresentationGenerator;
+import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.security.signature.jws2020.JsonWebKeyPair;
 import org.eclipse.edc.security.signature.jws2020.Jws2020ProofDraft;
@@ -42,13 +45,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.eclipse.edc.iam.identitytrust.spi.IatpConstants.IATP_CONTEXT_URL;
-import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
-import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
-import static org.eclipse.edc.identityhub.core.creators.PresentationGeneratorConstants.VP_TYPE_PROPERTY;
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
-import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.W3C_CREDENTIALS_URL;
-import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.CONTEXT;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.VP_TYPE_PROPERTY;
 
 /**
  * LdpPresentationCreator is a class that implements the PresentationCreator interface to generate Verifiable Presentations based on Verifiable Credential Containers.
@@ -129,8 +128,8 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
         var types = (List) additionalData.get(TYPE_ADDITIONAL_DATA);
         var presentationObject = Json.createObjectBuilder()
-                .add(CONTEXT, stringArray(List.of(W3C_CREDENTIALS_URL, PRESENTATION_EXCHANGE_URL)))
-                .add(ID_PROPERTY, IATP_CONTEXT_URL + "/id/" + UUID.randomUUID())
+                .add(JsonLdKeywords.CONTEXT, stringArray(List.of(VcConstants.W3C_CREDENTIALS_URL, VcConstants.PRESENTATION_EXCHANGE_URL)))
+                .add(ID_PROPERTY, IatpConstants.IATP_CONTEXT_URL + "/id/" + UUID.randomUUID())
                 .add(VP_TYPE_PROPERTY, stringArray(types))
                 .add(HOLDER_PROPERTY, issuerId)
                 .add(VERIFIABLE_CREDENTIAL_PROPERTY, toJsonArray(credentials))
