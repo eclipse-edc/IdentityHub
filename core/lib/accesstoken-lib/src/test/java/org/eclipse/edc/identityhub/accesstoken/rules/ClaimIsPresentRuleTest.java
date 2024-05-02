@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.token.rules;
+package org.eclipse.edc.identityhub.accesstoken.rules;
 
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.junit.jupiter.api.Test;

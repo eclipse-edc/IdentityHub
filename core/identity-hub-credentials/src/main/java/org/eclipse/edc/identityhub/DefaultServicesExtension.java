@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub;
 
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
+import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.defaults.InMemoryCredentialStore;
 import org.eclipse.edc.identityhub.defaults.InMemoryKeyPairResourceStore;
@@ -24,7 +25,6 @@ import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
-import org.eclipse.edc.identityhub.token.rules.ClaimIsPresentRule;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -33,15 +33,16 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.TOKEN_CLAIM;
 
 @Extension(NAME)
 public class DefaultServicesExtension implements ServiceExtension {
 
     public static final String NAME = "IdentityHub Default Services Extension";
-    public static final String IATP_SELF_ISSUED_TOKEN_CONTEXT = "iatp-si";
-    public static final String IATP_ACCESS_TOKEN_CONTEXT = "iatp-access-token";
-    public static final String TOKEN_CLAIM = "token";
-    public static final String ACCESS_TOKEN_SCOPE_CLAIM = "scope";
+
 
     @Inject
     private TokenValidationRulesRegistry registry;
@@ -59,7 +60,6 @@ public class DefaultServicesExtension implements ServiceExtension {
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
         registry.addRule(IATP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
-
     }
 
     @Provider(isDefault = true)

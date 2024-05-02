@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,13 +8,14 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Metaform Systems, Inc. - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityhub.token.verification;
+package org.eclipse.edc.identityhub.accesstoken.verification;
 
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
+import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
@@ -29,19 +30,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
-import static com.nimbusds.jwt.JWTClaimNames.SUBJECT;
-import static org.eclipse.edc.identityhub.DefaultServicesExtension.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.DefaultServicesExtension.IATP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.DefaultServicesExtension.IATP_SELF_ISSUED_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.DefaultServicesExtension.TOKEN_CLAIM;
-import static org.eclipse.edc.spi.result.Result.success;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.TOKEN_CLAIM;
 
 /**
  * Default implementation used to verify Self-Issued tokens. The public key is expected to be found in the
  * issuer's DID
  */
 public class AccessTokenVerifierImpl implements AccessTokenVerifier {
+
 
     private static final String SCOPE_SEPARATOR = " ";
     private final TokenValidationService tokenValidationService;
@@ -69,10 +68,10 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
 
         var claimToken = res.getContent();
         var accessTokenString = claimToken.getStringClaim(TOKEN_CLAIM);
-        var subClaim = claimToken.getStringClaim(SUBJECT);
+        var subClaim = claimToken.getStringClaim(JwtRegisteredClaimNames.SUBJECT);
 
         TokenValidationRule audMustMatchParticipantIdRule = (at, additional) -> {
-            var aud = at.getListClaim(AUDIENCE);
+            var aud = at.getListClaim(JwtRegisteredClaimNames.AUDIENCE);
             if (aud == null || aud.isEmpty()) {
                 return Result.failure("Mandatory claim 'aud' on 'token' was null.");
             }
@@ -80,7 +79,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         };
 
         TokenValidationRule subClaimsMatch = (at, additional) -> {
-            var atSub = at.getStringClaim(SUBJECT);
+            var atSub = at.getStringClaim(JwtRegisteredClaimNames.SUBJECT);
             // correlate sub and access_token.sub
             if (!Objects.equals(subClaim, atSub)) {
                 monitor.warning("ID token [sub] claim is not equal to [%s.sub] claim: expected '%s', got '%s'. Proof-of-possession could not be established!".formatted(TOKEN_CLAIM, subClaim, atSub));
@@ -100,6 +99,6 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
 
         // verify that the access_token contains a scope claim
         var scope = result.getContent().getStringClaim(ACCESS_TOKEN_SCOPE_CLAIM);
-        return success(Arrays.asList(scope.split(SCOPE_SEPARATOR)));
+        return Result.success(Arrays.asList(scope.split(SCOPE_SEPARATOR)));
     }
 }

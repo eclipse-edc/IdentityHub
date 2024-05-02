@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,13 +8,16 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Metaform Systems, Inc. - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityhub.token.verification;
+package org.eclipse.edc.identityhub.accesstoken.verification;
 
 import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil;
+import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
+import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.result.Result;
@@ -27,13 +30,6 @@ import java.security.PublicKey;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.CONSUMER_KEY;
-import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.PROVIDER_KEY;
-import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.TEST_SCOPE;
-import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.generateJwt;
-import static org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil.generateSiToken;
-import static org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
-import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -59,9 +55,9 @@ class AccessTokenVerifierImplTest {
     void verify_validSiToken_validAccessToken() {
         when(tokenValidationSerivce.validate(anyString(), any(), anyList()))
                 .thenReturn(Result.success(idToken));
-        assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant"))
+        AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant"))
                 .isSucceeded()
-                .satisfies(strings -> Assertions.assertThat(strings).containsOnly(TEST_SCOPE));
+                .satisfies(strings -> Assertions.assertThat(strings).containsOnly(JwtCreationUtil.TEST_SCOPE));
         verify(tokenValidationSerivce, times(2)).validate(anyString(), any(PublicKeyResolver.class), anyList());
 
     }
@@ -70,7 +66,7 @@ class AccessTokenVerifierImplTest {
     void verify_siTokenValidationFails() {
         when(tokenValidationSerivce.validate(anyString(), any(), anyList()))
                 .thenReturn(Result.failure("test-failure"));
-        assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant")).isFailed()
+        AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant")).isFailed()
                 .detail().contains("test-failure");
     }
 
@@ -79,19 +75,19 @@ class AccessTokenVerifierImplTest {
         when(tokenValidationSerivce.validate(anyString(), any(PublicKeyResolver.class), anyList()))
                 .thenReturn(Result.failure("no access token"));
 
-        assertThat(verifier.verify(generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant")).isFailed()
+        AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant")).isFailed()
                 .detail().contains("no access token");
         verify(tokenValidationSerivce).validate(anyString(), any(PublicKeyResolver.class), anyList());
     }
 
     @Test
     void verify_accessTokenValidationFails() {
-        var spoofedKey = generateEcKey("spoofed-key");
-        var accessToken = generateJwt(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, Map.of("scope", TEST_SCOPE), spoofedKey);
-        var siToken = generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "access_token", accessToken), PROVIDER_KEY);
+        var spoofedKey = VerifiableCredentialTestUtil.generateEcKey("spoofed-key");
+        var accessToken = JwtCreationUtil.generateJwt(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, Map.of("scope", JwtCreationUtil.TEST_SCOPE), spoofedKey);
+        var siToken = JwtCreationUtil.generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "access_token", accessToken), JwtCreationUtil.PROVIDER_KEY);
 
         when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.failure("test-failure"));
-        assertThat(verifier.verify(siToken, "did:web:test_participant")).isFailed()
+        AbstractResultAssert.assertThat(verifier.verify(siToken, "did:web:test_participant")).isFailed()
                 .detail().isEqualTo("test-failure");
     }
 
@@ -102,13 +98,13 @@ class AccessTokenVerifierImplTest {
 
     @Test
     void verify_accessTokenDoesNotContainScopeClaim() {
-        var accessToken = generateJwt(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, Map.of(/*scope missing*/), CONSUMER_KEY);
-        var siToken = generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "access_token", accessToken), PROVIDER_KEY);
+        var accessToken = JwtCreationUtil.generateJwt(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, Map.of(/*scope missing*/), JwtCreationUtil.CONSUMER_KEY);
+        var siToken = JwtCreationUtil.generateJwt(OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID, Map.of("client_id", OTHER_PARTICIPANT_DID, "access_token", accessToken), JwtCreationUtil.PROVIDER_KEY);
 
         when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.success(idToken));
         when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.failure("test-failure"));
 
-        assertThat(verifier.verify(siToken, "did:web:test_participant"))
+        AbstractResultAssert.assertThat(verifier.verify(siToken, "did:web:test_participant"))
                 .isFailed()
                 .detail().contains("test-failure");
     }
