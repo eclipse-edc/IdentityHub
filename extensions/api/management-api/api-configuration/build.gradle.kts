@@ -20,7 +20,7 @@ plugins {
 dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
-    api(project(":spi:identity-hub-did-spi"))
+    api(project(":spi:did-spi"))
 //    api(project(":extensions:api:identityhub-api-auth"))
     implementation(libs.edc.spi.web)
     implementation(libs.edc.core.jerseyproviders)

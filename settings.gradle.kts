@@ -28,7 +28,7 @@ include(":spi:participant-context-spi")
 include(":spi:verifiable-credential-spi")
 include(":spi:keypair-spi")
 include(":spi:identity-hub-store-spi")
-include(":spi:identity-hub-did-spi")
+include(":spi:did-spi")
 
 // core modules
 include(":core:presentation-api")
