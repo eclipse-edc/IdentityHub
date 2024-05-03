@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.security;
+package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.util.string.StringUtils;
@@ -64,9 +64,11 @@ public class KeyPairGenerator {
         algorithm = algorithm.toUpperCase();
         if (SUPPORTED_ALGORITHMS.contains(algorithm)) {
             return switch (algorithm) {
-                case ALGORITHM_RSA -> generateRsa(Integer.parseInt(parameters.getOrDefault(RSA_PARAM_LENGTH, RSA_DEFAULT_LENGTH).toString()));
+                case ALGORITHM_RSA ->
+                        generateRsa(Integer.parseInt(parameters.getOrDefault(RSA_PARAM_LENGTH, RSA_DEFAULT_LENGTH).toString()));
                 case ALGORITHM_EC -> generateEc(parameters.getOrDefault(EC_PARAM_CURVE, EC_DEFAULT_CURVE).toString());
-                case ALGORITHM_EDDSA -> generateEdDsa(parameters.getOrDefault(EC_PARAM_CURVE, CURVE_ED25519).toString());
+                case ALGORITHM_EDDSA ->
+                        generateEdDsa(parameters.getOrDefault(EC_PARAM_CURVE, CURVE_ED25519).toString());
                 default -> Result.failure(notSupportedError(algorithm));
             };
         }

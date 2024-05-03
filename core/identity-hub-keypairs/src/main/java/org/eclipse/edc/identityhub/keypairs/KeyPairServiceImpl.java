@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.keypairs;
 
-import org.eclipse.edc.identityhub.security.KeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;

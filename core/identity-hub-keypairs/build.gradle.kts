@@ -20,7 +20,7 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:identity-hub-store-spi"))
     api(libs.edc.spi.transaction)
-    implementation(project(":extensions:common:security"))
+    implementation(project(":core:lib:keypair-lib"))
     implementation(libs.edc.common.crypto)
     implementation(libs.edc.core.connector)
     testImplementation(libs.edc.junit)

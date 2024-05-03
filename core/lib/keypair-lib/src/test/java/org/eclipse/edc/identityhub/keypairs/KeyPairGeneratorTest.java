@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.security;
+package org.eclipse.edc.identityhub.keypairs;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -57,7 +57,7 @@ class KeyPairGeneratorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 1, -1, Integer.MAX_VALUE})
+    @ValueSource(ints = { 0, 1, -1, Integer.MAX_VALUE })
     void generateKeyPair_rsa_withInvalidLength(int invalidLength) {
         Assertions.assertThatThrownBy(() -> KeyPairGenerator.generateKeyPair(Map.of("algorithm", "RSA", "length", invalidLength))).isInstanceOf(InvalidParameterException.class);
     }
@@ -77,7 +77,7 @@ class KeyPairGeneratorTest {
     }
 
     @ParameterizedTest()
-    @ValueSource(strings = {"secp256r1", "secp384r1", "secp521r1", "SECP256R1", "SecP521R1"})
+    @ValueSource(strings = { "secp256r1", "secp384r1", "secp521r1", "SECP256R1", "SecP521R1" })
     void generateKeyPair_ec_withCurve(String curve) {
         var ecResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EC", "curve", curve));
         assertThat(ecResult).isSucceeded()
@@ -86,7 +86,7 @@ class KeyPairGeneratorTest {
     }
 
     @ParameterizedTest()
-    @ValueSource(strings = {"secp256k1", "foobar"})
+    @ValueSource(strings = { "secp256k1", "foobar" })
     @EmptySource
     void generateKeyPair_ec_withInvalidCurve(String curve) {
         var ecResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EC", "curve", curve));
@@ -104,7 +104,7 @@ class KeyPairGeneratorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Ed25519", "X25519", "ed25519", "x25519", "ED25519"})
+    @ValueSource(strings = { "Ed25519", "X25519", "ed25519", "x25519", "ED25519" })
     void generateKeyPair_edDsa_withValidCurve(String curve) {
         var edDsaResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EdDSA", "curve", curve));
         assertThat(edDsaResult).isSucceeded()
@@ -113,7 +113,7 @@ class KeyPairGeneratorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Ed448", "x448", "foobar"})
+    @ValueSource(strings = { "Ed448", "x448", "foobar" })
     void generateKeyPair_edDsa_withInvalidCurve(String invalidCurve) {
         var edDsaResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EdDSA", "curve", invalidCurve));
         assertThat(edDsaResult).isFailed()
