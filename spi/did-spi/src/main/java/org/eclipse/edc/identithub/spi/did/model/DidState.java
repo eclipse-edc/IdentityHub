@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,11 +8,11 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Metaform Systems, Inc. - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identithub.did.spi.model;
+package org.eclipse.edc.identithub.spi.did.model;
 
 import java.util.Arrays;
 
@@ -44,11 +44,11 @@ public enum DidState {
         this.code = code;
     }
 
-    public int code() {
-        return code;
-    }
-
     public static DidState from(int code) {
         return Arrays.stream(values()).filter(tps -> tps.code == code).findFirst().orElse(null);
+    }
+
+    public int code() {
+        return code;
     }
 }

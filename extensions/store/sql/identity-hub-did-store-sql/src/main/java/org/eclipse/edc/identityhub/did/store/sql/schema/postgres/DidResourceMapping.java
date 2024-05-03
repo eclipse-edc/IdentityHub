@@ -14,12 +14,13 @@
 
 package org.eclipse.edc.identityhub.did.store.sql.schema.postgres;
 
+import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.did.store.sql.DidResourceStatements;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
 
 /**
- * Provides a mapping from the canonical format to SQL column names for a {@link org.eclipse.edc.identithub.did.spi.model.DidResource}
+ * Provides a mapping from the canonical format to SQL column names for a {@link DidResource}
  */
 public class DidResourceMapping extends TranslationMapping {
 

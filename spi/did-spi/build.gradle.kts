@@ -21,8 +21,9 @@ plugins {
 dependencies {
 
     api(libs.edc.spi.identity.did)
-    api(project(":spi:identity-hub-store-spi"))
     api(project(":spi:participant-context-spi"))
+
+    testImplementation(libs.edc.lib.json)
 
     testFixturesImplementation(libs.edc.spi.identity.did)
     testFixturesImplementation(libs.junit.jupiter.api)

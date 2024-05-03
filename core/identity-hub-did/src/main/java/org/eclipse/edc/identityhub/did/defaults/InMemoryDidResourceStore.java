@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.did.defaults;
 
-import org.eclipse.edc.identithub.did.spi.model.DidResource;
-import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.identithub.spi.did.model.DidResource;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.spi.query.QuerySpec;

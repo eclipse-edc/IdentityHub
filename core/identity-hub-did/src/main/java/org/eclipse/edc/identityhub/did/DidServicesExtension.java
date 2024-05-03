@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.identityhub.did;
 
-import org.eclipse.edc.identithub.did.spi.DidDocumentPublisherRegistry;
-import org.eclipse.edc.identithub.did.spi.DidDocumentService;
-import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry;
+import org.eclipse.edc.identithub.spi.did.DidDocumentService;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;

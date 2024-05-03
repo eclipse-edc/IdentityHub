@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,15 +8,15 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Metaform Systems, Inc. - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identithub.did.spi;
+package org.eclipse.edc.identithub.spi.did;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.identithub.did.spi.model.DidResource;
+import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 

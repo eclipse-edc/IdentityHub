@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.api.didmanagement.v1;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identithub.did.spi.DidDocumentService;
+import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.Test;

@@ -23,7 +23,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identithub.did.spi.DidDocumentService;
+import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;

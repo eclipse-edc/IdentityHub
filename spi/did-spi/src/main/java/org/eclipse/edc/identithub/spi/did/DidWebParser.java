@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Metaform Systems, Inc.
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identithub.did.spi;
+package org.eclipse.edc.identithub.spi.did;
 
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.jetbrains.annotations.NotNull;
@@ -21,9 +21,6 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-
-import static org.eclipse.edc.identithub.did.spi.DidConstants.DID_WEB_DID_DOCUMENT;
-import static org.eclipse.edc.identithub.did.spi.DidConstants.WELL_KNOWN;
 
 /**
  * Converts a URL into a did:web identifier by parsing the authority and the path. For example the following conversion applies:
@@ -53,11 +50,11 @@ public class DidWebParser {
         var path = url.getPath();
         path = stripTrailingSlash(path);
 
-        if (path.endsWith(DID_WEB_DID_DOCUMENT)) {
-            path = path.substring(0, path.indexOf(DID_WEB_DID_DOCUMENT));
+        if (path.endsWith(DidConstants.DID_WEB_DID_DOCUMENT)) {
+            path = path.substring(0, path.indexOf(DidConstants.DID_WEB_DID_DOCUMENT));
             path = stripTrailingSlash(path);
         }
-        if (path.endsWith(WELL_KNOWN)) {
+        if (path.endsWith(DidConstants.WELL_KNOWN)) {
             path = path.replace(DidConstants.WELL_KNOWN, "");
             path = stripTrailingSlash(path);
         }

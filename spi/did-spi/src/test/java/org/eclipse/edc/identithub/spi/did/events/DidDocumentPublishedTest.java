@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.events.diddocument;
+package org.eclipse.edc.identithub.spi.did.events;
 
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.types.TypeManager;

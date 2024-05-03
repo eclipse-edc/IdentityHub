@@ -12,37 +12,37 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.events.diddocument;
+package org.eclipse.edc.identithub.spi.did.events;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 /**
- * Event that signals that a DID document was published.
+ * Event that signals that a DID document was un-published.
  */
-@JsonDeserialize(builder = DidDocumentPublished.Builder.class)
-public class DidDocumentPublished extends DidDocumentEvent {
+@JsonDeserialize(builder = DidDocumentUnpublished.Builder.class)
+public class DidDocumentUnpublished extends DidDocumentEvent {
     @Override
     public String name() {
-        return "diddocument.published";
+        return "diddocument.unpublished";
     }
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static class Builder extends DidDocumentEvent.Builder<DidDocumentPublished, Builder> {
+    public static class Builder extends DidDocumentEvent.Builder<DidDocumentUnpublished, Builder> {
 
         private Builder() {
-            super(new DidDocumentPublished());
-        }
-
-        @Override
-        public Builder self() {
-            return this;
+            super(new DidDocumentUnpublished());
         }
 
         @JsonCreator
         public static Builder newInstance() {
             return new Builder();
+        }
+
+        @Override
+        public Builder self() {
+            return this;
         }
     }
 }

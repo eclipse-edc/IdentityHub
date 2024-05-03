@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import org.eclipse.edc.identithub.did.spi.DidDocumentService;
+import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;

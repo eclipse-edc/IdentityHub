@@ -34,7 +34,6 @@ dependencies {
         exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
     }
 
-    testImplementation(libs.edc.lib.json)
     testFixturesImplementation(libs.nimbus.jwt)
     testFixturesImplementation(libs.edc.spi.identity.did)
 }
