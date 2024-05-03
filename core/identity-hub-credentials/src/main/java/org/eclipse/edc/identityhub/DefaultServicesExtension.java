@@ -16,11 +16,11 @@ package org.eclipse.edc.identityhub;
 
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
-import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.defaults.InMemoryCredentialStore;
 import org.eclipse.edc.identityhub.defaults.InMemoryKeyPairResourceStore;
 import org.eclipse.edc.identityhub.defaults.InMemoryParticipantContextStore;
 import org.eclipse.edc.identityhub.defaults.InMemorySignatureSuiteRegistry;
+import org.eclipse.edc.identityhub.query.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
