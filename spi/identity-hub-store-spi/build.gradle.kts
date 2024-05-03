@@ -6,6 +6,9 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
+    api(project(":spi:participant-context-spi"))
+    api(project(":spi:verifiable-credential-spi"))
+    api(project(":spi:keypair-spi"))
     api(libs.edc.spi.core)
 
     testFixturesImplementation(testFixtures(project(":spi:identity-hub-spi")))

@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.keypairs;
 
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairEventListener;
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairObservable;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairEventListener;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.spi.observe.ObservableImpl;
 
 public class KeyPairObservableImpl extends ObservableImpl<KeyPairEventListener> implements KeyPairObservable {

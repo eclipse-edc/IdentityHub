@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.identityhub.publisher.did.local;
 
-import org.eclipse.edc.identithub.did.spi.model.DidState;
-import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentObservable;
+import org.eclipse.edc.identithub.spi.did.events.DidDocumentObservable;
+import org.eclipse.edc.identithub.spi.did.model.DidState;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -39,9 +39,9 @@ class LocalDidPublisherTest {
 
     public static final String DID = "did:web:test";
     private final DidResourceStore storeMock = mock();
+    private final DidDocumentObservable observableMock = mock();
     private LocalDidPublisher publisher;
     private Monitor monitor;
-    private final DidDocumentObservable observableMock = mock();
 
     @BeforeEach
     void setUp() {
@@ -51,13 +51,13 @@ class LocalDidPublisherTest {
 
 
     @ParameterizedTest
-    @ValueSource(strings = {DID, "DID:web:test", "DID:WEB:TEST"})
+    @ValueSource(strings = { DID, "DID:web:test", "DID:WEB:TEST" })
     void canHandle(String validDid) {
         assertThat(publisher.canHandle(validDid)).isTrue();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"did:web", "DID:web:", "did:indy:whatever", "dod:web:something"})
+    @ValueSource(strings = { "did:web", "DID:web:", "did:indy:whatever", "dod:web:something" })
     void canHandle_invalid(String validDid) {
         assertThat(publisher.canHandle(validDid)).isFalse();
     }

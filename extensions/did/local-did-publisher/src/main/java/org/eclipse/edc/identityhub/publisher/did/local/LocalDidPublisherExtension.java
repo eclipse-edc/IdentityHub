@@ -14,11 +14,11 @@
 
 package org.eclipse.edc.identityhub.publisher.did.local;
 
-import org.eclipse.edc.identithub.did.spi.DidConstants;
-import org.eclipse.edc.identithub.did.spi.DidDocumentPublisherRegistry;
-import org.eclipse.edc.identithub.did.spi.DidWebParser;
-import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.events.diddocument.DidDocumentObservable;
+import org.eclipse.edc.identithub.spi.did.DidConstants;
+import org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry;
+import org.eclipse.edc.identithub.spi.did.DidWebParser;
+import org.eclipse.edc.identithub.spi.did.events.DidDocumentObservable;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;

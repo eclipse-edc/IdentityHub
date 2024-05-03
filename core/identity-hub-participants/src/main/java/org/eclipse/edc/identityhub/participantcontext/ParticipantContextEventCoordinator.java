@@ -15,9 +15,9 @@
 package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identithub.did.spi.DidDocumentService;
-import org.eclipse.edc.identityhub.spi.KeyPairService;
-import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
+import org.eclipse.edc.identithub.spi.did.DidDocumentService;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
@@ -38,12 +38,12 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
  * For example, once a KeyPair is added, the {@link KeyPairService} will emit a {@link org.eclipse.edc.identityhub.spi.events.keypair.KeyPairAdded} event. The {@link DidDocumentService}
  * can then react to this event by updating the DID Document.
  */
-public class ParticipantContextEventCoordinator implements EventSubscriber {
+class ParticipantContextEventCoordinator implements EventSubscriber {
     private final Monitor monitor;
     private final DidDocumentService didDocumentService;
     private final KeyPairService keyPairService;
 
-    public ParticipantContextEventCoordinator(Monitor monitor, DidDocumentService didDocumentService, KeyPairService keyPairService) {
+    ParticipantContextEventCoordinator(Monitor monitor, DidDocumentService didDocumentService, KeyPairService keyPairService) {
         this.monitor = monitor;
         this.didDocumentService = didDocumentService;
         this.keyPairService = keyPairService;

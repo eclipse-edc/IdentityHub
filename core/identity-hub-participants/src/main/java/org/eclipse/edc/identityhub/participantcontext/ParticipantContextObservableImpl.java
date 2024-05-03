@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextListener;
-import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextObservable;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextListener;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.spi.observe.ObservableImpl;
 
 public class ParticipantContextObservableImpl extends ObservableImpl<ParticipantContextListener> implements ParticipantContextObservable {

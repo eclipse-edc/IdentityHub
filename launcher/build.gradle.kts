@@ -19,17 +19,17 @@ plugins {
 }
 
 dependencies {
-    runtimeOnly(project(":core:identity-hub-api"))
+    runtimeOnly(project(":core:presentation-api"))
     runtimeOnly(project(":core:identity-hub-did"))
     runtimeOnly(project(":core:identity-hub-credentials"))
     runtimeOnly(project(":core:identity-hub-participants"))
     runtimeOnly(project(":core:identity-hub-keypairs"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
-    runtimeOnly(project(":extensions:api:did-mgmt-api"))
-    runtimeOnly(project(":extensions:api:participant-context-mgmt-api"))
-    runtimeOnly(project(":extensions:api:verifiable-credential-mgmt-api"))
-    runtimeOnly(project(":extensions:api:keypair-mgmt-api"))
-    runtimeOnly(project(":extensions:api:identityhub-management-api-configuration"))
+    runtimeOnly(project(":extensions:api:management-api:did-api"))
+    runtimeOnly(project(":extensions:api:management-api:participant-context-api"))
+    runtimeOnly(project(":extensions:api:management-api:verifiable-credentials-api"))
+    runtimeOnly(project(":extensions:api:management-api:keypair-api"))
+    runtimeOnly(project(":extensions:api:management-api:api-configuration"))
     runtimeOnly(project(":extensions:api:identityhub-api-authentication"))
     runtimeOnly(project(":extensions:api:identityhub-api-authorization"))
     runtimeOnly(libs.edc.identity.did.core)

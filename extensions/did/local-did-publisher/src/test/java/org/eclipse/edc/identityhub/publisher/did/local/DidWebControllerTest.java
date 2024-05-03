@@ -16,10 +16,10 @@ package org.eclipse.edc.identityhub.publisher.did.local;
 
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identithub.did.spi.DidWebParser;
-import org.eclipse.edc.identithub.did.spi.model.DidResource;
-import org.eclipse.edc.identithub.did.spi.model.DidState;
-import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.identithub.spi.did.DidWebParser;
+import org.eclipse.edc.identithub.spi.did.model.DidResource;
+import org.eclipse.edc.identithub.spi.did.model.DidState;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.Test;
@@ -41,6 +41,10 @@ import static org.mockito.Mockito.when;
 class DidWebControllerTest extends RestControllerTestBase {
 
     private final DidResourceStore storeMock = mock();
+
+    private static DidResource publishedDid(String did) {
+        return createDidResource(did).state(DidState.PUBLISHED).build();
+    }
 
     @Test
     void getDidDocument() {
@@ -103,9 +107,5 @@ class DidWebControllerTest extends RestControllerTestBase {
         return given()
                 .baseUri("http://localhost:" + port)
                 .when();
-    }
-
-    private static DidResource publishedDid(String did) {
-        return createDidResource(did).state(DidState.PUBLISHED).build();
     }
 }

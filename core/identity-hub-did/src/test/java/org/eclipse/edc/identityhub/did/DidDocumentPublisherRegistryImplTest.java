@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.identityhub.did;
 
-import org.eclipse.edc.identithub.did.spi.DidDocumentPublisher;
+import org.eclipse.edc.identithub.spi.did.DidDocumentPublisher;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.edc.identithub.did.spi.DidConstants.DID_WEB_METHOD;
+import static org.eclipse.edc.identithub.spi.did.DidConstants.DID_WEB_METHOD;
 import static org.mockito.Mockito.mock;
 
 class DidDocumentPublisherRegistryImplTest {

@@ -37,7 +37,7 @@ import static org.eclipse.edc.identityhub.core.CoreServicesExtension.PUBLIC_KEY_
  * <p>
  * It is NOT intended for general use when resolving arbitrary public keys!
  */
-public class LocalPublicKeySupplier implements Supplier<PublicKey> {
+class LocalPublicKeySupplier implements Supplier<PublicKey> {
     public static final String NO_PUBLIC_KEY_CONFIGURED_ERROR = "No public key was configured! Please either configure '%s', '%s' or '%s'."
             .formatted(PUBLIC_KEY_VAULT_ALIAS_PROPERTY, PUBLIC_KEY_PATH_PROPERTY, PUBLIC_KEY_VAULT_ALIAS_PROPERTY);
     private String vaultAlias;

@@ -14,12 +14,13 @@
 
 package org.eclipse.edc.identityhub.did.store.sql;
 
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.statement.SqlStatements;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 /**
- * Defines SQL-statements and column names for use with a SQL-based {@link org.eclipse.edc.identithub.did.spi.store.DidResourceStore}
+ * Defines SQL-statements and column names for use with a SQL-based {@link DidResourceStore}
  */
 public interface DidResourceStatements extends SqlStatements {
     default String getDidResourceTableName() {

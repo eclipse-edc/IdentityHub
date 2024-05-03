@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.did.store.sql;
 
-import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.did.store.sql.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.identityhub.did.store.test.DidResourceStoreTestBase;
 import org.eclipse.edc.json.JacksonTypeManager;
