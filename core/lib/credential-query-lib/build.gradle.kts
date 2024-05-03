@@ -3,7 +3,6 @@ plugins {
 }
 
 dependencies {
-    api(project(":spi:identity-hub-spi"))
     api(project(":spi:identity-hub-store-spi"))
 
     testImplementation(libs.edc.junit)
