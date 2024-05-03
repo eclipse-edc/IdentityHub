@@ -8,7 +8,7 @@ dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:identity-hub-store-spi"))
-    implementation(project(":extensions:api:identityhub-management-api-configuration"))
+    implementation(project(":extensions:api:management-api:api-configuration"))
     implementation(libs.edc.spi.web)
     implementation(libs.edc.lib.util)
     implementation(libs.jakarta.rsApi)
