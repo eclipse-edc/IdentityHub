@@ -24,15 +24,6 @@ dependencies {
 
     api(project(":spi:participant-context-spi"))
     api(libs.edc.spi.iatp)
-    api(libs.edc.spi.vc)
-    api(libs.edc.spi.web)
-    implementation(libs.jackson.databind)
-    implementation(libs.nimbus.jwt)
-    implementation(libs.edc.spi.identity.did)
-
-    implementation(libs.swagger.jaxrs) {
-        exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
-    }
 
     testImplementation(libs.edc.lib.json)
     testFixturesImplementation(libs.nimbus.jwt)

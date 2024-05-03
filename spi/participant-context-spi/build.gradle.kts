@@ -21,10 +21,6 @@ plugins {
 val swagger: String by project
 
 dependencies {
-
-    api(libs.edc.spi.web)
-    implementation(libs.edc.spi.identity.did)
-
+    implementation(libs.edc.spi.identity.did) // ParticipantManifest#serviceEndpoint
     testImplementation(libs.edc.lib.json)
-    testFixturesImplementation(libs.edc.spi.identity.did)
 }

@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.spi.keypair.events;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,7 @@ class KeyPairRevokedTest {
     private final TypeManager typeManager = new JacksonTypeManager();
 
     @Test
-    void verify_serDes() throws JsonProcessingException {
+    void verify_serDes() {
         var evt = KeyPairRevoked.Builder.newInstance().keyId("resource-id")
                 .participantId("participant-id")
                 .build();

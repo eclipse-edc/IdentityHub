@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi;
+package org.eclipse.edc.identityhub.spi.keypair;
 
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;

@@ -14,7 +14,6 @@
 
 plugins {
     `java-library`
-    `java-test-fixtures`
     `maven-publish`
 }
 
@@ -23,8 +22,7 @@ val swagger: String by project
 dependencies {
 
     api(project(":spi:participant-context-spi"))
+    api(libs.edc.spi.core)
 
     testImplementation(libs.edc.lib.json)
-    testFixturesImplementation(libs.nimbus.jwt)
-    testFixturesImplementation(libs.edc.spi.identity.did)
 }

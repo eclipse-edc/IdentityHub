@@ -23,8 +23,8 @@ import org.eclipse.edc.identithub.verifiablepresentation.generators.JwtPresentat
 import org.eclipse.edc.identithub.verifiablepresentation.generators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenVerifierImpl;
 import org.eclipse.edc.identityhub.query.CredentialQueryResolverImpl;
-import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;

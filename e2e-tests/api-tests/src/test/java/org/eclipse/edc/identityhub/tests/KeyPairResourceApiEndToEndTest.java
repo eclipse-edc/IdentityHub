@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.tests;
 
 import com.nimbusds.jose.jwk.Curve;
 import io.restassured.http.Header;
-import org.eclipse.edc.identityhub.spi.KeyPairService;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
