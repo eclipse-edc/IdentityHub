@@ -1627,8 +1627,6 @@ components:
           example: null
           items:
             $ref: "#/components/schemas/Constraint"
-        parentPermission:
-          $ref: "#/components/schemas/Permission"
       example: null
     Issuer:
       type: object
