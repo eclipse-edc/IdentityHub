@@ -90,8 +90,8 @@ public class KeyDescriptor {
     }
 
     /**
-     * Determines whether the new key should be set to {@link org.eclipse.edc.identityhub.spi.model.KeyPairState#ACTIVE}.
-     * If this is set to {@code false}, the key pair will be created in the {@link org.eclipse.edc.identityhub.spi.model.KeyPairState#CREATED} state.
+     * Determines whether the new key should be set to {@code KeyPairState.ACTIVE}.
+     * If this is set to {@code false}, the key pair will be created in the {@code KeyPairState.CREATED} state.
      * Defaults to {@code true}.
      */
     public boolean isActive() {

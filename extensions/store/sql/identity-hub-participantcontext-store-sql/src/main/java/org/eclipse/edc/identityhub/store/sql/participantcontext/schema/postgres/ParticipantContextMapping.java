@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.store.sql.participantcontext.schema.postgres;
 
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.store.sql.participantcontext.ParticipantContextStoreStatements;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
