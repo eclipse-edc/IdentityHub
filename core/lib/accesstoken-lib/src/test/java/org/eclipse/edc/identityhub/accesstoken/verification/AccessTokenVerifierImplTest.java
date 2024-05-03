@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.accesstoken.verification;
 
 import org.assertj.core.api.Assertions;
-import org.eclipse.edc.identityhub.junit.testfixtures.JwtCreationUtil;
-import org.eclipse.edc.identityhub.junit.testfixtures.VerifiableCredentialTestUtil;
+import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil;
+import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.ClaimToken;

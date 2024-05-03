@@ -15,13 +15,13 @@
 package org.eclipse.edc.identityhub.keypairs;
 
 import org.eclipse.edc.identityhub.spi.KeyPairService;
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairObservable;
-import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
-import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextDeleted;
-import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.model.KeyPairState;
-import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
-import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.event.Event;

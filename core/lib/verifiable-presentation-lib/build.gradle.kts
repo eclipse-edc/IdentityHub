@@ -4,6 +4,8 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
+    api(project(":spi:verifiable-credential-spi"))
+    api(project(":spi:keypair-spi"))
     implementation(libs.edc.spi.token)
     implementation(libs.edc.spi.vc)
     implementation(libs.edc.spi.jsonld)

@@ -25,8 +25,8 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
@@ -72,7 +72,7 @@ public interface ParticipantContextApi {
             operationId = "regenerateParticipantToken",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The API token was regenerated successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
+                    @ApiResponse(responseCode = "200", description = "The API token was regenerated successfully", content = { @Content(schema = @Schema(implementation = String.class)) }),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -86,9 +86,9 @@ public interface ParticipantContextApi {
     @Operation(description = "Activates a ParticipantContext. This operation is idempotent, i.e. activating an already active ParticipantContext is a NOOP.",
             operationId = "activateParticipant",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
-            parameters = {@Parameter(name = "isActive", description = "Whether the participantContext should be activated or deactivated. Defaults to 'false'")},
+            parameters = { @Parameter(name = "isActive", description = "Whether the participantContext should be activated or deactivated. Defaults to 'false'") },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was activated/deactivated successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
+                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was activated/deactivated successfully", content = { @Content(schema = @Schema(implementation = String.class)) }),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -102,7 +102,7 @@ public interface ParticipantContextApi {
     @Operation(description = "Delete a ParticipantContext.",
             operationId = "deleteParticipant",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was deleted successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
+                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was deleted successfully", content = { @Content(schema = @Schema(implementation = String.class)) }),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -132,7 +132,7 @@ public interface ParticipantContextApi {
             operationId = "getAllParticipants",
             parameters = {
                     @Parameter(name = "offset", description = "the paging offset. defaults to 0"),
-                    @Parameter(name = "limit", description = "the page size. defaults to 50")},
+                    @Parameter(name = "limit", description = "the page size. defaults to 50") },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of ParticipantContexts.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ParticipantContext.class)))),

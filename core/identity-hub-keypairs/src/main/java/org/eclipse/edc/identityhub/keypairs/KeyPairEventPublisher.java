@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.identityhub.keypairs;
 
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairAdded;
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairEvent;
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairEventListener;
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairRevoked;
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairRotated;
-import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairEvent;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairEventListener;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventRouter;
 
@@ -45,15 +45,6 @@ public class KeyPairEventPublisher implements KeyPairEventListener {
     }
 
     @Override
-    public void revoked(KeyPairResource keyPair) {
-        var event = KeyPairRevoked.Builder.newInstance()
-                .participantId(keyPair.getParticipantId())
-                .keyId(keyPair.getId())
-                .build();
-        publish(event);
-    }
-
-    @Override
     public void rotated(KeyPairResource keyPair) {
         var event = KeyPairRotated.Builder.newInstance()
                 .participantId(keyPair.getParticipantId())
@@ -62,6 +53,14 @@ public class KeyPairEventPublisher implements KeyPairEventListener {
         publish(event);
     }
 
+    @Override
+    public void revoked(KeyPairResource keyPair) {
+        var event = KeyPairRevoked.Builder.newInstance()
+                .participantId(keyPair.getParticipantId())
+                .keyId(keyPair.getId())
+                .build();
+        publish(event);
+    }
 
     private void publish(KeyPairEvent event) {
         var envelope = EventEnvelope.Builder.newInstance()

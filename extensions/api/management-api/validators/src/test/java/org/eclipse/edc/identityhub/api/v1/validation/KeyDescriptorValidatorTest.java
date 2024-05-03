@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.v1.validation;
 
-import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.junit.jupiter.api.Test;
 
@@ -111,5 +111,5 @@ class KeyDescriptorValidatorTest {
         assertThat(validator.validate(descriptor)).isFailed()
                 .detail().isEqualTo("Either the public key is specified (PEM or JWK), or the generator params are provided, not both.");
     }
-    
+
 }

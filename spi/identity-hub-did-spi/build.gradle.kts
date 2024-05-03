@@ -22,6 +22,7 @@ dependencies {
 
     api(libs.edc.spi.identity.did)
     api(project(":spi:identity-hub-store-spi"))
+    api(project(":spi:participant-context-spi"))
 
     testFixturesImplementation(libs.edc.spi.identity.did)
     testFixturesImplementation(libs.junit.jupiter.api)

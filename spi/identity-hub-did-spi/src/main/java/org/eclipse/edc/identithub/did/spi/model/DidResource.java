@@ -16,7 +16,7 @@ package org.eclipse.edc.identithub.did.spi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 
 import java.time.Clock;
 import java.util.Objects;
@@ -72,6 +72,10 @@ public class DidResource extends ParticipantResource {
             super(new DidResource());
         }
 
+        public static Builder newInstance() {
+            return new Builder();
+        }
+
         public Builder did(String did) {
             this.entity.did = did;
             return this;
@@ -121,10 +125,6 @@ public class DidResource extends ParticipantResource {
         public Builder state(int code) {
             this.entity.state = code;
             return this;
-        }
-
-        public static Builder newInstance() {
-            return new Builder();
         }
 
 

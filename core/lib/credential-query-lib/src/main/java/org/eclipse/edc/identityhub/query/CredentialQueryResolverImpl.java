@@ -16,10 +16,10 @@ package org.eclipse.edc.identityhub.query;
 
 import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
-import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
-import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
-import org.eclipse.edc.identityhub.spi.resolution.QueryResult;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.QueryResult;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.AbstractResult;

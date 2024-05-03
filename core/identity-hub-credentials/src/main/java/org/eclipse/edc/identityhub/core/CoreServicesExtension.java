@@ -25,11 +25,11 @@ import org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenVerifierI
 import org.eclipse.edc.identityhub.query.CredentialQueryResolverImpl;
 import org.eclipse.edc.identityhub.spi.KeyPairService;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
-import org.eclipse.edc.identityhub.spi.generator.PresentationCreatorRegistry;
-import org.eclipse.edc.identityhub.spi.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
-import org.eclipse.edc.identityhub.spi.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;

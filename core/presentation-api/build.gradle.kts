@@ -19,10 +19,11 @@ plugins {
 }
 
 dependencies {
+    api(project(":spi:identity-hub-spi"))
+    api(project(":spi:verifiable-credential-spi"))
     api(libs.edc.spi.jsonld)
     api(libs.edc.spi.jwt)
     api(libs.edc.spi.core)
-    api(project(":spi:identity-hub-spi"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
     implementation(libs.edc.spi.iatp)
@@ -33,7 +34,7 @@ dependencies {
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.ext.jsonld)
     testImplementation(testFixtures(libs.edc.core.jersey))
-    testImplementation(testFixtures(project(":spi:identity-hub-spi")))
+    testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(libs.nimbus.jwt)
 }
 

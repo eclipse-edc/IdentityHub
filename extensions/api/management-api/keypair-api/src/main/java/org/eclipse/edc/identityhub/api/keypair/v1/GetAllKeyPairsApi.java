@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
@@ -38,7 +38,7 @@ public interface GetAllKeyPairsApi {
             operationId = "getAllKeyPairs",
             parameters = {
                     @Parameter(name = "offset", description = "the paging offset. defaults to 0"),
-                    @Parameter(name = "limit", description = "the page size. defaults to 50")},
+                    @Parameter(name = "limit", description = "the page size. defaults to 50") },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of KeyPair resources.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = KeyPairResource.class)))),

@@ -10,6 +10,5 @@ dependencies {
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.core.token)
     testImplementation(libs.nimbus.jwt)
-    testImplementation(testFixtures(project(":spi:identity-hub-spi")))
-
+    testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
 }

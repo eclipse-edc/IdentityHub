@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.api.v1.validation;
 
 import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.identityhub.spi.model.participant.KeyDescriptor;
-import org.eclipse.edc.identityhub.spi.model.participant.ParticipantManifest;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -78,7 +78,7 @@ class ParticipantManifestValidatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "  ", "\n"})
+    @ValueSource(strings = { "", "  ", "\n" })
     @NullAndEmptySource
     void validate_didInvalid(String did) {
         var manifest = createManifest().did(did).build();
@@ -87,7 +87,7 @@ class ParticipantManifestValidatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "  ", "\n"})
+    @ValueSource(strings = { "", "  ", "\n" })
     @NullAndEmptySource
     void validate_participantIdNull(String participantId) {
         var manifest = createManifest().participantId(participantId).build();

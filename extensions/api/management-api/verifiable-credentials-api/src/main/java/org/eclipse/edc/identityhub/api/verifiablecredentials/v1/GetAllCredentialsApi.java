@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
@@ -37,7 +37,7 @@ public interface GetAllCredentialsApi {
             operationId = "getAllCredentials",
             parameters = {
                     @Parameter(name = "offset", description = "the paging offset. defaults to 0"),
-                    @Parameter(name = "limit", description = "the page size. defaults to 50")},
+                    @Parameter(name = "limit", description = "the page size. defaults to 50") },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of VerifiableCredential resources.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = VerifiableCredentialResource.class)))),
