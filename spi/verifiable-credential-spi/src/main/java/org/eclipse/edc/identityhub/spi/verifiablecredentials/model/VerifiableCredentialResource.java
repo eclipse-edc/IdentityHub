@@ -19,13 +19,20 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityResource;
 import org.eclipse.edc.policy.model.Policy;
 
+import java.time.Instant;
+
 /**
  * Represents a Verifiable Credential Resource.
  * The Verifiable Credential Resource extends the Identity Resource class and adds additional properties specific to verifiable credentials,
  * specifically the issuance and re-issuance policies as well as a representation of the VC
  */
 public class VerifiableCredentialResource extends IdentityResource {
+    private static final String EXPIRED = "expired";
+    private static final String REVOKED = "revoked";
+    private static final String SUSPENDED = "suspended";
     private int state;
+    private String credentialStatus;
+    private Instant timeOfLastStatusUpdate;
     private Policy issuancePolicy;
     private Policy reissuancePolicy;
     private VerifiableCredentialContainer verifiableCredential;
@@ -51,8 +58,49 @@ public class VerifiableCredentialResource extends IdentityResource {
         return reissuancePolicy;
     }
 
+    public boolean isExpired() {
+        return EXPIRED.equalsIgnoreCase(credentialStatus);
+    }
+
+    public boolean isRevoked() {
+        return REVOKED.equalsIgnoreCase(credentialStatus);
+    }
+
+    public boolean isSuspended() {
+        return SUSPENDED.equalsIgnoreCase(credentialStatus);
+    }
+
+    public void suspend() {
+        setCredentialStatus(SUSPENDED);
+    }
+
+    public void setExpired() {
+        setCredentialStatus(EXPIRED);
+    }
+
+    public void revoke() {
+        setCredentialStatus(REVOKED);
+    }
+
+    public void clearStatus() {
+        setCredentialStatus(null);
+    }
+
     public VerifiableCredentialContainer getVerifiableCredential() {
         return verifiableCredential;
+    }
+
+    public Instant getTimeOfLastStatusUpdate() {
+        return timeOfLastStatusUpdate;
+    }
+
+    public String getCredentialStatus() {
+        return credentialStatus;
+    }
+
+    public void setCredentialStatus(String status) {
+        credentialStatus = status;
+        timeOfLastStatusUpdate = Instant.now();
     }
 
     public static class Builder extends IdentityResource.Builder<VerifiableCredentialResource, Builder> {
