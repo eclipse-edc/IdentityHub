@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.core;
 
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
+import org.eclipse.edc.iam.verifiablecredentials.StatusList2021RevocationService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identithub.verifiablepresentation.PresentationCreatorRegistryImpl;
@@ -80,13 +81,17 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Setting(value = "Public key in PEM format")
     public static final String PUBLIC_KEY_PEM = "edc.ih.iam.publickey.pem";
+
+    public static final long DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS = 15 * 60 * 1000L;
+    @Setting(value = "Validity period of cached StatusList2021 credential entries in milliseconds.", defaultValue = DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS + "", type = "long")
+    public static final String REVOCATION_CACHE_VALIDITY = "edc.iam.credential.revocation.cache.validity";
+
     public static final String PRESENTATION_EXCHANGE_V_1_JSON = "presentation-exchange.v1.json";
     public static final String PRESENTATION_QUERY_V_08_JSON = "iatp.v08.json";
     public static final String PRESENTATION_SUBMISSION_V1_JSON = "presentation-submission.v1.json";
     public static final String DID_JSON = "did.json";
     public static final String JWS_2020_JSON = "jws2020.json";
     public static final String CREDENTIALS_V_1_JSON = "credentials.v1.json";
-    private final String defaultSuite = IdentityHubConstants.JWS_2020_SIGNATURE_SUITE;
     private PresentationCreatorRegistryImpl presentationCreatorRegistry;
 
     @Inject
@@ -117,7 +122,7 @@ public class CoreServicesExtension implements ServiceExtension {
     private SignatureSuiteRegistry suiteRegistry;
     @Inject
     private KeyPairService keyPairService;
-    @Inject
+    
     private RevocationListService revocationService;
 
     @Override
@@ -141,7 +146,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public CredentialQueryResolver createCredentialQueryResolver(ServiceExtensionContext context) {
-        return new CredentialQueryResolverImpl(credentialStore, transformer, revocationService, context.getMonitor().withPrefix("Credential Query"));
+        return new CredentialQueryResolverImpl(credentialStore, transformer, createRevocationListService(context), context.getMonitor().withPrefix("Credential Query"));
     }
 
     @Provider
@@ -151,12 +156,20 @@ public class CoreServicesExtension implements ServiceExtension {
             presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(privateKeyResolver, clock, getOwnDid(context), new JwtGenerationService()), CredentialFormat.JWT);
 
             var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(context.getMonitor()).build();
-            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, getOwnDid(context), signatureSuiteRegistry, defaultSuite, ldpIssuer, typeManager.getMapper(JSON_LD)),
+            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, getOwnDid(context), signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager.getMapper(JSON_LD)),
                     CredentialFormat.JSON_LD);
         }
         return presentationCreatorRegistry;
     }
 
+    @Provider
+    public RevocationListService createRevocationListService(ServiceExtensionContext context) {
+        if (revocationService == null) {
+            var validity = context.getConfig().getLong(REVOCATION_CACHE_VALIDITY, DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS);
+            revocationService = new StatusList2021RevocationService(typeManager.getMapper(), validity);
+        }
+        return revocationService;
+    }
 
     @Provider
     public VerifiablePresentationService presentationGenerator(ServiceExtensionContext context) {
