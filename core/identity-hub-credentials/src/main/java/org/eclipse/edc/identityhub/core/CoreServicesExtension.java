@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.core;
 
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
+import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identithub.verifiablepresentation.PresentationCreatorRegistryImpl;
 import org.eclipse.edc.identithub.verifiablepresentation.VerifiablePresentationServiceImpl;
@@ -116,6 +117,8 @@ public class CoreServicesExtension implements ServiceExtension {
     private SignatureSuiteRegistry suiteRegistry;
     @Inject
     private KeyPairService keyPairService;
+    @Inject
+    private RevocationListService revocationService;
 
     @Override
     public String name() {
@@ -137,8 +140,8 @@ public class CoreServicesExtension implements ServiceExtension {
 
 
     @Provider
-    public CredentialQueryResolver createCredentialQueryResolver() {
-        return new CredentialQueryResolverImpl(credentialStore, transformer);
+    public CredentialQueryResolver createCredentialQueryResolver(ServiceExtensionContext context) {
+        return new CredentialQueryResolverImpl(credentialStore, transformer, revocationService, context.getMonitor().withPrefix("Credential Query"));
     }
 
     @Provider

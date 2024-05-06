@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.query;
 
 import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
+import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
@@ -25,11 +26,14 @@ import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.QueryFailure;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,7 +51,21 @@ class CredentialQueryResolverImplTest {
 
     public static final String TEST_PARTICIPANT_CONTEXT_ID = "test-participant";
     private final CredentialStore storeMock = mock();
-    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer());
+    private final RevocationListService revocationServiceMock = mock();
+    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(), revocationServiceMock, mock());
+
+    private static VerifiableCredentialResource.Builder createCredentialResource(VerifiableCredential cred) {
+        return VerifiableCredentialResource.Builder.newInstance()
+                .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.JSON_LD, cred))
+                .holderId("test-holder")
+                .issuerId("test-issuer")
+                .participantId(TEST_PARTICIPANT_CONTEXT_ID);
+    }
+
+    @BeforeEach
+    void setUp() {
+        when(revocationServiceMock.checkValidity(any())).thenReturn(Result.success());
+    }
 
     @Test
     void query_noResult() {
@@ -216,23 +234,52 @@ class CredentialQueryResolverImplTest {
         assertThat(res.getFailureDetail()).isEqualTo("test-failure");
     }
 
+    @Test
+    void query_whenExpiredCredential_doesNotInclude() {
+        var credential = createCredential("TestCredential")
+                .expirationDate(Instant.now().minus(1, ChronoUnit.HOURS))
+                .build();
+        var resource = createCredentialResource(credential).build();
+
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+
+
+        assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
+        assertThat(res.getContent()).containsExactly(credential.getVerifiableCredential());
+    }
+
+    @Test
+    void query_whenNotYetValidCredential_doesNotInclude() {
+
+    }
+
+    @Test
+    void query_whenRevokedCredential_doesNotInclude() {
+        var credential = createCredentialResource("TestCredential");
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential)));
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+        assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
+        assertThat(res.getContent()).containsExactly(credential.getVerifiableCredential());
+    }
+
+    private VerifiableCredential.Builder createCredential(String... type) {
+        return VerifiableCredential.Builder.newInstance()
+                .types(Arrays.asList(type))
+                .issuer(new Issuer("test-issuer", Map.of()))
+                .issuanceDate(Instant.now())
+                .credentialSubject(CredentialSubject.Builder.newInstance().id("test-cred-id").claim("test-claim", "test-value").build());
+    }
+
     private PresentationQueryMessage createPresentationQuery(@Nullable String... scope) {
         var scopes = new ArrayList<>(Arrays.asList(scope));
         return PresentationQueryMessage.Builder.newinstance().scopes(scopes).build();
     }
 
     private VerifiableCredentialResource createCredentialResource(String... type) {
-        var cred = VerifiableCredential.Builder.newInstance()
-                .types(Arrays.asList(type))
-                .issuer(new Issuer("test-issuer", Map.of()))
-                .issuanceDate(Instant.now())
-                .credentialSubject(CredentialSubject.Builder.newInstance().id("test-cred-id").claim("test-claim", "test-value").build())
-                .build();
-        return VerifiableCredentialResource.Builder.newInstance()
-                .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.JSON_LD, cred))
-                .holderId("test-holder")
-                .issuerId("test-issuer")
-                .participantId(TEST_PARTICIPANT_CONTEXT_ID)
-                .build();
+        var cred = createCredential(type).build();
+        return createCredentialResource(cred).build();
     }
 }
