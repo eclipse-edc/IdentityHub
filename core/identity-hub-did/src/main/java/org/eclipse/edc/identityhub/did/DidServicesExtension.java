@@ -14,13 +14,13 @@
 
 package org.eclipse.edc.identityhub.did;
 
-import org.eclipse.edc.identithub.did.spi.DidDocumentPublisherRegistry;
-import org.eclipse.edc.identithub.did.spi.DidDocumentService;
-import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairAdded;
-import org.eclipse.edc.identityhub.spi.events.keypair.KeyPairRevoked;
-import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextDeleted;
-import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextUpdated;
+import org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry;
+import org.eclipse.edc.identithub.spi.did.DidDocumentService;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;

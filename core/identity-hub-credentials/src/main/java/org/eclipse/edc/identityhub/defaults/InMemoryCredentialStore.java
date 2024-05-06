@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
-import org.eclipse.edc.identityhub.spi.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 

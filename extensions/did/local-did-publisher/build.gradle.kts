@@ -22,7 +22,7 @@ val swagger: String by project
 
 dependencies {
 
-    api(project(":spi:identity-hub-did-spi"))
+    api(project(":spi:did-spi"))
     implementation(libs.jakarta.rsApi)
     implementation(libs.edc.spi.web)
 

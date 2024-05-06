@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.store.test;
 
 import org.assertj.core.api.Assertions;
-import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
-import org.eclipse.edc.identityhub.spi.model.participant.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static java.util.stream.IntStream.range;
-import static org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState.ACTIVATED;
-import static org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState.CREATED;
-import static org.eclipse.edc.identityhub.spi.model.participant.ParticipantContextState.DEACTIVATED;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.ACTIVATED;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.CREATED;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.DEACTIVATED;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public abstract class ParticipantContextStoreTestBase {

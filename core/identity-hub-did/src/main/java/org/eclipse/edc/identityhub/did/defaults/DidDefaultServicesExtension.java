@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.did.defaults;
 
-import org.eclipse.edc.identithub.did.spi.store.DidResourceStore;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;

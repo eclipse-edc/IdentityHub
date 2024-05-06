@@ -14,11 +14,12 @@
 
 package org.eclipse.edc.identityhub.spi.store;
 
-import org.eclipse.edc.identityhub.spi.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 
 import java.util.Collection;
+
 
 /**
  * Stores {@link KeyPairResource} entities in persistent storage.

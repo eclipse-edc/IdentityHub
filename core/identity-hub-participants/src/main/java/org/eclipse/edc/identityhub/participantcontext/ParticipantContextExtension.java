@@ -14,11 +14,11 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import org.eclipse.edc.identithub.did.spi.DidDocumentService;
-import org.eclipse.edc.identityhub.spi.KeyPairService;
-import org.eclipse.edc.identityhub.spi.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextCreated;
-import org.eclipse.edc.identityhub.spi.events.participant.ParticipantContextObservable;
+import org.eclipse.edc.identithub.spi.did.DidDocumentService;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;

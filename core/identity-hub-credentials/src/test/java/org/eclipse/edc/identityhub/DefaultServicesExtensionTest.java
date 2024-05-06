@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub;
 
-import org.eclipse.edc.identityhub.token.rules.ClaimIsPresentRule;
+import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;

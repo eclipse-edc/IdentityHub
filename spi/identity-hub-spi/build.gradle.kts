@@ -21,19 +21,13 @@ plugins {
 val swagger: String by project
 
 dependencies {
-
-    api(libs.edc.spi.iatp)
-    api(libs.edc.spi.vc)
-    api(libs.edc.spi.web)
+    api(libs.edc.spi.core)
+    api(libs.edc.spi.web) // ServiceResultHandler, etc.
+    api(libs.edc.spi.vc) // VC Constants
+    api(project(":spi:participant-context-spi"))
     implementation(libs.jackson.databind)
-    implementation(libs.nimbus.jwt)
-    implementation(libs.edc.spi.identity.did)
 
     implementation(libs.swagger.jaxrs) {
         exclude(group = "com.fasterxml.jackson.jaxrs", module = "jackson-jaxrs-json-provider")
     }
-
-    testImplementation(libs.edc.lib.json)
-    testFixturesImplementation(libs.nimbus.jwt)
-    testFixturesImplementation(libs.edc.spi.identity.did)
 }

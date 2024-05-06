@@ -17,11 +17,11 @@ plugins {
 }
 
 dependencies {
-    api(project(":spi:identity-hub-did-spi"))
+    api(project(":spi:did-spi"))
     implementation(libs.edc.core.sql) // for the SqlStatements
     implementation(libs.edc.spi.transaction.datasource)
 
-    testImplementation(testFixtures(project(":spi:identity-hub-did-spi")))
+    testImplementation(testFixtures(project(":spi:did-spi")))
     testImplementation(testFixtures(libs.edc.core.sql))
     testImplementation(libs.edc.junit)
 }

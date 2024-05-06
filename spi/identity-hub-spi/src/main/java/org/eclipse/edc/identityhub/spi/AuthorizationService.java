@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.spi;
 
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.identityhub.spi.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.security.Principal;
