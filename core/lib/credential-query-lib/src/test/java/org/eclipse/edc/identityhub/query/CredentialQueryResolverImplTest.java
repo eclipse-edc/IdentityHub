@@ -25,6 +25,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinitio
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.QueryFailure;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -39,12 +40,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CredentialQueryResolverImplTest {
@@ -52,7 +56,8 @@ class CredentialQueryResolverImplTest {
     public static final String TEST_PARTICIPANT_CONTEXT_ID = "test-participant";
     private final CredentialStore storeMock = mock();
     private final RevocationListService revocationServiceMock = mock();
-    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(), revocationServiceMock, mock());
+    private final Monitor monitor = mock();
+    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(), revocationServiceMock, monitor);
 
     private static VerifiableCredentialResource.Builder createCredentialResource(VerifiableCredential cred) {
         return VerifiableCredentialResource.Builder.newInstance()
@@ -245,29 +250,45 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
 
-
         assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
-        assertThat(res.getContent()).containsExactly(credential.getVerifiableCredential());
+        assertThat(res.getContent()).isEmpty();
+        verify(monitor).warning(eq("Credential '%s' is expired.".formatted(credential.getId())));
     }
 
     @Test
     void query_whenNotYetValidCredential_doesNotInclude() {
+        var credential = createCredential("TestCredential")
+                .issuanceDate(Instant.now().plus(1, ChronoUnit.HOURS))
+                .build();
+        var resource = createCredentialResource(credential).build();
 
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+
+        assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
+        assertThat(res.getContent()).isEmpty();
+        verify(monitor).warning(eq("Credential '%s' is not yet valid.".formatted(credential.getId())));
     }
 
     @Test
     void query_whenRevokedCredential_doesNotInclude() {
-        var credential = createCredentialResource("TestCredential");
-        when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential)));
+        when(revocationServiceMock.checkValidity(any())).thenReturn(Result.failure("revoked"));
+        var credential = createCredential("TestCredential").build();
+        var resource = createCredentialResource(credential).build();
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+
         assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
-        assertThat(res.getContent()).containsExactly(credential.getVerifiableCredential());
+        assertThat(res.getContent()).isEmpty();
+        verify(monitor).warning(eq("Credential '%s' not valid: revoked".formatted(credential.getId())));
     }
 
     private VerifiableCredential.Builder createCredential(String... type) {
         return VerifiableCredential.Builder.newInstance()
                 .types(Arrays.asList(type))
+                .id(UUID.randomUUID().toString())
                 .issuer(new Issuer("test-issuer", Map.of()))
                 .issuanceDate(Instant.now())
                 .credentialSubject(CredentialSubject.Builder.newInstance().id("test-cred-id").claim("test-claim", "test-value").build());

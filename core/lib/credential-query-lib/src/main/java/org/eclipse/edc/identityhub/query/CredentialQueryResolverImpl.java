@@ -108,7 +108,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
             return false;
         }
         if (credential.getExpirationDate() != null && credential.getExpirationDate().isBefore(now)) {
-            monitor.warning("Credential '%s' expired.".formatted(credential.getId()));
+            monitor.warning("Credential '%s' is expired.".formatted(credential.getId()));
             return false;
         }
         var revocationResult = revocationService.checkValidity(credential);
