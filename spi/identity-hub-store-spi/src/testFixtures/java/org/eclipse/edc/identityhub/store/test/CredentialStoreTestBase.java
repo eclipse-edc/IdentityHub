@@ -22,7 +22,6 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcIssuanceState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.spi.query.Criterion;
@@ -38,7 +37,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
-import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.OTHER;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.INITIAL;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTING;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
@@ -172,12 +172,12 @@ public abstract class CredentialStoreTestBase {
     @Test
     void query_byVcState() {
         var creds = createCredentials();
-        var expectedCred = createCredentialBuilder().state(VcIssuanceState.REISSUE_REQUESTED).id("id-test").build();
+        var expectedCred = createCredentialBuilder().state(VcStatus.REQUESTED).id("id-test").build();
         creds.add(expectedCred);
         creds.forEach(getStore()::create);
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("state", "=", VcIssuanceState.REISSUE_REQUESTED.code()))
+                .filter(new Criterion("state", "=", VcStatus.REQUESTED.code()))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -369,15 +369,15 @@ public abstract class CredentialStoreTestBase {
 
         var expectedCred = createCredentialBuilder()
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
-                .credentialStatus(REVOKED)
+                .state(REVOKED)
                 .build();
         var secondCred = createCredentialBuilder()
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JWT, createVerifiableCredential().build()))
-                .credentialStatus(OTHER)
+                .state(REQUESTING)
                 .build();
         var thirdCred = createCredentialBuilder()
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JWT, createVerifiableCredential().build()))
-                .credentialStatus(REVOKED)
+                .state(REVOKED)
                 .build();
         creds.add(expectedCred);
         creds.add(secondCred);
@@ -385,7 +385,7 @@ public abstract class CredentialStoreTestBase {
         creds.forEach(getStore()::create);
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("credentialStatus", "=", REVOKED.code()))
+                .filter(new Criterion("state", "=", REVOKED.code()))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -401,15 +401,15 @@ public abstract class CredentialStoreTestBase {
 
         var expectedCred = createCredentialBuilder()
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
-                .credentialStatus(REVOKED)
+                .state(REVOKED)
                 .build();
         var secondCred = createCredentialBuilder()
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JWT, createVerifiableCredential().build()))
-                .credentialStatus(OTHER)
+                .state(INITIAL)
                 .build();
         var thirdCred = createCredentialBuilder()
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JWT, createVerifiableCredential().build()))
-                .credentialStatus(VcStatus.NOT_YET_VALID)
+                .state(VcStatus.NOT_YET_VALID)
                 .build();
         creds.add(expectedCred);
         creds.add(secondCred);
@@ -417,7 +417,7 @@ public abstract class CredentialStoreTestBase {
         creds.forEach(getStore()::create);
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("credentialStatus", "in", List.of(OTHER.code(), REVOKED.code())))
+                .filter(new Criterion("state", "in", List.of(INITIAL.code(), REVOKED.code())))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -468,7 +468,7 @@ public abstract class CredentialStoreTestBase {
         var result = getStore().create(credential.build());
         assertThat(result).isSucceeded();
 
-        var updateRes = getStore().update(credential.state(VcIssuanceState.ISSUED).build());
+        var updateRes = getStore().update(credential.state(VcStatus.ISSUED).build());
         assertThat(updateRes).isSucceeded();
     }
 
@@ -477,14 +477,14 @@ public abstract class CredentialStoreTestBase {
         var credential = createCredentialBuilder();
         var result = getStore().create(credential.build());
 
-        var updateRes = getStore().update(credential.state(VcIssuanceState.ISSUED).id("another-id").build());
+        var updateRes = getStore().update(credential.state(VcStatus.ISSUED).id("another-id").build());
         assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
     void update_whenNotExists() {
         var credential = createCredentialBuilder();
-        var updateRes = getStore().update(credential.state(VcIssuanceState.ISSUED).id("another-id").build());
+        var updateRes = getStore().update(credential.state(VcStatus.ISSUED).id("another-id").build());
         assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
@@ -515,7 +515,7 @@ public abstract class CredentialStoreTestBase {
         return VerifiableCredentialResource.Builder.newInstance()
                 .issuerId("test-issuer")
                 .holderId("test-holder")
-                .state(VcIssuanceState.ISSUED)
+                .state(VcStatus.ISSUED)
                 .participantId(TEST_PARTICIPANT_CONTEXT_ID)
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
                 .id(UUID.randomUUID().toString());

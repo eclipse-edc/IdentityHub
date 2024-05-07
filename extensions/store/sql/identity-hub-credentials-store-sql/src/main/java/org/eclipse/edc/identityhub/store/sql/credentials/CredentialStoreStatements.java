@@ -70,10 +70,6 @@ public interface CredentialStoreStatements extends SqlStatements {
         return "participant_id";
     }
 
-    default String getCredentialStatusColumn() {
-        return "credential_status";
-    }
-
     String getInsertTemplate();
 
     String getUpdateTemplate();

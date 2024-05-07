@@ -18,12 +18,10 @@ public interface TestData {
     // taken from https://www.w3.org/TR/vc-data-model/#example-a-simple-example-of-a-verifiable-credential
     String VP_EXAMPLE = """
             {
-             
               "@context": [
                 "https://www.w3.org/2018/credentials/v1",
                 "https://www.w3.org/2018/credentials/examples/v1"
               ],
-             
               "id": "http://example.edu/credentials/1872",
               "type": ["VerifiableCredential", "AlumniCredential"],
               "issuer": "https://example.edu/issuers/565049",
@@ -41,8 +39,6 @@ public interface TestData {
                   }]
                 }
               },
-             
-             
               "proof": {
                 "type": "RsaSignature2018",
                 "created": "2017-06-18T21:19:10Z",

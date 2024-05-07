@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.tests.fixtures;
 
 import io.restassured.specification.RequestSpecification;
-import org.eclipse.edc.junit.testfixtures.TestUtils;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -50,7 +49,7 @@ public class IdentityHubRuntimeConfiguration {
                 put("web.http.management.port", String.valueOf(managementEndpoint.getUrl().getPort()));
                 put("web.http.management.path", managementEndpoint.getUrl().getPath());
                 put("edc.connector.name", name);
-                put("edc.ih.iam.publickey.path", TestUtils.getFileFromResourceName("testkey.pem").getAbsolutePath());
+                put("edc.ih.iam.publickey.alias", "public-key-alias");
                 put("edc.ih.iam.id", "did:web:consumer");
             }
         };

@@ -28,4 +28,5 @@ dependencies {
     testImplementation(libs.edc.lib.json)
     testFixturesImplementation(libs.nimbus.jwt)
     testFixturesImplementation(libs.edc.spi.identity.did)
+    testFixturesImplementation(libs.edc.common.crypto)
 }

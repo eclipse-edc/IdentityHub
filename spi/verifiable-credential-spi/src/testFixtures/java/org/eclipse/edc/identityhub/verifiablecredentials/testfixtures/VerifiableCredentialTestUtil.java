@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.verifiablecredentials.testfixtures;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.jwk.Curve;
@@ -25,6 +24,7 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.edc.security.token.jwt.CryptoConverter;
 
 /**
  * Util class to manipulate VerifiableCredentials in tests.
@@ -49,7 +49,9 @@ public class VerifiableCredentialTestUtil {
 
     public static SignedJWT buildSignedJwt(JWTClaimsSet claims, ECKey jwk) {
         try {
-            var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256)
+            var signer = CryptoConverter.createSigner(jwk);
+            var algorithm = CryptoConverter.getRecommendedAlgorithm(signer);
+            var jwsHeader = new JWSHeader.Builder(algorithm)
                     .keyID(jwk.getKeyID())
                     .build();
             var jws = new SignedJWT(jwsHeader, claims);

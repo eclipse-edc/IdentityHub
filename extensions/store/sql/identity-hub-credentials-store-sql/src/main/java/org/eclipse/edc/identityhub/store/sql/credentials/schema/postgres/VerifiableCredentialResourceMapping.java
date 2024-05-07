@@ -29,7 +29,6 @@ public class VerifiableCredentialResourceMapping extends TranslationMapping {
     public static final String FIELD_ISSUER_ID = "issuerId";
     public static final String FIELD_HOLDER_ID = "holderId";
     public static final String FIELD_STATE = "state";
-    public static final String FIELD_CRED_STATUS = "credentialStatus";
     public static final String FIELD_ISSUANCE_POLICY = "issuancePolicy";
     public static final String FIELD_REISSUANCE_POLICY = "reissuancePolicy";
     public static final String FIELD_VERIFIABLE_CREDENTIAL = "verifiableCredential";
@@ -41,7 +40,6 @@ public class VerifiableCredentialResourceMapping extends TranslationMapping {
         add(FIELD_ISSUER_ID, statements.getIssuerIdColumn());
         add(FIELD_HOLDER_ID, statements.getHolderIdColumn());
         add(FIELD_STATE, statements.getVcStateColumn());
-        add(FIELD_CRED_STATUS, statements.getCredentialStatusColumn());
         add(FIELD_ISSUANCE_POLICY, statements.getIssuancePolicyColumn());
         add(FIELD_REISSUANCE_POLICY, statements.getReissuancePolicyColumn());
         add(FIELD_VERIFIABLE_CREDENTIAL, new VerifiableCredentialContainerMapping(statements));
