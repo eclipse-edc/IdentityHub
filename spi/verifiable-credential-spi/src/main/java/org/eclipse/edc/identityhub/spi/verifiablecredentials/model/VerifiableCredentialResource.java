@@ -18,8 +18,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityResource;
 import org.eclipse.edc.policy.model.Policy;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
+
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.EXPIRED;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.SUSPENDED;
 
 /**
  * Represents a Verifiable Credential Resource.
@@ -27,11 +32,8 @@ import java.time.Instant;
  * specifically the issuance and re-issuance policies as well as a representation of the VC
  */
 public class VerifiableCredentialResource extends IdentityResource {
-    private static final String EXPIRED = "expired";
-    private static final String REVOKED = "revoked";
-    private static final String SUSPENDED = "suspended";
     private int state;
-    private String credentialStatus;
+    private int credentialStatus = VcStatus.VALID.code();
     private Instant timeOfLastStatusUpdate;
     private Policy issuancePolicy;
     private Policy reissuancePolicy;
@@ -46,8 +48,8 @@ public class VerifiableCredentialResource extends IdentityResource {
     }
 
     @JsonIgnore
-    public VcState getStateAsEnum() {
-        return VcState.from(state);
+    public VcIssuanceState getStateAsEnum() {
+        return VcIssuanceState.from(state);
     }
 
     public Policy getIssuancePolicy() {
@@ -59,15 +61,15 @@ public class VerifiableCredentialResource extends IdentityResource {
     }
 
     public boolean isExpired() {
-        return EXPIRED.equalsIgnoreCase(credentialStatus);
+        return EXPIRED.code() == credentialStatus;
     }
 
     public boolean isRevoked() {
-        return REVOKED.equalsIgnoreCase(credentialStatus);
+        return REVOKED.code() == credentialStatus;
     }
 
     public boolean isSuspended() {
-        return SUSPENDED.equalsIgnoreCase(credentialStatus);
+        return SUSPENDED.code() == credentialStatus;
     }
 
     public void suspend() {
@@ -94,13 +96,17 @@ public class VerifiableCredentialResource extends IdentityResource {
         return timeOfLastStatusUpdate;
     }
 
-    public String getCredentialStatus() {
+    public int getCredentialStatus() {
         return credentialStatus;
     }
 
-    public void setCredentialStatus(String status) {
-        credentialStatus = status;
+    public void setCredentialStatus(VcStatus status) {
+        credentialStatus = status.code();
         timeOfLastStatusUpdate = Instant.now();
+    }
+
+    public VcStatus getCredentialStatusEnum() {
+        return VcStatus.from(credentialStatus);
     }
 
     public static class Builder extends IdentityResource.Builder<VerifiableCredentialResource, Builder> {
@@ -113,7 +119,7 @@ public class VerifiableCredentialResource extends IdentityResource {
             return new Builder(new VerifiableCredentialResource());
         }
 
-        public Builder state(VcState state) {
+        public Builder state(VcIssuanceState state) {
             entity.state = state.code();
             return self();
         }
@@ -133,6 +139,11 @@ public class VerifiableCredentialResource extends IdentityResource {
             return self();
         }
 
+        public Builder credentialStatus(@NotNull VcStatus status) {
+            entity.credentialStatus = status.code();
+            return this;
+        }
+
         @Override
         public Builder self() {
             return this;
@@ -141,7 +152,7 @@ public class VerifiableCredentialResource extends IdentityResource {
         @Override
         public VerifiableCredentialResource build() {
             if (entity.state == 0) {
-                entity.state = VcState.INITIAL.code();
+                entity.state = VcIssuanceState.INITIAL.code();
             }
             return super.build();
         }

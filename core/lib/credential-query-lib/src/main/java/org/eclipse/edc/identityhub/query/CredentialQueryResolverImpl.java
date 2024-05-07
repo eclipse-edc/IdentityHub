@@ -28,6 +28,7 @@ import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -94,7 +95,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         // filter out any expired, revoked or suspended credentials
         return isValidQuery ?
                 QueryResult.success(requestedCredentials.stream()
-                        .filter(this::filterInvalidCredentials)
+                        .filter(this::filterInvalidCredentials) // we still have to filter invalid creds, b/c a revocation may not have been detected yet
                         .map(VerifiableCredentialResource::getVerifiableCredential))
                 : QueryResult.unauthorized("Invalid query: requested Credentials outside of scope.");
     }
@@ -154,8 +155,9 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
     private QuerySpec convertToQuerySpec(Criterion criteria, String participantContextId) {
         var filterByParticipant = new Criterion("participantId", "=", participantContextId);
+        var filterNoStatus = new Criterion("credentialStatus", "in", Arrays.asList("SUSPENDED", null));
         return QuerySpec.Builder.newInstance()
-                .filter(List.of(criteria, filterByParticipant))
+                .filter(List.of(criteria, filterByParticipant, filterNoStatus))
                 .build();
     }
 
