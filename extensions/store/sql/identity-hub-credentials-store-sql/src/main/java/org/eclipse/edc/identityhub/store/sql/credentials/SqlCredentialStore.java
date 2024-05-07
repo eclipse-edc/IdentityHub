@@ -20,6 +20,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcIssuanceState;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.policy.model.Policy;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
@@ -68,6 +69,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                         credentialResource.getIssuerId(),
                         credentialResource.getHolderId(),
                         credentialResource.getState(),
+                        credentialResource.getCredentialStatus(),
                         toJson(credentialResource.getIssuancePolicy()),
                         toJson(credentialResource.getReissuancePolicy()),
                         credentialResource.getVerifiableCredential().format().ordinal(),
@@ -109,6 +111,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                             credentialResource.getIssuerId(),
                             credentialResource.getHolderId(),
                             credentialResource.getState(),
+                            credentialResource.getCredentialStatus(),
                             toJson(credentialResource.getIssuancePolicy()),
                             toJson(credentialResource.getReissuancePolicy()),
                             credentialResource.getVerifiableCredential().format().ordinal(),
@@ -163,6 +166,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                 .issuerId(resultSet.getString(statements.getIssuerIdColumn()))
                 .holderId(resultSet.getString(statements.getHolderIdColumn()))
                 .state(VcIssuanceState.from(resultSet.getInt(statements.getVcStateColumn())))
+                .credentialStatus(VcStatus.from(resultSet.getInt(statements.getCredentialStatusColumn())))
                 .issuancePolicy(fromJson(resultSet.getString(statements.getIssuancePolicyColumn()), Policy.class))
                 .reissuancePolicy(fromJson(resultSet.getString(statements.getReissuancePolicyColumn()), Policy.class))
                 .credential(vcc)

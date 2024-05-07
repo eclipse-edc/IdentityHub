@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS credential_resource
     issuer_id             VARCHAR             NOT NULL,
     holder_id             VARCHAR             NOT NULL,
     vc_state              INTEGER             NOT NULL,
+    credential_status     INTEGER DEFAULT 0   NOT NULL, -- revocation/expiry status of the credential
     issuance_policy       JSON,
     reissuance_policy     JSON,
     raw_vc                VARCHAR             NOT NULL, -- Representation of the VC exactly as it was received by the issuer. Can be JWT or JSON(-LD)
@@ -31,5 +32,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS credential_resource_credential_id_uindex ON cr
 COMMENT ON COLUMN credential_resource.id IS 'ID of the VC, duplicated here for indexing purposes';
 COMMENT ON COLUMN credential_resource.raw_vc IS 'Representation of the VC exactly as it was received by the issuer. Can be JWT or JSON(-LD) ';
 COMMENT ON COLUMN credential_resource.vc_format IS '0 = JSON-LD, 1 = JWT';
-COMMENT ON COLUMN credential_resource.verifiable_credential is 'JSON-representation of the VerifiableCredential';
+COMMENT ON COLUMN credential_resource.verifiable_credential IS 'JSON-representation of the VerifiableCredential';
+COMMENT ON COLUMN credential_resource.credential_status IS 'Revocation/expiry status of the credential, 0 = VALID'
 

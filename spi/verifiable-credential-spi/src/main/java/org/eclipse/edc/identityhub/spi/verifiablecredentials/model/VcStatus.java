@@ -22,7 +22,7 @@ public enum VcStatus {
     NOT_YET_VALID(200),
     SUSPENDED(300),
     REVOKED(400),
-    OTHER(500)
+    OTHER(500);
 
     public static final List<VcStatus> KNOWN_STATUS_VALUES = List.of(
             VALID, EXPIRED, NOT_YET_VALID, SUSPENDED, REVOKED, OTHER
@@ -34,7 +34,7 @@ public enum VcStatus {
     }
 
     public static VcStatus from(int code) {
-        return KNOWN_STATUS_VALUES.stream().filter(tps -> tps.code() == code).findFirst().orElse(new VcStatus(code, null));
+        return KNOWN_STATUS_VALUES.stream().filter(tps -> tps.code() == code).findFirst().orElse(OTHER);
     }
 
 
