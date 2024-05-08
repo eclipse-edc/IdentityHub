@@ -58,14 +58,17 @@ public class VerifiableCredentialResource extends IdentityResource {
         return reissuancePolicy;
     }
 
+    @JsonIgnore
     public boolean isExpired() {
         return EXPIRED.code() == state;
     }
 
+    @JsonIgnore
     public boolean isRevoked() {
         return REVOKED.code() == state;
     }
 
+    @JsonIgnore
     public boolean isSuspended() {
         return SUSPENDED.code() == state;
     }
@@ -94,10 +97,6 @@ public class VerifiableCredentialResource extends IdentityResource {
     public void setCredentialStatus(VcStatus status) {
         state = status.code();
         timeOfLastStatusUpdate = Instant.now();
-    }
-
-    public VcStatus getCredentialStatusEnum() {
-        return VcStatus.from(state);
     }
 
     public static class Builder extends IdentityResource.Builder<VerifiableCredentialResource, Builder> {

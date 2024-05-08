@@ -48,7 +48,7 @@ class AccessTokenVerifierImplTest {
     private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, publicKeySupplier, tokenValidationRulesRegistry, mock(), pkResolver);
     private final ClaimToken idToken = ClaimToken.Builder.newInstance()
             .claim("token", "test-at")
-            .claim("scope", "org.eclipse.edc.vc.type:SomeTestCredential:read")
+            .claim("scope", "org.eclipse.edc.vc.type:AlumniCredential:read")
             .build();
 
     @Test
