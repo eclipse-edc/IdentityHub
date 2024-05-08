@@ -23,18 +23,19 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.credentialservice.Pre
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
+import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguration;
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.security.Vault;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -64,12 +65,8 @@ public class PresentationApiComponentTest {
               ]
             }
             """;
-    private static final String TEST_PARTICIPANT_CONTEXT_ID = "test-participant";
+    private static final String TEST_PARTICIPANT_CONTEXT_ID = "did:web:consumer";
     private static final String TEST_PARTICIPANT_CONTEXT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(TEST_PARTICIPANT_CONTEXT_ID.getBytes());
-    // todo: these mocks should be replaced, once their respective implementations exist!
-//    private static final CredentialQueryResolver CREDENTIAL_QUERY_RESOLVER = mock();
-//    private static final VerifiablePresentationService PRESENTATION_GENERATOR = mock();
-    //    private static final AccessTokenVerifier ACCESS_TOKEN_VERIFIER = mock();
     private static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
 
     @RegisterExtension
@@ -77,9 +74,6 @@ public class PresentationApiComponentTest {
 
     static {
         runtime = new EdcRuntimeExtension(":launcher", "identity-hub", IDENTITY_HUB_PARTICIPANT.controlPlaneConfiguration());
-//        runtime.registerServiceMock(CredentialQueryResolver.class, CREDENTIAL_QUERY_RESOLVER);
-//        runtime.registerServiceMock(VerifiablePresentationService.class, PRESENTATION_GENERATOR);
-//        runtime.registerServiceMock(AccessTokenVerifier.class, ACCESS_TOKEN_VERIFIER);
         runtime.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
     }
 
@@ -147,7 +141,6 @@ public class PresentationApiComponentTest {
     void query_tokenVerificationFails_shouldReturn401() {
         createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         var token = generateSiToken();
-//        when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(failure("token not verified"));
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(AUTHORIZATION, token)
@@ -164,8 +157,6 @@ public class PresentationApiComponentTest {
     void query_queryResolutionFails_shouldReturn403() {
         createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         var token = generateSiToken();
-//        when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
-//        when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.unauthorized("scope mismatch!"));
 
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
@@ -183,9 +174,6 @@ public class PresentationApiComponentTest {
     void query_presentationGenerationFails_shouldReturn500() {
         createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         var token = generateSiToken();
-//        when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("test-scope1")));
-//        when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
-//        when(PRESENTATION_GENERATOR.createPresentation(anyString(), anyList(), eq(null), any())).thenReturn(failure("generator test error"));
 
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
@@ -198,12 +186,9 @@ public class PresentationApiComponentTest {
     }
 
     @Test
-    void query_success() throws JOSEException {
+    void query_success_noCredentials() throws JOSEException {
         createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
         var token = generateSiToken();
-//        when(ACCESS_TOKEN_VERIFIER.verify(eq(token), anyString())).thenReturn(success(List.of("org.eclipse.edc.vc.type:TestScope1:read")));
-//        when(CREDENTIAL_QUERY_RESOLVER.query(anyString(), any(), ArgumentMatchers.anyList())).thenReturn(QueryResult.success(Stream.empty()));
-//        when(PRESENTATION_GENERATOR.createPresentation(anyString(), anyList(), eq(null), any())).thenReturn(success(createPresentationResponse()));
 
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(JwtCreationUtil.CONSUMER_KEY.toPublicKey()));
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(JwtCreationUtil.PROVIDER_KEY.toPublicKey()));
@@ -215,7 +200,32 @@ public class PresentationApiComponentTest {
                 .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                 .then()
                 .statusCode(200)
-                .log().ifValidationFails()
+                .log().ifError()
+                .extract().body().as(JsonObject.class);
+
+        assertThat(response)
+                .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(2));
+
+    }
+
+    @Test
+    void query_success() throws JOSEException {
+        createParticipant(TEST_PARTICIPANT_CONTEXT_ID);
+        var store = runtime.getContext().getService(CredentialStore.class);
+        //todo: store credential 
+        var token = generateSiToken();
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(JwtCreationUtil.CONSUMER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(JwtCreationUtil.PROVIDER_KEY.toPublicKey()));
+
+        var response = IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(AUTHORIZATION, token)
+                .body(VALID_QUERY_WITH_SCOPE)
+                .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                .then()
+                .statusCode(200)
+                .log().ifError()
                 .extract().body().as(JsonObject.class);
 
         assertThat(response)
@@ -227,19 +237,24 @@ public class PresentationApiComponentTest {
     private PresentationResponseMessage createPresentationResponse() {
         var submission = new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("input-id", "ldp-vp", "foo")));
         return PresentationResponseMessage.Builder.newinstance()
-                .presentation(List.of(TestData.VP_EXAMPLE))
+                .presentation(List.of(TestData.VC_EXAMPLE))
                 .presentationSubmission(submission)
                 .build();
     }
 
     private void createParticipant(String participantId) {
         var service = runtime.getContext().getService(ParticipantContextService.class);
+        var vault = runtime.getContext().getService(Vault.class);
+
+        var key = JwtCreationUtil.CONSUMER_KEY;
+        vault.storeSecret(key.getKeyID(), key.toPublicJWK().toJSONString());
+
         var manifest = ParticipantManifest.Builder.newInstance()
                 .participantId(participantId)
                 .did("did:web:%s".formatted(participantId))
                 .active(true)
                 .key(KeyDescriptor.Builder.newInstance()
-                        .keyGeneratorParams(Map.of("algorithm", "EC"))
+                        .publicKeyJwk(key.toPublicJWK().toJSONObject())
                         .privateKeyAlias("%s-privatekey-alias".formatted(participantId))
                         .keyId("key-1")
                         .build())

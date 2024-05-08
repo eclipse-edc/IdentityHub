@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.tests.fixtures;
 
 public interface TestData {
     // taken from https://www.w3.org/TR/vc-data-model/#example-a-simple-example-of-a-verifiable-credential
-    String VP_EXAMPLE = """
+    String VC_EXAMPLE = """
             {
               "@context": [
                 "https://www.w3.org/2018/credentials/v1",

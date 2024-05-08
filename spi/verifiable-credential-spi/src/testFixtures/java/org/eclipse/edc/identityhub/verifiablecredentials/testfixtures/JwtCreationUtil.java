@@ -39,7 +39,7 @@ public class JwtCreationUtil {
      * @return The generated self-issued token.
      */
     public static String generateSiToken() {
-        return generateSiToken("consumer-id", "did:web:consumer", "provider-id", "did:web:provider");
+        return generateSiToken("did:web:consumer", "did:web:consumer", "did:web:provider", "did:web:provider");
     }
 
     /**
@@ -52,8 +52,8 @@ public class JwtCreationUtil {
      * @return The generated self-issued token.
      */
     public static String generateSiToken(String consumerIdentifier, String consumerDid, String providerIdentifier, String providerDid) {
-        var accessToken = generateJwt(consumerDid, consumerDid, providerIdentifier, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
-        return generateJwt(consumerIdentifier, providerDid, providerDid, Map.of("client_id", providerIdentifier, "token", accessToken), PROVIDER_KEY);
+        var accessToken = generateJwt(consumerDid, consumerDid, providerDid, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
+        return generateJwt(consumerDid, providerDid, providerDid, Map.of("client_id", providerDid, "token", accessToken), PROVIDER_KEY);
     }
 
     /**
