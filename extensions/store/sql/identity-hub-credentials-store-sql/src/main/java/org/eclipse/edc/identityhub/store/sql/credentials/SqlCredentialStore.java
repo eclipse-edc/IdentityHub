@@ -19,7 +19,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcState;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.policy.model.Policy;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
@@ -162,7 +162,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                 .timestamp(resultSet.getLong(statements.getCreateTimestampColumn()))
                 .issuerId(resultSet.getString(statements.getIssuerIdColumn()))
                 .holderId(resultSet.getString(statements.getHolderIdColumn()))
-                .state(VcState.from(resultSet.getInt(statements.getVcStateColumn())))
+                .state(VcStatus.from(resultSet.getInt(statements.getVcStateColumn())))
                 .issuancePolicy(fromJson(resultSet.getString(statements.getIssuancePolicyColumn()), Policy.class))
                 .reissuancePolicy(fromJson(resultSet.getString(statements.getReissuancePolicyColumn()), Policy.class))
                 .credential(vcc)

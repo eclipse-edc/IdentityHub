@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.query;
 import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
@@ -274,7 +275,12 @@ class CredentialQueryResolverImplTest {
     @Test
     void query_whenRevokedCredential_doesNotInclude() {
         when(revocationServiceMock.checkValidity(any())).thenReturn(Result.failure("revoked"));
-        var credential = createCredential("TestCredential").build();
+        var credential = createCredential("TestCredential")
+                .credentialStatus(new CredentialStatus("test-cred-stat-id", "StatusList2021Entry",
+                        Map.of("statusListCredential", "https://university.example/credentials/status/3",
+                                "statusPurpose", "suspension",
+                                "statusListIndex", 69)))
+                .build();
         var resource = createCredentialResource(credential).build();
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
