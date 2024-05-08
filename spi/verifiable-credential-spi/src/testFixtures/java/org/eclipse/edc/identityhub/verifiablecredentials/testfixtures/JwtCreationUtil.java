@@ -29,7 +29,7 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Ver
  * Utility class to generate various JWTs
  */
 public class JwtCreationUtil {
-    public static final String TEST_SCOPE = "org.eclipse.edc.vc.type:SomeTestCredential:read";
+    public static final String TEST_SCOPE = "org.eclipse.edc.vc.type:AlumniCredential:read";
     public static final ECKey CONSUMER_KEY = generateEcKey("did:web:consumer#key1");
     public static final ECKey PROVIDER_KEY = generateEcKey("did:web:provider#key1");
 
@@ -39,19 +39,17 @@ public class JwtCreationUtil {
      * @return The generated self-issued token.
      */
     public static String generateSiToken() {
-        return generateSiToken("did:web:consumer", "did:web:consumer", "did:web:provider", "did:web:provider");
+        return generateSiToken("did:web:consumer", "did:web:provider");
     }
 
     /**
      * Generates a self-issued token.
      *
-     * @param consumerIdentifier The consumer participant agent identifier.
-     * @param consumerDid        The consumer DID.
-     * @param providerIdentifier The provider participant agent identifier.
-     * @param providerDid        The provider DID.
+     * @param consumerDid The consumer DID.
+     * @param providerDid The provider DID.
      * @return The generated self-issued token.
      */
-    public static String generateSiToken(String consumerIdentifier, String consumerDid, String providerIdentifier, String providerDid) {
+    public static String generateSiToken(String consumerDid, String providerDid) {
         var accessToken = generateJwt(consumerDid, consumerDid, providerDid, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
         return generateJwt(consumerDid, providerDid, providerDid, Map.of("client_id", providerDid, "token", accessToken), PROVIDER_KEY);
     }

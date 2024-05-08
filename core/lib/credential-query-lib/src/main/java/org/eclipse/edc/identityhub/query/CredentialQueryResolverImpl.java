@@ -18,6 +18,7 @@ import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.QueryResult;
@@ -28,7 +29,6 @@ import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -112,7 +112,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
             monitor.warning("Credential '%s' is expired.".formatted(credential.getId()));
             return false;
         }
-        var revocationResult = revocationService.checkValidity(credential);
+        var revocationResult = credential.getCredentialStatus().isEmpty() ? Result.success() : revocationService.checkValidity(credential);
         if (revocationResult.failed()) {
             monitor.warning("Credential '%s' not valid: %s".formatted(credential.getId(), revocationResult.getFailureDetail()));
             return false;
@@ -155,9 +155,10 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
     private QuerySpec convertToQuerySpec(Criterion criteria, String participantContextId) {
         var filterByParticipant = new Criterion("participantId", "=", participantContextId);
-        var filterNoStatus = new Criterion("credentialStatus", "in", Arrays.asList("SUSPENDED", null));
+        var filterNotRevoked = new Criterion("state", "!=", VcStatus.REVOKED.code());
+        var filterNotExpired = new Criterion("state", "!=", VcStatus.EXPIRED.code());
         return QuerySpec.Builder.newInstance()
-                .filter(List.of(criteria, filterByParticipant, filterNoStatus))
+                .filter(List.of(criteria, filterByParticipant, filterNotRevoked, filterNotExpired))
                 .build();
     }
 
