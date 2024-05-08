@@ -1943,6 +1943,21 @@ components:
     VerifiableCredentialResource:
       type: object
       properties:
+        credentialStatus:
+          type: string
+          writeOnly: true
+          example: null
+          enum:
+          - INITIAL
+          - REQUESTING
+          - REQUESTED
+          - ISSUING
+          - ISSUED
+          - REVOKED
+          - SUSPENDED
+          - EXPIRED
+          - NOT_YET_VALID
+          - ERROR
         holderId:
           type: string
           example: null
@@ -1962,6 +1977,10 @@ components:
         state:
           type: integer
           format: int32
+          example: null
+        timeOfLastStatusUpdate:
+          type: string
+          format: date-time
           example: null
         timestamp:
           type: integer
