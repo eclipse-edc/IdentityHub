@@ -11,3 +11,4 @@ permissions:
 jobs:
   check:
     uses: eclipse-edc/.github/.github/workflows/dependency-check.yml@main
+    secrets: inherit
