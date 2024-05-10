@@ -19,6 +19,12 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityResource;
 import org.eclipse.edc.policy.model.Policy;
 
+import java.time.Instant;
+
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.EXPIRED;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.SUSPENDED;
+
 /**
  * Represents a Verifiable Credential Resource.
  * The Verifiable Credential Resource extends the Identity Resource class and adds additional properties specific to verifiable credentials,
@@ -26,6 +32,7 @@ import org.eclipse.edc.policy.model.Policy;
  */
 public class VerifiableCredentialResource extends IdentityResource {
     private int state;
+    private Instant timeOfLastStatusUpdate;
     private Policy issuancePolicy;
     private Policy reissuancePolicy;
     private VerifiableCredentialContainer verifiableCredential;
@@ -39,8 +46,8 @@ public class VerifiableCredentialResource extends IdentityResource {
     }
 
     @JsonIgnore
-    public VcState getStateAsEnum() {
-        return VcState.from(state);
+    public VcStatus getStateAsEnum() {
+        return VcStatus.from(state);
     }
 
     public Policy getIssuancePolicy() {
@@ -51,8 +58,45 @@ public class VerifiableCredentialResource extends IdentityResource {
         return reissuancePolicy;
     }
 
+    @JsonIgnore
+    public boolean isExpired() {
+        return EXPIRED.code() == state;
+    }
+
+    @JsonIgnore
+    public boolean isRevoked() {
+        return REVOKED.code() == state;
+    }
+
+    @JsonIgnore
+    public boolean isSuspended() {
+        return SUSPENDED.code() == state;
+    }
+
+    public void suspend() {
+        setCredentialStatus(SUSPENDED);
+    }
+
+    public void setExpired() {
+        setCredentialStatus(EXPIRED);
+    }
+
+    public void revoke() {
+        setCredentialStatus(REVOKED);
+    }
+
     public VerifiableCredentialContainer getVerifiableCredential() {
         return verifiableCredential;
+    }
+
+    public Instant getTimeOfLastStatusUpdate() {
+        return timeOfLastStatusUpdate;
+    }
+
+
+    public void setCredentialStatus(VcStatus status) {
+        state = status.code();
+        timeOfLastStatusUpdate = Instant.now();
     }
 
     public static class Builder extends IdentityResource.Builder<VerifiableCredentialResource, Builder> {
@@ -65,7 +109,7 @@ public class VerifiableCredentialResource extends IdentityResource {
             return new Builder(new VerifiableCredentialResource());
         }
 
-        public Builder state(VcState state) {
+        public Builder state(VcStatus state) {
             entity.state = state.code();
             return self();
         }
@@ -93,7 +137,7 @@ public class VerifiableCredentialResource extends IdentityResource {
         @Override
         public VerifiableCredentialResource build() {
             if (entity.state == 0) {
-                entity.state = VcState.INITIAL.code();
+                entity.state = VcStatus.INITIAL.code();
             }
             return super.build();
         }

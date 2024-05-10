@@ -48,14 +48,14 @@ class AccessTokenVerifierImplTest {
     private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, publicKeySupplier, tokenValidationRulesRegistry, mock(), pkResolver);
     private final ClaimToken idToken = ClaimToken.Builder.newInstance()
             .claim("token", "test-at")
-            .claim("scope", "org.eclipse.edc.vc.type:SomeTestCredential:read")
+            .claim("scope", "org.eclipse.edc.vc.type:AlumniCredential:read")
             .build();
 
     @Test
     void verify_validSiToken_validAccessToken() {
         when(tokenValidationSerivce.validate(anyString(), any(), anyList()))
                 .thenReturn(Result.success(idToken));
-        AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant"))
+        AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant"))
                 .isSucceeded()
                 .satisfies(strings -> Assertions.assertThat(strings).containsOnly(JwtCreationUtil.TEST_SCOPE));
         verify(tokenValidationSerivce, times(2)).validate(anyString(), any(PublicKeyResolver.class), anyList());
@@ -66,7 +66,7 @@ class AccessTokenVerifierImplTest {
     void verify_siTokenValidationFails() {
         when(tokenValidationSerivce.validate(anyString(), any(), anyList()))
                 .thenReturn(Result.failure("test-failure"));
-        AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant")).isFailed()
+        AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant")).isFailed()
                 .detail().contains("test-failure");
     }
 
@@ -75,7 +75,7 @@ class AccessTokenVerifierImplTest {
         when(tokenValidationSerivce.validate(anyString(), any(PublicKeyResolver.class), anyList()))
                 .thenReturn(Result.failure("no access token"));
 
-        AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OWN_DID, OTHER_PARTICIPANT_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant")).isFailed()
+        AbstractResultAssert.assertThat(verifier.verify(JwtCreationUtil.generateSiToken(OWN_DID, OTHER_PARTICIPANT_DID), "did:web:test_participant")).isFailed()
                 .detail().contains("no access token");
         verify(tokenValidationSerivce).validate(anyString(), any(PublicKeyResolver.class), anyList());
     }

@@ -16,24 +16,28 @@ package org.eclipse.edc.identityhub.spi.verifiablecredentials.model;
 
 import java.util.Arrays;
 
-public enum VcState {
+/**
+ * Indicates the state of a credential. This tracks the credential from when the IdentityHub requests it to when it expires.
+ */
+public enum VcStatus {
     INITIAL(100),
     REQUESTING(200),
     REQUESTED(300),
     ISSUING(400),
     ISSUED(500),
-    REISSUE_REQUESTING(600),
-    REISSUE_REQUESTED(700),
-    TERMINATED(800),
-    ERROR(900);
+    REVOKED(600),
+    SUSPENDED(700),
+    EXPIRED(800),
+    NOT_YET_VALID(900),
+    ERROR(-100);
 
     private final int code;
 
-    VcState(int code) {
+    VcStatus(int code) {
         this.code = code;
     }
 
-    public static VcState from(int code) {
+    public static VcStatus from(int code) {
         return Arrays.stream(values()).filter(tps -> tps.code == code).findFirst().orElse(null);
     }
 

@@ -21,7 +21,7 @@ plugins {
 dependencies {
     runtimeOnly(project(":core:presentation-api"))
     runtimeOnly(project(":core:identity-hub-did"))
-    runtimeOnly(project(":core:identity-hub-credentials"))
+    runtimeOnly(project(":core:identity-hub-core"))
     runtimeOnly(project(":core:identity-hub-participants"))
     runtimeOnly(project(":core:identity-hub-keypairs"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
