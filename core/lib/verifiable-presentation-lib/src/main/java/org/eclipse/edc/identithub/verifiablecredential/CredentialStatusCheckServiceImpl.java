@@ -27,6 +27,7 @@ import java.time.Clock;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
 
+
 public class CredentialStatusCheckServiceImpl implements CredentialStatusCheckService {
     private static final String SUSPENSION = "suspension";
     private static final String REVOCATION = "revocation";
@@ -53,12 +54,13 @@ public class CredentialStatusCheckServiceImpl implements CredentialStatusCheckSe
         }
 
         try {
+            if (isRevoked(resource)) {
+                return success(VcStatus.REVOKED); //irreversible, cannot be overwritten
+            }
             if (isSuspended(resource)) {
                 targetStatus = VcStatus.SUSPENDED;
             }
-            if (isRevoked(resource)) {
-                targetStatus = VcStatus.REVOKED;
-            }
+
         } catch (EdcException ex) {
             return failure(ex.getMessage());
         }

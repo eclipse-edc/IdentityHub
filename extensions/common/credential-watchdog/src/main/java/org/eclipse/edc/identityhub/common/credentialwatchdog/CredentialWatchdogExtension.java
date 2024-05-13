@@ -53,12 +53,12 @@ public class CredentialWatchdogExtension implements ServiceExtension {
     private CredentialStatusCheckService credentialStatusCheckService;
     @Inject
     private CredentialStore credentialStore;
+    @Inject
+    private TransactionContext transactionContext;
     private ScheduledExecutorService scheduledExecutorService;
     private Integer watchdogPeriod;
     private Monitor monitor;
     private int initialDelay;
-    @Inject
-    private TransactionContext transactionContext;
 
     @Override
     public String name() {

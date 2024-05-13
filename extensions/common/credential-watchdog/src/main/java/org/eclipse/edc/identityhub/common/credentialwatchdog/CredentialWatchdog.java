@@ -34,9 +34,11 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
  * and update their status. Every execution (fetch-all - check-each - update-each) will run in a transaction.
  * <p>
  * Note that this will materialize <strong>all</strong> credentials into memory at once, as the general assumption is that typically, wallets don't
- * store an enormous amount of credentials.
+ * store an enormous amount of credentials. To mitigate this, the watchdog only considers credentials in states {@link VcStatus#ISSUED},
+ * {@link VcStatus#SUSPENDED} and {@link VcStatus#NOT_YET_VALID}, c.f. {@link CredentialWatchdog#ALLOWED_STATES}.
+ *
  * <p>
- * Note also, that a credential's status will only be updated if it did in fact change, to avoid unnecessary database interactions.
+ * Note also, that a credentials status will only be updated if it did in fact change, to avoid unnecessary database interactions.
  */
 public class CredentialWatchdog implements Runnable {
     //todo: add more states once we have to check issuance status
@@ -63,14 +65,14 @@ public class CredentialWatchdog implements Runnable {
             monitor.debug("checking %d credentials".formatted(allCredentials.size()));
 
             allCredentials.forEach(credential -> {
-                var status = credentialStatusCheckService.checkStatus(credential)
+                var newStatus = credentialStatusCheckService.checkStatus(credential)
                         .orElse(f -> {
                             monitor.warning("Error determining status for credential '%s': %s. Will move to the ERROR state.".formatted(credential.getId(), f.getFailureDetail()));
                             return VcStatus.ERROR;
                         });
-                var changed = credential.getState() != status.code();
+                var changed = credential.getState() != newStatus.code();
                 if (changed) {
-                    credential.setCredentialStatus(status);
+                    credential.setCredentialStatus(newStatus);
                     credentialStore.update(credential);
                 }
             });
