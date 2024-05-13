@@ -23,6 +23,11 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.Collections;
+import java.util.List;
+
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.NOT_YET_VALID;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.SUSPENDED;
 
 /**
  * This is a runnable task that is intended to be executed periodically to fetch all non-expired, non-revoked credentials from storage, check for their status,
@@ -34,6 +39,8 @@ import java.util.Collections;
  * Note also, that a credential's status will only be updated if it did in fact change, to avoid unnecessary database interactions.
  */
 public class CredentialWatchdog implements Runnable {
+    //todo: add more states once we have to check issuance status
+    public static final List<Integer> ALLOWED_STATES = List.of(ISSUED.code(), NOT_YET_VALID.code(), SUSPENDED.code());
     private final CredentialStore credentialStore;
     private final CredentialStatusCheckService credentialStatusCheckService;
     private final Monitor monitor;
@@ -72,9 +79,7 @@ public class CredentialWatchdog implements Runnable {
 
     private QuerySpec allExcludingExpiredAndRevoked() {
         return QuerySpec.Builder.newInstance()
-                .filter(new Criterion("state", "!=", VcStatus.REVOKED.code()))
-                .filter(new Criterion("state", "!=", VcStatus.EXPIRED.code()))
-                .filter(new Criterion("state", "!=", VcStatus.ERROR.code()))
+                .filter(new Criterion("state", "in", ALLOWED_STATES))
                 .build();
     }
 }

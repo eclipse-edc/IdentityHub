@@ -36,8 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ERROR;
-import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.EXPIRED;
+import static org.eclipse.edc.identityhub.common.credentialwatchdog.CredentialWatchdog.ALLOWED_STATES;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,11 +69,8 @@ class CredentialWatchdogTest {
 
         // verify the store was queried with the proper filter expressions
         verify(credentialStore).query(argThat(querySpec ->
-                querySpec.getFilterExpression().size() == 3 &&
-                        querySpec.getFilterExpression().stream()
-                                .anyMatch(c -> c.toString().equals("state != " + REVOKED.code()) ||
-                                        c.toString().equals("state != " + ERROR.code()) ||
-                                        c.toString().equals("state != " + EXPIRED.code()))));
+                querySpec.getFilterExpression().size() == 1 &&
+                        querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
     }
 
     @Test
