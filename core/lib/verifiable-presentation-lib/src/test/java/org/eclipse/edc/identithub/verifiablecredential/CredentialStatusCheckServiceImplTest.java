@@ -43,8 +43,8 @@ import static org.mockito.Mockito.when;
 class CredentialStatusCheckServiceImplTest {
 
     private final RevocationListService revocationListService = mock();
-    private final Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
-    private final CredentialStatusCheckServiceImpl service = new CredentialStatusCheckServiceImpl(revocationListService, clock);
+    private final Clock clock = Clock.systemUTC();
+    private CredentialStatusCheckServiceImpl service = new CredentialStatusCheckServiceImpl(revocationListService, clock);
 
     @BeforeEach
     void setUp() {
@@ -59,6 +59,24 @@ class CredentialStatusCheckServiceImplTest {
         assertThat(service.checkStatus(createCredentialBuilder(credential).build()))
                 .isSucceeded()
                 .isEqualTo(VcStatus.EXPIRED);
+    }
+
+    @Test
+    void checkStatus_notYetValid_becomesValid() {
+        var now = Instant.now();
+        var tenSecondsAgo = now.minus(10, ChronoUnit.SECONDS);
+        var fixedClock = Clock.fixed(now, ZoneId.systemDefault());
+
+        var credential = createVerifiableCredential()
+                .issuanceDate(tenSecondsAgo)
+                .build();
+
+        service = new CredentialStatusCheckServiceImpl(revocationListService, fixedClock);
+        var result = service.checkStatus(createCredentialBuilder(credential)
+                .state(VcStatus.NOT_YET_VALID)
+                .build());
+        assertThat(result).isSucceeded()
+                .isEqualTo(VcStatus.ISSUED);
     }
 
     @Test

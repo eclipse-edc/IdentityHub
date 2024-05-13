@@ -45,14 +45,28 @@ public class CredentialStatusCheckServiceImpl implements CredentialStatusCheckSe
                 new Pair(new IsSuspended(revocationListService), VcStatus.SUSPENDED)
         );
 
-
         var cred = resource.getVerifiableCredential().credential();
-        return statusMap.stream().filter(p -> p.rule().apply(cred))
-                .map(p -> success(p.status()))
+        return statusMap.stream()
+                .filter(p -> p.rule().apply(cred))
+                .map(p -> success(p.targetState()))
                 .findFirst()
-                .orElse(success(resource.getStateAsEnum()));
+                // assume ISSUED only if the credential is present, use previous state otherwise
+                .orElse(success(getFallbackStatus(resource)));
     }
 
-    private record Pair(Function<VerifiableCredential, Boolean> rule, VcStatus status) {
+    /**
+     * returns the state if the check _wasn't_ successful, e.g. an unsuccessful {@link IsExpired} check means, the credential
+     * is _not_ expired. Reversible states, i.e. {@link VcStatus#NOT_YET_VALID} and {@link VcStatus#SUSPENDED} will always return to
+     * {@link VcStatus#ISSUED}, because that means that the credential "isn't suspended anymore". In all other cases the
+     * resource's current status is used.
+     */
+    private VcStatus getFallbackStatus(VerifiableCredentialResource resource) {
+        if (resource.getStateAsEnum() == VcStatus.NOT_YET_VALID || resource.getStateAsEnum() == VcStatus.SUSPENDED) {
+            return VcStatus.ISSUED;
+        }
+        return resource.getStateAsEnum();
+    }
+
+    private record Pair(Function<VerifiableCredential, Boolean> rule, VcStatus targetState) {
     }
 }

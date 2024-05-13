@@ -74,6 +74,7 @@ public class CredentialWatchdog implements Runnable {
         return QuerySpec.Builder.newInstance()
                 .filter(new Criterion("state", "!=", VcStatus.REVOKED.code()))
                 .filter(new Criterion("state", "!=", VcStatus.EXPIRED.code()))
+                .filter(new Criterion("state", "!=", VcStatus.ERROR.code()))
                 .build();
     }
 }
