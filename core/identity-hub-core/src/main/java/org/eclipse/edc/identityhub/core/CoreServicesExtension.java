@@ -139,7 +139,6 @@ public class CoreServicesExtension implements ServiceExtension {
         return new AccessTokenVerifierImpl(tokenValidationService, createPublicKey(context), tokenValidationRulesRegistry, context.getMonitor(), publicKeyResolver);
     }
 
-
     @Provider
     public CredentialQueryResolver createCredentialQueryResolver(ServiceExtensionContext context) {
         return new CredentialQueryResolverImpl(credentialStore, transformer, revocationService, context.getMonitor().withPrefix("Credential Query"));

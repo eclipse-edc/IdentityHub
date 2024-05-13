@@ -92,7 +92,7 @@ public class DefaultServicesExtension implements ServiceExtension {
         return new EdcScopeToCriterionTransformer();
     }
 
-    @Provider
+    @Provider(isDefault = true)
     public RevocationListService createRevocationListService(ServiceExtensionContext context) {
         if (revocationService == null) {
             var validity = context.getConfig().getLong(REVOCATION_CACHE_VALIDITY, DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS);
