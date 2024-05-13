@@ -31,5 +31,5 @@ CREATE UNIQUE INDEX IF NOT EXISTS credential_resource_credential_id_uindex ON cr
 COMMENT ON COLUMN credential_resource.id IS 'ID of the VC, duplicated here for indexing purposes';
 COMMENT ON COLUMN credential_resource.raw_vc IS 'Representation of the VC exactly as it was received by the issuer. Can be JWT or JSON(-LD) ';
 COMMENT ON COLUMN credential_resource.vc_format IS '0 = JSON-LD, 1 = JWT';
-COMMENT ON COLUMN credential_resource.verifiable_credential is 'JSON-representation of the VerifiableCredential';
+COMMENT ON COLUMN credential_resource.verifiable_credential IS 'JSON-representation of the VerifiableCredential';
 

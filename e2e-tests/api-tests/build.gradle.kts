@@ -12,6 +12,7 @@ dependencies {
     testImplementation(libs.awaitility)
     testImplementation(libs.testcontainers.junit)
     // needed for the Participant
+    testImplementation(project(":core:lib:credential-query-lib"))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(testFixtures(libs.edc.testfixtures.managementapi))
     testImplementation(libs.nimbus.jwt)
