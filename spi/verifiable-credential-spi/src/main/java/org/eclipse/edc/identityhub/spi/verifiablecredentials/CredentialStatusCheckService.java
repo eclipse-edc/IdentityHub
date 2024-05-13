@@ -19,6 +19,6 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.spi.result.Result;
 
 @FunctionalInterface
-public interface CredentialValidityCheckService {
+public interface CredentialStatusCheckService {
     Result<VcStatus> checkStatus(VerifiableCredentialResource resource);
 }

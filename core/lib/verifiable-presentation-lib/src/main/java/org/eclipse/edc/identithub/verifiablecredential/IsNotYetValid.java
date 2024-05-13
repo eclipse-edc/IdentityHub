@@ -15,25 +15,24 @@
 package org.eclipse.edc.identithub.verifiablecredential;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
-import org.eclipse.edc.iam.verifiablecredentials.spi.validation.CredentialValidationRule;
-import org.eclipse.edc.spi.result.Result;
 
 import java.time.Clock;
+import java.util.function.Function;
 
-public class IsNotYetValid implements CredentialValidationRule {
+/**
+ * Checks if a credential is already valid, i.e. the issuanceDate is before NOW
+ */
+class IsNotYetValid implements Function<VerifiableCredential, Boolean> {
     private final Clock clock;
 
-    public IsNotYetValid(Clock clock) {
+    IsNotYetValid(Clock clock) {
         this.clock = clock;
     }
 
     @Override
-    public Result<Void> apply(VerifiableCredential credential) {
+    public Boolean apply(VerifiableCredential credential) {
         var now = clock.instant();
         // issuance date can not be null, due to builder validation
-        if (credential.getIssuanceDate().isAfter(now)) {
-            return Result.failure("Credential is not yet valid.");
-        }
-        return Result.success();
+        return credential.getIssuanceDate().isAfter(now);
     }
 }

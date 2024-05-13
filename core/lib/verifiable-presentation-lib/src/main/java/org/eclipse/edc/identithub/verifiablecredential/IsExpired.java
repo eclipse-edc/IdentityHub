@@ -15,24 +15,23 @@
 package org.eclipse.edc.identithub.verifiablecredential;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
-import org.eclipse.edc.iam.verifiablecredentials.spi.validation.CredentialValidationRule;
-import org.eclipse.edc.spi.result.Result;
 
 import java.time.Clock;
+import java.util.function.Function;
 
-public class IsExpired implements CredentialValidationRule {
+/**
+ * Checks if a credential is expired by checking the expirationDate. If it is not present, the credential is not expired.
+ */
+class IsExpired implements Function<VerifiableCredential, Boolean> {
     private final Clock clock;
 
-    public IsExpired(Clock clock) {
+    IsExpired(Clock clock) {
         this.clock = clock;
     }
 
     @Override
-    public Result<Void> apply(VerifiableCredential credential) {
+    public Boolean apply(VerifiableCredential credential) {
         var now = clock.instant();
-        if (credential.getExpirationDate() != null && credential.getExpirationDate().isBefore(now)) {
-            return Result.failure("Credential expired.");
-        }
-        return Result.success();
+        return credential.getExpirationDate() != null && credential.getExpirationDate().isBefore(now);
     }
 }
