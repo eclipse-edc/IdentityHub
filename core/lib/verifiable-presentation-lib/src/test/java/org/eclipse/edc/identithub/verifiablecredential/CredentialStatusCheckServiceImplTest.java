@@ -112,7 +112,7 @@ class CredentialStatusCheckServiceImplTest {
                 .hasMessage("failed");
     }
 
-    protected VerifiableCredentialResource.Builder createCredentialBuilder(VerifiableCredential credential) {
+    private VerifiableCredentialResource.Builder createCredentialBuilder(VerifiableCredential credential) {
 
         return VerifiableCredentialResource.Builder.newInstance()
                 .issuerId("test-issuer")

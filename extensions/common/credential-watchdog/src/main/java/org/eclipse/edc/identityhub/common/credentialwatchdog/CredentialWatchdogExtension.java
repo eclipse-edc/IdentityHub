@@ -23,6 +23,7 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.security.SecureRandom;
 import java.util.concurrent.Executors;
@@ -56,6 +57,8 @@ public class CredentialWatchdogExtension implements ServiceExtension {
     private Integer watchdogPeriod;
     private Monitor monitor;
     private int initialDelay;
+    @Inject
+    private TransactionContext transactionContext;
 
     @Override
     public String name() {
@@ -80,7 +83,7 @@ public class CredentialWatchdogExtension implements ServiceExtension {
     public void start() {
         if (scheduledExecutorService != null && !scheduledExecutorService.isShutdown()) {
             monitor.debug(() -> "Starting credential watchdog in %d seconds, every %d seconds".formatted(initialDelay, watchdogPeriod));
-            scheduledExecutorService.scheduleAtFixedRate(new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor), initialDelay, watchdogPeriod, TimeUnit.SECONDS);
+            scheduledExecutorService.scheduleAtFixedRate(new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext), initialDelay, watchdogPeriod, TimeUnit.SECONDS);
         }
     }
 
