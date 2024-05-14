@@ -25,6 +25,7 @@ dependencies {
     runtimeOnly(project(":core:identity-hub-participants"))
     runtimeOnly(project(":core:identity-hub-keypairs"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
+    runtimeOnly(project(":extensions:common:credential-watchdog"))
     runtimeOnly(project(":extensions:api:management-api:did-api"))
     runtimeOnly(project(":extensions:api:management-api:participant-context-api"))
     runtimeOnly(project(":extensions:api:management-api:verifiable-credentials-api"))
