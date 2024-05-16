@@ -105,7 +105,8 @@ class ParticipantContextServiceImplTest {
         assertThat(participantContextService.createParticipantContext(ctx))
                 .isSucceeded();
 
-        verify(participantContextStore).create(any());
+        verify(participantContextStore).create(argThat(pc -> pc.getDid() != null &&
+                pc.getParticipantId().equalsIgnoreCase("test-id")));
         verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
         verify(observableMock).invokeForEach(any());
