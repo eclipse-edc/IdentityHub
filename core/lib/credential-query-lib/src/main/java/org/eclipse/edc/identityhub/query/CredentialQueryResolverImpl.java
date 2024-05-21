@@ -112,7 +112,8 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
             monitor.warning("Credential '%s' is expired.".formatted(credential.getId()));
             return false;
         }
-        var revocationResult = credential.getCredentialStatus().isEmpty() ? Result.success() : revocationService.checkValidity(credential);
+        var credentialStatus = credential.getCredentialStatus();
+        var revocationResult = (credentialStatus == null || credentialStatus.isEmpty()) ? Result.success() : revocationService.checkValidity(credential);
         if (revocationResult.failed()) {
             monitor.warning("Credential '%s' not valid: %s".formatted(credential.getId(), revocationResult.getFailureDetail()));
             return false;
