@@ -49,6 +49,7 @@ include(":extensions:store:sql:identity-hub-credentials-store-sql")
 include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:store:sql:identity-hub-keypair-store-sql")
 include(":extensions:did:local-did-publisher")
+include(":extensions:common:credential-watchdog")
 
 // management APIs
 include(":extensions:api:management-api:validators")

@@ -159,6 +159,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         return ParticipantContext.Builder.newInstance()
                 .participantId(manifest.getParticipantId())
                 .roles(manifest.getRoles())
+                .did(manifest.getDid())
                 .apiTokenAlias("%s-%s".formatted(manifest.getParticipantId(), API_KEY_ALIAS_SUFFIX))
                 .state(manifest.isActive() ? ParticipantContextState.ACTIVATED : ParticipantContextState.CREATED)
                 .build();

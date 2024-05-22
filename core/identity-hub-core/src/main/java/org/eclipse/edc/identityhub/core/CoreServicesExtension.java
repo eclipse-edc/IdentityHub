@@ -18,6 +18,7 @@ import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.identithub.verifiablecredential.CredentialStatusCheckServiceImpl;
 import org.eclipse.edc.identithub.verifiablepresentation.PresentationCreatorRegistryImpl;
 import org.eclipse.edc.identithub.verifiablepresentation.VerifiablePresentationServiceImpl;
 import org.eclipse.edc.identithub.verifiablepresentation.generators.JwtPresentationGenerator;
@@ -28,6 +29,7 @@ import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
@@ -131,14 +133,12 @@ public class CoreServicesExtension implements ServiceExtension {
         // Setup API
         cacheContextDocuments(getClass().getClassLoader());
         suiteRegistry.register(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, new Jws2020SignatureSuite(JacksonJsonLd.createObjectMapper()));
-
     }
 
     @Provider
     public AccessTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
         return new AccessTokenVerifierImpl(tokenValidationService, createPublicKey(context), tokenValidationRulesRegistry, context.getMonitor(), publicKeyResolver);
     }
-
 
     @Provider
     public CredentialQueryResolver createCredentialQueryResolver(ServiceExtensionContext context) {
@@ -164,6 +164,11 @@ public class CoreServicesExtension implements ServiceExtension {
         return new VerifiablePresentationServiceImpl(CredentialFormat.JWT, presentationCreatorRegistry(context), context.getMonitor());
     }
 
+
+    @Provider
+    public CredentialStatusCheckService createStatusCheckService() {
+        return new CredentialStatusCheckServiceImpl(revocationService, clock);
+    }
 
     private String getOwnDid(ServiceExtensionContext context) {
         return context.getConfig().getString(OWN_DID_PROPERTY);

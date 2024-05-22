@@ -13,9 +13,9 @@ dependencies {
     implementation(libs.edc.common.crypto) // for the CryptoConverter
     implementation(libs.edc.lib.jws2020)
     implementation(libs.edc.vc.ldp)
+    implementation(libs.edc.verifiablecredentials)
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.lib.jsonld)
-    testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(testFixtures(libs.edc.vc.jwt)) // JWT generator
 }
