@@ -1,0 +1,232 @@
+openapi: 3.0.1
+info:
+  title: Identity Hub REST API
+  description: Identity Hub REST APIs - merged by OpenApiMerger
+  version: 0.7.1-SNAPSHOT
+servers:
+- url: /
+paths:
+  /v1/participants/{participantId}/presentations/query:
+    post:
+      tags:
+      - Resolution API
+      description: "Issues a new presentation query, that contains either a DIF presentation\
+        \ definition, or a list of scopes"
+      operationId: queryPresentation
+      parameters:
+      - name: participantId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: null
+      - name: Authorization
+        in: header
+        required: false
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: null
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PresentationQueryMessage"
+      responses:
+        "200":
+          description: "The query was successfully processed, the response contains\
+            \ the VerifiablePresentation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresentationResponseMessage"
+        "400":
+          description: "Request body was malformed, for example when both scope and\
+            \ presentationDefinition are given"
+          content:
+            application/json:
+              schema:
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: No Authorization header was given.
+          content:
+            application/json:
+              schema:
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "403":
+          description: "The given authentication token could not be validated. This\
+            \ can happen, when the request body calls for a broader query scope than\
+            \ the granted scope in the auth token"
+          content:
+            application/json:
+              schema:
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "501":
+          description: "When the request contained a presentationDefinition object,\
+            \ but the implementation does not support it."
+          content:
+            application/json:
+              schema:
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+components:
+  schemas:
+    ApiErrorDetail:
+      type: object
+      properties:
+        invalidValue:
+          type: string
+          example: null
+        message:
+          type: string
+          example: null
+        path:
+          type: string
+          example: null
+        type:
+          type: string
+          example: null
+      example:
+        message: error message
+        type: ErrorType
+        path: object.error.path
+        invalidValue: this value is not valid
+    JsonObject:
+      type: object
+      properties:
+        empty:
+          type: boolean
+          example: null
+        valueType:
+          type: string
+          example: null
+          enum:
+          - ARRAY
+          - OBJECT
+          - STRING
+          - NUMBER
+          - "TRUE"
+          - "FALSE"
+          - "NULL"
+      additionalProperties:
+        $ref: "#/components/schemas/JsonValue"
+      example: null
+    JsonValue:
+      type: object
+      properties:
+        valueType:
+          type: string
+          example: null
+          enum:
+          - ARRAY
+          - OBJECT
+          - STRING
+          - NUMBER
+          - "TRUE"
+          - "FALSE"
+          - "NULL"
+      example: null
+    PresentationDefinitionSchema:
+      type: object
+      example: |
+        {
+          "comment": "taken from https://identity.foundation/presentation-exchange/spec/v2.0.0/#presentation-definition"
+          "presentationDefinition": {
+            "id": "first simple example",
+            "input_descriptors": [
+              {
+                "id": "A specific type of VC",
+                "name": "A specific type of VC",
+                "purpose": "We want a VC of this type",
+                "constraints": {
+                  "fields": [
+                    {
+                      "path": [
+                        "$.type"
+                      ],
+                      "filter": {
+                        "type": "string",
+                        "pattern": "<the type of VC e.g. degree certificate>"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+    PresentationQueryMessage:
+      required:
+      - '@context'
+      - '@type'
+      type: object
+      properties:
+        '@context':
+          type: object
+          example: null
+        '@type':
+          type: string
+          example: null
+        presentationDefinition:
+          $ref: "#/components/schemas/PresentationDefinitionSchema"
+        scope:
+          type: array
+          example: null
+          items:
+            type: string
+            example: null
+      example:
+        '@context':
+        - https://w3id.org/tractusx-trust/v0.8
+        - https://identity.foundation/presentation-exchange/submission/v1
+        '@type': PresentationQueryMessage
+        presentationDefinition: null
+        scope:
+        - org.eclipse.edc.vc.type:SomeCredential_0.3.5:write
+        - org.eclipse.edc.vc.type:SomeOtherCredential:read
+        - org.eclipse.edc.vc.type:ThirdCredential:*
+    PresentationResponseMessage:
+      required:
+      - '@context'
+      - presentation
+      type: object
+      properties:
+        '@context':
+          type: object
+          example: null
+        presentation:
+          type: array
+          example: null
+          items:
+            type: object
+            example: null
+            anyOf:
+            - type: string
+              example: null
+            - $ref: "#/components/schemas/JsonObject"
+      example:
+        '@context':
+        - https://w3id.org/tractusx-trust/v0.8
+        '@type': PresentationResponseMessage
+        presentation:
+        - dsJdh...UMetV
+  securitySchemes:
+    Authentication:
+      type: http
+      description: Self-Issued ID token containing an access_token
+      scheme: bearer
+      bearerFormat: JWT
