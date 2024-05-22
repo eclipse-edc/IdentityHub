@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
+package org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;

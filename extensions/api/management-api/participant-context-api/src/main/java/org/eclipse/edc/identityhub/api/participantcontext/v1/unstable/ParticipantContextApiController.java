@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.participantcontext.v1;
+package org.eclipse.edc.identityhub.api.participantcontext.v1.unstable;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
@@ -27,6 +27,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.v1.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
@@ -46,7 +47,7 @@ import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantCont
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/participants")
+@Path(Versions.UNSTABLE + "/participants")
 public class ParticipantContextApiController implements ParticipantContextApi {
 
     private final ParticipantManifestValidator participantManifestValidator;

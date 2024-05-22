@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
+package org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -23,6 +23,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -39,7 +40,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/participants/{participantId}/credentials")
+@Path(Versions.UNSTABLE + "/participants/{participantId}/credentials")
 public class VerifiableCredentialsApiController implements VerifiableCredentialsApi {
 
     private final CredentialStore credentialStore;

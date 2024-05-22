@@ -12,10 +12,11 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.keypair.v1;
+package org.eclipse.edc.identityhub.api.keypair.v1.unstable;
 
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -362,7 +363,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + "/v1/participants/%s/keypairs".formatted(PARTICIPANT_ID_ENCODED))
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/keypairs".formatted(PARTICIPANT_ID_ENCODED))
                 .when();
     }
 }

@@ -12,13 +12,14 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.participantcontext.v1;
+package org.eclipse.edc.identityhub.api.participantcontext.v1.unstable;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.v1.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
@@ -286,7 +287,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + "/v1/participants")
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants")
                 .when();
     }
 

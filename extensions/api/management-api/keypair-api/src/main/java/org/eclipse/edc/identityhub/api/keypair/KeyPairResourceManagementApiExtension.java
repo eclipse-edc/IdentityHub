@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.api.keypair;
 
-import org.eclipse.edc.identityhub.api.keypair.v1.GetAllKeyPairsApiController;
-import org.eclipse.edc.identityhub.api.keypair.v1.KeyPairResourceApiController;
+import org.eclipse.edc.identityhub.api.keypair.v1.unstable.GetAllKeyPairsApiController;
+import org.eclipse.edc.identityhub.api.keypair.v1.unstable.KeyPairResourceApiController;
 import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;

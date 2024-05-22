@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.participantcontext;
 
-import org.eclipse.edc.identityhub.api.participantcontext.v1.ParticipantContextApiController;
+import org.eclipse.edc.identityhub.api.participantcontext.v1.unstable.ParticipantContextApiController;
 import org.eclipse.edc.identityhub.api.v1.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
