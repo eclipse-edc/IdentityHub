@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Metaform Systems, Inc.
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -12,13 +12,14 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.didmanagement.v1;
+package org.eclipse.edc.identityhub.api.didmanagement.v1.unstable;
 
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identithub.spi.did.model.DidResource;
+import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.query.Criterion;
@@ -33,7 +34,7 @@ import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.edc.identityhub.api.didmanagement.v1.TestFunctions.createDidDocument;
+import static org.eclipse.edc.identityhub.api.didmanagement.v1.unstable.TestFunctions.createDidDocument;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
@@ -64,7 +65,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + "/v1/participants/test-participant/dids")
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/test-participant/dids")
                 .when();
     }
 

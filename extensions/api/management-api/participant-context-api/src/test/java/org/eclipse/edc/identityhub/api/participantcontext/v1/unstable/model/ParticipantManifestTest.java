@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.participantcontext.v1.model;
+package org.eclipse.edc.identityhub.api.participantcontext.v1.unstable.model;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

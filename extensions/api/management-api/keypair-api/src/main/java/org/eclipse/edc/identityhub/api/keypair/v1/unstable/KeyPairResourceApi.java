@@ -12,11 +12,12 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.participantcontext.v1;
+package org.eclipse.edc.identityhub.api.keypair.v1.unstable;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -25,122 +26,124 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
-import java.util.List;
 
-@OpenAPIDefinition(info = @Info(description = "This is the Management API for ParticipantContexts", title = "ParticipantContext Management API", version = "1"))
-@Tag(name = "Participant Context")
-public interface ParticipantContextApi {
+@OpenAPIDefinition(info = @Info(description = "This is the Management API for KeyPairResources", title = "KeyPairResources Management API", version = "1"))
+@Tag(name = "Key Pairs")
+public interface KeyPairResourceApi {
 
-
-    @Operation(description = "Creates a new ParticipantContext object.",
-            operationId = "createParticipant",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
+    @Operation(description = "Finds a KeyPairResource by ID.",
+            operationId = "getKeyPair",
+            parameters = {
+                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was created successfully, its API token is returned in the response body."),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "409", description = "Can't create the ParticipantContext, because a object with the same ID already exists",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
-            }
-    )
-    String createParticipant(ParticipantManifest manifest);
-
-
-    @Operation(description = "Gets ParticipantContexts by ID.",
-            operationId = "getParticipant",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "The list of ParticipantContexts.",
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource.",
                             content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "A ParticipantContext with the given ID does not exist.",
+                    @ApiResponse(responseCode = "404", description = "A KeyPairResource with the given ID does not exist.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    ParticipantContext getParticipant(String participantId, SecurityContext securityContext);
+    KeyPairResource getKeyPair(String id, SecurityContext securityContext);
 
-    @Operation(description = "Regenerates the API token for a ParticipantContext and returns the new token.",
-            operationId = "regenerateParticipantToken",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
+    @Operation(description = "Finds all KeyPairResources for a particular ParticipantContext.",
+            operationId = "queryKeyPairByParticipantId",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The API token was regenerated successfully", content = { @Content(schema = @Schema(implementation = String.class)) }),
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource.",
+                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "A ParticipantContext with the given ID does not exist.",
+                    @ApiResponse(responseCode = "404", description = "A KeyPairResource with the given ID does not exist.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    String regenerateParticipantToken(String participantId, SecurityContext securityContext);
+    Collection<KeyPairResource> queryKeyPairByParticipantId(String participantId, SecurityContext securityContext);
 
-    @Operation(description = "Activates a ParticipantContext. This operation is idempotent, i.e. activating an already active ParticipantContext is a NOOP.",
-            operationId = "activateParticipant",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
-            parameters = { @Parameter(name = "isActive", description = "Whether the participantContext should be activated or deactivated. Defaults to 'false'") },
+    @Operation(description = "Adds a new key pair to a ParticipantContext. Note that the key pair is either generated, or the private key is expected to be found in the vault.",
+            operationId = "addKeyPair",
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = KeyDescriptor.class), mediaType = "application/json")),
+            parameters = @Parameter(name = "makeDefault", description = "Make the new key pair the default key pair"),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was activated/deactivated successfully", content = { @Content(schema = @Schema(implementation = String.class)) }),
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource was successfully created and linked to the participant.",
+                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "A ParticipantContext with the given ID does not exist.",
+                    @ApiResponse(responseCode = "404", description = "A KeyPairResource with the given ID does not exist.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void activateParticipant(String participantId, boolean isActive);
+    void addKeyPair(String participantId, KeyDescriptor keyDescriptor, boolean makeDefault, SecurityContext securityContext);
 
-    @Operation(description = "Delete a ParticipantContext.",
-            operationId = "deleteParticipant",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was deleted successfully", content = { @Content(schema = @Schema(implementation = String.class)) }),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "A ParticipantContext with the given ID does not exist.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
-            }
-    )
-    void deleteParticipant(String participantId, SecurityContext securityContext);
 
-    @Operation(description = "Updates a ParticipantContext's roles. Note that this is an absolute update, that means all roles that the Participant should have must be submitted in the body. Requires elevated privileges.",
-            operationId = "updateParticipantRoles",
-            requestBody = @RequestBody(content = @Content(array = @ArraySchema(schema = @Schema(implementation = List.class)))),
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was updated successfully"),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "A ParticipantContext with the given ID does not exist.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
-            }
-    )
-    void updateParticipantRoles(String participantId, List<String> roles);
-
-    @Operation(description = "Get all DID documents across all Participant Contexts. Requires elevated access.",
-            operationId = "getAllParticipants",
+    @Operation(description = "Sets a KeyPairResource to the ACTIVE state. Will fail if the current state is anything other than ACTIVE or CREATED.",
+            operationId = "activateKeyPair",
             parameters = {
-                    @Parameter(name = "offset", description = "the paging offset. defaults to 0"),
-                    @Parameter(name = "limit", description = "the page size. defaults to 50") },
+                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The list of ParticipantContexts.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ParticipantContext.class)))),
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource.",
+                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "400", description = "The query was malformed or was not understood by the server.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "404", description = "A KeyPairResource with the given ID does not exist.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Collection<ParticipantContext> getAllParticipants(Integer offset, Integer limit);
+    void activateKeyPair(String keyPairResourceId, SecurityContext securityContext);
+
+    @Operation(description = "Rotates (=retires) a particular key pair, identified by their ID and optionally create a new successor key.",
+            operationId = "rotateKeyPair",
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = KeyDescriptor.class), mediaType = "application/json")),
+            parameters = {
+                    @Parameter(name = "duration", description = "Indicates for how long the public key of the rotated/retired key pair should still be available "),
+                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource was successfully rotated and linked to the participant.",
+                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "404", description = "A KeyPairResource with the given ID does not exist.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    void rotateKeyPair(String id, KeyDescriptor newKey, long duration, SecurityContext securityContext);
+
+    @Operation(description = "Revokes (=removes) a particular key pair, identified by their ID and create a new successor key.",
+            operationId = "revokeKeyPair",
+            parameters = {
+                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = KeyDescriptor.class), mediaType = "application/json")),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource was successfully rotated and linked to the participant.",
+                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "404", description = "A KeyPairResource with the given ID does not exist.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    void revokeKeyPair(String id, KeyDescriptor newKey, SecurityContext securityContext);
+
+
 }

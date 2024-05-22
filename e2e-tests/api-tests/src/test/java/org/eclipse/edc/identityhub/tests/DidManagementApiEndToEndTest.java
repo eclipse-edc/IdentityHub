@@ -68,7 +68,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:user1"
                         }
                         """)
-                .post("/v1/participants/%s/dids/publish".formatted(user1))
+                .post("/v1alpha/participants/%s/dids/publish".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -97,7 +97,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                                        "did": "did:web:test-user"
                                     }
                                     """)
-                            .post("/v1/participants/%s/dids/publish".formatted(user))
+                            .post("/v1alpha/participants/%s/dids/publish".formatted(user))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(204)
@@ -144,7 +144,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:user1"
                         }
                         """)
-                .post("/v1/participants/%s/dids/unpublish".formatted(user1))
+                .post("/v1alpha/participants/%s/dids/unpublish".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -173,7 +173,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                                        "did": "did:web:test-user"
                                     }
                                     """)
-                            .post("/v1/participants/%s/dids/unpublish".formatted(user))
+                            .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(204)
@@ -206,7 +206,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:user1"
                         }
                         """)
-                .post("/v1/participants/%s/dids/state".formatted(user1))
+                .post("/v1alpha/participants/%s/dids/state".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);
@@ -220,7 +220,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/dids")
+                .get("/v1alpha/dids")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -237,7 +237,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/dids")
+                .get("/v1alpha/dids")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -254,7 +254,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/dids?offset=5&limit=10")
+                .get("/v1alpha/dids?offset=5&limit=10")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -271,7 +271,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", attackerToken))
-                .get("/v1/dids")
+                .get("/v1alpha/dids")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);

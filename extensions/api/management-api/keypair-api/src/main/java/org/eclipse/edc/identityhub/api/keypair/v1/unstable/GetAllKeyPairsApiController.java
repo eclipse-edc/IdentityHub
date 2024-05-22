@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.keypair.v1;
+package org.eclipse.edc.identityhub.api.keypair.v1.unstable;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
@@ -21,6 +21,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
@@ -33,7 +34,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/keypairs")
+@Path(Versions.UNSTABLE + "/keypairs")
 public class GetAllKeyPairsApiController implements GetAllKeyPairsApi {
 
     private final KeyPairService keyPairService;

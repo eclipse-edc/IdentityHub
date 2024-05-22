@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.didmanagement.v1;
+package org.eclipse.edc.identityhub.api.didmanagement.v1.unstable;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
@@ -24,6 +24,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
+import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
@@ -34,7 +35,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Path("/v1/dids")
+@Path(Versions.UNSTABLE + "/dids")
 public class GetAllDidsApiController implements GetAllDidsApi {
     private final DidDocumentService documentService;
 

@@ -12,10 +12,11 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.didmanagement.v1;
+package org.eclipse.edc.identityhub.api.didmanagement.v1.unstable;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
+import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.edc.identityhub.api.didmanagement.v1.TestFunctions.createDidDocument;
+import static org.eclipse.edc.identityhub.api.didmanagement.v1.unstable.TestFunctions.createDidDocument;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -41,7 +42,7 @@ class GetAllDidsApiControllerTest extends RestControllerTestBase {
         var docs = given()
                 .when()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + "/v1/dids")
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/dids")
                 .get()
                 .then()
                 .statusCode(200)

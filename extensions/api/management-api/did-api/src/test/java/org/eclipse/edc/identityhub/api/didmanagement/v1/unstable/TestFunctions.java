@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.didmanagement.v1;
+package org.eclipse.edc.identityhub.api.didmanagement.v1.unstable;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;

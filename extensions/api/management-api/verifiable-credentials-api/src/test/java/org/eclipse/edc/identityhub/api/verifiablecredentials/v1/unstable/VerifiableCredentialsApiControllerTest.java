@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.verifiablecredentials.v1;
+package org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable;
 
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
@@ -20,6 +20,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -214,7 +215,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + "/v1/participants/test-participant/credentials")
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/test-participant/credentials")
                 .when();
     }
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Metaform Systems, Inc.
+ *  Copyright (c) 2024 Metaform Systems, Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api.didmanagement.v1;
+package org.eclipse.edc.identityhub.api.didmanagement.v1.unstable;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -29,6 +29,7 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identithub.spi.did.model.DidState;
+import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -40,7 +41,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/participants/{participantId}/dids")
+@Path(Versions.UNSTABLE + "/participants/{participantId}/dids")
 public class DidManagementApiController implements DidManagementApi {
 
     private final DidDocumentService documentService;
