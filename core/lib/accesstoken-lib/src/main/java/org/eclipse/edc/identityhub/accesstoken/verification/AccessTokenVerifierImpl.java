@@ -63,7 +63,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         Objects.requireNonNull(participantId, "Participant ID is mandatory.");
         var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(IATP_SELF_ISSUED_TOKEN_CONTEXT));
         if (res.failed()) {
-            return res.mapTo();
+            return res.mapFailure();
         }
 
         var claimToken = res.getContent();
@@ -94,7 +94,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         rules.add(audMustMatchParticipantIdRule);
         var result = tokenValidationService.validate(accessTokenString, id -> Result.success(stsPublicKey.get()), rules);
         if (result.failed()) {
-            return result.mapTo();
+            return result.mapFailure();
         }
 
         // verify that the access_token contains a scope claim
