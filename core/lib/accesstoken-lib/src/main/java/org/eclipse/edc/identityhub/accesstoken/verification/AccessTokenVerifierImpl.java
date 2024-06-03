@@ -91,6 +91,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(IATP_ACCESS_TOKEN_CONTEXT));
         rules.add(subClaimsMatch);
         rules.add(audMustMatchParticipantIdRule);
+        // todo: verify that the resolved public key belongs to the participant ID
         var result = tokenValidationService.validate(accessTokenString, localPublicKeyService, rules);
         if (result.failed()) {
             return result.mapFailure();
