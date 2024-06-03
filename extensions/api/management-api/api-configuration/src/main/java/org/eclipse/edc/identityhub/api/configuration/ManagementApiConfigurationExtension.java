@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.api.configuration;
 
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -25,7 +24,6 @@ import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
-import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebServer;
 import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
@@ -62,21 +60,11 @@ public class ManagementApiConfigurationExtension implements ServiceExtension {
     @Inject
     private Vault vault;
 
-    private ManagementApiConfigurationImpl configuration;
-
     @Override
     public String name() {
         return NAME;
     }
 
-
-    @Provider
-    public ManagementApiConfiguration createApiConfig(ServiceExtensionContext context) {
-        if (configuration == null) {
-            configuration = new ManagementApiConfigurationImpl(configurer.configure(context, webServer, SETTINGS));
-        }
-        return configuration;
-    }
 
     @Provider(isDefault = true)
     public AuthorizationService authorizationService() {

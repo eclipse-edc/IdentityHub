@@ -17,7 +17,7 @@ package org.eclipse.edc.identityhub.api.participantcontext;
 import org.eclipse.edc.identityhub.api.participantcontext.v1.unstable.ParticipantContextApiController;
 import org.eclipse.edc.identityhub.api.v1.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
+import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -39,8 +39,6 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
     @Inject
     private ParticipantContextService participantContextService;
     @Inject
-    private ManagementApiConfiguration webServiceConfiguration;
-    @Inject
     private AuthorizationService authorizationService;
     @Inject
     private Monitor monitor;
@@ -54,6 +52,6 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(ParticipantContext.class, s -> participantContextService.getParticipantContext(s).orElseThrow(exceptionMapper(ParticipantContext.class, s)));
         var controller = new ParticipantContextApiController(new ParticipantManifestValidator(monitor), participantContextService, authorizationService);
-        webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
+        webService.registerResource(IdentityHubApiContext.IH_MANAGEMENT, controller);
     }
 }

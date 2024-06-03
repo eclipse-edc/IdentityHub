@@ -19,7 +19,7 @@ import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.api.didmanagement.v1.unstable.DidManagementApiController;
 import org.eclipse.edc.identityhub.api.didmanagement.v1.unstable.GetAllDidsApiController;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
+import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -38,8 +38,6 @@ public class DidManagementApiExtension implements ServiceExtension {
     @Inject
     private DidDocumentService didDocumentService;
     @Inject
-    private ManagementApiConfiguration webServiceConfiguration;
-    @Inject
     private AuthorizationService authorizationService;
 
     @Override
@@ -52,8 +50,8 @@ public class DidManagementApiExtension implements ServiceExtension {
         authorizationService.addLookupFunction(DidResource.class, s -> didDocumentService.findById(s));
         var controller = new DidManagementApiController(didDocumentService, authorizationService);
         var getAllController = new GetAllDidsApiController(didDocumentService);
-        webService.registerResource(webServiceConfiguration.getContextAlias(), controller);
-        webService.registerResource(webServiceConfiguration.getContextAlias(), getAllController);
+        webService.registerResource(IdentityHubApiContext.IH_MANAGEMENT, controller);
+        webService.registerResource(IdentityHubApiContext.IH_MANAGEMENT, getAllController);
     }
 
 }

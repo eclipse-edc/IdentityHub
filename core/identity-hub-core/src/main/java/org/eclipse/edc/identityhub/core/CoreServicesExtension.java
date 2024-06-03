@@ -24,11 +24,13 @@ import org.eclipse.edc.identithub.verifiablepresentation.VerifiablePresentationS
 import org.eclipse.edc.identithub.verifiablepresentation.generators.JwtPresentationGenerator;
 import org.eclipse.edc.identithub.verifiablepresentation.generators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenVerifierImpl;
+import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.query.CredentialQueryResolverImpl;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
@@ -74,16 +76,6 @@ public class CoreServicesExtension implements ServiceExtension {
     @Setting(value = "Configure this IdentityHub's DID", required = true)
     public static final String OWN_DID_PROPERTY = "edc.ih.iam.id";
 
-    @Setting(value = "Key alias, which was used to store the public key in the vaule", required = true)
-    public static final String PUBLIC_KEY_VAULT_ALIAS_PROPERTY = "edc.ih.iam.publickey.alias";
-
-    @Setting(value = "Path to a file that holds the public key, e.g. a PEM file. Do not use in production!")
-    public static final String PUBLIC_KEY_PATH_PROPERTY = "edc.ih.iam.publickey.path";
-
-    @Setting(value = "Public key in PEM format")
-    public static final String PUBLIC_KEY_PEM = "edc.ih.iam.publickey.pem";
-
-
     public static final String PRESENTATION_EXCHANGE_V_1_JSON = "presentation-exchange.v1.json";
     public static final String PRESENTATION_QUERY_V_08_JSON = "iatp.v08.json";
     public static final String PRESENTATION_SUBMISSION_V1_JSON = "presentation-submission.v1.json";
@@ -122,6 +114,8 @@ public class CoreServicesExtension implements ServiceExtension {
     private KeyPairService keyPairService;
     @Inject
     private RevocationListService revocationService;
+    @Inject
+    private KeyPairResourceStore store;
 
     @Override
     public String name() {
@@ -137,7 +131,8 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public AccessTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
-        return new AccessTokenVerifierImpl(tokenValidationService, createPublicKey(context), tokenValidationRulesRegistry, context.getMonitor(), publicKeyResolver);
+        var keyResolver = new KeyPairResourcePublicKeyResolver(vault, store, keyParserRegistry, context.getMonitor());
+        return new AccessTokenVerifierImpl(tokenValidationService, keyResolver, tokenValidationRulesRegistry, context.getMonitor(), publicKeyResolver);
     }
 
     @Provider
@@ -187,13 +182,4 @@ public class CoreServicesExtension implements ServiceExtension {
         }
     }
 
-    private LocalPublicKeySupplier createPublicKey(ServiceExtensionContext context) {
-        return LocalPublicKeySupplier.Builder.newInstance()
-                .vault(vault)
-                .vaultAlias(context.getSetting(PUBLIC_KEY_VAULT_ALIAS_PROPERTY, null))
-                .publicKeyPath(context.getSetting(PUBLIC_KEY_PATH_PROPERTY, null))
-                .rawString(context.getSetting(PUBLIC_KEY_PEM, null))
-                .keyParserRegistry(keyParserRegistry)
-                .build();
-    }
 }

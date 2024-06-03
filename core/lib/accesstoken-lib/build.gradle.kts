@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
+    api(project(":core:lib:keypair-lib")) // for the KeyPairResourcePublicKeyResolver
     implementation(libs.edc.spi.token)
     implementation(libs.edc.spi.jwt)
 

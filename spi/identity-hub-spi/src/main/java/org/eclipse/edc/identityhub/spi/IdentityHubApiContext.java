@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.spi;
 
-import org.eclipse.edc.web.spi.configuration.WebServiceConfiguration;
-
-public abstract class ManagementApiConfiguration extends WebServiceConfiguration {
+public interface IdentityHubApiContext {
+    String IH_MANAGEMENT = "management";
+    String IH_DID = "did";
 }
