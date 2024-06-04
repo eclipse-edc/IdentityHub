@@ -16,12 +16,11 @@ package org.eclipse.edc.identityhub.publickey;
 
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
-import org.eclipse.edc.keys.LocalPublicKeyServiceImpl;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
+import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.spi.security.Vault;
 
 import java.security.PublicKey;
 
@@ -29,29 +28,37 @@ import java.security.PublicKey;
  * This {@link org.eclipse.edc.keys.spi.LocalPublicKeyService} resolves this IdentityHub's own public keys by querying the {@link KeyPairResourceStore}.
  * The rationale being that public keys should be represented as a {@link org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource}.
  * <p>
- * If no such {@link org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource} is found, this service will fall back to looking up the key in the vault. Note that this
+ * If no such {@link org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource} is found, this service will fall back to e.g. looking up the keys from the vault. Note that this
  * would be a strong indication of a data inconsistency.
  */
-public class KeyPairResourcePublicKeyResolver extends LocalPublicKeyServiceImpl {
+public class KeyPairResourcePublicKeyResolver {
 
     private final KeyPairResourceStore keyPairResourceStore;
     private final KeyParserRegistry keyParserRegistry;
     private final Monitor monitor;
+    private final LocalPublicKeyService fallbackResolver;
 
-    public KeyPairResourcePublicKeyResolver(Vault vault, KeyPairResourceStore keyPairResourceStore, KeyParserRegistry registry, Monitor monitor) {
-        super(vault, registry);
+    public KeyPairResourcePublicKeyResolver(KeyPairResourceStore keyPairResourceStore, KeyParserRegistry registry, Monitor monitor, LocalPublicKeyService fallbackResolver) {
+
         this.keyPairResourceStore = keyPairResourceStore;
         this.keyParserRegistry = registry;
         this.monitor = monitor;
+        this.fallbackResolver = fallbackResolver;
     }
 
-    @Override
-    public Result<PublicKey> resolveKey(String id) {
-        return resolveFromDbOrVault(id);
-    }
-
-    private Result<PublicKey> resolveFromDbOrVault(String publicKeyId) {
-        var query = ParticipantResource.queryByParticipantId("").filter(new Criterion("keyId", "=", publicKeyId)).build();
+    /**
+     * Resolves a {@link PublicKey} with a given key-ID from the internal {@link KeyPairResourceStore}. Note that this only works for public keys
+     * that are known to this runtime, i.e. this only works for public keys that belong to one of the {@link org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext} objects
+     * that are managed by this IdentityHub!
+     * <p>
+     * As a fallback, if the PublicKey is not found in storage, the resolver falls back to the {@link LocalPublicKeyService}.
+     *
+     * @param publicKeyId   The fully-qualified ID of the public key. For example: {@code did:web:someparticipant#key-123}.
+     * @param participantId The participant ID of the requestor
+     * @return A result with the public key, resolved from storage, or a failed result.
+     */
+    public Result<PublicKey> resolveKey(String publicKeyId, String participantId) {
+        var query = ParticipantResource.queryByParticipantId(participantId).filter(new Criterion("keyId", "=", publicKeyId)).build();
         var result = keyPairResourceStore.query(query);
         // store failed, e.g. data model does not match query, etc.
         if (result.failed()) {
@@ -67,11 +74,10 @@ public class KeyPairResourcePublicKeyResolver extends LocalPublicKeyServiceImpl 
                 .map(kpr -> parseKey(kpr.getSerializedPublicKey()))
                 .orElseGet(() -> {
                     monitor.warning("No KeyPairResource with keyId '%s' was found in the store. Will attempt to resolve from the Vault. This could be an indication of a data inconsistency, it is recommended to revoke and regenerate keys!");
-                    return super.resolveKey(publicKeyId); // attempt to resolve from vault
+                    return fallbackResolver.resolveKey(publicKeyId); // attempt to resolve from vault
                 });
     }
 
-    // super-class's method is private, simply temporarily copy-pasted here
     private Result<PublicKey> parseKey(String encodedKey) {
         return keyParserRegistry.parse(encodedKey).compose(pk -> {
             if (pk instanceof PublicKey publicKey) {

@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.tests.fixtures;
 
 import io.restassured.specification.RequestSpecification;
-import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -49,8 +48,7 @@ public class IdentityHubRuntimeConfiguration {
                 put("web.http.resolution.path", resolutionEndpoint.getUrl().getPath());
                 put("web.http.identity.port", String.valueOf(managementEndpoint.getUrl().getPort()));
                 put("web.http.identity.path", managementEndpoint.getUrl().getPath());
-                put("edc.connector.name", name);
-                put("edc.ih.iam.publickey.alias", JwtCreationUtil.CONSUMER_KEY.getKeyID());
+                put("edc.runtime.id", name);
                 put("edc.ih.iam.id", "did:web:consumer");
             }
         };
@@ -91,11 +89,6 @@ public class IdentityHubRuntimeConfiguration {
     public static class Endpoint {
         private final URI url;
         private final Map<String, String> headers;
-
-        public Endpoint(URI url) {
-            this.url = url;
-            this.headers = new HashMap();
-        }
 
         public Endpoint(URI url, Map<String, String> headers) {
             this.url = url;

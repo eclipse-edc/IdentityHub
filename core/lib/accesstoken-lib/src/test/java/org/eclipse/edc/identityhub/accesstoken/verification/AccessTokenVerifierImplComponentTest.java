@@ -78,7 +78,7 @@ class AccessTokenVerifierImplComponentTest {
         ruleRegistry.addRule(IATP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
 
         var resolverMock = mock(KeyPairResourcePublicKeyResolver.class);
-        when(resolverMock.resolveKey(anyString())).thenReturn(Result.success(stsKeyPair.getPublic()));
+        when(resolverMock.resolveKey(anyString(), anyString())).thenReturn(Result.success(stsKeyPair.getPublic()));
 
         verifier = new AccessTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, monitor, (id) -> Result.success(providerKeyPair.getPublic()));
     }

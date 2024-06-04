@@ -15,10 +15,10 @@
 package org.eclipse.edc.identityhub.accesstoken.verification;
 
 import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.edc.junit.assertions.AbstractResultAssert;
-import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.result.Result;
@@ -46,7 +46,7 @@ class AccessTokenVerifierImplTest {
             .claim("token", "test-at")
             .claim("scope", "org.eclipse.edc.vc.type:AlumniCredential:read")
             .build();
-    private final LocalPublicKeyService localPublicKeyResolver = mock();
+    private final KeyPairResourcePublicKeyResolver localPublicKeyResolver = mock();
     private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, localPublicKeyResolver, tokenValidationRulesRegistry, mock(), pkResolver);
 
     @Test

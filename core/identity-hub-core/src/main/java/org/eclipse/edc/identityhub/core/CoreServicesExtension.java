@@ -39,6 +39,7 @@ import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
+import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -117,6 +118,9 @@ public class CoreServicesExtension implements ServiceExtension {
     @Inject
     private KeyPairResourceStore store;
 
+    @Inject
+    private LocalPublicKeyService fallbackService;
+
     @Override
     public String name() {
         return NAME;
@@ -131,7 +135,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public AccessTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
-        var keyResolver = new KeyPairResourcePublicKeyResolver(vault, store, keyParserRegistry, context.getMonitor());
+        var keyResolver = new KeyPairResourcePublicKeyResolver(store, keyParserRegistry, context.getMonitor(), fallbackService);
         return new AccessTokenVerifierImpl(tokenValidationService, keyResolver, tokenValidationRulesRegistry, context.getMonitor(), publicKeyResolver);
     }
 

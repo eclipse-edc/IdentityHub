@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.identityhub.accesstoken.verification;
 
+import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
-import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
@@ -43,12 +43,12 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
 
     private static final String SCOPE_SEPARATOR = " ";
     private final TokenValidationService tokenValidationService;
-    private final LocalPublicKeyService localPublicKeyService;
+    private final KeyPairResourcePublicKeyResolver localPublicKeyService;
     private final TokenValidationRulesRegistry tokenValidationRulesRegistry;
     private final Monitor monitor;
     private final PublicKeyResolver publicKeyResolver;
 
-    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, LocalPublicKeyService localPublicKeyService, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
+    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, KeyPairResourcePublicKeyResolver localPublicKeyService, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
                                    PublicKeyResolver publicKeyResolver) {
         this.tokenValidationService = tokenValidationService;
         this.localPublicKeyService = localPublicKeyService;
@@ -92,7 +92,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         rules.add(subClaimsMatch);
         rules.add(audMustMatchParticipantIdRule);
         // todo: verify that the resolved public key belongs to the participant ID
-        var result = tokenValidationService.validate(accessTokenString, localPublicKeyService, rules);
+        var result = tokenValidationService.validate(accessTokenString, keyId -> localPublicKeyService.resolveKey(keyId, participantId), rules);
         if (result.failed()) {
             return result.mapFailure();
         }
