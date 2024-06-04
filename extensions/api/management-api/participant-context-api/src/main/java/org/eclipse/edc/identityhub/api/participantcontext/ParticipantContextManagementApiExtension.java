@@ -52,6 +52,6 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(ParticipantContext.class, s -> participantContextService.getParticipantContext(s).orElseThrow(exceptionMapper(ParticipantContext.class, s)));
         var controller = new ParticipantContextApiController(new ParticipantManifestValidator(monitor), participantContextService, authorizationService);
-        webService.registerResource(IdentityHubApiContext.IH_MANAGEMENT, controller);
+        webService.registerResource(IdentityHubApiContext.IDENTITY, controller);
     }
 }

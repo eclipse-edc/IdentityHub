@@ -45,7 +45,7 @@ public class ApiAuthenticationExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var alias = IdentityHubApiContext.IH_MANAGEMENT;
+        var alias = IdentityHubApiContext.IDENTITY;
         webService.registerResource(alias, new RoleBasedAccessFeature());
         webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(new ParticipantServicePrincipalResolver(participantContextService, vault)));
     }

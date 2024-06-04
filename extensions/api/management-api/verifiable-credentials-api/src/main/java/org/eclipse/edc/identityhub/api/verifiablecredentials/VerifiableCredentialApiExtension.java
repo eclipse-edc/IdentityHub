@@ -53,8 +53,8 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
         authorizationService.addLookupFunction(VerifiableCredentialResource.class, this::queryById);
         var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService);
         var getAllController = new GetAllCredentialsApiController(credentialStore);
-        webService.registerResource(IdentityHubApiContext.IH_MANAGEMENT, controller);
-        webService.registerResource(IdentityHubApiContext.IH_MANAGEMENT, getAllController);
+        webService.registerResource(IdentityHubApiContext.IDENTITY, controller);
+        webService.registerResource(IdentityHubApiContext.IDENTITY, getAllController);
     }
 
     private ParticipantResource queryById(String credentialId) {

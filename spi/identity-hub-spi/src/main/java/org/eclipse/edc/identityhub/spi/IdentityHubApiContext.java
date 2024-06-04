@@ -15,6 +15,6 @@
 package org.eclipse.edc.identityhub.spi;
 
 public interface IdentityHubApiContext {
-    String IH_MANAGEMENT = "management";
+    String IDENTITY = "identity";
     String IH_DID = "did";
 }

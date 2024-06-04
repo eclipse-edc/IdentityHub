@@ -50,8 +50,8 @@ public class DidManagementApiExtension implements ServiceExtension {
         authorizationService.addLookupFunction(DidResource.class, s -> didDocumentService.findById(s));
         var controller = new DidManagementApiController(didDocumentService, authorizationService);
         var getAllController = new GetAllDidsApiController(didDocumentService);
-        webService.registerResource(IdentityHubApiContext.IH_MANAGEMENT, controller);
-        webService.registerResource(IdentityHubApiContext.IH_MANAGEMENT, getAllController);
+        webService.registerResource(IdentityHubApiContext.IDENTITY, controller);
+        webService.registerResource(IdentityHubApiContext.IDENTITY, getAllController);
     }
 
 }

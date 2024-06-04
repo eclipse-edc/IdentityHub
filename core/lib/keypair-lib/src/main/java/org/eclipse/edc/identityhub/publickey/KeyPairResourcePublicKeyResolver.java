@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.identityhub.publickey;
 
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.keys.LocalPublicKeyServiceImpl;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
-import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
 
@@ -51,7 +51,8 @@ public class KeyPairResourcePublicKeyResolver extends LocalPublicKeyServiceImpl 
     }
 
     private Result<PublicKey> resolveFromDbOrVault(String publicKeyId) {
-        var result = keyPairResourceStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("keyId", "=", publicKeyId)).build());
+        var query = ParticipantResource.queryByParticipantId("").filter(new Criterion("keyId", "=", publicKeyId)).build();
+        var result = keyPairResourceStore.query(query);
         // store failed, e.g. data model does not match query, etc.
         if (result.failed()) {
             monitor.warning("Error querying database for KeyPairResource with key ID '%s': %s".formatted(publicKeyId, result.getFailureDetail()));

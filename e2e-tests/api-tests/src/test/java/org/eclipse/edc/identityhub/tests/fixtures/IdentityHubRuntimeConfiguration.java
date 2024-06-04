@@ -47,8 +47,8 @@ public class IdentityHubRuntimeConfiguration {
                 put("web.http.path", "/api/v1");
                 put("web.http.resolution.port", String.valueOf(resolutionEndpoint.getUrl().getPort()));
                 put("web.http.resolution.path", resolutionEndpoint.getUrl().getPath());
-                put("web.http.management.port", String.valueOf(managementEndpoint.getUrl().getPort()));
-                put("web.http.management.path", managementEndpoint.getUrl().getPath());
+                put("web.http.identity.port", String.valueOf(managementEndpoint.getUrl().getPort()));
+                put("web.http.identity.path", managementEndpoint.getUrl().getPath());
                 put("edc.connector.name", name);
                 put("edc.ih.iam.publickey.alias", JwtCreationUtil.CONSUMER_KEY.getKeyID());
                 put("edc.ih.iam.id", "did:web:consumer");

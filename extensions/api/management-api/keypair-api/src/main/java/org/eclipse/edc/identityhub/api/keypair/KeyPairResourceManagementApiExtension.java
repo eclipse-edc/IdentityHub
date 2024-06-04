@@ -58,8 +58,8 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
         authorizationService.addLookupFunction(KeyPairResource.class, this::findById);
         var api = new KeyPairResourceApiController(authorizationService, keyPairService, new KeyDescriptorValidator(context.getMonitor()));
         var getAllApi = new GetAllKeyPairsApiController(keyPairService);
-        webService.registerResource(IdentityHubApiContext.IH_MANAGEMENT, api);
-        webService.registerResource(IdentityHubApiContext.IH_MANAGEMENT, getAllApi);
+        webService.registerResource(IdentityHubApiContext.IDENTITY, api);
+        webService.registerResource(IdentityHubApiContext.IDENTITY, getAllApi);
     }
 
     private ParticipantResource findById(String keyPairId) {
