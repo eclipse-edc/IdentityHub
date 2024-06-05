@@ -22,8 +22,8 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
+import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.junit.annotations.ComponentTest;
-import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.TokenValidationRulesRegistryImpl;
@@ -43,13 +43,17 @@ import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenCo
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_ACCESS_TOKEN_CONTEXT;
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.TOKEN_CLAIM;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ComponentTest
 class AccessTokenVerifierImplComponentTest {
 
+    public static final String STS_PUBLIC_KEY_ID = "sts-key-123";
     private final Monitor monitor = mock();
     private AccessTokenVerifierImpl verifier;
     private KeyPair stsKeyPair; // this is used to sign the acces token
@@ -73,7 +77,10 @@ class AccessTokenVerifierImplComponentTest {
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
         ruleRegistry.addRule(IATP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
 
-        verifier = new AccessTokenVerifierImpl(tokenValidationService, stsKeyPair::getPublic, ruleRegistry, monitor, (id) -> Result.success(providerKeyPair.getPublic()));
+        var resolverMock = mock(KeyPairResourcePublicKeyResolver.class);
+        when(resolverMock.resolveKey(anyString(), anyString())).thenReturn(Result.success(stsKeyPair.getPublic()));
+
+        verifier = new AccessTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, monitor, (id) -> Result.success(providerKeyPair.getPublic()));
     }
 
     @Test
@@ -81,7 +88,7 @@ class AccessTokenVerifierImplComponentTest {
         var spoofedKey = generator.generateKeyPair().getPrivate();
 
         var selfIssuedIdToken = createSignedJwt(spoofedKey, new JWTClaimsSet.Builder().claim("foo", "bar").jwtID(UUID.randomUUID().toString()).build());
-        AbstractResultAssert.assertThat(verifier.verify(selfIssuedIdToken, "did:web:test_participant")).isFailed()
+        assertThat(verifier.verify(selfIssuedIdToken, "did:web:test_participant")).isFailed()
                 .detail().isEqualTo("Token verification failed");
 
     }
@@ -89,7 +96,7 @@ class AccessTokenVerifierImplComponentTest {
     @Test
     void selfIssuedToken_noAccessTokenClaim() {
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()/* missing: claims("access_token", "....") */.build());
-        AbstractResultAssert.assertThat(verifier.verify(selfIssuedIdToken, "did:web:test_participant")).isFailed()
+        assertThat(verifier.verify(selfIssuedIdToken, "did:web:test_participant")).isFailed()
                 .detail().isEqualTo("Required claim 'token' not present on token.");
     }
 
@@ -100,7 +107,7 @@ class AccessTokenVerifierImplComponentTest {
                 .build());
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
                 .build());
-        AbstractResultAssert.assertThat(verifier.verify(selfIssuedIdToken, "did:web:test_participant")).isFailed()
+        assertThat(verifier.verify(selfIssuedIdToken, "did:web:test_participant")).isFailed()
                 .detail().isEqualTo("Mandatory claim 'aud' on 'token' was null.");
     }
 
@@ -110,20 +117,21 @@ class AccessTokenVerifierImplComponentTest {
         var accessToken = createSignedJwt(spoofedKey, new JWTClaimsSet.Builder().claim("scope", "foobar").claim("foo", "bar").build());
         var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken).build());
 
-        AbstractResultAssert.assertThat(verifier.verify(siToken, "did:web:test_participant")).isFailed()
+        assertThat(verifier.verify(siToken, "did:web:test_participant")).isFailed()
                 .detail().isEqualTo("Token verification failed");
     }
 
     @Test
     void accessToken_noScopeClaim() {
-        var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()/* missing: .claim("scope", "foobar") */
+        var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                /* missing: .claim("scope", "foobar") */
                 .claim("foo", "bar")
                 .audience("did:web:test_participant")
                 .build());
         var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
                 .build());
 
-        AbstractResultAssert.assertThat(verifier.verify(siToken, "did:web:test_participant")).isFailed()
+        assertThat(verifier.verify(siToken, "did:web:test_participant")).isFailed()
                 .detail().isEqualTo("Required claim 'scope' not present on token.");
     }
 
@@ -132,12 +140,12 @@ class AccessTokenVerifierImplComponentTest {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("scope", "foobar")
                 .claim("foo", "bar")
-                /*missin: .audience("did:web:test_participant") */
+                /*missing: .audience("did:web:test_participant") */
                 .build());
         var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
                 .build());
 
-        AbstractResultAssert.assertThat(verifier.verify(siToken, "did:web:test_participant")).isFailed()
+        assertThat(verifier.verify(siToken, "did:web:test_participant")).isFailed()
                 .detail().isEqualTo("Mandatory claim 'aud' on 'token' was null.");
     }
 
@@ -150,14 +158,14 @@ class AccessTokenVerifierImplComponentTest {
                 .build());
         var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken).subject("mismatching-subject").build());
 
-        AbstractResultAssert.assertThat(verifier.verify(siToken, "did:web:test_participant")).isSucceeded();
+        assertThat(verifier.verify(siToken, "did:web:test_participant")).isSucceeded();
         verify(monitor).warning(startsWith("ID token [sub] claim is not equal to [token.sub]"));
     }
 
     private String createSignedJwt(PrivateKey signingKey, JWTClaimsSet claimsSet) {
         try {
             var signer = new ECDSASigner(signingKey, Curve.P_256);
-            var jwsHeader = new JWSHeader(JWSAlgorithm.ES256);
+            var jwsHeader = new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(STS_PUBLIC_KEY_ID).build();
             var jwt = new SignedJWT(jwsHeader, claimsSet);
             jwt.sign(signer);
             return jwt.serialize();

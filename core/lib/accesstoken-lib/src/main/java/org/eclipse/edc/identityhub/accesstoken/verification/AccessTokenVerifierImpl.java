@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.accesstoken.verification;
 
+import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
@@ -23,12 +24,10 @@ import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
 
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_ACCESS_TOKEN_CONTEXT;
@@ -44,17 +43,17 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
 
     private static final String SCOPE_SEPARATOR = " ";
     private final TokenValidationService tokenValidationService;
+    private final KeyPairResourcePublicKeyResolver localPublicKeyService;
     private final TokenValidationRulesRegistry tokenValidationRulesRegistry;
-    private final Supplier<PublicKey> stsPublicKey;
     private final Monitor monitor;
     private final PublicKeyResolver publicKeyResolver;
 
-    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, Supplier<PublicKey> publicKeySupplier, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
+    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, KeyPairResourcePublicKeyResolver localPublicKeyService, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
                                    PublicKeyResolver publicKeyResolver) {
         this.tokenValidationService = tokenValidationService;
+        this.localPublicKeyService = localPublicKeyService;
         this.tokenValidationRulesRegistry = tokenValidationRulesRegistry;
         this.monitor = monitor;
-        this.stsPublicKey = publicKeySupplier;
         this.publicKeyResolver = publicKeyResolver;
     }
 
@@ -63,7 +62,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         Objects.requireNonNull(participantId, "Participant ID is mandatory.");
         var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(IATP_SELF_ISSUED_TOKEN_CONTEXT));
         if (res.failed()) {
-            return res.mapTo();
+            return res.mapFailure();
         }
 
         var claimToken = res.getContent();
@@ -92,9 +91,10 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(IATP_ACCESS_TOKEN_CONTEXT));
         rules.add(subClaimsMatch);
         rules.add(audMustMatchParticipantIdRule);
-        var result = tokenValidationService.validate(accessTokenString, id -> Result.success(stsPublicKey.get()), rules);
+        // todo: verify that the resolved public key belongs to the participant ID
+        var result = tokenValidationService.validate(accessTokenString, keyId -> localPublicKeyService.resolveKey(keyId, participantId), rules);
         if (result.failed()) {
-            return result.mapTo();
+            return result.mapFailure();
         }
 
         // verify that the access_token contains a scope claim

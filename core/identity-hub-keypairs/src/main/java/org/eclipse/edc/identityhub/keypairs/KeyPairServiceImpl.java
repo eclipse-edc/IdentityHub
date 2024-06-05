@@ -209,7 +209,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
         if (keyDescriptor.getKeyGeneratorParams() != null) {
             var keyPair = KeyPairGenerator.generateKeyPair(keyDescriptor.getKeyGeneratorParams());
             if (keyPair.failed()) {
-                return keyPair.mapTo();
+                return keyPair.mapFailure();
             }
             var privateJwk = CryptoConverter.createJwk(keyPair.getContent(), keyDescriptor.getKeyId());
             publicKeySerialized = privateJwk.toPublicJWK().toJSONString();

@@ -19,9 +19,11 @@ import org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry;
 import org.eclipse.edc.identithub.spi.did.DidWebParser;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentObservable;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.runtime.metamodel.annotation.SettingContext;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -37,12 +39,13 @@ import static org.eclipse.edc.identityhub.publisher.did.local.LocalDidPublisherE
 @Extension(value = NAME)
 public class LocalDidPublisherExtension implements ServiceExtension {
     public static final String NAME = "Local DID publisher extension";
-    private static final String DID_CONTEXT_ALIAS = "did";
+    @SettingContext("DID API context setting key")
+    public static final String DID_CONTEXT_KEY = "web.http." + IdentityHubApiContext.IH_DID;
     private static final String DEFAULT_DID_PATH = "/";
     private static final int DEFAULT_DID_PORT = 10100;
     public static final WebServiceSettings SETTINGS = WebServiceSettings.Builder.newInstance()
-            .apiConfigKey("web.http." + DID_CONTEXT_ALIAS)
-            .contextAlias(DID_CONTEXT_ALIAS)
+            .apiConfigKey(DID_CONTEXT_KEY)
+            .contextAlias(IdentityHubApiContext.IH_DID)
             .defaultPath(DEFAULT_DID_PATH)
             .defaultPort(DEFAULT_DID_PORT)
             .useDefaultContext(false)
@@ -77,10 +80,10 @@ public class LocalDidPublisherExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var webServiceConfiguration = configurator.configure(context, webServer, SETTINGS);
+        configurator.configure(context.getConfig(DID_CONTEXT_KEY), webServer, SETTINGS);
         var localPublisher = new LocalDidPublisher(didDocumentObservable(), didResourceStore, context.getMonitor());
         registry.addPublisher(DidConstants.DID_WEB_METHOD, localPublisher);
-        webService.registerResource(webServiceConfiguration.getContextAlias(), new DidWebController(context.getMonitor(), didResourceStore, getDidParser()));
+        webService.registerResource(IdentityHubApiContext.IH_DID, new DidWebController(context.getMonitor(), didResourceStore, getDidParser()));
     }
 
     @Provider

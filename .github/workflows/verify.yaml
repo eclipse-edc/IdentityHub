@@ -53,6 +53,8 @@ jobs:
             -v $(pwd)/keys:/opt/keys \
             -e "EDC_IH_IAM_PUBLICKEY_PATH=/opt/keys/key.pem" \
             -e "EDC_IH_IAM_ID=did:web:test" \
+            -e "WEB_HTTP_IDENTITY_PORT=8182" \
+            -e "WEB_HTTP_IDENTITY_PATH=/api/management" \
             -e "WEB_HTTP_RESOLUTION_PORT=10001" \
             -e "WEB_HTTP_RESOLUTION_PATH=/api/v1/resolution/" \
             identity-hub:latest

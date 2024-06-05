@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.accesstoken.verification;
 
 import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.edc.junit.assertions.AbstractResultAssert;
@@ -24,11 +25,8 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import java.security.PublicKey;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -42,14 +40,14 @@ class AccessTokenVerifierImplTest {
     public static final String OWN_DID = "did:web:consumer";
     private static final String OTHER_PARTICIPANT_DID = "did:web:provider";
     private final TokenValidationService tokenValidationSerivce = mock();
-    private final Supplier<PublicKey> publicKeySupplier = Mockito::mock;
     private final TokenValidationRulesRegistry tokenValidationRulesRegistry = mock();
     private final PublicKeyResolver pkResolver = mock();
-    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, publicKeySupplier, tokenValidationRulesRegistry, mock(), pkResolver);
     private final ClaimToken idToken = ClaimToken.Builder.newInstance()
             .claim("token", "test-at")
             .claim("scope", "org.eclipse.edc.vc.type:AlumniCredential:read")
             .build();
+    private final KeyPairResourcePublicKeyResolver localPublicKeyResolver = mock();
+    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, localPublicKeyResolver, tokenValidationRulesRegistry, mock(), pkResolver);
 
     @Test
     void verify_validSiToken_validAccessToken() {

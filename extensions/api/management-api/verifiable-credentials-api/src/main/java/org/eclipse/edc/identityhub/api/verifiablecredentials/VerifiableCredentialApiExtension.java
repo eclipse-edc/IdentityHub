@@ -17,7 +17,7 @@ package org.eclipse.edc.identityhub.api.verifiablecredentials;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.GetAllCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.VerifiableCredentialsApiController;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
+import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -37,8 +37,6 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
     public static final String NAME = "VerifiableCredentials Management API Extension";
 
     @Inject
-    private ManagementApiConfiguration managementApiConfiguration;
-    @Inject
     private WebService webService;
     @Inject
     private CredentialStore credentialStore;
@@ -55,8 +53,8 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
         authorizationService.addLookupFunction(VerifiableCredentialResource.class, this::queryById);
         var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService);
         var getAllController = new GetAllCredentialsApiController(credentialStore);
-        webService.registerResource(managementApiConfiguration.getContextAlias(), controller);
-        webService.registerResource(managementApiConfiguration.getContextAlias(), getAllController);
+        webService.registerResource(IdentityHubApiContext.IDENTITY, controller);
+        webService.registerResource(IdentityHubApiContext.IDENTITY, getAllController);
     }
 
     private ParticipantResource queryById(String credentialId) {
