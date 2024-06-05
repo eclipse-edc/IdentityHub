@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.accesstoken.verification;
 
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
@@ -47,14 +48,16 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
     private final TokenValidationRulesRegistry tokenValidationRulesRegistry;
     private final Monitor monitor;
     private final PublicKeyResolver publicKeyResolver;
+    private final ParticipantContextService participantContextService;
 
     public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, KeyPairResourcePublicKeyResolver localPublicKeyService, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
-                                   PublicKeyResolver publicKeyResolver) {
+                                   PublicKeyResolver publicKeyResolver, ParticipantContextService participantContextService) {
         this.tokenValidationService = tokenValidationService;
         this.localPublicKeyService = localPublicKeyService;
         this.tokenValidationRulesRegistry = tokenValidationRulesRegistry;
         this.monitor = monitor;
         this.publicKeyResolver = publicKeyResolver;
+        this.participantContextService = participantContextService;
     }
 
     @Override
@@ -74,7 +77,15 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
             if (aud == null || aud.isEmpty()) {
                 return Result.failure("Mandatory claim 'aud' on 'token' was null.");
             }
-            return aud.contains(participantId) ? Result.success() : Result.failure("Participant Context ID must match 'aud' claim in 'access_token'");
+            var participantDidResult = participantContextService.getParticipantContext(participantId);
+
+            if (participantDidResult.failed()) {
+                return Result.failure(participantDidResult.getFailureDetail());
+            }
+            var pcDid = participantDidResult.getContent().getDid();
+            return aud.contains(pcDid) ?
+                    Result.success() :
+                    Result.failure("The DID associated with the Participant Context ID of this request ('%s') must match 'aud' claim in 'access_token' (%s).".formatted(pcDid, aud));
         };
 
         TokenValidationRule subClaimsMatch = (at, additional) -> {
