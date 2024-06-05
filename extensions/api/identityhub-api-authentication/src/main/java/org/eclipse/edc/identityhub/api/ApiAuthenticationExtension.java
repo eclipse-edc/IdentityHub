@@ -30,7 +30,7 @@ import static org.eclipse.edc.identityhub.api.ApiAuthenticationExtension.NAME;
 @Extension(NAME)
 public class ApiAuthenticationExtension implements ServiceExtension {
 
-    public static final String NAME = "Management API Authentication Extension";
+    public static final String NAME = "Identity API Authentication Extension";
     @Inject
     private WebService webService;
     @Inject

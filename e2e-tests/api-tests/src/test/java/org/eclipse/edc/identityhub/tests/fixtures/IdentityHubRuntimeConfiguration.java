@@ -30,7 +30,7 @@ import static org.eclipse.edc.util.io.Ports.getFreePort;
 public class IdentityHubRuntimeConfiguration {
 
     private Endpoint resolutionEndpoint;
-    private Endpoint managementEndpoint;
+    private Endpoint identityEndpoint;
     private String id;
     private String name;
 
@@ -46,16 +46,16 @@ public class IdentityHubRuntimeConfiguration {
                 put("web.http.path", "/api/v1");
                 put("web.http.resolution.port", String.valueOf(resolutionEndpoint.getUrl().getPort()));
                 put("web.http.resolution.path", resolutionEndpoint.getUrl().getPath());
-                put("web.http.identity.port", String.valueOf(managementEndpoint.getUrl().getPort()));
-                put("web.http.identity.path", managementEndpoint.getUrl().getPath());
+                put("web.http.identity.port", String.valueOf(identityEndpoint.getUrl().getPort()));
+                put("web.http.identity.path", identityEndpoint.getUrl().getPath());
                 put("edc.runtime.id", name);
                 put("edc.ih.iam.id", "did:web:consumer");
             }
         };
     }
 
-    public Endpoint getManagementEndpoint() {
-        return managementEndpoint;
+    public Endpoint getIdentityApiEndpoint() {
+        return identityEndpoint;
     }
 
     public static final class Builder {
@@ -81,7 +81,7 @@ public class IdentityHubRuntimeConfiguration {
 
         public IdentityHubRuntimeConfiguration build() {
             participant.resolutionEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/v1/resolution"), Map.of());
-            participant.managementEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/management"), Map.of());
+            participant.identityEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/management"), Map.of());
             return participant;
         }
     }

@@ -36,7 +36,7 @@ Two deployment topologies will be supported:
 A participant context (PC) functions as a unit of management and control for `identity resources` in the Identity Hub.
 All resources are contained and accessed through a PC. Contexts are tied to the participant identity as defined in
 the [DSP specifications](https://github.com/International-Data-Spaces-Association/ids-specification) and created through
-the [IH Management API](#311-elevated-privilege-operations).
+the [Identity API](#311-elevated-privilege-operations).
 
 Access control for public client API endpoints is scoped to a specific PC. For example, an access token as defined in
 the [Base Identity Protocol specification]() is associated with a specific context and may not be used to access
@@ -240,9 +240,9 @@ public class AccessDefinition {
 > Note read access should not since some resources should be public. However, for C-X a read token for most types should
 > be required.
 
-## 2.5. Management APIs
+## 2.5. Identity APIs
 
-The `Management API` executes authorized client requests to perform operational tasks against the Identity Hub
+The `Identity API` executes authorized client requests to perform operational tasks against the Identity Hub
 installation. Operations fall into two groups: those requiring elevated privileges that affect the installation as a
 whole, and those that are scoped to a specific participant context.
 
@@ -259,10 +259,10 @@ The following diagram depicts the Identity Hub module dependency graph:
 The term `installation` is used to denote an Identity Hub deployment that is operated as a unit. An `installation` may
 be a single runtime instance or a cluster of instances.
 
-## 3.1. Management API
+## 3.1. Identity API
 
-The `Management API` is executes authorized client requests to perform operational tasks against the Identity Hub
-installation.
+The `Identity API` executes authorized client requests to perform operational tasks against the Identity Hub
+installation such as adding or manipulating key pairs, DID documents etc.
 
 ### 3.1.1. Elevated Privilege Operations
 

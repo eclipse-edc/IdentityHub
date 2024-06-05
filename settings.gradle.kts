@@ -51,15 +51,15 @@ include(":extensions:store:sql:identity-hub-keypair-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:common:credential-watchdog")
 
-// management APIs
-include(":extensions:api:management-api:validators")
-include(":extensions:api:management-api:api-configuration")
+// Identity APIs
+include(":extensions:api:identity-api:validators")
+include(":extensions:api:identity-api:api-configuration")
 include(":extensions:api:identityhub-api-authentication")
 include(":extensions:api:identityhub-api-authorization")
-include(":extensions:api:management-api:participant-context-api")
-include(":extensions:api:management-api:verifiable-credentials-api")
-include(":extensions:api:management-api:did-api")
-include(":extensions:api:management-api:keypair-api")
+include(":extensions:api:identity-api:participant-context-api")
+include(":extensions:api:identity-api:verifiable-credentials-api")
+include(":extensions:api:identity-api:did-api")
+include(":extensions:api:identity-api:keypair-api")
 
 // other modules
 include(":launcher")

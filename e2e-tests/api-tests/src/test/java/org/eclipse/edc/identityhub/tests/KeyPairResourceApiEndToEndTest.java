@@ -46,7 +46,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 
 @EndToEndTest
-public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
+public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
 
     private static KeyDescriptor.Builder createKeyDescriptor(String participantId) {
         var id = UUID.randomUUID().toString();
@@ -73,7 +73,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var key = createKeyPair(user1);
 
         // attempt to publish user1's DID document, which should fail
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", user2Token))
                 .get("/v1alpha/participants/%s/keypairs/%s".formatted(toBase64(user1), key))
@@ -92,7 +92,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var key = createKeyPair(user1);
 
         assertThat(Arrays.asList(token, superUserKey))
-                .allSatisfy(t -> RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .allSatisfy(t -> RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                         .contentType(JSON)
                         .header(new Header("x-api-key", t))
                         .get("/v1alpha/participants/%s/keypairs/%s".formatted(toBase64(user1), key))
@@ -119,7 +119,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         createKeyPair(user1);
 
         // attempt to publish user1's DID document, which should fail
-        var res = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var res = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", user2Token))
                 .get("/v1alpha/participants/%s/keypairs".formatted(toBase64(user1)))
@@ -140,7 +140,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         createKeyPair(user1);
 
         assertThat(Arrays.asList(token, superUserKey))
-                .allSatisfy(t -> RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .allSatisfy(t -> RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                         .contentType(JSON)
                         .header(new Header("x-api-key", t))
                         .get("/v1alpha/participants/%s/keypairs".formatted(toBase64(user1)))
@@ -163,7 +163,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     var keyDesc = createKeyDescriptor(user1).build();
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body(keyDesc)
@@ -194,7 +194,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
         // attempt to publish user1's DID document, which should fail
         var keyDesc = createKeyDescriptor(user1).build();
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token2))
                 .body(keyDesc)
@@ -229,7 +229,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                     reset(subscriber);
                     // attempt to publish user1's DID document, which should fail
                     var keyDesc = createKeyDescriptor(user1).build();
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body(keyDesc)
@@ -271,7 +271,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
         // attempt to publish user1's DID document, which should fail
         var keyDesc = createKeyDescriptor(user1).build();
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token2))
                 .body(keyDesc)
@@ -301,7 +301,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     var keyDesc = createKeyDescriptor(user1).build();
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body(keyDesc)
@@ -328,7 +328,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
         // attempt to publish user1's DID document, which should fail
         var keyDesc = createKeyDescriptor(user1).build();
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token2))
                 .body(keyDesc)
@@ -347,7 +347,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var found = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
                 .get("/v1alpha/keypairs")
@@ -366,7 +366,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var found = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
                 .get("/v1alpha/keypairs?offset=2&limit=4")
@@ -385,7 +385,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var found = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
                 .get("/v1alpha/keypairs")
@@ -405,7 +405,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", attackerToken))
                 .get("/v1alpha/keypairs")
@@ -423,7 +423,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
@@ -445,7 +445,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var keyId = createKeyPair(user1);
         var attackerToken = createParticipant("attacker");
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", attackerToken))
                 .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
@@ -466,7 +466,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var keyId = createKeyPair(user1);
 
         // first revoke the key, which puts it in the REVOKED state
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
                 .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(toBase64(user1), keyId))
@@ -476,7 +476,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                 .body(notNullValue());
 
         // now attempt to activate
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
                 .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
