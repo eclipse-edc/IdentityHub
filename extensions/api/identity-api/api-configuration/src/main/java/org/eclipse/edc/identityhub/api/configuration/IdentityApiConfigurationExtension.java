@@ -27,28 +27,16 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.web.spi.WebServer;
 import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
-import org.eclipse.edc.web.spi.configuration.WebServiceSettings;
 
 import java.util.function.Function;
 
-import static org.eclipse.edc.identityhub.api.configuration.ManagementApiConfigurationExtension.NAME;
+import static org.eclipse.edc.identityhub.api.configuration.IdentityApiConfigurationExtension.NAME;
 
 @Extension(value = NAME)
-public class ManagementApiConfigurationExtension implements ServiceExtension {
+public class IdentityApiConfigurationExtension implements ServiceExtension {
 
 
-    public static final String NAME = "Management API Extension";
-    private static final String MGMT_CONTEXT_ALIAS = "management";
-    private static final String DEFAULT_DID_PATH = "/api/management";
-    private static final int DEFAULT_DID_PORT = 8182;
-    public static final WebServiceSettings SETTINGS = WebServiceSettings.Builder.newInstance()
-            .apiConfigKey("web.http." + MGMT_CONTEXT_ALIAS)
-            .contextAlias(MGMT_CONTEXT_ALIAS)
-            .defaultPath(DEFAULT_DID_PATH)
-            .defaultPort(DEFAULT_DID_PORT)
-            .useDefaultContext(false)
-            .name("IdentityHub Management API")
-            .build();
+    public static final String NAME = "Identity API Extension";
     @Inject
     private WebService webService;
     @Inject

@@ -32,7 +32,7 @@ import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
 
-@OpenAPIDefinition(info = @Info(description = "This is the Management API for VerifiableCredentials", title = "VerifiableCredentials Management API", version = "1"))
+@OpenAPIDefinition(info = @Info(description = "This is the Identity API for manipulating VerifiableCredentials", title = "VerifiableCredentials Identity API", version = "1"))
 @Tag(name = "Verifiable Credentials")
 public interface VerifiableCredentialsApi {
 

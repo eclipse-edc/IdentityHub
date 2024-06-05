@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @EndToEndTest
-public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
+public class DidManagementApiEndToEndTest extends IdentityApiEndToEndTest {
 
     @Test
     void publishDid_notOwner_expect403() {
@@ -60,7 +60,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         reset(subscriber); // need to reset here, to ignore a previous interaction
 
         // attempt to publish user1's DID document, which should fail
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", user2Token))
                 .body("""
@@ -89,7 +89,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     reset(subscriber);
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body("""
@@ -136,7 +136,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         reset(subscriber); // need to reset here, to ignore a previous interaction
 
         // attempt to publish user1's DID document, which should fail
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", user2Token))
                 .body("""
@@ -165,7 +165,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     reset(subscriber);
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body("""
@@ -198,7 +198,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var user2 = "user2";
         var token2 = createParticipant(user2);
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", token2))
                 .contentType(JSON)
                 .body(""" 
@@ -217,7 +217,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var superUserKey = createSuperUser();
         range(0, 20).forEach(i -> createParticipant("user-" + i));
 
-        var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var docs = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
                 .get("/v1alpha/dids")
@@ -234,7 +234,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var superUserKey = createSuperUser();
         range(0, 70).forEach(i -> createParticipant("user-" + i));
 
-        var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var docs = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
                 .get("/v1alpha/dids")
@@ -251,7 +251,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var superUserKey = createSuperUser();
         range(0, 20).forEach(i -> createParticipant("user-" + i));
 
-        var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var docs = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
                 .get("/v1alpha/dids?offset=5&limit=10")
@@ -268,7 +268,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
         var attackerToken = createParticipant("attacker");
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", attackerToken))
                 .get("/v1alpha/dids")

@@ -32,7 +32,7 @@ import org.eclipse.edc.web.spi.ApiErrorDetail;
 import java.util.Collection;
 import java.util.List;
 
-@OpenAPIDefinition(info = @Info(description = "This is the Management API for ParticipantContexts", title = "ParticipantContext Management API", version = "1"))
+@OpenAPIDefinition(info = @Info(description = "This is the Identity API for manipulating ParticipantContexts", title = "ParticipantContext Management API", version = "1"))
 @Tag(name = "Participant Context")
 public interface ParticipantContextApi {
 

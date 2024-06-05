@@ -34,7 +34,7 @@ import static org.eclipse.edc.identityhub.api.verifiablecredentials.VerifiableCr
 
 @Extension(NAME)
 public class VerifiableCredentialApiExtension implements ServiceExtension {
-    public static final String NAME = "VerifiableCredentials Management API Extension";
+    public static final String NAME = "VerifiableCredentials API Extension";
 
     @Inject
     private WebService webService;

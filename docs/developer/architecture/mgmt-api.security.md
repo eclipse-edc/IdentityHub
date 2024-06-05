@@ -1,4 +1,4 @@
-# On IdentityHub Management API security
+# On IdentityHub Identity API security
 
 ## 1. Definition of terms
 
@@ -11,10 +11,10 @@
   IdentityHub!**
 - _Participant context_: this is the unit of management, that owns all resources. Its identifier must be equal to
   the `participantId` that is defined
-  in [DSP](https://github.com/International-Data-Spaces-Association/ids-specification). For the purposes of management
+  in [DSP](https://github.com/International-Data-Spaces-Association/ids-specification). For the purposes of Identity
   API operations, IdentityHub assumes the ID of the `ParticipantContext` to be equal to the ID of
   the `ServicePrincipal`.
-- Management API: collective term for all endpoints that serve the purpose of managing participant contexts and their
+- Identity API: collective term for all endpoints that serve the purpose of managing participant contexts and their
   resources. Also referred to as: mgmt api
 - API Key: a secret string that is used to authenticate/authorize a request and that is typically sent in the HTTP
   header. Also referred to as: API token, API secret, credential
@@ -25,10 +25,10 @@
 
 ### 2.1 Authentication of ServicePrincipals
 
-When Management API requests are received by the web server, it (or a related function) must be able to derive
+When Identity API requests are received by the web server, it (or a related function) must be able to derive
 the `ServicePrincipal` from the request context. In other words, it must be able to determine which participant sent the
 request.
-For that, the Management API should employ methods that are widely known, such as Basic Auth or API keys.
+For that, the Identity API should employ methods that are widely known, such as Basic Auth or API keys.
 
 Authentication (=user identification) should happen before the request is matched onto a controller method, so that the
 handling controller method can inject the `ServicePrincipal` using standard JAX-RS features:
@@ -55,7 +55,7 @@ service is needed to perform the resource lookup.
 
 ### 2.3 Elevated access
 
-Some operations in the Management API _require_ elevated access rights, for example modifying participant contexts, or
+Some operations in the Identity API _require_ elevated access rights, for example modifying participant contexts, or
 listing resources across multiple participant contexts. The elevated access is tied to
 a [built-in role](#51-built-in-roles). The super-user has that role.
 
@@ -66,7 +66,7 @@ super-user's `ServicePrincipal` does not technically own a resource, permissions
 
 ### 3.1 Authenticating a request
 
-To access the Management API, every request must contain the `x-api-key` header, which contains the API key of the
+To access the Identity API, every request must contain the `x-api-key` header, which contains the API key of the
 participant. This is a string that contains the service principal's ID (=`spId`) followed by a randomly generated
 character sequence. Both parts are base64-encoded:
 
@@ -94,7 +94,7 @@ inject it for further processing.
 API keys are generated automatically when a new `ParticipantContext` is created. This API operation requires elevated
 access and can thus only be done by the super-user, and returns the new API key in the HTTP response.
 
-IdentityHub's Management API does not provide a feature for participant self-registration, as it is not an
+IdentityHub's Identity API does not provide a feature for participant self-registration, as it is not an
 end-user-facing API. This is intentional. New participant contexts must be created by the super-user.
 
 > The initial API key must be transmitted to the participant by the super-user in a secure out-of-band channel.
@@ -103,7 +103,7 @@ end-user-facing API. This is intentional. New participant contexts must be creat
 ### 3.3 Regenerating the API key
 
 Once the participant has received the initial API key, it is highly recommended that it is immediately regenerated using
-the Management API. Note that the initial API Key is required for that operation:
+the Identity API. Note that the initial API Key is required for that operation:
 
 ```shell
 curl -X POST -H "x-api-key: <initial-api-key>" "http://your-identityhub.com/.../v1/participants/<participant-id>/token"
@@ -157,9 +157,9 @@ a `KeyPairResource` with `id`.
 As mentioned before, the `AuthorizationService` is responsible to establish the link between service principal and
 resource. It is a normal service which can be injected into controller classes.
 
-Every management API module then contributes a _lookup function_ and the resource type it handles, which
+Every Identity API module then contributes a _lookup function_ and the resource type it handles, which
 the `AuthorizationService` maintains and to which it dispatches based on resource class. For example the DID document
-management API module:
+management Identity API module:
 
 ```java
 
@@ -259,7 +259,7 @@ permission levels may be required. Thus, the RBAC system used by EDC is extensib
 1. role concept
 2. access permissions based on roles
 
-#### 5.2.1 Customize roles via Management API
+#### 5.2.1 Customize roles via Identity API
 
 Roles are just labels that a `ParticipantContext` has attached to them, and there is no need for a complicated rule
 engine. The super-user can assign arbitrary roles to participants.
@@ -315,7 +315,7 @@ However, swapping out the authorization module is possible, and necessary if RBA
 
 ## 7. General security considerations
 
-- the Management API is **not** intended for public consumption and thus should **never** be exposed to the internet
+- the Identity API is **not** intended for public consumption and thus should **never** be exposed to the internet
   directly.
 - if management operations must be accessbile over the internet, additional security measures such as API gateways,
   firewalls, additional authorization frontends, etc. must be in place. The specifics of that are beyond the scope of an

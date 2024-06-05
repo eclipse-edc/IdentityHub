@@ -6,9 +6,10 @@
 
 Contains the `VerifiablePresentationService` and a `CredentialManager`.<br/>
 Its job is to
+
 - generate and serve VPs (through the [Hub API](#hub-api))
-- CRUD VCs, for example when the Issuer wants to write a VC via the [Hub API](#management-api) or
-the [Management API](#management-api)
+- CRUD VCs, for example when the Issuer wants to write a VC via the [Hub API](#identity-api) or
+  the [Identity API](#identity-api)
 - run the `VerifiableCredentialManager`
 - exchanges protocol messages with the Issuer, e.g. in response to a credential-offer
 
@@ -18,7 +19,7 @@ is triggered , it moves into the `REISSUE_REQUESTING` state. Generally, renewals
 
 1. an incoming credential offer
 2. the state machine detects a nearing expiry (if auto-renewal is active)
-3. a manual action via the management API
+3. a manual action via the Identity API
 
 ## DID Module
 
@@ -28,7 +29,7 @@ Contains the `DidResourceManager`. Its job is to
 - publish/overwrite DID documents using the publishers
 - react to key rotation events from the [KeyPair module](#keypair-module): adds new keys to the DID, removes old ones,
   etc.
-- react to manual action via the management API
+- react to manual action via the Identity API
 
 ## KeyPair Module
 
@@ -37,7 +38,7 @@ Contains the `KeyPairStateMachine`. Its job is to
 - generate and maintain key pairs using a state machine
 - check for automatic renewal, e.g. if keys are configured with a max lifetime
 - send out events when a key is rotated
-- react to manual action via the management API
+- react to manual action via the Identity API
 
 ## Auth/Permission Module
 
@@ -80,7 +81,7 @@ the [Storage API](https://github.com/eclipse-tractusx/identity-trust/blob/main/s
 Is
 contains model classes, validators and JSON-LD-transformers.
 
-## Management API
+## Identity API
 
 This module contains implementations to maintain internal data structures, such as:
 

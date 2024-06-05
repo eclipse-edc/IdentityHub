@@ -35,7 +35,7 @@ import org.eclipse.edc.web.spi.ApiErrorDetail;
 import java.util.Collection;
 
 @OpenAPIDefinition(
-        info = @Info(description = "This is the Management API for DID documents", title = "DID Management API", version = "1"))
+        info = @Info(description = "This is the Identity API for manipulating DID documents", title = "DID Identity API", version = "1"))
 @Tag(name = "DID")
 public interface DidManagementApi {
 

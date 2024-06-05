@@ -20,7 +20,7 @@ title Identity Hub Modules
 
 frame "APIs" {
    component  "Hub API" as HubApi <<api module>>
-   component "Management API" as ManagementApi <<api module>>
+   component "Identity API" as IdentityApi <<api module>>
 }
 
 component "Aggregate Services Module" as AggregateServices
@@ -39,7 +39,7 @@ frame "Libraries" {
 }
 
 AggregateServices -up-> HubApi
-AggregateServices -up-> ManagementApi
+AggregateServices -up-> IdentityApi
 
 AuthModule -up-> AggregateServices
 

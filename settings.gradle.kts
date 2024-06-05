@@ -51,7 +51,7 @@ include(":extensions:store:sql:identity-hub-keypair-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:common:credential-watchdog")
 
-// management APIs
+// Identity APIs
 include(":extensions:api:identity-api:validators")
 include(":extensions:api:identity-api:api-configuration")
 include(":extensions:api:identityhub-api-authentication")

@@ -26,7 +26,7 @@ import java.util.Base64;
 import java.util.List;
 
 /**
- * For the purposes of the Management API of the IdentityHub, a {@link ServicePrincipal} is represented by a {@link ParticipantContext}. However, the request filter chain ({@link ServicePrincipalAuthenticationFilter}
+ * For the purposes of the Identity API of the IdentityHub, a {@link ServicePrincipal} is represented by a {@link ParticipantContext}. However, the request filter chain ({@link ServicePrincipalAuthenticationFilter}
  * etc.)
  * do not need to know about that, they only know about {@link ServicePrincipal} and {@link ServicePrincipalResolver}. Thus, this implementation acts as bridge. Other authentication backends like Apache Shiro would call this a _realm_.
  */

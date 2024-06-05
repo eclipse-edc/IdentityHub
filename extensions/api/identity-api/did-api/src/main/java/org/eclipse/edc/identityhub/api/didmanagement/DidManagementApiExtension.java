@@ -31,7 +31,7 @@ import static org.eclipse.edc.identityhub.api.didmanagement.DidManagementApiExte
 @Extension(value = NAME)
 public class DidManagementApiExtension implements ServiceExtension {
 
-    public static final String NAME = "DID Management API Extension";
+    public static final String NAME = "DID management Identity API Extension";
 
     @Inject
     private WebService webService;

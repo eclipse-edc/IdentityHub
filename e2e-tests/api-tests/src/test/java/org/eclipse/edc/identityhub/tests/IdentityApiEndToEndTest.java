@@ -41,9 +41,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Base class for all management API tests
+ * Base class for all Identity API tests
  */
-public abstract class ManagementApiEndToEndTest {
+public abstract class IdentityApiEndToEndTest {
     public static final String SUPER_USER = "super-user";
     protected static final IdentityHubRuntimeConfiguration RUNTIME_CONFIGURATION = IdentityHubRuntimeConfiguration.Builder.newInstance()
             .name("identity-hub")

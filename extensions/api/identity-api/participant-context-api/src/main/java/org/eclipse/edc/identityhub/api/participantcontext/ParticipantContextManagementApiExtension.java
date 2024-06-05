@@ -33,7 +33,7 @@ import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.excepti
 @Extension(value = NAME)
 public class ParticipantContextManagementApiExtension implements ServiceExtension {
 
-    public static final String NAME = "ParticipantContext Management API Extension";
+    public static final String NAME = "ParticipantContext management Identity API Extension";
     @Inject
     private WebService webService;
     @Inject

@@ -33,7 +33,7 @@ import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
 
-@OpenAPIDefinition(info = @Info(description = "This is the Management API for KeyPairResources", title = "KeyPairResources Management API", version = "1"))
+@OpenAPIDefinition(info = @Info(description = "This is the Identity API for manipulating KeyPairResources", title = "KeyPairResources Identity API", version = "1"))
 @Tag(name = "Key Pairs")
 public interface KeyPairResourceApi {
 
