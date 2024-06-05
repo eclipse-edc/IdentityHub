@@ -73,7 +73,8 @@ public class KeyPairResourcePublicKeyResolver {
         return resources.stream().findAny()
                 .map(kpr -> parseKey(kpr.getSerializedPublicKey()))
                 .orElseGet(() -> {
-                    monitor.warning("No KeyPairResource with keyId '%s' was found in the store. Will attempt to resolve from the Vault. This could be an indication of a data inconsistency, it is recommended to revoke and regenerate keys!");
+                    monitor.warning("No KeyPairResource with keyId '%s' was found for participant '%s' in the store. Will attempt to resolve from the Vault. ".formatted(publicKeyId, participantId) +
+                            "This could be an indication of a data inconsistency, it is recommended to revoke and regenerate keys!");
                     return fallbackResolver.resolveKey(publicKeyId); // attempt to resolve from vault
                 });
     }

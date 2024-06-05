@@ -29,6 +29,7 @@ import org.eclipse.edc.identityhub.query.CredentialQueryResolverImpl;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
@@ -120,6 +121,8 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Inject
     private LocalPublicKeyService fallbackService;
+    @Inject
+    private ParticipantContextService participantContextService;
 
     @Override
     public String name() {
@@ -136,7 +139,7 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public AccessTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
         var keyResolver = new KeyPairResourcePublicKeyResolver(store, keyParserRegistry, context.getMonitor(), fallbackService);
-        return new AccessTokenVerifierImpl(tokenValidationService, keyResolver, tokenValidationRulesRegistry, context.getMonitor(), publicKeyResolver);
+        return new AccessTokenVerifierImpl(tokenValidationService, keyResolver, tokenValidationRulesRegistry, context.getMonitor(), publicKeyResolver, participantContextService);
     }
 
     @Provider
