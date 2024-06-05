@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
 class AccessTokenVerifierImplComponentTest {
 
     public static final String STS_PUBLIC_KEY_ID = "sts-key-123";
-    public static final String PARTICIPANT_CONTEXT_ID = "did:web:test_participant";
+    public static final String PARTICIPANT_CONTEXT_ID = "test_participant";
     public static final String PARTICIPANT_DID = "did:web:test_participant";
     private final Monitor monitor = mock();
     private final ParticipantContextService participantContextService = mock();
@@ -169,7 +169,7 @@ class AccessTokenVerifierImplComponentTest {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 /* missing: .claim("scope", "foobar") */
                 .claim("foo", "bar")
-                .audience(PARTICIPANT_CONTEXT_ID)
+                .audience(PARTICIPANT_DID)
                 .build());
         var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
                 .build());
@@ -196,7 +196,7 @@ class AccessTokenVerifierImplComponentTest {
     void assertWarning_whenSubjectClaimsMismatch() {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("scope", "foobar")
-                .audience(PARTICIPANT_CONTEXT_ID)
+                .audience(PARTICIPANT_DID)
                 .subject("test-subject")
                 .build());
         var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken).subject("mismatching-subject").build());
