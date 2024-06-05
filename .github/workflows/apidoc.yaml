@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        apiGroup: [ 'ih-resolution-api', 'ih-management-api' ]
+        apiGroup: [ 'ih-resolution-api', 'identity-api' ]
     env:
       rootDir: resources/openapi/yaml/${{ matrix.apiGroup }}
       SWAGGERHUB_API_KEY: ${{ secrets.SWAGGERHUB_TOKEN }}

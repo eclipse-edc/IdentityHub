@@ -7,10 +7,9 @@ plugins {
 dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
-    api(project(":spi:keypair-spi"))
     api(project(":spi:identity-hub-store-spi"))
-    implementation(project(":extensions:api:management-api:api-configuration"))
-    implementation(project(":extensions:api:management-api:validators"))
+    api(project(":spi:verifiable-credential-spi"))
+    implementation(project(":extensions:api:identity-api:api-configuration"))
     implementation(libs.edc.spi.web)
     implementation(libs.edc.lib.util)
     implementation(libs.jakarta.rsApi)
@@ -23,6 +22,6 @@ dependencies {
 
 edcBuild {
     swagger {
-        apiGroup.set("ih-management-api")
+        apiGroup.set("identity-api")
     }
 }
