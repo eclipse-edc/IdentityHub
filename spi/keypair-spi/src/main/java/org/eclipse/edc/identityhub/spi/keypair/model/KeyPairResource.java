@@ -20,6 +20,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResou
 import org.eclipse.edc.spi.security.Vault;
 
 import java.time.Duration;
+import java.util.Objects;
 
 /**
  * A {@link KeyPairResource} contains key material for a particular {@link ParticipantContext}. The public key is stored in the database in serialized form (JWK or PEM) and the private
@@ -149,6 +150,7 @@ public class KeyPairResource extends ParticipantResource {
         }
 
         public KeyPairResource build() {
+            Objects.requireNonNull(entity.id);
             if (entity.useDuration == 0) {
                 entity.useDuration = Duration.ofDays(6 * 30).toMillis();
             }

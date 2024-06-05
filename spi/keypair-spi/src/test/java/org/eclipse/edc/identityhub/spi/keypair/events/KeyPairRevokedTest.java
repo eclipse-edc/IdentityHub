@@ -26,7 +26,9 @@ class KeyPairRevokedTest {
 
     @Test
     void verify_serDes() {
-        var evt = KeyPairRevoked.Builder.newInstance().keyId("resource-id")
+        var evt = KeyPairRevoked.Builder.newInstance()
+                .keyPairResourceId("resource-id")
+                .keyId("key-id")
                 .participantId("participant-id")
                 .build();
 
