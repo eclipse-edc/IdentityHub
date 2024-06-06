@@ -228,7 +228,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
     private void keypairRevoked(KeyPairRevoked event) {
         var didResources = findByParticipantId(event.getParticipantId());
-        var keyId = event.getKeyId();
+        var keyId = event.getKeyPairResourceId();
 
         var errors = didResources.stream()
                 .peek(didResource -> didResource.getDocument().getVerificationMethod().removeIf(vm -> vm.getId().equals(keyId)))
@@ -252,7 +252,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         var publicKey = keyParserRegistry.parse(serialized);
 
         if (publicKey.failed()) {
-            monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyId(), event.getParticipantId(), publicKey.getFailureDetail()));
+            monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyPairResourceId(), event.getParticipantId(), publicKey.getFailureDetail()));
             return;
         }
 
@@ -260,7 +260,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
         var errors = didResources.stream()
                 .peek(dd -> dd.getDocument().getVerificationMethod().add(VerificationMethod.Builder.newInstance()
-                        .id(dd.getDocument().getId() + "#" + event.getKeyId())
+                        .id(dd.getDocument().getId() + "#" + event.getKeyPairResourceId())
                         .publicKeyJwk(jwk.toJSONObject())
                         .controller(dd.getDocument().getId())
                         .type(event.getType())

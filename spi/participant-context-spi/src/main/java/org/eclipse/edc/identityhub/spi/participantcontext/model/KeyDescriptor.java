@@ -21,6 +21,7 @@ import org.eclipse.edc.iam.did.spi.document.DidConstants;
 import org.eclipse.edc.spi.security.Vault;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Container object to describe, what security keys should be used when creating a {@link ParticipantContext}.
@@ -33,6 +34,7 @@ import java.util.Map;
  */
 @JsonDeserialize(builder = KeyDescriptor.Builder.class)
 public class KeyDescriptor {
+    private String resourceId = UUID.randomUUID().toString();
     private String keyId;
     private String type;
     private String privateKeyAlias;
@@ -98,6 +100,9 @@ public class KeyDescriptor {
         return isActive;
     }
 
+    public String getResourceId() {
+        return resourceId;
+    }
 
     @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder {
@@ -144,6 +149,11 @@ public class KeyDescriptor {
 
         public Builder active(boolean isActive) {
             keyDescriptor.isActive = isActive;
+            return this;
+        }
+
+        public Builder resourceId(String resourceId) {
+            keyDescriptor.resourceId = resourceId;
             return this;
         }
 

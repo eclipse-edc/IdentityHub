@@ -122,6 +122,7 @@ public abstract class IdentityApiEndToEndTest {
                 .did("did:web:" + participantId)
                 .key(KeyDescriptor.Builder.newInstance()
                         .privateKeyAlias(participantId + "-alias")
+                        .resourceId(participantId + "-resource")
                         .keyId(participantId + "-key")
                         .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"))
                         .build())

@@ -110,11 +110,11 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @POST
     @Path("/{keyPairId}/rotate")
     @Override
-    public void rotateKeyPair(@PathParam("keyPairId") String id, @Nullable KeyDescriptor newKey, @QueryParam("duration") long duration, @Context SecurityContext securityContext) {
+    public void rotateKeyPair(@PathParam("keyPairId") String keyPairId, @Nullable KeyDescriptor newKey, @QueryParam("duration") long duration, @Context SecurityContext securityContext) {
         if (newKey != null) {
             keyDescriptorValidator.validate(newKey).orElseThrow(ValidationFailureException::new);
         }
-        authorizationService.isAuthorized(securityContext, id, KeyPairResource.class).compose(u -> keyPairService.rotateKeyPair(id, newKey, duration)).orElseThrow(exceptionMapper(KeyPairResource.class, id));
+        authorizationService.isAuthorized(securityContext, keyPairId, KeyPairResource.class).compose(u -> keyPairService.rotateKeyPair(keyPairId, newKey, duration)).orElseThrow(exceptionMapper(KeyPairResource.class, keyPairId));
     }
 
     @POST

@@ -49,11 +49,12 @@ import static org.mockito.Mockito.verify;
 public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
 
     private static KeyDescriptor.Builder createKeyDescriptor(String participantId) {
-        var id = UUID.randomUUID().toString();
+        var keyId = UUID.randomUUID().toString();
         return KeyDescriptor.Builder.newInstance()
-                .keyId(id)
+                .keyId(keyId)
+                .resourceId(UUID.randomUUID().toString())
                 .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
-                .privateKeyAlias("%s-%s-alias".formatted(participantId, id));
+                .privateKeyAlias("%s-%s-alias".formatted(participantId, keyId));
     }
 
     @Test
@@ -175,7 +176,9 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
 
                     verify(subscriber).on(argThat(env -> {
                         var evt = (KeyPairAdded) env.getPayload();
-                        return evt.getParticipantId().equals(user1) && evt.getKeyId().equals(keyDesc.getKeyId());
+                        return evt.getParticipantId().equals(user1) &&
+                                evt.getKeyPairResourceId().equals(keyDesc.getResourceId()) &&
+                                evt.getKeyId().equals(keyDesc.getKeyId());
                     }));
                 });
     }
@@ -206,7 +209,7 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
 
         verify(subscriber, never()).on(argThat(env -> {
             if (env.getPayload() instanceof KeyPairAdded evt) {
-                return evt.getKeyId().equals(keyDesc.getKeyId());
+                return evt.getKeyPairResourceId().equals(keyDesc.getKeyId());
             }
             return false;
         }));
@@ -222,7 +225,7 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
         var user1 = "user1";
         var token = createParticipant(user1);
 
-        var keyId = createKeyPair(user1);
+        var keyPairId = createKeyPair(user1);
 
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
@@ -233,7 +236,7 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body(keyDesc)
-                            .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(toBase64(user1), keyId))
+                            .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(toBase64(user1), keyPairId))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(204)
@@ -249,7 +252,8 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
                     // verify that the correct "added" event fired
                     verify(subscriber).on(argThat(env -> {
                         if (env.getPayload() instanceof KeyPairAdded evt) {
-                            return evt.getKeyId().equals(keyDesc.getKeyId());
+                            return evt.getKeyPairResourceId().equals(keyDesc.getResourceId()) &&
+                                    evt.getKeyId().equals(keyDesc.getKeyId());
                         }
                         return false;
                     }));
@@ -284,7 +288,7 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
         // make sure that the event to add the _new_ keypair was never fired
         verify(subscriber, never()).on(argThat(env -> {
             if (env.getPayload() instanceof KeyPairRotated evt) {
-                return evt.getParticipantId().equals(user1) && evt.getKeyId().equals(keyDesc.getKeyId());
+                return evt.getParticipantId().equals(user1) && evt.getKeyPairResourceId().equals(keyDesc.getKeyId());
             }
             return false;
         }));
@@ -419,14 +423,14 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
         var superUserKey = createSuperUser();
         var user1 = "user1";
         var token = createParticipant(user1);
-        var keyId = createKeyPair(user1);
+        var keyPairId = createKeyPair(user1);
 
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
-                            .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
+                            .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyPairId))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(204)
@@ -434,7 +438,7 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
 
                     assertThat(getDidForParticipant(user1))
                             .hasSize(1)
-                            .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyId)));
+                            .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyPairId)));
                 });
     }
 
@@ -463,13 +467,13 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
     void activate_illegalState() {
         var user1 = "user1";
         var token = createParticipant(user1);
-        var keyId = createKeyPair(user1);
+        var keyPairId = createKeyPair(user1);
 
         // first revoke the key, which puts it in the REVOKED state
         RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
-                .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(toBase64(user1), keyId))
+                .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(toBase64(user1), keyPairId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(204)
@@ -479,7 +483,7 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
         RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
-                .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
+                .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyPairId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(400)
@@ -493,7 +497,7 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
         var service = RUNTIME.getContext().getService(KeyPairService.class);
         service.addKeyPair(participantId, descriptor, true)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
-        return descriptor.getKeyId();
+        return descriptor.getResourceId();
     }
 
     private String toBase64(String s) {

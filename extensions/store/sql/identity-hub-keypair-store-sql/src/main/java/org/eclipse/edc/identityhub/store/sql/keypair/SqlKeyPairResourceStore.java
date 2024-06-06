@@ -51,7 +51,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 if (findByIdInternal(connection, keyPairResource.getId()) != null) {
-                    return alreadyExists("A KeyPairResource with ID '%s' already exists.".formatted(keyPairResource.getKeyId()));
+                    return alreadyExists("A KeyPairResource with ID '%s' already exists.".formatted(keyPairResource.getId()));
                 }
                 var stmt = statements.getInsertTemplate();
                 queryExecutor.execute(connection, stmt, keyPairResource.getId(),
