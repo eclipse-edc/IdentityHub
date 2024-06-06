@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.TOKEN_CLAIM;
 
 /**
@@ -63,7 +63,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
     @Override
     public Result<List<String>> verify(String token, String participantId) {
         Objects.requireNonNull(participantId, "Participant ID is mandatory.");
-        var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(IATP_SELF_ISSUED_TOKEN_CONTEXT));
+        var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(DCP_SELF_ISSUED_TOKEN_CONTEXT));
         if (res.failed()) {
             return res.mapFailure();
         }
@@ -99,7 +99,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         };
 
         // verify the correctness of the 'access_token'
-        var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(IATP_ACCESS_TOKEN_CONTEXT));
+        var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(DCP_ACCESS_TOKEN_CONTEXT));
         rules.add(subClaimsMatch);
         rules.add(audMustMatchParticipantIdRule);
         // todo: verify that the resolved public key belongs to the participant ID

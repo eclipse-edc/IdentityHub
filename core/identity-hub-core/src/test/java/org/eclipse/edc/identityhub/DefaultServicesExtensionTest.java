@@ -40,8 +40,8 @@ class DefaultServicesExtensionTest {
     @Test
     void initialize_verifyTokenRules(DefaultServicesExtension extension, ServiceExtensionContext context) {
         extension.initialize(context);
-        verify(registry).addRule(eq("iatp-si"), isA(ClaimIsPresentRule.class));
-        verify(registry).addRule(eq("iatp-access-token"), isA(ClaimIsPresentRule.class));
+        verify(registry).addRule(eq("dcp-si"), isA(ClaimIsPresentRule.class));
+        verify(registry).addRule(eq("dcp-access-token"), isA(ClaimIsPresentRule.class));
         verifyNoMoreInteractions(registry);
     }
 }

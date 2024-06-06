@@ -36,7 +36,7 @@ import org.eclipse.edc.web.jersey.providers.jsonld.JerseyJsonLdInterceptor;
 import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
-import static org.eclipse.edc.iam.identitytrust.spi.IatpConstants.IATP_CONTEXT_URL;
+import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DCP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.api.PresentationApiExtension.NAME;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
@@ -83,7 +83,7 @@ public class PresentationApiExtension implements ServiceExtension {
         webService.registerResource(RESOLUTION_CONTEXT, new JerseyJsonLdInterceptor(jsonLd, jsonLdMapper, RESOLUTION_SCOPE));
         webService.registerResource(RESOLUTION_CONTEXT, controller);
 
-        jsonLd.registerContext(IATP_CONTEXT_URL, RESOLUTION_SCOPE);
+        jsonLd.registerContext(DCP_CONTEXT_URL, RESOLUTION_SCOPE);
 
         // register transformer -- remove once registration is handled in EDC
         typeTransformer.register(new JsonObjectToPresentationQueryTransformer(jsonLdMapper));

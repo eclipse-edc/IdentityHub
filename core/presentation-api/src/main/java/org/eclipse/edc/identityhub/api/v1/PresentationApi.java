@@ -30,7 +30,7 @@ import jakarta.json.JsonObject;
 import jakarta.ws.rs.core.Response;
 
 @OpenAPIDefinition(
-        info = @Info(description = "This represents the Presentation API as per IATP specification. It serves endpoints to query for specific VerifiablePresentations.", title = "Resolution API",
+        info = @Info(description = "This represents the Presentation API as per DCP specification. It serves endpoints to query for specific VerifiablePresentations.", title = "Resolution API",
                 version = "1"))
 @SecurityScheme(name = "Authentication",
         description = "Self-Issued ID token containing an access_token",

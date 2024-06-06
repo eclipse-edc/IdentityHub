@@ -38,8 +38,8 @@ import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.TOKEN_CLAIM;
 
 @Extension(NAME)
@@ -64,10 +64,10 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         var accessTokenRule = new ClaimIsPresentRule(TOKEN_CLAIM);
-        registry.addRule(IATP_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
+        registry.addRule(DCP_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
-        registry.addRule(IATP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
+        registry.addRule(DCP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
     }
 
     @Provider(isDefault = true)
