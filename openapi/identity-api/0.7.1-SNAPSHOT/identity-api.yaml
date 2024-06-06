@@ -1668,6 +1668,9 @@ components:
         publicKeyPem:
           type: string
           example: null
+        resourceId:
+          type: string
+          example: null
         type:
           type: string
           example: null
