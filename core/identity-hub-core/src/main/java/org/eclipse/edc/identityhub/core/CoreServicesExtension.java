@@ -45,7 +45,6 @@ import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
-import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -75,8 +74,6 @@ import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 public class CoreServicesExtension implements ServiceExtension {
 
     public static final String NAME = "IdentityHub Core Services Extension";
-    @Setting(value = "Configure this IdentityHub's DID", required = true)
-    public static final String OWN_DID_PROPERTY = "edc.ih.iam.id";
 
     public static final String PRESENTATION_EXCHANGE_V_1_JSON = "presentation-exchange.v1.json";
     public static final String PRESENTATION_QUERY_V_08_JSON = "iatp.v08.json";
