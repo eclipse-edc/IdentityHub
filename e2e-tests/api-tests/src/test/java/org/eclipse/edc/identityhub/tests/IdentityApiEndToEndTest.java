@@ -30,7 +30,7 @@ import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguration;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
-import org.eclipse.edc.junit.extensions.RuntimePerMethodExtension;
+import org.eclipse.edc.junit.extensions.RuntimePerClassExtension;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -52,7 +52,7 @@ public abstract class IdentityApiEndToEndTest {
             .id("identity-hub")
             .build();
     @RegisterExtension
-    protected static final RuntimeExtension RUNTIME = new RuntimePerMethodExtension(new EmbeddedRuntime("identity-hub", RUNTIME_CONFIGURATION.controlPlaneConfiguration(), ":launcher"));
+    protected static final RuntimeExtension RUNTIME = new RuntimePerClassExtension(new EmbeddedRuntime("identity-hub", RUNTIME_CONFIGURATION.controlPlaneConfiguration(), ":launcher"));
 
     protected static String createSuperUser() {
         return createParticipant(SUPER_USER, List.of(ServicePrincipal.ROLE_ADMIN));

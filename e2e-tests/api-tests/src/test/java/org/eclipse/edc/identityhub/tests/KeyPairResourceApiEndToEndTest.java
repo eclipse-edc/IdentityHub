@@ -21,19 +21,21 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
+import org.eclipse.edc.spi.query.QuerySpec;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
 
 import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
@@ -48,13 +50,12 @@ import static org.mockito.Mockito.verify;
 @EndToEndTest
 public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
 
-    private static KeyDescriptor.Builder createKeyDescriptor(String participantId) {
-        var keyId = UUID.randomUUID().toString();
-        return KeyDescriptor.Builder.newInstance()
-                .keyId(keyId)
-                .resourceId(UUID.randomUUID().toString())
-                .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
-                .privateKeyAlias("%s-%s-alias".formatted(participantId, keyId));
+    @AfterEach
+    void tearDown() {
+        // purge all users
+        var pcService = RUNTIME.getService(ParticipantContextService.class);
+        pcService.query(QuerySpec.max()).getContent()
+                .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
     }
 
     @Test
@@ -384,7 +385,7 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
     @Test
     void getAll_withDefaultPaging() {
         var superUserKey = createSuperUser();
-        IntStream.range(0, 70)
+        range(0, 70)
                 .forEach(i -> {
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
@@ -488,6 +489,15 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
                 .log().ifValidationFails()
                 .statusCode(400)
                 .body(notNullValue());
+    }
+
+    private KeyDescriptor.Builder createKeyDescriptor(String participantId) {
+        var keyId = UUID.randomUUID().toString();
+        return KeyDescriptor.Builder.newInstance()
+                .keyId(keyId)
+                .resourceId(UUID.randomUUID().toString())
+                .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
+                .privateKeyAlias("%s-%s-alias".formatted(participantId, keyId));
     }
 
     private String createKeyPair(String participantId) {
