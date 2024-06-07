@@ -18,6 +18,8 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -32,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -42,19 +45,23 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings("unchecked") // mocking a generic type (PresentationGenerator) would raise warnings
 class PresentationCreatorRegistryImplTest {
 
+    public static final String ISSUER_ID = "did:web:test";
     private static final String TEST_PARTICIPANT = "test-participant";
     private final KeyPairService keyPairService = mock();
-    private final PresentationCreatorRegistryImpl registry = new PresentationCreatorRegistryImpl(keyPairService);
+    private final ParticipantContextService participantContextService = mock();
+    private final PresentationCreatorRegistryImpl registry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService);
 
     @Test
     void createPresentation_whenSingleKey() {
         var keyPair = createKeyPair(TEST_PARTICIPANT, "key-1").build();
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(keyPair)));
+        when(participantContextService.getParticipantContext(anyString()))
+                .thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance().did(ISSUER_ID).build()));
 
         var generator = mock(PresentationGenerator.class);
         registry.addCreator(generator, CredentialFormat.JWT);
         assertThatNoException().isThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.JWT, Map.of()));
-        verify(generator).generatePresentation(anyList(), eq(keyPair.getPrivateKeyAlias()), eq(keyPair.getKeyId()), anyMap());
+        verify(generator).generatePresentation(anyList(), eq(keyPair.getPrivateKeyAlias()), eq(keyPair.getKeyId()), eq(ISSUER_ID), anyMap());
     }
 
     @Test
@@ -81,7 +88,7 @@ class PresentationCreatorRegistryImplTest {
         verify(generator).generatePresentation(anyList(),
                 argThat(s -> s.equals(keyPair1.getPrivateKeyAlias()) || s.equals(keyPair2.getPrivateKeyAlias())),
                 argThat(s -> s.equals(keyPair1.getKeyId()) || s.equals(keyPair2.getKeyId())),
-                anyMap());
+                eq(ISSUER_ID), anyMap());
     }
 
 
@@ -95,7 +102,7 @@ class PresentationCreatorRegistryImplTest {
         var generator = mock(PresentationGenerator.class);
         registry.addCreator(generator, CredentialFormat.JWT);
         assertThatNoException().isThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.JWT, Map.of()));
-        verify(generator).generatePresentation(anyList(), eq(keyPair2.getPrivateKeyAlias()), eq(keyPair2.getKeyId()), anyMap());
+        verify(generator).generatePresentation(anyList(), eq(keyPair2.getPrivateKeyAlias()), eq(keyPair2.getKeyId()), eq(ISSUER_ID), anyMap());
     }
 
     @Test

@@ -31,6 +31,7 @@ abstract class PresentationGeneratorTest {
 
     public static final String PRIVATE_KEY_ALIAS = "private-key";
     public static final String PUBLIC_KEY_ID = "key-1";
+    protected final String issuerId = "did:web:testissuer";
 
     @Test
     @DisplayName("Verify succesful creation of a JWT_VP")

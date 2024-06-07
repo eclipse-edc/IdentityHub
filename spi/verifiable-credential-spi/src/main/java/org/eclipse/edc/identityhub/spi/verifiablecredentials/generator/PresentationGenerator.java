@@ -60,11 +60,12 @@ public interface PresentationGenerator<T> {
      * @param credentials     The list of Verifiable Credential Containers to include in the presentation.
      * @param privateKeyAlias The alias of the private key to be used for generating the presentation.
      * @param publicKeyId     The ID used by the counterparty to resolve the public key for verifying the VP.
+     * @param issuerId
      * @param additionalData  Additional data used for validation.
      * @return The generated Verifiable Presentation. The concrete return type depends on the implementation.
      * @throws IllegalArgumentException If not all VCs can be represented in one VP, mandatory additional information was not given, or the specified key is not suitable for signing.
      */
-    default T generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, Map<String, Object> additionalData) {
+    default T generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, String issuerId, Map<String, Object> additionalData) {
         return generatePresentation(credentials, privateKeyAlias, publicKeyId);
     }
 }

@@ -150,11 +150,11 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public PresentationCreatorRegistry presentationCreatorRegistry(ServiceExtensionContext context) {
         if (presentationCreatorRegistry == null) {
-            presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService);
-            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(privateKeyResolver, clock, getOwnDid(context), new JwtGenerationService()), CredentialFormat.JWT);
+            presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService);
+            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(privateKeyResolver, clock, new JwtGenerationService()), CredentialFormat.JWT);
 
             var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(context.getMonitor()).build();
-            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, getOwnDid(context), signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager.getMapper(JSON_LD)),
+            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager.getMapper(JSON_LD)),
                     CredentialFormat.JSON_LD);
         }
         return presentationCreatorRegistry;
@@ -170,10 +170,6 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public CredentialStatusCheckService createStatusCheckService() {
         return new CredentialStatusCheckServiceImpl(revocationService, clock);
-    }
-
-    private String getOwnDid(ServiceExtensionContext context) {
-        return context.getConfig().getString(OWN_DID_PROPERTY);
     }
 
     private void cacheContextDocuments(ClassLoader classLoader) {
