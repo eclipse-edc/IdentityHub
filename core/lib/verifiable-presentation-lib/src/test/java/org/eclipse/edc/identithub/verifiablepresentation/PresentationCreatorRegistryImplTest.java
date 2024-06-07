@@ -23,6 +23,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantConte
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -51,12 +52,19 @@ class PresentationCreatorRegistryImplTest {
     private final ParticipantContextService participantContextService = mock();
     private final PresentationCreatorRegistryImpl registry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService);
 
+    @BeforeEach
+    void setup() {
+        when(participantContextService.getParticipantContext(anyString()))
+                .thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
+                        .participantId("test-participant")
+                        .apiTokenAlias("test-token")
+                        .did(ISSUER_ID).build()));
+    }
+
     @Test
     void createPresentation_whenSingleKey() {
         var keyPair = createKeyPair(TEST_PARTICIPANT, "key-1").build();
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(keyPair)));
-        when(participantContextService.getParticipantContext(anyString()))
-                .thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance().did(ISSUER_ID).build()));
 
         var generator = mock(PresentationGenerator.class);
         registry.addCreator(generator, CredentialFormat.JWT);
