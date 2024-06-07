@@ -26,6 +26,8 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
+import org.eclipse.edc.spi.query.QuerySpec;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -49,6 +51,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @EndToEndTest
 public class ParticipantContextApiEndToEndTest extends IdentityApiEndToEndTest {
+
+    @AfterEach
+    void tearDown() {
+        // purge all users
+        var pcService = RUNTIME.getService(ParticipantContextService.class);
+        pcService.query(QuerySpec.max()).getContent()
+                .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+    }
 
     @Test
     void getUserById() {
@@ -222,7 +232,7 @@ public class ParticipantContextApiEndToEndTest extends IdentityApiEndToEndTest {
                 .log().ifError()
                 .statusCode(204);
 
-        var updatedParticipant = RUNTIME.getContext().getService(ParticipantContextService.class).getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+        var updatedParticipant = RUNTIME.getService(ParticipantContextService.class).getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
         assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.ACTIVATED.ordinal());
         // verify the correct event was emitted
         verify(subscriber).on(argThat(env -> {

@@ -18,11 +18,14 @@ import io.restassured.http.Header;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentUnpublished;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -38,6 +41,15 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @EndToEndTest
 public class DidManagementApiEndToEndTest extends IdentityApiEndToEndTest {
+
+
+    @AfterEach
+    void tearDown() {
+        // purge all users
+        var store = RUNTIME.getService(ParticipantContextService.class);
+        store.query(QuerySpec.max()).getContent()
+                .forEach(pc -> store.deleteParticipantContext(pc.getParticipantId()));
+    }
 
     @Test
     void publishDid_notOwner_expect403() {

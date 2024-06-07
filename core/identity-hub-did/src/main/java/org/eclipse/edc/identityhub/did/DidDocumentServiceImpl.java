@@ -300,8 +300,8 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         //unpublish and delete all DIDs associated with that participant
         var errors = findByParticipantId(participantId)
                 .stream()
-                .map(didResource -> unpublish(didResource.getDid())
-                        .compose(u -> deleteById(didResource.getDid())))
+                .map(didResource -> unpublish(didResource.getDid()).compose(u -> deleteById(didResource.getDid())))
+                .filter(AbstractResult::failed)
                 .map(AbstractResult::getFailureDetail)
                 .collect(Collectors.joining(", "));
 

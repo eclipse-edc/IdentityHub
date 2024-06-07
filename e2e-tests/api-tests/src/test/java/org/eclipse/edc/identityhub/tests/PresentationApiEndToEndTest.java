@@ -41,10 +41,15 @@ import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguratio
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
-import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
+import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
+import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.junit.extensions.RuntimePerClassExtension;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -81,7 +86,6 @@ public class PresentationApiEndToEndTest {
             .name("identity-hub")
             .id("identity-hub")
             .build();
-    private static final String KEY_RESOURCE_ID = "key-1";
     private static final String VALID_QUERY_WITH_SCOPE = """
             {
               "@context": [
@@ -115,17 +119,35 @@ public class PresentationApiEndToEndTest {
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT);
     @RegisterExtension
-    static EdcRuntimeExtension runtime;
+    static RuntimeExtension runtime;
 
     static {
-        runtime = new EdcRuntimeExtension(":launcher", "identity-hub", IDENTITY_HUB_PARTICIPANT.controlPlaneConfiguration());
+        runtime = new RuntimePerClassExtension(new EmbeddedRuntime("identity-hub", IDENTITY_HUB_PARTICIPANT.controlPlaneConfiguration(), ":launcher"));
         runtime.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
         runtime.registerServiceMock(RevocationListService.class, REVOCATION_LIST_SERVICE);
     }
 
+    @BeforeEach
+    void setup() {
+        createParticipant();
+    }
+
+    @AfterEach
+    void teardown() {
+        // purge all participant contexts
+        runtime.getService(ParticipantContextService.class).deleteParticipantContext(TEST_PARTICIPANT_CONTEXT_ID)
+                .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
+
+        // purge all VCs
+        var store = runtime.getService(CredentialStore.class);
+        store.query(QuerySpec.none())
+                .map(creds -> creds.stream().map(cred -> store.deleteById(cred.getId())).toList())
+                .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
+    }
+
     @Test
     void query_tokenNotPresent_shouldReturn401() {
-        createParticipant();
+
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType("application/json")
                 .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
@@ -136,7 +158,7 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_validationError_shouldReturn400() {
-        createParticipant();
+
         var query = """
                 {
                   "@context": [
@@ -159,7 +181,7 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_withPresentationDefinition_shouldReturn503() {
-        createParticipant();
+
         var query = """
                 {
                   "@context": [
@@ -183,7 +205,7 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_tokenVerificationFails_shouldReturn401() throws JOSEException {
-        createParticipant();
+
 
         var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID("did:web:provider#key1").generate();
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(spoofedKey.toPublicKey()));
@@ -203,14 +225,14 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_credentialQueryResolverFails_shouldReturn403() throws JOSEException, JsonProcessingException {
-        createParticipant();
+
         var token = generateSiToken();
 
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
         // create the credential in the store
-        var store = runtime.getContext().getService(CredentialStore.class);
+        var store = runtime.getService(CredentialStore.class);
         var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
         var res = VerifiableCredentialResource.Builder.newInstance()
                 .state(VcStatus.ISSUED)
@@ -247,7 +269,7 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_success_noCredentials() throws JOSEException {
-        createParticipant();
+
         var token = generateSiToken();
 
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
@@ -272,8 +294,8 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_success_containsCredential() throws JOSEException, JsonProcessingException {
-        createParticipant();
-        var store = runtime.getContext().getService(CredentialStore.class);
+
+        var store = runtime.getService(CredentialStore.class);
         var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
         var res = VerifiableCredentialResource.Builder.newInstance()
                 .state(VcStatus.ISSUED)
@@ -313,8 +335,8 @@ public class PresentationApiEndToEndTest {
     @ParameterizedTest(name = "VcState code: {0}")
     @ValueSource(ints = { 600, 700, 800, 900 })
     void query_shouldFilterOutInvalidCreds(int vcStateCode) throws JOSEException, JsonProcessingException {
-        createParticipant();
-        var store = runtime.getContext().getService(CredentialStore.class);
+
+        var store = runtime.getService(CredentialStore.class);
 
         // modify VC content, so that it becomes either not-yet-valid or expired
         var vcContent = TestData.VC_EXAMPLE;
@@ -375,10 +397,10 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_accessTokenKeyIdDoesNotBelongToParticipant_shouldReturn401() throws JsonProcessingException, JOSEException {
-        createParticipant();
+
         createParticipant("attacker", generateEcKey("did:web:attacker#key-1"));
 
-        var store = runtime.getContext().getService(CredentialStore.class);
+        var store = runtime.getService(CredentialStore.class);
         var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
         var res = VerifiableCredentialResource.Builder.newInstance()
                 .state(VcStatus.ISSUED)
@@ -407,8 +429,8 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_accessTokenAudienceDoesNotBelongToParticipant_shouldReturn401() throws JsonProcessingException, JOSEException {
-        createParticipant();
-        var store = runtime.getContext().getService(CredentialStore.class);
+
+        var store = runtime.getService(CredentialStore.class);
         var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
         var res = VerifiableCredentialResource.Builder.newInstance()
                 .state(VcStatus.ISSUED)
@@ -462,8 +484,8 @@ public class PresentationApiEndToEndTest {
     }
 
     private void createParticipant(String participantContextId, ECKey participantKey) {
-        var service = runtime.getContext().getService(ParticipantContextService.class);
-        var vault = runtime.getContext().getService(Vault.class);
+        var service = runtime.getService(ParticipantContextService.class);
+        var vault = runtime.getService(Vault.class);
 
         var privateKeyAlias = "%s-privatekey-alias".formatted(participantContextId);
         vault.storeSecret(privateKeyAlias, participantKey.toJSONString());
