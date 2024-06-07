@@ -494,7 +494,7 @@ public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
 
         var descriptor = createKeyDescriptor(participantId).build();
 
-        var service = RUNTIME.getContext().getService(KeyPairService.class);
+        var service = RUNTIME.getService(KeyPairService.class);
         service.addKeyPair(participantId, descriptor, true)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
         return descriptor.getResourceId();

@@ -41,7 +41,9 @@ import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguratio
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
-import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
+import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
+import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.junit.extensions.RuntimePerMethodExtension;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
 import org.hamcrest.Matchers;
@@ -115,10 +117,10 @@ public class PresentationApiEndToEndTest {
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT);
     @RegisterExtension
-    static EdcRuntimeExtension runtime;
+    static RuntimeExtension runtime;
 
     static {
-        runtime = new EdcRuntimeExtension(":launcher", "identity-hub", IDENTITY_HUB_PARTICIPANT.controlPlaneConfiguration());
+        runtime = new RuntimePerMethodExtension(new EmbeddedRuntime("identity-hub", IDENTITY_HUB_PARTICIPANT.controlPlaneConfiguration(), ":launcher"));
         runtime.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
         runtime.registerServiceMock(RevocationListService.class, REVOCATION_LIST_SERVICE);
     }
@@ -210,7 +212,7 @@ public class PresentationApiEndToEndTest {
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
         // create the credential in the store
-        var store = runtime.getContext().getService(CredentialStore.class);
+        var store = runtime.getService(CredentialStore.class);
         var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
         var res = VerifiableCredentialResource.Builder.newInstance()
                 .state(VcStatus.ISSUED)
@@ -273,7 +275,7 @@ public class PresentationApiEndToEndTest {
     @Test
     void query_success_containsCredential() throws JOSEException, JsonProcessingException {
         createParticipant();
-        var store = runtime.getContext().getService(CredentialStore.class);
+        var store = runtime.getService(CredentialStore.class);
         var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
         var res = VerifiableCredentialResource.Builder.newInstance()
                 .state(VcStatus.ISSUED)
@@ -314,7 +316,7 @@ public class PresentationApiEndToEndTest {
     @ValueSource(ints = { 600, 700, 800, 900 })
     void query_shouldFilterOutInvalidCreds(int vcStateCode) throws JOSEException, JsonProcessingException {
         createParticipant();
-        var store = runtime.getContext().getService(CredentialStore.class);
+        var store = runtime.getService(CredentialStore.class);
 
         // modify VC content, so that it becomes either not-yet-valid or expired
         var vcContent = TestData.VC_EXAMPLE;
@@ -378,7 +380,7 @@ public class PresentationApiEndToEndTest {
         createParticipant();
         createParticipant("attacker", generateEcKey("did:web:attacker#key-1"));
 
-        var store = runtime.getContext().getService(CredentialStore.class);
+        var store = runtime.getService(CredentialStore.class);
         var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
         var res = VerifiableCredentialResource.Builder.newInstance()
                 .state(VcStatus.ISSUED)
@@ -408,7 +410,7 @@ public class PresentationApiEndToEndTest {
     @Test
     void query_accessTokenAudienceDoesNotBelongToParticipant_shouldReturn401() throws JsonProcessingException, JOSEException {
         createParticipant();
-        var store = runtime.getContext().getService(CredentialStore.class);
+        var store = runtime.getService(CredentialStore.class);
         var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
         var res = VerifiableCredentialResource.Builder.newInstance()
                 .state(VcStatus.ISSUED)
@@ -462,8 +464,8 @@ public class PresentationApiEndToEndTest {
     }
 
     private void createParticipant(String participantContextId, ECKey participantKey) {
-        var service = runtime.getContext().getService(ParticipantContextService.class);
-        var vault = runtime.getContext().getService(Vault.class);
+        var service = runtime.getService(ParticipantContextService.class);
+        var vault = runtime.getService(Vault.class);
 
         var privateKeyAlias = "%s-privatekey-alias".formatted(participantContextId);
         vault.storeSecret(privateKeyAlias, participantKey.toJSONString());

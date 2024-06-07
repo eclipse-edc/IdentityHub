@@ -222,7 +222,7 @@ public class ParticipantContextApiEndToEndTest extends IdentityApiEndToEndTest {
                 .log().ifError()
                 .statusCode(204);
 
-        var updatedParticipant = RUNTIME.getContext().getService(ParticipantContextService.class).getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+        var updatedParticipant = RUNTIME.getService(ParticipantContextService.class).getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
         assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.ACTIVATED.ordinal());
         // verify the correct event was emitted
         verify(subscriber).on(argThat(env -> {
