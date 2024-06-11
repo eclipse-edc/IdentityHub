@@ -18,7 +18,7 @@
   resources. Also referred to as: mgmt api
 - API Key: a secret string that is used to authenticate/authorize a request and that is typically sent in the HTTP
   header. Also referred to as: API token, API secret, credential
-- Super-user: service principal with pre-definted roles that grant elevated access permissions. Also referred to as:
+- Super-user: service principal with pre-defined roles that grant elevated access permissions. Also referred to as:
   admin, root user
 
 ## 2. Requirements
