@@ -61,16 +61,14 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
     public static final String HOLDER_PROPERTY = "holder";
     public static final URI ASSERTION_METHOD = URI.create("https://w3id.org/security#assertionMethod");
     private final PrivateKeyResolver privateKeyResolver;
-    private final String issuerId;
     private final SignatureSuiteRegistry signatureSuiteRegistry;
     private final String defaultSignatureSuite;
     private final LdpIssuer ldpIssuer;
     private final ObjectMapper mapper;
 
-    public LdpPresentationGenerator(PrivateKeyResolver privateKeyResolver, String ownDid,
+    public LdpPresentationGenerator(PrivateKeyResolver privateKeyResolver,
                                     SignatureSuiteRegistry signatureSuiteRegistry, String defaultSignatureSuite, LdpIssuer ldpIssuer, ObjectMapper mapper) {
         this.privateKeyResolver = privateKeyResolver;
-        this.issuerId = ownDid;
         this.signatureSuiteRegistry = signatureSuiteRegistry;
         this.defaultSignatureSuite = defaultSignatureSuite;
         this.ldpIssuer = ldpIssuer;
@@ -79,7 +77,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
     /**
      * Will always throw an {@link UnsupportedOperationException}.
-     * Please use {@link LdpPresentationGenerator#generatePresentation(List, String, String, Map)} instead.
+     * Please use {@link PresentationGenerator#generatePresentation(List, String, String, String, Map)} instead.
      */
     @Override
     public JsonObject generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String privateKeyId) {
@@ -94,6 +92,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
      * @param credentials     The list of Verifiable Credential Containers to include in the presentation.
      * @param privateKeyAlias The alias of the private key to be used for generating the presentation.
      * @param publicKeyId     The ID used by the counterparty to resolve the public key for verifying the VP.
+     * @param issuerId        The ID of this issuer. Usually a DID.
      * @param additionalData  The additional data to be included in the presentation.
      *                        It must contain a "types" field and optionally, a "suite" field to indicate the desired signature suite.
      *                        If the "suite" parameter is specified, it must be a W3C identifier for signature suites.
@@ -104,7 +103,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
      *                                  or if one or more VerifiableCredentials cannot be represented in the JSON-LD format.
      */
     @Override
-    public JsonObject generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, Map<String, Object> additionalData) {
+    public JsonObject generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, String issuerId, Map<String, Object> additionalData) {
         if (!additionalData.containsKey(TYPE_ADDITIONAL_DATA)) {
             throw new IllegalArgumentException("Must provide additional data: '%s'".formatted(TYPE_ADDITIONAL_DATA));
         }
