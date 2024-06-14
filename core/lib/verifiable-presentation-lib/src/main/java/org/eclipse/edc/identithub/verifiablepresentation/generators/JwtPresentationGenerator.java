@@ -98,6 +98,12 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
             throw new IllegalArgumentException("Must provide additional data: '%s'".formatted(CONTROLLER_ADDITIONAL_DATA));
         }
 
+        var controller = additionalData.get(CONTROLLER_ADDITIONAL_DATA).toString();
+        var composedKeyId = publicKeyId;
+        if (!publicKeyId.startsWith(controller)) {
+            composedKeyId = controller + "#" + publicKeyId;
+        }
+
         var rawVcs = credentials.stream()
                 .map(VerifiableCredentialContainer::rawVc)
                 .collect(Collectors.toList());
@@ -105,7 +111,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
         var tokenResult = tokenGenerationService.generate(privateKeySupplier, vpDecorator(rawVcs, issuerId), tp -> {
             additionalData.forEach(tp::claims);
             return tp;
-        }, new KeyIdDecorator(additionalData.get(CONTROLLER_ADDITIONAL_DATA) + "#" + publicKeyId));
+        }, new KeyIdDecorator(composedKeyId));
 
         return tokenResult.map(TokenRepresentation::getToken).orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
