@@ -35,7 +35,7 @@ edc-spi-jsonld = { module = "org.eclipse.edc:json-ld-spi", version.ref = "edc" }
 edc-spi-validator = { module = "org.eclipse.edc:validator-spi", version.ref = "edc" }
 edc-spi-web = { module = "org.eclipse.edc:web-spi", version.ref = "edc" }
 edc-spi-token = { module = "org.eclipse.edc:token-spi", version.ref = "edc" }
-edc-spi-iatp = { module = "org.eclipse.edc:identity-trust-spi", version.ref = "edc" }
+edc-spi-dcp = { module = "org.eclipse.edc:identity-trust-spi", version.ref = "edc" }
 edc-spi-vc = { module = "org.eclipse.edc:verifiable-credentials-spi", version.ref = "edc" }
 edc-core-connector = { module = "org.eclipse.edc:connector-core", version.ref = "edc" }
 edc-core-sql = { module = "org.eclipse.edc:sql-core", version.ref = "edc" }
@@ -44,9 +44,9 @@ edc-core-jersey = { module = "org.eclipse.edc:jersey-core", version.ref = "edc" 
 edc-core-junit = { module = "org.eclipse.edc:junit", version.ref = "edc" }
 edc-identity-did-core = { module = "org.eclipse.edc:identity-did-core", version.ref = "edc" }
 edc-identity-did-web = { module = "org.eclipse.edc:identity-did-web", version.ref = "edc" }
-edc-iatp-service = { module = "org.eclipse.edc:identity-trust-service", version.ref = "edc" }
-edc-iatp-core = { module = "org.eclipse.edc:identity-trust-core", version.ref = "edc" }
-edc-iatp-transform = { module = "org.eclipse.edc:identity-trust-transform", version.ref = "edc" }
+edc-dcp-service = { module = "org.eclipse.edc:identity-trust-service", version.ref = "edc" }
+edc-dcp-core = { module = "org.eclipse.edc:identity-trust-core", version.ref = "edc" }
+edc-dcp-transform = { module = "org.eclipse.edc:identity-trust-transform", version.ref = "edc" }
 edc-verifiablecredentials = { module = "org.eclipse.edc:verifiable-credentials", version.ref = "edc" }
 edc-vc-jwt = { module = "org.eclipse.edc:jwt-verifiable-credentials", version.ref = "edc" }
 edc-vc-ldp = { module = "org.eclipse.edc:ldp-verifiable-credentials", version.ref = "edc" }

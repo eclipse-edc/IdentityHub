@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identithub.verifiablepresentation.generators;
 
-import org.eclipse.edc.iam.identitytrust.spi.IatpConstants;
+import org.eclipse.edc.iam.identitytrust.spi.DcpConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
@@ -122,7 +122,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
 
     private Map<String, Object> createVpClaim(List<String> rawVcs) {
         return Map.of(
-                JsonLdKeywords.CONTEXT, List.of(IatpConstants.IATP_CONTEXT_URL, VcConstants.W3C_CREDENTIALS_URL, VcConstants.PRESENTATION_EXCHANGE_URL),
+                JsonLdKeywords.CONTEXT, List.of(DcpConstants.DCP_CONTEXT_URL, VcConstants.W3C_CREDENTIALS_URL, VcConstants.PRESENTATION_EXCHANGE_URL),
                 VP_TYPE_PROPERTY, VcConstants.VERIFIABLE_PRESENTATION_TYPE,
                 VERIFIABLE_CREDENTIAL_PROPERTY, rawVcs
         );

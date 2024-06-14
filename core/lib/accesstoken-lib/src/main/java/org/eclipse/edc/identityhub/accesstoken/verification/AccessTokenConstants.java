@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.accesstoken.verification;
 
 public interface AccessTokenConstants {
-    String IATP_SELF_ISSUED_TOKEN_CONTEXT = "iatp-si";
-    String IATP_ACCESS_TOKEN_CONTEXT = "iatp-access-token";
+    String DCP_SELF_ISSUED_TOKEN_CONTEXT = "dcp-si";
+    String DCP_ACCESS_TOKEN_CONTEXT = "dcp-access-token";
     String TOKEN_CLAIM = "token";
     String ACCESS_TOKEN_SCOPE_CLAIM = "scope";
 }

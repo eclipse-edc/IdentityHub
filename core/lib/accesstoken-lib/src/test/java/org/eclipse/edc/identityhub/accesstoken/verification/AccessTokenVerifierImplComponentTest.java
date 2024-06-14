@@ -43,8 +43,8 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.UUID;
 
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.TOKEN_CLAIM;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -79,10 +79,10 @@ class AccessTokenVerifierImplComponentTest {
 
         // would normally get registered in an extension.
         var accessTokenRule = new ClaimIsPresentRule(TOKEN_CLAIM);
-        ruleRegistry.addRule(IATP_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
+        ruleRegistry.addRule(DCP_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
-        ruleRegistry.addRule(IATP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
+        ruleRegistry.addRule(DCP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
 
         var resolverMock = mock(KeyPairResourcePublicKeyResolver.class);
         when(resolverMock.resolveKey(anyString(), anyString())).thenReturn(Result.success(stsKeyPair.getPublic()));

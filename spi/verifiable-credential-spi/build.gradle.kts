@@ -23,7 +23,7 @@ val swagger: String by project
 dependencies {
 
     api(project(":spi:participant-context-spi"))
-    api(libs.edc.spi.iatp)
+    api(libs.edc.spi.dcp)
 
     testImplementation(libs.edc.lib.json)
     testFixturesImplementation(libs.nimbus.jwt)
