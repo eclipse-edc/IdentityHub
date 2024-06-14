@@ -228,7 +228,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
     private void keypairRevoked(KeyPairRevoked event) {
         var didResources = findByParticipantId(event.getParticipantId());
-        var keyId = event.getKeyPairResourceId();
+        var keyId = event.getKeyId();
 
         var errors = didResources.stream()
                 .peek(didResource -> didResource.getDocument().getVerificationMethod().removeIf(vm -> vm.getId().equals(keyId)))
@@ -260,7 +260,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
         var errors = didResources.stream()
                 .peek(dd -> dd.getDocument().getVerificationMethod().add(VerificationMethod.Builder.newInstance()
-                        .id(dd.getDocument().getId() + "#" + event.getKeyPairResourceId())
+                        .id(dd.getDocument().getId() + "#" + event.getKeyId())
                         .publicKeyJwk(jwk.toJSONObject())
                         .controller(dd.getDocument().getId())
                         .type(event.getType())
