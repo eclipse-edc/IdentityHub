@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identithub.verifiablepresentation.generators;
 
-import org.eclipse.edc.iam.identitytrust.spi.IatpConstants;
+import org.eclipse.edc.iam.identitytrust.spi.DcpConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
@@ -49,7 +49,6 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
     public static final String VERIFIABLE_PRESENTATION_CLAIM = "vp";
     private final PrivateKeyResolver privateKeyResolver;
     private final Clock clock;
-    private final String issuerId;
 
     private final TokenGenerationService tokenGenerationService;
 
@@ -58,18 +57,16 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
      *
      * @param privateKeyResolver The resolver for private keys used for signing the presentation.
      * @param clock              The clock used for generating timestamps.
-     * @param issuerId           The ID of the issuer for the presentation. Could be a DID.
      */
-    public JwtPresentationGenerator(PrivateKeyResolver privateKeyResolver, Clock clock, String issuerId, TokenGenerationService tokenGenerationService) {
+    public JwtPresentationGenerator(PrivateKeyResolver privateKeyResolver, Clock clock, TokenGenerationService tokenGenerationService) {
         this.privateKeyResolver = privateKeyResolver;
         this.clock = clock;
-        this.issuerId = issuerId;
         this.tokenGenerationService = tokenGenerationService;
     }
 
     /**
      * Will always throw an {@link UnsupportedOperationException}.
-     * Please use {@link JwtPresentationGenerator#generatePresentation(List, String, String, Map)} instead.
+     * Please use {@link PresentationGenerator#generatePresentation(List, String, String, String, Map)} instead.
      */
     @Override
     public String generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId) {
@@ -82,6 +79,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
      * @param credentials     The list of Verifiable Credential Containers to include in the presentation.
      * @param privateKeyAlias The alias of the private key to be used for generating the presentation.
      * @param publicKeyId     The ID used by the counterparty to resolve the public key for verifying the VP.
+     * @param issuerId        The ID of this issuer. Usually a DID.
      * @param additionalData  Additional data to include in the presentation. Must contain an entry 'aud'. Every entry in the map is added as a claim to the token.
      * @return The serialized JWT presentation.
      * @throws IllegalArgumentException      If the additional data does not contain the required 'aud' value or if no private key could be resolved for the key ID.
@@ -89,7 +87,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
      * @throws EdcException                  If signing the JWT fails.
      */
     @Override
-    public String generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, Map<String, Object> additionalData) {
+    public String generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, String issuerId, Map<String, Object> additionalData) {
 
         // check if expected data is there
         if (!additionalData.containsKey(JwtRegisteredClaimNames.AUDIENCE)) {
@@ -100,19 +98,25 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
             throw new IllegalArgumentException("Must provide additional data: '%s'".formatted(CONTROLLER_ADDITIONAL_DATA));
         }
 
+        var controller = additionalData.get(CONTROLLER_ADDITIONAL_DATA).toString();
+        var composedKeyId = publicKeyId;
+        if (!publicKeyId.startsWith(controller)) {
+            composedKeyId = controller + "#" + publicKeyId;
+        }
+
         var rawVcs = credentials.stream()
                 .map(VerifiableCredentialContainer::rawVc)
                 .collect(Collectors.toList());
         Supplier<PrivateKey> privateKeySupplier = () -> privateKeyResolver.resolvePrivateKey(privateKeyAlias).orElseThrow(f -> new IllegalArgumentException(f.getFailureDetail()));
-        var tokenResult = tokenGenerationService.generate(privateKeySupplier, vpDecorator(rawVcs), tp -> {
+        var tokenResult = tokenGenerationService.generate(privateKeySupplier, vpDecorator(rawVcs, issuerId), tp -> {
             additionalData.forEach(tp::claims);
             return tp;
-        }, new KeyIdDecorator(additionalData.get(CONTROLLER_ADDITIONAL_DATA) + "#" + publicKeyId));
+        }, new KeyIdDecorator(composedKeyId));
 
         return tokenResult.map(TokenRepresentation::getToken).orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 
-    private TokenDecorator vpDecorator(List<String> rawVcs) {
+    private TokenDecorator vpDecorator(List<String> rawVcs, String issuerId) {
         var now = Date.from(clock.instant());
         return tp -> tp.claims(JwtRegisteredClaimNames.ISSUER, issuerId)
                 .claims(JwtRegisteredClaimNames.ISSUED_AT, now)
@@ -124,7 +128,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
 
     private Map<String, Object> createVpClaim(List<String> rawVcs) {
         return Map.of(
-                JsonLdKeywords.CONTEXT, List.of(IatpConstants.IATP_CONTEXT_URL, VcConstants.W3C_CREDENTIALS_URL, VcConstants.PRESENTATION_EXCHANGE_URL),
+                JsonLdKeywords.CONTEXT, List.of(DcpConstants.DCP_CONTEXT_URL, VcConstants.W3C_CREDENTIALS_URL, VcConstants.PRESENTATION_EXCHANGE_URL),
                 VP_TYPE_PROPERTY, VcConstants.VERIFIABLE_PRESENTATION_TYPE,
                 VERIFIABLE_CREDENTIAL_PROPERTY, rawVcs
         );

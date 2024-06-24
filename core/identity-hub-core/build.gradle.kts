@@ -8,7 +8,7 @@ dependencies {
     implementation(project(":core:lib:verifiable-presentation-lib"))
     implementation(project(":core:lib:accesstoken-lib"))
     implementation(project(":core:lib:credential-query-lib"))
-    implementation(libs.edc.spi.iatp) //SignatureSuiteRegistry
+    implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
     implementation(libs.edc.core.connector) // for the CriterionToPredicateConverterImpl
     implementation(libs.edc.ext.jsonld) // for the JSON-LD mapper
     implementation(libs.edc.lib.util)

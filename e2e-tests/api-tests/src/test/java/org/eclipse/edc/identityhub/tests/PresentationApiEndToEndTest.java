@@ -19,36 +19,37 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.edc.iam.identitytrust.spi.model.PresentationResponseMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.credentialservice.InputDescriptorMapping;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.credentialservice.PresentationSubmission;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubRuntimeConfiguration;
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
-import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
-import org.eclipse.edc.junit.extensions.EdcRuntimeExtension;
-import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
+import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.junit.extensions.RuntimePerClassExtension;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -64,7 +65,14 @@ import java.util.Map;
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_DID;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_KEY;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.PROVIDER_DID;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.PROVIDER_KEY;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.TEST_SCOPE;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateSiToken;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -78,7 +86,6 @@ public class PresentationApiEndToEndTest {
             .name("identity-hub")
             .id("identity-hub")
             .build();
-    private static final String KEY_RESOURCE_ID = "key-1";
     private static final String VALID_QUERY_WITH_SCOPE = """
             {
               "@context": [
@@ -104,7 +111,7 @@ public class PresentationApiEndToEndTest {
               ]
             }
             """;
-    private static final String TEST_PARTICIPANT_CONTEXT_ID = "did:web:consumer";
+    private static final String TEST_PARTICIPANT_CONTEXT_ID = "consumer";
     private static final String TEST_PARTICIPANT_CONTEXT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(TEST_PARTICIPANT_CONTEXT_ID.getBytes());
     private static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
     private static final RevocationListService REVOCATION_LIST_SERVICE = mock();
@@ -112,17 +119,35 @@ public class PresentationApiEndToEndTest {
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT);
     @RegisterExtension
-    static EdcRuntimeExtension runtime;
+    static RuntimeExtension runtime;
 
     static {
-        runtime = new EdcRuntimeExtension(":launcher", "identity-hub", IDENTITY_HUB_PARTICIPANT.controlPlaneConfiguration());
+        runtime = new RuntimePerClassExtension(new EmbeddedRuntime("identity-hub", IDENTITY_HUB_PARTICIPANT.controlPlaneConfiguration(), ":launcher"));
         runtime.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
         runtime.registerServiceMock(RevocationListService.class, REVOCATION_LIST_SERVICE);
     }
 
+    @BeforeEach
+    void setup() {
+        createParticipant();
+    }
+
+    @AfterEach
+    void teardown() {
+        // purge all participant contexts
+        runtime.getService(ParticipantContextService.class).deleteParticipantContext(TEST_PARTICIPANT_CONTEXT_ID)
+                .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
+
+        // purge all VCs
+        var store = runtime.getService(CredentialStore.class);
+        store.query(QuerySpec.none())
+                .map(creds -> creds.stream().map(cred -> store.deleteById(cred.getId())).toList())
+                .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
+    }
+
     @Test
     void query_tokenNotPresent_shouldReturn401() {
-        createParticipant();
+
         IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType("application/json")
                 .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
@@ -133,7 +158,7 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_validationError_shouldReturn400() {
-        createParticipant();
+
         var query = """
                 {
                   "@context": [
@@ -156,7 +181,7 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_withPresentationDefinition_shouldReturn503() {
-        createParticipant();
+
         var query = """
                 {
                   "@context": [
@@ -180,7 +205,7 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_tokenVerificationFails_shouldReturn401() throws JOSEException {
-        createParticipant();
+
 
         var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID("did:web:provider#key1").generate();
         when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(spoofedKey.toPublicKey()));
@@ -200,14 +225,14 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_credentialQueryResolverFails_shouldReturn403() throws JOSEException, JsonProcessingException {
-        createParticipant();
+
         var token = generateSiToken();
 
-        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(JwtCreationUtil.CONSUMER_KEY.toPublicKey()));
-        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(JwtCreationUtil.PROVIDER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
         // create the credential in the store
-        var store = runtime.getContext().getService(CredentialStore.class);
+        var store = runtime.getService(CredentialStore.class);
         var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
         var res = VerifiableCredentialResource.Builder.newInstance()
                 .state(VcStatus.ISSUED)
@@ -243,31 +268,12 @@ public class PresentationApiEndToEndTest {
     }
 
     @Test
-    void query_presentationGenerationFails_shouldReturn500() {
-        createParticipant();
-        var token = generateSiToken();
-
-        // delete the key, so the presentation generation will fail
-        var kpStore = runtime.getService(KeyPairResourceStore.class);
-        kpStore.deleteById(KEY_RESOURCE_ID)
-                .orElseThrow(f -> new EdcException(f.getFailureDetail()));
-        IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
-                .contentType(JSON)
-                .header(AUTHORIZATION, token)
-                .body(VALID_QUERY_WITH_SCOPE)
-                .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
-                .then()
-                .statusCode(500)
-                .log().ifValidationFails();
-    }
-
-    @Test
     void query_success_noCredentials() throws JOSEException {
-        createParticipant();
+
         var token = generateSiToken();
 
-        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(JwtCreationUtil.CONSUMER_KEY.toPublicKey()));
-        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(JwtCreationUtil.PROVIDER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
         var response = IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
@@ -288,8 +294,8 @@ public class PresentationApiEndToEndTest {
 
     @Test
     void query_success_containsCredential() throws JOSEException, JsonProcessingException {
-        createParticipant();
-        var store = runtime.getContext().getService(CredentialStore.class);
+
+        var store = runtime.getService(CredentialStore.class);
         var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
         var res = VerifiableCredentialResource.Builder.newInstance()
                 .state(VcStatus.ISSUED)
@@ -301,8 +307,8 @@ public class PresentationApiEndToEndTest {
 
         store.create(res);
         var token = generateSiToken();
-        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(JwtCreationUtil.CONSUMER_KEY.toPublicKey()));
-        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(JwtCreationUtil.PROVIDER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
         var response = IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
                 .contentType(JSON)
@@ -326,12 +332,11 @@ public class PresentationApiEndToEndTest {
 
     }
 
-
     @ParameterizedTest(name = "VcState code: {0}")
     @ValueSource(ints = { 600, 700, 800, 900 })
     void query_shouldFilterOutInvalidCreds(int vcStateCode) throws JOSEException, JsonProcessingException {
-        createParticipant();
-        var store = runtime.getContext().getService(CredentialStore.class);
+
+        var store = runtime.getService(CredentialStore.class);
 
         // modify VC content, so that it becomes either not-yet-valid or expired
         var vcContent = TestData.VC_EXAMPLE;
@@ -364,8 +369,8 @@ public class PresentationApiEndToEndTest {
                 .build();
         store.create(res);
 
-        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(JwtCreationUtil.CONSUMER_KEY.toPublicKey()));
-        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(JwtCreationUtil.PROVIDER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
         var token = generateSiToken();
         var response = IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
@@ -390,6 +395,71 @@ public class PresentationApiEndToEndTest {
 
     }
 
+    @Test
+    void query_accessTokenKeyIdDoesNotBelongToParticipant_shouldReturn401() throws JsonProcessingException, JOSEException {
+
+        createParticipant("attacker", generateEcKey("did:web:attacker#key-1"));
+
+        var store = runtime.getService(CredentialStore.class);
+        var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
+        var res = VerifiableCredentialResource.Builder.newInstance()
+                .state(VcStatus.ISSUED)
+                .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.JWT, cred))
+                .issuerId("https://example.edu/issuers/565049")
+                .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
+                .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                .build();
+
+        store.create(res);
+        var token = generateSiToken();
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+        IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(AUTHORIZATION, token)
+                .body(VALID_QUERY_WITH_SCOPE)
+                // attempt to request the presentation for a different participant than the one who issued the access token
+                .post("/v1/participants/%s/presentations/query".formatted(Base64.getUrlEncoder().encodeToString("attacker".getBytes())))
+                .then()
+                .statusCode(401)
+                .log().ifValidationFails();
+
+    }
+
+    @Test
+    void query_accessTokenAudienceDoesNotBelongToParticipant_shouldReturn401() throws JsonProcessingException, JOSEException {
+
+        var store = runtime.getService(CredentialStore.class);
+        var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
+        var res = VerifiableCredentialResource.Builder.newInstance()
+                .state(VcStatus.ISSUED)
+                .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.JWT, cred))
+                .issuerId("https://example.edu/issuers/565049")
+                .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
+                .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                .build();
+
+        store.create(res);
+
+        var accessToken = generateJwt("did:web:someone_else", "did:web:someone_else", PROVIDER_DID, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
+        var token = generateJwt(CONSUMER_DID, PROVIDER_DID, PROVIDER_DID, Map.of("client_id", PROVIDER_DID, "token", accessToken), PROVIDER_KEY);
+
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+        IDENTITY_HUB_PARTICIPANT.getResolutionEndpoint().baseRequest()
+                .contentType(JSON)
+                .header(AUTHORIZATION, token)
+                .body(VALID_QUERY_WITH_SCOPE)
+                // attempt to request the presentation for a different participant than the one who issued the access token
+                .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                .then()
+                .statusCode(401)
+                .log().ifValidationFails()
+                .body(Matchers.containsString("The DID associated with the Participant Context ID of this request ('did:web:consumer') must match 'aud' claim in 'access_token' ([did:web:someone_else])."));
+    }
+
     /**
      * extracts a (potentially empty) list of verifiable credentials from a JWT-VP
      */
@@ -409,30 +479,24 @@ public class PresentationApiEndToEndTest {
         }
     }
 
-    private PresentationResponseMessage createPresentationResponse() {
-        var submission = new PresentationSubmission("id", "def-id", List.of(new InputDescriptorMapping("input-id", "ldp-vp", "foo")));
-        return PresentationResponseMessage.Builder.newinstance()
-                .presentation(List.of(TestData.VC_EXAMPLE))
-                .presentationSubmission(submission)
-                .build();
+    private void createParticipant() {
+        createParticipant(TEST_PARTICIPANT_CONTEXT_ID, CONSUMER_KEY);
     }
 
-    private void createParticipant() {
-        var service = runtime.getContext().getService(ParticipantContextService.class);
-        var vault = runtime.getContext().getService(Vault.class);
+    private void createParticipant(String participantContextId, ECKey participantKey) {
+        var service = runtime.getService(ParticipantContextService.class);
+        var vault = runtime.getService(Vault.class);
 
-        var key = JwtCreationUtil.CONSUMER_KEY;
-        var privateKeyAlias = "%s-privatekey-alias".formatted(PresentationApiEndToEndTest.TEST_PARTICIPANT_CONTEXT_ID);
-        vault.storeSecret(key.getKeyID(), key.toPublicJWK().toJSONString());
-        vault.storeSecret(privateKeyAlias, key.toJSONString());
+        var privateKeyAlias = "%s-privatekey-alias".formatted(participantContextId);
+        vault.storeSecret(privateKeyAlias, participantKey.toJSONString());
         var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId(PresentationApiEndToEndTest.TEST_PARTICIPANT_CONTEXT_ID)
-                .did("did:web:%s".formatted(PresentationApiEndToEndTest.TEST_PARTICIPANT_CONTEXT_ID))
+                .participantId(participantContextId)
+                .did("did:web:%s".formatted(participantContextId.replace("did:web:", "")))
                 .active(true)
                 .key(KeyDescriptor.Builder.newInstance()
-                        .publicKeyJwk(key.toPublicJWK().toJSONObject())
+                        .publicKeyJwk(participantKey.toPublicJWK().toJSONObject())
                         .privateKeyAlias(privateKeyAlias)
-                        .keyId(KEY_RESOURCE_ID)
+                        .keyId(participantKey.getKeyID())
                         .build())
                 .build();
         service.createParticipantContext(manifest)

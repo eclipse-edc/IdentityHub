@@ -26,6 +26,8 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
+import org.eclipse.edc.spi.query.QuerySpec;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -48,15 +50,23 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @EndToEndTest
-public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest {
+public class ParticipantContextApiEndToEndTest extends IdentityApiEndToEndTest {
+
+    @AfterEach
+    void tearDown() {
+        // purge all users
+        var pcService = RUNTIME.getService(ParticipantContextService.class);
+        pcService.query(QuerySpec.max()).getContent()
+                .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+    }
 
     @Test
     void getUserById() {
         var apikey = createSuperUser();
 
-        var su = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var su = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", apikey))
-                .get("/v1/participants/" + toBase64(SUPER_USER))
+                .get("/v1alpha/participants/" + toBase64(SUPER_USER))
                 .then()
                 .statusCode(200)
                 .extract().body().as(ParticipantContext.class);
@@ -82,10 +92,10 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         var apiToken2 = storeParticipant(user2Context);
 
         //user1 attempts to read user2 -> fail
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", apiToken1))
                 .contentType(ContentType.JSON)
-                .get("/v1/participants/" + toBase64(user2))
+                .get("/v1alpha/participants/" + toBase64(user2))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);
@@ -99,11 +109,11 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
         var manifest = createNewParticipant().build();
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", apikey))
                 .contentType(ContentType.JSON)
                 .body(manifest)
-                .post("/v1/participants/")
+                .post("/v1alpha/participants/")
                 .then()
                 .log().ifError()
                 .statusCode(anyOf(equalTo(200), equalTo(204)))
@@ -130,11 +140,11 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .key(createKeyDescriptor().active(isActive).build())
                 .build();
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", apikey))
                 .contentType(ContentType.JSON)
                 .body(manifest)
-                .post("/v1/participants/")
+                .post("/v1alpha/participants/")
                 .then()
                 .log().ifError()
                 .statusCode(anyOf(equalTo(200), equalTo(204)))
@@ -164,11 +174,11 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         var apiToken = storeParticipant(anotherUser);
         var manifest = createNewParticipant().build();
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", apiToken))
                 .contentType(ContentType.JSON)
                 .body(manifest)
-                .post("/v1/participants/")
+                .post("/v1alpha/participants/")
                 .then()
                 .log().ifError()
                 .statusCode(403)
@@ -186,11 +196,11 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
         var manifest = createNewParticipant().build();
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", createTokenFor(principal)))
                 .contentType(ContentType.JSON)
                 .body(manifest)
-                .post("/v1/participants/")
+                .post("/v1alpha/participants/")
                 .then()
                 .log().ifError()
                 .statusCode(401)
@@ -214,15 +224,15 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                 .build();
         storeParticipant(anotherUser);
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", superUserKey))
                 .contentType(ContentType.JSON)
-                .post("/v1/participants/%s/state?isActive=true".formatted(toBase64(participantId)))
+                .post("/v1alpha/participants/%s/state?isActive=true".formatted(toBase64(participantId)))
                 .then()
                 .log().ifError()
                 .statusCode(204);
 
-        var updatedParticipant = RUNTIME.getContext().getService(ParticipantContextService.class).getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+        var updatedParticipant = RUNTIME.getService(ParticipantContextService.class).getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
         assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.ACTIVATED.ordinal());
         // verify the correct event was emitted
         verify(subscriber).on(argThat(env -> {
@@ -240,10 +250,10 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
 
         assertThat(getDidForParticipant(participantId)).hasSize(1);
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", superUserKey))
                 .contentType(ContentType.JSON)
-                .delete("/v1/participants/%s".formatted(toBase64(participantId)))
+                .delete("/v1alpha/participants/%s".formatted(toBase64(participantId)))
                 .then()
                 .log().ifError()
                 .statusCode(204);
@@ -258,10 +268,10 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         var userToken = createParticipant(participantId);
 
         assertThat(Arrays.asList(userToken, superUserKey))
-                .allSatisfy(t -> RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .allSatisfy(t -> RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                         .header(new Header("x-api-key", t))
                         .contentType(ContentType.JSON)
-                        .post("/v1/participants/%s/token".formatted(toBase64(participantId)))
+                        .post("/v1alpha/participants/%s/token".formatted(toBase64(participantId)))
                         .then()
                         .log().ifError()
                         .statusCode(200)
@@ -274,11 +284,11 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         var participantId = "some-user";
         createParticipant(participantId);
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", superUserKey))
                 .contentType(ContentType.JSON)
                 .body(List.of("role1", "role2", "admin"))
-                .put("/v1/participants/%s/roles".formatted(toBase64(participantId)))
+                .put("/v1alpha/participants/%s/roles".formatted(toBase64(participantId)))
                 .then()
                 .log().ifError()
                 .statusCode(204);
@@ -292,11 +302,11 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
         var participantId = "some-user";
         var userToken = createParticipant(participantId);
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", userToken))
                 .contentType(ContentType.JSON)
                 .body(List.of(role))
-                .put("/v1/participants/%s/roles".formatted(toBase64(participantId)))
+                .put("/v1alpha/participants/%s/roles".formatted(toBase64(participantId)))
                 .then()
                 .log().ifError()
                 .statusCode(403);
@@ -310,10 +320,10 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                     var participantId = "user" + i;
                     createParticipant(participantId);
                 });
-        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var found = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/participants")
+                .get("/v1alpha/participants")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -329,10 +339,10 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var found = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/participants?offset=2&limit=4")
+                .get("/v1alpha/participants?offset=2&limit=4")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -348,10 +358,10 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var found = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/participants")
+                .get("/v1alpha/participants")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -368,10 +378,10 @@ public class ParticipantContextApiEndToEndTest extends ManagementApiEndToEndTest
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", attackerToken))
-                .get("/v1/participants")
+                .get("/v1alpha/participants")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);

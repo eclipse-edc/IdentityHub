@@ -32,6 +32,8 @@ public class JwtCreationUtil {
     public static final String TEST_SCOPE = "org.eclipse.edc.vc.type:AlumniCredential:read";
     public static final ECKey CONSUMER_KEY = generateEcKey("did:web:consumer#key1");
     public static final ECKey PROVIDER_KEY = generateEcKey("did:web:provider#key1");
+    public static final String CONSUMER_DID = "did:web:consumer";
+    public static final String PROVIDER_DID = "did:web:provider";
 
     /**
      * Generates a self-issued token.
@@ -39,7 +41,7 @@ public class JwtCreationUtil {
      * @return The generated self-issued token.
      */
     public static String generateSiToken() {
-        return generateSiToken("did:web:consumer", "did:web:provider");
+        return generateSiToken(CONSUMER_DID, PROVIDER_DID);
     }
 
     /**

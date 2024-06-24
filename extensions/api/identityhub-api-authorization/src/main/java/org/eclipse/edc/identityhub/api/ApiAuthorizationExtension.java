@@ -25,7 +25,7 @@ import static org.eclipse.edc.identityhub.api.ApiAuthorizationExtension.NAME;
 @Extension(NAME)
 public class ApiAuthorizationExtension implements ServiceExtension {
 
-    public static final String NAME = "Management API Authorization Extension";
+    public static final String NAME = "Identity API Authorization Extension";
 
     @Override
     public String name() {

@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.accesstoken.verification;
 
+import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
@@ -23,16 +25,14 @@ import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
 
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.IATP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.TOKEN_CLAIM;
 
 /**
@@ -44,26 +44,28 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
 
     private static final String SCOPE_SEPARATOR = " ";
     private final TokenValidationService tokenValidationService;
+    private final KeyPairResourcePublicKeyResolver localPublicKeyService;
     private final TokenValidationRulesRegistry tokenValidationRulesRegistry;
-    private final Supplier<PublicKey> stsPublicKey;
     private final Monitor monitor;
     private final PublicKeyResolver publicKeyResolver;
+    private final ParticipantContextService participantContextService;
 
-    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, Supplier<PublicKey> publicKeySupplier, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
-                                   PublicKeyResolver publicKeyResolver) {
+    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, KeyPairResourcePublicKeyResolver localPublicKeyService, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
+                                   PublicKeyResolver publicKeyResolver, ParticipantContextService participantContextService) {
         this.tokenValidationService = tokenValidationService;
+        this.localPublicKeyService = localPublicKeyService;
         this.tokenValidationRulesRegistry = tokenValidationRulesRegistry;
         this.monitor = monitor;
-        this.stsPublicKey = publicKeySupplier;
         this.publicKeyResolver = publicKeyResolver;
+        this.participantContextService = participantContextService;
     }
 
     @Override
     public Result<List<String>> verify(String token, String participantId) {
         Objects.requireNonNull(participantId, "Participant ID is mandatory.");
-        var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(IATP_SELF_ISSUED_TOKEN_CONTEXT));
+        var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(DCP_SELF_ISSUED_TOKEN_CONTEXT));
         if (res.failed()) {
-            return res.mapTo();
+            return res.mapFailure();
         }
 
         var claimToken = res.getContent();
@@ -75,7 +77,15 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
             if (aud == null || aud.isEmpty()) {
                 return Result.failure("Mandatory claim 'aud' on 'token' was null.");
             }
-            return aud.contains(participantId) ? Result.success() : Result.failure("Participant Context ID must match 'aud' claim in 'access_token'");
+            var participantDidResult = participantContextService.getParticipantContext(participantId);
+
+            if (participantDidResult.failed()) {
+                return Result.failure(participantDidResult.getFailureDetail());
+            }
+            var pcDid = participantDidResult.getContent().getDid();
+            return aud.contains(pcDid) ?
+                    Result.success() :
+                    Result.failure("The DID associated with the Participant Context ID of this request ('%s') must match 'aud' claim in 'access_token' (%s).".formatted(pcDid, aud));
         };
 
         TokenValidationRule subClaimsMatch = (at, additional) -> {
@@ -89,12 +99,13 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
         };
 
         // verify the correctness of the 'access_token'
-        var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(IATP_ACCESS_TOKEN_CONTEXT));
+        var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(DCP_ACCESS_TOKEN_CONTEXT));
         rules.add(subClaimsMatch);
         rules.add(audMustMatchParticipantIdRule);
-        var result = tokenValidationService.validate(accessTokenString, id -> Result.success(stsPublicKey.get()), rules);
+        // todo: verify that the resolved public key belongs to the participant ID
+        var result = tokenValidationService.validate(accessTokenString, keyId -> localPublicKeyService.resolveKey(keyId, participantId), rules);
         if (result.failed()) {
-            return result.mapTo();
+            return result.mapFailure();
         }
 
         // verify that the access_token contains a scope claim

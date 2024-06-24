@@ -19,6 +19,8 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
@@ -35,9 +37,11 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
 
     private final Map<CredentialFormat, PresentationGenerator<?>> creators = new HashMap<>();
     private final KeyPairService keyPairService;
+    private final ParticipantContextService participantContextService;
 
-    public PresentationCreatorRegistryImpl(KeyPairService keyPairService) {
+    public PresentationCreatorRegistryImpl(KeyPairService keyPairService, ParticipantContextService participantContextService) {
         this.keyPairService = keyPairService;
+        this.participantContextService = participantContextService;
     }
 
     @Override
@@ -65,6 +69,11 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
             throw new EdcException("No active key pair found for participant '%s'".formatted(participantContextId));
         }
 
-        return (T) creator.generatePresentation(credentials, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), additionalData);
+        var did = participantContextService.getParticipantContext(participantContextId)
+                .map(ParticipantContext::getDid)
+                .orElseThrow(f -> new EdcException(f.getFailureDetail()));
+
+
+        return (T) creator.generatePresentation(credentials, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), did, additionalData);
     }
 }

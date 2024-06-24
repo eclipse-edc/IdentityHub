@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.identityhub.api.authentication.filter.RoleBasedAccessFeature;
 import org.eclipse.edc.identityhub.api.authentication.filter.ServicePrincipalAuthenticationFilter;
-import org.eclipse.edc.identityhub.spi.ManagementApiConfiguration;
+import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -30,9 +30,7 @@ import static org.eclipse.edc.identityhub.api.ApiAuthenticationExtension.NAME;
 @Extension(NAME)
 public class ApiAuthenticationExtension implements ServiceExtension {
 
-    public static final String NAME = "Management API Authentication Extension";
-    @Inject
-    private ManagementApiConfiguration apiConfig;
+    public static final String NAME = "Identity API Authentication Extension";
     @Inject
     private WebService webService;
     @Inject
@@ -47,7 +45,7 @@ public class ApiAuthenticationExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var alias = apiConfig.getContextAlias();
+        var alias = IdentityHubApiContext.IDENTITY;
         webService.registerResource(alias, new RoleBasedAccessFeature());
         webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(new ParticipantServicePrincipalResolver(participantContextService, vault)));
     }

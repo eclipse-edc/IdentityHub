@@ -21,19 +21,21 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
+import org.eclipse.edc.spi.query.QuerySpec;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
 
 import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
@@ -46,14 +48,14 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 
 @EndToEndTest
-public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
+public class KeyPairResourceApiEndToEndTest extends IdentityApiEndToEndTest {
 
-    private static KeyDescriptor.Builder createKeyDescriptor(String participantId) {
-        var id = UUID.randomUUID().toString();
-        return KeyDescriptor.Builder.newInstance()
-                .keyId(id)
-                .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
-                .privateKeyAlias("%s-%s-alias".formatted(participantId, id));
+    @AfterEach
+    void tearDown() {
+        // purge all users
+        var pcService = RUNTIME.getService(ParticipantContextService.class);
+        pcService.query(QuerySpec.max()).getContent()
+                .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
     }
 
     @Test
@@ -73,10 +75,10 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var key = createKeyPair(user1);
 
         // attempt to publish user1's DID document, which should fail
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", user2Token))
-                .get("/v1/participants/%s/keypairs/%s".formatted(toBase64(user1), key))
+                .get("/v1alpha/participants/%s/keypairs/%s".formatted(toBase64(user1), key))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -92,10 +94,10 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var key = createKeyPair(user1);
 
         assertThat(Arrays.asList(token, superUserKey))
-                .allSatisfy(t -> RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .allSatisfy(t -> RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                         .contentType(JSON)
                         .header(new Header("x-api-key", t))
-                        .get("/v1/participants/%s/keypairs/%s".formatted(toBase64(user1), key))
+                        .get("/v1alpha/participants/%s/keypairs/%s".formatted(toBase64(user1), key))
                         .then()
                         .log().ifValidationFails()
                         .statusCode(200)
@@ -119,10 +121,10 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         createKeyPair(user1);
 
         // attempt to publish user1's DID document, which should fail
-        var res = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var res = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", user2Token))
-                .get("/v1/participants/%s/keypairs".formatted(toBase64(user1)))
+                .get("/v1alpha/participants/%s/keypairs".formatted(toBase64(user1)))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -140,10 +142,10 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         createKeyPair(user1);
 
         assertThat(Arrays.asList(token, superUserKey))
-                .allSatisfy(t -> RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                .allSatisfy(t -> RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                         .contentType(JSON)
                         .header(new Header("x-api-key", t))
-                        .get("/v1/participants/%s/keypairs".formatted(toBase64(user1)))
+                        .get("/v1alpha/participants/%s/keypairs".formatted(toBase64(user1)))
                         .then()
                         .log().ifValidationFails()
                         .statusCode(200)
@@ -163,11 +165,11 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     var keyDesc = createKeyDescriptor(user1).build();
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body(keyDesc)
-                            .put("/v1/participants/%s/keypairs".formatted(toBase64(user1)))
+                            .put("/v1alpha/participants/%s/keypairs".formatted(toBase64(user1)))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(204)
@@ -175,7 +177,9 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
                     verify(subscriber).on(argThat(env -> {
                         var evt = (KeyPairAdded) env.getPayload();
-                        return evt.getParticipantId().equals(user1) && evt.getKeyId().equals(keyDesc.getKeyId());
+                        return evt.getParticipantId().equals(user1) &&
+                                evt.getKeyPairResourceId().equals(keyDesc.getResourceId()) &&
+                                evt.getKeyId().equals(keyDesc.getKeyId());
                     }));
                 });
     }
@@ -194,11 +198,11 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
         // attempt to publish user1's DID document, which should fail
         var keyDesc = createKeyDescriptor(user1).build();
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token2))
                 .body(keyDesc)
-                .put("/v1/participants/%s/keypairs".formatted(toBase64(user1)))
+                .put("/v1alpha/participants/%s/keypairs".formatted(toBase64(user1)))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -206,7 +210,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
         verify(subscriber, never()).on(argThat(env -> {
             if (env.getPayload() instanceof KeyPairAdded evt) {
-                return evt.getKeyId().equals(keyDesc.getKeyId());
+                return evt.getKeyPairResourceId().equals(keyDesc.getKeyId());
             }
             return false;
         }));
@@ -222,18 +226,18 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var user1 = "user1";
         var token = createParticipant(user1);
 
-        var keyId = createKeyPair(user1);
+        var keyPairId = createKeyPair(user1);
 
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     reset(subscriber);
                     // attempt to publish user1's DID document, which should fail
                     var keyDesc = createKeyDescriptor(user1).build();
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body(keyDesc)
-                            .post("/v1/participants/%s/keypairs/%s/rotate".formatted(toBase64(user1), keyId))
+                            .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(toBase64(user1), keyPairId))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(204)
@@ -249,7 +253,8 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                     // verify that the correct "added" event fired
                     verify(subscriber).on(argThat(env -> {
                         if (env.getPayload() instanceof KeyPairAdded evt) {
-                            return evt.getKeyId().equals(keyDesc.getKeyId());
+                            return evt.getKeyPairResourceId().equals(keyDesc.getResourceId()) &&
+                                    evt.getKeyId().equals(keyDesc.getKeyId());
                         }
                         return false;
                     }));
@@ -271,11 +276,11 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
         // attempt to publish user1's DID document, which should fail
         var keyDesc = createKeyDescriptor(user1).build();
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token2))
                 .body(keyDesc)
-                .post("/v1/participants/%s/keypairs/%s/rotate".formatted(user1, keyId))
+                .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(user1, keyId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -284,7 +289,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         // make sure that the event to add the _new_ keypair was never fired
         verify(subscriber, never()).on(argThat(env -> {
             if (env.getPayload() instanceof KeyPairRotated evt) {
-                return evt.getParticipantId().equals(user1) && evt.getKeyId().equals(keyDesc.getKeyId());
+                return evt.getParticipantId().equals(user1) && evt.getKeyPairResourceId().equals(keyDesc.getKeyId());
             }
             return false;
         }));
@@ -301,11 +306,11 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     var keyDesc = createKeyDescriptor(user1).build();
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body(keyDesc)
-                            .post("/v1/participants/%s/keypairs/%s/revoke".formatted(toBase64(user1), keyId))
+                            .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(toBase64(user1), keyId))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(204)
@@ -328,11 +333,11 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
         // attempt to publish user1's DID document, which should fail
         var keyDesc = createKeyDescriptor(user1).build();
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token2))
                 .body(keyDesc)
-                .post("/v1/participants/%s/keypairs/%s/revoke".formatted(toBase64(user1), keyId))
+                .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(toBase64(user1), keyId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -347,10 +352,10 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var found = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/keypairs")
+                .get("/v1alpha/keypairs")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -366,10 +371,10 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var found = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/keypairs?offset=2&limit=4")
+                .get("/v1alpha/keypairs?offset=2&limit=4")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -380,15 +385,15 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
     @Test
     void getAll_withDefaultPaging() {
         var superUserKey = createSuperUser();
-        IntStream.range(0, 70)
+        range(0, 70)
                 .forEach(i -> {
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        var found = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var found = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/keypairs")
+                .get("/v1alpha/keypairs")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -405,10 +410,10 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
                     var participantId = "user" + i;
                     createParticipant(participantId); // implicitly creates a keypair
                 });
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", attackerToken))
-                .get("/v1/keypairs")
+                .get("/v1alpha/keypairs")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);
@@ -419,14 +424,14 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var superUserKey = createSuperUser();
         var user1 = "user1";
         var token = createParticipant(user1);
-        var keyId = createKeyPair(user1);
+        var keyPairId = createKeyPair(user1);
 
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
-                            .post("/v1/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
+                            .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyPairId))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(204)
@@ -434,7 +439,7 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
 
                     assertThat(getDidForParticipant(user1))
                             .hasSize(1)
-                            .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyId)));
+                            .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyPairId)));
                 });
     }
 
@@ -445,10 +450,10 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
         var keyId = createKeyPair(user1);
         var attackerToken = createParticipant("attacker");
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", attackerToken))
-                .post("/v1/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
+                .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -463,37 +468,46 @@ public class KeyPairResourceApiEndToEndTest extends ManagementApiEndToEndTest {
     void activate_illegalState() {
         var user1 = "user1";
         var token = createParticipant(user1);
-        var keyId = createKeyPair(user1);
+        var keyPairId = createKeyPair(user1);
 
         // first revoke the key, which puts it in the REVOKED state
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
-                .post("/v1/participants/%s/keypairs/%s/revoke".formatted(toBase64(user1), keyId))
+                .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(toBase64(user1), keyPairId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(204)
                 .body(notNullValue());
 
         // now attempt to activate
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
-                .post("/v1/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyId))
+                .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(toBase64(user1), keyPairId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(400)
                 .body(notNullValue());
     }
 
+    private KeyDescriptor.Builder createKeyDescriptor(String participantId) {
+        var keyId = UUID.randomUUID().toString();
+        return KeyDescriptor.Builder.newInstance()
+                .keyId(keyId)
+                .resourceId(UUID.randomUUID().toString())
+                .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
+                .privateKeyAlias("%s-%s-alias".formatted(participantId, keyId));
+    }
+
     private String createKeyPair(String participantId) {
 
         var descriptor = createKeyDescriptor(participantId).build();
 
-        var service = RUNTIME.getContext().getService(KeyPairService.class);
+        var service = RUNTIME.getService(KeyPairService.class);
         service.addKeyPair(participantId, descriptor, true)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
-        return descriptor.getKeyId();
+        return descriptor.getResourceId();
     }
 
     private String toBase64(String s) {

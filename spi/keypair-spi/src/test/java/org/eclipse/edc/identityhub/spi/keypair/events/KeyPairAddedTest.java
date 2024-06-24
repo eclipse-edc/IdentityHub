@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.spi.keypair.events;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.Test;
@@ -26,8 +25,10 @@ class KeyPairAddedTest {
     private final TypeManager typeManager = new JacksonTypeManager();
 
     @Test
-    void verify_serDes() throws JsonProcessingException {
-        var evt = KeyPairAdded.Builder.newInstance().keyId("resource-id")
+    void verify_serDes() {
+        var evt = KeyPairAdded.Builder.newInstance()
+                .keyPairResourceId("resource-id")
+                .keyId("key-id")
                 .participantId("participant-id")
                 .build();
 

@@ -18,11 +18,14 @@ import io.restassured.http.Header;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentUnpublished;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -37,7 +40,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @EndToEndTest
-public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
+public class DidManagementApiEndToEndTest extends IdentityApiEndToEndTest {
+
+
+    @AfterEach
+    void tearDown() {
+        // purge all users
+        var store = RUNTIME.getService(ParticipantContextService.class);
+        store.query(QuerySpec.max()).getContent()
+                .forEach(pc -> store.deleteParticipantContext(pc.getParticipantId()));
+    }
 
     @Test
     void publishDid_notOwner_expect403() {
@@ -60,7 +72,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         reset(subscriber); // need to reset here, to ignore a previous interaction
 
         // attempt to publish user1's DID document, which should fail
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", user2Token))
                 .body("""
@@ -68,7 +80,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:user1"
                         }
                         """)
-                .post("/v1/participants/%s/dids/publish".formatted(user1))
+                .post("/v1alpha/participants/%s/dids/publish".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -89,7 +101,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     reset(subscriber);
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body("""
@@ -97,7 +109,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                                        "did": "did:web:test-user"
                                     }
                                     """)
-                            .post("/v1/participants/%s/dids/publish".formatted(user))
+                            .post("/v1alpha/participants/%s/dids/publish".formatted(user))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(204)
@@ -136,7 +148,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         reset(subscriber); // need to reset here, to ignore a previous interaction
 
         // attempt to publish user1's DID document, which should fail
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", user2Token))
                 .body("""
@@ -144,7 +156,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:user1"
                         }
                         """)
-                .post("/v1/participants/%s/dids/unpublish".formatted(user1))
+                .post("/v1alpha/participants/%s/dids/unpublish".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403)
@@ -165,7 +177,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         assertThat(Arrays.asList(token, superUserKey))
                 .allSatisfy(t -> {
                     reset(subscriber);
-                    RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+                    RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .body("""
@@ -173,7 +185,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                                        "did": "did:web:test-user"
                                     }
                                     """)
-                            .post("/v1/participants/%s/dids/unpublish".formatted(user))
+                            .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(204)
@@ -198,7 +210,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var user2 = "user2";
         var token2 = createParticipant(user2);
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .header(new Header("x-api-key", token2))
                 .contentType(JSON)
                 .body(""" 
@@ -206,7 +218,7 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
                            "did": "did:web:user1"
                         }
                         """)
-                .post("/v1/participants/%s/dids/state".formatted(user1))
+                .post("/v1alpha/participants/%s/dids/state".formatted(user1))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);
@@ -217,10 +229,10 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var superUserKey = createSuperUser();
         range(0, 20).forEach(i -> createParticipant("user-" + i));
 
-        var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var docs = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/dids")
+                .get("/v1alpha/dids")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -234,10 +246,10 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var superUserKey = createSuperUser();
         range(0, 70).forEach(i -> createParticipant("user-" + i));
 
-        var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var docs = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/dids")
+                .get("/v1alpha/dids")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -251,10 +263,10 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
         var superUserKey = createSuperUser();
         range(0, 20).forEach(i -> createParticipant("user-" + i));
 
-        var docs = RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        var docs = RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", superUserKey))
-                .get("/v1/dids?offset=5&limit=10")
+                .get("/v1alpha/dids?offset=5&limit=10")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -268,10 +280,10 @@ public class DidManagementApiEndToEndTest extends ManagementApiEndToEndTest {
 
         var attackerToken = createParticipant("attacker");
 
-        RUNTIME_CONFIGURATION.getManagementEndpoint().baseRequest()
+        RUNTIME_CONFIGURATION.getIdentityApiEndpoint().baseRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", attackerToken))
-                .get("/v1/dids")
+                .get("/v1alpha/dids")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(403);

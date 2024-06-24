@@ -41,7 +41,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.edc.iam.identitytrust.spi.IatpConstants.IATP_CONTEXT_URL;
+import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DCP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.DID_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.JWS_2020_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
@@ -78,7 +78,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
                 .jsonLd(initializeJsonLd())
                 .monitor(mock())
                 .build();
-        creator = new LdpPresentationGenerator(privateKeyResolver, "did:web:test-issuer", signatureSuiteRegistryMock, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer,
+        creator = new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistryMock, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer,
                 JacksonJsonLd.createObjectMapper());
     }
 
@@ -88,7 +88,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
 
-        var result = creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, ADDITIONAL_DATA);
+        var result = creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }
@@ -103,7 +103,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, Map.of("vc", TestConstants.VC_CONTENT_DEGREE_EXAMPLE));
         var vcc2 = new VerifiableCredentialContainer(jwtVc, CredentialFormat.JWT, createDummyCredential());
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc, vcc2), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, ADDITIONAL_DATA))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc, vcc2), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("One or more VerifiableCredentials cannot be represented in the desired format %s".formatted(CredentialFormat.JSON_LD));
     }
@@ -111,7 +111,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Override
     @Test
     public void create_whenVcsEmpty_shouldReturnEmptyVp() {
-        var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, ADDITIONAL_DATA);
+        var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
     }
 
@@ -121,7 +121,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exists", PUBLIC_KEY_ID, ADDITIONAL_DATA))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exists", PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -133,11 +133,11 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID)).isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Must provide additional data: 'types' and 'controller'");
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, Map.of("some-key", "some-value")))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, Map.of("some-key", "some-value")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Must provide additional data: 'types'");
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, Map.of("types", "some-value")))
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, Map.of("types", "some-value")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Must provide additional data: 'controller'");
     }
@@ -147,7 +147,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Override
     void create_whenEmptyList() {
 
-        var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, ADDITIONAL_DATA);
+        var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }
@@ -159,7 +159,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         jld.registerCachedDocument(DID_CONTEXT_URL, TestUtils.getResource("did.json"));
         jld.registerCachedDocument(JWS_2020_URL, TestUtils.getResource("jws2020.json"));
         jld.registerCachedDocument(W3C_CREDENTIALS_URL, TestUtils.getResource("credentials.v1.json"));
-        jld.registerCachedDocument(IATP_CONTEXT_URL, TestUtils.getResource("iatp.v08.json"));
+        jld.registerCachedDocument(DCP_CONTEXT_URL, TestUtils.getResource("dcp.v08.json"));
         jld.registerCachedDocument(PRESENTATION_EXCHANGE_URL, TestUtils.getResource("presentation-exchange.v1.json"));
         jld.registerCachedDocument("https://www.w3.org/2018/credentials/examples/v1", TestUtils.getResource("examples.v1.json"));
         return jld;

@@ -25,10 +25,18 @@ import java.util.Objects;
  */
 public abstract class KeyPairEvent extends Event {
     protected String participantId;
+    protected String keyPairResourceId;
     protected String keyId;
 
     /**
-     * The ID of the Key stored in the {@link KeyPairResource}
+     * The ID of the {@link KeyPairResource}. This is the internal database ID.
+     */
+    public String getKeyPairResourceId() {
+        return keyPairResourceId;
+    }
+
+    /**
+     * The Key ID. For example, this is what would go into the {@code kid} header of a JWT.
      */
     public String getKeyId() {
         return keyId;
@@ -58,6 +66,11 @@ public abstract class KeyPairEvent extends Event {
 
         public B keyId(String keyId) {
             event.keyId = keyId;
+            return self();
+        }
+
+        public B keyPairResourceId(String keyPairResourceId) {
+            event.keyPairResourceId = keyPairResourceId;
             return self();
         }
 
