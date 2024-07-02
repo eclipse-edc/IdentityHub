@@ -60,14 +60,6 @@ class CredentialQueryResolverImplTest {
     private final Monitor monitor = mock();
     private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(), revocationServiceMock, monitor);
 
-    private static VerifiableCredentialResource.Builder createCredentialResource(VerifiableCredential cred) {
-        return VerifiableCredentialResource.Builder.newInstance()
-                .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.JSON_LD, cred))
-                .holderId("test-holder")
-                .issuerId("test-issuer")
-                .participantId(TEST_PARTICIPANT_CONTEXT_ID);
-    }
-
     @BeforeEach
     void setUp() {
         when(revocationServiceMock.checkValidity(any())).thenReturn(Result.success());
@@ -117,6 +109,22 @@ class CredentialQueryResolverImplTest {
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
         assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
         assertThat(res.getContent()).containsExactly(credential.getVerifiableCredential());
+    }
+
+    @Test
+    void query_verifyDifferentObjects() {
+        var credential1 = createCredentialResource(createCredential("TestCredential").build()).id("id1").build();
+        var credential2 = createCredentialResource(createCredential("TestCredential").build()).id("id1").build();
+
+        when(storeMock.query(any()))
+                .thenAnswer(i -> success(List.of(credential1)))
+                .thenAnswer(i -> success(List.of(credential2)));
+
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+
+        assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
+        assertThat(res.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(credential1.getVerifiableCredential());
     }
 
     @Test
@@ -289,6 +297,14 @@ class CredentialQueryResolverImplTest {
         assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
         assertThat(res.getContent()).isEmpty();
         verify(monitor).warning(eq("Credential '%s' not valid: revoked".formatted(credential.getId())));
+    }
+
+    private VerifiableCredentialResource.Builder createCredentialResource(VerifiableCredential cred) {
+        return VerifiableCredentialResource.Builder.newInstance()
+                .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.JSON_LD, cred))
+                .holderId("test-holder")
+                .issuerId("test-issuer")
+                .participantId(TEST_PARTICIPANT_CONTEXT_ID);
     }
 
     private VerifiableCredential.Builder createCredential(String... type) {
