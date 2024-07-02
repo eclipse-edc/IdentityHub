@@ -90,7 +90,8 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
         // now narrow down the requested credentials to only contain allowed credentials
         var content = allowedCred.getContent();
-        var isValidQuery = new HashSet<>(content).containsAll(requestedCredentials);
+        var isValidQuery = new HashSet<>(content.stream().map(VerifiableCredentialResource::getId).toList())
+                .containsAll(requestedCredentials.stream().map(VerifiableCredentialResource::getId).toList());
 
         // filter out any expired, revoked or suspended credentials
         return isValidQuery ?
