@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
@@ -53,51 +54,69 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
     }
 
     @Override
-    public QueryResult query(String participantContextId, PresentationQueryMessage query, List<String> issuerScopes) {
+    public QueryResult query(String participantContextId, PresentationQueryMessage query, List<String> accessTokenScopes) {
         if (query.getPresentationDefinition() != null) {
             throw new UnsupportedOperationException("Querying with a DIF Presentation Exchange definition is not yet supported.");
         }
-        if (query.getScopes().isEmpty()) {
-            return QueryResult.noScopeFound("Invalid query: must contain at least one scope.");
+        var requestedScopes = query.getScopes();
+        // check that all access token scopes are valid
+        var accessTokenScopesParseResult = parseScopes(accessTokenScopes);
+        if (accessTokenScopesParseResult.failed()) {
+            return QueryResult.invalidScope(accessTokenScopesParseResult.getFailureMessages());
         }
 
-        // check that all prover scopes are valid
-        var proverScopeResult = parseScopes(query.getScopes());
-        if (proverScopeResult.failed()) {
-            return QueryResult.invalidScope(proverScopeResult.getFailureMessages());
+        // fetch all credentials according to the scopes in the access token:
+        var allowedScopes = accessTokenScopesParseResult.getContent();
+
+        if (allowedScopes.isEmpty()) {
+            // no scopes granted, no scopes requested, return empty list
+            if (requestedScopes.isEmpty()) {
+                return QueryResult.success(Stream.empty());
+            }
+            // no scopes granted, but some requested -> unauthorized! This is a shortcut to save some database communication
+            var msg = "Permission was not granted on any credentials (empty access token scope list), but %d were requested.".formatted(requestedScopes.size());
+            monitor.warning(msg);
+            QueryResult.unauthorized(msg.formatted(requestedScopes.size()));
         }
-
-        // check that all issuer scopes are valid
-        var issuerScopeResult = parseScopes(issuerScopes);
-        if (issuerScopeResult.failed()) {
-            return QueryResult.invalidScope(issuerScopeResult.getFailureMessages());
-        }
-
-        // query storage for requested credentials
-        var credentialResult = queryCredentials(proverScopeResult.getContent(), participantContextId);
-        if (credentialResult.failed()) {
-            return QueryResult.storageFailure(credentialResult.getFailureMessages());
-        }
-
-        // the credentials requested by the other party
-        var requestedCredentials = credentialResult.getContent();
-
-        // check that prover scope is not wider than issuer scope
-        var allowedCred = queryCredentials(issuerScopeResult.getContent(), participantContextId);
+        var allowedCred = queryCredentials(allowedScopes, participantContextId);
         if (allowedCred.failed()) {
-            return QueryResult.invalidScope(allowedCred.getFailureMessages());
+            return QueryResult.storageFailure(allowedCred.getFailureMessages());
         }
 
-        // now narrow down the requested credentials to only contain allowed credentials
-        var content = allowedCred.getContent();
-        var isValidQuery = new HashSet<>(content).containsAll(requestedCredentials);
+        var allowedCredentials = allowedCred.getContent();
+        Stream<VerifiableCredentialResource> credentialResult;
 
+        // the client did not request any scopes, so we simply return all they have access to
+        if (requestedScopes.isEmpty()) {
+            credentialResult = allowedCredentials.stream();
+        } else {
+            // check that all prover scopes are valid
+            var requestedScopesParseResult = parseScopes(requestedScopes);
+            if (requestedScopesParseResult.failed()) {
+                return QueryResult.invalidScope(requestedScopesParseResult.getFailureMessages());
+            }
+            // query storage for requested credentials
+            var requestedCredentialResult = queryCredentials(requestedScopesParseResult.getContent(), participantContextId);
+            if (requestedCredentialResult.failed()) {
+                return QueryResult.storageFailure(requestedCredentialResult.getFailureMessages());
+            }
+            var requestedCredentials = requestedCredentialResult.getContent();
+
+            // clients can never request more credentials than they are permitted to, i.e. their scope list can not exceed the scopes taken
+            // from the access token
+            var isValidQuery = new HashSet<>(allowedCredentials.stream().map(VerifiableCredentialResource::getId).toList())
+                    .containsAll(requestedCredentials.stream().map(VerifiableCredentialResource::getId).toList());
+
+            if (!isValidQuery) {
+                return QueryResult.unauthorized("Invalid query: requested Credentials outside of scope.");
+            }
+
+            credentialResult = requestedCredentials.stream();
+        }
         // filter out any expired, revoked or suspended credentials
-        return isValidQuery ?
-                QueryResult.success(requestedCredentials.stream()
-                        .filter(this::filterInvalidCredentials) // we still have to filter invalid creds, b/c a revocation may not have been detected yet
-                        .map(VerifiableCredentialResource::getVerifiableCredential))
-                : QueryResult.unauthorized("Invalid query: requested Credentials outside of scope.");
+        return QueryResult.success(credentialResult
+                .filter(this::filterInvalidCredentials)
+                .map(VerifiableCredentialResource::getVerifiableCredential));
     }
 
     private boolean filterInvalidCredentials(VerifiableCredentialResource verifiableCredentialResource) {
@@ -138,7 +157,6 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         }
         return success(transformResult.stream().map(AbstractResult::getContent).toList());
     }
-
 
     private Result<Collection<VerifiableCredentialResource>> queryCredentials(List<Criterion> criteria, String participantContextId) {
         var results = criteria.stream()
