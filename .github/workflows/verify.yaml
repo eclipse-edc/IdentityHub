@@ -96,6 +96,20 @@ jobs:
         with:
           command: ./gradlew compileJava compileTestJava test -DincludeTags="ComponentTest,ApiTest,EndToEndTest"
 
+  Postgresql-Integration-Tests:
+    runs-on: ubuntu-latest
+    env:
+      JACOCO: true
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: eclipse-edc/.github/.github/actions/setup-build@main
+
+      - name: Postgresql Tests
+        uses: eclipse-edc/.github/.github/actions/run-tests@main
+        with:
+          command: ./gradlew test -DincludeTags="PostgresqlIntegrationTest"
+
   Upload-Coverage-Report-To-Codecov:
     needs:
       - Test

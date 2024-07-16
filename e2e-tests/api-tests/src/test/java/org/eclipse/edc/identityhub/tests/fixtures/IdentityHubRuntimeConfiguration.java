@@ -38,7 +38,7 @@ public class IdentityHubRuntimeConfiguration {
         return resolutionEndpoint;
     }
 
-    public Map<String, String> controlPlaneConfiguration() {
+    public Map<String, String> config() {
         return new HashMap<>() {
             {
                 put(PARTICIPANT_ID, id);
