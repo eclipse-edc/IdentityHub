@@ -1825,6 +1825,12 @@ components:
           example: null
           items:
             $ref: "#/components/schemas/Permission"
+        profiles:
+          type: array
+          example: null
+          items:
+            type: string
+            example: null
         prohibitions:
           type: array
           example: null
