@@ -136,7 +136,7 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public AccessTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
         var keyResolver = new KeyPairResourcePublicKeyResolver(store, keyParserRegistry, context.getMonitor(), fallbackService);
-        return new AccessTokenVerifierImpl(tokenValidationService, keyResolver, tokenValidationRulesRegistry, context.getMonitor(), publicKeyResolver, participantContextService);
+        return new AccessTokenVerifierImpl(tokenValidationService, keyResolver, tokenValidationRulesRegistry, publicKeyResolver, participantContextService);
     }
 
     @Provider

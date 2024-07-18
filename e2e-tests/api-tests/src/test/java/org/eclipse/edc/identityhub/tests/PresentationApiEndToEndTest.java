@@ -79,6 +79,7 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Jwt
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -218,6 +219,29 @@ public class PresentationApiEndToEndTest {
                     .log().ifValidationFails()
                     .body("[0].type", equalTo("AuthenticationFailed"))
                     .body("[0].message", equalTo("ID token verification failed: Token verification failed"));
+        }
+
+        @Test
+        void query_proofOfPossessionFails_shouldReturn401(IdentityHubEndToEndTestContext context) throws JOSEException {
+
+            var accessToken = generateJwt(CONSUMER_DID, CONSUMER_DID, PROVIDER_DID, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
+            var token = generateJwt(PROVIDER_DID, PROVIDER_DID, "mismatching", Map.of("client_id", PROVIDER_DID, "token", accessToken), PROVIDER_KEY);
+
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            context.getResolutionEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .body(VALID_QUERY_WITH_SCOPE)
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .then()
+                    .statusCode(401)
+                    .log().ifValidationFails()
+                    .body("[0].type", equalTo("AuthenticationFailed"))
+                    .body("[0].message", startsWith("ID token verification failed: ID token [sub] claim is not equal to [token.sub] claim"));
+
         }
 
         @Test
@@ -517,7 +541,7 @@ public class PresentationApiEndToEndTest {
 
         private static final String DB_NAME = "runtime";
         private static final Integer DB_PORT = getFreePort();
-        
+
         @RegisterExtension
         static IdentityHubCustomizableEndToEndExtension runtime;
         static PostgresSqlService server = new PostgresSqlService(DB_NAME, DB_PORT);
