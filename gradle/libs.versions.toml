@@ -16,7 +16,7 @@ postgres = "42.7.1"
 restAssured = "5.5.0"
 swagger = "2.2.21"
 rsApi = "4.0.0"
-testcontainers = "1.19.8"
+testcontainers = "1.20.0"
 tink = "1.14.0"
 
 [libraries]
