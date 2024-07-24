@@ -34,7 +34,6 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -69,7 +68,7 @@ class PresentationCreatorRegistryImplTest {
         var generator = mock(PresentationGenerator.class);
         registry.addCreator(generator, CredentialFormat.JWT);
         assertThatNoException().isThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.JWT, Map.of()));
-        verify(generator).generatePresentation(anyList(), eq(keyPair.getPrivateKeyAlias()), eq(keyPair.getKeyId()), eq(ISSUER_ID), anyMap());
+        verify(generator).generatePresentation(anyList(), eq(keyPair.getPrivateKeyAlias()), eq(keyPair.getKeyId()), eq(ISSUER_ID), argThat(additional -> ISSUER_ID.equals(additional.get("controller"))));
     }
 
     @Test
@@ -96,7 +95,7 @@ class PresentationCreatorRegistryImplTest {
         verify(generator).generatePresentation(anyList(),
                 argThat(s -> s.equals(keyPair1.getPrivateKeyAlias()) || s.equals(keyPair2.getPrivateKeyAlias())),
                 argThat(s -> s.equals(keyPair1.getKeyId()) || s.equals(keyPair2.getKeyId())),
-                eq(ISSUER_ID), anyMap());
+                eq(ISSUER_ID), argThat(additional -> ISSUER_ID.equals(additional.get("controller"))));
     }
 
 
@@ -110,7 +109,7 @@ class PresentationCreatorRegistryImplTest {
         var generator = mock(PresentationGenerator.class);
         registry.addCreator(generator, CredentialFormat.JWT);
         assertThatNoException().isThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.JWT, Map.of()));
-        verify(generator).generatePresentation(anyList(), eq(keyPair2.getPrivateKeyAlias()), eq(keyPair2.getKeyId()), eq(ISSUER_ID), anyMap());
+        verify(generator).generatePresentation(anyList(), eq(keyPair2.getPrivateKeyAlias()), eq(keyPair2.getKeyId()), eq(ISSUER_ID), argThat(additional -> ISSUER_ID.equals(additional.get("controller"))));
     }
 
     @Test
