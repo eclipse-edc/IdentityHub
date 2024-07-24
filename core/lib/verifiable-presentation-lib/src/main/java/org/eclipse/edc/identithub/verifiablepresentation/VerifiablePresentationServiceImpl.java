@@ -37,7 +37,6 @@ import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.VERIFIABLE_PRESENTATION_TYPE;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.JSON_LD;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.LdpPresentationGenerator.TYPE_ADDITIONAL_DATA;
-import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
 
 public class VerifiablePresentationServiceImpl implements VerifiablePresentationService {
     private final CredentialFormat defaultFormatVp;
@@ -81,15 +80,13 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
 
         var additionalDataJwt = new HashMap<String, Object>();
         ofNullable(audience).ifPresent(aud -> additionalDataJwt.put(AUDIENCE, audience));
-        additionalDataJwt.put(CONTROLLER_ADDITIONAL_DATA, participantContextId);
 
         if (defaultFormatVp == JSON_LD) { // LDP-VPs cannot contain JWT VCs
             if (!ldpVcs.isEmpty()) {
 
                 // todo: once we support PresentationDefinition, the types list could be dynamic
                 JsonObject ldpVp = registry.createPresentation(participantContextId, ldpVcs, JSON_LD, Map.of(
-                        TYPE_ADDITIONAL_DATA, List.of(VERIFIABLE_PRESENTATION_TYPE),
-                        CONTROLLER_ADDITIONAL_DATA, participantContextId));
+                        TYPE_ADDITIONAL_DATA, List.of(VERIFIABLE_PRESENTATION_TYPE)));
                 vpToken.add(ldpVp);
             }
 

@@ -81,7 +81,7 @@ class VerifiablePresentationServiceImplTest {
                 eq(TEST_PARTICIPANT_CONTEXT_ID),
                 argThat(argument -> argument.size() == 2),
                 eq(JSON_LD),
-                argThat(additional -> TEST_PARTICIPANT_CONTEXT_ID.equals(additional.get("controller"))));
+                argThat(additional -> additional.get("types") instanceof List<?> typesList && typesList.contains("VerifiablePresentation")));
     }
 
     @Test
@@ -113,8 +113,7 @@ class VerifiablePresentationServiceImplTest {
                 eq(TEST_PARTICIPANT_CONTEXT_ID),
                 argThat(argument -> argument.size() == 2),
                 eq(JWT),
-                argThat(additional -> TEST_PARTICIPANT_CONTEXT_ID.equals(additional.get("controller")) &&
-                        TEST_AUDIENCE.equals(additional.get(JwtRegisteredClaimNames.AUDIENCE)))
+                argThat(additional -> TEST_AUDIENCE.equals(additional.get(JwtRegisteredClaimNames.AUDIENCE)))
         );
         verify(registry, never()).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JSON_LD), any());
         verify(monitor).warning(eq("The VP was requested in JSON_LD format, but the request yielded 2 JWT-VCs, which cannot be transported in a LDP-VP. A second VP will be returned, containing JWT-VCs"));

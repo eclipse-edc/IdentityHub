@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
 
 public class PresentationCreatorRegistryImpl implements PresentationCreatorRegistry {
 
@@ -73,7 +74,9 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
                 .map(ParticipantContext::getDid)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
+        var additionalDataWithController = new HashMap<>(additionalData);
+        additionalDataWithController.put(CONTROLLER_ADDITIONAL_DATA, did);
 
-        return (T) creator.generatePresentation(credentials, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), did, additionalData);
+        return (T) creator.generatePresentation(credentials, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), did, additionalDataWithController);
     }
 }
