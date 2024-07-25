@@ -19,7 +19,6 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
-import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
@@ -46,16 +45,14 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
     private final TokenValidationService tokenValidationService;
     private final KeyPairResourcePublicKeyResolver localPublicKeyService;
     private final TokenValidationRulesRegistry tokenValidationRulesRegistry;
-    private final Monitor monitor;
     private final PublicKeyResolver publicKeyResolver;
     private final ParticipantContextService participantContextService;
 
-    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, KeyPairResourcePublicKeyResolver localPublicKeyService, TokenValidationRulesRegistry tokenValidationRulesRegistry, Monitor monitor,
+    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, KeyPairResourcePublicKeyResolver localPublicKeyService, TokenValidationRulesRegistry tokenValidationRulesRegistry,
                                    PublicKeyResolver publicKeyResolver, ParticipantContextService participantContextService) {
         this.tokenValidationService = tokenValidationService;
         this.localPublicKeyService = localPublicKeyService;
         this.tokenValidationRulesRegistry = tokenValidationRulesRegistry;
-        this.monitor = monitor;
         this.publicKeyResolver = publicKeyResolver;
         this.participantContextService = participantContextService;
     }
@@ -92,8 +89,7 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
             var atSub = at.getStringClaim(JwtRegisteredClaimNames.SUBJECT);
             // correlate sub and access_token.sub
             if (!Objects.equals(subClaim, atSub)) {
-                monitor.warning("ID token [sub] claim is not equal to [%s.sub] claim: expected '%s', got '%s'. Proof-of-possession could not be established!".formatted(TOKEN_CLAIM, subClaim, atSub));
-                // return failure("ID token 'sub' claim is not equal to '%s.sub' claim.".formatted(ACCES_TOKEN_CLAIM));
+                return Result.failure("ID token [sub] claim is not equal to [%s.sub] claim: expected '%s', got '%s'.".formatted(TOKEN_CLAIM, subClaim, atSub));
             }
             return Result.success();
         };

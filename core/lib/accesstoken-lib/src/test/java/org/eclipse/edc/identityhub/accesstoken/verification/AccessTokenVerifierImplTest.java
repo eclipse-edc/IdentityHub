@@ -50,7 +50,7 @@ class AccessTokenVerifierImplTest {
             .build();
     private final KeyPairResourcePublicKeyResolver localPublicKeyResolver = mock();
     private final ParticipantContextService participantContextService = mock();
-    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, localPublicKeyResolver, tokenValidationRulesRegistry, mock(), pkResolver, participantContextService);
+    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, localPublicKeyResolver, tokenValidationRulesRegistry, pkResolver, participantContextService);
 
     @Test
     void verify_validSiToken_validAccessToken() {
@@ -90,11 +90,6 @@ class AccessTokenVerifierImplTest {
         when(tokenValidationSerivce.validate(anyString(), any(), anyList())).thenReturn(Result.failure("test-failure"));
         AbstractResultAssert.assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
                 .detail().isEqualTo("test-failure");
-    }
-
-    @Test
-    void verify_accessTokenSubNotEqualToSub_shouldFail() {
-
     }
 
     @Test

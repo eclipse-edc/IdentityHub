@@ -26,7 +26,6 @@ import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.junit.annotations.ComponentTest;
-import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.TokenValidationRulesRegistryImpl;
@@ -49,9 +48,7 @@ import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenCo
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
@@ -60,7 +57,6 @@ class AccessTokenVerifierImplComponentTest {
     public static final String STS_PUBLIC_KEY_ID = "sts-key-123";
     public static final String PARTICIPANT_CONTEXT_ID = "test_participant";
     public static final String PARTICIPANT_DID = "did:web:test_participant";
-    private final Monitor monitor = mock();
     private final ParticipantContextService participantContextService = mock();
     private AccessTokenVerifierImpl verifier;
     private KeyPair stsKeyPair; // this is used to sign the acces token
@@ -88,7 +84,7 @@ class AccessTokenVerifierImplComponentTest {
         when(resolverMock.resolveKey(anyString(), anyString())).thenReturn(Result.success(stsKeyPair.getPublic()));
 
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance().did(PARTICIPANT_DID).participantId(PARTICIPANT_CONTEXT_ID).apiTokenAlias("foobar").build()));
-        verifier = new AccessTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, monitor, (id) -> Result.success(providerKeyPair.getPublic()), participantContextService);
+        verifier = new AccessTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, (id) -> Result.success(providerKeyPair.getPublic()), participantContextService);
     }
 
     @Test
@@ -201,8 +197,9 @@ class AccessTokenVerifierImplComponentTest {
                 .build());
         var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken).subject("mismatching-subject").build());
 
-        assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isSucceeded();
-        verify(monitor).warning(startsWith("ID token [sub] claim is not equal to [token.sub]"));
+        assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail()
+                .startsWith("ID token [sub] claim is not equal to [token.sub] claim");
     }
 
 

@@ -2,9 +2,9 @@
 format.version = "1.1"
 
 [versions]
-assertj = "3.26.0"
+assertj = "3.26.3"
 awaitility = "4.2.1"
-edc = "0.7.2-SNAPSHOT"
+edc = "0.8.1-SNAPSHOT"
 failsafe = "3.3.2"
 jackson = "2.17.2"
 jakarta-annotation = "2.1.1"
@@ -16,7 +16,7 @@ postgres = "42.7.1"
 restAssured = "5.5.0"
 swagger = "2.2.21"
 rsApi = "4.0.0"
-testcontainers = "1.19.3"
+testcontainers = "1.19.8"
 tink = "1.14.0"
 
 [libraries]
@@ -53,7 +53,9 @@ edc-vc-ldp = { module = "org.eclipse.edc:ldp-verifiable-credentials", version.re
 edc-ext-http = { module = "org.eclipse.edc:http", version.ref = "edc" }
 edc-ext-jsonld = { module = "org.eclipse.edc:json-ld", version.ref = "edc" }
 edc-ext-observability = { module = "org.eclipse.edc:api-observability", version.ref = "edc" }
+edc-ext-transaction-local = { module = "org.eclipse.edc:transaction-local", version.ref = "edc" }
 edc-testfixtures-managementapi = { module = "org.eclipse.edc:management-api-test-fixtures", version.ref = "edc" }
+edc-sql-pool = { module = "org.eclipse.edc:sql-pool-apache-commons", version.ref = "edc" }
 
 # EDC libs
 edc-lib-keys = { "module" = "org.eclipse.edc:keys-lib", version.ref = "edc" }
@@ -82,7 +84,7 @@ postgres = { module = "org.postgresql:postgresql", version.ref = "postgres" }
 restAssured = { module = "io.rest-assured:rest-assured", version.ref = "restAssured" }
 swagger-jaxrs = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
-testcontainers-postgres = { module = "org.testcontainers:postgres", version.ref = "testcontainers" }
+testcontainers-postgres = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
 jakarta-annotation = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
 jersey-common = { module = "org.glassfish.jersey.core:jersey-common", version.ref = "jersey" }
 tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
