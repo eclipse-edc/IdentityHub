@@ -51,10 +51,11 @@ import org.eclipse.edc.spi.security.Vault;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -543,19 +544,21 @@ public class PresentationApiEndToEndTest {
         private static final Integer DB_PORT = getFreePort();
 
         @RegisterExtension
+        @Order(1)
         static IdentityHubCustomizableEndToEndExtension runtime;
         static PostgresSqlService server = new PostgresSqlService(DB_NAME, DB_PORT);
+
+        @Order(0) // must be the first extension to be evaluated since it starts the DB server
+        @RegisterExtension
+        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
+            server.start();
+        };
 
         static {
             var ctx = IdentityHubEndToEndExtension.Postgres.context(DB_NAME, DB_PORT);
             ctx.getRuntime().registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
             ctx.getRuntime().registerServiceMock(RevocationListService.class, REVOCATION_LIST_SERVICE);
             runtime = new IdentityHubCustomizableEndToEndExtension(ctx);
-        }
-
-        @BeforeAll
-        static void beforeAll() {
-            server.start();
         }
 
         @AfterAll

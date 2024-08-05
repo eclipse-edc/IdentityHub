@@ -19,15 +19,12 @@ import org.eclipse.edc.identityhub.did.store.sql.schema.postgres.PostgresDialect
 import org.eclipse.edc.identityhub.did.store.test.DidResourceStoreTestBase;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.ComponentTest;
+import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 @ComponentTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
@@ -37,12 +34,12 @@ class SqlDidResourceStoreTest extends DidResourceStoreTestBase {
     private SqlDidResourceStore store;
 
     @BeforeEach
-    void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) throws IOException {
+    void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
         var typeManager = new JacksonTypeManager();
         store = new SqlDidResourceStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
                 extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements);
 
-        var schema = Files.readString(Paths.get("./docs/schema.sql"));
+        var schema = TestUtils.getResourceFileContentAsString("did-schema.sql");
         extension.runQuery(schema);
     }
 

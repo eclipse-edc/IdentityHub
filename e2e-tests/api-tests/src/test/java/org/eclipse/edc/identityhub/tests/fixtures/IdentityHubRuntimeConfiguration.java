@@ -50,6 +50,7 @@ public class IdentityHubRuntimeConfiguration {
                 put("web.http.identity.path", identityEndpoint.getUrl().getPath());
                 put("edc.runtime.id", name);
                 put("edc.ih.iam.id", "did:web:consumer");
+                put("edc.sql.schema.autocreate", "true");
             }
         };
     }
