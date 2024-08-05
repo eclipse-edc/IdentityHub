@@ -408,5 +408,6 @@ public class ParticipantContextApiEndToEndTest {
     @PostgresqlIntegrationTest
     @ExtendWith(IdentityHubEndToEndExtension.Postgres.class)
     class Postgres extends Tests {
+
     }
 }

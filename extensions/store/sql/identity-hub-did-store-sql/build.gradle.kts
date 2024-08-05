@@ -19,6 +19,7 @@ plugins {
 dependencies {
     api(project(":spi:did-spi"))
     implementation(libs.edc.core.sql) // for the SqlStatements
+    implementation(libs.edc.sql.bootstrapper)
     implementation(libs.edc.spi.transaction.datasource)
 
     testImplementation(testFixtures(project(":spi:did-spi")))

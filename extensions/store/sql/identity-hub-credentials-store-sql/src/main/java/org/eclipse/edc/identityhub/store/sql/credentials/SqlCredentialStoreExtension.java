@@ -24,6 +24,7 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.QueryExecutor;
+import org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
@@ -46,6 +47,13 @@ public class SqlCredentialStoreExtension implements ServiceExtension {
     @Inject(required = false)
     private CredentialStoreStatements statements;
 
+    @Inject
+    private SqlSchemaBootstrapper sqlSchemaBootstrapper;
+
+    @Override
+    public void initialize(ServiceExtensionContext context) {
+        sqlSchemaBootstrapper.addStatementFromResource(getDataSourceName(context), "credentials-schema.sql");
+    }
 
     @Provider
     public CredentialStore createSqlStore(ServiceExtensionContext context) {
