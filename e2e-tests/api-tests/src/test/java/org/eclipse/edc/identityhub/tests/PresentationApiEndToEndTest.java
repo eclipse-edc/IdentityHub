@@ -49,7 +49,6 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -559,11 +558,6 @@ public class PresentationApiEndToEndTest {
             ctx.getRuntime().registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
             ctx.getRuntime().registerServiceMock(RevocationListService.class, REVOCATION_LIST_SERVICE);
             runtime = new IdentityHubCustomizableEndToEndExtension(ctx);
-        }
-
-        @AfterAll
-        static void afterAll() {
-            server.stop();
         }
 
     }
