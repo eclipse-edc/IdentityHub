@@ -25,6 +25,7 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper;
+import org.eclipse.edc.sql.configuration.DataSourceName;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
@@ -34,8 +35,12 @@ import static org.eclipse.edc.identityhub.store.sql.credentials.SqlCredentialSto
 public class SqlCredentialStoreExtension implements ServiceExtension {
     public static final String NAME = "CredentialResource SQL Store Extension";
 
+    @Deprecated(since = "0.8.1")
     @Setting(value = "Datasource name for the DidResource database", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE)
     public static final String DATASOURCE_SETTING_NAME = "edc.datasource.credentials.name";
+    @Setting(value = "The datasource to be used", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE)
+    public static final String DATASOURCE_NAME = "edc.sql.store.credentials.datasource";
+
     @Inject
     private DataSourceRegistry dataSourceRegistry;
     @Inject
@@ -66,6 +71,7 @@ public class SqlCredentialStoreExtension implements ServiceExtension {
     }
 
     private String getDataSourceName(ServiceExtensionContext context) {
-        return context.getConfig().getString(DATASOURCE_SETTING_NAME, DataSourceRegistry.DEFAULT_DATASOURCE);
+        return DataSourceName.getDataSourceName(DATASOURCE_NAME, DATASOURCE_SETTING_NAME, context.getConfig(), context.getMonitor());
     }
+
 }
