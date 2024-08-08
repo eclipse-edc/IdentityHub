@@ -39,6 +39,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.Credenti
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
+import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
@@ -120,6 +121,8 @@ public class CoreServicesExtension implements ServiceExtension {
     private LocalPublicKeyService fallbackService;
     @Inject
     private ParticipantContextService participantContextService;
+    @Inject
+    private JwsSignerProvider jwsSignerProvider;
 
     @Override
     public String name() {
@@ -148,7 +151,7 @@ public class CoreServicesExtension implements ServiceExtension {
     public PresentationCreatorRegistry presentationCreatorRegistry(ServiceExtensionContext context) {
         if (presentationCreatorRegistry == null) {
             presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService);
-            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(privateKeyResolver, clock, new JwtGenerationService()), CredentialFormat.JWT);
+            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(clock, new JwtGenerationService(jwsSignerProvider)), CredentialFormat.JWT);
 
             var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(context.getMonitor()).build();
             presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager.getMapper(JSON_LD)),

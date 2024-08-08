@@ -27,10 +27,14 @@ import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
+import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.security.token.jwt.CryptoConverter;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -54,6 +58,8 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Inject
     private TypeManager typeManager;
     private RevocationListService revocationService;
+    @Inject
+    private PrivateKeyResolver privateKeyResolver;
 
     @Override
     public String name() {
@@ -104,5 +110,12 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Provider(isDefault = true)
     public SignatureSuiteRegistry createSignatureSuiteRegistry() {
         return new InMemorySignatureSuiteRegistry();
+    }
+
+    @Provider(isDefault = true)
+    public JwsSignerProvider defaultSignerProvider() {
+        // default implementation: resolve the private key (from vault of config) and create a JWSSigner based on its algorithm
+        return privateKeyId -> privateKeyResolver.resolvePrivateKey(privateKeyId)
+                .compose(pk -> Result.ofThrowable(() -> CryptoConverter.createSignerFor(pk)));
     }
 }

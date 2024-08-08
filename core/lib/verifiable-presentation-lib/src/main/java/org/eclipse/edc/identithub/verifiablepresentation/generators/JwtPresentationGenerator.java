@@ -20,21 +20,18 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
-import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
 import org.eclipse.edc.token.spi.TokenDecorator;
 import org.eclipse.edc.token.spi.TokenGenerationService;
 
-import java.security.PrivateKey;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
@@ -47,7 +44,6 @@ import static org.eclipse.edc.identithub.verifiablepresentation.generators.Prese
  */
 public class JwtPresentationGenerator implements PresentationGenerator<String> {
     public static final String VERIFIABLE_PRESENTATION_CLAIM = "vp";
-    private final PrivateKeyResolver privateKeyResolver;
     private final Clock clock;
 
     private final TokenGenerationService tokenGenerationService;
@@ -55,11 +51,10 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
     /**
      * Creates a JWT presentation based on a list of Verifiable Credential Containers.
      *
-     * @param privateKeyResolver The resolver for private keys used for signing the presentation.
-     * @param clock              The clock used for generating timestamps.
+     * @param clock                  The clock used for generating timestamps.
+     * @param tokenGenerationService service to generate (JWT) tokens
      */
-    public JwtPresentationGenerator(PrivateKeyResolver privateKeyResolver, Clock clock, TokenGenerationService tokenGenerationService) {
-        this.privateKeyResolver = privateKeyResolver;
+    public JwtPresentationGenerator(Clock clock, TokenGenerationService tokenGenerationService) {
         this.clock = clock;
         this.tokenGenerationService = tokenGenerationService;
     }
@@ -107,8 +102,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
         var rawVcs = credentials.stream()
                 .map(VerifiableCredentialContainer::rawVc)
                 .collect(Collectors.toList());
-        Supplier<PrivateKey> privateKeySupplier = () -> privateKeyResolver.resolvePrivateKey(privateKeyAlias).orElseThrow(f -> new IllegalArgumentException(f.getFailureDetail()));
-        var tokenResult = tokenGenerationService.generate(privateKeySupplier, vpDecorator(rawVcs, issuerId), tp -> {
+        var tokenResult = tokenGenerationService.generate(privateKeyAlias, vpDecorator(rawVcs, issuerId), tp -> {
             additionalData.forEach(tp::claims);
             return tp;
         }, new KeyIdDecorator(composedKeyId));
