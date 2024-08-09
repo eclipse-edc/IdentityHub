@@ -266,6 +266,7 @@ maven/mavencentral/org.eclipse.edc/json-lib/0.8.2-SNAPSHOT, Apache-2.0, approved
 maven/mavencentral/org.eclipse.edc/junit-base/0.8.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/junit/0.8.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jws2020-lib/0.8.2-SNAPSHOT, Apache-2.0, approved, technology.edc
+maven/mavencentral/org.eclipse.edc/jwt-signer-spi/0.8.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jwt-spi/0.8.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jwt-verifiable-credentials/0.8.2-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/keys-lib/0.8.2-SNAPSHOT, Apache-2.0, approved, technology.edc
