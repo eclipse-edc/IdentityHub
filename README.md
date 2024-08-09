@@ -14,6 +14,12 @@ extensibility mechanism.
 
 Here, developers find everything necessary to build and run a basic "vanilla" version of IdentityHub.
 
+## Security Warning
+Older versions of IdentityHub (in particular <= 0.3.1 ) **must not be used anymore**, as they were intended for proof-of-concept 
+purposes only and may contain **significant security vulnerabilities** (for example missing authn/authz on the API) and possibly 
+others. 
+**Please always use the latest version of IdentityHub.**
+
 ## Quick start
 
 A basic launcher configured with in-memory stores (i.e. no persistent storage) can be found [here](launcher/). There are
