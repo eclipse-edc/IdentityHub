@@ -33,8 +33,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
-import org.eclipse.edc.security.token.jwt.CryptoConverter;
-import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.security.token.jwt.DefaultJwsSignerProvider;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -114,8 +113,6 @@ public class DefaultServicesExtension implements ServiceExtension {
 
     @Provider(isDefault = true)
     public JwsSignerProvider defaultSignerProvider() {
-        // default implementation: resolve the private key (from vault of config) and create a JWSSigner based on its algorithm
-        return privateKeyId -> privateKeyResolver.resolvePrivateKey(privateKeyId)
-                .compose(pk -> Result.ofThrowable(() -> CryptoConverter.createSignerFor(pk)));
+        return new DefaultJwsSignerProvider(privateKeyResolver);
     }
 }
