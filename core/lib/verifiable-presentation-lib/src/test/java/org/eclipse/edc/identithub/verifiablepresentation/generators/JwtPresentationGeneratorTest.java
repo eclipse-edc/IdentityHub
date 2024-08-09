@@ -16,12 +16,14 @@ package org.eclipse.edc.identithub.verifiablepresentation.generators;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
-import org.eclipse.edc.keys.spi.PrivateKeyResolver;
+import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.token.spi.TokenGenerationService;
@@ -42,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.JwtPresentationGenerator.VERIFIABLE_PRESENTATION_CLAIM;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -53,16 +55,17 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
             "aud", "did:web:test-audience",
             "controller", "did:web:test"
     );
-    private final PrivateKeyResolver privateKeyResolver = mock();
-    private final TokenGenerationService tokenGenerationService = new JwtGenerationService();
+    private final JwsSignerProvider signerProvider = mock();
+    private final TokenGenerationService tokenGenerationService = new JwtGenerationService(signerProvider);
     private JwtPresentationGenerator creator;
 
     @BeforeEach
     void setup() throws JOSEException {
         var vpSigningKey = createKey(Curve.P_384, "vp-key");
-        when(privateKeyResolver.resolvePrivateKey(any())).thenReturn(Result.failure("not found"));
-        when(privateKeyResolver.resolvePrivateKey(eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(vpSigningKey.toPrivateKey()));
-        creator = new JwtPresentationGenerator(privateKeyResolver, Clock.systemUTC(), tokenGenerationService);
+        when(signerProvider.createJwsSigner(anyString())).thenReturn(Result.failure("not found"));
+        when(signerProvider.createJwsSigner(eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(new ECDSASigner(vpSigningKey)));
+
+        creator = new JwtPresentationGenerator(Clock.systemUTC(), tokenGenerationService);
     }
 
     @Test
@@ -121,7 +124,9 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
     @DisplayName("Should throw an exception if no private key is found for a key-id")
     void create_whenPrivateKeyNotFound() {
         var vcc = new VerifiableCredentialContainer("foobar", CredentialFormat.JWT, createDummyCredential());
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exist", PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exist", PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
+                .isInstanceOf(EdcException.class)
+                .hasMessage("JWSSigner cannot be generated for private key 'not-exist': not found");
     }
 
     @Test

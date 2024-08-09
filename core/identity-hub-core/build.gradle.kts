@@ -16,6 +16,7 @@ dependencies {
     implementation(libs.edc.lib.jsonld)
     implementation(libs.edc.lib.query)
     implementation(libs.edc.lib.jws2020)
+    implementation(libs.edc.lib.common.crypto)
     implementation(libs.edc.spi.token)
     implementation(libs.edc.spi.identity.did)
     implementation(libs.edc.vc.ldp)
