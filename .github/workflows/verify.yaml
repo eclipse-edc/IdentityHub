@@ -7,6 +7,7 @@ on:
       - '**.md'
       - 'docs/**'
   pull_request:
+    branches: [ main, release/*, bugfix/* ]
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -20,6 +21,14 @@ jobs:
 
       - name: Run Checkstyle
         run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures
+
+  CodeQL:
+    uses: eclipse-edc/.github/.github/workflows/codeql-analysis.yml@main
+    secrets: inherit
+
+  Dependency-Check:
+    uses: eclipse-edc/.github/.github/workflows/dependency-check.yml@main
+    secrets: inherit
 
   Javadoc:
     runs-on: ubuntu-latest
@@ -76,12 +85,6 @@ jobs:
           INTEGRATION_TEST: true
           JACOCO: "true"
 
-      #      - name: 'Publish Test Results'
-      #        uses: EnricoMi/publish-unit-test-result-action@v1
-      #        if: always()
-      #        with:
-      #          files: "**/test-results/**/*.xml"
-
   Integration-Tests:
     runs-on: ubuntu-latest
     env:
@@ -125,3 +128,7 @@ jobs:
           path: artifacts
       - name: CodeCov
         uses: codecov/codecov-action@v4
+
+  Verify-OpenApi:
+    uses: eclipse-edc/.github/.github/workflows/verify-openapi.yml@main
+    secrets: inherit
