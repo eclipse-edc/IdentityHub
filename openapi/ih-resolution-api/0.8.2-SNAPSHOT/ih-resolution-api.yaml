@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
-  title: Identity Hub REST API
-  description: Identity Hub REST APIs - merged by OpenApiMerger
+  title: ih-resolution-api
+  description: REST API documentation for the ih-resolution-api
   version: 0.8.2-SNAPSHOT
 servers:
 - url: /
