@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
@@ -45,13 +46,15 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
 
     private static final String API_KEY_ALIAS_SUFFIX = "apikey";
     private final ParticipantContextStore participantContextStore;
+    private final DidResourceStore didResourceStore;
     private final Vault vault;
     private final TransactionContext transactionContext;
     private final ApiTokenGenerator tokenGenerator;
     private final ParticipantContextObservable observable;
 
-    public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore, Vault vault, TransactionContext transactionContext, ParticipantContextObservable observable) {
+    public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore, DidResourceStore didResourceStore, Vault vault, TransactionContext transactionContext, ParticipantContextObservable observable) {
         this.participantContextStore = participantContextStore;
+        this.didResourceStore = didResourceStore;
         this.vault = vault;
         this.transactionContext = transactionContext;
         this.observable = observable;
@@ -61,6 +64,9 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     @Override
     public ServiceResult<String> createParticipantContext(ParticipantManifest manifest) {
         return transactionContext.execute(() -> {
+            if (didResourceStore.findById(manifest.getDid()) != null) {
+                return ServiceResult.conflict("Another participant with the same DID '%s' already exists.".formatted(manifest.getDid()));
+            }
             var apiKey = new AtomicReference<String>();
             var context = convert(manifest);
             var res = createParticipantContext(context)
