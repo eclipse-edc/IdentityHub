@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identithub.verifiablecredential;
 
-import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -31,12 +31,12 @@ import static org.eclipse.edc.spi.result.Result.success;
 public class CredentialStatusCheckServiceImpl implements CredentialStatusCheckService {
     private static final String SUSPENSION = "suspension";
     private static final String REVOCATION = "revocation";
-    private final RevocationListService revocationListService;
+    private final RevocationServiceRegistry revocationServiceRegistry;
     private final Clock clock;
 
 
-    public CredentialStatusCheckServiceImpl(RevocationListService revocationListService, Clock clock) {
-        this.revocationListService = revocationListService;
+    public CredentialStatusCheckServiceImpl(RevocationServiceRegistry revocationServiceRegistry, Clock clock) {
+        this.revocationServiceRegistry = revocationServiceRegistry;
         this.clock = clock;
     }
 
@@ -107,7 +107,7 @@ public class CredentialStatusCheckServiceImpl implements CredentialStatusCheckSe
         if (cred == null) {
             return null;
         }
-        return revocationListService.getStatusPurpose(cred)
+        return revocationServiceRegistry.getRevocationStatus(cred)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 }

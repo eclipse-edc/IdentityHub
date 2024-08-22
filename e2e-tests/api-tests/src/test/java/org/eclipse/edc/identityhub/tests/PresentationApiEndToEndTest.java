@@ -26,9 +26,9 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
@@ -90,7 +90,7 @@ public class PresentationApiEndToEndTest {
     abstract static class Tests {
 
         protected static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
-        protected static final RevocationListService REVOCATION_LIST_SERVICE = mock();
+        protected static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
         private static final String VALID_QUERY_WITH_SCOPE = """
                 {
                   "@context": [
@@ -373,7 +373,7 @@ public class PresentationApiEndToEndTest {
                         Map.of("statusListCredential", "https://university.example/credentials/status/3",
                                 "statusPurpose", "suspension",
                                 "statusListIndex", 69)));
-                when(REVOCATION_LIST_SERVICE.checkValidity(any(VerifiableCredential.class)))
+                when(REVOCATION_LIST_REGISTRY.checkValidity(any(VerifiableCredential.class)))
                         .thenReturn(Result.failure("suspended"));
             }
             // create the credential in the store
@@ -530,7 +530,7 @@ public class PresentationApiEndToEndTest {
         static {
             var ctx = IdentityHubEndToEndExtension.InMemory.context();
             ctx.getRuntime().registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
-            ctx.getRuntime().registerServiceMock(RevocationListService.class, REVOCATION_LIST_SERVICE);
+            ctx.getRuntime().registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
             runtime = new IdentityHubCustomizableEndToEndExtension(ctx);
         }
     }
@@ -556,7 +556,7 @@ public class PresentationApiEndToEndTest {
         static {
             var ctx = IdentityHubEndToEndExtension.Postgres.context(DB_NAME, DB_PORT);
             ctx.getRuntime().registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
-            ctx.getRuntime().registerServiceMock(RevocationListService.class, REVOCATION_LIST_SERVICE);
+            ctx.getRuntime().registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
             runtime = new IdentityHubCustomizableEndToEndExtension(ctx);
         }
 
