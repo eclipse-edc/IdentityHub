@@ -18,7 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
-
       - name: Run Checkstyle
         run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures
 
@@ -35,7 +34,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
-
       - name: Run Javadoc
         run: ./gradlew javadoc
 
@@ -73,61 +71,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
-
       - name: 'Unit and system tests'
-        uses: eclipse-edc/.github/.github/actions/run-tests@main
-        with:
-          command: ./gradlew test
+        run: ./gradlew test
         timeout-minutes: 10
         env:
           INTEGRATION_TEST: true
-          JACOCO: "true"
 
   Integration-Tests:
     runs-on: ubuntu-latest
-    env:
-      JACOCO: true
-
     steps:
       - uses: actions/checkout@v4
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: Component Tests
-        uses: eclipse-edc/.github/.github/actions/run-tests@main
-        with:
-          command: ./gradlew compileJava compileTestJava test -DincludeTags="ComponentTest,ApiTest,EndToEndTest"
+        run: ./gradlew compileJava compileTestJava test -DincludeTags="ComponentTest,ApiTest,EndToEndTest"
 
   Postgresql-Integration-Tests:
     runs-on: ubuntu-latest
-    env:
-      JACOCO: true
-
     steps:
       - uses: actions/checkout@v4
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: Postgresql Tests
-        uses: eclipse-edc/.github/.github/actions/run-tests@main
-        with:
-          command: ./gradlew test -DincludeTags="PostgresqlIntegrationTest"
-
-  Upload-Coverage-Report-To-Codecov:
-    needs:
-      - Test
-      - Integration-Tests
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      # Sources are needed for Codecov report
-      - uses: actions/checkout@v4
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-      - name: CodeCov
-        uses: codecov/codecov-action@v4
+        run: ./gradlew test -DincludeTags="PostgresqlIntegrationTest"
 
   Verify-OpenApi:
     if: github.event_name == 'pull_request'
