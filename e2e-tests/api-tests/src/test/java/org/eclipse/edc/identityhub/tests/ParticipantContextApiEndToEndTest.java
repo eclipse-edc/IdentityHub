@@ -112,7 +112,7 @@ public class ParticipantContextApiEndToEndTest {
         }
 
         @Test
-        void createNewUser_principalIsSuperser(IdentityHubEndToEndTestContext context, EventRouter router) {
+        void createNewUser_principalIsSuperuser(IdentityHubEndToEndTestContext context, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(ParticipantContextCreated.class, subscriber);
             var apikey = context.createSuperUser();
