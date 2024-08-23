@@ -15,9 +15,12 @@ extensibility mechanism.
 Here, developers find everything necessary to build and run a basic "vanilla" version of IdentityHub.
 
 ## Security Warning
-Older versions of IdentityHub (in particular <= 0.3.1 ) **must not be used anymore**, as they were intended for proof-of-concept 
-purposes only and may contain **significant security vulnerabilities** (for example missing authn/authz on the API) and possibly 
-others. 
+
+Older versions of IdentityHub (in particular <= 0.3.1 ) **must not be used anymore**, as they were intended for
+proof-of-concept
+purposes only and may contain **significant security vulnerabilities** (for example missing authn/authz on the API) and
+possibly
+others.
 **Please always use the latest version of IdentityHub.**
 
 ## Quick start
@@ -39,8 +42,8 @@ two ways of running IdentityHub:
 Once the jar file is built, IdentityHub can be launched using this shell command:
 
 ```bash
-java -Dweb.http.resolution.port=10001 \
-     -Dweb.http.resolution.path="/api/resolution" \
+java -Dweb.http.presentation.port=10001 \
+     -Dweb.http.presentation.path="/api/presentation" \
      -Dweb.http.port=8181 \
      -Dweb.http.path="/api" \
      -Dweb.http.identity.port=8182 \
@@ -49,7 +52,7 @@ java -Dweb.http.resolution.port=10001 \
      -jar launcher/build/libs/identity-hub.jar
 ```
 
-this will expose the Presentation API at `http://localhost:10001/api/resolution` and the Identity API
+this will expose the Presentation API at `http://localhost:10001/api/presentation` and the Identity API
 at `http://localhost:8191/api/identity`. More information about IdentityHub's APIs can be
 found [here](docs/developer/architecture/identityhub-apis.md)
 
@@ -63,8 +66,8 @@ docker build -t identity-hub ./launcher
 
 ```bash
 docker run --rm --name identity-hub \
-            -e "WEB_HTTP_RESOLUTION_PORT=10001" \
-            -e "WEB_HTTP_RESOLUTION_PATH=/api/resolution/" \
+            -e "WEB_HTTP_PRESENTATION_PORT=10001" \
+            -e "WEB_HTTP_PRESENTATION_PATH=/api/presentation/" \
             -e "WEB_HTTP_PATH=/api" \
             -e "WEB_HTTP_PORT=8181" \
             -e "WEB_HTTP_IDENTITY_PORT=8182" \

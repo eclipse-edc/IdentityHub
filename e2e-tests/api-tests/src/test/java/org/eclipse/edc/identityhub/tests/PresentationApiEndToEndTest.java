@@ -146,7 +146,7 @@ public class PresentationApiEndToEndTest {
         @Test
         void query_tokenNotPresent_shouldReturn401(IdentityHubEndToEndTestContext context) {
 
-            context.getResolutionEndpoint().baseRequest()
+            context.getPresentationEndpoint().baseRequest()
                     .contentType("application/json")
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -166,7 +166,7 @@ public class PresentationApiEndToEndTest {
                       "@type": "PresentationQueryMessage"
                     }
                     """;
-            context.getResolutionEndpoint().baseRequest()
+            context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, generateSiToken())
                     .body(query)
@@ -191,7 +191,7 @@ public class PresentationApiEndToEndTest {
                       }
                     }
                     """;
-            context.getResolutionEndpoint().baseRequest()
+            context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, generateSiToken())
                     .body(query)
@@ -209,7 +209,7 @@ public class PresentationApiEndToEndTest {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(spoofedKey.toPublicKey()));
 
             var token = generateSiToken();
-            context.getResolutionEndpoint().baseRequest()
+            context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_QUERY_WITH_SCOPE)
@@ -231,7 +231,7 @@ public class PresentationApiEndToEndTest {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
-            context.getResolutionEndpoint().baseRequest()
+            context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_QUERY_WITH_SCOPE)
@@ -275,7 +275,7 @@ public class PresentationApiEndToEndTest {
             store.create(res2);
 
 
-            context.getResolutionEndpoint().baseRequest()
+            context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_QUERY_WITH_ADDITIONAL_SCOPE)
@@ -295,7 +295,7 @@ public class PresentationApiEndToEndTest {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
-            var response = context.getResolutionEndpoint().baseRequest()
+            var response = context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_QUERY_WITH_SCOPE)
@@ -329,7 +329,7 @@ public class PresentationApiEndToEndTest {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
-            var response = context.getResolutionEndpoint().baseRequest()
+            var response = context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_QUERY_WITH_SCOPE)
@@ -390,7 +390,7 @@ public class PresentationApiEndToEndTest {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             var token = generateSiToken();
-            var response = context.getResolutionEndpoint().baseRequest()
+            var response = context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_QUERY_WITH_SCOPE)
@@ -431,7 +431,7 @@ public class PresentationApiEndToEndTest {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
-            context.getResolutionEndpoint().baseRequest()
+            context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_QUERY_WITH_SCOPE)
@@ -463,7 +463,7 @@ public class PresentationApiEndToEndTest {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
-            context.getResolutionEndpoint().baseRequest()
+            context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_QUERY_WITH_SCOPE)

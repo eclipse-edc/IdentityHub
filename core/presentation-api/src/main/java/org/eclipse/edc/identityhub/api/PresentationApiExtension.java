@@ -46,13 +46,14 @@ import java.util.stream.Stream;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DCP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.api.PresentationApiExtension.NAME;
 import static org.eclipse.edc.identityhub.spi.IdentityHubApiContext.PRESENTATION;
+import static org.eclipse.edc.identityhub.spi.IdentityHubApiContext.RESOLUTION;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
 @Extension(value = NAME)
 public class PresentationApiExtension implements ServiceExtension {
 
     public static final String NAME = "Presentation API Extension";
-    public static final String RESOLUTION_SCOPE = "resolution-scope";
+    public static final String PRESENTATION_SCOPE = "presentation-scope";
     private static final String API_VERSION_JSON_FILE = "presentation-api-version.json";
     @Inject
     private TypeTransformerRegistry typeTransformer;
@@ -89,11 +90,14 @@ public class PresentationApiExtension implements ServiceExtension {
         var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, accessTokenVerifier, verifiablePresentationService, context.getMonitor(), participantContextService);
 
         var jsonLdMapper = typeManager.getMapper(JSON_LD);
-        webService.registerResource(PRESENTATION, new ObjectMapperProvider(jsonLdMapper));
-        webService.registerResource(PRESENTATION, new JerseyJsonLdInterceptor(jsonLd, jsonLdMapper, RESOLUTION_SCOPE));
-        webService.registerResource(PRESENTATION, controller);
 
-        jsonLd.registerContext(DCP_CONTEXT_URL, RESOLUTION_SCOPE);
+        var contextString = determineApiContext(context);
+
+        webService.registerResource(contextString, new ObjectMapperProvider(jsonLdMapper));
+        webService.registerResource(contextString, new JerseyJsonLdInterceptor(jsonLd, jsonLdMapper, PRESENTATION_SCOPE));
+        webService.registerResource(contextString, controller);
+
+        jsonLd.registerContext(DCP_CONTEXT_URL, PRESENTATION_SCOPE);
 
         // register transformer -- remove once registration is handled in EDC
         typeTransformer.register(new JsonObjectToPresentationQueryTransformer(jsonLdMapper));
@@ -101,6 +105,15 @@ public class PresentationApiExtension implements ServiceExtension {
         typeTransformer.register(new JsonObjectFromPresentationResponseMessageTransformer());
 
         registerVersionInfo(getClass().getClassLoader());
+    }
+
+    private String determineApiContext(ServiceExtensionContext context) {
+
+        if (context.getConfig("web.http").getRelativeEntries(PRESENTATION).isEmpty() && !context.getConfig("web.http").getRelativeEntries(RESOLUTION).isEmpty()) {
+            context.getMonitor().warning("Deprecated config: 'web.http.%s.* was replaced by 'web.http.%s.*', please update at your earliest convenience.".formatted(RESOLUTION, PRESENTATION));
+            return RESOLUTION;
+        }
+        return PRESENTATION;
     }
 
     private void registerVersionInfo(ClassLoader resourceClassLoader) {

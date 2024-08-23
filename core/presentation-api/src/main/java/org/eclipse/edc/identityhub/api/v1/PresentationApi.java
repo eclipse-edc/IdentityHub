@@ -30,7 +30,7 @@ import jakarta.json.JsonObject;
 import jakarta.ws.rs.core.Response;
 
 @OpenAPIDefinition(
-        info = @Info(description = "This represents the Presentation API as per DCP specification. It serves endpoints to query for specific VerifiablePresentations.", title = "Resolution API",
+        info = @Info(description = "This represents the Presentation API as per DCP specification. It serves endpoints to query for specific VerifiablePresentations.", title = "Presentation API",
                 version = "1"))
 @SecurityScheme(name = "Authentication",
         description = "Self-Issued ID token containing an access_token",
@@ -39,7 +39,7 @@ import jakarta.ws.rs.core.Response;
         bearerFormat = "JWT")
 public interface PresentationApi {
 
-    @Tag(name = "Resolution API")
+    @Tag(name = "Presentation API")
     @Operation(description = "Issues a new presentation query, that contains either a DIF presentation definition, or a list of scopes",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ApiSchema.PresentationQuerySchema.class))),
             responses = {

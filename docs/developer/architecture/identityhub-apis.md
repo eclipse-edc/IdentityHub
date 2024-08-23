@@ -11,7 +11,7 @@ These APIs is intended to be exposed to the internet.
 This API allows clients to request credentials in the form of a VerifiablePresentation. It is part of the Verifiable
 Credential Presentation protocol of the DCP specification.
 
-Please refer to the [API documentation](https://eclipse-edc.github.io/IdentityHub/openapi/ih-resolution-api) for more
+Please refer to the [API documentation](https://eclipse-edc.github.io/IdentityHub/openapi/presentation-api) for more
 details.
 
 ### Storage API
