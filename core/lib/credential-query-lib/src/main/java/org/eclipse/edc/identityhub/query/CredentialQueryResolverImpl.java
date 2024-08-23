@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.query;
 
 import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
-import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
@@ -43,13 +43,13 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
     private final CredentialStore credentialStore;
     private final ScopeToCriterionTransformer scopeTransformer;
-    private final RevocationListService revocationService;
+    private final RevocationServiceRegistry revocationServiceRegistry;
     private final Monitor monitor;
 
-    public CredentialQueryResolverImpl(CredentialStore credentialStore, ScopeToCriterionTransformer scopeTransformer, RevocationListService revocationService, Monitor monitor) {
+    public CredentialQueryResolverImpl(CredentialStore credentialStore, ScopeToCriterionTransformer scopeTransformer, RevocationServiceRegistry revocationServiceRegistry, Monitor monitor) {
         this.credentialStore = credentialStore;
         this.scopeTransformer = scopeTransformer;
-        this.revocationService = revocationService;
+        this.revocationServiceRegistry = revocationServiceRegistry;
         this.monitor = monitor;
     }
 
@@ -132,7 +132,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
             return false;
         }
         var credentialStatus = credential.getCredentialStatus();
-        var revocationResult = (credentialStatus == null || credentialStatus.isEmpty()) ? Result.success() : revocationService.checkValidity(credential);
+        var revocationResult = (credentialStatus == null || credentialStatus.isEmpty()) ? Result.success() : revocationServiceRegistry.checkValidity(credential);
         if (revocationResult.failed()) {
             monitor.warning("Credential '%s' not valid: %s".formatted(credential.getId(), revocationResult.getFailureDetail()));
             return false;

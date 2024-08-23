@@ -15,11 +15,11 @@
 package org.eclipse.edc.identityhub.query;
 
 import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
-import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
@@ -56,13 +56,13 @@ class CredentialQueryResolverImplTest {
 
     public static final String TEST_PARTICIPANT_CONTEXT_ID = "test-participant";
     private final CredentialStore storeMock = mock();
-    private final RevocationListService revocationServiceMock = mock();
+    private final RevocationServiceRegistry revocationServiceRegistry = mock();
     private final Monitor monitor = mock();
-    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(), revocationServiceMock, monitor);
+    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(), revocationServiceRegistry, monitor);
 
     @BeforeEach
     void setUp() {
-        when(revocationServiceMock.checkValidity(any())).thenReturn(Result.success());
+        when(revocationServiceRegistry.checkValidity(any())).thenReturn(Result.success());
     }
 
     @Test
@@ -318,7 +318,7 @@ class CredentialQueryResolverImplTest {
 
     @Test
     void query_whenRevokedCredential_doesNotInclude() {
-        when(revocationServiceMock.checkValidity(any())).thenReturn(Result.failure("revoked"));
+        when(revocationServiceRegistry.checkValidity(any())).thenReturn(Result.failure("revoked"));
         var credential = createCredential("TestCredential")
                 .credentialStatus(new CredentialStatus("test-cred-stat-id", "StatusList2021Entry",
                         Map.of("statusListCredential", "https://university.example/credentials/status/3",

@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.identithub.verifiablecredential;
 
-import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
@@ -40,13 +40,13 @@ import static org.mockito.Mockito.when;
 
 class CredentialStatusCheckServiceImplTest {
 
-    private final RevocationListService revocationListService = mock();
+    private final RevocationServiceRegistry revocationServiceRegistry = mock();
     private final Clock clock = Clock.systemUTC();
-    private final CredentialStatusCheckServiceImpl service = new CredentialStatusCheckServiceImpl(revocationListService, clock);
+    private final CredentialStatusCheckServiceImpl service = new CredentialStatusCheckServiceImpl(revocationServiceRegistry, clock);
 
     @BeforeEach
     void setUp() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success(null));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success(null));
     }
 
     @Test
@@ -77,7 +77,7 @@ class CredentialStatusCheckServiceImplTest {
 
     @Test
     void checkStatus_suspended_becomesSuspended() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success("suspension"));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("suspension"));
         var credential = createVerifiableCredential()
                 .build();
 
@@ -90,7 +90,7 @@ class CredentialStatusCheckServiceImplTest {
 
     @Test
     void checkStatus_suspended_becomesNotSuspended() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success(null));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success(null));
         var credential = createVerifiableCredential()
                 .build();
 
@@ -103,7 +103,7 @@ class CredentialStatusCheckServiceImplTest {
 
     @Test
     void checkStatus_whenRevoked() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success("revocation"));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("revocation"));
         var credential = createCredentialBuilder(createVerifiableCredential().build()).build();
 
         assertThat(service.checkStatus(credential))
@@ -113,7 +113,7 @@ class CredentialStatusCheckServiceImplTest {
 
     @Test
     void checkStatus_whenSuspended() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success("suspension"));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("suspension"));
         var credential = createCredentialBuilder(createVerifiableCredential().build()).build();
 
         assertThat(service.checkStatus(credential))
@@ -123,7 +123,7 @@ class CredentialStatusCheckServiceImplTest {
 
     @Test
     void checkStatus_whenUnknownRevocationStatus() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success("foo-status"));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("foo-status"));
         var credential = createCredentialBuilder(createVerifiableCredential().build()).build();
 
         assertThat(service.checkStatus(credential))
@@ -133,7 +133,7 @@ class CredentialStatusCheckServiceImplTest {
 
     @Test
     void checkStatus_whenMultipleRules() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success("revocation"));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("revocation"));
         var credential = createVerifiableCredential()
                 .expirationDate(Instant.now(clock).minus(10, ChronoUnit.MINUTES))
                 .build();
@@ -144,7 +144,7 @@ class CredentialStatusCheckServiceImplTest {
 
     @Test
     void checkStatus_revocationCheckThrows() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.failure("failed"));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.failure("failed"));
         var credential = createCredentialBuilder(createVerifiableCredential().build()).build();
 
         assertThat(service.checkStatus(credential))
@@ -164,7 +164,7 @@ class CredentialStatusCheckServiceImplTest {
 
     @Test
     void checkStatus_notYetValid_becomesSuspended() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success("suspension"));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("suspension"));
         var now = Instant.now();
         var tenSecondsAgo = now.minus(10, ChronoUnit.SECONDS);
 
@@ -216,7 +216,7 @@ class CredentialStatusCheckServiceImplTest {
 
     @Test
     void checkStatus_suspended_becomesRevoked() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success("revocation"));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("revocation"));
         var credential = createVerifiableCredential()
                 .build();
 
@@ -227,7 +227,7 @@ class CredentialStatusCheckServiceImplTest {
 
     @Test
     void checkStatus_expired_becomesRevoked() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success("revocation"));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("revocation"));
         var credential = createVerifiableCredential()
                 .expirationDate(Instant.now(clock).minus(10, ChronoUnit.MINUTES))
                 .build();
@@ -235,12 +235,12 @@ class CredentialStatusCheckServiceImplTest {
         assertThat(service.checkStatus(createCredentialBuilder(credential).state(VcStatus.ISSUED).build()))
                 .isSucceeded()
                 .isEqualTo(VcStatus.EXPIRED);
-        verifyNoInteractions(revocationListService);
+        verifyNoInteractions(revocationServiceRegistry);
     }
 
     @Test
     void checkStatus_expired_becomesSuspended() {
-        when(revocationListService.getStatusPurpose(any())).thenReturn(Result.success("suspension"));
+        when(revocationServiceRegistry.getRevocationStatus(any())).thenReturn(Result.success("suspension"));
         var credential = createVerifiableCredential()
                 .expirationDate(Instant.now(clock).minus(10, ChronoUnit.MINUTES))
                 .build();
@@ -248,7 +248,7 @@ class CredentialStatusCheckServiceImplTest {
         assertThat(service.checkStatus(createCredentialBuilder(credential).state(VcStatus.ISSUED).build()))
                 .isSucceeded()
                 .isEqualTo(VcStatus.EXPIRED);
-        verifyNoInteractions(revocationListService);
+        verifyNoInteractions(revocationServiceRegistry);
     }
 
     private VerifiableCredentialResource.Builder createCredentialBuilder(VerifiableCredential credential) {

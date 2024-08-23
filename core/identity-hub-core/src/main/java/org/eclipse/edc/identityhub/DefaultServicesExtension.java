@@ -15,8 +15,12 @@
 package org.eclipse.edc.identityhub;
 
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
-import org.eclipse.edc.iam.verifiablecredentials.StatusList2021RevocationService;
-import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
+import org.eclipse.edc.iam.verifiablecredentials.revocation.RevocationServiceRegistryImpl;
+import org.eclipse.edc.iam.verifiablecredentials.revocation.bitstring.BitstringStatusListRevocationService;
+import org.eclipse.edc.iam.verifiablecredentials.revocation.statuslist2021.StatusList2021RevocationService;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.statuslist2021.StatusList2021Status;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
 import org.eclipse.edc.identityhub.defaults.InMemoryCredentialStore;
 import org.eclipse.edc.identityhub.defaults.InMemoryKeyPairResourceStore;
@@ -56,7 +60,7 @@ public class DefaultServicesExtension implements ServiceExtension {
     private TokenValidationRulesRegistry registry;
     @Inject
     private TypeManager typeManager;
-    private RevocationListService revocationService;
+    private RevocationServiceRegistry revocationService;
     @Inject
     private PrivateKeyResolver privateKeyResolver;
 
@@ -98,10 +102,12 @@ public class DefaultServicesExtension implements ServiceExtension {
     }
 
     @Provider(isDefault = true)
-    public RevocationListService createRevocationListService(ServiceExtensionContext context) {
+    public RevocationServiceRegistry createRevocationListService(ServiceExtensionContext context) {
         if (revocationService == null) {
+            revocationService = new RevocationServiceRegistryImpl(context.getMonitor());
             var validity = context.getConfig().getLong(REVOCATION_CACHE_VALIDITY, DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS);
-            revocationService = new StatusList2021RevocationService(typeManager.getMapper(), validity);
+            revocationService.addService(StatusList2021Status.TYPE, new StatusList2021RevocationService(typeManager.getMapper(), validity));
+            revocationService.addService(BitstringStatusListStatus.TYPE, new BitstringStatusListRevocationService(typeManager.getMapper(), validity));
         }
         return revocationService;
     }

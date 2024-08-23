@@ -16,8 +16,8 @@ package org.eclipse.edc.identityhub.core;
 
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
-import org.eclipse.edc.iam.verifiablecredentials.spi.RevocationListService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identithub.verifiablecredential.CredentialStatusCheckServiceImpl;
 import org.eclipse.edc.identithub.verifiablepresentation.PresentationCreatorRegistryImpl;
 import org.eclipse.edc.identithub.verifiablepresentation.VerifiablePresentationServiceImpl;
@@ -113,7 +113,7 @@ public class CoreServicesExtension implements ServiceExtension {
     @Inject
     private KeyPairService keyPairService;
     @Inject
-    private RevocationListService revocationService;
+    private RevocationServiceRegistry revocationServiceRegistry;
     @Inject
     private KeyPairResourceStore store;
 
@@ -144,7 +144,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public CredentialQueryResolver createCredentialQueryResolver(ServiceExtensionContext context) {
-        return new CredentialQueryResolverImpl(credentialStore, transformer, revocationService, context.getMonitor().withPrefix("Credential Query"));
+        return new CredentialQueryResolverImpl(credentialStore, transformer, revocationServiceRegistry, context.getMonitor().withPrefix("Credential Query"));
     }
 
     @Provider
@@ -169,7 +169,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public CredentialStatusCheckService createStatusCheckService() {
-        return new CredentialStatusCheckServiceImpl(revocationService, clock);
+        return new CredentialStatusCheckServiceImpl(revocationServiceRegistry, clock);
     }
 
     private void cacheContextDocuments(ClassLoader classLoader) {
