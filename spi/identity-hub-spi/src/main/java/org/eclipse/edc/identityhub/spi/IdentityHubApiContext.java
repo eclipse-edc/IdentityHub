@@ -17,4 +17,5 @@ package org.eclipse.edc.identityhub.spi;
 public interface IdentityHubApiContext {
     String IDENTITY = "identity";
     String IH_DID = "did";
+    String PRESENTATION = "resolution"; // should be "presentation", but this would break config
 }

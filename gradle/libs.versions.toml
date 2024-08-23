@@ -57,6 +57,8 @@ edc-ext-transaction-local = { module = "org.eclipse.edc:transaction-local", vers
 edc-testfixtures-managementapi = { module = "org.eclipse.edc:management-api-test-fixtures", version.ref = "edc" }
 edc-sql-pool = { module = "org.eclipse.edc:sql-pool-apache-commons", version.ref = "edc" }
 edc-sql-bootstrapper = { module = "org.eclipse.edc:sql-bootstrapper", version.ref = "edc" }
+edc-api-version = { module = "org.eclipse.edc:version-api", version.ref = "edc" }
+
 
 # EDC libs
 edc-lib-keys = { "module" = "org.eclipse.edc:keys-lib", version.ref = "edc" }
