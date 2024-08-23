@@ -9,7 +9,7 @@ paths:
   /v1/participants/{participantId}/presentations/query:
     post:
       tags:
-      - Resolution API
+      - Presentation API
       description: "Issues a new presentation query, that contains either a DIF presentation\
         \ definition, or a list of scopes"
       operationId: queryPresentation
