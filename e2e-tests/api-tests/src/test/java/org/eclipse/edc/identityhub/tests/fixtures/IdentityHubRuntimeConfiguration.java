@@ -29,13 +29,13 @@ import static org.eclipse.edc.util.io.Ports.getFreePort;
  */
 public class IdentityHubRuntimeConfiguration {
 
-    private Endpoint resolutionEndpoint;
+    private Endpoint presentationEndpoint;
     private Endpoint identityEndpoint;
     private String id;
     private String name;
 
-    public Endpoint getResolutionEndpoint() {
-        return resolutionEndpoint;
+    public Endpoint getPresentationEndpoint() {
+        return presentationEndpoint;
     }
 
     public Map<String, String> config() {
@@ -44,8 +44,8 @@ public class IdentityHubRuntimeConfiguration {
                 put(PARTICIPANT_ID, id);
                 put("web.http.port", String.valueOf(getFreePort()));
                 put("web.http.path", "/api/v1");
-                put("web.http.resolution.port", String.valueOf(resolutionEndpoint.getUrl().getPort()));
-                put("web.http.resolution.path", resolutionEndpoint.getUrl().getPath());
+                put("web.http.presentation.port", String.valueOf(presentationEndpoint.getUrl().getPort()));
+                put("web.http.presentation.path", presentationEndpoint.getUrl().getPath());
                 put("web.http.identity.port", String.valueOf(identityEndpoint.getUrl().getPort()));
                 put("web.http.identity.path", identityEndpoint.getUrl().getPath());
                 put("edc.runtime.id", name);
@@ -81,8 +81,8 @@ public class IdentityHubRuntimeConfiguration {
         }
 
         public IdentityHubRuntimeConfiguration build() {
-            participant.resolutionEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/v1/resolution"), Map.of());
-            participant.identityEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/management"), Map.of());
+            participant.presentationEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/presentation"), Map.of());
+            participant.identityEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/identity"), Map.of());
             return participant;
         }
     }

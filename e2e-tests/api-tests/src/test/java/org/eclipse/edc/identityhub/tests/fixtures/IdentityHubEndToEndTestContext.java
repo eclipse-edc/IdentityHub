@@ -100,8 +100,8 @@ public class IdentityHubEndToEndTestContext {
         return configuration.getIdentityApiEndpoint();
     }
 
-    public IdentityHubRuntimeConfiguration.Endpoint getResolutionEndpoint() {
-        return configuration.getResolutionEndpoint();
+    public IdentityHubRuntimeConfiguration.Endpoint getPresentationEndpoint() {
+        return configuration.getPresentationEndpoint();
     }
 
 

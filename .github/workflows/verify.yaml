@@ -54,8 +54,8 @@ jobs:
           docker run -d --rm --name identity-hub \
             -e "WEB_HTTP_IDENTITY_PORT=8182" \
             -e "WEB_HTTP_IDENTITY_PATH=/api/identity" \
-            -e "WEB_HTTP_RESOLUTION_PORT=10001" \
-            -e "WEB_HTTP_RESOLUTION_PATH=/api/resolution" \
+            -e "WEB_HTTP_PRESENTATION_PORT=10001" \
+            -e "WEB_HTTP_PRESENTATION_PATH=/api/presentation" \
             identity-hub:latest
 
       - name: 'Wait for Identity Hub to be healthy'

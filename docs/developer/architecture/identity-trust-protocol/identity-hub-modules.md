@@ -75,7 +75,7 @@ all SPIs that are relevant here.
 ## Hub API (`:core:presentation-api`)
 
 This module contains implementations for
-the [Resolution API](https://github.com/eclipse-tractusx/identity-trust/blob/main/specifications/M1/verifiable.presentation.protocol.md#4-resolution-api)
+the [Presentation API](https://github.com/eclipse-tractusx/identity-trust/blob/main/specifications/M1/verifiable.presentation.protocol.md#4-resolution-api)
 and
 the [Storage API](https://github.com/eclipse-tractusx/identity-trust/blob/main/specifications/M1/verifiable.presentation.protocol.md#5-storage-api).
 Is
