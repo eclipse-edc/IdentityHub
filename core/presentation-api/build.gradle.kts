@@ -40,6 +40,6 @@ dependencies {
 
 edcBuild {
     swagger {
-        apiGroup.set("ih-resolution-api")
+        apiGroup.set("presentation-api")
     }
 }
