@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
@@ -54,6 +55,8 @@ public class ParticipantContextExtension implements ServiceExtension {
     private Clock clock;
     @Inject
     private EventRouter eventRouter;
+    @Inject
+    private DidResourceStore didResourceStore;
 
     private ParticipantContextObservable participantContextObservable;
 
@@ -72,7 +75,7 @@ public class ParticipantContextExtension implements ServiceExtension {
 
     @Provider
     public ParticipantContextService createParticipantService() {
-        return new ParticipantContextServiceImpl(participantContextStore, vault, transactionContext, participantContextObservable());
+        return new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, participantContextObservable());
     }
 
     @Provider

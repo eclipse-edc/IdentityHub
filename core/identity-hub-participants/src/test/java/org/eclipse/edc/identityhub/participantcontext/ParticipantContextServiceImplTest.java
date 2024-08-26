@@ -18,6 +18,8 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.assertj.core.api.Assertions;
+import org.eclipse.edc.identithub.spi.did.model.DidResource;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
@@ -56,13 +58,14 @@ class ParticipantContextServiceImplTest {
     private final Vault vault = mock();
     private final ParticipantContextStore participantContextStore = mock();
     private final ParticipantContextObservable observableMock = mock();
+    private final DidResourceStore didResourceStore = mock();
     private ParticipantContextServiceImpl participantContextService;
 
     @BeforeEach
     void setUp() {
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, vault, new NoopTransactionContext(), observableMock);
+        participantContextService = new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock);
     }
 
     @ParameterizedTest(name = "isActive: {0}")
@@ -157,6 +160,18 @@ class ParticipantContextServiceImplTest {
         verify(participantContextStore).create(any());
         verifyNoMoreInteractions(vault, participantContextStore, observableMock);
 
+    }
+
+    @Test
+    void createParticipantContext_whenDidExists() {
+        var ctx = createManifest().build();
+        when(didResourceStore.findById(anyString())).thenReturn(DidResource.Builder.newInstance().did(ctx.getDid()).build());
+
+        assertThat(participantContextService.createParticipantContext(ctx)).isFailed()
+                .detail().isEqualTo("Another participant with the same DID '%s' already exists.".formatted(ctx.getDid()));
+
+        verify(didResourceStore).findById(eq(ctx.getDid()));
+        verifyNoMoreInteractions(didResourceStore, participantContextStore, observableMock);
     }
 
     @Test

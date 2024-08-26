@@ -16,6 +16,9 @@ package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
+import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.identithub.spi.did.model.DidResource;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
@@ -52,6 +55,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -108,7 +112,7 @@ public class ParticipantContextApiEndToEndTest {
         }
 
         @Test
-        void createNewUser_principalIsSuperser(IdentityHubEndToEndTestContext context, EventRouter router) {
+        void createNewUser_principalIsSuperuser(IdentityHubEndToEndTestContext context, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(ParticipantContextCreated.class, subscriber);
             var apikey = context.createSuperUser();
@@ -165,7 +169,6 @@ public class ParticipantContextApiEndToEndTest {
 
         }
 
-
         @Test
         void createNewUser_principalIsNotSuperuser_expect403(IdentityHubEndToEndTestContext context, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
@@ -213,6 +216,28 @@ public class ParticipantContextApiEndToEndTest {
                     .body(notNullValue());
             verifyNoInteractions(subscriber);
             assertThat(context.getKeyPairsForParticipant(manifest.getParticipantId())).isEmpty();
+        }
+
+        @Test
+        void createNewUser_whenDidAlreadyExists_expect409(IdentityHubEndToEndTestContext context, DidResourceStore didResourceStore, EventRouter router) {
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(ParticipantContextCreated.class, subscriber);
+            var apikey = context.createSuperUser();
+
+            var manifest = context.createNewParticipant().build();
+
+            didResourceStore.save(DidResource.Builder.newInstance().did(manifest.getDid()).document(DidDocument.Builder.newInstance().build()).build());
+
+            context.getIdentityApiEndpoint().baseRequest()
+                    .header(new Header("x-api-key", apikey))
+                    .contentType(ContentType.JSON)
+                    .body(manifest)
+                    .post("/v1alpha/participants/")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(409);
+
+            verify(subscriber, never()).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
         }
 
         @Test
