@@ -370,7 +370,7 @@ maven/mavencentral/org.ow2.asm/asm-commons/9.7, BSD-3-Clause, approved, #14075
 maven/mavencentral/org.ow2.asm/asm-tree/9.7, BSD-3-Clause, approved, #14073
 maven/mavencentral/org.ow2.asm/asm/9.1, BSD-3-Clause, approved, CQ23029
 maven/mavencentral/org.ow2.asm/asm/9.7, BSD-3-Clause, approved, #14076
-maven/mavencentral/org.postgresql/postgresql/42.7.3, BSD-2-Clause AND Apache-2.0, approved, #11681
+maven/mavencentral/org.postgresql/postgresql/42.7.4, BSD-2-Clause AND Apache-2.0, approved, #11681
 maven/mavencentral/org.reflections/reflections/0.10.2, Apache-2.0 AND WTFPL, approved, clearlydefined
 maven/mavencentral/org.rnorth.duct-tape/duct-tape/1.0.8, MIT, approved, clearlydefined
 maven/mavencentral/org.slf4j/slf4j-api/1.7.22, MIT, approved, CQ11943

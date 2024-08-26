@@ -28,7 +28,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
@@ -44,7 +43,7 @@ public interface KeyPairResourceApi {
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The KeyPairResource.",
-                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                            content = @Content(schema = @Schema(implementation = KeyPairResource.class))),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -59,7 +58,7 @@ public interface KeyPairResourceApi {
             operationId = "queryKeyPairByParticipantId",
             responses = {
                     @ApiResponse(responseCode = "200", description = "The KeyPairResource.",
-                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = KeyPairResource.class)))),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -75,8 +74,7 @@ public interface KeyPairResourceApi {
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = KeyDescriptor.class), mediaType = "application/json")),
             parameters = @Parameter(name = "makeDefault", description = "Make the new key pair the default key pair"),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The KeyPairResource was successfully created and linked to the participant.",
-                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource was successfully created and linked to the participant."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -94,8 +92,7 @@ public interface KeyPairResourceApi {
                     @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The KeyPairResource.",
-                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -114,8 +111,7 @@ public interface KeyPairResourceApi {
                     @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The KeyPairResource was successfully rotated and linked to the participant.",
-                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource was successfully rotated and linked to the participant."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -133,8 +129,7 @@ public interface KeyPairResourceApi {
             },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = KeyDescriptor.class), mediaType = "application/json")),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The KeyPairResource was successfully rotated and linked to the participant.",
-                            content = @Content(schema = @Schema(implementation = ParticipantContext.class))),
+                    @ApiResponse(responseCode = "200", description = "The KeyPairResource was successfully rotated and linked to the participant."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
