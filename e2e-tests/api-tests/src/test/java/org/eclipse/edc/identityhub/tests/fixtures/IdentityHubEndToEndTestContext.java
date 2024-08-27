@@ -17,6 +17,11 @@ package org.eclipse.edc.identityhub.tests.fixtures;
 import com.nimbusds.jose.jwk.Curve;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.participantcontext.ApiTokenGenerator;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
@@ -27,17 +32,22 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -63,6 +73,28 @@ public class IdentityHubEndToEndTestContext {
         return createParticipant(participantId, List.of());
     }
 
+    public VerifiableCredential createCredential() {
+        return VerifiableCredential.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .type("test-type")
+                .issuanceDate(Instant.now())
+                .issuer(new Issuer("did:web:issuer"))
+                .credentialSubject(CredentialSubject.Builder.newInstance().id("id").claim("foo", "bar").build())
+                .build();
+    }
+
+    public String storeCredential(VerifiableCredential credential, String participantId) {
+        var resource = VerifiableCredentialResource.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .state(VcStatus.ISSUED)
+                .participantId(participantId)
+                .holderId("holderId")
+                .issuerId("issuerId")
+                .credential(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, credential))
+                .build();
+        runtime.getService(CredentialStore.class).create(resource).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+        return resource.getId();
+    }
 
     public String createParticipant(String participantId, List<String> roles) {
         var manifest = ParticipantManifest.Builder.newInstance()
@@ -159,6 +191,13 @@ public class IdentityHubEndToEndTestContext {
         return runtime.getService(ParticipantContextService.class)
                 .getParticipantContext(participantId)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
+    }
+
+    public Optional<VerifiableCredentialResource> getCredential(String credentialId) {
+        return runtime.getService(CredentialStore.class)
+                .query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", credentialId)).build())
+                .orElseThrow(f -> new EdcException(f.getFailureDetail()))
+                .stream().findFirst();
     }
 
 }

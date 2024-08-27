@@ -14,8 +14,10 @@
 
 package org.eclipse.edc.identityhub.api.verifiablecredentials;
 
+import org.eclipse.edc.identityhub.api.v1.validation.VerifiableCredentialManifestValidator;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.GetAllCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.VerifiableCredentialsApiController;
+import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.transformer.VerifiableCredentialManifestToVerifiableCredentialResourceTransformer;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
@@ -28,6 +30,7 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.spi.WebService;
 
 import static org.eclipse.edc.identityhub.api.verifiablecredentials.VerifiableCredentialApiExtension.NAME;
@@ -36,6 +39,8 @@ import static org.eclipse.edc.identityhub.api.verifiablecredentials.VerifiableCr
 public class VerifiableCredentialApiExtension implements ServiceExtension {
     public static final String NAME = "VerifiableCredentials API Extension";
 
+    @Inject
+    TypeTransformerRegistry typeTransformerRegistry;
     @Inject
     private WebService webService;
     @Inject
@@ -51,7 +56,9 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         authorizationService.addLookupFunction(VerifiableCredentialResource.class, this::queryById);
-        var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService);
+        var registry = typeTransformerRegistry.forContext("identity-api");
+        registry.register(new VerifiableCredentialManifestToVerifiableCredentialResourceTransformer());
+        var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService, new VerifiableCredentialManifestValidator(), registry);
         var getAllController = new GetAllCredentialsApiController(credentialStore);
         webService.registerResource(IdentityHubApiContext.IDENTITY, controller);
         webService.registerResource(IdentityHubApiContext.IDENTITY, getAllController);

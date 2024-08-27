@@ -22,7 +22,7 @@ import java.util.UUID;
 
 /**
  * Abstract class representing an Identity Resource.
- * Identity entitys have an ID, a timestamp, an issuer ID, a holder ID, and a clock.
+ * Identity resources have an ID, a timestamp, an issuer ID, a holder ID, and a clock.
  * They can be extended with custom properties and behaviors.
  */
 public abstract class IdentityResource extends ParticipantResource {
