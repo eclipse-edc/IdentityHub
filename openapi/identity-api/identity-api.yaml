@@ -410,7 +410,7 @@ paths:
                 type: array
                 example: null
                 items:
-                  $ref: "#/components/schemas/DidDocument"
+                  $ref: "#/components/schemas/VerifiableCredentialResource"
         "400":
           description: The query was malformed or was not understood by the server.
           content:
@@ -420,9 +420,121 @@ paths:
                 example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
+        "403":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+    put:
+      tags:
+      - Verifiable Credentials
+      description: Update an existing VerifiableCredential.
+      operationId: updateCredential
+      parameters:
+      - name: participantId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: null
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifiableCredentialManifest"
+      responses:
+        "204":
+          description: The VerifiableCredential was updated successfully.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "403":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: VerifiableCredential could not be updated because it does not
+            exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+    post:
+      tags:
+      - Verifiable Credentials
+      description: Adds a new VerifiableCredential into the system.
+      operationId: addCredential
+      parameters:
+      - name: participantId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: null
+      - name: participantId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: null
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifiableCredentialManifest"
+      responses:
+        "204":
+          description: The VerifiableCredential was successfully created.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "403":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "409":
+          description: "Could not create VerifiableCredential, because a VerifiableCredential\
+            \ with that ID already exists"
           content:
             application/json:
               schema:
@@ -460,7 +572,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ParticipantContext"
+                $ref: "#/components/schemas/VerifiableCredentialResource"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -470,7 +582,7 @@ paths:
                 example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
+        "403":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
           content:
@@ -529,7 +641,7 @@ paths:
                 example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
+        "403":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
           content:
@@ -971,7 +1083,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ParticipantContext"
+                type: array
+                example: null
+                items:
+                  $ref: "#/components/schemas/KeyPairResource"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1033,10 +1148,6 @@ paths:
         "200":
           description: The KeyPairResource was successfully created and linked to
             the participant.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1095,7 +1206,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ParticipantContext"
+                $ref: "#/components/schemas/KeyPairResource"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1152,10 +1263,6 @@ paths:
       responses:
         "200":
           description: The KeyPairResource.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed."
           content:
@@ -1218,10 +1325,6 @@ paths:
         "200":
           description: The KeyPairResource was successfully rotated and linked to
             the participant.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1293,10 +1396,6 @@ paths:
         "200":
           description: The KeyPairResource was successfully rotated and linked to
             the participant.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1948,6 +2047,22 @@ components:
         rawVc:
           type: string
           example: null
+      example: null
+    VerifiableCredentialManifest:
+      type: object
+      properties:
+        id:
+          type: string
+          example: null
+        issuancePolicy:
+          $ref: "#/components/schemas/Policy"
+        participantId:
+          type: string
+          example: null
+        reissuancePolicy:
+          $ref: "#/components/schemas/Policy"
+        verifiableCredentialContainer:
+          $ref: "#/components/schemas/VerifiableCredentialContainer"
       example: null
     VerifiableCredentialResource:
       type: object
