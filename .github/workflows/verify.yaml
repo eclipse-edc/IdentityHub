@@ -13,6 +13,11 @@ on:
       - 'docs/**'
 
 jobs:
+
+  CodeQL:
+    uses: eclipse-edc/.github/.github/workflows/codeql-analysis.yml@main
+    secrets: inherit
+
   Checkstyle:
     runs-on: ubuntu-latest
     steps:
