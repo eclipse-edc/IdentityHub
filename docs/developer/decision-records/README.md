@@ -6,3 +6,4 @@
 - [2022-08-12 Code Quality Tooling](2022-08-12-code-quality-tooling/)
 - [2023-01-20 Credentials Verifier Output Format](2023-01-20-credentials-verifier-output-format/)
 - [2024-08-23 Identity Hub Write Credentials API](2024-08-23-identity_hub_identity_write_credentials_api/)
+- [2024-09-02 Identity Hub Resource Operations](2024-09-02-resource-operations)
