@@ -49,6 +49,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -223,7 +224,8 @@ class ParticipantContextServiceImplTest {
         assertThat(participantContextService.deleteParticipantContext("test-id")).isSucceeded();
 
         verify(participantContextStore).deleteById(anyString());
-        verify(observableMock).invokeForEach(any());
+        verify(observableMock, times(2)).invokeForEach(any());
+        verify(vault).deleteSecret(anyString());
         verifyNoMoreInteractions(vault, observableMock);
     }
 
@@ -239,7 +241,9 @@ class ParticipantContextServiceImplTest {
                     Assertions.assertThat(f.getFailureDetail()).isEqualTo("foo bar");
                 });
 
+        verify(observableMock).invokeForEach(any()); //deleting
         verify(participantContextStore).deleteById(anyString());
+        verify(vault).deleteSecret(anyString());
         verifyNoMoreInteractions(vault, observableMock);
     }
 

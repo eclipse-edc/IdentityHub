@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleting;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextEvent;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextListener;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
@@ -49,6 +50,15 @@ public class ParticipantContextEventPublisher implements ParticipantContextListe
         var event = ParticipantContextUpdated.Builder.newInstance()
                 .participantId(updatedContext.getParticipantId())
                 .newState(updatedContext.getStateAsEnum())
+                .build();
+        publish(event);
+    }
+
+    @Override
+    public void deleting(ParticipantContext deletedContext) {
+        var event = ParticipantContextDeleting.Builder.newInstance()
+                .participantId(deletedContext.getParticipantId())
+                .participant(deletedContext)
                 .build();
         publish(event);
     }

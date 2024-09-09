@@ -97,7 +97,9 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                 return ServiceResult.notFound("A ParticipantContext with ID '%s' does not exist.");
             }
 
+            observable.invokeForEach(l -> l.deleting(participantContext));
             var res = participantContextStore.deleteById(participantId);
+            vault.deleteSecret(participantContext.getApiTokenAlias());
             if (res.failed()) {
                 return fromFailure(res);
             }

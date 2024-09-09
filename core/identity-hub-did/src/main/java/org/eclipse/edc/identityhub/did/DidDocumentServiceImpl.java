@@ -24,8 +24,6 @@ import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
-import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
-import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
@@ -130,11 +128,15 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             if (publisher == null) {
                 return ServiceResult.badRequest(noPublisherFoundMessage(did));
             }
-            var publishResult = publisher.unpublish(did);
-            return publishResult.succeeded() ?
-                    success() :
-                    ServiceResult.badRequest(publishResult.getFailureDetail());
-
+            // only unpublish if published, NOOP otherwise
+            if (existingDoc.getState() == DidState.PUBLISHED.code()) {
+                var publishResult = publisher.unpublish(did);
+                return publishResult.succeeded() ?
+                        success() :
+                        ServiceResult.badRequest(publishResult.getFailureDetail());
+            }
+            monitor.info("Unpublishing DID Document '%s': not in state '%s', unpublishing is a NOOP.".formatted(did, existingDoc.getStateAsEnum()));
+            return success();
         });
     }
 
@@ -216,8 +218,6 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         var payload = eventEnvelope.getPayload();
         if (payload instanceof ParticipantContextUpdated event) {
             updated(event);
-        } else if (payload instanceof ParticipantContextDeleted event) {
-            deleted(event);
         } else if (payload instanceof KeyPairAdded event) {
             keypairAdded(event);
         } else if (payload instanceof KeyPairRevoked event) {
@@ -296,35 +296,8 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         }
     }
 
-    private void deleted(ParticipantContextDeleted event) {
-        var participantId = event.getParticipantId();
-        //unpublish and delete all DIDs associated with that participant
-        var errors = findByParticipantId(participantId)
-                .stream()
-                .map(didResource -> unpublish(didResource.getDid()).compose(u -> deleteById(didResource.getDid())))
-                .filter(AbstractResult::failed)
-                .map(AbstractResult::getFailureDetail)
-                .collect(Collectors.joining(", "));
-
-        if (!errors.isEmpty()) {
-            monitor.warning("Unpublishing/deleting DID documents after deleting a ParticipantContext failed: %s".formatted(errors));
-        }
-    }
-
     private Collection<DidResource> findByParticipantId(String participantId) {
         return didResourceStore.query(ParticipantResource.queryByParticipantId(participantId).build());
     }
 
-
-    private void created(ParticipantContextCreated event) {
-        var manifest = event.getManifest();
-        var doc = DidDocument.Builder.newInstance()
-                .id(manifest.getDid())
-                .service(manifest.getServiceEndpoints().stream().toList())
-                // updating and adding a verification method happens as a result of the KeyPairAddedEvent
-                .build();
-        store(doc, manifest.getParticipantId())
-                .compose(u -> manifest.isActive() ? publish(doc.getId()) : success())
-                .onFailure(f -> monitor.warning("Creating a DID document after creating a ParticipantContext creation failed: %s".formatted(f.getFailureDetail())));
-    }
 }

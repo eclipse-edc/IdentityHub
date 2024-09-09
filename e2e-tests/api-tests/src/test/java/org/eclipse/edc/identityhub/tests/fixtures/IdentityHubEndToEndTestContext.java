@@ -50,6 +50,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.Mockito.spy;
+
 /**
  * Identity Hub end to end context used in tests extended with {@link IdentityHubEndToEndExtension}
  */
@@ -136,7 +138,6 @@ public class IdentityHubEndToEndTestContext {
         return configuration.getPresentationEndpoint();
     }
 
-
     public Collection<DidDocument> getDidForParticipant(String participantId) {
         return runtime.getService(DidDocumentService.class).queryDocuments(QuerySpec.Builder.newInstance()
                 .filter(new Criterion("participantId", "=", participantId))
@@ -198,6 +199,10 @@ public class IdentityHubEndToEndTestContext {
                 .query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", credentialId)).build())
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()))
                 .stream().findFirst();
+    }
+
+    public <S> S spyService(Class<S> serviceClass) {
+        return spy(runtime.getService(serviceClass));
     }
 
 }
