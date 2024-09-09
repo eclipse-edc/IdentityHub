@@ -46,10 +46,19 @@ public interface ParticipantContextListener {
     }
 
     /**
-     * Notifies about the fact that a {@link ParticipantContext} has been deleted, and further action, such as deleting keypairs or updating DID documents
-     * can now happen.
+     * Notifies about the fact that the deletion of a {@link ParticipantContext} is imminent. This is useful if resources like keypairs,
+     * DID documents etc. should be cleaned up <em>before the deletion of the {@link ParticipantContext}</em>.
      *
-     * @param deletedContext The updated (already persisted) participant context
+     * @param deletedContext The ParticipantContext that is going to be deleted.
+     */
+    default void deleting(ParticipantContext deletedContext) {
+
+    }
+
+    /**
+     * Notifies about the fact that a {@link ParticipantContext} and all associated data (key-pairs, DID documents, etc) have been deleted.
+     *
+     * @param deletedContext The deleted participant context
      */
     default void deleted(ParticipantContext deletedContext) {
 

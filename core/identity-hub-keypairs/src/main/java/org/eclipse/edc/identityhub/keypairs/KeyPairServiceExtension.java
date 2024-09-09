@@ -25,6 +25,7 @@ import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.time.Clock;
 
@@ -42,6 +43,8 @@ public class KeyPairServiceExtension implements ServiceExtension {
     private EventRouter eventRouter;
     @Inject
     private Clock clock;
+    @Inject
+    private TransactionContext transactionContext;
 
     private KeyPairObservable observable;
 
@@ -52,7 +55,7 @@ public class KeyPairServiceExtension implements ServiceExtension {
 
     @Provider
     public KeyPairService createParticipantService(ServiceExtensionContext context) {
-        var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor().withPrefix("KeyPairService"), keyPairObservable());
+        var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor().withPrefix("KeyPairService"), keyPairObservable(), transactionContext);
         eventRouter.registerSync(ParticipantContextDeleted.class, service);
         return service;
     }

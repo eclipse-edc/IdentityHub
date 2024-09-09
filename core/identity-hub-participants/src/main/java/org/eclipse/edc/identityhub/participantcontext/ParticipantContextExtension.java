@@ -19,6 +19,7 @@ import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleting;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
@@ -71,6 +72,7 @@ public class ParticipantContextExtension implements ServiceExtension {
                 didDocumentService, keyPairService);
 
         eventRouter.registerSync(ParticipantContextCreated.class, coordinator);
+        eventRouter.registerSync(ParticipantContextDeleting.class, coordinator);
     }
 
     @Provider

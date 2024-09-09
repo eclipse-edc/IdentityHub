@@ -40,6 +40,7 @@ import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.security.Vault;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -75,7 +76,7 @@ public class ParticipantContextApiEndToEndTest {
         @AfterEach
         void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore) {
             // purge all users, dids, keypairs
-            
+
             pcService.query(QuerySpec.max()).getContent()
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
 
@@ -345,12 +346,16 @@ public class ParticipantContextApiEndToEndTest {
         }
 
         @Test
-        void deleteParticipant(IdentityHubEndToEndTestContext context) {
+        void deleteParticipant(IdentityHubEndToEndTestContext context, Vault vault) {
             var superUserKey = context.createSuperUser();
             var participantId = "another-user";
             context.createParticipant(participantId);
-
             assertThat(context.getDidForParticipant(participantId)).hasSize(1);
+
+            var pc = context.getParticipant(participantId);
+            var alias = context.getKeyPairsForParticipant(participantId).stream().findFirst().map(KeyPairResource::getPrivateKeyAlias).orElseThrow();
+            var apiTokenAlias = pc.getApiTokenAlias();
+
 
             context.getIdentityApiEndpoint().baseRequest()
                     .header(new Header("x-api-key", superUserKey))
@@ -361,6 +366,9 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(204);
 
             assertThat(context.getDidForParticipant(participantId)).isEmpty();
+            assertThat(context.getKeyPairsForParticipant(participantId)).isEmpty();
+            assertThat(vault.resolveSecret(alias)).isNull();
+            assertThat(vault.resolveSecret(apiTokenAlias)).isNull();
         }
 
         @Test

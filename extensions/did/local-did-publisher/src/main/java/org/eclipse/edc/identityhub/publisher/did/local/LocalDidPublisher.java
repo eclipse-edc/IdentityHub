@@ -74,11 +74,6 @@ public class LocalDidPublisher implements DidDocumentPublisher {
             return Result.failure("A DID Resource with the ID '%s' was not found.".formatted(did));
         }
 
-        if (!isPublished(existingDocument)) {
-            monitor.info("Un-publish DID Resource '%s': not published -> NOOP.".formatted(did));
-            // do not return early, the state could be anything
-        }
-
         existingDocument.transitionState(DidState.UNPUBLISHED);
         return didResourceStore.update(existingDocument)
                 .map(v -> success())

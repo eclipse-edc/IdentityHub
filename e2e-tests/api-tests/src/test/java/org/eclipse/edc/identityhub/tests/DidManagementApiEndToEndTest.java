@@ -170,40 +170,68 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void unpublishDid(IdentityHubEndToEndTestContext context, EventRouter router) {
+        void unpublishDid_withSuperUserToken(IdentityHubEndToEndTestContext context, EventRouter router) {
             var superUserKey = context.createSuperUser();
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(DidDocumentUnpublished.class, subscriber);
+
+            var user = "test-user";
+            context.createParticipant(user);
+
+            reset(subscriber);
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", superUserKey))
+                    .body("""
+                            {
+                               "did": "did:web:test-user"
+                            }
+                            """)
+                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204)
+                    .body(Matchers.notNullValue());
+
+            // verify that the publish event was fired twice
+            verify(subscriber).on(argThat(env -> {
+                if (env.getPayload() instanceof DidDocumentUnpublished event) {
+                    return event.getDid().equals("did:web:test-user");
+                }
+                return false;
+            }));
+        }
+
+        @Test
+        void unpublishDid_withUserToken(IdentityHubEndToEndTestContext context, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentUnpublished.class, subscriber);
 
             var user = "test-user";
             var token = context.createParticipant(user);
 
-            assertThat(Arrays.asList(token, superUserKey))
-                    .allSatisfy(t -> {
-                        reset(subscriber);
-                        context.getIdentityApiEndpoint().baseRequest()
-                                .contentType(JSON)
-                                .header(new Header("x-api-key", t))
-                                .body("""
-                                        {
-                                           "did": "did:web:test-user"
-                                        }
-                                        """)
-                                .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
-                                .then()
-                                .log().ifValidationFails()
-                                .statusCode(204)
-                                .body(Matchers.notNullValue());
-
-                        // verify that the publish event was fired twice
-                        verify(subscriber).on(argThat(env -> {
-                            if (env.getPayload() instanceof DidDocumentUnpublished event) {
-                                return event.getDid().equals("did:web:test-user");
+            reset(subscriber);
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body("""
+                            {
+                               "did": "did:web:test-user"
                             }
-                            return false;
-                        }));
-                    });
+                            """)
+                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204)
+                    .body(Matchers.notNullValue());
 
+            // verify that the unpublish event was fired
+            verify(subscriber).on(argThat(env -> {
+                if (env.getPayload() instanceof DidDocumentUnpublished event) {
+                    return event.getDid().equals("did:web:test-user");
+                }
+                return false;
+            }));
         }
 
         @Test

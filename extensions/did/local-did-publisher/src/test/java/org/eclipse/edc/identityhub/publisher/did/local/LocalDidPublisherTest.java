@@ -157,7 +157,6 @@ class LocalDidPublisherTest {
         verify(storeMock).update(any());
         verify(observableMock).invokeForEach(any());
         verifyNoMoreInteractions(storeMock, observableMock);
-        verify(monitor).info("Un-publish DID Resource 'did:web:test': not published -> NOOP.");
     }
 
     @Test
