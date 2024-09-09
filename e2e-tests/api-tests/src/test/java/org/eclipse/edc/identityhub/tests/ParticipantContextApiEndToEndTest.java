@@ -17,14 +17,20 @@ package org.eclipse.edc.identityhub.tests;
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.identithub.spi.did.DidConstants;
+import org.eclipse.edc.identithub.spi.did.DidDocumentPublisher;
+import org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry;
 import org.eclipse.edc.identithub.spi.did.model.DidResource;
+import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
+import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -33,6 +39,7 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.Result;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -53,21 +60,29 @@ import static org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTest
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 public class ParticipantContextApiEndToEndTest {
 
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService pcService) {
-            // purge all users
+        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore) {
+            // purge all users, dids, keypairs
+            
             pcService.query(QuerySpec.max()).getContent()
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+
+            didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
+
+            keyPairResourceStore.query(QuerySpec.max()).getContent()
+                    .forEach(kpr -> keyPairResourceStore.deleteById(kpr.getId()).getContent());
         }
 
         @Test
@@ -99,7 +114,7 @@ public class ParticipantContextApiEndToEndTest {
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();
-            var apiToken2 = context.storeParticipant(user2Context);
+            context.storeParticipant(user2Context);
 
             //user1 attempts to read user2 -> fail
             context.getIdentityApiEndpoint().baseRequest()
@@ -238,6 +253,62 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(409);
 
             verify(subscriber, never()).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
+        }
+
+
+        @Test
+        void createNewUser_andNotActive_shouldNotPublishDid(IdentityHubEndToEndTestContext context, DidResourceStore didResourceStore, DidDocumentPublisherRegistry publisherRegistry) {
+            var apikey = context.createSuperUser();
+
+            var mockedPublisher = mock(DidDocumentPublisher.class);
+            when(mockedPublisher.publish(anyString())).thenReturn(Result.success());
+            when(mockedPublisher.unpublish(anyString())).thenReturn(Result.success());
+            publisherRegistry.addPublisher(DidConstants.DID_WEB_METHOD, mockedPublisher);
+            var manifest = context.createNewParticipant()
+                    .active(false)
+                    .build();
+
+            context.getIdentityApiEndpoint().baseRequest()
+                    .header(new Header("x-api-key", apikey))
+                    .contentType(ContentType.JSON)
+                    .body(manifest)
+                    .post("/v1alpha/participants/")
+                    .then()
+                    .log().ifError()
+                    .statusCode(anyOf(equalTo(200), equalTo(204)))
+                    .body(notNullValue());
+
+            assertThat(context.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1).allMatch(KeyPairResource::isDefaultPair);
+            assertThat(context.getDidForParticipant(manifest.getParticipantId())).hasSize(1)
+                    .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
+            var storedDidResource = didResourceStore.findById(manifest.getDid());
+            assertThat(storedDidResource.getState()).withFailMessage("Expected DID resource state %s, got %s", DidState.GENERATED, storedDidResource.getStateAsEnum()).isEqualTo(DidState.GENERATED.code());
+            verify(mockedPublisher, never()).publish(manifest.getDid());
+        }
+
+        @Test
+        void createNewUser_andActive_shouldAutoPublish(IdentityHubEndToEndTestContext context, DidResourceStore didResourceStore) {
+            var apikey = context.createSuperUser();
+
+            var manifest = context.createNewParticipant()
+                    .active(true)
+                    .build();
+
+            context.getIdentityApiEndpoint().baseRequest()
+                    .header(new Header("x-api-key", apikey))
+                    .contentType(ContentType.JSON)
+                    .body(manifest)
+                    .post("/v1alpha/participants/")
+                    .then()
+                    .log().ifError()
+                    .statusCode(anyOf(equalTo(200), equalTo(204)))
+                    .body(notNullValue());
+
+            assertThat(context.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1).allMatch(KeyPairResource::isDefaultPair);
+            assertThat(context.getDidForParticipant(manifest.getParticipantId())).hasSize(1)
+                    .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
+            var storedDidResource = didResourceStore.findById(manifest.getDid());
+            assertThat(storedDidResource.getState()).withFailMessage("Expected DID resource state %s, got %s", DidState.PUBLISHED, storedDidResource.getStateAsEnum()).isEqualTo(DidState.PUBLISHED.code());
         }
 
         @Test

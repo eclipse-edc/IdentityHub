@@ -61,9 +61,9 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
                     .build();
 
             didDocumentService.store(doc, manifest.getParticipantId())
-                    .compose(u -> manifest.isActive() ? didDocumentService.publish(doc.getId()) : success())
                     // adding the keypair event will cause the DidDocumentService to update the DID.
                     .compose(u -> keyPairService.addKeyPair(createdEvent.getParticipantId(), createdEvent.getManifest().getKey(), true))
+                    .compose(u -> manifest.isActive() ? didDocumentService.publish(doc.getId()) : success())
                     .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
 
         } else {
