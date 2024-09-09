@@ -74,6 +74,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                     .document(document)
                     .did(document.getId())
                     .participantId(participantId)
+                    .state(DidState.GENERATED.code())
                     .build();
             var result = didResourceStore.save(res);
             return result.succeeded() ?

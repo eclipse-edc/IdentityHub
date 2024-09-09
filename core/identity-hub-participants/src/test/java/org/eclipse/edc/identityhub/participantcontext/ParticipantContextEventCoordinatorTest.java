@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -79,37 +80,55 @@ class ParticipantContextEventCoordinatorTest {
     }
 
     @Test
-    void onParticipantCreated_didDocumentServicePublishFailure() {
+    void onParticipantCreated_active_didDocumentServicePublishFailure() {
         var participantId = "test-id";
         when(didDocumentService.store(any(), eq(participantId))).thenReturn(ServiceResult.success());
+        when(keyPairService.addKeyPair(eq(participantId), any(), anyBoolean())).thenReturn(ServiceResult.success());
         when(didDocumentService.publish(anyString())).thenReturn(ServiceResult.badRequest("foobar"));
 
         coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
                 .participantId(participantId)
-                .manifest(createManifest().build())
+                .manifest(createManifest().active(true).build())
                 .build()));
 
         verify(didDocumentService).store(any(), eq(participantId));
+        verify(keyPairService).addKeyPair(eq(participantId), any(), eq(true));
         verify(didDocumentService).publish(anyString());
         verify(monitor).warning("foobar");
-        verifyNoMoreInteractions(keyPairService, didDocumentService);
+        verifyNoMoreInteractions(didDocumentService);
     }
 
     @Test
-    void onParticipantCreated_keyPairServiceFailure() {
+    void onParticipantCreated_notActive_shouldNotPublish() {
         var participantId = "test-id";
         when(didDocumentService.store(any(), eq(participantId))).thenReturn(ServiceResult.success());
-        when(didDocumentService.publish(anyString())).thenReturn(ServiceResult.success());
-        when(keyPairService.addKeyPair(eq(participantId), any(), anyBoolean())).thenReturn(ServiceResult.notFound("foobar"));
+        when(keyPairService.addKeyPair(eq(participantId), any(), anyBoolean())).thenReturn(ServiceResult.success());
 
         coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
                 .participantId(participantId)
-                .manifest(createManifest().build())
+                .manifest(createManifest().active(false).build())
                 .build()));
 
         verify(didDocumentService).store(any(), eq(participantId));
-        verify(didDocumentService).publish(eq("did:web:" + participantId));
         verify(keyPairService).addKeyPair(eq(participantId), any(), eq(true));
+        verify(didDocumentService, never()).publish(anyString());
+        verifyNoMoreInteractions(didDocumentService);
+    }
+
+    @Test
+    void onParticipantCreated_active_whenKeyPairServiceFailure_shouldNotPublish() {
+        var participantId = "test-id";
+        when(didDocumentService.store(any(), eq(participantId))).thenReturn(ServiceResult.success());
+        when(keyPairService.addKeyPair(eq(participantId), any(KeyDescriptor.class), anyBoolean())).thenReturn(ServiceResult.notFound("foobar"));
+
+        coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
+                .participantId(participantId)
+                .manifest(createManifest().active(true).build())
+                .build()));
+
+        verify(didDocumentService).store(any(), eq(participantId));
+        verify(keyPairService).addKeyPair(eq(participantId), any(), eq(true));
+        verify(didDocumentService, never()).publish(eq("did:web:" + participantId));
         verify(monitor).warning("foobar");
         verifyNoMoreInteractions(keyPairService, didDocumentService);
     }

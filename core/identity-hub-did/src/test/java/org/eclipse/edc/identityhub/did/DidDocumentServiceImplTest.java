@@ -68,6 +68,7 @@ class DidDocumentServiceImplTest {
         var doc = createDidDocument().build();
         when(storeMock.save(argThat(dr -> dr.getDocument().equals(doc)))).thenReturn(StoreResult.success());
         assertThat(service.store(doc, "test-participant")).isSucceeded();
+        verify(storeMock).save(argThat(didResource -> didResource.getState() == DidState.GENERATED.code()));
     }
 
     @Test
