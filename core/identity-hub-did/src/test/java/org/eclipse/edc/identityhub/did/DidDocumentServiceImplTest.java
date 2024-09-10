@@ -28,6 +28,7 @@ import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
@@ -63,6 +64,7 @@ class DidDocumentServiceImplTest {
     private final DidResourceStore didResourceStoreMock = mock();
     private final DidDocumentPublisherRegistry publisherRegistry = mock();
     private final DidDocumentPublisher publisherMock = mock();
+    private final ParticipantContextService participantContextServiceMock = mock();
     private DidDocumentServiceImpl service;
     private Monitor monitorMock;
 
@@ -75,7 +77,7 @@ class DidDocumentServiceImplTest {
         registry.register(new JwkParser(new ObjectMapper(), mock()));
         registry.register(new PemParser(mock()));
         monitorMock = mock();
-        service = new DidDocumentServiceImpl(trx, didResourceStoreMock, publisherRegistry, monitorMock, registry);
+        service = new DidDocumentServiceImpl(trx, didResourceStoreMock, publisherRegistry, participantContextServiceMock, monitorMock, registry);
     }
 
     @Test

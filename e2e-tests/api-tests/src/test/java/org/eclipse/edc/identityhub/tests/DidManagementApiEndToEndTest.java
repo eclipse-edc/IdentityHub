@@ -18,8 +18,10 @@ import io.restassured.http.Header;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentUnpublished;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
@@ -49,10 +52,16 @@ public class DidManagementApiEndToEndTest {
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService store) {
-            // purge all users
-            store.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> store.deleteParticipantContext(pc.getParticipantId()));
+        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore) {
+            // purge all users, dids, keypairs
+
+            pcService.query(QuerySpec.max()).getContent()
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+
+            didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
+
+            keyPairResourceStore.query(QuerySpec.max()).getContent()
+                    .forEach(kpr -> keyPairResourceStore.deleteById(kpr.getId()).getContent());
         }
 
         @Test
@@ -131,6 +140,38 @@ public class DidManagementApiEndToEndTest {
 
         }
 
+
+        @Test
+        void publishDid_participantNotActivated_expect400(IdentityHubEndToEndTestContext context, EventRouter router) {
+            var superUserKey = context.createSuperUser();
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(DidDocumentPublished.class, subscriber);
+
+            var user = "test-user";
+            var token = context.createParticipant(user, List.of(), false);
+
+            assertThat(Arrays.asList(token, superUserKey))
+                    .allSatisfy(t -> {
+                        reset(subscriber);
+                        context.getIdentityApiEndpoint().baseRequest()
+                                .contentType(JSON)
+                                .header(new Header("x-api-key", t))
+                                .body("""
+                                        {
+                                           "did": "did:web:test-user"
+                                        }
+                                        """)
+                                .post("/v1alpha/participants/%s/dids/publish".formatted(user))
+                                .then()
+                                .log().ifValidationFails()
+                                .statusCode(400)
+                                .body(Matchers.containsString("Cannot publish DID 'did:web:test-user' for participant 'test-user' because the ParticipantContext is not state 'ACTIVATED' state, but was 'CREATED'."));
+
+                        // verify that the publish event was fired twice
+                        verifyNoInteractions(subscriber);
+                    });
+        }
+
         @Test
         void unpublishDid_notOwner_expect403(IdentityHubEndToEndTestContext context, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
@@ -170,13 +211,15 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void unpublishDid_withSuperUserToken(IdentityHubEndToEndTestContext context, EventRouter router) {
+        void unpublishDid_withSuperUserToken(IdentityHubEndToEndTestContext context, EventRouter router, ParticipantContextService participantContextService) {
             var superUserKey = context.createSuperUser();
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentUnpublished.class, subscriber);
 
             var user = "test-user";
             context.createParticipant(user);
+
+            participantContextService.updateParticipant(user, ParticipantContext::deactivate);
 
             reset(subscriber);
             context.getIdentityApiEndpoint().baseRequest()
@@ -194,21 +237,19 @@ public class DidManagementApiEndToEndTest {
                     .body(Matchers.notNullValue());
 
             // verify that the publish event was fired twice
-            verify(subscriber).on(argThat(env -> {
-                if (env.getPayload() instanceof DidDocumentUnpublished event) {
-                    return event.getDid().equals("did:web:test-user");
-                }
-                return false;
-            }));
+            verifyNoInteractions(subscriber);
         }
 
         @Test
-        void unpublishDid_withUserToken(IdentityHubEndToEndTestContext context, EventRouter router) {
+        void unpublishDid_withUserToken(IdentityHubEndToEndTestContext context, EventRouter router, ParticipantContextService participantContextService) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentUnpublished.class, subscriber);
 
             var user = "test-user";
             var token = context.createParticipant(user);
+
+            participantContextService.updateParticipant(user, ParticipantContext::deactivate);
+
 
             reset(subscriber);
             context.getIdentityApiEndpoint().baseRequest()
@@ -226,12 +267,34 @@ public class DidManagementApiEndToEndTest {
                     .body(Matchers.notNullValue());
 
             // verify that the unpublish event was fired
-            verify(subscriber).on(argThat(env -> {
-                if (env.getPayload() instanceof DidDocumentUnpublished event) {
-                    return event.getDid().equals("did:web:test-user");
-                }
-                return false;
-            }));
+            verifyNoInteractions(subscriber);
+        }
+
+        @Test
+        void unpublishDid_participantActive_expect400(IdentityHubEndToEndTestContext context, EventRouter router) {
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(DidDocumentUnpublished.class, subscriber);
+
+            var user = "test-user";
+            var token = context.createParticipant(user, List.of(), true);
+
+            reset(subscriber);
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body("""
+                            {
+                               "did": "did:web:test-user"
+                            }
+                            """)
+                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400)
+                    .body(Matchers.containsString("Cannot un-publish DID 'did:web:test-user' for participant 'test-user' because the ParticipantContext is not state 'DEACTIVATED' state, but was 'ACTIVATED'."));
+
+            // verify that the unpublish event was fired
+            verifyNoInteractions(subscriber);
         }
 
         @Test
