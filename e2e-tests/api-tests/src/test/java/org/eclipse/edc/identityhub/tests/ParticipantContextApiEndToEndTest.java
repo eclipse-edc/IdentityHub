@@ -319,13 +319,10 @@ public class ParticipantContextApiEndToEndTest {
             router.registerSync(ParticipantContextUpdated.class, subscriber);
 
             var participantId = "another-user";
-            var anotherUser = ParticipantContext.Builder.newInstance()
-                    .participantId(participantId)
-                    .did("did:web:" + participantId)
-                    .apiTokenAlias(participantId + "-alias")
-                    .state(ParticipantContextState.CREATED)
-                    .build();
-            context.storeParticipant(anotherUser);
+            var did = "did:web:" + participantId;
+
+            context.createParticipant(participantId, List.of(), false);
+            assertThat(context.getDidResourceForParticipant(did).getState()).isEqualTo(DidState.GENERATED.code());
 
             context.getIdentityApiEndpoint().baseRequest()
                     .header(new Header("x-api-key", superUserKey))
@@ -337,12 +334,44 @@ public class ParticipantContextApiEndToEndTest {
 
             var updatedParticipant = participantContextService.getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
             assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.ACTIVATED.ordinal());
+            assertThat(context.getDidResourceForParticipant(did).getState()).isEqualTo(DidState.PUBLISHED.code());
+
             // verify the correct event was emitted
             verify(subscriber).on(argThat(env -> {
                 var evt = (ParticipantContextUpdated) env.getPayload();
                 return evt.getParticipantId().equals(participantId) && evt.getNewState() == ParticipantContextState.ACTIVATED;
             }));
+        }
 
+        @Test
+        void deactivateParticipant_shouldUnpublishDid(IdentityHubEndToEndTestContext context, ParticipantContextService participantContextService, EventRouter router) {
+            var superUserKey = context.createSuperUser();
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(ParticipantContextUpdated.class, subscriber);
+
+            var participantId = "test-user";
+            var did = "did:web:" + participantId;
+
+            context.createParticipant(participantId);
+            assertThat(context.getDidResourceForParticipant(did).getState()).isEqualTo(DidState.PUBLISHED.code());
+
+            context.getIdentityApiEndpoint().baseRequest()
+                    .header(new Header("x-api-key", superUserKey))
+                    .contentType(ContentType.JSON)
+                    .post("/v1alpha/participants/%s/state?isActive=false".formatted(toBase64(participantId)))
+                    .then()
+                    .log().ifError()
+                    .statusCode(204);
+
+            var updatedParticipant = participantContextService.getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+            assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.DEACTIVATED.ordinal());
+            assertThat(context.getDidResourceForParticipant(did).getState()).isEqualTo(DidState.UNPUBLISHED.code());
+
+            // verify the correct event was emitted
+            verify(subscriber).on(argThat(env -> {
+                var evt = (ParticipantContextUpdated) env.getPayload();
+                return evt.getParticipantId().equals(participantId) && evt.getNewState() == ParticipantContextState.DEACTIVATED;
+            }));
         }
 
         @Test

@@ -23,6 +23,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
+import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.participantcontext.ApiTokenGenerator;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -50,8 +51,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.Mockito.spy;
-
 /**
  * Identity Hub end to end context used in tests extended with {@link IdentityHubEndToEndExtension}
  */
@@ -73,6 +72,29 @@ public class IdentityHubEndToEndTestContext {
 
     public String createParticipant(String participantId) {
         return createParticipant(participantId, List.of());
+    }
+
+    public String createParticipant(String participantId, List<String> roles, boolean isActive) {
+        var manifest = ParticipantManifest.Builder.newInstance()
+                .participantId(participantId)
+                .active(isActive)
+                .roles(roles)
+                .serviceEndpoint(new Service("test-service-id", "test-type", "http://foo.bar.com"))
+                .did("did:web:" + participantId)
+                .key(KeyDescriptor.Builder.newInstance()
+                        .privateKeyAlias(participantId + "-alias")
+                        .resourceId(participantId + "-resource")
+                        .keyId(participantId + "-key")
+                        .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"))
+                        .build())
+                .build();
+        var srv = runtime.getService(ParticipantContextService.class);
+        return srv.createParticipantContext(manifest).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+    }
+
+
+    public String createParticipant(String participantId, List<String> roles) {
+        return createParticipant(participantId, roles, true);
     }
 
     public VerifiableCredential createCredential() {
@@ -98,23 +120,6 @@ public class IdentityHubEndToEndTestContext {
         return resource.getId();
     }
 
-    public String createParticipant(String participantId, List<String> roles) {
-        var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId(participantId)
-                .active(true)
-                .roles(roles)
-                .serviceEndpoint(new Service("test-service-id", "test-type", "http://foo.bar.com"))
-                .did("did:web:" + participantId)
-                .key(KeyDescriptor.Builder.newInstance()
-                        .privateKeyAlias(participantId + "-alias")
-                        .resourceId(participantId + "-resource")
-                        .keyId(participantId + "-key")
-                        .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"))
-                        .build())
-                .build();
-        var srv = runtime.getService(ParticipantContextService.class);
-        return srv.createParticipantContext(manifest).orElseThrow(f -> new EdcException(f.getFailureDetail()));
-    }
 
     public String createSuperUser() {
         return createParticipant(SUPER_USER, List.of(ServicePrincipal.ROLE_ADMIN));
@@ -201,8 +206,9 @@ public class IdentityHubEndToEndTestContext {
                 .stream().findFirst();
     }
 
-    public <S> S spyService(Class<S> serviceClass) {
-        return spy(runtime.getService(serviceClass));
+    public DidResource getDidResourceForParticipant(String did) {
+        return runtime.getService(DidDocumentService.class).findById(did);
     }
+
 
 }
