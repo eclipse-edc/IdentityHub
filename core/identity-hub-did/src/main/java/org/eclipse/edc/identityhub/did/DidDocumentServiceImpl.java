@@ -61,7 +61,8 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     private final Monitor monitor;
     private final KeyParserRegistry keyParserRegistry;
 
-    public DidDocumentServiceImpl(TransactionContext transactionContext, DidResourceStore didResourceStore, DidDocumentPublisherRegistry registry, ParticipantContextService participantContextService, Monitor monitor, KeyParserRegistry keyParserRegistry) {
+    public DidDocumentServiceImpl(TransactionContext transactionContext, DidResourceStore didResourceStore, DidDocumentPublisherRegistry registry,
+                                  ParticipantContextService participantContextService, Monitor monitor, KeyParserRegistry keyParserRegistry) {
         this.transactionContext = transactionContext;
         this.didResourceStore = didResourceStore;
         this.registry = registry;
