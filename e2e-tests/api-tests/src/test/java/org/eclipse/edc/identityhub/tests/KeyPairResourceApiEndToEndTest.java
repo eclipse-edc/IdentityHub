@@ -15,12 +15,14 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.Header;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -51,10 +53,16 @@ public class KeyPairResourceApiEndToEndTest {
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService store) {
-            // purge all users
-            store.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> store.deleteParticipantContext(pc.getParticipantId()).getContent());
+        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore) {
+            // purge all users, dids, keypairs
+
+            pcService.query(QuerySpec.max()).getContent()
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+
+            didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
+
+            keyPairResourceStore.query(QuerySpec.max()).getContent()
+                    .forEach(kpr -> keyPairResourceStore.deleteById(kpr.getId()).getContent());
         }
 
         @Test

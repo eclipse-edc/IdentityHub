@@ -96,16 +96,20 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             if (participantContext == null) {
                 return ServiceResult.notFound("A ParticipantContext with ID '%s' does not exist.");
             }
+            // deactivating the PC must be the first step, because unpublishing DIDs requires the PC to be in the DEACTIVATED state.
+            // Unpublishing DIDs happens in callback of the "-Deleting" Event
+            return updateParticipant(participantId, ParticipantContext::deactivate)
+                    .compose(v -> {
+                        observable.invokeForEach(l -> l.deleting(participantContext));
+                        var res = participantContextStore.deleteById(participantId);
+                        vault.deleteSecret(participantContext.getApiTokenAlias());
+                        if (res.failed()) {
+                            return fromFailure(res);
+                        }
 
-            observable.invokeForEach(l -> l.deleting(participantContext));
-            var res = participantContextStore.deleteById(participantId);
-            vault.deleteSecret(participantContext.getApiTokenAlias());
-            if (res.failed()) {
-                return fromFailure(res);
-            }
-
-            observable.invokeForEach(l -> l.deleted(participantContext));
-            return ServiceResult.success();
+                        observable.invokeForEach(l -> l.deleted(participantContext));
+                        return ServiceResult.success();
+                    });
         });
     }
 
