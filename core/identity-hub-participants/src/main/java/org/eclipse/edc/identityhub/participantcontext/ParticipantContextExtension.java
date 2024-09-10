@@ -14,22 +14,17 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
-import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleting;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
-import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
-import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.time.Clock;
@@ -47,10 +42,6 @@ public class ParticipantContextExtension implements ServiceExtension {
     @Inject
     private TransactionContext transactionContext;
     @Inject
-    private KeyParserRegistry keyParserRegistry;
-    @Inject
-    private DidDocumentService didDocumentService;
-    @Inject
     private KeyPairService keyPairService;
     @Inject
     private Clock clock;
@@ -64,15 +55,6 @@ public class ParticipantContextExtension implements ServiceExtension {
     @Override
     public String name() {
         return NAME;
-    }
-
-    @Override
-    public void initialize(ServiceExtensionContext context) {
-        var coordinator = new ParticipantContextEventCoordinator(context.getMonitor().withPrefix("ParticipantContextEventCoordinator"),
-                didDocumentService, keyPairService);
-
-        eventRouter.registerSync(ParticipantContextCreated.class, coordinator);
-        eventRouter.registerSync(ParticipantContextDeleting.class, coordinator);
     }
 
     @Provider

@@ -221,10 +221,11 @@ class ParticipantContextServiceImplTest {
     void deleteParticipantContext() {
         when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
         when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
+        when(participantContextStore.update(any())).thenReturn(StoreResult.success());
         assertThat(participantContextService.deleteParticipantContext("test-id")).isSucceeded();
 
         verify(participantContextStore).deleteById(anyString());
-        verify(observableMock, times(2)).invokeForEach(any());
+        verify(observableMock, times(3)).invokeForEach(any());
         verify(vault).deleteSecret(anyString());
         verifyNoMoreInteractions(vault, observableMock);
     }
@@ -234,6 +235,8 @@ class ParticipantContextServiceImplTest {
     void deleteParticipantContext_whenNotExists() {
         when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
         when(participantContextStore.deleteById(any())).thenReturn(StoreResult.notFound("foo bar"));
+        when(participantContextStore.update(any())).thenReturn(StoreResult.success());
+
         assertThat(participantContextService.deleteParticipantContext("test-id"))
                 .isFailed()
                 .satisfies(f -> {
@@ -241,7 +244,7 @@ class ParticipantContextServiceImplTest {
                     Assertions.assertThat(f.getFailureDetail()).isEqualTo("foo bar");
                 });
 
-        verify(observableMock).invokeForEach(any()); //deleting
+        verify(observableMock, times(2)).invokeForEach(any()); //deleting
         verify(participantContextStore).deleteById(anyString());
         verify(vault).deleteSecret(anyString());
         verifyNoMoreInteractions(vault, observableMock);

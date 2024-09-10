@@ -31,10 +31,12 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubCustomizableEndToEndExtension;
@@ -129,13 +131,16 @@ public class PresentationApiEndToEndTest {
         }
 
         @AfterEach
-        void teardown(ParticipantContextService contextService, CredentialStore store) {
+        void teardown(ParticipantContextService contextService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, CredentialStore store) {
             // purge all participant contexts
-            contextService.query(QuerySpec.none())
-                    .onSuccess(participantContexts -> participantContexts.forEach(participant -> {
-                        contextService.deleteParticipantContext(participant.getParticipantId());
-                    }))
-                    .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
+
+            contextService.query(QuerySpec.max()).getContent()
+                    .forEach(pc -> contextService.deleteParticipantContext(pc.getParticipantId()).getContent());
+
+            didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
+
+            keyPairResourceStore.query(QuerySpec.max()).getContent()
+                    .forEach(kpr -> keyPairResourceStore.deleteById(kpr.getId()).getContent());
 
             // purge all VCs
             store.query(QuerySpec.none())

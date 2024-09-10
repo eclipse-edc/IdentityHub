@@ -18,7 +18,9 @@ import io.restassured.http.Header;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
@@ -44,10 +46,16 @@ public class VerifiableCredentialApiEndToEndTest {
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService store) {
-            // purge all users
-            store.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> store.deleteParticipantContext(pc.getParticipantId()).getContent());
+        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore) {
+            // purge all users, dids, keypairs
+
+            pcService.query(QuerySpec.max()).getContent()
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+
+            didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
+
+            keyPairResourceStore.query(QuerySpec.max()).getContent()
+                    .forEach(kpr -> keyPairResourceStore.deleteById(kpr.getId()).getContent());
         }
 
         @Test

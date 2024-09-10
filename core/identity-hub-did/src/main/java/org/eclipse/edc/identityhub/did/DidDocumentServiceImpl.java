@@ -24,7 +24,10 @@ import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
@@ -54,13 +57,16 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     private final TransactionContext transactionContext;
     private final DidResourceStore didResourceStore;
     private final DidDocumentPublisherRegistry registry;
+    private final ParticipantContextService participantContextService;
     private final Monitor monitor;
     private final KeyParserRegistry keyParserRegistry;
 
-    public DidDocumentServiceImpl(TransactionContext transactionContext, DidResourceStore didResourceStore, DidDocumentPublisherRegistry registry, Monitor monitor, KeyParserRegistry keyParserRegistry) {
+    public DidDocumentServiceImpl(TransactionContext transactionContext, DidResourceStore didResourceStore, DidDocumentPublisherRegistry registry,
+                                  ParticipantContextService participantContextService, Monitor monitor, KeyParserRegistry keyParserRegistry) {
         this.transactionContext = transactionContext;
         this.didResourceStore = didResourceStore;
         this.registry = registry;
+        this.participantContextService = participantContextService;
         this.monitor = monitor;
         this.keyParserRegistry = keyParserRegistry;
     }
@@ -101,18 +107,30 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public ServiceResult<Void> publish(String did) {
         return transactionContext.execute(() -> {
-            var existingDoc = didResourceStore.findById(did);
-            if (existingDoc == null) {
+            var existingResource = didResourceStore.findById(did);
+            if (existingResource == null) {
                 return ServiceResult.notFound(notFoundMessage(did));
             }
-            var publisher = registry.getPublisher(did);
-            if (publisher == null) {
-                return ServiceResult.badRequest(noPublisherFoundMessage(did));
-            }
-            var publishResult = publisher.publish(did);
-            return publishResult.succeeded() ?
-                    success() :
-                    ServiceResult.badRequest(publishResult.getFailureDetail());
+            var participantId = existingResource.getParticipantId();
+            return participantContextService.getParticipantContext(participantId)
+                    .map(ParticipantContext::getStateAsEnum)
+                    .compose(state -> {
+                        var canPublish = state.equals(ParticipantContextState.ACTIVATED);
+                        if (canPublish) {
+                            var publisher = registry.getPublisher(did);
+                            if (publisher == null) {
+                                return ServiceResult.badRequest(noPublisherFoundMessage(did));
+                            }
+                            var publishResult = publisher.publish(did);
+                            return publishResult.succeeded() ?
+                                    success() :
+                                    ServiceResult.badRequest(publishResult.getFailureDetail());
+                        }
+                        return ServiceResult.badRequest(("Cannot publish DID '%s' for participant '%s' because the ParticipantContext is not state '%s' state, " +
+                                "but was '%s'.")
+                                .formatted(did, participantId, ParticipantContextState.ACTIVATED, state));
+                    });
+
 
         });
     }
@@ -120,23 +138,35 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public ServiceResult<Void> unpublish(String did) {
         return transactionContext.execute(() -> {
-            var existingDoc = didResourceStore.findById(did);
-            if (existingDoc == null) {
+            var existingResource = didResourceStore.findById(did);
+            if (existingResource == null) {
                 return ServiceResult.notFound(notFoundMessage(did));
             }
-            var publisher = registry.getPublisher(did);
-            if (publisher == null) {
-                return ServiceResult.badRequest(noPublisherFoundMessage(did));
-            }
-            // only unpublish if published, NOOP otherwise
-            if (existingDoc.getState() == DidState.PUBLISHED.code()) {
-                var publishResult = publisher.unpublish(did);
-                return publishResult.succeeded() ?
-                        success() :
-                        ServiceResult.badRequest(publishResult.getFailureDetail());
-            }
-            monitor.info("Unpublishing DID Document '%s': not in state '%s', unpublishing is a NOOP.".formatted(did, existingDoc.getStateAsEnum()));
-            return success();
+
+            var participantId = existingResource.getParticipantId();
+            return participantContextService.getParticipantContext(participantId)
+                    .map(ParticipantContext::getStateAsEnum)
+                    .compose(state -> {
+                        var canUnpublish = state.equals(ParticipantContextState.DEACTIVATED);
+                        if (canUnpublish) {
+                            var publisher = registry.getPublisher(did);
+                            if (publisher == null) {
+                                return ServiceResult.badRequest(noPublisherFoundMessage(did));
+                            }
+                            // only unpublish if published, NOOP otherwise
+                            if (existingResource.getState() == DidState.PUBLISHED.code()) {
+                                var publishResult = publisher.unpublish(did);
+                                return publishResult.succeeded() ?
+                                        success() :
+                                        ServiceResult.badRequest(publishResult.getFailureDetail());
+                            }
+                            monitor.info("Unpublishing DID Document '%s': not in state '%s', unpublishing is a NOOP.".formatted(did, existingResource.getStateAsEnum()));
+                            return success();
+                        }
+                        return ServiceResult.badRequest(("Cannot un-publish DID '%s' for participant '%s' because the ParticipantContext is not state '%s' state, " +
+                                "but was '%s'.")
+                                .formatted(did, participantId, ParticipantContextState.DEACTIVATED, state));
+                    });
         });
     }
 

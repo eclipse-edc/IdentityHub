@@ -28,7 +28,9 @@ import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.keyparsers.JwkParser;
@@ -38,6 +40,7 @@ import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,9 +63,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class DidDocumentServiceImplTest {
+    public static final String TEST_DID = "did:web:testdid";
+    private static final String TEST_PARTICIPANT_ID = "test-participant";
     private final DidResourceStore didResourceStoreMock = mock();
     private final DidDocumentPublisherRegistry publisherRegistry = mock();
     private final DidDocumentPublisher publisherMock = mock();
+    private final ParticipantContextService participantContextServiceMock = mock();
     private DidDocumentServiceImpl service;
     private Monitor monitorMock;
 
@@ -75,7 +81,13 @@ class DidDocumentServiceImplTest {
         registry.register(new JwkParser(new ObjectMapper(), mock()));
         registry.register(new PemParser(mock()));
         monitorMock = mock();
-        service = new DidDocumentServiceImpl(trx, didResourceStoreMock, publisherRegistry, monitorMock, registry);
+        service = new DidDocumentServiceImpl(trx, didResourceStoreMock, publisherRegistry, participantContextServiceMock, monitorMock, registry);
+
+        when(participantContextServiceMock.getParticipantContext(any())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
+                .participantId(TEST_PARTICIPANT_ID)
+                .apiTokenAlias("token")
+                .state(ParticipantContextState.ACTIVATED)
+                .build()));
     }
 
     @Test
@@ -200,6 +212,11 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
         when(publisherMock.unpublish(did)).thenReturn(Result.success());
+        when(participantContextServiceMock.getParticipantContext(any())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
+                .participantId(TEST_PARTICIPANT_ID)
+                .apiTokenAlias("token")
+                .state(ParticipantContextState.DEACTIVATED)
+                .build()));
 
         assertThat(service.unpublish(did)).isSucceeded();
 
@@ -226,6 +243,11 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         when(publisherRegistry.getPublisher(any())).thenReturn(null);
         when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
+        when(participantContextServiceMock.getParticipantContext(any())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
+                .participantId(TEST_PARTICIPANT_ID)
+                .apiTokenAlias("token")
+                .state(ParticipantContextState.DEACTIVATED)
+                .build()));
 
         assertThat(service.unpublish(did)).isFailed().detail()
                 .isEqualTo(service.noPublisherFoundMessage(did));
@@ -241,7 +263,12 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
         when(publisherMock.unpublish(did)).thenReturn(Result.failure("test-failure"));
-
+        when(participantContextServiceMock.getParticipantContext(any())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
+                .participantId(TEST_PARTICIPANT_ID)
+                .apiTokenAlias("token")
+                .state(ParticipantContextState.DEACTIVATED)
+                .build()));
+        
         assertThat(service.unpublish(did)).isFailed()
                 .detail()
                 .isEqualTo("test-failure");
@@ -408,6 +435,12 @@ class DidDocumentServiceImplTest {
         when(didResourceStoreMock.query(any())).thenReturn(List.of(didResource));
         when(publisherMock.unpublish(anyString())).thenReturn(Result.success());
 
+        when(participantContextServiceMock.getParticipantContext(any())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
+                .participantId(TEST_PARTICIPANT_ID)
+                .apiTokenAlias("token")
+                .state(ParticipantContextState.DEACTIVATED)
+                .build()));
+
         service.on(EventEnvelope.Builder.newInstance()
                 .payload(ParticipantContextUpdated.Builder.newInstance()
                         .newState(ParticipantContextState.DEACTIVATED)
@@ -453,6 +486,12 @@ class DidDocumentServiceImplTest {
         when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
         when(didResourceStoreMock.query(any())).thenReturn(List.of(didResource));
         when(publisherMock.unpublish(anyString())).thenReturn(Result.success());
+
+        when(participantContextServiceMock.getParticipantContext(any())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
+                .participantId(TEST_PARTICIPANT_ID)
+                .apiTokenAlias("token")
+                .state(ParticipantContextState.DEACTIVATED)
+                .build()));
 
         service.on(EventEnvelope.Builder.newInstance()
                 .payload(ParticipantContextUpdated.Builder.newInstance()
@@ -572,10 +611,10 @@ class DidDocumentServiceImplTest {
 
     private DidDocument.Builder createDidDocument() {
         return DidDocument.Builder.newInstance()
-                .id("did:web:testdid")
+                .id(TEST_DID)
                 .service(List.of(new Service("test-service", "test-service", "https://test.service.com/")))
                 .verificationMethod(List.of(VerificationMethod.Builder.newInstance()
-                        .id("did:web:testdid#key-1")
+                        .id(TEST_DID + "#key-1")
                         .publicKeyMultibase("saflasjdflaskjdflasdkfj")
                         .build()));
     }

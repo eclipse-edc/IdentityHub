@@ -12,3 +12,4 @@
 #
 #
 org.eclipse.edc.identityhub.participantcontext.ParticipantContextExtension
+org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension
