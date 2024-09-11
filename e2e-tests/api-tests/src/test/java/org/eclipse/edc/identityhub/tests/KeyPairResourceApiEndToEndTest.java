@@ -322,48 +322,84 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @Test
-        void rotate(IdentityHubEndToEndTestContext context, EventRouter router) {
+        void rotate_withSuperUserToken(IdentityHubEndToEndTestContext context, EventRouter router) {
             var superUserKey = context.createSuperUser();
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(KeyPairRotated.class, subscriber);
             router.registerSync(KeyPairAdded.class, subscriber);
 
             var user1 = "user1";
-            var token = context.createParticipant(user1);
+            context.createParticipant(user1);
 
             var keyPairId = context.createKeyPair(user1).getResourceId();
 
-            assertThat(Arrays.asList(token, superUserKey))
-                    .allSatisfy(t -> {
-                        reset(subscriber);
-                        // attempt to publish user1's DID document, which should fail
-                        var keyDesc = context.createKeyDescriptor(user1).build();
-                        context.getIdentityApiEndpoint().baseRequest()
-                                .contentType(JSON)
-                                .header(new Header("x-api-key", t))
-                                .body(keyDesc)
-                                .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(toBase64(user1), keyPairId))
-                                .then()
-                                .log().ifValidationFails()
-                                .statusCode(204)
-                                .body(notNullValue());
+            // attempt to publish user1's DID document, which should fail
+            var keyDesc = context.createKeyDescriptor(user1).build();
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", superUserKey))
+                    .body(keyDesc)
+                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(toBase64(user1), keyPairId))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204)
+                    .body(notNullValue());
 
-                        // verify that the "rotated" event fired once
-                        verify(subscriber).on(argThat(env -> {
-                            if (env.getPayload() instanceof KeyPairRotated evt) {
-                                return evt.getParticipantId().equals(user1);
-                            }
-                            return false;
-                        }));
-                        // verify that the correct "added" event fired
-                        verify(subscriber).on(argThat(env -> {
-                            if (env.getPayload() instanceof KeyPairAdded evt) {
-                                return evt.getKeyPairResourceId().equals(keyDesc.getResourceId()) &&
-                                        evt.getKeyId().equals(keyDesc.getKeyId());
-                            }
-                            return false;
-                        }));
-                    });
+            // verify that the "rotated" event fired once
+            verify(subscriber).on(argThat(env -> {
+                if (env.getPayload() instanceof KeyPairRotated evt) {
+                    return evt.getParticipantId().equals(user1);
+                }
+                return false;
+            }));
+            // verify that the correct "added" event fired
+            verify(subscriber).on(argThat(env -> {
+                if (env.getPayload() instanceof KeyPairAdded evt) {
+                    return evt.getKeyPairResourceId().equals(keyDesc.getResourceId()) &&
+                            evt.getKeyId().equals(keyDesc.getKeyId());
+                }
+                return false;
+            }));
+        }
+
+        @Test
+        void rotate_withUserToken(IdentityHubEndToEndTestContext context, EventRouter router) {
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(KeyPairRotated.class, subscriber);
+            router.registerSync(KeyPairAdded.class, subscriber);
+
+            var user1 = "user1";
+            var userToken = context.createParticipant(user1);
+
+            var keyPairId = context.createKeyPair(user1).getResourceId();
+
+            // attempt to publish user1's DID document, which should fail
+            var keyDesc = context.createKeyDescriptor(user1).build();
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", userToken))
+                    .body(keyDesc)
+                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(toBase64(user1), keyPairId))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204)
+                    .body(notNullValue());
+
+            // verify that the "rotated" event fired once
+            verify(subscriber).on(argThat(env -> {
+                if (env.getPayload() instanceof KeyPairRotated evt) {
+                    return evt.getParticipantId().equals(user1);
+                }
+                return false;
+            }));
+            // verify that the correct "added" event fired
+            verify(subscriber).on(argThat(env -> {
+                if (env.getPayload() instanceof KeyPairAdded evt) {
+                    return evt.getKeyPairResourceId().equals(keyDesc.getResourceId()) &&
+                            evt.getKeyId().equals(keyDesc.getKeyId());
+                }
+                return false;
+            }));
         }
 
         @Test
