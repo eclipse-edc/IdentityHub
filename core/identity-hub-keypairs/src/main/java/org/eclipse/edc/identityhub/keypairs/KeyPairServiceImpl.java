@@ -21,8 +21,11 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
@@ -40,11 +43,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.ACTIVATED;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.CREATED;
 
 public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     private final KeyPairResourceStore keyPairResourceStore;
@@ -52,19 +59,28 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     private final Monitor monitor;
     private final KeyPairObservable observable;
     private final TransactionContext transactionContext;
+    private final ParticipantContextStore participantContextService;
 
-    public KeyPairServiceImpl(KeyPairResourceStore keyPairResourceStore, Vault vault, Monitor monitor, KeyPairObservable observable, TransactionContext transactionContext) {
+    public KeyPairServiceImpl(KeyPairResourceStore keyPairResourceStore, Vault vault, Monitor monitor, KeyPairObservable observable, TransactionContext transactionContext, ParticipantContextStore participantContextService) {
         this.keyPairResourceStore = keyPairResourceStore;
         this.vault = vault;
         this.monitor = monitor;
         this.observable = observable;
         this.transactionContext = transactionContext;
+        this.participantContextService = participantContextService;
     }
 
     @Override
     public ServiceResult<Void> addKeyPair(String participantId, KeyDescriptor keyDescriptor, boolean makeDefault) {
 
         return transactionContext.execute(() -> {
+
+            var result = checkParticipantState(participantId, ACTIVATED, CREATED);
+
+            if (result.failed()) {
+                return result.mapEmpty();
+            }
+
             var key = generateOrGetKey(keyDescriptor);
             if (key.failed()) {
                 return ServiceResult.badRequest(key.getFailureDetail());
@@ -185,6 +201,28 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
         } else {
             monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }
+    }
+
+    /**
+     * checks if the participant exists, and that its {@link ParticipantContext#state} flag matches either of the given states
+     *
+     * @param participantId the ParticipantContext ID of the participant context
+     * @param allowedStates a (possible empty) list of allowed states a participant may be in for a particular operation.
+     * @return {@link ServiceResult#success()} if the participant context exists, and is in one of the allowed states, a failure otherwise.
+     */
+    private ServiceResult<Void> checkParticipantState(String participantId, ParticipantContextState... allowedStates) {
+        var result = ServiceResult.from(participantContextService.query(ParticipantContext.queryByParticipantId(participantId).build()))
+                .compose(list -> list.stream().findFirst()
+                        .map(pc -> {
+                            var state = pc.getStateAsEnum();
+                            if (!Arrays.asList(allowedStates).contains(state)) {
+                                return ServiceResult.badRequest("To add a key pair, the ParticipantContext with ID '%s' must be in state %s or %s but was %s."
+                                        .formatted(participantId, ACTIVATED, CREATED, state));
+                            }
+                            return ServiceResult.success();
+                        })
+                        .orElse(ServiceResult.notFound("No ParticipantContext with ID '%s' was found.".formatted(participantId))));
+        return result.mapEmpty();
     }
 
     private @NotNull ServiceResult<Void> activateKeyPair(KeyPairResource existingKeyPair) {

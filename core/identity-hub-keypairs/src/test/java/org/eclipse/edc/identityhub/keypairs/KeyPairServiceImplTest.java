@@ -21,11 +21,16 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -51,11 +56,19 @@ import static org.mockito.Mockito.when;
 
 class KeyPairServiceImplTest {
 
+    public static final String PARTICIPANT_ID = "test-participant";
     private final KeyPairResourceStore keyPairResourceStore = mock(i -> StoreResult.success());
     private final Vault vault = mock();
     private final KeyPairObservable observableMock = mock();
-    private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault, mock(), observableMock, new NoopTransactionContext());
+    private final ParticipantContextStore participantContextServiceMock = mock();
+    private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault, mock(), observableMock, new NoopTransactionContext(), participantContextServiceMock);
 
+
+    @BeforeEach
+    void setup() {
+        when(participantContextServiceMock.query(any(QuerySpec.class)))
+                .thenReturn(StoreResult.success(List.of(ParticipantContext.Builder.newInstance().participantId(PARTICIPANT_ID).apiTokenAlias("apitoken-alias").build())));
+    }
 
     @ParameterizedTest(name = "make default: {0}")
     @ValueSource(booleans = { true, false })
@@ -64,9 +77,9 @@ class KeyPairServiceImplTest {
         when(keyPairResourceStore.create(any())).thenReturn(success());
         var key = createKey().publicKeyJwk(createJwk()).publicKeyPem(null).keyGeneratorParams(null).build();
 
-        assertThat(keyPairService.addKeyPair("some-participant", key, makeDefault)).isSucceeded();
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, makeDefault)).isSucceeded();
 
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantId().equals("some-participant")));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantId().equals(PARTICIPANT_ID)));
         // new key is set to active - expect an update in the DB
         verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
         verify(observableMock, times(2)).invokeForEach(any());
@@ -83,11 +96,11 @@ class KeyPairServiceImplTest {
                 "curve", "Ed25519"
         )).build();
 
-        assertThat(keyPairService.addKeyPair("some-participant", key, makeDefault)).isSucceeded();
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, makeDefault)).isSucceeded();
 
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
         verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault &&
-                kpr.getParticipantId().equals("some-participant") &&
+                kpr.getParticipantId().equals(PARTICIPANT_ID) &&
                 kpr.getState() == KeyPairState.ACTIVATED.code()));
         // new key is set to active - expect an update in the DB
         verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
@@ -108,12 +121,12 @@ class KeyPairServiceImplTest {
                         "curve", "Ed25519"
                 )).build();
 
-        assertThat(keyPairService.addKeyPair("some-participant", key, true)).isSucceeded();
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isSucceeded();
 
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
         //expect the query for other active keys at least once, if the new key is inactive
         verify(keyPairResourceStore, never()).query(any());
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantId().equals("some-participant") && kpr.getState() == KeyPairState.ACTIVATED.code()));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.ACTIVATED.code()));
         // new key is set to active - expect an update in the DB
         verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
         verify(observableMock, times(2)).invokeForEach(any());
@@ -133,20 +146,40 @@ class KeyPairServiceImplTest {
                         "curve", "Ed25519"
                 )).build();
 
-        assertThat(keyPairService.addKeyPair("some-participant", key, true)).isSucceeded();
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isSucceeded();
 
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
         //expect the query for other active keys at least once, if the new key is inactive
         verify(keyPairResourceStore, times(1)).query(any());
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantId().equals("some-participant") && kpr.getState() == KeyPairState.CREATED.code()));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.CREATED.code()));
         verify(observableMock, times(1)).invokeForEach(any());
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
     @Test
     void addKeyPair_participantNotFound() {
-        // can be implemented once events are used https://github.com/eclipse-edc/IdentityHub/issues/232
+        when(participantContextServiceMock.query(any(QuerySpec.class))).thenReturn(StoreResult.success(List.of()));
+
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, createKey().build(), false)).isFailed()
+                .detail().isEqualTo("No ParticipantContext with ID '%s' was found.".formatted(PARTICIPANT_ID));
     }
+
+
+    @Test
+    void addKeyPair_whenParticipantDeactivated_shouldFail() {
+        var pc = ParticipantContext.Builder.newInstance()
+                .participantId(PARTICIPANT_ID)
+                .apiTokenAlias("apitoken-alias")
+                .state(ParticipantContextState.DEACTIVATED)
+                .build();
+        when(participantContextServiceMock.query(any(QuerySpec.class))).thenReturn(StoreResult.success(List.of(pc)));
+
+        assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, createKey().build(), false))
+                .isFailed()
+                .detail()
+                .isEqualTo("To add a key pair, the ParticipantContext with ID '%s' must be in state ACTIVATED or CREATED but was DEACTIVATED.".formatted(PARTICIPANT_ID));
+    }
+
 
     @Test
     void rotateKeyPair_withNewKey() {
@@ -400,7 +433,7 @@ class KeyPairServiceImplTest {
                 .id(UUID.randomUUID().toString())
                 .keyId("test-key-1")
                 .privateKeyAlias("private-key-alias")
-                .participantId("test-participant")
+                .participantId(PARTICIPANT_ID)
                 .serializedPublicKey("this-is-a-pem-string")
                 .useDuration(Duration.ofDays(6).toMillis());
     }

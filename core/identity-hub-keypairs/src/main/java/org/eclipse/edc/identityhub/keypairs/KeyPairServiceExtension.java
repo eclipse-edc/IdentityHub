@@ -18,6 +18,7 @@ import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -45,6 +46,9 @@ public class KeyPairServiceExtension implements ServiceExtension {
     private Clock clock;
     @Inject
     private TransactionContext transactionContext;
+    @Inject
+    private ParticipantContextStore participantContextService;
+
 
     private KeyPairObservable observable;
 
@@ -55,7 +59,7 @@ public class KeyPairServiceExtension implements ServiceExtension {
 
     @Provider
     public KeyPairService createParticipantService(ServiceExtensionContext context) {
-        var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor().withPrefix("KeyPairService"), keyPairObservable(), transactionContext);
+        var service = new KeyPairServiceImpl(keyPairResourceStore, vault, context.getMonitor().withPrefix("KeyPairService"), keyPairObservable(), transactionContext, participantContextService);
         eventRouter.registerSync(ParticipantContextDeleted.class, service);
         return service;
     }
