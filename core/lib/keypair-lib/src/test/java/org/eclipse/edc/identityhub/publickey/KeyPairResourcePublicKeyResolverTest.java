@@ -153,7 +153,7 @@ class KeyPairResourcePublicKeyResolverTest {
                 .id(UUID.randomUUID().toString())
                 .keyId(UUID.randomUUID().toString())
                 .isDefaultPair(true)
-                .state(KeyPairState.ACTIVE)
+                .state(KeyPairState.ACTIVATED)
                 .serializedPublicKey(createPublicKeyJwk().toJSONString())
                 .privateKeyAlias("test-key-alias");
     }

@@ -56,7 +56,7 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
         var creator = ofNullable(creators.get(format)).orElseThrow(() -> new EdcException("No PresentationCreator was found for CredentialFormat %s".formatted(format)));
 
         var query = ParticipantResource.queryByParticipantId(participantContextId)
-                .filter(new Criterion("state", "=", KeyPairState.ACTIVE.code()))
+                .filter(new Criterion("state", "=", KeyPairState.ACTIVATED.code()))
                 .build();
 
         var keyPairResult = keyPairService.query(query)

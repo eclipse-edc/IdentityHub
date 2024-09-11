@@ -70,10 +70,10 @@ public interface KeyPairService {
     ServiceResult<Collection<KeyPairResource>> query(QuerySpec querySpec);
 
     /**
-     * Sets a key pair to the {@link KeyPairState#ACTIVE} state.
+     * Sets a key pair to the {@link KeyPairState#ACTIVATED} state.
      *
      * @param keyPairResourceId The ID of the {@link KeyPairResource}
-     * @return return a failure if the key pair resource is not in either {@link KeyPairState#CREATED} or {@link KeyPairState#ACTIVE}
+     * @return return a failure if the key pair resource is not in either {@link KeyPairState#CREATED} or {@link KeyPairState#ACTIVATED}
      */
     ServiceResult<Void> activate(String keyPairResourceId);
 }

@@ -152,9 +152,8 @@ public class ParticipantContextApiEndToEndTest {
                     .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
         }
 
-        @ParameterizedTest(name = "Create participant with key pair active = {0}")
-        @ValueSource(booleans = { true, false })
-        void createNewUser_verifyKeyPairActive(boolean isActive, IdentityHubEndToEndTestContext context, EventRouter router) {
+        @Test
+        void createNewUser_whenKeyPairActive(IdentityHubEndToEndTestContext context, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(ParticipantContextCreated.class, subscriber);
             var apikey = context.createSuperUser();
@@ -162,8 +161,9 @@ public class ParticipantContextApiEndToEndTest {
             var participantId = UUID.randomUUID().toString();
             var manifest = context.createNewParticipant()
                     .participantId(participantId)
+                    .active(true)
                     .did("did:web:" + participantId)
-                    .key(context.createKeyDescriptor().active(isActive).build())
+                    .key(context.createKeyDescriptor().active(true).build())
                     .build();
 
             context.getIdentityApiEndpoint().baseRequest()
@@ -179,9 +179,46 @@ public class ParticipantContextApiEndToEndTest {
             verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
 
             assertThat(context.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1)
-                    .allSatisfy(kpr -> assertThat(kpr.getState()).isEqualTo(isActive ? KeyPairState.ACTIVE.code() : KeyPairState.CREATED.code()));
-            assertThat(context.getDidForParticipant(manifest.getParticipantId())).hasSize(1)
+                    .allSatisfy(kpr -> assertThat(kpr.getState()).isEqualTo(KeyPairState.ACTIVATED.code()));
+            assertThat(context.getDidForParticipant(manifest.getParticipantId()))
+                    .hasSize(1)
                     .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
+
+        }
+
+        @Test
+        void createNewUser_whenKeyPairNotActive(IdentityHubEndToEndTestContext context, EventRouter router) {
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(ParticipantContextCreated.class, subscriber);
+            var apikey = context.createSuperUser();
+
+            var participantId = UUID.randomUUID().toString();
+            var manifest = context.createNewParticipant()
+                    .active(true)
+                    .participantId(participantId)
+                    .did("did:web:" + participantId)
+                    .key(context.createKeyDescriptor().active(false).build())
+                    .build();
+
+            context.getIdentityApiEndpoint().baseRequest()
+                    .header(new Header("x-api-key", apikey))
+                    .contentType(ContentType.JSON)
+                    .body(manifest)
+                    .post("/v1alpha/participants/")
+                    .then()
+                    .log().ifError()
+                    .statusCode(anyOf(equalTo(200), equalTo(204)))
+                    .body(notNullValue());
+
+            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
+
+            assertThat(context.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1)
+                    .allSatisfy(kpr -> assertThat(kpr.getState()).isEqualTo(KeyPairState.CREATED.code()));
+
+            // inactive key-pairs don't get added to the DID Document
+            assertThat(context.getDidForParticipant(manifest.getParticipantId()))
+                    .hasSize(1)
+                    .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).isEmpty());
 
         }
 

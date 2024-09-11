@@ -103,7 +103,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Path("/{keyPairId}/activate")
     @Override
     public void activateKeyPair(@PathParam("keyPairId") String keyPairResourceId, @Context SecurityContext context) {
-        authorizationService.isAuthorized(context, keyPairResourceId, KeyPairResource.class).compose(u -> keyPairService.activate(keyPairResourceId)).orElseThrow(exceptionMapper(KeyPairResource.class, keyPairResourceId));
+        authorizationService.isAuthorized(context, keyPairResourceId, KeyPairResource.class)
+                .compose(u -> keyPairService.activate(keyPairResourceId)).orElseThrow(exceptionMapper(KeyPairResource.class, keyPairResourceId));
 
     }
 

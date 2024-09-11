@@ -26,7 +26,7 @@ import org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry;
 import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
@@ -268,7 +268,7 @@ class DidDocumentServiceImplTest {
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));
-        
+
         assertThat(service.unpublish(did)).isFailed()
                 .detail()
                 .isEqualTo("test-failure");
@@ -530,7 +530,7 @@ class DidDocumentServiceImplTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    void onKeyPairAdded() throws JOSEException {
+    void onKeyPairActivated() throws JOSEException {
         var keyId = "key-id";
         var key = new ECKeyGenerator(Curve.P_256).keyID(keyId).generate();
         var doc = createDidDocument().build();
@@ -543,7 +543,7 @@ class DidDocumentServiceImplTest {
         var event = EventEnvelope.Builder.newInstance()
                 .at(System.currentTimeMillis())
                 .id(UUID.randomUUID().toString())
-                .payload(KeyPairAdded.Builder.newInstance()
+                .payload(KeyPairActivated.Builder.newInstance()
                         .keyId(keyId)
                         .keyPairResourceId("test-resource-id")
                         .participantId("test-participant")

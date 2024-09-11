@@ -36,6 +36,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -71,9 +72,11 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
 
             // check if the new key is not active, and no other active key exists
             if (!keyDescriptor.isActive()) {
+
+                //todo: replace this with invocation to activateKeyPair()
                 var hasActiveKeys = keyPairResourceStore.query(ParticipantResource.queryByParticipantId(participantId).build())
                         .orElse(failure -> Collections.emptySet())
-                        .stream().filter(kpr -> kpr.getState() == KeyPairState.ACTIVE.code())
+                        .stream().filter(kpr -> kpr.getState() == KeyPairState.ACTIVATED.code())
                         .findAny()
                         .isEmpty();
 
@@ -85,16 +88,23 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             var newResource = KeyPairResource.Builder.newInstance()
                     .id(keyDescriptor.getResourceId())
                     .keyId(keyDescriptor.getKeyId())
-                    .state(keyDescriptor.isActive() ? KeyPairState.ACTIVE : KeyPairState.CREATED)
+                    .state(keyDescriptor.isActive() ? KeyPairState.ACTIVATED : KeyPairState.CREATED)
                     .isDefaultPair(makeDefault)
                     .privateKeyAlias(keyDescriptor.getPrivateKeyAlias())
                     .serializedPublicKey(key.getContent())
                     .timestamp(Instant.now().toEpochMilli())
                     .participantId(participantId)
+                    .keyContext(keyDescriptor.getType())
                     .build();
 
             return ServiceResult.from(keyPairResourceStore.create(newResource))
-                    .onSuccess(v -> observable.invokeForEach(l -> l.added(newResource, keyDescriptor.getType())));
+                    .onSuccess(v -> observable.invokeForEach(l -> l.added(newResource, keyDescriptor.getType())))
+                    .compose(v -> {
+                        if (keyDescriptor.isActive()) {
+                            return activateKeyPair(newResource);
+                        }
+                        return ServiceResult.success();
+                    });
         });
     }
 
@@ -158,19 +168,12 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     @Override
     public ServiceResult<Void> activate(String keyPairResourceId) {
         return transactionContext.execute(() -> {
-            var oldKey = findById(keyPairResourceId);
-            if (oldKey == null) {
+            var existingKeyPair = findById(keyPairResourceId);
+            if (existingKeyPair == null) {
                 return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(keyPairResourceId));
             }
 
-            var allowedStates = List.of(KeyPairState.ACTIVE.code(), KeyPairState.CREATED.code());
-            if (!allowedStates.contains(oldKey.getState())) {
-                return ServiceResult.badRequest("The key pair resource is expected to be in %s, but was %s".formatted(allowedStates, oldKey.getState()));
-            }
-
-            oldKey.activate();
-
-            return ServiceResult.from(keyPairResourceStore.update(oldKey));
+            return activateKeyPair(existingKeyPair);
         });
     }
 
@@ -182,6 +185,17 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
         } else {
             monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }
+    }
+
+    private @NotNull ServiceResult<Void> activateKeyPair(KeyPairResource existingKeyPair) {
+        var allowedStates = List.of(KeyPairState.ACTIVATED.code(), KeyPairState.CREATED.code());
+        if (!allowedStates.contains(existingKeyPair.getState())) {
+            return ServiceResult.badRequest("The key pair resource is expected to be in %s, but was %s".formatted(allowedStates, existingKeyPair.getState()));
+        }
+        existingKeyPair.activate();
+
+        return ServiceResult.from(keyPairResourceStore.update(existingKeyPair)
+                .onSuccess(u -> observable.invokeForEach(l -> l.activated(existingKeyPair, existingKeyPair.getKeyContext()))));
     }
 
     private void created(ParticipantContextCreated event) {

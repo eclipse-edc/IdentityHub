@@ -128,7 +128,7 @@ class PresentationCreatorRegistryImplTest {
         return KeyPairResource.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .keyId(keyId)
-                .state(KeyPairState.ACTIVE)
+                .state(KeyPairState.ACTIVATED)
                 .isDefaultPair(true)
                 .privateKeyAlias("%s-%s-alias".formatted(participantId, keyId));
     }
