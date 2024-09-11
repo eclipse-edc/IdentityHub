@@ -157,7 +157,10 @@ public class IdentityHubEndToEndTestContext {
     public KeyDescriptor createKeyPair(String participantId) {
 
         var descriptor = createKeyDescriptor(participantId).build();
+        return createKeyPair(participantId, descriptor);
+    }
 
+    public KeyDescriptor createKeyPair(String participantId, KeyDescriptor descriptor) {
         var service = runtime.getService(KeyPairService.class);
         service.addKeyPair(participantId, descriptor, true)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));

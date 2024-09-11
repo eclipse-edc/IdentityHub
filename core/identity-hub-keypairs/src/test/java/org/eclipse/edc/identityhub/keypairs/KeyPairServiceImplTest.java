@@ -286,6 +286,7 @@ class KeyPairServiceImplTest {
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
 
+
     @Test
     void revokeKey_withNewKey() {
         var oldId = "old-id";

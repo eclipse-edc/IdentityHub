@@ -274,14 +274,17 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             var jwk = CryptoConverter.createJwk(new KeyPair((PublicKey) publicKey.getContent(), null));
 
             var errors = didResources.stream()
-                    .peek(dd -> dd.getDocument().getVerificationMethod().add(VerificationMethod.Builder.newInstance()
-                            .id(event.getKeyId())
-                            .publicKeyJwk(jwk.toJSONObject())
-                            .controller(dd.getDocument().getId())
-                            .type(event.getKeyType())
-                            .build()))
-                    .map(didResourceStore::update)
-                    .filter(StoreResult::failed)
+                    .map(dd -> {
+                        dd.getDocument().getVerificationMethod().add(VerificationMethod.Builder.newInstance()
+                                .id(event.getKeyId())
+                                .publicKeyJwk(jwk.toJSONObject())
+                                .controller(dd.getDocument().getId())
+                                .type(event.getKeyType())
+                                .build());
+                        return ServiceResult.from(didResourceStore.update(dd))
+                                .compose(v -> publish(dd.getDid()));
+                    })
+                    .filter(ServiceResult::failed)
                     .map(AbstractResult::getFailureDetail)
                     .collect(Collectors.joining(","));
 
