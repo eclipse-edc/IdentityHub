@@ -25,8 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-import static java.util.Optional.ofNullable;
-
 public class AuthorizationServiceImpl implements AuthorizationService {
     private final Map<Class<?>, Function<String, ParticipantResource>> resourceLookupFunctions = new HashMap<>();
 
@@ -43,12 +41,14 @@ public class AuthorizationServiceImpl implements AuthorizationService {
             return ServiceResult.unauthorized("User access for '%s' to resource ID '%s' of type '%s' cannot be verified".formatted(name, resourceClass, resourceClass));
         }
 
-        var isAuthorized = ofNullable(function.apply(resourceId))
-                .map(pr -> Objects.equals(pr.getParticipantId(), name))
-                .orElse(false);
+        var result = function.apply(resourceId);
+        if (result != null) {
+            return Objects.equals(result.getParticipantId(), name)
+                    ? ServiceResult.success()
+                    : ServiceResult.unauthorized("User '%s' is not authorized to access resource of type %s with ID '%s'.".formatted(name, resourceClass, resourceId));
+        }
 
-        return isAuthorized ? ServiceResult.success() : ServiceResult.unauthorized("User '%s' is not authorized to access resource of type %s with ID '%s'.".formatted(name, resourceClass, resourceId));
-
+        return ServiceResult.notFound("No Resource of type '%s' with ID '%s' was found.".formatted(resourceClass, resourceId));
     }
 
     @Override

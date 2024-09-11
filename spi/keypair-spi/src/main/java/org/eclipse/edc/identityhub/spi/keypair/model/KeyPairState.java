@@ -27,7 +27,7 @@ public enum KeyPairState {
     /**
      * Key pair is actively used to sign or encrypt material.
      */
-    ACTIVE(200),
+    ACTIVATED(200),
     /**
      * The key is not used to sign or encrypt anymore, but it can still be used to verify material that was signed with it in the past. At this point
      * the private key is likely expunged from the vault.

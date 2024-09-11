@@ -129,7 +129,7 @@ public abstract class KeyPairResourceStoreTestBase {
 
     @Test
     void query_byIdAndState() {
-        var kp1 = createKeyPairResource().id("id1").state(KeyPairState.ACTIVE).build();
+        var kp1 = createKeyPairResource().id("id1").state(KeyPairState.ACTIVATED).build();
         var kp2 = createKeyPairResource().id("id2").state(KeyPairState.CREATED).build();
         var kp3 = createKeyPairResource().id("id3").state(KeyPairState.REVOKED).build();
         var kp4 = createKeyPairResource().id("id4").state(KeyPairState.ROTATED).build();
@@ -198,6 +198,7 @@ public abstract class KeyPairResourceStoreTestBase {
                 .privateKeyAlias("private-key-alias")
                 .participantId("test-participant")
                 .serializedPublicKey("this-is-a-pem-string")
+                .keyContext("JsonWebKey2020")
                 .useDuration(Duration.ofDays(6).toMillis());
     }
 }

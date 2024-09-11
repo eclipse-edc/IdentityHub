@@ -154,20 +154,21 @@ public class IdentityHubEndToEndTestContext {
                 .getContent();
     }
 
-    public String createKeyPair(String participantId) {
+    public KeyDescriptor createKeyPair(String participantId) {
 
         var descriptor = createKeyDescriptor(participantId).build();
 
         var service = runtime.getService(KeyPairService.class);
         service.addKeyPair(participantId, descriptor, true)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
-        return descriptor.getResourceId();
+        return descriptor;
     }
 
     public KeyDescriptor.Builder createKeyDescriptor(String participantId) {
-        var keyId = UUID.randomUUID().toString();
+        var keyId = "key-id-%s".formatted(UUID.randomUUID());
         return KeyDescriptor.Builder.newInstance()
                 .keyId(keyId)
+                .active(false)
                 .resourceId(UUID.randomUUID().toString())
                 .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
                 .privateKeyAlias("%s-%s-alias".formatted(participantId, keyId));

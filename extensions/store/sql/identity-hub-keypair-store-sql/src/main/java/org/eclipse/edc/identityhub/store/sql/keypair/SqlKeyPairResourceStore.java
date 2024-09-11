@@ -64,7 +64,8 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                         keyPairResource.getRotationDuration(),
                         keyPairResource.getSerializedPublicKey(),
                         keyPairResource.getPrivateKeyAlias(),
-                        keyPairResource.getState());
+                        keyPairResource.getState(),
+                        keyPairResource.getKeyContext());
 
                 return success();
             } catch (SQLException e) {
@@ -108,6 +109,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                         keyPairResource.getSerializedPublicKey(),
                         keyPairResource.getPrivateKeyAlias(),
                         keyPairResource.getState(),
+                        keyPairResource.getKeyContext(),
                         id);
 
                 return success();
@@ -156,6 +158,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                 .serializedPublicKey(resultSet.getString(statements.getSerializedPublicKeyColumn()))
                 .privateKeyAlias(resultSet.getString(statements.getPrivateKeyAliasColumn()))
                 .state(resultSet.getInt(statements.getStateColumn()))
+                .keyContext(resultSet.getString(statements.getKeyContextColumn()))
                 .build();
     }
 

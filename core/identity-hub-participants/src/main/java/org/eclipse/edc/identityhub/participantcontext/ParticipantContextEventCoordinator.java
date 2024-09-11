@@ -65,6 +65,11 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
                     // updating and adding a verification method happens as a result of the KeyPairAddedEvent
                     .build();
 
+            if (manifest.isActive() && !manifest.getKey().isActive()) {
+                monitor.warning("The ParticipantContext is 'active', but its (only) KeyPair is 'inActive'. " +
+                        "This will result in a DID Document without Verification Methods, and thus, an unusable ParticipantContext.");
+            }
+
             didDocumentService.store(doc, manifest.getParticipantId())
                     // adding the keypair event will cause the DidDocumentService to update the DID.
                     .compose(u -> keyPairService.addKeyPair(createdEvent.getParticipantId(), createdEvent.getManifest().getKey(), true))

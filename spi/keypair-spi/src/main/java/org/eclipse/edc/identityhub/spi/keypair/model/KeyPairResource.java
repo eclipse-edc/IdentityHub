@@ -31,6 +31,7 @@ public class KeyPairResource extends ParticipantResource {
     private long timestamp;
     private String keyId;
     private String groupName;
+    private String keyContext;
     private boolean defaultPair;
     private long useDuration;
     private long rotationDuration;
@@ -103,6 +104,16 @@ public class KeyPairResource extends ParticipantResource {
         return useDuration;
     }
 
+    /**
+     * The context in which this key resource is to be used, for example this could be "JsonWebKey2020". This value will
+     * be set on the Verification Method's {@code type} field of the participant's DID document
+     *
+     * @return the context in which the key context is to be used.
+     */
+    public String getKeyContext() {
+        return keyContext;
+    }
+
 
     public int getState() {
         return state;
@@ -121,7 +132,7 @@ public class KeyPairResource extends ParticipantResource {
     }
 
     public void activate() {
-        state = KeyPairState.ACTIVE.code();
+        state = KeyPairState.ACTIVATED.code();
     }
 
     public static final class Builder extends ParticipantResource.Builder<KeyPairResource, KeyPairResource.Builder> {
@@ -194,6 +205,11 @@ public class KeyPairResource extends ParticipantResource {
 
         public Builder state(int state) {
             entity.state = state;
+            return this;
+        }
+
+        public Builder keyContext(String keyContext) {
+            entity.keyContext = keyContext;
             return this;
         }
 

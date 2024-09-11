@@ -75,7 +75,8 @@ This operation can be performed for the `CREATED` and `ACTIVATED` participant co
 Activating a key pair and publishing associated changes to a DID document must be performed in the following sequence:
 
 - A transaction is opened.
-- The new key pair is added to storage.
+- key key pair resource's state is set to ACTIVATED
+- The new (now active) key pair is added to the did document resource in its storage.
 - If the DID document resource is in the `PUBLISHED` state, the DID document is published with all verification methods
   for public keys in the `ACTIVATED` state. Note that the DID document resource cannot be in the `PUBLISHED` state if
   the participant context is not `ACTIVATED`.
@@ -92,9 +93,12 @@ It must not be possible to activate a key without publishing it.
 
 This operation can be performed for the `CREATED` and `ACTIVATED` participant context states.
 
-If activation is false, the key pair is committed to storage.
+the following sequence takes place:
 
-If activation is true, see activating key pair above.
+- open transaction
+- add key pair resource to the storage
+- if activation is false, the key pair is committed to storage.
+- if activation is true, see activating key pair above.
 
 ## 3. Key rotation: *rotateKeyPair()*
 
