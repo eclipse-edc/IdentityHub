@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.tests;
 
+import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
@@ -40,10 +41,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -170,25 +173,30 @@ public class KeyPairResourceApiEndToEndTest {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(KeyPairAdded.class, subscriber);
 
-            var user1 = "user1";
-            var token = context.createParticipant(user1);
+            var participantId = "user1";
+            var token = context.createParticipant(participantId);
 
             assertThat(Arrays.asList(token, superUserKey))
                     .allSatisfy(t -> {
-                        var keyDesc = context.createKeyDescriptor(user1).build();
+                        var keyDesc = context.createKeyDescriptor(participantId)
+                                .keyId(UUID.randomUUID().toString())
+                                .build();
                         context.getIdentityApiEndpoint().baseRequest()
                                 .contentType(JSON)
                                 .header(new Header("x-api-key", t))
                                 .body(keyDesc)
-                                .put("/v1alpha/participants/%s/keypairs".formatted(toBase64(user1)))
+                                .put("/v1alpha/participants/%s/keypairs".formatted(toBase64(participantId)))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(204)
                                 .body(notNullValue());
 
+                        assertThat(context.getKeyPairsForParticipant(participantId))
+                                .hasSizeGreaterThanOrEqualTo(2)
+                                .anyMatch(kpr -> kpr.getKeyId().equals(keyDesc.getKeyId()));
                         verify(subscriber).on(argThat(env -> {
                             var evt = (KeyPairAdded) env.getPayload();
-                            return evt.getParticipantId().equals(user1) &&
+                            return evt.getParticipantId().equals(participantId) &&
                                     evt.getKeyPairResourceId().equals(keyDesc.getResourceId()) &&
                                     evt.getKeyId().equals(keyDesc.getKeyId());
                         }));
@@ -225,6 +233,92 @@ public class KeyPairResourceApiEndToEndTest {
                 }
                 return false;
             }));
+        }
+
+        @Test
+        void addKeyPair_participantNotFound(IdentityHubEndToEndTestContext context, EventRouter router) {
+            var superUserKey = context.createSuperUser();
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(KeyPairAdded.class, subscriber);
+
+            var participantId = "user1";
+
+            var keyDesc = context.createKeyDescriptor(participantId).keyId("new-key-id").build();
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", superUserKey))
+                    .body(keyDesc)
+                    .put("/v1alpha/participants/%s/keypairs".formatted(toBase64(participantId)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(404)
+                    .body(notNullValue());
+
+            assertThat(context.getKeyPairsForParticipant(participantId)).isEmpty();
+            verifyNoInteractions(subscriber);
+        }
+
+        @Test
+        void addKeyPair_participantDeactivated(IdentityHubEndToEndTestContext context, EventRouter router) {
+            var superUserKey = context.createSuperUser();
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(KeyPairAdded.class, subscriber);
+
+            var participantId = "user1";
+            context.createParticipant(participantId);
+
+            // deactivate participant
+            context.getIdentityApiEndpoint().baseRequest()
+                    .header(new Header("x-api-key", superUserKey))
+                    .contentType(ContentType.JSON)
+                    .post("/v1alpha/participants/%s/state?isActive=false".formatted(toBase64(participantId)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204);
+
+
+            var keyDesc = context.createKeyDescriptor(participantId).keyId("new-key-id").build();
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", superUserKey))
+                    .body(keyDesc)
+                    .put("/v1alpha/participants/%s/keypairs".formatted(toBase64(participantId)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400)
+                    .body(containsString("To add a key pair, the ParticipantContext with ID 'user1' must be in state"));
+
+            assertThat(context.getKeyPairsForParticipant(participantId)).hasSize(1)
+                    .noneMatch(kpr -> kpr.getKeyId().equals(keyDesc.getKeyId()));
+            verify(subscriber, never()).on(argThat(e -> e.getPayload() instanceof KeyPairAdded evt && evt.getKeyId().equals(keyDesc.getKeyId())));
+        }
+
+        @Test
+        void addKeyPair_withoutActivate(IdentityHubEndToEndTestContext context, EventRouter router) {
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(KeyPairActivated.class, subscriber);
+
+            var participantId = "user1";
+            var token = context.createParticipant(participantId);
+
+            var keyDesc = context.createKeyDescriptor(participantId)
+                    .keyId(UUID.randomUUID().toString())
+                    .active(false)
+                    .build();
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(keyDesc)
+                    .put("/v1alpha/participants/%s/keypairs".formatted(toBase64(participantId)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204)
+                    .body(notNullValue());
+
+            assertThat(context.getKeyPairsForParticipant(participantId))
+                    .hasSizeGreaterThanOrEqualTo(2)
+                    .anyMatch(kpr -> kpr.getState() == KeyPairState.CREATED.code());
+            verify(subscriber, never()).on(argThat(evt -> evt.getPayload() instanceof KeyPairActivated kpa && kpa.getKeyId().equals(keyDesc.getKeyId())));
         }
 
         @Test
