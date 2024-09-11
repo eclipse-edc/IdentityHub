@@ -1786,6 +1786,9 @@ components:
         id:
           type: string
           example: null
+        keyContext:
+          type: string
+          example: null
         keyId:
           type: string
           example: null
