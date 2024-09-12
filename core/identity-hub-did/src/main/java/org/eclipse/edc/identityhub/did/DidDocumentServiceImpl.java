@@ -126,10 +126,6 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                                     success() :
                                     ServiceResult.badRequest(publishResult.getFailureDetail());
                         }
-//                        var msg = "Cannot publish DID '%s' for participant '%s' because the ParticipantContext is not state '%s' state, " +
-//                                "but was '%s'.";
-//                        monitor.warning(msg);
-//                        return success();
                         return ServiceResult.badRequest(("Cannot publish DID '%s' for participant '%s' because the ParticipantContext state is not '%s', " +
                                 "but '%s'.")
                                 .formatted(did, participantId, ParticipantContextState.ACTIVATED, state));
