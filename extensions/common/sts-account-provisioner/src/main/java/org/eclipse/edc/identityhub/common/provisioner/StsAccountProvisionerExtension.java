@@ -22,6 +22,7 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.event.EventRouter;
@@ -57,6 +58,7 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
         if (stsClientStore != null) {
             var provisioner = new StsAccountProvisioner(monitor, keyPairService, didDocumentService, stsClientStore, vault);
             eventRouter.registerSync(ParticipantContextCreated.class, provisioner);
+            eventRouter.registerSync(ParticipantContextDeleted.class, provisioner);
             eventRouter.registerSync(KeyPairAdded.class, provisioner);
             eventRouter.registerSync(KeyPairRevoked.class, provisioner);
             eventRouter.registerSync(KeyPairRotated.class, provisioner);

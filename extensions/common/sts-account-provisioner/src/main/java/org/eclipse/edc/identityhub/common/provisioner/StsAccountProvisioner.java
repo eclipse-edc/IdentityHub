@@ -26,6 +26,7 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.spi.event.Event;
@@ -34,6 +35,7 @@ import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -63,23 +65,34 @@ public class StsAccountProvisioner implements EventSubscriber {
         Result<Void> result;
         if (payload instanceof ParticipantContextCreated createdEvent) {
             result = createAccount(createdEvent.getManifest());
+        } else if (payload instanceof ParticipantContextDeleted deletedEvent) {
+            result = deleteAccount(deletedEvent.getParticipantId());
         } else if (payload instanceof KeyPairRevoked || payload instanceof KeyPairRotated) {
             result = setKeyAliases(((KeyPairEvent) payload).getParticipantId(), null, null);
         } else if (payload instanceof DidDocumentPublished didDocumentPublished) {
-
-            var participantId = didDocumentPublished.getParticipantId();
-            result = getDefaultKeyPair(participantId)
-                    .map(kpr -> {
-                        var alias = kpr.getPrivateKeyAlias();
-                        var publicKeyReference = getVerificationMethodWithId(didDocumentPublished.getDid(), kpr.getKeyId());
-                        return setKeyAliases(participantId, alias, publicKeyReference);
-                    })
-                    .orElse(Result.failure("No default keypair found for participant " + participantId));
+            result = didDocumentPublished(didDocumentPublished);
         } else {
             result = Result.failure("Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }
 
         result.onFailure(f -> monitor.warning(f.getFailureDetail()));
+    }
+
+    private Result<Void> deleteAccount(String participantId) {
+        return Result.failure("Deleting StsClients is not yet implemented");
+    }
+
+    private @NotNull Result<Void> didDocumentPublished(DidDocumentPublished didDocumentPublished) {
+        Result<Void> result;
+        var participantId = didDocumentPublished.getParticipantId();
+        result = getDefaultKeyPair(participantId)
+                .map(kpr -> {
+                    var alias = kpr.getPrivateKeyAlias();
+                    var publicKeyReference = getVerificationMethodWithId(didDocumentPublished.getDid(), kpr.getKeyId());
+                    return setKeyAliases(participantId, alias, publicKeyReference);
+                })
+                .orElse(Result.failure("No default keypair found for participant " + participantId));
+        return result;
     }
 
     private String getVerificationMethodWithId(String did, String keyId) {

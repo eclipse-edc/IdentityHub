@@ -28,6 +28,7 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.event.Event;
@@ -168,6 +169,16 @@ class StsAccountProvisionerTest {
         verify(keyPairService).query(any(QuerySpec.class));
         verifyNoInteractions(stsClientStore, didDocumentService);
 
+    }
+
+    @Test
+    void onParticipantDeleted_shouldDelete() {
+        accountProvisioner.on(event(ParticipantContextDeleted.Builder.newInstance()
+                .participantId(PARTICIPANT_CONTEXT_ID)
+                .build()));
+
+        verify(monitor).warning(eq("Deleting StsClients is not yet implemented"));
+        verifyNoInteractions(keyPairService, didDocumentService, stsClientStore);
     }
 
     @Test
