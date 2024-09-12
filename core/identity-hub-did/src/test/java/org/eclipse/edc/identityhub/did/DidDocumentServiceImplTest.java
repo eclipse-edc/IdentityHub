@@ -539,6 +539,8 @@ class DidDocumentServiceImplTest {
 
         when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
         when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
+        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(publisherMock.publish(did)).thenReturn(Result.success());
 
         var event = EventEnvelope.Builder.newInstance()
                 .at(System.currentTimeMillis())
@@ -555,8 +557,9 @@ class DidDocumentServiceImplTest {
 
         verify(didResourceStoreMock).query(any(QuerySpec.class));
         verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().anyMatch(vm -> vm.getId().equals(keyId))));
+        verify(didResourceStoreMock).findById(did); // happens during the publishing
         verifyNoMoreInteractions(didResourceStoreMock);
-        verifyNoInteractions(publisherMock);
+        verify(publisherMock).publish(eq(did));
     }
 
     @SuppressWarnings("unchecked")

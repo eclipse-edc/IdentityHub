@@ -125,7 +125,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     }
 
     @Override
-    public ServiceResult<Void> rotateKeyPair(String oldId, @Nullable KeyDescriptor newKeySpec, long duration) {
+    public ServiceResult<Void> rotateKeyPair(String oldId, @Nullable KeyDescriptor newKeyDesc, long duration) {
         return transactionContext.execute(() -> {
             var oldKey = findById(oldId);
             if (oldKey == null) {
@@ -142,8 +142,8 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             var updateResult = ServiceResult.from(keyPairResourceStore.update(oldKey))
                     .onSuccess(v -> observable.invokeForEach(l -> l.rotated(oldKey)));
 
-            if (newKeySpec != null) {
-                return updateResult.compose(v -> addKeyPair(participantId, newKeySpec, wasDefault));
+            if (newKeyDesc != null) {
+                return updateResult.compose(v -> addKeyPair(participantId, newKeyDesc, wasDefault));
             }
             monitor.warning("Rotating keys without a successor key may leave the participant without an active keypair.");
             return updateResult;
