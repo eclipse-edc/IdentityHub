@@ -18,8 +18,10 @@ import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleting;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
@@ -47,11 +49,13 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
     private final Monitor monitor;
     private final DidDocumentService didDocumentService;
     private final KeyPairService keyPairService;
+    private final ParticipantContextService participantContextService;
 
-    ParticipantContextEventCoordinator(Monitor monitor, DidDocumentService didDocumentService, KeyPairService keyPairService) {
+    ParticipantContextEventCoordinator(Monitor monitor, DidDocumentService didDocumentService, KeyPairService keyPairService, ParticipantContextService participantContextService) {
         this.monitor = monitor;
         this.didDocumentService = didDocumentService;
         this.keyPairService = keyPairService;
+        this.participantContextService = participantContextService;
     }
 
     @Override
@@ -71,9 +75,11 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
             }
 
             didDocumentService.store(doc, manifest.getParticipantId())
-                    // adding the keypair event will cause the DidDocumentService to update the DID.
+                    // adding the keypair event will cause the DidDocumentService to update the DID
                     .compose(u -> keyPairService.addKeyPair(createdEvent.getParticipantId(), createdEvent.getManifest().getKey(), true))
-                    .compose(u -> manifest.isActive() ? didDocumentService.publish(doc.getId()) : success())
+                    .compose(u -> manifest.isActive()
+                            ? participantContextService.updateParticipant(manifest.getParticipantId(), ParticipantContext::activate) //implicitly publishes the did document
+                            : success())
                     .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
 
         } else if (payload instanceof ParticipantContextDeleting deletionEvent) {

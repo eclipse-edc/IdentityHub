@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -24,6 +25,7 @@ import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -44,7 +46,14 @@ class ParticipantContextEventCoordinatorTest {
     private final Monitor monitor = mock();
     private final DidDocumentService didDocumentService = mock();
     private final KeyPairService keyPairService = mock();
-    private final ParticipantContextEventCoordinator coordinator = new ParticipantContextEventCoordinator(monitor, didDocumentService, keyPairService);
+    private final ParticipantContextService participantContextService = mock();
+    private final ParticipantContextEventCoordinator coordinator = new ParticipantContextEventCoordinator(monitor, didDocumentService, keyPairService, participantContextService);
+
+    @BeforeEach
+    void setup() {
+        when(participantContextService.updateParticipant(anyString(), any()))
+                .thenReturn(ServiceResult.success());
+    }
 
     @Test
     void onParticipantCreated() {
@@ -59,7 +68,6 @@ class ParticipantContextEventCoordinatorTest {
                 .build()));
 
         verify(didDocumentService).store(any(), eq(participantId));
-        verify(didDocumentService).publish(eq("did:web:" + participantId));
         verify(keyPairService).addKeyPair(eq(participantId), any(), eq(true));
         verifyNoMoreInteractions(keyPairService, didDocumentService, monitor);
     }
@@ -84,7 +92,6 @@ class ParticipantContextEventCoordinatorTest {
         var participantId = "test-id";
         when(didDocumentService.store(any(), eq(participantId))).thenReturn(ServiceResult.success());
         when(keyPairService.addKeyPair(eq(participantId), any(), anyBoolean())).thenReturn(ServiceResult.success());
-        when(didDocumentService.publish(anyString())).thenReturn(ServiceResult.badRequest("foobar"));
 
         coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
                 .participantId(participantId)
@@ -93,8 +100,6 @@ class ParticipantContextEventCoordinatorTest {
 
         verify(didDocumentService).store(any(), eq(participantId));
         verify(keyPairService).addKeyPair(eq(participantId), any(), eq(true));
-        verify(didDocumentService).publish(anyString());
-        verify(monitor).warning("foobar");
         verifyNoMoreInteractions(didDocumentService);
     }
 

@@ -20,6 +20,7 @@ import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identithub.spi.did.DidConstants;
 import org.eclipse.edc.identithub.spi.did.DidDocumentPublisher;
 import org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry;
+import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
@@ -65,6 +66,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -166,6 +168,8 @@ public class ParticipantContextApiEndToEndTest {
                     .key(context.createKeyDescriptor().active(true).build())
                     .build();
 
+            router.registerSync(DidDocumentPublished.class, subscriber);
+
             context.getIdentityApiEndpoint().baseRequest()
                     .header(new Header("x-api-key", apikey))
                     .contentType(ContentType.JSON)
@@ -176,7 +180,8 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
                     .body(notNullValue());
 
-            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
+            verify(subscriber).on(argThat(env -> env.getPayload() instanceof ParticipantContextCreated created && created.getParticipantId().equals(manifest.getParticipantId())));
+            verify(subscriber, times(1)).on(argThat(evt -> evt.getPayload() instanceof DidDocumentPublished));
 
             assertThat(context.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1)
                     .allSatisfy(kpr -> assertThat(kpr.getState()).isEqualTo(KeyPairState.ACTIVATED.code()));

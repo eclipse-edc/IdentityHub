@@ -126,8 +126,8 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                                     success() :
                                     ServiceResult.badRequest(publishResult.getFailureDetail());
                         }
-                        return ServiceResult.badRequest(("Cannot publish DID '%s' for participant '%s' because the ParticipantContext is not state '%s' state, " +
-                                "but was '%s'.")
+                        return ServiceResult.badRequest(("Cannot publish DID '%s' for participant '%s' because the ParticipantContext state is not '%s', " +
+                                "but '%s'.")
                                 .formatted(did, participantId, ParticipantContextState.ACTIVATED, state));
                     });
         });
@@ -158,10 +158,10 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                                         success() :
                                         ServiceResult.badRequest(publishResult.getFailureDetail());
                             }
-                            monitor.info("Unpublishing DID Document '%s': not in state '%s', unpublishing is a NOOP.".formatted(did, existingResource.getStateAsEnum()));
+                            monitor.info("Unpublishing DID Document '%s' in state '%s', unpublishing is a NOOP.".formatted(did, existingResource.getStateAsEnum()));
                             return success();
                         }
-                        return ServiceResult.badRequest(("Cannot un-publish DID '%s' for participant '%s' because the ParticipantContext is not state '%s' state, " +
+                        return ServiceResult.badRequest(("Cannot un-publish DID '%s' for participant '%s' because the ParticipantContext is not '%s' state, " +
                                 "but was '%s'.")
                                 .formatted(did, participantId, ParticipantContextState.DEACTIVATED, state));
                     });

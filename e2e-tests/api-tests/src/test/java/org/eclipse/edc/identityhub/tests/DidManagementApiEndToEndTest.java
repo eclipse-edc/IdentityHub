@@ -165,7 +165,7 @@ public class DidManagementApiEndToEndTest {
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(400)
-                                .body(Matchers.containsString("Cannot publish DID 'did:web:test-user' for participant 'test-user' because the ParticipantContext is not state 'ACTIVATED' state, but was 'CREATED'."));
+                                .body(Matchers.containsString("Cannot publish DID 'did:web:test-user' for participant 'test-user' because the ParticipantContext state is not 'ACTIVATED', but 'CREATED'."));
 
                         // verify that the publish event was fired twice
                         verifyNoInteractions(subscriber);
@@ -291,7 +291,7 @@ public class DidManagementApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
-                    .body(Matchers.containsString("Cannot un-publish DID 'did:web:test-user' for participant 'test-user' because the ParticipantContext is not state 'DEACTIVATED' state, but was 'ACTIVATED'."));
+                    .body(Matchers.containsString("Cannot un-publish DID 'did:web:test-user' for participant 'test-user' because the ParticipantContext is not 'DEACTIVATED' state, but was 'ACTIVATED'."));
 
             // verify that the unpublish event was fired
             verifyNoInteractions(subscriber);
