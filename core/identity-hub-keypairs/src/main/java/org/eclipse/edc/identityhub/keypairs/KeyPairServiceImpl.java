@@ -89,7 +89,6 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             // check if the new key is not active, and no other active key exists
             if (!keyDescriptor.isActive()) {
 
-                //todo: replace this with invocation to activateKeyPair()
                 var hasActiveKeys = keyPairResourceStore.query(ParticipantResource.queryByParticipantId(participantId).build())
                         .orElse(failure -> Collections.emptySet())
                         .stream().filter(kpr -> kpr.getState() == KeyPairState.ACTIVATED.code())
