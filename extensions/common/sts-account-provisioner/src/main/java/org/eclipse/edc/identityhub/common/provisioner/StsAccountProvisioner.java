@@ -39,7 +39,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.Optional;
-import java.util.UUID;
 
 import static java.util.Optional.ofNullable;
 
@@ -50,13 +49,16 @@ public class StsAccountProvisioner implements EventSubscriber {
     private final DidDocumentService didDocumentService;
     private final StsClientStore stsClientStore;
     private final Vault vault;
+    private final StsClientSecretGenerator stsClientSecretGenerator;
 
-    public StsAccountProvisioner(Monitor monitor, KeyPairService keyPairService, DidDocumentService didDocumentService, StsClientStore stsClientStore, Vault vault) {
+    public StsAccountProvisioner(Monitor monitor, KeyPairService keyPairService, DidDocumentService didDocumentService,
+                                 StsClientStore stsClientStore, Vault vault, StsClientSecretGenerator stsClientSecretGenerator) {
         this.monitor = monitor;
         this.keyPairService = keyPairService;
         this.didDocumentService = didDocumentService;
         this.stsClientStore = stsClientStore;
         this.vault = vault;
+        this.stsClientSecretGenerator = stsClientSecretGenerator;
     }
 
     @Override
@@ -122,9 +124,7 @@ public class StsAccountProvisioner implements EventSubscriber {
     }
 
     private Result<Void> createAccount(ParticipantManifest manifest) {
-        var secretAlias = UUID.randomUUID().toString();
-
-        //todo: generate random password and store in vault!
+        var secretAlias = manifest.getParticipantId() + "-sts-client-secret";
 
         var client = StsClient.Builder.newInstance()
                 .id(manifest.getParticipantId())
@@ -135,7 +135,13 @@ public class StsAccountProvisioner implements EventSubscriber {
                 .publicKeyReference(manifest.getKey().getKeyId())
                 .secretAlias(secretAlias)
                 .build();
-        var createResult = stsClientStore.create(client);
+        var createResult = stsClientStore.create(client).onSuccess(stsClient -> {
+            var clientSecret = stsClientSecretGenerator.generateClientSecret(null);
+            // the vault's result does not influence the service result, since that may cause the transaction to roll back,
+            // but vaults aren't transactional resources
+            vault.storeSecret(secretAlias, clientSecret)
+                    .onFailure(e -> monitor.severe(e.getFailureDetail()));
+        });
         return createResult.succeeded() ? Result.success() : Result.failure(createResult.getFailureDetail());
     }
 }

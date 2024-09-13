@@ -35,6 +35,7 @@ import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
@@ -47,6 +48,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
@@ -65,11 +68,13 @@ class StsAccountProvisionerTest {
     private final StsClientStore stsClientStore = mock();
     private final Vault vault = mock();
     private final Monitor monitor = mock();
-    private final StsAccountProvisioner accountProvisioner = new StsAccountProvisioner(monitor, keyPairService, didDocumentService, stsClientStore, vault);
+    private final StsClientSecretGenerator stsClientSecretGenerator = parameters -> UUID.randomUUID().toString();
+    private final StsAccountProvisioner accountProvisioner = new StsAccountProvisioner(monitor, keyPairService, didDocumentService, stsClientStore, vault, stsClientSecretGenerator);
 
     @Test
     void onParticipantCreated() {
         when(stsClientStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
 
         accountProvisioner.on(event(ParticipantContextCreated.Builder.newInstance()
                 .participantId(PARTICIPANT_CONTEXT_ID)
@@ -77,6 +82,7 @@ class StsAccountProvisionerTest {
                 .build()));
 
         verify(stsClientStore).create(any());
+        verify(vault).storeSecret(anyString(), argThat(secret -> UUID.fromString(secret) != null));
         verifyNoInteractions(keyPairService, didDocumentService);
     }
 
@@ -91,7 +97,7 @@ class StsAccountProvisionerTest {
 
         verify(monitor).warning(eq("foo"));
         verify(stsClientStore).create(any());
-        verifyNoInteractions(keyPairService, didDocumentService);
+        verifyNoInteractions(keyPairService, didDocumentService, vault);
     }
 
     @Test
