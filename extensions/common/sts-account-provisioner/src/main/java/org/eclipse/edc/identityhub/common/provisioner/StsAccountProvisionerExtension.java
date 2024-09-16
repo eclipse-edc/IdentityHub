@@ -72,7 +72,7 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
             var monitor = context.getMonitor().withPrefix("STS-Account");
             if (stsClientStore != null) {
                 monitor.debug("This IdentityHub runtime contains an embedded SecureTokenService (STS) instance. ParticipantContexts and STS Clients will be synchronized.");
-                provisioner = new StsAccountProvisioner(monitor, keyPairService, didDocumentService, stsClientStore, vault, stsClientSecretGenerator());
+                provisioner = new StsAccountProvisioner(monitor, stsClientStore, vault, stsClientSecretGenerator());
                 eventRouter.registerSync(ParticipantContextDeleted.class, provisioner);
                 eventRouter.registerSync(KeyPairRevoked.class, provisioner);
                 eventRouter.registerSync(KeyPairRotated.class, provisioner);
