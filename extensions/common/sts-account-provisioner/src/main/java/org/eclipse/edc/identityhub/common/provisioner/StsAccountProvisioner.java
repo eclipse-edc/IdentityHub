@@ -85,74 +85,80 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
     }
 
     private Result<AccountInfo> createAccount(ParticipantManifest manifest) {
-        var secretAlias = manifest.getParticipantId() + "-sts-client-secret";
+        return transactionContext.execute(() -> {
+            var secretAlias = manifest.getParticipantId() + "-sts-client-secret";
 
-        var client = StsClient.Builder.newInstance()
-                .id(manifest.getParticipantId())
-                .name(manifest.getParticipantId())
-                .clientId(manifest.getDid())
-                .did(manifest.getDid())
-                .privateKeyAlias(manifest.getKey().getPrivateKeyAlias())
-                .publicKeyReference(manifest.getKey().getKeyId())
-                .secretAlias(secretAlias)
-                .build();
+            var client = StsClient.Builder.newInstance()
+                    .id(manifest.getParticipantId())
+                    .name(manifest.getParticipantId())
+                    .clientId(manifest.getDid())
+                    .did(manifest.getDid())
+                    .privateKeyAlias(manifest.getKey().getPrivateKeyAlias())
+                    .publicKeyReference(manifest.getKey().getKeyId())
+                    .secretAlias(secretAlias)
+                    .build();
 
-        var createResult = stsClientStore.create(client)
-                .map(stsClient -> {
-                    var clientSecret = stsClientSecretGenerator.generateClientSecret(null);
-                    return new AccountInfo(stsClient.getClientId(), clientSecret);
-                })
-                .onSuccess(accountInfo -> {
-                    // the vault's result does not influence the service result, since that may cause the transaction to roll back,
-                    // but vaults aren't transactional resources
-                    vault.storeSecret(secretAlias, accountInfo.clientSecret())
-                            .onFailure(e -> monitor.severe(e.getFailureDetail()));
-                });
+            var createResult = stsClientStore.create(client)
+                    .map(stsClient -> {
+                        var clientSecret = stsClientSecretGenerator.generateClientSecret(null);
+                        return new AccountInfo(stsClient.getClientId(), clientSecret);
+                    })
+                    .onSuccess(accountInfo -> {
+                        // the vault's result does not influence the service result, since that may cause the transaction to roll back,
+                        // but vaults aren't transactional resources
+                        vault.storeSecret(secretAlias, accountInfo.clientSecret())
+                                .onFailure(e -> monitor.severe(e.getFailureDetail()));
+                    });
 
-        return createResult.succeeded() ? Result.success(createResult.getContent()) : Result.failure(createResult.getFailureDetail());
+            return createResult.succeeded() ? Result.success(createResult.getContent()) : Result.failure(createResult.getFailureDetail());
+        });
     }
 
     private ServiceResult<Void> updateStsClient(KeyPairResource oldKeyResource, String participantId, @Nullable KeyDescriptor newKeyDescriptor) {
-        var findResult = stsClientStore.findById(participantId);
-        if (findResult.failed()) {
-            return ServiceResult.from(findResult).mapEmpty();
-        }
+        return transactionContext.execute(() -> {
+            var findResult = stsClientStore.findById(participantId);
+            if (findResult.failed()) {
+                return ServiceResult.from(findResult).mapEmpty();
+            }
 
-        var existingClient = findResult.getContent();
+            var existingClient = findResult.getContent();
 
-        if (Objects.equals(oldKeyResource.getPrivateKeyAlias(), existingClient.getPrivateKeyAlias())) {
-            return ServiceResult.success(); // the revoked/rotated key pair does not pertain to this STS Client
-        }
+            if (Objects.equals(oldKeyResource.getPrivateKeyAlias(), existingClient.getPrivateKeyAlias())) {
+                return ServiceResult.success(); // the revoked/rotated key pair does not pertain to this STS Client
+            }
 
-        if (newKeyDescriptor == null) {
-            // no "successor" key was given, will only reset
-            return setKeyAliases(existingClient, "", "");
-        }
+            if (newKeyDescriptor == null) {
+                // no "successor" key was given, will only reset
+                return setKeyAliases(existingClient, "", "");
+            }
 
-        var publicKeyRef = newKeyDescriptor.getKeyId();
-        // check that key-id contains the DID
-        if (!publicKeyRef.startsWith(existingClient.getDid())) {
-            publicKeyRef = existingClient.getDid() + "#" + publicKeyRef;
-        }
-        return setKeyAliases(existingClient, newKeyDescriptor.getPrivateKeyAlias(), publicKeyRef);
+            var publicKeyRef = newKeyDescriptor.getKeyId();
+            // check that key-id contains the DID
+            if (!publicKeyRef.startsWith(existingClient.getDid())) {
+                publicKeyRef = existingClient.getDid() + "#" + publicKeyRef;
+            }
+            return setKeyAliases(existingClient, newKeyDescriptor.getPrivateKeyAlias(), publicKeyRef);
+        });
     }
 
     private ServiceResult<Void> deleteAccount(String participantId) {
-        var result = stsClientStore.deleteById(participantId);
+        var result = transactionContext.execute(() -> stsClientStore.deleteById(participantId));
         return ServiceResult.from(result).mapEmpty();
     }
 
     private ServiceResult<Void> setKeyAliases(StsClient stsClient, String privateKeyAlias, String publicKeyReference) {
-        var newClient = StsClient.Builder.newInstance()
-                .id(stsClient.getId())
-                .clientId(stsClient.getClientId())
-                .did(stsClient.getDid())
-                .name(stsClient.getName())
-                .secretAlias(stsClient.getSecretAlias())
-                .privateKeyAlias(privateKeyAlias)
-                .publicKeyReference(publicKeyReference)
-                .build();
-
-        return ServiceResult.from(stsClientStore.update(newClient));
+        var updatedClient = transactionContext.execute(() -> {
+            var newClient = StsClient.Builder.newInstance()
+                    .id(stsClient.getId())
+                    .clientId(stsClient.getClientId())
+                    .did(stsClient.getDid())
+                    .name(stsClient.getName())
+                    .secretAlias(stsClient.getSecretAlias())
+                    .privateKeyAlias(privateKeyAlias)
+                    .publicKeyReference(publicKeyReference)
+                    .build();
+            return stsClientStore.update(newClient);
+        });
+        return ServiceResult.from(updatedClient);
     }
 }
