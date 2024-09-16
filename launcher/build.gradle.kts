@@ -38,6 +38,8 @@ dependencies {
     runtimeOnly(libs.edc.core.token)
     runtimeOnly(libs.edc.api.version)
     runtimeOnly(libs.edc.sts.core)
+    runtimeOnly(libs.edc.sts)
+    runtimeOnly(libs.edc.sts.api)
 
     runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.bundles.connector)

@@ -75,6 +75,8 @@ edc-core-jerseyproviders = { module = "org.eclipse.edc:jersey-providers-lib", ve
 # EDC STS dependencies
 edc-sts-spi = { module = "org.eclipse.edc:identity-trust-sts-spi", version.ref = "edc" }
 edc-sts-core = { module = "org.eclipse.edc:identity-trust-sts-core", version.ref = "edc" }
+edc-sts = { module = "org.eclipse.edc:identity-trust-sts-embedded", version.ref = "edc" }
+edc-sts-api = { module = "org.eclipse.edc:identity-trust-sts-api", version.ref = "edc" }
 
 # Third party libs
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
