@@ -48,6 +48,8 @@ public class IdentityHubRuntimeConfiguration {
                 put("web.http.presentation.path", presentationEndpoint.getUrl().getPath());
                 put("web.http.identity.port", String.valueOf(identityEndpoint.getUrl().getPort()));
                 put("web.http.identity.path", identityEndpoint.getUrl().getPath());
+                put("web.http.sts.port", String.valueOf(getFreePort()));
+                put("web.http.sts.path", "/api/sts");
                 put("edc.runtime.id", name);
                 put("edc.ih.iam.id", "did:web:consumer");
                 put("edc.sql.schema.autocreate", "true");

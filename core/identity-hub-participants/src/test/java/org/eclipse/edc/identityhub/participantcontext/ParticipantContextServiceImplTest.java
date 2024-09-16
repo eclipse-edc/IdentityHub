@@ -20,6 +20,7 @@ import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
@@ -31,6 +32,7 @@ import org.eclipse.edc.keys.keyparsers.PemParser;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
@@ -60,13 +62,15 @@ class ParticipantContextServiceImplTest {
     private final ParticipantContextStore participantContextStore = mock();
     private final ParticipantContextObservable observableMock = mock();
     private final DidResourceStore didResourceStore = mock();
+    private final AccountProvisioner provisionerMock = mock();
     private ParticipantContextServiceImpl participantContextService;
 
     @BeforeEach
     void setUp() {
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock);
+        participantContextService = new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock, provisionerMock);
+        when(provisionerMock.create(any())).thenReturn(ServiceResult.success());
     }
 
     @ParameterizedTest(name = "isActive: {0}")
@@ -178,34 +182,34 @@ class ParticipantContextServiceImplTest {
     @Test
     void getParticipantContext() {
         var ctx = createContext();
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(ctx)));
+        when(participantContextStore.findById(any())).thenReturn(StoreResult.success(ctx));
 
         assertThat(participantContextService.getParticipantContext("test-id"))
                 .isSucceeded()
                 .usingRecursiveComparison()
                 .isEqualTo(ctx);
 
-        verify(participantContextStore).query(any());
+        verify(participantContextStore).findById(anyString());
         verifyNoMoreInteractions(vault);
     }
 
     @Test
     void getParticipantContext_whenNotExists() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of()));
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.notFound("foo"));
         assertThat(participantContextService.getParticipantContext("test-id"))
                 .isFailed()
                 .satisfies(f -> {
                     Assertions.assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
-                    Assertions.assertThat(f.getFailureDetail()).isEqualTo("ParticipantContext with ID 'test-id' does not exist.");
+                    Assertions.assertThat(f.getFailureDetail()).isEqualTo("foo");
                 });
 
-        verify(participantContextStore).query(any());
+        verify(participantContextStore).findById(anyString());
         verifyNoMoreInteractions(vault);
     }
 
     @Test
     void getParticipantContext_whenStorageFails() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.notFound("foo bar"));
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.notFound("foo bar"));
         assertThat(participantContextService.getParticipantContext("test-id"))
                 .isFailed()
                 .satisfies(f -> {
@@ -213,13 +217,13 @@ class ParticipantContextServiceImplTest {
                     Assertions.assertThat(f.getFailureDetail()).isEqualTo("foo bar");
                 });
 
-        verify(participantContextStore).query(any());
+        verify(participantContextStore).findById(anyString());
         verifyNoMoreInteractions(vault);
     }
 
     @Test
     void deleteParticipantContext() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(createContext()));
         when(participantContextStore.deleteById(anyString())).thenReturn(StoreResult.success());
         when(participantContextStore.update(any())).thenReturn(StoreResult.success());
         assertThat(participantContextService.deleteParticipantContext("test-id")).isSucceeded();
@@ -233,7 +237,7 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void deleteParticipantContext_whenNotExists() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(createContext()));
         when(participantContextStore.deleteById(any())).thenReturn(StoreResult.notFound("foo bar"));
         when(participantContextStore.update(any())).thenReturn(StoreResult.success());
 
@@ -252,44 +256,44 @@ class ParticipantContextServiceImplTest {
 
     @Test
     void regenerateApiToken() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(createContext()));
         when(vault.storeSecret(eq("test-alias"), anyString())).thenReturn(Result.success());
 
         assertThat(participantContextService.regenerateApiToken("test-id")).isSucceeded().isNotNull();
 
-        verify(participantContextStore).query(any());
+        verify(participantContextStore).findById(anyString());
         verify(vault).storeSecret(eq("test-alias"), argThat(s -> s.length() >= 64));
     }
 
     @Test
     void regenerateApiToken_vaultFails() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(createContext())));
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(createContext()));
         when(vault.storeSecret(eq("test-alias"), anyString())).thenReturn(Result.failure("test failure"));
 
         assertThat(participantContextService.regenerateApiToken("test-id")).isFailed().detail().isEqualTo("Could not store new API token: test failure.");
 
-        verify(participantContextStore).query(any());
+        verify(participantContextStore).findById(anyString());
         verify(vault).storeSecret(eq("test-alias"), anyString());
     }
 
     @Test
     void regenerateApiToken_whenNotFound() {
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of()));
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.notFound("foo"));
 
-        assertThat(participantContextService.regenerateApiToken("test-id")).isFailed().detail().isEqualTo("ParticipantContext with ID 'test-id' does not exist.");
+        assertThat(participantContextService.regenerateApiToken("test-id")).isFailed().detail().isEqualTo("foo");
 
-        verify(participantContextStore).query(any());
+        verify(participantContextStore).findById(anyString());
         verifyNoMoreInteractions(participantContextStore, vault);
     }
 
     @Test
     void update() {
         var context = createContext();
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(context)));
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(context));
         when(participantContextStore.update(any())).thenReturn(StoreResult.success());
         assertThat(participantContextService.updateParticipant(context.getParticipantId(), ParticipantContext::deactivate)).isSucceeded();
 
-        verify(participantContextStore).query(any());
+        verify(participantContextStore).findById(anyString());
         verify(participantContextStore).update(any());
         verify(observableMock).invokeForEach(any());
     }
@@ -297,24 +301,24 @@ class ParticipantContextServiceImplTest {
     @Test
     void update_whenNotFound() {
         var context = createContext();
-        when(participantContextStore.query(any())).thenReturn(StoreResult.notFound("foobar"));
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.notFound("foobar"));
         assertThat(participantContextService.updateParticipant(context.getParticipantId(), ParticipantContext::deactivate)).isFailed()
                 .detail().isEqualTo("ParticipantContext with ID 'test-id' not found.");
 
-        verify(participantContextStore).query(any());
+        verify(participantContextStore).findById(anyString());
         verifyNoMoreInteractions(participantContextStore, observableMock);
     }
 
     @Test
     void update_whenStoreUpdateFails() {
         var context = createContext();
-        when(participantContextStore.query(any())).thenReturn(StoreResult.success(List.of(context)));
+        when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(context));
         when(participantContextStore.update(any())).thenReturn(StoreResult.alreadyExists("test-msg"));
 
         assertThat(participantContextService.updateParticipant(context.getParticipantId(), ParticipantContext::deactivate)).isFailed()
                 .detail().isEqualTo("test-msg");
 
-        verify(participantContextStore).query(any());
+        verify(participantContextStore).findById(anyString());
         verify(participantContextStore).update(any());
         verifyNoMoreInteractions(participantContextStore, observableMock);
     }

@@ -26,6 +26,7 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
+import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
@@ -131,7 +132,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @AfterEach
-        void teardown(ParticipantContextService contextService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, CredentialStore store) {
+        void teardown(ParticipantContextService contextService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, CredentialStore store, StsClientStore stsClientStore) {
             // purge all participant contexts
 
             contextService.query(QuerySpec.max()).getContent()
@@ -146,6 +147,9 @@ public class PresentationApiEndToEndTest {
             store.query(QuerySpec.none())
                     .map(creds -> creds.stream().map(cred -> store.deleteById(cred.getId())).toList())
                     .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
+
+            stsClientStore.findAll(QuerySpec.max())
+                    .forEach(sts -> stsClientStore.deleteById(sts.getId()).getContent());
         }
 
         @Test
@@ -312,7 +316,7 @@ public class PresentationApiEndToEndTest {
 
             assertThat(response)
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
-                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(2))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
                     .hasEntrySatisfying("presentation", jsonValue -> assertThat(extractCredentials(((JsonString) jsonValue).getString())).isEmpty());
 
         }
@@ -346,7 +350,7 @@ public class PresentationApiEndToEndTest {
 
             assertThat(response)
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
-                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(2))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
                     .hasEntrySatisfying("presentation", jsonValue -> {
                         assertThat(jsonValue.getValueType()).isEqualTo(JsonValue.ValueType.STRING);
                         var vpToken = ((JsonString) jsonValue).getString();
@@ -407,7 +411,7 @@ public class PresentationApiEndToEndTest {
 
             assertThat(response)
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
-                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(2))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
                     .hasEntrySatisfying("presentation", jsonValue -> {
                         assertThat(jsonValue.getValueType()).isEqualTo(JsonValue.ValueType.STRING);
                         var vpToken = ((JsonString) jsonValue).getString();

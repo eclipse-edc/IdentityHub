@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.common.provisioner;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
+import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsClient;
 import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
@@ -27,7 +28,6 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
-import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -72,14 +73,19 @@ class StsAccountProvisionerTest {
     private final StsAccountProvisioner accountProvisioner = new StsAccountProvisioner(monitor, keyPairService, didDocumentService, stsClientStore, vault, stsClientSecretGenerator);
 
     @Test
-    void onParticipantCreated() {
-        when(stsClientStore.create(any())).thenReturn(StoreResult.success());
+    void create() {
+        when(stsClientStore.create(any())).thenReturn(StoreResult.success(StsClient.Builder.newInstance()
+                .id("test-id")
+                .name("test-name")
+                .did("did:web:" + PARTICIPANT_CONTEXT_ID)
+                .secretAlias("test-secret")
+                .publicKeyReference("public-key-ref")
+                .privateKeyAlias("private-key-alias")
+                .clientId("client-id")
+                .build()));
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
 
-        accountProvisioner.on(event(ParticipantContextCreated.Builder.newInstance()
-                .participantId(PARTICIPANT_CONTEXT_ID)
-                .manifest(createManifest().build())
-                .build()));
+        assertThat(accountProvisioner.create(createManifest().build())).isSucceeded();
 
         verify(stsClientStore).create(any());
         verify(vault).storeSecret(anyString(), argThat(secret -> UUID.fromString(secret) != null));
@@ -87,15 +93,13 @@ class StsAccountProvisionerTest {
     }
 
     @Test
-    void onParticipantCreated_whenClientAlreadyExists() {
+    void create_whenClientAlreadyExists() {
         when(stsClientStore.create(any())).thenReturn(StoreResult.alreadyExists("foo"));
 
-        accountProvisioner.on(event(ParticipantContextCreated.Builder.newInstance()
-                .participantId(PARTICIPANT_CONTEXT_ID)
-                .manifest(createManifest().build())
-                .build()));
+        var res = accountProvisioner.create(createManifest().build());
+        assertThat(res).isFailed()
+                .detail().isEqualTo("foo");
 
-        verify(monitor).warning(eq("foo"));
         verify(stsClientStore).create(any());
         verifyNoInteractions(keyPairService, didDocumentService, vault);
     }

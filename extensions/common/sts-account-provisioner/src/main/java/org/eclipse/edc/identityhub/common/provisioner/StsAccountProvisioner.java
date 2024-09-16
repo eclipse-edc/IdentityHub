@@ -25,7 +25,8 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
-import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.participantcontext.AccountInfo;
+import org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
@@ -34,6 +35,7 @@ import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,7 +44,7 @@ import java.util.Optional;
 
 import static java.util.Optional.ofNullable;
 
-public class StsAccountProvisioner implements EventSubscriber {
+public class StsAccountProvisioner implements EventSubscriber, AccountProvisioner {
 
     private final Monitor monitor;
     private final KeyPairService keyPairService;
@@ -51,8 +53,12 @@ public class StsAccountProvisioner implements EventSubscriber {
     private final Vault vault;
     private final StsClientSecretGenerator stsClientSecretGenerator;
 
-    public StsAccountProvisioner(Monitor monitor, KeyPairService keyPairService, DidDocumentService didDocumentService,
-                                 StsClientStore stsClientStore, Vault vault, StsClientSecretGenerator stsClientSecretGenerator) {
+    public StsAccountProvisioner(Monitor monitor,
+                                 KeyPairService keyPairService,
+                                 DidDocumentService didDocumentService,
+                                 StsClientStore stsClientStore,
+                                 Vault vault,
+                                 StsClientSecretGenerator stsClientSecretGenerator) {
         this.monitor = monitor;
         this.keyPairService = keyPairService;
         this.didDocumentService = didDocumentService;
@@ -65,9 +71,7 @@ public class StsAccountProvisioner implements EventSubscriber {
     public <E extends Event> void on(EventEnvelope<E> event) {
         var payload = event.getPayload();
         Result<Void> result;
-        if (payload instanceof ParticipantContextCreated createdEvent) {
-            result = createAccount(createdEvent.getManifest());
-        } else if (payload instanceof ParticipantContextDeleted deletedEvent) {
+        if (payload instanceof ParticipantContextDeleted deletedEvent) {
             result = deleteAccount(deletedEvent.getParticipantId());
         } else if (payload instanceof KeyPairRevoked || payload instanceof KeyPairRotated) {
             result = setKeyAliases(((KeyPairEvent) payload).getParticipantId(), null, null);
@@ -78,6 +82,11 @@ public class StsAccountProvisioner implements EventSubscriber {
         }
 
         result.onFailure(f -> monitor.warning(f.getFailureDetail()));
+    }
+
+    @Override
+    public ServiceResult<AccountInfo> create(ParticipantManifest manifest) {
+        return ServiceResult.from(createAccount(manifest));
     }
 
     private Result<Void> deleteAccount(String participantId) {
@@ -123,7 +132,7 @@ public class StsAccountProvisioner implements EventSubscriber {
         return Result.failure("Updating StsClients is not yet implemented");
     }
 
-    private Result<Void> createAccount(ParticipantManifest manifest) {
+    private Result<AccountInfo> createAccount(ParticipantManifest manifest) {
         var secretAlias = manifest.getParticipantId() + "-sts-client-secret";
 
         var client = StsClient.Builder.newInstance()
@@ -135,13 +144,19 @@ public class StsAccountProvisioner implements EventSubscriber {
                 .publicKeyReference(manifest.getKey().getKeyId())
                 .secretAlias(secretAlias)
                 .build();
-        var createResult = stsClientStore.create(client).onSuccess(stsClient -> {
-            var clientSecret = stsClientSecretGenerator.generateClientSecret(null);
-            // the vault's result does not influence the service result, since that may cause the transaction to roll back,
-            // but vaults aren't transactional resources
-            vault.storeSecret(secretAlias, clientSecret)
-                    .onFailure(e -> monitor.severe(e.getFailureDetail()));
-        });
-        return createResult.succeeded() ? Result.success() : Result.failure(createResult.getFailureDetail());
+
+        var createResult = stsClientStore.create(client)
+                .map(stsClient -> {
+                    var clientSecret = stsClientSecretGenerator.generateClientSecret(null);
+                    return new AccountInfo(stsClient.getClientId(), clientSecret);
+                })
+                .onSuccess(accountInfo -> {
+                    // the vault's result does not influence the service result, since that may cause the transaction to roll back,
+                    // but vaults aren't transactional resources
+                    vault.storeSecret(secretAlias, accountInfo.clientSecret())
+                            .onFailure(e -> monitor.severe(e.getFailureDetail()));
+                });
+
+        return createResult.succeeded() ? Result.success(createResult.getContent()) : Result.failure(createResult.getFailureDetail());
     }
 }

@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.spi.store;
 
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 
@@ -62,5 +63,15 @@ public interface ParticipantContextStore {
 
     default String notFoundErrorMessage(String id) {
         return "A ParticipantContext with ID '%s' does not exist.".formatted(id);
+    }
+
+    default StoreResult<ParticipantContext> findById(String participantId) {
+        var res = query(ParticipantResource.queryByParticipantId(participantId).build());
+        if (res.succeeded()) {
+            return res.getContent().stream().findFirst()
+                    .map(StoreResult::success)
+                    .orElse(StoreResult.notFound("ParticipantContext with ID '%s' does not exist.".formatted(participantId)));
+        }
+        return StoreResult.generalError(res.getFailureDetail());
     }
 }

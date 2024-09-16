@@ -31,6 +31,7 @@ import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 @OpenAPIDefinition(info = @Info(description = "This is the Identity API for manipulating ParticipantContexts", title = "ParticipantContext Management API", version = "1"))
 @Tag(name = "Participant Context")
@@ -50,7 +51,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    String createParticipant(ParticipantManifest manifest);
+    Map<String, Object> createParticipant(ParticipantManifest manifest);
 
 
     @Operation(description = "Gets ParticipantContexts by ID.",

@@ -17,14 +17,13 @@ package org.eclipse.edc.identityhub.common.provisioner;
 import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
-import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
-import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
-import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
+import org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -53,6 +52,8 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
     @Inject(required = false)
     private StsClientSecretGenerator stsClientSecretGenerator;
 
+    private StsAccountProvisioner provisioner;
+
 
     @Override
     public String name() {
@@ -61,18 +62,26 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var monitor = context.getMonitor().withPrefix("STS-Account");
-        if (stsClientStore != null) {
-            var provisioner = new StsAccountProvisioner(monitor, keyPairService, didDocumentService, stsClientStore, vault, stsClientSecretGenerator());
-            eventRouter.registerSync(ParticipantContextCreated.class, provisioner);
-            eventRouter.registerSync(ParticipantContextDeleted.class, provisioner);
-            eventRouter.registerSync(KeyPairAdded.class, provisioner);
-            eventRouter.registerSync(KeyPairRevoked.class, provisioner);
-            eventRouter.registerSync(KeyPairRotated.class, provisioner);
-            eventRouter.registerSync(KeyPairActivated.class, provisioner);
-        } else {
-            monitor.warning("STS Client Store not available (are you using a standalone STS?). Synchronizing ParticipantContexts with STS not possible.");
+        // invoke once, so that the event registration definitely happens
+        createProvisioner(context);
+    }
+
+    @Provider
+    public AccountProvisioner createProvisioner(ServiceExtensionContext context) {
+        if (provisioner == null) {
+            var monitor = context.getMonitor().withPrefix("STS-Account");
+            if (stsClientStore != null) {
+                monitor.debug("This IdentityHub runtime contains an embedded SecureTokenService (STS) instance. ParticipantContexts and STS Clients will be synchronized.");
+                provisioner = new StsAccountProvisioner(monitor, keyPairService, didDocumentService, stsClientStore, vault, stsClientSecretGenerator());
+                eventRouter.registerSync(ParticipantContextDeleted.class, provisioner);
+                eventRouter.registerSync(KeyPairRevoked.class, provisioner);
+                eventRouter.registerSync(KeyPairRotated.class, provisioner);
+            } else {
+                monitor.warning("This IdentityHub runtime does NOT contain an embedded SecureTokenService (STS) instance. " +
+                        "Synchronizing ParticipantContexts and STS clients must be handled out-of-band.");
+            }
         }
+        return provisioner;
     }
 
     private StsClientSecretGenerator stsClientSecretGenerator() {
