@@ -28,6 +28,7 @@ import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
@@ -546,7 +547,7 @@ class DidDocumentServiceImplTest {
                 .id(UUID.randomUUID().toString())
                 .payload(KeyPairActivated.Builder.newInstance()
                         .keyId(keyId)
-                        .keyPairResourceId("test-resource-id")
+                        .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                         .participantId("test-participant")
                         .publicKey(key.toPublicJWK().toJSONString(), JSON_WEB_KEY_2020)
                         .build())
@@ -581,7 +582,7 @@ class DidDocumentServiceImplTest {
                 .id(UUID.randomUUID().toString())
                 .payload(KeyPairRevoked.Builder.newInstance()
                         .keyId(keyId)
-                        .keyPairResourceId("test-resource-id")
+                        .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                         .participantId("test-participant")
                         .build())
                 .build();

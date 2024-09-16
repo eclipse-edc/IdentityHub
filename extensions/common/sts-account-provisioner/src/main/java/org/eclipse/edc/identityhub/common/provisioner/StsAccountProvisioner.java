@@ -16,12 +16,13 @@ package org.eclipse.edc.identityhub.common.provisioner;
 
 import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsClient;
 import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
-import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairEvent;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.AccountInfo;
 import org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
@@ -30,22 +31,35 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
+/**
+ * AccountProvisioner, that synchronizes the {@link org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext} object
+ * to {@link StsClient} entries. That means, when a participant is created, this provisioner takes care of creating a corresponding
+ * {@link StsClient}, if the embedded STS is used.
+ * When key pairs are revoked or rotated, the corresponding {@link StsClient} entry is updated.
+ */
 public class StsAccountProvisioner implements EventSubscriber, AccountProvisioner {
 
     private final Monitor monitor;
     private final StsClientStore stsClientStore;
     private final Vault vault;
     private final StsClientSecretGenerator stsClientSecretGenerator;
+    private final TransactionContext transactionContext;
 
     public StsAccountProvisioner(Monitor monitor,
                                  StsClientStore stsClientStore,
                                  Vault vault,
-                                 StsClientSecretGenerator stsClientSecretGenerator) {
+                                 StsClientSecretGenerator stsClientSecretGenerator,
+                                 TransactionContext transactionContext) {
         this.monitor = monitor;
         this.stsClientStore = stsClientStore;
         this.vault = vault;
         this.stsClientSecretGenerator = stsClientSecretGenerator;
+        this.transactionContext = transactionContext;
     }
 
     @Override
@@ -54,8 +68,10 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
         ServiceResult<Void> result;
         if (payload instanceof ParticipantContextDeleted deletedEvent) {
             result = deleteAccount(deletedEvent.getParticipantId());
-        } else if (payload instanceof KeyPairRevoked || payload instanceof KeyPairRotated) {
-            result = setKeyAliases(((KeyPairEvent) payload).getParticipantId(), "", "");
+        } else if (payload instanceof KeyPairRevoked kpe) {
+            result = updateStsClient(kpe.getKeyPairResource(), kpe.getParticipantId(), kpe.getNewKeyDescriptor());
+        } else if (payload instanceof KeyPairRotated kpr) {
+            result = updateStsClient(kpr.getKeyPairResource(), kpr.getParticipantId(), kpr.getNewKeyDescriptor());
         } else {
             result = ServiceResult.badRequest("Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }
@@ -66,28 +82,6 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
     @Override
     public ServiceResult<AccountInfo> create(ParticipantManifest manifest) {
         return ServiceResult.from(createAccount(manifest));
-    }
-
-    private ServiceResult<Void> deleteAccount(String participantId) {
-        var result = stsClientStore.deleteById(participantId);
-        return ServiceResult.from(result).mapEmpty();
-    }
-
-    private ServiceResult<Void> setKeyAliases(String participantId, String privateKeyAlias, String publicKeyReference) {
-        return ServiceResult.from(stsClientStore.findById(participantId)
-                .compose(stsClient -> {
-                    var newClient = StsClient.Builder.newInstance()
-                            .id(stsClient.getId())
-                            .clientId(stsClient.getClientId())
-                            .did(stsClient.getDid())
-                            .name(stsClient.getName())
-                            .secretAlias(stsClient.getSecretAlias())
-                            .privateKeyAlias(privateKeyAlias)
-                            .publicKeyReference(publicKeyReference)
-                            .build();
-
-                    return stsClientStore.update(newClient);
-                }));
     }
 
     private Result<AccountInfo> createAccount(ParticipantManifest manifest) {
@@ -116,5 +110,49 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
                 });
 
         return createResult.succeeded() ? Result.success(createResult.getContent()) : Result.failure(createResult.getFailureDetail());
+    }
+
+    private ServiceResult<Void> updateStsClient(KeyPairResource oldKeyResource, String participantId, @Nullable KeyDescriptor newKeyDescriptor) {
+        var findResult = stsClientStore.findById(participantId);
+        if (findResult.failed()) {
+            return ServiceResult.from(findResult).mapEmpty();
+        }
+
+        var existingClient = findResult.getContent();
+
+        if (Objects.equals(oldKeyResource.getPrivateKeyAlias(), existingClient.getPrivateKeyAlias())) {
+            return ServiceResult.success(); // the revoked/rotated key pair does not pertain to this STS Client
+        }
+
+        if (newKeyDescriptor == null) {
+            // no "successor" key was given, will only reset
+            return setKeyAliases(existingClient, "", "");
+        }
+
+        var publicKeyRef = newKeyDescriptor.getKeyId();
+        // check that key-id contains the DID
+        if (!publicKeyRef.startsWith(existingClient.getDid())) {
+            publicKeyRef = existingClient.getDid() + "#" + publicKeyRef;
+        }
+        return setKeyAliases(existingClient, newKeyDescriptor.getPrivateKeyAlias(), publicKeyRef);
+    }
+
+    private ServiceResult<Void> deleteAccount(String participantId) {
+        var result = stsClientStore.deleteById(participantId);
+        return ServiceResult.from(result).mapEmpty();
+    }
+
+    private ServiceResult<Void> setKeyAliases(StsClient stsClient, String privateKeyAlias, String publicKeyReference) {
+        var newClient = StsClient.Builder.newInstance()
+                .id(stsClient.getId())
+                .clientId(stsClient.getClientId())
+                .did(stsClient.getDid())
+                .name(stsClient.getName())
+                .secretAlias(stsClient.getSecretAlias())
+                .privateKeyAlias(privateKeyAlias)
+                .publicKeyReference(publicKeyReference)
+                .build();
+
+        return ServiceResult.from(stsClientStore.update(newClient));
     }
 }

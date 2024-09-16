@@ -54,7 +54,12 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private final ParticipantContextObservable observable;
     private final AccountProvisioner accountProvisioner;
 
-    public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore, DidResourceStore didResourceStore, Vault vault, TransactionContext transactionContext, ParticipantContextObservable observable, AccountProvisioner accountProvisioner) {
+    public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore,
+                                         DidResourceStore didResourceStore,
+                                         Vault vault,
+                                         TransactionContext transactionContext,
+                                         ParticipantContextObservable observable,
+                                         AccountProvisioner accountProvisioner) {
         this.participantContextStore = participantContextStore;
         this.didResourceStore = didResourceStore;
         this.vault = vault;

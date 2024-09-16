@@ -20,6 +20,7 @@ import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -29,6 +30,7 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -56,7 +58,7 @@ class StsAccountProvisionerTest {
     private final Vault vault = mock();
     private final Monitor monitor = mock();
     private final StsClientSecretGenerator stsClientSecretGenerator = parameters -> UUID.randomUUID().toString();
-    private final StsAccountProvisioner accountProvisioner = new StsAccountProvisioner(monitor, stsClientStore, vault, stsClientSecretGenerator);
+    private final StsAccountProvisioner accountProvisioner = new StsAccountProvisioner(monitor, stsClientStore, vault, stsClientSecretGenerator, new NoopTransactionContext());
 
     @Test
     void create() {
@@ -88,7 +90,7 @@ class StsAccountProvisionerTest {
         when(stsClientStore.update(any())).thenAnswer(a -> StoreResult.success(a.getArguments()[0]));
         accountProvisioner.on(event(KeyPairRevoked.Builder.newInstance()
                 .participantId(PARTICIPANT_CONTEXT_ID)
-                .keyPairResourceId(UUID.randomUUID().toString())
+                .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                 .keyId(KEY_ID)
                 .build()));
 
@@ -104,7 +106,7 @@ class StsAccountProvisionerTest {
 
         accountProvisioner.on(event(KeyPairRotated.Builder.newInstance()
                 .participantId(PARTICIPANT_CONTEXT_ID)
-                .keyPairResourceId(UUID.randomUUID().toString())
+                .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                 .keyId(KEY_ID)
                 .build()));
 

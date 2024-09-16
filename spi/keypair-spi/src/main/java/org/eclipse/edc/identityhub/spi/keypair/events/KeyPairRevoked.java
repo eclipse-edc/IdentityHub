@@ -17,15 +17,23 @@ package org.eclipse.edc.identityhub.spi.keypair.events;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Event that signals that a KeyPair was revoked.
  */
 @JsonDeserialize(builder = KeyPairRevoked.Builder.class)
 public class KeyPairRevoked extends KeyPairEvent {
+    private @Nullable KeyDescriptor newKeyDescriptor;
+
     @Override
     public String name() {
         return "keypair.revoked";
+    }
+
+    public @Nullable KeyDescriptor getNewKeyDescriptor() {
+        return newKeyDescriptor;
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -42,6 +50,11 @@ public class KeyPairRevoked extends KeyPairEvent {
 
         @Override
         public KeyPairRevoked.Builder self() {
+            return this;
+        }
+
+        public Builder newKeyDescriptor(@Nullable KeyDescriptor newKeyDescriptor) {
+            event.newKeyDescriptor = newKeyDescriptor;
             return this;
         }
     }

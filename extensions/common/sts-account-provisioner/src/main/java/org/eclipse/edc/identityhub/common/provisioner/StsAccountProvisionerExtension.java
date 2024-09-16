@@ -28,6 +28,7 @@ import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
 
 import java.security.SecureRandom;
@@ -51,6 +52,8 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
     private Vault vault;
     @Inject(required = false)
     private StsClientSecretGenerator stsClientSecretGenerator;
+    @Inject
+    private TransactionContext transactionContext;
 
     private StsAccountProvisioner provisioner;
 
@@ -72,7 +75,7 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
             var monitor = context.getMonitor().withPrefix("STS-Account");
             if (stsClientStore != null) {
                 monitor.debug("This IdentityHub runtime contains an embedded SecureTokenService (STS) instance. ParticipantContexts and STS Clients will be synchronized.");
-                provisioner = new StsAccountProvisioner(monitor, stsClientStore, vault, stsClientSecretGenerator());
+                provisioner = new StsAccountProvisioner(monitor, stsClientStore, vault, stsClientSecretGenerator(), transactionContext);
                 eventRouter.registerSync(ParticipantContextDeleted.class, provisioner);
                 eventRouter.registerSync(KeyPairRevoked.class, provisioner);
                 eventRouter.registerSync(KeyPairRotated.class, provisioner);

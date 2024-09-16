@@ -139,7 +139,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             vault.deleteSecret(oldAlias);
             oldKey.rotate(duration);
             var updateResult = ServiceResult.from(keyPairResourceStore.update(oldKey))
-                    .onSuccess(v -> observable.invokeForEach(l -> l.rotated(oldKey)));
+                    .onSuccess(v -> observable.invokeForEach(l -> l.rotated(oldKey, newKeyDesc)));
 
             if (newKeyDesc != null) {
                 return updateResult.compose(v -> addKeyPair(participantId, newKeyDesc, wasDefault));
@@ -150,7 +150,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     }
 
     @Override
-    public ServiceResult<Void> revokeKey(String id, @Nullable KeyDescriptor newKeySpec) {
+    public ServiceResult<Void> revokeKey(String id, @Nullable KeyDescriptor newKeyDesc) {
         return transactionContext.execute(() -> {
             var oldKey = findById(id);
             if (oldKey == null) {
@@ -165,10 +165,10 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             vault.deleteSecret(oldAlias);
             oldKey.revoke();
             var updateResult = ServiceResult.from(keyPairResourceStore.update(oldKey))
-                    .onSuccess(v -> observable.invokeForEach(l -> l.revoked(oldKey)));
+                    .onSuccess(v -> observable.invokeForEach(l -> l.revoked(oldKey, newKeyDesc)));
 
-            if (newKeySpec != null) {
-                return updateResult.compose(v -> addKeyPair(participantId, newKeySpec, wasDefault));
+            if (newKeyDesc != null) {
+                return updateResult.compose(v -> addKeyPair(participantId, newKeyDesc, wasDefault));
             }
             monitor.warning("Revoking keys without a successor key may leave the participant without an active keypair.");
             return updateResult;

@@ -267,7 +267,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             var publicKey = keyParserRegistry.parse(serialized);
 
             if (publicKey.failed()) {
-                monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyPairResourceId(), event.getParticipantId(), publicKey.getFailureDetail()));
+                monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyPairResource().getId(), event.getParticipantId(), publicKey.getFailureDetail()));
                 return;
             }
 
