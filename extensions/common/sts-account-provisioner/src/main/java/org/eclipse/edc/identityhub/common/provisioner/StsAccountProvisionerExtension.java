@@ -74,14 +74,14 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
         if (provisioner == null) {
             var monitor = context.getMonitor().withPrefix("STS-Account");
             if (stsClientStore != null) {
-                monitor.debug("This IdentityHub runtime contains an embedded SecureTokenService (STS) instance. ParticipantContexts and STS Clients will be synchronized.");
+                monitor.info("This IdentityHub runtime contains an embedded SecureTokenService (STS) instance. That means ParticipantContexts and STS Accounts will be synchronized automatically.");
                 provisioner = new StsAccountProvisioner(monitor, stsClientStore, vault, stsClientSecretGenerator(), transactionContext);
                 eventRouter.registerSync(ParticipantContextDeleted.class, provisioner);
                 eventRouter.registerSync(KeyPairRevoked.class, provisioner);
                 eventRouter.registerSync(KeyPairRotated.class, provisioner);
             } else {
                 monitor.warning("This IdentityHub runtime does NOT contain an embedded SecureTokenService (STS) instance. " +
-                        "Synchronizing ParticipantContexts and STS clients must be handled out-of-band.");
+                        "Synchronizing ParticipantContexts and STS Accounts must be handled out-of-band.");
             }
         }
         return provisioner;
