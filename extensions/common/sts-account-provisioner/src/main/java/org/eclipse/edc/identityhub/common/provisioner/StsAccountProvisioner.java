@@ -28,7 +28,6 @@ import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
-import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -81,10 +80,6 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
 
     @Override
     public ServiceResult<AccountInfo> create(ParticipantManifest manifest) {
-        return ServiceResult.from(createAccount(manifest));
-    }
-
-    private Result<AccountInfo> createAccount(ParticipantManifest manifest) {
         return transactionContext.execute(() -> {
             var secretAlias = manifest.getParticipantId() + "-sts-client-secret";
 
@@ -110,9 +105,10 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
                                 .onFailure(e -> monitor.severe(e.getFailureDetail()));
                     });
 
-            return createResult.succeeded() ? Result.success(createResult.getContent()) : Result.failure(createResult.getFailureDetail());
+            return createResult.succeeded() ? ServiceResult.success(createResult.getContent()) : ServiceResult.badRequest(createResult.getFailureDetail());
         });
     }
+
 
     private ServiceResult<Void> updateStsClient(KeyPairResource oldKeyResource, String participantId, @Nullable KeyDescriptor newKeyDescriptor) {
         return transactionContext.execute(() -> {

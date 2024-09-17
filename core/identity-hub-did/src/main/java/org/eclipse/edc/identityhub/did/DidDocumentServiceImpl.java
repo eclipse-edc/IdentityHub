@@ -57,16 +57,16 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     private final TransactionContext transactionContext;
     private final DidResourceStore didResourceStore;
     private final DidDocumentPublisherRegistry registry;
-    private final ParticipantContextStore participantcontextStore;
+    private final ParticipantContextStore participantContextStore;
     private final Monitor monitor;
     private final KeyParserRegistry keyParserRegistry;
 
     public DidDocumentServiceImpl(TransactionContext transactionContext, DidResourceStore didResourceStore, DidDocumentPublisherRegistry registry,
-                                  ParticipantContextStore participantcontextStore, Monitor monitor, KeyParserRegistry keyParserRegistry) {
+                                  ParticipantContextStore participantContextStore, Monitor monitor, KeyParserRegistry keyParserRegistry) {
         this.transactionContext = transactionContext;
         this.didResourceStore = didResourceStore;
         this.registry = registry;
-        this.participantcontextStore = participantcontextStore;
+        this.participantContextStore = participantContextStore;
         this.monitor = monitor;
         this.keyParserRegistry = keyParserRegistry;
     }
@@ -112,7 +112,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                 return ServiceResult.notFound(notFoundMessage(did));
             }
             var participantId = existingResource.getParticipantId();
-            return ServiceResult.from(participantcontextStore.findById(participantId))
+            return ServiceResult.from(participantContextStore.findById(participantId))
                     .map(ParticipantContext::getStateAsEnum)
                     .compose(state -> {
                         var canPublish = state.equals(ParticipantContextState.ACTIVATED);
@@ -142,7 +142,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             }
 
             var participantId = existingResource.getParticipantId();
-            return ServiceResult.from(participantcontextStore.findById(participantId))
+            return ServiceResult.from(participantContextStore.findById(participantId))
                     .map(ParticipantContext::getStateAsEnum)
                     .compose(state -> {
                         var canUnpublish = state.equals(ParticipantContextState.DEACTIVATED);
