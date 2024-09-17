@@ -20,6 +20,7 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -34,7 +35,7 @@ public interface ParticipantContextService {
      * @param manifest The new participant context
      * @return success if created, or a failure if already exists.
      */
-    ServiceResult<String> createParticipantContext(ParticipantManifest manifest);
+    ServiceResult<Map<String, Object>> createParticipantContext(ParticipantManifest manifest);
 
     /**
      * Fetches the {@link ParticipantContext} by ID.

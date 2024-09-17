@@ -22,6 +22,7 @@ dependencies {
     testImplementation(libs.edc.sql.pool)
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.jakarta.rsApi)
+    testImplementation(libs.edc.sts.spi)
 }
 
 edcBuild {

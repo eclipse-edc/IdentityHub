@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
@@ -23,12 +24,14 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.event.EventRouter;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.time.Clock;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.participantcontext.ParticipantContextExtension.NAME;
 
 @Extension(NAME)
@@ -50,6 +53,9 @@ public class ParticipantContextExtension implements ServiceExtension {
     @Inject
     private DidResourceStore didResourceStore;
 
+    @Inject(required = false)
+    private AccountProvisioner accountProvisioner;
+
     private ParticipantContextObservable participantContextObservable;
 
     @Override
@@ -59,7 +65,7 @@ public class ParticipantContextExtension implements ServiceExtension {
 
     @Provider
     public ParticipantContextService createParticipantService() {
-        return new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, participantContextObservable());
+        return new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, participantContextObservable(), accountProvisioner());
     }
 
     @Provider
@@ -69,5 +75,10 @@ public class ParticipantContextExtension implements ServiceExtension {
             participantContextObservable.registerListener(new ParticipantContextEventPublisher(clock, eventRouter));
         }
         return participantContextObservable;
+    }
+
+    private AccountProvisioner accountProvisioner() {
+        return ofNullable(accountProvisioner)
+                .orElseGet(() -> manifest -> ServiceResult.success()); // default is a NOOP
     }
 }

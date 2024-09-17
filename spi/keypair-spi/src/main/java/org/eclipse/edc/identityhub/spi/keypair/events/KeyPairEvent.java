@@ -25,14 +25,14 @@ import java.util.Objects;
  */
 public abstract class KeyPairEvent extends Event {
     protected String participantId;
-    protected String keyPairResourceId;
+    protected KeyPairResource keyPairResource;
     protected String keyId;
 
     /**
-     * The ID of the {@link KeyPairResource}. This is the internal database ID.
+     * The {@link KeyPairResource} that this event refers to.
      */
-    public String getKeyPairResourceId() {
-        return keyPairResourceId;
+    public KeyPairResource getKeyPairResource() {
+        return keyPairResource;
     }
 
     /**
@@ -69,8 +69,8 @@ public abstract class KeyPairEvent extends Event {
             return self();
         }
 
-        public B keyPairResourceId(String keyPairResourceId) {
-            event.keyPairResourceId = keyPairResourceId;
+        public B keyPairResource(KeyPairResource keyPairResource) {
+            event.keyPairResource = keyPairResource;
             return self();
         }
 

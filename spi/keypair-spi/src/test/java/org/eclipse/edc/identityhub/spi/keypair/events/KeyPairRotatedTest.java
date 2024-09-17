@@ -14,9 +14,12 @@
 
 package org.eclipse.edc.identityhub.spi.keypair.events;
 
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,7 +30,7 @@ class KeyPairRotatedTest {
     @Test
     void verify_serDes() {
         var evt = KeyPairRotated.Builder.newInstance()
-                .keyPairResourceId("resource-id")
+                .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                 .keyId("key-id")
                 .participantId("participant-id")
                 .build();

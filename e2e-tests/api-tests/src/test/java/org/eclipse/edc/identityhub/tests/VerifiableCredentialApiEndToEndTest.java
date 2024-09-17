@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.Header;
+import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
@@ -46,7 +47,7 @@ public class VerifiableCredentialApiEndToEndTest {
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore) {
+        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsClientStore stsClientStore) {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
@@ -56,6 +57,10 @@ public class VerifiableCredentialApiEndToEndTest {
 
             keyPairResourceStore.query(QuerySpec.max()).getContent()
                     .forEach(kpr -> keyPairResourceStore.deleteById(kpr.getId()).getContent());
+
+            stsClientStore.findAll(QuerySpec.max())
+                    .forEach(sts -> stsClientStore.deleteById(sts.getId()).getContent());
+
         }
 
         @Test

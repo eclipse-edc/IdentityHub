@@ -50,6 +50,7 @@ include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:store:sql:identity-hub-keypair-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:common:credential-watchdog")
+include(":extensions:common:sts-account-provisioner")
 
 // Identity APIs
 include(":extensions:api:identity-api:validators")

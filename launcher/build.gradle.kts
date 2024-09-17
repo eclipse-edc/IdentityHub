@@ -26,6 +26,7 @@ dependencies {
     runtimeOnly(project(":core:identity-hub-keypairs"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
     runtimeOnly(project(":extensions:common:credential-watchdog"))
+    runtimeOnly(project(":extensions:common:sts-account-provisioner"))
     runtimeOnly(project(":extensions:api:identity-api:did-api"))
     runtimeOnly(project(":extensions:api:identity-api:participant-context-api"))
     runtimeOnly(project(":extensions:api:identity-api:verifiable-credentials-api"))
@@ -36,6 +37,9 @@ dependencies {
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
     runtimeOnly(libs.edc.api.version)
+    runtimeOnly(libs.edc.sts.core)
+    runtimeOnly(libs.edc.sts)
+    runtimeOnly(libs.edc.sts.api)
 
     runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.bundles.connector)

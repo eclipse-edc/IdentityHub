@@ -15,12 +15,12 @@
 package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -28,7 +28,8 @@ import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.eclipse.edc.spi.result.ServiceResult.conflict;
@@ -51,42 +52,48 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private final TransactionContext transactionContext;
     private final ApiTokenGenerator tokenGenerator;
     private final ParticipantContextObservable observable;
+    private final AccountProvisioner accountProvisioner;
 
-    public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore, DidResourceStore didResourceStore, Vault vault, TransactionContext transactionContext, ParticipantContextObservable observable) {
+    public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore,
+                                         DidResourceStore didResourceStore,
+                                         Vault vault,
+                                         TransactionContext transactionContext,
+                                         ParticipantContextObservable observable,
+                                         AccountProvisioner accountProvisioner) {
         this.participantContextStore = participantContextStore;
         this.didResourceStore = didResourceStore;
         this.vault = vault;
         this.transactionContext = transactionContext;
         this.observable = observable;
+        this.accountProvisioner = accountProvisioner;
         this.tokenGenerator = new ApiTokenGenerator();
     }
 
     @Override
-    public ServiceResult<String> createParticipantContext(ParticipantManifest manifest) {
+    public ServiceResult<Map<String, Object>> createParticipantContext(ParticipantManifest manifest) {
         return transactionContext.execute(() -> {
             if (didResourceStore.findById(manifest.getDid()) != null) {
                 return ServiceResult.conflict("Another participant with the same DID '%s' already exists.".formatted(manifest.getDid()));
             }
-            var apiKey = new AtomicReference<String>();
+            var response = new HashMap<String, Object>();
             var context = convert(manifest);
             var res = createParticipantContext(context)
-                    .compose(u -> createTokenAndStoreInVault(context)).onSuccess(apiKey::set)
+                    .compose(u -> createTokenAndStoreInVault(context)).onSuccess(k -> response.put("apiKey", k))
+                    .compose(apiKey -> accountProvisioner.create(manifest))
+                    .onSuccess(accountInfo -> {
+                        if (accountInfo != null) {
+                            response.put("clientId", accountInfo.clientId());
+                            response.put("clientSecret", accountInfo.clientSecret());
+                        }
+                    })
                     .onSuccess(apiToken -> observable.invokeForEach(l -> l.created(context, manifest)));
-            return res.map(u -> apiKey.get());
+            return res.map(u -> response);
         });
     }
 
     @Override
     public ServiceResult<ParticipantContext> getParticipantContext(String participantId) {
-        return transactionContext.execute(() -> {
-            var res = participantContextStore.query(ParticipantResource.queryByParticipantId(participantId).build());
-            if (res.succeeded()) {
-                return res.getContent().stream().findFirst()
-                        .map(ServiceResult::success)
-                        .orElse(notFound("ParticipantContext with ID '%s' does not exist.".formatted(participantId)));
-            }
-            return fromFailure(res);
-        });
+        return transactionContext.execute(() -> ServiceResult.from(participantContextStore.findById(participantId)));
     }
 
     @Override
@@ -161,9 +168,8 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     private ParticipantContext findByIdInternal(String participantId) {
-        var resultStream = participantContextStore.query(ParticipantResource.queryByParticipantId(participantId).build());
-        if (resultStream.failed()) return null;
-        return resultStream.getContent().stream().findFirst().orElse(null);
+        var resultStream = participantContextStore.findById(participantId);
+        return resultStream.orElse(f -> null);
     }
 
 

@@ -17,6 +17,8 @@ package org.eclipse.edc.identityhub.spi.keypair.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
 
 import java.time.Duration;
@@ -40,6 +42,10 @@ public class KeyPairResource extends ParticipantResource {
     private int state;
 
     private KeyPairResource() {
+    }
+
+    public static QuerySpec.Builder queryById(String id) {
+        return QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id));
     }
 
     public String getGroupName() {

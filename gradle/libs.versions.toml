@@ -72,6 +72,11 @@ edc-lib-json = { module = "org.eclipse.edc:json-lib", version.ref = "edc" }
 edc-lib-common-crypto = { module = "org.eclipse.edc:crypto-common-lib", version.ref = "edc" }
 edc-core-jerseyproviders = { module = "org.eclipse.edc:jersey-providers-lib", version.ref = "edc" }
 
+# EDC STS dependencies
+edc-sts-spi = { module = "org.eclipse.edc:identity-trust-sts-spi", version.ref = "edc" }
+edc-sts-core = { module = "org.eclipse.edc:identity-trust-sts-core", version.ref = "edc" }
+edc-sts = { module = "org.eclipse.edc:identity-trust-sts-embedded", version.ref = "edc" }
+edc-sts-api = { module = "org.eclipse.edc:identity-trust-sts-api", version.ref = "edc" }
 
 # Third party libs
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
