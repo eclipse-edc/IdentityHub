@@ -24,11 +24,11 @@ import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.event.Event;
@@ -57,16 +57,16 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     private final TransactionContext transactionContext;
     private final DidResourceStore didResourceStore;
     private final DidDocumentPublisherRegistry registry;
-    private final ParticipantContextService participantContextService;
+    private final ParticipantContextStore participantContextStore;
     private final Monitor monitor;
     private final KeyParserRegistry keyParserRegistry;
 
     public DidDocumentServiceImpl(TransactionContext transactionContext, DidResourceStore didResourceStore, DidDocumentPublisherRegistry registry,
-                                  ParticipantContextService participantContextService, Monitor monitor, KeyParserRegistry keyParserRegistry) {
+                                  ParticipantContextStore participantContextStore, Monitor monitor, KeyParserRegistry keyParserRegistry) {
         this.transactionContext = transactionContext;
         this.didResourceStore = didResourceStore;
         this.registry = registry;
-        this.participantContextService = participantContextService;
+        this.participantContextStore = participantContextStore;
         this.monitor = monitor;
         this.keyParserRegistry = keyParserRegistry;
     }
@@ -112,7 +112,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                 return ServiceResult.notFound(notFoundMessage(did));
             }
             var participantId = existingResource.getParticipantId();
-            return participantContextService.getParticipantContext(participantId)
+            return ServiceResult.from(participantContextStore.findById(participantId))
                     .map(ParticipantContext::getStateAsEnum)
                     .compose(state -> {
                         var canPublish = state.equals(ParticipantContextState.ACTIVATED);
@@ -142,7 +142,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             }
 
             var participantId = existingResource.getParticipantId();
-            return participantContextService.getParticipantContext(participantId)
+            return ServiceResult.from(participantContextStore.findById(participantId))
                     .map(ParticipantContext::getStateAsEnum)
                     .compose(state -> {
                         var canUnpublish = state.equals(ParticipantContextState.DEACTIVATED);
@@ -267,7 +267,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             var publicKey = keyParserRegistry.parse(serialized);
 
             if (publicKey.failed()) {
-                monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyPairResourceId(), event.getParticipantId(), publicKey.getFailureDetail()));
+                monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyPairResource().getId(), event.getParticipantId(), publicKey.getFailureDetail()));
                 return;
             }
 

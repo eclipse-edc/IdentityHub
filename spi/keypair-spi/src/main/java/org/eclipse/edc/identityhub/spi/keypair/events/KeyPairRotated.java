@@ -17,15 +17,23 @@ package org.eclipse.edc.identityhub.spi.keypair.events;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Event that signals that a KeyPair was rotated.
  */
 @JsonDeserialize(builder = KeyPairRotated.Builder.class)
 public class KeyPairRotated extends KeyPairEvent {
+    private @Nullable KeyDescriptor newKeyDescriptor;
+
     @Override
     public String name() {
         return "keypair.rotated";
+    }
+
+    public @Nullable KeyDescriptor getNewKeyDescriptor() {
+        return newKeyDescriptor;
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -42,6 +50,11 @@ public class KeyPairRotated extends KeyPairEvent {
 
         @Override
         public KeyPairRotated.Builder self() {
+            return this;
+        }
+
+        public Builder newKeyDescriptor(@Nullable KeyDescriptor newKeyDesc) {
+            event.newKeyDescriptor = newKeyDesc;
             return this;
         }
     }

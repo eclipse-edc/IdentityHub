@@ -15,8 +15,10 @@
 package org.eclipse.edc.identityhub.spi.keypair.events;
 
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.observe.Observable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface implemented by listeners registered to observe key pair resource changes via {@link Observable#registerListener}.
@@ -39,9 +41,10 @@ public interface KeyPairEventListener {
      * A {@link KeyPairResource} was rotated (=phased out). If the rotation was done with a successor keypair, this would be communicated using the {@link KeyPairEventListener#added(KeyPairResource, String)}
      * callback.
      *
-     * @param keyPair the old (outgoing) {@link KeyPairResource}
+     * @param keyPair    the old (outgoing) {@link KeyPairResource}
+     * @param newKeyDesc The {@link KeyDescriptor} of the new Key pair. can be null.
      */
-    default void rotated(KeyPairResource keyPair) {
+    default void rotated(KeyPairResource keyPair, @Nullable KeyDescriptor newKeyDesc) {
 
     }
 
@@ -49,9 +52,10 @@ public interface KeyPairEventListener {
      * A {@link KeyPairResource} was revoked (=deleted). If the revocation was done with a successor keypair, this would be communicated using the {@link KeyPairEventListener#added(KeyPairResource, String)}
      * callback.
      *
-     * @param keyPair the old (outgoing) {@link KeyPairResource}
+     * @param keyPair    the old (outgoing) {@link KeyPairResource}
+     * @param newKeyDesc The {@link KeyDescriptor} of the new Key pair. can be null.
      */
-    default void revoked(KeyPairResource keyPair) {
+    default void revoked(KeyPairResource keyPair, @Nullable KeyDescriptor newKeyDesc) {
 
     }
 
