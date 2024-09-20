@@ -1,4 +1,15 @@
-# Identity Hub
+# EDC Identity Hub
+
+[![documentation](https://img.shields.io/badge/documentation-8A2BE2?style=flat-square)](https://eclipse-edc.github.io)
+[![discord](https://img.shields.io/badge/discord-chat-brightgreen.svg?style=flat-square&logo=discord)](https://discord.gg/n4sD9qtjMQ)
+[![latest version](https://img.shields.io/maven-central/v/org.eclipse.edc/boot?logo=apache-maven&style=flat-square&label=latest%20version)](https://search.maven.org/artifact/org.eclipse.edc/boot)
+[![license](https://img.shields.io/github/license/eclipse-edc/IdentityHub?style=flat-square&logo=apache)](https://www.apache.org/licenses/LICENSE-2.0)
+<br>
+[![build](https://img.shields.io/github/actions/workflow/status/eclipse-edc/IdentityHub/verify.yaml?branch=main&logo=GitHub&style=flat-square&label=ci)](https://github.com/eclipse-edc/IdentityHub/actions/workflows/verify.yaml?query=branch%3Amain)
+[![snapshot build](https://img.shields.io/github/actions/workflow/status/eclipse-edc/IdentityHub/trigger_snapshot.yml?branch=main&logo=GitHub&style=flat-square&label=snapshot-build)](https://github.com/eclipse-edc/IdentityHub/actions/workflows/trigger_snapshot.yml)
+[![nightly build](https://img.shields.io/github/actions/workflow/status/eclipse-edc/Release/nightly.yaml?branch=main&logo=GitHub&style=flat-square&label=nightly-build)](https://github.com/eclipse-edc/Release/actions/workflows/nightly.yaml)
+
+---
 
 This repository contains an implementation for
 the [Decentralized Claims Protocol (DCP) specification](https://projects.eclipse.org/projects/technology.dataspace-dcp).
@@ -13,6 +24,12 @@ handling etc., while adding specific functionality using the EDC
 extensibility mechanism.
 
 Here, developers find everything necessary to build and run a basic "vanilla" version of IdentityHub.
+
+## Documentation
+
+Base documentation can be found on the [documentation website](https://eclipse-edc.github.io). \
+Developer documentation can be found under [docs/developer](docs/developer/README.md), \
+where the main concepts and decisions are captured as [decision records](docs/developer/decision-records/README.md).
 
 ## Security Warning
 
@@ -100,11 +117,6 @@ detail [here](docs/developer/architecture/identityhub-apis.md).
 - Support for VC Presentation Definition
 - Support for VC Data Model 2.0
 
-## Other documentation
-
-Developer documentation can be found under [docs/developer](docs/developer), where the main concepts and decisions are
-captured as [decision records](docs/developer/decision-records).
-
 ## References
 
 - Decentralized Claims Protocol (DCP): https://projects.eclipse.org/projects/technology.dataspace-dcp
@@ -114,4 +126,4 @@ captured as [decision records](docs/developer/decision-records).
 
 ## Contributing
 
-See [how to contribute](https://github.com/eclipse-edc/docs/blob/main/CONTRIBUTING.md) for details.
+See [how to contribute](https://github.com/eclipse-edc/eclipse-edc.github.io/blob/main/CONTRIBUTING.md).
