@@ -22,7 +22,6 @@ paths:
         schema:
           type: integer
           format: int32
-          example: null
           default: 0
       - name: limit
         in: query
@@ -32,7 +31,6 @@ paths:
         schema:
           type: integer
           format: int32
-          example: null
           default: 50
       responses:
         "200":
@@ -41,7 +39,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/VerifiableCredentialResource"
         "400":
@@ -50,7 +47,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -60,7 +56,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/dids:
@@ -79,7 +74,6 @@ paths:
         schema:
           type: integer
           format: int32
-          example: null
           default: 0
       - name: limit
         in: query
@@ -89,7 +83,6 @@ paths:
         schema:
           type: integer
           format: int32
-          example: null
           default: 50
       responses:
         "200":
@@ -98,7 +91,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/DidDocument"
         "400":
@@ -107,7 +99,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -117,7 +108,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/keypairs:
@@ -136,7 +126,6 @@ paths:
         schema:
           type: integer
           format: int32
-          example: null
           default: 0
       - name: limit
         in: query
@@ -146,7 +135,6 @@ paths:
         schema:
           type: integer
           format: int32
-          example: null
           default: 50
       responses:
         "200":
@@ -155,7 +143,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/KeyPairResource"
         "400":
@@ -164,7 +151,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -174,7 +160,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants:
@@ -193,7 +178,6 @@ paths:
         schema:
           type: integer
           format: int32
-          example: null
           default: 0
       - name: limit
         in: query
@@ -203,7 +187,6 @@ paths:
         schema:
           type: integer
           format: int32
-          example: null
           default: 50
       responses:
         "200":
@@ -212,7 +195,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ParticipantContext"
         "400":
@@ -221,7 +203,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -231,7 +212,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
     post:
@@ -254,7 +234,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -264,7 +243,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "409":
@@ -274,7 +252,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}:
@@ -291,7 +268,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       responses:
         "200":
           description: The list of ParticipantContexts.
@@ -305,7 +281,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -315,7 +290,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -324,7 +298,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
     delete:
@@ -340,7 +313,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       responses:
         "200":
           description: The ParticipantContext was deleted successfully
@@ -348,14 +320,12 @@ paths:
             application/json:
               schema:
                 type: string
-                example: null
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -365,7 +335,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -374,7 +343,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/credentials:
@@ -392,7 +360,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: type
         in: query
         required: false
@@ -400,7 +367,6 @@ paths:
         explode: true
         schema:
           type: string
-          example: null
       responses:
         "200":
           description: The list of VerifiableCredentials.
@@ -408,7 +374,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/VerifiableCredentialResource"
         "400":
@@ -417,7 +382,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "403":
@@ -427,7 +391,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
     put:
@@ -444,7 +407,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       requestBody:
         content:
           application/json:
@@ -459,7 +421,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "403":
@@ -469,7 +430,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -479,7 +439,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
     post:
@@ -496,7 +455,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: participantId
         in: path
         required: true
@@ -504,7 +462,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       requestBody:
         content:
           application/json:
@@ -519,7 +476,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "403":
@@ -529,7 +485,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "409":
@@ -539,7 +494,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/credentials/{credentialId}:
@@ -557,7 +511,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: credentialId
         in: path
         required: true
@@ -565,7 +518,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       responses:
         "200":
           description: The VerifiableCredential.
@@ -579,7 +531,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "403":
@@ -589,7 +540,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -598,7 +548,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
     delete:
@@ -615,7 +564,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: credentialId
         in: path
         required: true
@@ -623,7 +571,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       responses:
         "200":
           description: The VerifiableCredential was deleted successfully
@@ -631,14 +578,12 @@ paths:
             application/json:
               schema:
                 type: string
-                example: null
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "403":
@@ -648,7 +593,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -657,7 +601,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/dids/publish:
@@ -676,7 +619,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       requestBody:
         content:
           application/json:
@@ -692,7 +634,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -701,7 +642,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/dids/query:
@@ -719,7 +659,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       requestBody:
         content:
           application/json:
@@ -732,7 +671,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/DidDocument"
         "400":
@@ -741,7 +679,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -751,7 +688,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/dids/state:
@@ -769,7 +705,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       requestBody:
         content:
           application/json:
@@ -785,7 +720,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -794,7 +728,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/dids/unpublish:
@@ -813,7 +746,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       requestBody:
         content:
           application/json:
@@ -829,7 +761,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -839,7 +770,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -848,7 +778,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/dids/{did}/endpoints:
@@ -866,7 +795,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: did
         in: path
         required: true
@@ -874,7 +802,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: autoPublish
         in: query
         required: false
@@ -882,7 +809,6 @@ paths:
         explode: true
         schema:
           type: boolean
-          example: null
       requestBody:
         content:
           application/json:
@@ -898,7 +824,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -908,7 +833,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "409":
@@ -918,7 +842,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
     delete:
@@ -935,7 +858,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: did
         in: path
         required: true
@@ -943,7 +865,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: serviceId
         in: query
         required: false
@@ -951,7 +872,6 @@ paths:
         explode: true
         schema:
           type: string
-          example: null
       - name: autoPublish
         in: query
         required: false
@@ -959,7 +879,6 @@ paths:
         explode: true
         schema:
           type: boolean
-          example: null
       responses:
         "200":
           description: The DID document was successfully updated.
@@ -970,7 +889,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -980,7 +898,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -990,7 +907,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
     patch:
@@ -1007,7 +923,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: did
         in: path
         required: true
@@ -1015,7 +930,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: autoPublish
         in: query
         required: false
@@ -1023,7 +937,6 @@ paths:
         explode: true
         schema:
           type: boolean
-          example: null
       requestBody:
         content:
           application/json:
@@ -1039,7 +952,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -1049,7 +961,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -1059,7 +970,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/keypairs:
@@ -1076,7 +986,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       responses:
         "200":
           description: The KeyPairResource.
@@ -1084,7 +993,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/KeyPairResource"
         "400":
@@ -1093,7 +1001,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -1103,7 +1010,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -1112,7 +1018,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
     put:
@@ -1130,7 +1035,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: makeDefault
         in: query
         required: false
@@ -1138,7 +1042,6 @@ paths:
         explode: true
         schema:
           type: boolean
-          example: null
       requestBody:
         content:
           application/json:
@@ -1154,7 +1057,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -1164,7 +1066,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -1173,7 +1074,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/keypairs/{keyPairId}:
@@ -1191,7 +1091,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: keyPairId
         in: path
         required: true
@@ -1199,7 +1098,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       responses:
         "200":
           description: The KeyPairResource.
@@ -1213,7 +1111,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -1223,7 +1120,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -1232,7 +1128,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/keypairs/{keyPairId}/activate:
@@ -1251,7 +1146,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: keyPairId
         in: path
         required: true
@@ -1259,7 +1153,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       responses:
         "200":
           description: The KeyPairResource.
@@ -1269,7 +1162,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -1279,7 +1171,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -1288,7 +1179,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/keypairs/{keyPairId}/revoke:
@@ -1307,7 +1197,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: keyPairId
         in: path
         required: true
@@ -1315,7 +1204,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       requestBody:
         content:
           application/json:
@@ -1331,7 +1219,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -1341,7 +1228,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -1350,7 +1236,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/keypairs/{keyPairId}/rotate:
@@ -1369,7 +1254,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: keyPairId
         in: path
         required: true
@@ -1377,7 +1261,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: duration
         in: query
         required: false
@@ -1386,7 +1269,6 @@ paths:
         schema:
           type: integer
           format: int64
-          example: null
       requestBody:
         content:
           application/json:
@@ -1402,7 +1284,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -1412,7 +1293,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -1421,7 +1301,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/roles:
@@ -1440,16 +1319,13 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       requestBody:
         content:
           application/json:
             schema:
               type: array
-              example: null
               items:
                 type: string
-                example: null
       responses:
         "200":
           description: The ParticipantContext was updated successfully
@@ -1459,7 +1335,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -1469,7 +1344,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -1478,7 +1352,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/state:
@@ -1496,7 +1369,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: isActive
         in: query
         required: false
@@ -1504,7 +1376,6 @@ paths:
         explode: true
         schema:
           type: boolean
-          example: null
       requestBody:
         content:
           application/json:
@@ -1517,14 +1388,12 @@ paths:
             application/json:
               schema:
                 type: string
-                example: null
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -1534,7 +1403,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -1543,7 +1411,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantId}/token:
@@ -1561,7 +1428,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       requestBody:
         content:
           application/json:
@@ -1574,14 +1440,12 @@ paths:
             application/json:
               schema:
                 type: string
-                example: null
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -1591,7 +1455,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
@@ -1600,7 +1463,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
 components:
@@ -1612,27 +1474,19 @@ components:
           $ref: "#/components/schemas/Constraint"
         includedIn:
           type: string
-          example: null
         type:
           type: string
-          example: null
-      example: null
     ApiErrorDetail:
       type: object
       properties:
         invalidValue:
           type: object
-          example: null
         message:
           type: string
-          example: null
         path:
           type: string
-          example: null
         type:
           type: string
-          example: null
-      example: null
     Constraint:
       required:
       - edctype
@@ -1640,8 +1494,6 @@ components:
       properties:
         edctype:
           type: string
-          example: null
-      example: null
       discriminator:
         propertyName: edctype
     CredentialStatus:
@@ -1651,71 +1503,50 @@ components:
           type: object
           additionalProperties:
             type: object
-            example: null
-          example: null
         id:
           type: string
-          example: null
         type:
           type: string
-          example: null
-      example: null
     CredentialSubject:
       type: object
       properties:
         id:
           type: string
-          example: null
-      example: null
     Criterion:
       type: object
       properties:
         operandLeft:
           type: object
-          example: null
         operandRight:
           type: object
-          example: null
         operator:
           type: string
-          example: null
-      example: null
     DidDocument:
       type: object
       properties:
         '@context':
           type: array
-          example: null
           items:
             type: object
-            example: null
         authentication:
           type: array
-          example: null
           items:
             type: string
-            example: null
         id:
           type: string
-          example: null
         service:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Service"
         verificationMethod:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/VerificationMethod"
-      example: null
     DidRequestPayload:
       type: object
       properties:
         did:
           type: string
-          example: null
-      example: null
     Duty:
       type: object
       properties:
@@ -1723,10 +1554,8 @@ components:
           $ref: "#/components/schemas/Action"
         constraints:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Constraint"
-      example: null
     Issuer:
       type: object
       properties:
@@ -1734,148 +1563,104 @@ components:
           type: object
           additionalProperties:
             type: object
-            example: null
-          example: null
         id:
           type: string
-          example: null
-      example: null
     KeyDescriptor:
       type: object
       properties:
         active:
           type: boolean
-          example: null
         keyGeneratorParams:
           type: object
           additionalProperties:
             type: object
-            example: null
-          example: null
         keyId:
           type: string
-          example: null
         privateKeyAlias:
           type: string
-          example: null
         publicKeyJwk:
           type: object
           additionalProperties:
             type: object
-            example: null
-          example: null
         publicKeyPem:
           type: string
-          example: null
         resourceId:
           type: string
-          example: null
         type:
           type: string
-          example: null
-      example: null
     KeyPairResource:
       type: object
       properties:
         defaultPair:
           type: boolean
-          example: null
         groupName:
           type: string
-          example: null
         id:
           type: string
-          example: null
         keyContext:
           type: string
-          example: null
         keyId:
           type: string
-          example: null
         participantId:
           type: string
-          example: null
         privateKeyAlias:
           type: string
-          example: null
         rotationDuration:
           type: integer
           format: int64
-          example: null
         serializedPublicKey:
           type: string
-          example: null
         state:
           type: integer
           format: int32
-          example: null
         timestamp:
           type: integer
           format: int64
-          example: null
         useDuration:
           type: integer
           format: int64
-          example: null
-      example: null
     ParticipantContext:
       type: object
       properties:
         apiTokenAlias:
           type: string
-          example: null
         createdAt:
           type: integer
           format: int64
-          example: null
         did:
           type: string
-          example: null
         lastModified:
           type: integer
           format: int64
-          example: null
         participantId:
           type: string
-          example: null
         roles:
           type: array
-          example: null
           items:
             type: string
-            example: null
         state:
           type: integer
           format: int32
-          example: null
-      example: null
     ParticipantManifest:
       type: object
       properties:
         active:
           type: boolean
-          example: null
         did:
           type: string
-          example: null
         key:
           $ref: "#/components/schemas/KeyDescriptor"
         participantId:
           type: string
-          example: null
         roles:
           type: array
-          example: null
           items:
             type: string
-            example: null
         serviceEndpoints:
           uniqueItems: true
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Service"
-      example: null
     Permission:
       type: object
       properties:
@@ -1883,65 +1668,49 @@ components:
           $ref: "#/components/schemas/Action"
         constraints:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Constraint"
         duties:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Duty"
-      example: null
     Policy:
       type: object
       properties:
         '@type':
           type: string
-          example: null
           enum:
           - SET
           - OFFER
           - CONTRACT
         assignee:
           type: string
-          example: null
         assigner:
           type: string
-          example: null
         extensibleProperties:
           type: object
           additionalProperties:
             type: object
-            example: null
-          example: null
         inheritsFrom:
           type: string
-          example: null
         obligations:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Duty"
         permissions:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Permission"
         profiles:
           type: array
-          example: null
           items:
             type: string
-            example: null
         prohibitions:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Prohibition"
         target:
           type: string
-          example: null
-      example: null
     Prohibition:
       type: object
       properties:
@@ -1949,93 +1718,70 @@ components:
           $ref: "#/components/schemas/Action"
         constraints:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Constraint"
         remedies:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Duty"
-      example: null
     QuerySpec:
       type: object
       properties:
         filterExpression:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/Criterion"
         limit:
           type: integer
           format: int32
-          example: null
         offset:
           type: integer
           format: int32
-          example: null
         sortField:
           type: string
-          example: null
         sortOrder:
           type: string
-          example: null
           enum:
           - ASC
           - DESC
-      example: null
     Service:
       type: object
       properties:
         id:
           type: string
-          example: null
         serviceEndpoint:
           type: string
-          example: null
         type:
           type: string
-          example: null
-      example: null
     VerifiableCredential:
       type: object
       properties:
         credentialStatus:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/CredentialStatus"
         credentialSubject:
           type: array
-          example: null
           items:
             $ref: "#/components/schemas/CredentialSubject"
         description:
           type: string
-          example: null
         expirationDate:
           type: string
           format: date-time
-          example: null
         id:
           type: string
-          example: null
         issuanceDate:
           type: string
           format: date-time
-          example: null
         issuer:
           $ref: "#/components/schemas/Issuer"
         name:
           type: string
-          example: null
         type:
           type: array
-          example: null
           items:
             type: string
-            example: null
-      example: null
     VerifiableCredentialContainer:
       type: object
       properties:
@@ -2043,37 +1789,30 @@ components:
           $ref: "#/components/schemas/VerifiableCredential"
         format:
           type: string
-          example: null
           enum:
           - JSON_LD
           - JWT
         rawVc:
           type: string
-          example: null
-      example: null
     VerifiableCredentialManifest:
       type: object
       properties:
         id:
           type: string
-          example: null
         issuancePolicy:
           $ref: "#/components/schemas/Policy"
         participantId:
           type: string
-          example: null
         reissuancePolicy:
           $ref: "#/components/schemas/Policy"
         verifiableCredentialContainer:
           $ref: "#/components/schemas/VerifiableCredentialContainer"
-      example: null
     VerifiableCredentialResource:
       type: object
       properties:
         credentialStatus:
           type: string
           writeOnly: true
-          example: null
           enum:
           - INITIAL
           - REQUESTING
@@ -2087,54 +1826,39 @@ components:
           - ERROR
         holderId:
           type: string
-          example: null
         id:
           type: string
-          example: null
         issuancePolicy:
           $ref: "#/components/schemas/Policy"
         issuerId:
           type: string
-          example: null
         participantId:
           type: string
-          example: null
         reissuancePolicy:
           $ref: "#/components/schemas/Policy"
         state:
           type: integer
           format: int32
-          example: null
         timeOfLastStatusUpdate:
           type: string
           format: date-time
-          example: null
         timestamp:
           type: integer
           format: int64
-          example: null
         verifiableCredential:
           $ref: "#/components/schemas/VerifiableCredentialContainer"
-      example: null
     VerificationMethod:
       type: object
       properties:
         controller:
           type: string
-          example: null
         id:
           type: string
-          example: null
         publicKeyJwk:
           type: object
           additionalProperties:
             type: object
-            example: null
-          example: null
         publicKeyMultibase:
           type: string
-          example: null
         type:
           type: string
-          example: null
-      example: null

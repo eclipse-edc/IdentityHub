@@ -21,7 +21,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       - name: Authorization
         in: header
         required: false
@@ -29,7 +28,6 @@ paths:
         explode: false
         schema:
           type: string
-          example: null
       requestBody:
         content:
           application/json:
@@ -50,7 +48,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "401":
@@ -59,7 +56,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "403":
@@ -70,7 +66,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "501":
@@ -80,7 +75,6 @@ paths:
             application/json:
               schema:
                 type: array
-                example: null
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
 components:
@@ -90,16 +84,12 @@ components:
       properties:
         invalidValue:
           type: string
-          example: null
         message:
           type: string
-          example: null
         path:
           type: string
-          example: null
         type:
           type: string
-          example: null
       example:
         message: error message
         type: ErrorType
@@ -110,10 +100,8 @@ components:
       properties:
         empty:
           type: boolean
-          example: null
         valueType:
           type: string
-          example: null
           enum:
           - ARRAY
           - OBJECT
@@ -124,13 +112,11 @@ components:
           - "NULL"
       additionalProperties:
         $ref: "#/components/schemas/JsonValue"
-      example: null
     JsonValue:
       type: object
       properties:
         valueType:
           type: string
-          example: null
           enum:
           - ARRAY
           - OBJECT
@@ -139,7 +125,6 @@ components:
           - "TRUE"
           - "FALSE"
           - "NULL"
-      example: null
     PresentationDefinitionSchema:
       type: object
       example: |
@@ -177,18 +162,14 @@ components:
       properties:
         '@context':
           type: object
-          example: null
         '@type':
           type: string
-          example: null
         presentationDefinition:
           $ref: "#/components/schemas/PresentationDefinitionSchema"
         scope:
           type: array
-          example: null
           items:
             type: string
-            example: null
       example:
         '@context':
         - https://w3id.org/tractusx-trust/v0.8
@@ -207,16 +188,12 @@ components:
       properties:
         '@context':
           type: object
-          example: null
         presentation:
           type: array
-          example: null
           items:
             type: object
-            example: null
             anyOf:
             - type: string
-              example: null
             - $ref: "#/components/schemas/JsonObject"
       example:
         '@context':
