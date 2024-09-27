@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.common.provisioner;
 
-import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsClient;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
+import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccount;
+import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
@@ -37,25 +37,25 @@ import java.util.Objects;
 
 /**
  * AccountProvisioner, that synchronizes the {@link org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext} object
- * to {@link StsClient} entries. That means, when a participant is created, this provisioner takes care of creating a corresponding
- * {@link StsClient}, if the embedded STS is used.
- * When key pairs are revoked or rotated, the corresponding {@link StsClient} entry is updated.
+ * to {@link StsAccount} entries. That means, when a participant is created, this provisioner takes care of creating a corresponding
+ * {@link StsAccount}, if the embedded STS is used.
+ * When key pairs are revoked or rotated, the corresponding {@link StsAccount} entry is updated.
  */
 public class StsAccountProvisioner implements EventSubscriber, AccountProvisioner {
 
     private final Monitor monitor;
-    private final StsClientStore stsClientStore;
+    private final StsAccountStore stsAccountStore;
     private final Vault vault;
     private final StsClientSecretGenerator stsClientSecretGenerator;
     private final TransactionContext transactionContext;
 
     public StsAccountProvisioner(Monitor monitor,
-                                 StsClientStore stsClientStore,
+                                 StsAccountStore stsAccountStore,
                                  Vault vault,
                                  StsClientSecretGenerator stsClientSecretGenerator,
                                  TransactionContext transactionContext) {
         this.monitor = monitor;
-        this.stsClientStore = stsClientStore;
+        this.stsAccountStore = stsAccountStore;
         this.vault = vault;
         this.stsClientSecretGenerator = stsClientSecretGenerator;
         this.transactionContext = transactionContext;
@@ -83,7 +83,7 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
         return transactionContext.execute(() -> {
             var secretAlias = manifest.getParticipantId() + "-sts-client-secret";
 
-            var client = StsClient.Builder.newInstance()
+            var client = StsAccount.Builder.newInstance()
                     .id(manifest.getParticipantId())
                     .name(manifest.getParticipantId())
                     .clientId(manifest.getDid())
@@ -93,7 +93,7 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
                     .secretAlias(secretAlias)
                     .build();
 
-            var createResult = stsClientStore.create(client)
+            var createResult = stsAccountStore.create(client)
                     .map(stsClient -> {
                         var clientSecret = stsClientSecretGenerator.generateClientSecret(null);
                         return new AccountInfo(stsClient.getClientId(), clientSecret);
@@ -112,7 +112,7 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
 
     private ServiceResult<Void> updateStsClient(KeyPairResource oldKeyResource, String participantId, @Nullable KeyDescriptor newKeyDescriptor) {
         return transactionContext.execute(() -> {
-            var findResult = stsClientStore.findById(participantId);
+            var findResult = stsAccountStore.findById(participantId);
             if (findResult.failed()) {
                 return ServiceResult.from(findResult).mapEmpty();
             }
@@ -138,13 +138,13 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
     }
 
     private ServiceResult<Void> deleteAccount(String participantId) {
-        var result = transactionContext.execute(() -> stsClientStore.deleteById(participantId));
+        var result = transactionContext.execute(() -> stsAccountStore.deleteById(participantId));
         return ServiceResult.from(result).mapEmpty();
     }
 
-    private ServiceResult<Void> setKeyAliases(StsClient stsClient, String privateKeyAlias, String publicKeyReference) {
+    private ServiceResult<Void> setKeyAliases(StsAccount stsClient, String privateKeyAlias, String publicKeyReference) {
         var updatedClient = transactionContext.execute(() -> {
-            var newClient = StsClient.Builder.newInstance()
+            var newClient = StsAccount.Builder.newInstance()
                     .id(stsClient.getId())
                     .clientId(stsClient.getClientId())
                     .did(stsClient.getDid())
@@ -153,7 +153,7 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
                     .privateKeyAlias(privateKeyAlias)
                     .publicKeyReference(publicKeyReference)
                     .build();
-            return stsClientStore.update(newClient);
+            return stsAccountStore.update(newClient);
         });
         return ServiceResult.from(updatedClient);
     }
