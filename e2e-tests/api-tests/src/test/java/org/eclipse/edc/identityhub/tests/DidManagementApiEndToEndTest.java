@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.Header;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
+import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentUnpublished;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
@@ -53,7 +53,7 @@ public class DidManagementApiEndToEndTest {
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsClientStore stsClientStore) {
+        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore stsAccountStore) {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
@@ -64,8 +64,8 @@ public class DidManagementApiEndToEndTest {
             keyPairResourceStore.query(QuerySpec.max()).getContent()
                     .forEach(kpr -> keyPairResourceStore.deleteById(kpr.getId()).getContent());
 
-            stsClientStore.findAll(QuerySpec.max())
-                    .forEach(sts -> stsClientStore.deleteById(sts.getId()).getContent());
+            stsAccountStore.findAll(QuerySpec.max())
+                    .forEach(sts -> stsAccountStore.deleteById(sts.getId()).getContent());
         }
 
         @Test

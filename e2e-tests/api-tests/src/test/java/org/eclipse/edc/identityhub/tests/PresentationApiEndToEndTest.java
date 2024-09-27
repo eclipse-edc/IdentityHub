@@ -26,7 +26,7 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
+import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
@@ -132,7 +132,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @AfterEach
-        void teardown(ParticipantContextService contextService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, CredentialStore store, StsClientStore stsClientStore) {
+        void teardown(ParticipantContextService contextService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, CredentialStore store, StsAccountStore accountStore) {
             // purge all participant contexts
 
             contextService.query(QuerySpec.max()).getContent()
@@ -148,8 +148,8 @@ public class PresentationApiEndToEndTest {
                     .map(creds -> creds.stream().map(cred -> store.deleteById(cred.getId())).toList())
                     .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
 
-            stsClientStore.findAll(QuerySpec.max())
-                    .forEach(sts -> stsClientStore.deleteById(sts.getId()).getContent());
+            accountStore.findAll(QuerySpec.max())
+                    .forEach(sts -> accountStore.deleteById(sts.getId()).getContent());
         }
 
         @Test

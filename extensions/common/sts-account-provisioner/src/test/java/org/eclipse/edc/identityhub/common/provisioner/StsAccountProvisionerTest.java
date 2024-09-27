@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.common.provisioner;
 
-import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsClient;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
+import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccount;
+import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
@@ -54,55 +54,55 @@ class StsAccountProvisionerTest {
     private static final String KEY_ID = "test-key-id";
     private final KeyPairService keyPairService = mock();
     private final DidDocumentService didDocumentService = mock();
-    private final StsClientStore stsClientStore = mock();
+    private final StsAccountStore stsAccountStore = mock();
     private final Vault vault = mock();
     private final Monitor monitor = mock();
     private final StsClientSecretGenerator stsClientSecretGenerator = parameters -> UUID.randomUUID().toString();
-    private final StsAccountProvisioner accountProvisioner = new StsAccountProvisioner(monitor, stsClientStore, vault, stsClientSecretGenerator, new NoopTransactionContext());
+    private final StsAccountProvisioner accountProvisioner = new StsAccountProvisioner(monitor, stsAccountStore, vault, stsClientSecretGenerator, new NoopTransactionContext());
 
     @Test
     void create() {
-        when(stsClientStore.create(any())).thenReturn(StoreResult.success(createStsClient().build()));
+        when(stsAccountStore.create(any())).thenReturn(StoreResult.success(createStsClient().build()));
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
 
         assertThat(accountProvisioner.create(createManifest().build())).isSucceeded();
 
-        verify(stsClientStore).create(any());
+        verify(stsAccountStore).create(any());
         verify(vault).storeSecret(anyString(), argThat(secret -> UUID.fromString(secret) != null));
         verifyNoInteractions(keyPairService, didDocumentService);
     }
 
     @Test
     void create_whenClientAlreadyExists() {
-        when(stsClientStore.create(any())).thenReturn(StoreResult.alreadyExists("foo"));
+        when(stsAccountStore.create(any())).thenReturn(StoreResult.alreadyExists("foo"));
 
         var res = accountProvisioner.create(createManifest().build());
         assertThat(res).isFailed()
                 .detail().isEqualTo("foo");
 
-        verify(stsClientStore).create(any());
+        verify(stsAccountStore).create(any());
         verifyNoInteractions(keyPairService, didDocumentService, vault);
     }
 
     @Test
     void onKeyRevoked_shouldUpdate() {
-        when(stsClientStore.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(StoreResult.success(createStsClient().build()));
-        when(stsClientStore.update(any())).thenAnswer(a -> StoreResult.success(a.getArguments()[0]));
+        when(stsAccountStore.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(StoreResult.success(createStsClient().build()));
+        when(stsAccountStore.update(any())).thenAnswer(a -> StoreResult.success(a.getArguments()[0]));
         accountProvisioner.on(event(KeyPairRevoked.Builder.newInstance()
                 .participantId(PARTICIPANT_CONTEXT_ID)
                 .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                 .keyId(KEY_ID)
                 .build()));
 
-        verify(stsClientStore).findById(PARTICIPANT_CONTEXT_ID);
-        verify(stsClientStore).update(any());
-        verifyNoMoreInteractions(stsClientStore, didDocumentService, keyPairService);
+        verify(stsAccountStore).findById(PARTICIPANT_CONTEXT_ID);
+        verify(stsAccountStore).update(any());
+        verifyNoMoreInteractions(stsAccountStore, didDocumentService, keyPairService);
     }
 
     @Test
     void onKeyRotated_withNewKey_shouldUpdate() {
-        when(stsClientStore.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(StoreResult.success(createStsClient().build()));
-        when(stsClientStore.update(any())).thenAnswer(a -> StoreResult.success(a.getArguments()[0]));
+        when(stsAccountStore.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(StoreResult.success(createStsClient().build()));
+        when(stsAccountStore.update(any())).thenAnswer(a -> StoreResult.success(a.getArguments()[0]));
 
         accountProvisioner.on(event(KeyPairRotated.Builder.newInstance()
                 .participantId(PARTICIPANT_CONTEXT_ID)
@@ -110,31 +110,31 @@ class StsAccountProvisionerTest {
                 .keyId(KEY_ID)
                 .build()));
 
-        verify(stsClientStore).findById(PARTICIPANT_CONTEXT_ID);
-        verify(stsClientStore).update(any());
-        verifyNoMoreInteractions(stsClientStore, didDocumentService, keyPairService);
+        verify(stsAccountStore).findById(PARTICIPANT_CONTEXT_ID);
+        verify(stsAccountStore).update(any());
+        verifyNoMoreInteractions(stsAccountStore, didDocumentService, keyPairService);
     }
 
     @Test
     void onParticipantDeleted_shouldDelete() {
-        when(stsClientStore.deleteById(PARTICIPANT_CONTEXT_ID)).thenReturn(StoreResult.success());
+        when(stsAccountStore.deleteById(PARTICIPANT_CONTEXT_ID)).thenReturn(StoreResult.success());
         accountProvisioner.on(event(ParticipantContextDeleted.Builder.newInstance()
                 .participantId(PARTICIPANT_CONTEXT_ID)
                 .build()));
 
-        verify(stsClientStore).deleteById(PARTICIPANT_CONTEXT_ID);
-        verifyNoMoreInteractions(keyPairService, didDocumentService, stsClientStore);
+        verify(stsAccountStore).deleteById(PARTICIPANT_CONTEXT_ID);
+        verifyNoMoreInteractions(keyPairService, didDocumentService, stsAccountStore);
     }
 
     @Test
     void onOtherEvent_shouldLogWarning() {
         accountProvisioner.on(event(new DummyEvent()));
         verify(monitor).warning(startsWith("Received event with unexpected payload"));
-        verifyNoInteractions(keyPairService, didDocumentService, stsClientStore, vault);
+        verifyNoInteractions(keyPairService, didDocumentService, stsAccountStore, vault);
     }
 
-    private StsClient.Builder createStsClient() {
-        return StsClient.Builder.newInstance()
+    private StsAccount.Builder createStsClient() {
+        return StsAccount.Builder.newInstance()
                 .id("test-id")
                 .name("test-name")
                 .did("did:web:" + PARTICIPANT_CONTEXT_ID)

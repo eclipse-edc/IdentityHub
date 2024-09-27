@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.common.provisioner;
 
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
+import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
@@ -47,7 +47,7 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
     @Inject
     private DidDocumentService didDocumentService;
     @Inject(required = false)
-    private StsClientStore stsClientStore;
+    private StsAccountStore stsAccountStore;
     @Inject
     private Vault vault;
     @Inject(required = false)
@@ -73,9 +73,9 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
     public AccountProvisioner createProvisioner(ServiceExtensionContext context) {
         if (provisioner == null) {
             var monitor = context.getMonitor().withPrefix("STS-Account");
-            if (stsClientStore != null) {
+            if (stsAccountStore != null) {
                 monitor.info("This IdentityHub runtime contains an embedded SecureTokenService (STS) instance. That means ParticipantContexts and STS Accounts will be synchronized automatically.");
-                provisioner = new StsAccountProvisioner(monitor, stsClientStore, vault, stsClientSecretGenerator(), transactionContext);
+                provisioner = new StsAccountProvisioner(monitor, stsAccountStore, vault, stsClientSecretGenerator(), transactionContext);
                 eventRouter.registerSync(ParticipantContextDeleted.class, provisioner);
                 eventRouter.registerSync(KeyPairRevoked.class, provisioner);
                 eventRouter.registerSync(KeyPairRotated.class, provisioner);

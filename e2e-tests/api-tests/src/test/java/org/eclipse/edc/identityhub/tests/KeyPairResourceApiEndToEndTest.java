@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore;
+import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
@@ -68,7 +68,7 @@ public class KeyPairResourceApiEndToEndTest {
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsClientStore stsClientStore) {
+        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore accountStore) {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
@@ -79,8 +79,8 @@ public class KeyPairResourceApiEndToEndTest {
             keyPairResourceStore.query(QuerySpec.max()).getContent()
                     .forEach(kpr -> keyPairResourceStore.deleteById(kpr.getId()).getContent());
 
-            stsClientStore.findAll(QuerySpec.max())
-                    .forEach(sts -> stsClientStore.deleteById(sts.getId()).getContent());
+            accountStore.findAll(QuerySpec.max())
+                    .forEach(sts -> accountStore.deleteById(sts.getId()).getContent());
         }
 
         @Test
@@ -375,7 +375,7 @@ public class KeyPairResourceApiEndToEndTest {
 
         @ParameterizedTest(name = "New KeyID {0}")
         @ValueSource(strings = { "did:web:user1#new-key-id", "new-key-id" })
-        void rotate_withUserToken(String keyId, IdentityHubEndToEndTestContext context, EventRouter router, StsClientStore clientStore) {
+        void rotate_withUserToken(String keyId, IdentityHubEndToEndTestContext context, EventRouter router, StsAccountStore accountStore) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(KeyPairRotated.class, subscriber);
             router.registerSync(KeyPairAdded.class, subscriber);
@@ -417,7 +417,7 @@ public class KeyPairResourceApiEndToEndTest {
             }));
 
             // verify that the STS client got updated correctly
-            assertThat(clientStore.findById(participantId)).isSucceeded()
+            assertThat(accountStore.findById(participantId)).isSucceeded()
                     .satisfies(stsClient -> {
                         assertThat(stsClient.getPrivateKeyAlias()).isEqualTo("new-key-alias");
                         assertThat(stsClient.getPublicKeyReference()).isEqualTo("did:web:" + participantId + "#new-key-id");
@@ -425,7 +425,7 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @Test
-        void rotate_withoutNewKey(IdentityHubEndToEndTestContext context, EventRouter router, StsClientStore clientStore) {
+        void rotate_withoutNewKey(IdentityHubEndToEndTestContext context, EventRouter router, StsAccountStore accountStore) {
 
             var participantId = "user1";
             var userToken = context.createParticipant(participantId);
@@ -458,7 +458,7 @@ public class KeyPairResourceApiEndToEndTest {
             verify(subscriber, never()).on(argThat(env -> env.getPayload() instanceof KeyPairAdded));
 
             // verify that the STS client got updated correctly
-            assertThat(clientStore.findById(participantId)).isSucceeded()
+            assertThat(accountStore.findById(participantId)).isSucceeded()
                     .satisfies(stsClient -> {
                         assertThat(stsClient.getPrivateKeyAlias()).isEqualTo("");
                         assertThat(stsClient.getPublicKeyReference()).isEqualTo("");
@@ -583,7 +583,7 @@ public class KeyPairResourceApiEndToEndTest {
 
         @ParameterizedTest(name = "New Key-ID: {0}")
         @ValueSource(strings = { "new-keyId", "did:web:user1#new-keyId" })
-        void revoke(String newKeyId, IdentityHubEndToEndTestContext context, StsClientStore clientStore) {
+        void revoke(String newKeyId, IdentityHubEndToEndTestContext context, StsAccountStore accountStore) {
             var superUserKey = context.createSuperUser();
             var participantId = "user1";
             var token = context.createParticipant(participantId);
@@ -611,7 +611,7 @@ public class KeyPairResourceApiEndToEndTest {
                                 .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyId)));
 
                         // verify that the STS client got updated correctly
-                        assertThat(clientStore.findById(participantId)).isSucceeded()
+                        assertThat(accountStore.findById(participantId)).isSucceeded()
                                 .satisfies(stsClient -> {
                                     assertThat(stsClient.getPrivateKeyAlias()).isEqualTo("new-alias");
                                     assertThat(stsClient.getPublicKeyReference()).isEqualTo("did:web:" + participantId + "#new-keyId");
@@ -620,7 +620,7 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @Test
-        void revoke_withoutNewKey(IdentityHubEndToEndTestContext context, EventRouter router, StsClientStore clientStore) {
+        void revoke_withoutNewKey(IdentityHubEndToEndTestContext context, EventRouter router, StsAccountStore accountStore) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(KeyPairRotated.class, subscriber);
             router.registerSync(KeyPairRevoked.class, subscriber);
@@ -651,7 +651,7 @@ public class KeyPairResourceApiEndToEndTest {
             verify(subscriber, never()).on(argThat(env -> env.getPayload() instanceof KeyPairAdded));
 
             // verify that the STS client got updated correctly
-            assertThat(clientStore.findById(participantId)).isSucceeded()
+            assertThat(accountStore.findById(participantId)).isSucceeded()
                     .satisfies(stsClient -> {
                         assertThat(stsClient.getPrivateKeyAlias()).isEqualTo("");
                         assertThat(stsClient.getPublicKeyReference()).isEqualTo("");
