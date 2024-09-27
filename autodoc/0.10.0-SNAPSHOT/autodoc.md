@@ -1,8 +1,8 @@
 Module `api-configuration`
 --------------------------
-_artifact: _org.eclipse.edc:api-configuration:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:api-configuration:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -14,12 +14,12 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identityhub.spi.AuthorizationService`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 - `org.eclipse.edc.web.spi.configuration.WebServiceConfigurer` (required)
@@ -30,9 +30,9 @@ _None_
 
 Module `credential-watchdog`
 ----------------------------
-_artifact: _org.eclipse.edc:credential-watchdog:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:credential-watchdog:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -44,17 +44,17 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: 
+### Configuration
 
 | Key                                      | Required | Type      | Default                | Pattern | Min | Max | Description                                                                                                                                      |
 | ---------------------------------------- | -------- | --------- | ---------------------- | ------- | --- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `edc.iam.credential.status.check.period` |          | `integer` | `60`                   |         |     |     | Period (in seconds) at which the Watchdog thread checks all stored credentials for their status. Configuring a number <=0 disables the Watchdog. |
 | `edc.iam.credential.status.check.delay`  |          | `integer` | `random number [1..5]` |         |     |     | Initial delay (in seconds) before the Watchdog thread begins its work.                                                                           |
 
-##### Provided services:
+#### Provided services
 _None_
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.spi.system.ExecutorInstrumentation` (required)
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService` (required)
 - `org.eclipse.edc.identityhub.spi.store.CredentialStore` (required)
@@ -62,9 +62,9 @@ _None_
 
 Module `did-api`
 ----------------
-_artifact: _org.eclipse.edc:did-api:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:did-api:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -76,22 +76,22 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 _None_
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identithub.spi.did.DidDocumentService` (required)
 - `org.eclipse.edc.identityhub.spi.AuthorizationService` (required)
 
 Module `did-spi`
 ----------------
-_name: _Identity Hub DID services
-_artifact: _org.eclipse.edc:did-spi:0.10.0-SNAPSHOT
+**Name:** Identity Hub DID services
+**Artifact:** org.eclipse.edc:did-spi:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
   - `org.eclipse.edc.identithub.spi.did.DidDocumentPublisher`
@@ -101,9 +101,9 @@ _Categories: None_
 ### Extensions
 Module `identity-hub-core`
 --------------------------
-_artifact: _org.eclipse.edc:identity-hub-core:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:identity-hub-core:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -116,16 +116,16 @@ _None_
 
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier`
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver`
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry`
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService`
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver` (required)
 - `org.eclipse.edc.jsonld.spi.JsonLd` (required)
 - `org.eclipse.edc.identityhub.spi.store.CredentialStore` (required)
@@ -153,13 +153,13 @@ _None_
 
 
 
-### Configuration: 
+### Configuration
 
 | Key                                            | Required | Type   | Default  | Pattern | Min | Max | Description                                                                  |
 | ---------------------------------------------- | -------- | ------ | -------- | ------- | --- | --- | ---------------------------------------------------------------------------- |
 | `edc.iam.credential.revocation.cache.validity` |          | `long` | `900000` |         |     |     | Validity period of cached StatusList2021 credential entries in milliseconds. |
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identityhub.spi.store.CredentialStore`
 - `org.eclipse.edc.identityhub.spi.store.ParticipantContextStore`
 - `org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore`
@@ -168,16 +168,16 @@ _None_
 - `org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry`
 - `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.token.spi.TokenValidationRulesRegistry` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
 - `org.eclipse.edc.keys.spi.PrivateKeyResolver` (required)
 
 Module `identity-hub-credentials-store-sql`
 -------------------------------------------
-_artifact: _org.eclipse.edc:identity-hub-credentials-store-sql:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:identity-hub-credentials-store-sql:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -189,17 +189,17 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: 
+### Configuration
 
 | Key                                    | Required | Type     | Default   | Pattern | Min | Max | Description                                  |
 | -------------------------------------- | -------- | -------- | --------- | ------- | --- | --- | -------------------------------------------- |
 | ~~edc.datasource.credentials.name~~    |          | `string` | `default` |         |     |     | Datasource name for the DidResource database |
 | `edc.sql.store.credentials.datasource` |          | `string` | `default` |         |     |     | The datasource to be used                    |
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identityhub.spi.store.CredentialStore`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
@@ -209,9 +209,9 @@ _None_
 
 Module `identity-hub-did`
 -------------------------
-_artifact: _org.eclipse.edc:identity-hub-did:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:identity-hub-did:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -223,12 +223,12 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identithub.spi.did.store.DidResourceStore`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 #### Class: `org.eclipse.edc.identityhub.did.DidServicesExtension`
@@ -237,13 +237,13 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry`
 - `org.eclipse.edc.identithub.spi.did.DidDocumentService`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.identithub.spi.did.store.DidResourceStore` (required)
 - `org.eclipse.edc.spi.event.EventRouter` (required)
@@ -252,9 +252,9 @@ _None_
 
 Module `identity-hub-did-store-sql`
 -----------------------------------
-_artifact: _org.eclipse.edc:identity-hub-did-store-sql:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:identity-hub-did-store-sql:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -266,17 +266,17 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: 
+### Configuration
 
 | Key                                    | Required | Type     | Default   | Pattern | Min | Max | Description                                  |
 | -------------------------------------- | -------- | -------- | --------- | ------- | --- | --- | -------------------------------------------- |
 | ~~edc.datasource.didresource.name~~    |          | `string` | `default` |         |     |     | Datasource name for the DidResource database |
 | `edc.sql.store.didresource.datasource` |          | `string` | `default` |         |     |     | The datasource to be used                    |
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identithub.spi.did.store.DidResourceStore`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
@@ -286,9 +286,9 @@ _None_
 
 Module `identity-hub-keypair-store-sql`
 ---------------------------------------
-_artifact: _org.eclipse.edc:identity-hub-keypair-store-sql:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:identity-hub-keypair-store-sql:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -300,17 +300,17 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: 
+### Configuration
 
 | Key                                | Required | Type     | Default   | Pattern | Min | Max | Description                                      |
 | ---------------------------------- | -------- | -------- | --------- | ------- | --- | --- | ------------------------------------------------ |
 | ~~edc.datasource.keypair.name~~    |          | `string` | `default` |         |     |     | Datasource name for the KeyPairResource database |
 | `edc.sql.store.keypair.datasource` |          | `string` | `default` |         |     |     | The datasource to be used                        |
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
@@ -320,9 +320,9 @@ _None_
 
 Module `identity-hub-keypairs`
 ------------------------------
-_artifact: _org.eclipse.edc:identity-hub-keypairs:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:identity-hub-keypairs:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -334,13 +334,13 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identityhub.spi.keypair.KeyPairService`
 - `org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.spi.security.Vault` (required)
 - `org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore` (required)
 - `org.eclipse.edc.spi.event.EventRouter` (required)
@@ -350,9 +350,9 @@ _None_
 
 Module `identity-hub-participantcontext-store-sql`
 --------------------------------------------------
-_artifact: _org.eclipse.edc:identity-hub-participantcontext-store-sql:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:identity-hub-participantcontext-store-sql:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -364,17 +364,17 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: 
+### Configuration
 
 | Key                                           | Required | Type     | Default   | Pattern | Min | Max | Description                                         |
 | --------------------------------------------- | -------- | -------- | --------- | ------- | --- | --- | --------------------------------------------------- |
 | ~~edc.datasource.participantcontext.name~~    |          | `string` | `default` |         |     |     | Datasource name for the ParticipantContext database |
 | `edc.sql.store.participantcontext.datasource` |          | `string` | `default` |         |     |     | The datasource to be used                           |
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identityhub.spi.store.ParticipantContextStore`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
@@ -384,45 +384,27 @@ _None_
 
 Module `identity-hub-participants`
 ----------------------------------
-_artifact: _org.eclipse.edc:identity-hub-participants:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:identity-hub-participants:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension`
-**Name:** "ParticipantContext Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration: _None_
-
-##### Provided services:
-_None_
-
-##### Referenced (injected) services:
-- `org.eclipse.edc.identithub.spi.did.DidDocumentService` (required)
-- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
-- `java.time.Clock` (required)
-- `org.eclipse.edc.spi.event.EventRouter` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
-
 #### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextExtension`
 **Name:** "ParticipantContext Extension"
 
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService`
 - `org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.identityhub.spi.store.ParticipantContextStore` (required)
 - `org.eclipse.edc.spi.security.Vault` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
@@ -432,11 +414,29 @@ _None_
 - `org.eclipse.edc.identithub.spi.did.store.DidResourceStore` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner` (optional)
 
+#### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension`
+**Name:** "ParticipantContext Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.identithub.spi.did.DidDocumentService` (required)
+- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
+- `java.time.Clock` (required)
+- `org.eclipse.edc.spi.event.EventRouter` (required)
+- `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
+
 Module `identityhub-api-authentication`
 ---------------------------------------
-_artifact: _org.eclipse.edc:identityhub-api-authentication:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:identityhub-api-authentication:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -448,21 +448,21 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 _None_
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 - `org.eclipse.edc.spi.security.Vault` (required)
 
 Module `identityhub-api-authorization`
 --------------------------------------
-_artifact: _org.eclipse.edc:identityhub-api-authorization:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:identityhub-api-authorization:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -474,19 +474,19 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identityhub.spi.AuthorizationService`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 _None_
 
 Module `keypair-api`
 --------------------
-_artifact: _org.eclipse.edc:keypair-api:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:keypair-api:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -498,12 +498,12 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 _None_
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
 - `org.eclipse.edc.identityhub.spi.AuthorizationService` (required)
@@ -511,9 +511,9 @@ _None_
 
 Module `local-did-publisher`
 ----------------------------
-_artifact: _org.eclipse.edc:local-did-publisher:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:local-did-publisher:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -525,12 +525,12 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identithub.spi.did.events.DidDocumentObservable`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry` (required)
 - `org.eclipse.edc.identithub.spi.did.store.DidResourceStore` (required)
 - `org.eclipse.edc.web.spi.WebService` (required)
@@ -542,9 +542,9 @@ _None_
 
 Module `participant-context-api`
 --------------------------------
-_artifact: _org.eclipse.edc:participant-context-api:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:participant-context-api:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -556,12 +556,12 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 _None_
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 - `org.eclipse.edc.identityhub.spi.AuthorizationService` (required)
@@ -569,9 +569,9 @@ _None_
 
 Module `presentation-api`
 -------------------------
-_artifact: _org.eclipse.edc:presentation-api:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:presentation-api:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -583,12 +583,12 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 _None_
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.transform.spi.TypeTransformerRegistry` (required)
 - `org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry` (required)
 - `org.eclipse.edc.web.spi.WebService` (required)
@@ -602,9 +602,9 @@ _None_
 
 Module `sts-account-provisioner`
 --------------------------------
-_artifact: _org.eclipse.edc:sts-account-provisioner:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:sts-account-provisioner:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
   - `org.eclipse.edc.identityhub.common.provisioner.StsClientSecretGenerator`
@@ -616,25 +616,25 @@ _Categories: None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 - `org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner`
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
 - `org.eclipse.edc.identithub.spi.did.DidDocumentService` (required)
-- `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsClientStore` (optional)
+- `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore` (optional)
 - `org.eclipse.edc.spi.security.Vault` (required)
 - `org.eclipse.edc.identityhub.common.provisioner.StsClientSecretGenerator` (optional)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 
 Module `verifiable-credentials-api`
 -----------------------------------
-_artifact: _org.eclipse.edc:verifiable-credentials-api:0.10.0-SNAPSHOT
+**Artifact:** org.eclipse.edc:verifiable-credentials-api:0.10.0-SNAPSHOT
 
-_Categories: None_
+**Categories:** _None_
 
 ### Extension points
 _None_
@@ -646,12 +646,12 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration: _None_
+### Configuration_None_
 
-##### Provided services:
+#### Provided services
 _None_
 
-##### Referenced (injected) services:
+#### Referenced (injected) services
 - `org.eclipse.edc.transform.spi.TypeTransformerRegistry` (required)
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identityhub.spi.store.CredentialStore` (required)
