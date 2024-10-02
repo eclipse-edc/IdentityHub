@@ -1646,6 +1646,10 @@ components:
       properties:
         active:
           type: boolean
+        additionalProperties:
+          type: object
+          additionalProperties:
+            type: object
         did:
           type: string
         key:
