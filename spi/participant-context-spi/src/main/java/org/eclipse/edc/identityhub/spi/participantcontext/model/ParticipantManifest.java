@@ -20,8 +20,10 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.iam.did.spi.document.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -29,6 +31,7 @@ import java.util.Set;
  */
 @JsonDeserialize(builder = ParticipantManifest.Builder.class)
 public class ParticipantManifest {
+    private Map<String, Object> additionalProperties = new HashMap<>();
     private List<String> roles = new ArrayList<>();
     private Set<Service> serviceEndpoints = new HashSet<>();
     private boolean isActive;
@@ -37,6 +40,10 @@ public class ParticipantManifest {
     private KeyDescriptor key;
 
     private ParticipantManifest() {
+    }
+
+    public Map<String, Object> getAdditionalProperties() {
+        return additionalProperties;
     }
 
     /**
@@ -78,6 +85,10 @@ public class ParticipantManifest {
 
     public List<String> getRoles() {
         return roles;
+    }
+
+    public Object getProperty(String key) {
+        return additionalProperties.get(key);
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -126,6 +137,16 @@ public class ParticipantManifest {
 
         public Builder did(String did) {
             manifest.did = did;
+            return this;
+        }
+
+        public Builder property(String key, Object value) {
+            manifest.additionalProperties.put(key, value);
+            return this;
+        }
+
+        public Builder additionalProperties(Map<String, Object> properties) {
+            manifest.additionalProperties = properties;
             return this;
         }
 
