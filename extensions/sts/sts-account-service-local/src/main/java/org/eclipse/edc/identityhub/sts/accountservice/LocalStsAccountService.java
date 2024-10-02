@@ -55,8 +55,7 @@ class LocalStsAccountService implements StsAccountService {
 
     @Override
     public ServiceResult<Void> deleteAccount(String id) {
-        var result = transactionContext.execute(() -> stsAccountStore.deleteById(id));
-        return ServiceResult.from(result).mapEmpty();
+        return transactionContext.execute(() -> ServiceResult.from(stsAccountStore.deleteById(id)).mapEmpty());
     }
 
     @Override

@@ -28,7 +28,7 @@ import static org.eclipse.edc.identityhub.sts.accountservice.LocalStsAccountServ
 
 @Extension(value = NAME)
 public class LocalStsAccountServiceExtension implements ServiceExtension {
-    public static final String NAME = "Default STS Account Service Extension";
+    public static final String NAME = "Local (embedded) STS Account Service Extension";
     @Inject
     private StsAccountStore accountStore;
     @Inject

@@ -19,11 +19,9 @@ plugins {
 
 dependencies {
 
+    api(project(":spi:participant-context-spi"))
     implementation(libs.edc.sts.spi)
     implementation(libs.edc.spi.core)
     implementation(libs.edc.spi.transaction)
-    implementation(project(":spi:participant-context-spi"))
-    implementation(project(":spi:keypair-spi"))
-    implementation(project(":spi:did-spi"))
     testImplementation(libs.edc.junit)
 }

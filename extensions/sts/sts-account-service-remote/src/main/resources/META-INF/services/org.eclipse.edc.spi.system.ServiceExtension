@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.edc.identityhub.common.provisioner.StsAccountProvisionerExtension
+org.eclipse.edc.identityhub.sts.accountservice.RemoteStsAccountServiceExtension
