@@ -59,6 +59,7 @@ import java.util.stream.IntStream;
 import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner.CLIENT_SECRET_PROPERTY;
 import static org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext.SUPER_USER;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -198,6 +199,32 @@ public class ParticipantContextApiEndToEndTest {
         }
 
         @Test
+        void createNewUser_withCustomSecretAlias(IdentityHubEndToEndTestContext context, Vault vault) {
+            var apikey = context.createSuperUser();
+
+            var participantId = UUID.randomUUID().toString();
+            var manifest = context.createNewParticipant()
+                    .participantId(participantId)
+                    .active(true)
+                    .did("did:web:" + participantId)
+                    .key(context.createKeyDescriptor().active(true).build())
+                    .property(CLIENT_SECRET_PROPERTY, "test-alias")
+                    .build();
+
+            context.getIdentityApiEndpoint().baseRequest()
+                    .header(new Header("x-api-key", apikey))
+                    .contentType(ContentType.JSON)
+                    .body(manifest)
+                    .post("/v1alpha/participants/")
+                    .then()
+                    .log().ifError()
+                    .statusCode(anyOf(equalTo(200), equalTo(204)))
+                    .body(notNullValue());
+
+            assertThat(vault.resolveSecret("test-alias")).isNotNull();
+        }
+
+        @Test
         void createNewUser_whenKeyPairNotActive(IdentityHubEndToEndTestContext context, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(ParticipantContextCreated.class, subscriber);
@@ -303,7 +330,6 @@ public class ParticipantContextApiEndToEndTest {
 
             verify(subscriber, never()).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
         }
-
 
         @Test
         void createNewUser_andNotActive_shouldNotPublishDid(IdentityHubEndToEndTestContext context, DidResourceStore didResourceStore, DidDocumentPublisherRegistry publisherRegistry) {

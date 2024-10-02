@@ -21,6 +21,7 @@ import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -40,6 +41,7 @@ import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -68,8 +70,26 @@ class StsAccountProvisionerTest {
         assertThat(accountProvisioner.create(createManifest().build())).isSucceeded();
 
         verify(stsAccountStore).create(any());
-        verify(vault).storeSecret(anyString(), argThat(secret -> UUID.fromString(secret) != null));
+        verify(vault).storeSecret(anyString(), argThat(secret -> {
+            UUID.fromString(secret);
+            return true;
+        }));
         verifyNoInteractions(keyPairService, didDocumentService);
+    }
+
+    @Test
+    void create_withCustomSecretAlias() {
+        when(stsAccountStore.create(any())).thenReturn(StoreResult.success(createStsClient().build()));
+        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+
+        assertThat(accountProvisioner.create(createManifest()
+                .property(AccountProvisioner.CLIENT_SECRET_PROPERTY, "test-alias")
+                .build())).isSucceeded();
+
+        verify(stsAccountStore).create(any());
+        verify(vault).storeSecret(eq("test-alias"), anyString());
+        verifyNoInteractions(keyPairService, didDocumentService);
+        verifyNoMoreInteractions(vault);
     }
 
     @Test

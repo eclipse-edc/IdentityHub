@@ -18,5 +18,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.spi.result.ServiceResult;
 
 public interface AccountProvisioner {
+    String CLIENT_SECRET_PROPERTY = "clientSecret";
+
     ServiceResult<AccountInfo> create(ParticipantManifest manifest);
 }

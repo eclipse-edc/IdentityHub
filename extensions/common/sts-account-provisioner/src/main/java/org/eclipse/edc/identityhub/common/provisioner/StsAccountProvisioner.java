@@ -35,6 +35,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
+import static java.util.Optional.ofNullable;
+
 /**
  * AccountProvisioner, that synchronizes the {@link org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext} object
  * to {@link StsAccount} entries. That means, when a participant is created, this provisioner takes care of creating a corresponding
@@ -81,7 +83,9 @@ public class StsAccountProvisioner implements EventSubscriber, AccountProvisione
     @Override
     public ServiceResult<AccountInfo> create(ParticipantManifest manifest) {
         return transactionContext.execute(() -> {
-            var secretAlias = manifest.getParticipantId() + "-sts-client-secret";
+            var secretAlias = ofNullable(manifest.getProperty(CLIENT_SECRET_PROPERTY))
+                    .map(Object::toString)
+                    .orElseGet(() -> manifest.getParticipantId() + "-sts-client-secret");
 
             var client = StsAccount.Builder.newInstance()
                     .id(manifest.getParticipantId())
