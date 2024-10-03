@@ -18,7 +18,7 @@ dependencies {
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(testFixtures(libs.edc.testfixtures.managementapi))
     testImplementation(testFixtures(libs.edc.core.sql))
-    testImplementation(libs.edc.ext.transaction.local)
+    testImplementation(libs.edc.transaction.local)
     testImplementation(libs.edc.sql.pool)
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.jakarta.rsApi)

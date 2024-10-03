@@ -43,6 +43,7 @@ dependencies {
     runtimeOnly(libs.edc.sts.api)
 
     runtimeOnly(libs.edc.identity.did.web)
+    runtimeOnly(libs.edc.jsonld)
     runtimeOnly(libs.bundles.connector)
 }
 

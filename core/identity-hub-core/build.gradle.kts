@@ -10,7 +10,7 @@ dependencies {
     implementation(project(":core:lib:credential-query-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
     implementation(libs.edc.core.connector) // for the CriterionToPredicateConverterImpl
-    implementation(libs.edc.ext.jsonld) // for the JSON-LD mapper
+    implementation(libs.edc.jsonld) // for the JSON-LD mapper
     implementation(libs.edc.lib.util)
     implementation(libs.edc.lib.store)
     implementation(libs.edc.lib.jsonld)
@@ -25,7 +25,7 @@ dependencies {
 
 
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.ext.jsonld)
+    testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
     testImplementation(testFixtures(libs.edc.vc.jwt)) // JWT generator
 }

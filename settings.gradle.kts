@@ -65,7 +65,8 @@ include(":extensions:api:identity-api:did-api")
 include(":extensions:api:identity-api:keypair-api")
 
 // other modules
-include(":launcher")
+include(":launcher:identityhub")
+include(":launcher:sts")
 
 include(":version-catalog")
 // test modules

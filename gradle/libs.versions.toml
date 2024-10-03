@@ -50,10 +50,10 @@ edc-dcp-transform = { module = "org.eclipse.edc:identity-trust-transform", versi
 edc-verifiablecredentials = { module = "org.eclipse.edc:verifiable-credentials", version.ref = "edc" }
 edc-vc-jwt = { module = "org.eclipse.edc:jwt-verifiable-credentials", version.ref = "edc" }
 edc-vc-ldp = { module = "org.eclipse.edc:ldp-verifiable-credentials", version.ref = "edc" }
-edc-ext-http = { module = "org.eclipse.edc:http", version.ref = "edc" }
-edc-ext-jsonld = { module = "org.eclipse.edc:json-ld", version.ref = "edc" }
-edc-ext-observability = { module = "org.eclipse.edc:api-observability", version.ref = "edc" }
-edc-ext-transaction-local = { module = "org.eclipse.edc:transaction-local", version.ref = "edc" }
+edc-http = { module = "org.eclipse.edc:http", version.ref = "edc" }
+edc-jsonld = { module = "org.eclipse.edc:json-ld", version.ref = "edc" }
+edc-observability = { module = "org.eclipse.edc:api-observability", version.ref = "edc" }
+edc-transaction-local = { module = "org.eclipse.edc:transaction-local", version.ref = "edc" }
 edc-testfixtures-managementapi = { module = "org.eclipse.edc:management-api-test-fixtures", version.ref = "edc" }
 edc-sql-pool = { module = "org.eclipse.edc:sql-pool-apache-commons", version.ref = "edc" }
 edc-sql-bootstrapper = { module = "org.eclipse.edc:sql-bootstrapper", version.ref = "edc" }
@@ -99,7 +99,7 @@ jersey-common = { module = "org.glassfish.jersey.core:jersey-common", version.re
 tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
 
 [bundles]
-connector = ["edc-boot", "edc-core-connector", "edc-ext-http", "edc-ext-observability", "edc-ext-jsonld"]
+connector = ["edc-boot", "edc-core-connector", "edc-http", "edc-observability", "edc-jsonld"]
 
 [plugins]
 shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }

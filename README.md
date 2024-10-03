@@ -42,7 +42,8 @@ others.
 
 ## Quick start
 
-A basic launcher configured with in-memory stores (i.e. no persistent storage) can be found [here](launcher/). There are
+A basic launcher configured with in-memory stores (i.e. no persistent storage) can be
+found [here](launcher/identityhub). There are
 two ways of running IdentityHub:
 
 1. As native Java process
@@ -51,7 +52,7 @@ two ways of running IdentityHub:
 ### Build the `*.jar` file
 
 ```bash
-./gradlew :launcher:shadowJar
+./gradlew :launcher:identityhub:shadowJar
 ```
 
 ### Start IdentityHub as Java process
@@ -66,7 +67,7 @@ java -Dweb.http.presentation.port=10001 \
      -Dweb.http.identity.port=8182 \
      -Dweb.http.identity.path="/api/identity" \
      -Dedc.ih.api.superuser.key="c3VwZXItdXNlcgo=c3VwZXItc2VjcmV0Cg==" \
-     -jar launcher/build/libs/identity-hub.jar
+     -jar launcher/identityhub/build/libs/identity-hub.jar
 ```
 
 this will expose the Presentation API at `http://localhost:10001/api/presentation` and the Identity API
@@ -76,7 +77,7 @@ found [here](docs/developer/architecture/identityhub-apis.md)
 ### Create the Docker image
 
 ```bash
-docker build -t identity-hub ./launcher
+docker build -t identity-hub ./launcher/identityhub
 ```
 
 ### Start the Identity Hub
