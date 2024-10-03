@@ -430,7 +430,7 @@ _None_
 - `java.time.Clock` (required)
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.identithub.spi.did.store.DidResourceStore` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner` (optional)
+- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner` (required)
 
 Module `identityhub-api-authentication`
 ---------------------------------------
@@ -619,16 +619,69 @@ Module `sts-account-provisioner`
 ### Configuration_None_
 
 #### Provided services
-- `org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner`
+- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner`
 
 #### Referenced (injected) services
 - `org.eclipse.edc.spi.event.EventRouter` (required)
-- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
-- `org.eclipse.edc.identithub.spi.did.DidDocumentService` (required)
-- `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore` (optional)
 - `org.eclipse.edc.spi.security.Vault` (required)
 - `org.eclipse.edc.identityhub.common.provisioner.StsClientSecretGenerator` (optional)
+- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService` (optional)
+
+Module `sts-account-service-local`
+----------------------------------
+**Artifact:** org.eclipse.edc:sts-account-service-local:0.10.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.identityhub.sts.accountservice.LocalStsAccountServiceExtension`
+**Name:** "Local (embedded) STS Account Service Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+
+Module `sts-account-service-remote`
+-----------------------------------
+**Artifact:** org.eclipse.edc:sts-account-service-remote:0.10.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.identityhub.sts.accountservice.RemoteStsAccountServiceExtension`
+**Name:** "Remote STS Account Service Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                      | Required | Type     | Default     | Pattern | Min | Max | Description                                                                                    |
+| ---------------------------------------- | -------- | -------- | ----------- | ------- | --- | --- | ---------------------------------------------------------------------------------------------- |
+| `edc.sts.accounts.api.auth.header.name`  |          | `string` | `x-api-key` |         |     |     | The name of the Auth header to use. Could be 'Authorization', some custom auth header, etc.    |
+| `edc.sts.accounts.api.auth.header.value` |          | `string` | ``          |         |     |     | The value of the Auth header to use. Currently we only support static values, e.g. tokens etc. |
+| `edc.sts.account.api.url`                |          | `string` | ``          |         |     |     | The base URL of the remote STS Accounts API                                                    |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.http.spi.EdcHttpClient` (required)
+- `org.eclipse.edc.spi.types.TypeManager` (required)
 
 Module `verifiable-credentials-api`
 -----------------------------------
