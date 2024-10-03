@@ -96,7 +96,7 @@ jobs:
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: Postgresql Tests
-        run: ./gradlew test -DincludeTags="PostgresqlIntegrationTest"
+        run: ./gradlew compileJava compileTestJava test -DincludeTags="PostgresqlIntegrationTest"
 
   Verify-OpenApi:
     if: github.event_name == 'pull_request'
