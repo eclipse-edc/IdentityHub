@@ -15,7 +15,7 @@ dependencies {
     implementation(libs.edc.lib.query)
 
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.ext.jsonld)
+    testImplementation(libs.edc.jsonld)
     testImplementation(libs.edc.lib.keys)
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(testFixtures(project(":spi:did-spi")))

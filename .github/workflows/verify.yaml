@@ -46,10 +46,10 @@ jobs:
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: 'Build launcher'
-        run: ./gradlew :launcher:shadowJar
+        run: ./gradlew :launcher:identityhub:shadowJar
 
       - name: 'Build Docker image'
-        run: docker build -t identity-hub ./launcher
+        run: docker build -t identity-hub ./launcher/identityhub
 
       - name: 'Start Identity Hub'
         run: |
@@ -96,7 +96,7 @@ jobs:
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: Postgresql Tests
-        run: ./gradlew test -DincludeTags="PostgresqlIntegrationTest"
+        run: ./gradlew compileJava compileTestJava test -DincludeTags="PostgresqlIntegrationTest"
 
   Verify-OpenApi:
     if: github.event_name == 'pull_request'

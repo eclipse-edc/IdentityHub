@@ -33,7 +33,7 @@ dependencies {
 
 
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.ext.jsonld)
+    testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(libs.edc.core.jersey))
     testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(libs.nimbus.jwt)

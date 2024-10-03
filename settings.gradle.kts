@@ -50,7 +50,9 @@ include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:store:sql:identity-hub-keypair-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:common:credential-watchdog")
-include(":extensions:common:sts-account-provisioner")
+include(":extensions:sts:sts-account-provisioner")
+include(":extensions:sts:sts-account-service-local")
+include(":extensions:sts:sts-account-service-remote")
 
 // Identity APIs
 include(":extensions:api:identity-api:validators")
@@ -63,9 +65,12 @@ include(":extensions:api:identity-api:did-api")
 include(":extensions:api:identity-api:keypair-api")
 
 // other modules
-include(":launcher")
+include(":launcher:identityhub")
 
 include(":version-catalog")
 // test modules
 include(":e2e-tests")
 include(":e2e-tests:api-tests")
+include(":e2e-tests:sts-tests")
+include(":e2e-tests:runtimes:identityhub-remote-sts")
+include(":e2e-tests:runtimes:sts")

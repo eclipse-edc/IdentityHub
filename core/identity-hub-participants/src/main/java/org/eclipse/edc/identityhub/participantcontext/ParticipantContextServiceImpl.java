@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
@@ -52,20 +52,20 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private final TransactionContext transactionContext;
     private final ApiTokenGenerator tokenGenerator;
     private final ParticipantContextObservable observable;
-    private final AccountProvisioner accountProvisioner;
+    private final StsAccountProvisioner stsAccountProvisioner;
 
     public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore,
                                          DidResourceStore didResourceStore,
                                          Vault vault,
                                          TransactionContext transactionContext,
                                          ParticipantContextObservable observable,
-                                         AccountProvisioner accountProvisioner) {
+                                         StsAccountProvisioner stsAccountProvisioner) {
         this.participantContextStore = participantContextStore;
         this.didResourceStore = didResourceStore;
         this.vault = vault;
         this.transactionContext = transactionContext;
         this.observable = observable;
-        this.accountProvisioner = accountProvisioner;
+        this.stsAccountProvisioner = stsAccountProvisioner;
         this.tokenGenerator = new ApiTokenGenerator();
     }
 
@@ -79,7 +79,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             var context = convert(manifest);
             var res = createParticipantContext(context)
                     .compose(u -> createTokenAndStoreInVault(context)).onSuccess(k -> response.put("apiKey", k))
-                    .compose(apiKey -> accountProvisioner.create(manifest))
+                    .compose(apiKey -> stsAccountProvisioner.create(manifest))
                     .onSuccess(accountInfo -> {
                         if (accountInfo != null) {
                             response.put("clientId", accountInfo.clientId());

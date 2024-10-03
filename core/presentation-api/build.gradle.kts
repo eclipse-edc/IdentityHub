@@ -32,7 +32,7 @@ dependencies {
     implementation(libs.edc.dcp.transform)
     implementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.ext.jsonld)
+    testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(libs.edc.core.jersey))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(libs.nimbus.jwt)

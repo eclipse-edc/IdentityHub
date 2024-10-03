@@ -59,7 +59,7 @@ import java.util.stream.IntStream;
 import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner.CLIENT_SECRET_PROPERTY;
+import static org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner.CLIENT_SECRET_PROPERTY;
 import static org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext.SUPER_USER;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;

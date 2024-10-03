@@ -20,7 +20,7 @@ import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.AccountProvisioner;
+import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
@@ -62,7 +62,7 @@ class ParticipantContextServiceImplTest {
     private final ParticipantContextStore participantContextStore = mock();
     private final ParticipantContextObservable observableMock = mock();
     private final DidResourceStore didResourceStore = mock();
-    private final AccountProvisioner provisionerMock = mock();
+    private final StsAccountProvisioner provisionerMock = mock();
     private ParticipantContextServiceImpl participantContextService;
 
     @BeforeEach
