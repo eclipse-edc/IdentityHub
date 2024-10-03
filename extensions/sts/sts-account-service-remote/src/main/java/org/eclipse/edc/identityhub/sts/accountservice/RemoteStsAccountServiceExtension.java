@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.sts.accountservice;
 
 import org.eclipse.edc.http.spi.EdcHttpClient;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -44,9 +43,6 @@ public class RemoteStsAccountServiceExtension implements ServiceExtension {
     @Setting(value = "The base URL of the remote STS Accounts API")
     public static final String REMOTE_STS_API_BASE_URL = "edc.sts.account.api.url";
 
-
-    @Inject
-    private StsAccountStore accountStore;
     @Inject
     private EdcHttpClient edcHttpClient;
     @Inject

@@ -66,9 +66,11 @@ include(":extensions:api:identity-api:keypair-api")
 
 // other modules
 include(":launcher:identityhub")
-include(":launcher:sts")
 
 include(":version-catalog")
 // test modules
 include(":e2e-tests")
 include(":e2e-tests:api-tests")
+include(":e2e-tests:sts-tests")
+include(":e2e-tests:runtimes:identityhub-remote-sts")
+include(":e2e-tests:runtimes:sts")

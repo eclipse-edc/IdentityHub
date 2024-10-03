@@ -27,6 +27,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.util.string.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Map;
@@ -38,7 +39,7 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
  * Manages {@link StsAccount} objects by directly interacting with a (local) storage. This is useful if the STS is directly
  * embedded into IdentityHub.
  */
-class RemoteStsAccountService implements StsAccountService {
+public class RemoteStsAccountService implements StsAccountService {
 
     public static final MediaType JSON = MediaType.get("application/json");
     private final String stsAccountApiBaseUrl;
@@ -47,7 +48,7 @@ class RemoteStsAccountService implements StsAccountService {
     private final Monitor monitor;
     private final ObjectMapper objectMapper;
 
-    RemoteStsAccountService(String stsAccountApiBaseUrl, EdcHttpClient edcHttpClient, Supplier<Map<String, String>> headerSupplier, Monitor monitor, ObjectMapper objectMapper) {
+    public RemoteStsAccountService(String stsAccountApiBaseUrl, EdcHttpClient edcHttpClient, Supplier<Map<String, String>> headerSupplier, Monitor monitor, ObjectMapper objectMapper) {
         this.stsAccountApiBaseUrl = stsAccountApiBaseUrl;
         this.edcHttpClient = edcHttpClient;
         this.headerSupplier = headerSupplier;
@@ -67,11 +68,13 @@ class RemoteStsAccountService implements StsAccountService {
                 .secretAlias(secretAlias)
                 .build();
 
-        return stringify(account)
+
+        return stringify(new CreateAccountRequest(account))
                 .map(json -> request("/v1alpha/accounts")
                         .post(RequestBody.create(json, JSON))
                         .build())
-                .compose(this::execute);
+                .compose(rq -> request(rq, CreateAccountRequest.class))
+                .mapEmpty();
     }
 
     @Override
@@ -85,7 +88,7 @@ class RemoteStsAccountService implements StsAccountService {
     @Override
     public ServiceResult<Void> updateAccount(StsAccount updatedAccount) {
         return stringify(updatedAccount)
-                .map(json -> request("/v1alpha/accounts/" + updatedAccount.getId())
+                .map(json -> request("/v1alpha/accounts")
                         .put(RequestBody.create(json, JSON))
                         .build())
                 .compose(this::execute);
@@ -122,7 +125,7 @@ class RemoteStsAccountService implements StsAccountService {
         }
     }
 
-    private ServiceResult<String> stringify(StsAccount updatedAccount) {
+    private ServiceResult<String> stringify(Object updatedAccount) {
         try {
             return success(objectMapper.writeValueAsString(updatedAccount));
         } catch (JsonProcessingException e) {
@@ -148,5 +151,11 @@ class RemoteStsAccountService implements StsAccountService {
         return builder.header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .url(stsAccountApiBaseUrl + path);
+    }
+
+    private record CreateAccountRequest(StsAccount account, @Nullable String clientSecret) {
+        CreateAccountRequest(StsAccount account) {
+            this(account, null);
+        }
     }
 }

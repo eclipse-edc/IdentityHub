@@ -34,7 +34,7 @@ class NoopAccountService implements StsAccountService {
     }
 
     @Override
-    public ServiceResult<Void> updateAccount(StsAccount modificationFunction) {
+    public ServiceResult<Void> updateAccount(StsAccount updatedAccount) {
         return ServiceResult.success();
     }
 

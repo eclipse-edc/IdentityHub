@@ -23,7 +23,7 @@ public interface StsAccountService {
 
     ServiceResult<Void> deleteAccount(String participantId);
 
-    ServiceResult<Void> updateAccount(StsAccount modificationFunction);
+    ServiceResult<Void> updateAccount(StsAccount updatedAccount);
 
     ServiceResult<StsAccount> findById(String id);
 }

@@ -110,24 +110,24 @@ class RemoteStsAccountServiceTest {
     @Test
     void update_succeeds() {
         var account = createAccount().build();
-        server.when(request().withMethod("PUT").withPath("/v1alpha/accounts/test-id"))
+        server.when(request().withMethod("PUT").withPath("/v1alpha/accounts"))
                 .respond(HttpResponse.response().withStatusCode(200));
 
         assertThat(remoteStsAccountService.updateAccount(account)).isSucceeded();
 
-        server.verify(request().withMethod("PUT").withPath("/v1alpha/accounts/test-id"));
+        server.verify(request().withMethod("PUT").withPath("/v1alpha/accounts"));
     }
 
     @ParameterizedTest(name = "HTTP Error {0}")
     @ValueSource(ints = { 400, 401, 404, 409, 500 })
     void update_succeeds(int errorCode) {
         var account = createAccount().build();
-        server.when(request().withMethod("PUT").withPath("/v1alpha/accounts/test-id"))
+        server.when(request().withMethod("PUT").withPath("/v1alpha/accounts"))
                 .respond(HttpResponse.response().withStatusCode(errorCode));
 
         assertThat(remoteStsAccountService.updateAccount(account)).isFailed();
 
-        server.verify(request().withMethod("PUT").withPath("/v1alpha/accounts/test-id"));
+        server.verify(request().withMethod("PUT").withPath("/v1alpha/accounts"));
     }
 
     @Test
