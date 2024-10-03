@@ -41,7 +41,7 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
     private Vault vault;
     @Inject(required = false)
     private StsClientSecretGenerator stsClientSecretGenerator;
-    @Inject
+    @Inject(required = false)
     private StsAccountService accountManager;
 
 

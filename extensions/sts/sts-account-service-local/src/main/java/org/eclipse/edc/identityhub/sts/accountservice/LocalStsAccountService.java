@@ -30,7 +30,7 @@ class LocalStsAccountService implements StsAccountService {
     private final StsAccountStore stsAccountStore;
     private final TransactionContext transactionContext;
 
-    public LocalStsAccountService(StsAccountStore accountStore, TransactionContext transactionContext) {
+    LocalStsAccountService(StsAccountStore accountStore, TransactionContext transactionContext) {
         this.stsAccountStore = accountStore;
         this.transactionContext = transactionContext;
     }

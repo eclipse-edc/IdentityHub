@@ -56,7 +56,7 @@ public class RemoteStsAccountServiceExtension implements ServiceExtension {
     @Provider
     public StsAccountService createAccountManager(ServiceExtensionContext context) {
         var monitor = context.getMonitor().withPrefix("STS-Account");
-        monitor.info("This IdentityHub runtime contains an embedded SecureTokenService (STS) instance. That means ParticipantContexts and STS Accounts will be synchronized automatically.");
+        monitor.info("This IdentityHub runtime is configured to manage STS Accounts remotely using the STS Accounts API. That means ParticipantContexts and STS Accounts will be synchronized automatically.");
         return new RemoteStsAccountService(getAccountApiBaseUrl(context), edcHttpClient, getAuthHeaderSupplier(context), monitor, typeManager.getMapper());
     }
 
