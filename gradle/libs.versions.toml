@@ -66,6 +66,7 @@ edc-lib-query = { "module" = "org.eclipse.edc:query-lib", version.ref = "edc" }
 edc-lib-jsonld = { "module" = "org.eclipse.edc:json-ld-lib", version.ref = "edc" }
 edc-lib-jws2020 = { module = "org.eclipse.edc:jws2020-lib", version.ref = "edc" }
 edc-lib-store = { "module" = "org.eclipse.edc:store-lib", version.ref = "edc" }
+edc-lib-http = { "module" = "org.eclipse.edc:http-lib", version.ref = "edc" }
 edc-lib-transform = { module = "org.eclipse.edc:transform-lib", version.ref = "edc" }
 edc-lib-util = { module = "org.eclipse.edc:util-lib", version.ref = "edc" }
 edc-lib-json = { module = "org.eclipse.edc:json-lib", version.ref = "edc" }

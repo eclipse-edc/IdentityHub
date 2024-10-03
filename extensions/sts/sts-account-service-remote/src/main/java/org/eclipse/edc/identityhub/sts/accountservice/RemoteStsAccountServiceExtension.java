@@ -34,6 +34,7 @@ import static org.eclipse.edc.identityhub.sts.accountservice.RemoteStsAccountSer
 
 @Extension(value = NAME)
 public class RemoteStsAccountServiceExtension implements ServiceExtension {
+    public static final String DEFAULT_AUTH_HEADER = "x-api-key";
     public static final String NAME = "Remote STS Account Service Extension";
     @Setting(value = "The name of the Auth header to use. Could be 'Authorization', some custom auth header, etc.", defaultValue = DEFAULT_AUTH_HEADER)
     public static final String AUTH_HEADER = "edc.sts.accounts.api.auth.header.name";
@@ -43,7 +44,6 @@ public class RemoteStsAccountServiceExtension implements ServiceExtension {
     @Setting(value = "The base URL of the remote STS Accounts API")
     public static final String REMOTE_STS_API_BASE_URL = "edc.sts.account.api.url";
 
-    private static final String DEFAULT_AUTH_HEADER = "x-api-key";
 
     @Inject
     private StsAccountStore accountStore;

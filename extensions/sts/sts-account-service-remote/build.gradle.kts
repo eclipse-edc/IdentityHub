@@ -22,6 +22,9 @@ dependencies {
     implementation(libs.edc.sts.spi)
     implementation(libs.edc.spi.core)
     implementation(libs.edc.spi.http)
+    implementation(libs.edc.lib.util)
 
     testImplementation(libs.edc.junit)
+    testImplementation(libs.mockserver.netty)
+    testImplementation(testFixtures(libs.edc.lib.http))
 }

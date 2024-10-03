@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.sts.accountservice;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -27,6 +26,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.util.string.StringUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -71,24 +71,24 @@ class RemoteStsAccountService implements StsAccountService {
                 .map(json -> request("/v1alpha/accounts")
                         .post(RequestBody.create(json, JSON))
                         .build())
-                .compose(this::executeRequest);
+                .compose(this::execute);
     }
 
     @Override
     public ServiceResult<Void> deleteAccount(String participantId) {
-        var rq = request("/v1alpha/accounts/")
+        var rq = request("/v1alpha/accounts/" + participantId)
                 .delete()
                 .build();
-        return executeRequest(rq);
+        return execute(rq);
     }
 
     @Override
     public ServiceResult<Void> updateAccount(StsAccount updatedAccount) {
         return stringify(updatedAccount)
-                .map(json -> request("/v1alpha/accounts/")
+                .map(json -> request("/v1alpha/accounts/" + updatedAccount.getId())
                         .put(RequestBody.create(json, JSON))
                         .build())
-                .compose(this::executeRequest);
+                .compose(this::execute);
     }
 
     @Override
@@ -96,8 +96,30 @@ class RemoteStsAccountService implements StsAccountService {
         var rq = request("/v1alpha/accounts/%s".formatted(id))
                 .get()
                 .build();
+        return request(rq, StsAccount.class);
+    }
 
-        return executeRequest(rq);
+    private ServiceResult<Void> execute(Request rq) {
+        return request(rq, Void.class).mapEmpty();
+    }
+
+    private <T> ServiceResult<T> request(Request rq, Class<T> clazz) {
+        try (var response = edcHttpClient.execute(rq)) {
+            if (response.isSuccessful()) {
+                var body = response.body();
+                if (body != null) {
+                    var json = body.string();
+                    return StringUtils.isNullOrEmpty(json) ?
+                            success() :
+                            success(objectMapper.readValue(json, clazz));
+                }
+                return success();
+            }
+            return failureFromResponse(response);
+        } catch (IOException e) {
+            monitor.severe("Error deleting account", e);
+            return ServiceResult.unexpected(e.getMessage());
+        }
     }
 
     private ServiceResult<String> stringify(StsAccount updatedAccount) {
@@ -107,23 +129,6 @@ class RemoteStsAccountService implements StsAccountService {
             var msg = "Error while converting StsAccount to JSON";
             monitor.severe(msg, e);
             return ServiceResult.unexpected(msg); // todo: should this be badRequest?
-        }
-    }
-
-    private <T> ServiceResult<T> executeRequest(Request rq) {
-        try (var response = edcHttpClient.execute(rq)) {
-            if (response.isSuccessful()) {
-                var body = response.body();
-                if (body != null) {
-                    return success(objectMapper.readValue(body.string(), new TypeReference<>() {
-                    }));
-                }
-                return success();
-            }
-            return failureFromResponse(response);
-        } catch (IOException e) {
-            monitor.severe("Error deleting account", e);
-            return ServiceResult.unexpected(e.getMessage());
         }
     }
 
