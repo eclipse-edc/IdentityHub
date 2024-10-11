@@ -19,32 +19,7 @@ plugins {
 }
 
 dependencies {
-    runtimeOnly(project(":core:presentation-api"))
-    runtimeOnly(project(":core:identity-hub-did"))
-    runtimeOnly(project(":core:identity-hub-core"))
-    runtimeOnly(project(":core:identity-hub-participants"))
-    runtimeOnly(project(":core:identity-hub-keypairs"))
-    runtimeOnly(project(":extensions:did:local-did-publisher"))
-    runtimeOnly(project(":extensions:common:credential-watchdog"))
-    runtimeOnly(project(":extensions:sts:sts-account-provisioner"))
-    runtimeOnly(project(":extensions:sts:sts-account-service-local"))
-    runtimeOnly(project(":extensions:api:identity-api:did-api"))
-    runtimeOnly(project(":extensions:api:identity-api:participant-context-api"))
-    runtimeOnly(project(":extensions:api:identity-api:verifiable-credentials-api"))
-    runtimeOnly(project(":extensions:api:identity-api:keypair-api"))
-    runtimeOnly(project(":extensions:api:identity-api:api-configuration"))
-    runtimeOnly(project(":extensions:api:identityhub-api-authentication"))
-    runtimeOnly(project(":extensions:api:identityhub-api-authorization"))
-    runtimeOnly(libs.edc.identity.did.core)
-    runtimeOnly(libs.edc.core.token)
-    runtimeOnly(libs.edc.api.version)
-    runtimeOnly(libs.edc.sts.core)
-    runtimeOnly(libs.edc.sts)
-    runtimeOnly(libs.edc.sts.api)
-
-    runtimeOnly(libs.edc.identity.did.web)
-    runtimeOnly(libs.edc.jsonld)
-    runtimeOnly(libs.bundles.connector)
+    runtimeOnly(project(":dist:bom:identityhub-with-sts-bom"))
 }
 
 application {
