@@ -74,6 +74,7 @@ include(":e2e-tests:api-tests")
 include(":e2e-tests:sts-tests")
 include(":e2e-tests:runtimes:identityhub-remote-sts")
 include(":e2e-tests:runtimes:sts")
+include(":e2e-tests:bom-tests")
 
 // BOM modules
 include(":dist:bom:identityhub-base-bom")
