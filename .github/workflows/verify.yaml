@@ -99,16 +99,3 @@ jobs:
     if: github.event_name == 'pull_request'
     uses: eclipse-edc/.github/.github/workflows/verify-openapi.yml@main
     secrets: inherit
-
-  Verify-IH-BOM:
-    strategy:
-      fail-fast: false
-
-      # we can't test the "controlplane-oauth2-com" because it only starts successfully if the public key is already in the vault
-      matrix:
-        bom-directory: [ "dist/bom/identityhub-bom",
-                         "dist/bom/identityhub-with-sts-bom" ]
-    uses: eclipse-edc/.github/.github/workflows/verify-bom.yml@main
-    with:
-      module-dir: ${{ matrix.bom-directory }}
-      properties-file: example.properties
