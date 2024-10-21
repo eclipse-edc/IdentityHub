@@ -32,6 +32,7 @@ import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
+import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -42,6 +43,7 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
+import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
 import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
@@ -56,6 +58,10 @@ public class DefaultServicesExtension implements ServiceExtension {
     public static final long DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS = 15 * 60 * 1000L;
     @Setting(value = "Validity period of cached StatusList2021 credential entries in milliseconds.", defaultValue = DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS + "", type = "long")
     public static final String REVOCATION_CACHE_VALIDITY = "edc.iam.credential.revocation.cache.validity";
+
+    @Setting(value = "Activates the JTI check: access tokens can only be used once to guard against replay attacks", defaultValue = "false", type = "boolean")
+    public static final String ACCESSTOKEN_JTI_VALIDATION_ACTIVATE = "edc.iam.accesstoken.jti.validation";
+
     @Inject
     private TokenValidationRulesRegistry registry;
     @Inject
@@ -63,6 +69,8 @@ public class DefaultServicesExtension implements ServiceExtension {
     private RevocationServiceRegistry revocationService;
     @Inject
     private PrivateKeyResolver privateKeyResolver;
+    @Inject
+    private JtiValidationStore jwtValidationStore;
 
     @Override
     public String name() {
@@ -77,6 +85,12 @@ public class DefaultServicesExtension implements ServiceExtension {
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
         registry.addRule(DCP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
+
+        if (context.getSetting(ACCESSTOKEN_JTI_VALIDATION_ACTIVATE, false)) {
+            registry.addRule(DCP_ACCESS_TOKEN_CONTEXT, new JtiValidationRule(jwtValidationStore, context.getMonitor()));
+        } else {
+            context.getMonitor().warning("JWT Token ID (\"jti\" claim) Validation is not active. Please consider setting '%s=true' for protection against replay attacks".formatted(ACCESSTOKEN_JTI_VALIDATION_ACTIVATE));
+        }
     }
 
     @Provider(isDefault = true)

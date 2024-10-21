@@ -20,6 +20,7 @@ dependencies {
     implementation(libs.edc.spi.token)
     implementation(libs.edc.spi.identity.did)
     implementation(libs.edc.vc.ldp)
+    implementation(libs.edc.vc.jwt)
     implementation(libs.edc.core.token)
     implementation(libs.edc.verifiablecredentials) // revocation list service
 
