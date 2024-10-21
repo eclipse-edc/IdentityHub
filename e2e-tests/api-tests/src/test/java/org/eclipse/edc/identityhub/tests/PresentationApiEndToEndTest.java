@@ -48,6 +48,8 @@ import org.eclipse.edc.identityhub.tests.fixtures.TestData;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
+import org.eclipse.edc.jwt.validation.jti.JtiValidationEntry;
+import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
@@ -235,7 +237,7 @@ public class PresentationApiEndToEndTest {
 
             var accessToken = generateJwt(CONSUMER_DID, CONSUMER_DID, PROVIDER_DID, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
             var token = generateJwt(PROVIDER_DID, PROVIDER_DID, "mismatching", Map.of("client_id", PROVIDER_DID, "token", accessToken), PROVIDER_KEY);
-
+            registerToken(token, context);
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -257,6 +259,7 @@ public class PresentationApiEndToEndTest {
         void query_credentialQueryResolverFails_shouldReturn403(IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             var token = generateSiToken();
+            registerToken(token, context);
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -300,6 +303,7 @@ public class PresentationApiEndToEndTest {
         void query_success_noCredentials(IdentityHubEndToEndTestContext context) throws JOSEException {
 
             var token = generateSiToken();
+            registerToken(token, context);
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -311,7 +315,7 @@ public class PresentationApiEndToEndTest {
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
                     .statusCode(200)
-                    .log().ifError()
+                    .log().ifValidationFails()
                     .extract().body().as(JsonObject.class);
 
             assertThat(response)
@@ -335,6 +339,8 @@ public class PresentationApiEndToEndTest {
 
             store.create(res);
             var token = generateSiToken();
+            registerToken(token, context);
+
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
@@ -345,7 +351,7 @@ public class PresentationApiEndToEndTest {
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
                     .statusCode(200)
-                    .log().ifError()
+                    .log().ifValidationFails()
                     .extract().body().as(JsonObject.class);
 
             assertThat(response)
@@ -399,6 +405,9 @@ public class PresentationApiEndToEndTest {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             var token = generateSiToken();
+            registerToken(token, context);
+
+
             var response = context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
@@ -482,6 +491,21 @@ public class PresentationApiEndToEndTest {
                     .statusCode(401)
                     .log().ifValidationFails()
                     .body(Matchers.containsString("The DID associated with the Participant Context ID of this request ('did:web:consumer') must match 'aud' claim in 'access_token' ([did:web:someone_else])."));
+        }
+
+        private void registerToken(String token, IdentityHubEndToEndTestContext context) {
+            try {
+                var sj = SignedJWT.parse(token);
+                var at = sj.getJWTClaimsSet().getStringClaim("token");
+                var accessToken = SignedJWT.parse(at);
+                var jti = accessToken.getJWTClaimsSet().getStringClaim("jti");
+                var exp = accessToken.getJWTClaimsSet().getExpirationTime();
+                context.getRuntime().getService(JtiValidationStore.class)
+                        .storeEntry(new JtiValidationEntry(jti, exp.getTime()));
+
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         /**
