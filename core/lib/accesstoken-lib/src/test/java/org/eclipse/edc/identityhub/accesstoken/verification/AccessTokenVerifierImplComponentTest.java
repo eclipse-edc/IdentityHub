@@ -26,10 +26,13 @@ import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.junit.annotations.ComponentTest;
+import org.eclipse.edc.jwt.validation.jti.JtiValidationEntry;
+import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.TokenValidationRulesRegistryImpl;
 import org.eclipse.edc.token.TokenValidationServiceImpl;
+import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -62,6 +65,7 @@ class AccessTokenVerifierImplComponentTest {
     private KeyPair stsKeyPair; // this is used to sign the acces token
     private KeyPair providerKeyPair; // this is used to sign the incoming SI token
     private KeyPairGenerator generator;
+    private JtiValidationStore jtiValidationStore;
 
     @BeforeEach
     void setUp() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
@@ -71,7 +75,7 @@ class AccessTokenVerifierImplComponentTest {
         providerKeyPair = generator.generateKeyPair();
 
         var tokenValidationService = new TokenValidationServiceImpl();
-        var ruleRegistry = new TokenValidationRulesRegistryImpl();
+        TokenValidationRulesRegistryImpl ruleRegistry = new TokenValidationRulesRegistryImpl();
 
         // would normally get registered in an extension.
         var accessTokenRule = new ClaimIsPresentRule(TOKEN_CLAIM);
@@ -80,12 +84,17 @@ class AccessTokenVerifierImplComponentTest {
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
         ruleRegistry.addRule(DCP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
 
+        jtiValidationStore = mock(JtiValidationStore.class);
+        when(jtiValidationStore.findById(anyString())).thenReturn(new JtiValidationEntry("test-jti", null));
+        ruleRegistry.addRule(DCP_ACCESS_TOKEN_CONTEXT, new JtiValidationRule(jtiValidationStore, mock()));
+
         var resolverMock = mock(KeyPairResourcePublicKeyResolver.class);
         when(resolverMock.resolveKey(anyString(), anyString())).thenReturn(Result.success(stsKeyPair.getPublic()));
 
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance().did(PARTICIPANT_DID).participantId(PARTICIPANT_CONTEXT_ID).apiTokenAlias("foobar").build()));
         verifier = new AccessTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, (id) -> Result.success(providerKeyPair.getPublic()), participantContextService);
     }
+
 
     @Test
     void selfIssuedTokenNotVerified() {
@@ -115,6 +124,18 @@ class AccessTokenVerifierImplComponentTest {
                 .detail().isEqualTo("Mandatory claim 'aud' on 'token' was null.");
     }
 
+    @Test
+    void validation_successful_withJti() {
+        var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("scope", "foobar")
+                .audience(PARTICIPANT_DID)
+                .claim("jti", UUID.randomUUID().toString())
+                .build());
+        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("token", accessToken)
+                .build());
+        assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isSucceeded();
+    }
 
     @Test
     void accessToken_audClaimDoesNotBelongToParticipant() {
@@ -186,6 +207,22 @@ class AccessTokenVerifierImplComponentTest {
 
         assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
                 .detail().isEqualTo("Mandatory claim 'aud' on 'token' was null.");
+    }
+
+    @Test
+    void accessToken_jtiValidationFails() {
+        when(jtiValidationStore.findById(anyString())).thenReturn(null); //JTI not known
+
+        var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("scope", "foobar")
+                .audience(PARTICIPANT_DID)
+                .claim("jti", UUID.randomUUID().toString())
+                .build());
+        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("token", accessToken)
+                .build());
+        assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().matches("The JWT id '.*' was not found");
     }
 
     @Test
