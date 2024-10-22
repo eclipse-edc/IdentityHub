@@ -117,9 +117,10 @@ _None_
 
 ### Configuration
 
-| Key                                            | Required | Type   | Default  | Pattern | Min | Max | Description                                                                  |
-| ---------------------------------------------- | -------- | ------ | -------- | ------- | --- | --- | ---------------------------------------------------------------------------- |
-| `edc.iam.credential.revocation.cache.validity` |          | `long` | `900000` |         |     |     | Validity period of cached StatusList2021 credential entries in milliseconds. |
+| Key                                            | Required | Type      | Default  | Pattern | Min | Max | Description                                                                                  |
+| ---------------------------------------------- | -------- | --------- | -------- | ------- | --- | --- | -------------------------------------------------------------------------------------------- |
+| `edc.iam.credential.revocation.cache.validity` |          | `long`    | `900000` |         |     |     | Validity period of cached StatusList2021 credential entries in milliseconds.                 |
+| `edc.iam.accesstoken.jti.validation`           |          | `boolean` | `false`  |         |     |     | Activates the JTI check: access tokens can only be used once to guard against replay attacks |
 
 #### Provided services
 - `org.eclipse.edc.identityhub.spi.store.CredentialStore`
@@ -134,6 +135,7 @@ _None_
 - `org.eclipse.edc.token.spi.TokenValidationRulesRegistry` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
 - `org.eclipse.edc.keys.spi.PrivateKeyResolver` (required)
+- `org.eclipse.edc.jwt.validation.jti.JtiValidationStore` (required)
 
 #### Class: `org.eclipse.edc.identityhub.core.CoreServicesExtension`
 **Name:** "IdentityHub Core Services Extension"
@@ -215,20 +217,6 @@ Module `identity-hub-did`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
-**Name:** "DID Default Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identithub.spi.did.store.DidResourceStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
-
 #### Class: `org.eclipse.edc.identityhub.did.DidServicesExtension`
 **Name:** "DID Service Extension"
 
@@ -247,6 +235,20 @@ _None_
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.keys.spi.KeyParserRegistry` (required)
 - `org.eclipse.edc.identityhub.spi.store.ParticipantContextStore` (required)
+
+#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
+**Name:** "DID Default Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identithub.spi.did.store.DidResourceStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `identity-hub-did-store-sql`
 -----------------------------------
