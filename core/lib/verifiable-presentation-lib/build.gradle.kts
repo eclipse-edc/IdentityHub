@@ -8,8 +8,9 @@ dependencies {
     api(project(":spi:keypair-spi"))
     implementation(libs.edc.spi.token)
     implementation(libs.edc.spi.vc)
+    implementation(libs.edc.spi.jwt)
     implementation(libs.edc.spi.jsonld)
-    implementation(libs.edc.core.token) // for Jwt generation service, token validation service and rule registry impl
+    implementation(libs.edc.lib.token) // for Jwt generation service, token validation service and rule registry impl
     implementation(libs.edc.lib.common.crypto) // for the CryptoConverter
     implementation(libs.edc.lib.jws2020)
     implementation(libs.edc.vc.ldp)

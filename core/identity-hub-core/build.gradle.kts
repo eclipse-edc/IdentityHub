@@ -9,6 +9,7 @@ dependencies {
     implementation(project(":core:lib:accesstoken-lib"))
     implementation(project(":core:lib:credential-query-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
+    implementation(libs.edc.spi.jwt.signer)
     implementation(libs.edc.core.connector) // for the CriterionToPredicateConverterImpl
     implementation(libs.edc.jsonld) // for the JSON-LD mapper
     implementation(libs.edc.lib.util)
@@ -17,6 +18,7 @@ dependencies {
     implementation(libs.edc.lib.query)
     implementation(libs.edc.lib.jws2020)
     implementation(libs.edc.lib.common.crypto)
+    implementation(libs.edc.lib.token)
     implementation(libs.edc.spi.token)
     implementation(libs.edc.spi.identity.did)
     implementation(libs.edc.vc.ldp)
