@@ -28,6 +28,7 @@ dependencies {
     api(libs.edc.sql.pool)
     api(libs.edc.sql.transactionlocal)
     api(libs.edc.sql.bootstrapper)
+    api(libs.edc.sql.jtivdalidation)
 
     // third-party deps
     api(libs.postgres)
