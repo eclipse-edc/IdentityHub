@@ -317,7 +317,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         }
 
         @Test
-        void typeNotSpecified_returnsAllCredentials(){
+        void typeNotSpecified_returnsAllCredentials() {
             var credential1 = createCredentialResource("test-type").build();
             var credential2 = createCredentialResource("test-type").build();
             when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(credential1, credential2)));

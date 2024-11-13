@@ -46,7 +46,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
@@ -112,7 +111,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     public Collection<VerifiableCredentialResource> queryCredentialsByType(@Nullable @QueryParam("type") String type, @Context SecurityContext securityContext) {
         var query = QuerySpec.Builder.newInstance();
 
-        if(!StringUtils.isNullOrEmpty(type)){
+        if (!StringUtils.isNullOrEmpty(type)) {
             query.filter(new Criterion("verifiableCredential.credential.types", "contains", type));
         }
 
