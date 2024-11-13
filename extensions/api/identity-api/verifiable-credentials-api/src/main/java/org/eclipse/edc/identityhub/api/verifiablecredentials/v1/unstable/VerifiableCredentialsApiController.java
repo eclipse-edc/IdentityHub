@@ -37,9 +37,11 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
+import org.eclipse.edc.util.string.StringUtils;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -106,12 +108,14 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
     @GET
     @Override
-    public Collection<VerifiableCredentialResource> queryCredentialsByType(@QueryParam("type") String type, @Context SecurityContext securityContext) {
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("verifiableCredential.credential.types", "contains", type))
-                .build();
+    public Collection<VerifiableCredentialResource> queryCredentialsByType(@Nullable @QueryParam("type") String type, @Context SecurityContext securityContext) {
+        var query = QuerySpec.Builder.newInstance();
 
-        return credentialStore.query(query)
+        if (!StringUtils.isNullOrEmpty(type)) {
+            query.filter(new Criterion("verifiableCredential.credential.types", "contains", type));
+        }
+
+        return credentialStore.query(query.build())
                 .orElseThrow(InvalidRequestException::new)
                 .stream()
                 .filter(vcr -> authorizationService.isAuthorized(securityContext, vcr.getId(), VerifiableCredentialResource.class).succeeded())

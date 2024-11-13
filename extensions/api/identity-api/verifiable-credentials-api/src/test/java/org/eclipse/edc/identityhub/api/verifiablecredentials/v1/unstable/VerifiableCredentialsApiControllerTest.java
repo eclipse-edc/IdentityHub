@@ -317,6 +317,24 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         }
 
         @Test
+        void typeNotSpecified_returnsAllCredentials() {
+            var credential1 = createCredentialResource("test-type").build();
+            var credential2 = createCredentialResource("test-type").build();
+            when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(credential1, credential2)));
+
+            var result = baseRequest()
+                    .get()
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .extract().body().as(VerifiableCredentialResource[].class);
+
+            assertThat(result).usingRecursiveFieldByFieldElementComparatorIgnoringFields("clock").containsExactlyInAnyOrder(credential1, credential2);
+            verify(credentialStore).query(any());
+            verifyNoMoreInteractions(credentialStore);
+        }
+
+        @Test
         void emptyResult() {
             when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of()));
 

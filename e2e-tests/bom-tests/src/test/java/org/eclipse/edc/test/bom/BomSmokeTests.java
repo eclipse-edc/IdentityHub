@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static java.lang.String.valueOf;
@@ -58,17 +57,23 @@ public class BomSmokeTests {
         @RegisterExtension
         protected RuntimeExtension runtime =
                 new RuntimePerMethodExtension(new EmbeddedRuntime("identityhub-bom",
-                        Map.of(
-                                "web.http.port", DEFAULT_PORT,
-                                "web.http.path", DEFAULT_PATH,
-                                "edc.ih.iam.id", "did:web:test",
-                                "edc.ih.iam.publickey.path", "/some/path/to/key.pem",
-                                "web.http.presentation.port", valueOf(getFreePort()),
-                                "web.http.presentation.path", "/api/resolution",
-                                "web.http.identity.port", valueOf(getFreePort()),
-                                "web.http.identity.path", "/api/identity",
-                                "edc.sts.account.api.url", "https://sts.com/accounts",
-                                "edc.sts.accounts.api.auth.header.value", "password"),
+                        new HashMap<>() {
+
+                            {
+                                put("web.http.port", DEFAULT_PORT);
+                                put("web.http.path", DEFAULT_PATH);
+                                put("edc.ih.iam.id", "did:web:test");
+                                put("edc.ih.iam.publickey.path", "/some/path/to/key.pem");
+                                put("web.http.presentation.port", valueOf(getFreePort()));
+                                put("web.http.presentation.path", "/api/resolution");
+                                put("web.http.identity.port", valueOf(getFreePort()));
+                                put("web.http.identity.path", "/api/identity");
+                                put("web.http.version.port", valueOf(getFreePort()));
+                                put("web.http.version.path", "/api/version");
+                                put("edc.sts.account.api.url", "https://sts.com/accounts");
+                                put("edc.sts.accounts.api.auth.header.value", "password");
+                            }
+                        },
                         ":dist:bom:identityhub-bom"
                 ));
     }
@@ -92,6 +97,8 @@ public class BomSmokeTests {
                                 put("web.http.identity.path", "/api/identity");
                                 put("web.http.accounts.port", valueOf(getFreePort()));
                                 put("web.http.accounts.path", "/api/accounts");
+                                put("web.http.version.port", valueOf(getFreePort()));
+                                put("web.http.version.path", "/api/version");
                                 put("edc.api.accounts.key", "password");
                             }
                         },

@@ -160,6 +160,46 @@ public class VerifiableCredentialApiEndToEndTest {
                     });
         }
 
+        @Test
+        void queryByType(IdentityHubEndToEndTestContext context) {
+            var superUserKey = context.createSuperUser();
+            var user = "user1";
+            var token = context.createParticipant(user);
+
+            var credential = context.createCredential();
+            context.storeCredential(credential, user);
+
+            assertThat(Arrays.asList(token, superUserKey))
+                    .allSatisfy(t -> context.getIdentityApiEndpoint().baseRequest()
+                            .contentType(JSON)
+                            .header(new Header("x-api-key", t))
+                            .get("/v1alpha/participants/%s/credentials?type=%s".formatted(toBase64(user), credential.getType().get(0)))
+                            .then()
+                            .log().ifValidationFails()
+                            .statusCode(200)
+                            .body(notNullValue()));
+        }
+
+        @Test
+        void queryByTyp_noTypeSpecified(IdentityHubEndToEndTestContext context) {
+            var superUserKey = context.createSuperUser();
+            var user = "user1";
+            var token = context.createParticipant(user);
+
+            var credential = context.createCredential();
+            context.storeCredential(credential, user);
+
+            assertThat(Arrays.asList(token, superUserKey))
+                    .allSatisfy(t -> context.getIdentityApiEndpoint().baseRequest()
+                            .contentType(JSON)
+                            .header(new Header("x-api-key", t))
+                            .get("/v1alpha/participants/%s/credentials".formatted(toBase64(user)))
+                            .then()
+                            .log().ifValidationFails()
+                            .statusCode(200)
+                            .body(notNullValue()));
+        }
+
         private String toBase64(String s) {
             return Base64.getUrlEncoder().encodeToString(s.getBytes());
         }
