@@ -15,10 +15,12 @@
 package org.eclipse.edc.identityhub.common.credentialwatchdog;
 
 
+import org.eclipse.edc.boot.system.injection.ObjectFactory;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,15 +29,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatchers;
 
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static org.eclipse.edc.identityhub.common.credentialwatchdog.CredentialWatchdogExtension.CREDENTIAL_WATCHDOG;
-import static org.eclipse.edc.identityhub.common.credentialwatchdog.CredentialWatchdogExtension.WATCHDOG_DELAY_PROPERTY;
-import static org.eclipse.edc.identityhub.common.credentialwatchdog.CredentialWatchdogExtension.WATCHDOG_PERIOD_PROPERTY;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
@@ -48,6 +48,8 @@ import static org.mockito.Mockito.when;
 class CredentialWatchdogExtensionTest {
 
 
+    private static final String WATCHDOG_PERIOD_PROPERTY = "edc.iam.credential.status.check.period";
+    private static final String WATCHDOG_DELAY_PROPERTY = "edc.iam.credential.status.check.delay";
     private final ExecutorInstrumentation executorInstrumentationMock = mock();
     private Monitor monitor;
 
@@ -62,12 +64,12 @@ class CredentialWatchdogExtensionTest {
     @DisplayName("Disable watchdog on negative or zero second period")
     @ParameterizedTest(name = "Disable on delay of {0} seconds")
     @ValueSource(ints = { 0, -1, -100 })
-    void initialize_whenNegativePeriod_shouldDisable(int period, CredentialWatchdogExtension extension, ServiceExtensionContext context) {
-        when(context.getSetting(eq(WATCHDOG_PERIOD_PROPERTY), anyInt())).thenReturn(period);
-        extension.initialize(context);
+    void initialize_whenNegativePeriod_shouldDisable(int period, ServiceExtensionContext context, ObjectFactory objectFactory) {
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(WATCHDOG_PERIOD_PROPERTY, String.valueOf(period))));
+        objectFactory.constructInstance(CredentialWatchdogExtension.class).initialize(context);
 
-        verifyNoInteractions(executorInstrumentationMock);
         verify(monitor).debug(ArgumentMatchers.<Supplier<String>>argThat(stringSupplier -> stringSupplier.get().contains("Credential Watchdog is disabled")));
+        verifyNoInteractions(executorInstrumentationMock);
     }
 
     @DisplayName("Verify random delay [1..5] if no initial delay is configured")
@@ -82,10 +84,12 @@ class CredentialWatchdogExtensionTest {
 
     @DisplayName("Verify a configured delay is used")
     @Test
-    void initialize_whenDelay_shouldUseConfiguredDelay(CredentialWatchdogExtension extension, ServiceExtensionContext context) {
-        when(context.getSetting(eq(WATCHDOG_DELAY_PROPERTY), anyInt())).thenReturn(42);
+    void initialize_whenDelay_shouldUseConfiguredDelay(ServiceExtensionContext context, ObjectFactory factory) {
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(
+                WATCHDOG_DELAY_PROPERTY, String.valueOf(42)
+        )));
+        factory.constructInstance(CredentialWatchdogExtension.class).initialize(context);
 
-        extension.initialize(context);
         verify(monitor).debug(ArgumentMatchers.<Supplier<String>>argThat(stringSupplier ->
                 stringSupplier.get().endsWith("delay of 42 seconds, at an interval of 60 seconds")));
         verify(executorInstrumentationMock).instrument(any(), eq(CREDENTIAL_WATCHDOG));
@@ -93,9 +97,11 @@ class CredentialWatchdogExtensionTest {
 
     @DisplayName("Verify the watchdog is not start if a <=0 period is configured")
     @Test
-    void start_whenWatchdogDisabled_shouldNotStart(CredentialWatchdogExtension extension, ServiceExtensionContext context) {
-        when(context.getSetting(eq(WATCHDOG_PERIOD_PROPERTY), anyInt())).thenReturn(-10);
-
+    void start_whenWatchdogDisabled_shouldNotStart(ServiceExtensionContext context, ObjectFactory factory) {
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(
+                WATCHDOG_PERIOD_PROPERTY, String.valueOf(-10)
+        )));
+        var extension = factory.constructInstance(CredentialWatchdogExtension.class);
         extension.initialize(context);
         extension.start();
         verifyNoInteractions(executorInstrumentationMock);
@@ -105,13 +111,16 @@ class CredentialWatchdogExtensionTest {
 
     @DisplayName("Verify watchdog starts when properly configured, at the expected timing intervals")
     @Test
-    void start_shouldStartWatchdog(CredentialWatchdogExtension extension, ServiceExtensionContext context) {
-        when(context.getSetting(eq(WATCHDOG_PERIOD_PROPERTY), anyInt())).thenReturn(1);
-        when(context.getSetting(eq(WATCHDOG_DELAY_PROPERTY), anyInt())).thenReturn(1);
+    void start_shouldStartWatchdog(ServiceExtensionContext context, ObjectFactory factory) {
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(
+                WATCHDOG_PERIOD_PROPERTY, String.valueOf(1),
+                WATCHDOG_DELAY_PROPERTY, String.valueOf(1)
+        )));
         var executorMock = mock(ScheduledExecutorService.class);
         when(executorInstrumentationMock.instrument(any(), eq(CREDENTIAL_WATCHDOG)))
                 .thenReturn(executorMock);
         when(executorMock.isShutdown()).thenReturn(false);
+        var extension = factory.constructInstance(CredentialWatchdogExtension.class);
         extension.initialize(context);
         extension.start();
 
@@ -122,11 +131,12 @@ class CredentialWatchdogExtensionTest {
 
     @DisplayName("Verify shutting down the extension is a NOOP if the watchdog is not started")
     @Test
-    void shutdown_whenNotRunning_shouldNoop(CredentialWatchdogExtension extension, ServiceExtensionContext context) {
-        when(context.getSetting(eq(WATCHDOG_PERIOD_PROPERTY), anyInt())).thenReturn(-1); // executor will not be initialized
-        when(context.getSetting(eq(WATCHDOG_DELAY_PROPERTY), anyInt())).thenReturn(1);
-        var executorMock = mock(ScheduledExecutorService.class);
+    void shutdown_whenNotRunning_shouldNoop(ServiceExtensionContext context, ObjectFactory factory) {
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(
+                WATCHDOG_PERIOD_PROPERTY, String.valueOf(-1),
+                WATCHDOG_DELAY_PROPERTY, String.valueOf(1))));
 
+        var extension = factory.constructInstance(CredentialWatchdogExtension.class);
         extension.initialize(context);
 
         extension.shutdown();
@@ -136,9 +146,12 @@ class CredentialWatchdogExtensionTest {
 
     @DisplayName("Verify shutting down the extension stops the watchdog thread")
     @Test
-    void shutdown_whenRunning_shouldStop(CredentialWatchdogExtension extension, ServiceExtensionContext context) {
-        when(context.getSetting(eq(WATCHDOG_PERIOD_PROPERTY), anyInt())).thenReturn(1);
-        when(context.getSetting(eq(WATCHDOG_DELAY_PROPERTY), anyInt())).thenReturn(1);
+    void shutdown_whenRunning_shouldStop(ServiceExtensionContext context, ObjectFactory factory) {
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of(
+                WATCHDOG_PERIOD_PROPERTY, String.valueOf(1),
+                WATCHDOG_DELAY_PROPERTY, String.valueOf(1))));
+
+        var extension = factory.constructInstance(CredentialWatchdogExtension.class);
         var executorMock = mock(ScheduledExecutorService.class);
 
         when(executorInstrumentationMock.instrument(any(), eq(CREDENTIAL_WATCHDOG))).thenReturn(executorMock);

@@ -56,12 +56,11 @@ public class DefaultServicesExtension implements ServiceExtension {
 
     public static final String NAME = "IdentityHub Default Services Extension";
     public static final long DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS = 15 * 60 * 1000L;
-    @Setting(value = "Validity period of cached StatusList2021 credential entries in milliseconds.", defaultValue = DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS + "", type = "long")
-    public static final String REVOCATION_CACHE_VALIDITY = "edc.iam.credential.revocation.cache.validity";
-
-    @Setting(value = "Activates the JTI check: access tokens can only be used once to guard against replay attacks", defaultValue = "false", type = "boolean")
-    public static final String ACCESSTOKEN_JTI_VALIDATION_ACTIVATE = "edc.iam.accesstoken.jti.validation";
-
+    static final String ACCESSTOKEN_JTI_VALIDATION_ACTIVATE = "edc.iam.accesstoken.jti.validation";
+    @Setting(description = "Activates the JTI check: access tokens can only be used once to guard against replay attacks", defaultValue = "false", key = ACCESSTOKEN_JTI_VALIDATION_ACTIVATE)
+    private boolean activateJtiCheck;
+    @Setting(description = "Validity period of cached StatusList2021 credential entries in milliseconds.", defaultValue = DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS + "", key = "edc.iam.credential.revocation.cache.validity")
+    private long revocationCacheValidity;
     @Inject
     private TokenValidationRulesRegistry registry;
     @Inject
@@ -86,7 +85,7 @@ public class DefaultServicesExtension implements ServiceExtension {
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
         registry.addRule(DCP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
 
-        if (context.getSetting(ACCESSTOKEN_JTI_VALIDATION_ACTIVATE, false)) {
+        if (activateJtiCheck) {
             registry.addRule(DCP_ACCESS_TOKEN_CONTEXT, new JtiValidationRule(jwtValidationStore, context.getMonitor()));
         } else {
             context.getMonitor().warning("JWT Token ID (\"jti\" claim) Validation is not active. Please consider setting '%s=true' for protection against replay attacks".formatted(ACCESSTOKEN_JTI_VALIDATION_ACTIVATE));
@@ -111,7 +110,7 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Provider(isDefault = true)
     public ScopeToCriterionTransformer createScopeTransformer(ServiceExtensionContext context) {
         context.getMonitor().warning("Using the default EdcScopeToCriterionTransformer. This is not intended for production use and should be replaced " +
-                "with a specialized implementation for your dataspace");
+                                     "with a specialized implementation for your dataspace");
         return new EdcScopeToCriterionTransformer();
     }
 
@@ -119,9 +118,8 @@ public class DefaultServicesExtension implements ServiceExtension {
     public RevocationServiceRegistry createRevocationListService(ServiceExtensionContext context) {
         if (revocationService == null) {
             revocationService = new RevocationServiceRegistryImpl(context.getMonitor());
-            var validity = context.getConfig().getLong(REVOCATION_CACHE_VALIDITY, DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS);
-            revocationService.addService(StatusList2021Status.TYPE, new StatusList2021RevocationService(typeManager.getMapper(), validity));
-            revocationService.addService(BitstringStatusListStatus.TYPE, new BitstringStatusListRevocationService(typeManager.getMapper(), validity));
+            revocationService.addService(StatusList2021Status.TYPE, new StatusList2021RevocationService(typeManager.getMapper(), revocationCacheValidity));
+            revocationService.addService(BitstringStatusListStatus.TYPE, new BitstringStatusListRevocationService(typeManager.getMapper(), revocationCacheValidity));
         }
         return revocationService;
     }
