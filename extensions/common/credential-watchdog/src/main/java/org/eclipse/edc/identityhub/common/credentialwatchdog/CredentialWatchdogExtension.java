@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.common.credentialwatchdog.CredentialWatchdogExtension.NAME;
 
 @Extension(value = NAME)
@@ -37,16 +38,17 @@ public class CredentialWatchdogExtension implements ServiceExtension {
     public static final String NAME = "VerifiableCredential Watchdog Extension";
 
     public static final int DEFAULT_WATCHDOG_PERIOD = 60;
-    @Setting(value = "Period (in seconds) at which the Watchdog thread checks all stored credentials for their status. Configuring a number <=0 disables the Watchdog.",
-            type = "integer", min = 0, defaultValue = DEFAULT_WATCHDOG_PERIOD + "")
-    public static final String WATCHDOG_PERIOD_PROPERTY = "edc.iam.credential.status.check.period";
-
     public static final int DEFAULT_WATCHDOG_INITIAL_DELAY = 5;
-    @Setting(value = "Initial delay (in seconds) before the Watchdog thread begins its work.",
-            type = "integer", min = 0, defaultValue = "random number [1.." + DEFAULT_WATCHDOG_INITIAL_DELAY + "]")
-    public static final String WATCHDOG_DELAY_PROPERTY = "edc.iam.credential.status.check.delay";
     public static final String CREDENTIAL_WATCHDOG = "CredentialWatchdog";
     private final SecureRandom random = new SecureRandom();
+
+    @Setting(description = "Period (in seconds) at which the Watchdog thread checks all stored credentials for their status. Configuring a number <=0 disables the Watchdog.",
+            min = 0, defaultValue = DEFAULT_WATCHDOG_PERIOD + "", key = "edc.iam.credential.status.check.period")
+    private int watchdogPeriod;
+    @Setting(description = "Initial delay (in seconds) before the Watchdog thread begins its work.",
+            min = 0, key = "edc.iam.credential.status.check.delay", required = false)
+    private Integer initialDelay;
+
     @Inject
     private ExecutorInstrumentation executorInstrumentation;
     @Inject
@@ -56,9 +58,7 @@ public class CredentialWatchdogExtension implements ServiceExtension {
     @Inject
     private TransactionContext transactionContext;
     private ScheduledExecutorService scheduledExecutorService;
-    private Integer watchdogPeriod;
     private Monitor monitor;
-    private int initialDelay;
 
     @Override
     public String name() {
@@ -67,15 +67,14 @@ public class CredentialWatchdogExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        watchdogPeriod = context.getSetting(WATCHDOG_PERIOD_PROPERTY, DEFAULT_WATCHDOG_PERIOD);
         monitor = context.getMonitor().withPrefix(CREDENTIAL_WATCHDOG);
 
-        if (watchdogPeriod <= 0) {
-            monitor.debug(() -> "Config property '%s' was <= 0 (%d). The Credential Watchdog is disabled.".formatted(WATCHDOG_PERIOD_PROPERTY, watchdogPeriod));
-        } else {
-            initialDelay = context.getSetting(WATCHDOG_DELAY_PROPERTY, randomDelay());
+        if (watchdogPeriod > 0) {
+            initialDelay = ofNullable(initialDelay).orElseGet((this::randomDelay));
             monitor.debug(() -> "Credential watchdog will run with a delay of %d seconds, at an interval of %d seconds".formatted(initialDelay, watchdogPeriod));
             scheduledExecutorService = executorInstrumentation.instrument(Executors.newSingleThreadScheduledExecutor(), CREDENTIAL_WATCHDOG);
+        } else {
+            monitor.debug(() -> "The Credential Watchdog is disabled.");
         }
     }
 

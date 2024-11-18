@@ -35,14 +35,12 @@ import static org.eclipse.edc.identityhub.sts.accountservice.RemoteStsAccountSer
 public class RemoteStsAccountServiceExtension implements ServiceExtension {
     public static final String DEFAULT_AUTH_HEADER = "x-api-key";
     public static final String NAME = "Remote STS Account Service Extension";
-    @Setting(value = "The name of the Auth header to use. Could be 'Authorization', some custom auth header, etc.", defaultValue = DEFAULT_AUTH_HEADER)
-    public static final String AUTH_HEADER = "edc.sts.accounts.api.auth.header.name";
-    @Setting(value = "The value of the Auth header to use. Currently we only support static values, e.g. tokens etc.")
-    public static final String AUTH_HEADER_VALUE = "edc.sts.accounts.api.auth.header.value";
-
-    @Setting(value = "The base URL of the remote STS Accounts API")
-    public static final String REMOTE_STS_API_BASE_URL = "edc.sts.account.api.url";
-
+    @Setting(description = "The base URL of the remote STS Accounts API", key = "edc.sts.account.api.url")
+    private String baseUrl;
+    @Setting(description = "The name of the Auth header to use. Could be 'Authorization', some custom auth header, etc.", defaultValue = DEFAULT_AUTH_HEADER, key = "edc.sts.accounts.api.auth.header.name")
+    private String authHeader;
+    @Setting(description = "The value of the Auth header to use. Currently we only support static values, e.g. tokens etc.", key = "edc.sts.accounts.api.auth.header.value")
+    private String authHeaderValue;
     @Inject
     private EdcHttpClient edcHttpClient;
     @Inject
@@ -57,17 +55,11 @@ public class RemoteStsAccountServiceExtension implements ServiceExtension {
     public StsAccountService createAccountManager(ServiceExtensionContext context) {
         var monitor = context.getMonitor().withPrefix("STS-Account");
         monitor.info("This IdentityHub runtime is configured to manage STS Accounts remotely using the STS Accounts API. That means ParticipantContexts and STS Accounts will be synchronized automatically.");
-        return new RemoteStsAccountService(getAccountApiBaseUrl(context), edcHttpClient, getAuthHeaderSupplier(context), monitor, typeManager.getMapper());
+        return new RemoteStsAccountService(baseUrl, edcHttpClient, getAuthHeaderSupplier(context), monitor, typeManager.getMapper());
     }
 
     private @NotNull Supplier<Map<String, String>> getAuthHeaderSupplier(ServiceExtensionContext context) {
         //obtain the auth header value outside the supplier to make it fail fast
-        var authHeaderValue = context.getConfig().getString(AUTH_HEADER_VALUE);
-        return () -> Map.of(context.getConfig().getString(AUTH_HEADER, DEFAULT_AUTH_HEADER), authHeaderValue);
+        return () -> Map.of(authHeader, authHeaderValue);
     }
-
-    private String getAccountApiBaseUrl(ServiceExtensionContext context) {
-        return context.getConfig().getString(REMOTE_STS_API_BASE_URL);
-    }
-
 }
