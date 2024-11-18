@@ -99,6 +99,8 @@ public class BomSmokeTests {
                                 put("web.http.accounts.path", "/api/accounts");
                                 put("web.http.version.port", valueOf(getFreePort()));
                                 put("web.http.version.path", "/api/version");
+                                put("web.http.sts.port", valueOf(getFreePort()));
+                                put("web.http.sts.path", "/api/sts");
                                 put("edc.api.accounts.key", "password");
                             }
                         },
