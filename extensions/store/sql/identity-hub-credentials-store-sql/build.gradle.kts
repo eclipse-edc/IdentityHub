@@ -18,12 +18,12 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-store-spi"))
-    implementation(libs.edc.core.sql) // for the SqlStatements
+    implementation(libs.edc.lib.sql)
+    implementation(libs.edc.lib.util)
     implementation(libs.edc.sql.bootstrapper) // for the schema bootstrapper
     implementation(libs.edc.spi.transaction.datasource)
-    implementation(libs.edc.lib.util)
 
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
-    testImplementation(testFixtures(libs.edc.core.sql))
+    testImplementation(testFixtures(libs.edc.sql.test.fixtures))
     testImplementation(libs.edc.junit)
 }

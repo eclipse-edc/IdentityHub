@@ -26,7 +26,7 @@ dependencies {
     implementation(project(":extensions:api:identity-api:validators"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
-    implementation(libs.edc.core.jerseyproviders)
+    implementation(libs.edc.lib.jerseyproviders)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
 

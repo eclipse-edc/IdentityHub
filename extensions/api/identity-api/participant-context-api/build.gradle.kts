@@ -27,7 +27,7 @@ dependencies {
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
     implementation(libs.edc.lib.util)
-    implementation(libs.edc.core.jerseyproviders)
+    implementation(libs.edc.lib.jerseyproviders)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
 

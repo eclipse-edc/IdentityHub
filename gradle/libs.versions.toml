@@ -5,7 +5,6 @@ format.version = "1.1"
 assertj = "3.26.3"
 awaitility = "4.2.2"
 edc = "0.11.0-SNAPSHOT"
-failsafe = "3.3.2"
 jackson = "2.18.1"
 jakarta-annotation = "2.1.1"
 jersey = "3.1.9"
@@ -28,7 +27,6 @@ edc-spi-core = { module = "org.eclipse.edc:core-spi", version.ref = "edc" }
 edc-spi-jwt = { module = "org.eclipse.edc:jwt-spi", version.ref = "edc" }
 edc-spi-jwt-signer = { module = "org.eclipse.edc:jwt-signer-spi", version.ref = "edc" }
 edc-spi-http = { module = "org.eclipse.edc:http-spi", version.ref = "edc" }
-edc-spi-policy-engine = { module = "org.eclipse.edc:policy-engine-spi", version.ref = "edc" }
 edc-spi-transaction = { module = "org.eclipse.edc:transaction-spi", version.ref = "edc" }
 edc-spi-transform = { module = "org.eclipse.edc:transform-spi", version.ref = "edc" }
 edc-spi-transaction-datasource = { module = "org.eclipse.edc:transaction-datasource-spi", version.ref = "edc" }
@@ -40,14 +38,10 @@ edc-spi-token = { module = "org.eclipse.edc:token-spi", version.ref = "edc" }
 edc-spi-dcp = { module = "org.eclipse.edc:identity-trust-spi", version.ref = "edc" }
 edc-spi-vc = { module = "org.eclipse.edc:verifiable-credentials-spi", version.ref = "edc" }
 edc-core-connector = { module = "org.eclipse.edc:connector-core", version.ref = "edc" }
-edc-core-sql = { module = "org.eclipse.edc:sql-core", version.ref = "edc" }
 edc-core-token = { module = "org.eclipse.edc:token-core", version.ref = "edc" }
 edc-core-jersey = { module = "org.eclipse.edc:jersey-core", version.ref = "edc" }
-edc-core-junit = { module = "org.eclipse.edc:junit", version.ref = "edc" }
 edc-identity-did-core = { module = "org.eclipse.edc:identity-did-core", version.ref = "edc" }
 edc-identity-did-web = { module = "org.eclipse.edc:identity-did-web", version.ref = "edc" }
-edc-dcp-service = { module = "org.eclipse.edc:identity-trust-service", version.ref = "edc" }
-edc-dcp-core = { module = "org.eclipse.edc:identity-trust-core", version.ref = "edc" }
 edc-dcp-transform = { module = "org.eclipse.edc:identity-trust-transform", version.ref = "edc" }
 edc-verifiablecredentials = { module = "org.eclipse.edc:verifiable-credentials", version.ref = "edc" }
 edc-vc-jwt = { module = "org.eclipse.edc:jwt-verifiable-credentials", version.ref = "edc" }
@@ -61,27 +55,28 @@ edc-api-version = { module = "org.eclipse.edc:version-api", version.ref = "edc" 
 
 
 # EDC libs
-edc-lib-keys = { "module" = "org.eclipse.edc:keys-lib", version.ref = "edc" }
-edc-lib-query = { "module" = "org.eclipse.edc:query-lib", version.ref = "edc" }
+edc-lib-common-crypto = { module = "org.eclipse.edc:crypto-common-lib", version.ref = "edc" }
+edc-lib-http = { "module" = "org.eclipse.edc:http-lib", version.ref = "edc" }
+edc-lib-jerseyproviders = { module = "org.eclipse.edc:jersey-providers-lib", version.ref = "edc" }
+edc-lib-json = { module = "org.eclipse.edc:json-lib", version.ref = "edc" }
 edc-lib-jsonld = { "module" = "org.eclipse.edc:json-ld-lib", version.ref = "edc" }
 edc-lib-jws2020 = { module = "org.eclipse.edc:jws2020-lib", version.ref = "edc" }
+edc-lib-keys = { "module" = "org.eclipse.edc:keys-lib", version.ref = "edc" }
+edc-lib-query = { "module" = "org.eclipse.edc:query-lib", version.ref = "edc" }
+edc-lib-sql = { "module" = "org.eclipse.edc:sql-lib", version.ref = "edc" }
 edc-lib-store = { "module" = "org.eclipse.edc:store-lib", version.ref = "edc" }
-edc-lib-http = { "module" = "org.eclipse.edc:http-lib", version.ref = "edc" }
+edc-lib-token = { module = "org.eclipse.edc:token-lib", version.ref = "edc" }
 edc-lib-transform = { module = "org.eclipse.edc:transform-lib", version.ref = "edc" }
 edc-lib-util = { module = "org.eclipse.edc:util-lib", version.ref = "edc" }
-edc-lib-json = { module = "org.eclipse.edc:json-lib", version.ref = "edc" }
-edc-lib-common-crypto = { module = "org.eclipse.edc:crypto-common-lib", version.ref = "edc" }
-edc-lib-token = { module = "org.eclipse.edc:token-lib", version.ref = "edc" }
-edc-core-jerseyproviders = { module = "org.eclipse.edc:jersey-providers-lib", version.ref = "edc" }
 
 # SQL dependencies
-edc-sql-core = { module = "org.eclipse.edc:sql-core", version.ref = "edc" }
-edc-sql-pool = { module = "org.eclipse.edc:sql-pool-apache-commons", version.ref = "edc" }
 edc-sql-bootstrapper = { module = "org.eclipse.edc:sql-bootstrapper", version.ref = "edc" }
-edc-sql-transactionlocal = { module = "org.eclipse.edc:transaction-local", version.ref = "edc" }
+edc-sql-core = { module = "org.eclipse.edc:sql-core", version.ref = "edc" }
 edc-sql-ih-stsstore-sql = { module = "org.eclipse.edc:sts-client-store-sql", version.ref = "edc" }
 edc-sql-jtivdalidation = { module = "org.eclipse.edc:jti-validation-store-sql", version.ref = "edc" }
-
+edc-sql-pool = { module = "org.eclipse.edc:sql-pool-apache-commons", version.ref = "edc" }
+edc-sql-test-fixtures = { module = "org.eclipse.edc:sql-test-fixtures", version.ref = "edc" }
+edc-sql-transactionlocal = { module = "org.eclipse.edc:transaction-local", version.ref = "edc" }
 
 # EDC STS dependencies
 edc-sts-spi = { module = "org.eclipse.edc:identity-trust-sts-spi", version.ref = "edc" }
@@ -93,11 +88,9 @@ edc-sts-api-accounts = { module = "org.eclipse.edc:identity-trust-sts-accounts-a
 # Third party libs
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitility" }
-failsafe-core = { module = "dev.failsafe:failsafe", version.ref = "failsafe" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jakarta-rsApi = { module = "jakarta.ws.rs:jakarta.ws.rs-api", version.ref = "rsApi" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "jupiter" }
-mockserver-client = { module = "org.mock-server:mockserver-client-java", version.ref = "mockserver" }
 mockserver-netty = { module = "org.mock-server:mockserver-netty", version.ref = "mockserver" }
 nimbus-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus" }
 postgres = { module = "org.postgresql:postgresql", version.ref = "postgres" }
