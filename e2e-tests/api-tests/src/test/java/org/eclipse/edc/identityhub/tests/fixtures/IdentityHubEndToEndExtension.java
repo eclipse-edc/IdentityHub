@@ -76,7 +76,7 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
             var runtime = new EmbeddedRuntime(
                     "identity-hub",
                     configuration.config(),
-                    ":launcher:identityhub"
+                    ":dist:bom:identityhub-with-sts-bom"
             );
 
             return new IdentityHubEndToEndTestContext(runtime, configuration);
@@ -112,7 +112,7 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
             var runtime = new EmbeddedRuntime(
                     "control-plane",
                     cfg,
-                    ":launcher:identityhub",
+                    ":dist:bom:identityhub-with-sts-bom",
                     ":dist:bom:identityhub-feature-sql-bom"
 
             );

@@ -19,7 +19,6 @@ dependencies {
     testImplementation(testFixtures(libs.edc.testfixtures.managementapi))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
     testImplementation(libs.edc.transaction.local)
-    testImplementation(libs.edc.sql.pool)
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.sts.spi)
