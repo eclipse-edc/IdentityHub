@@ -17,12 +17,12 @@ package org.eclipse.edc.identityhub.api.participantcontext.v1.unstable;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
-import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.v1.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
@@ -33,6 +33,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -42,9 +43,11 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -96,69 +99,78 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
                 .log().ifError();
     }
 
-    @Test
-    void createParticipant_success() {
-        when(participantContextServiceMock.createParticipantContext(any())).thenReturn(ServiceResult.success());
-        when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.success());
-        var manifest = createManifest().build();
+    @Nested
+    class Create {
+        @Test
+        void shouldReturnOk_whenParticipantIsCreated() {
+            var response = new CreateParticipantContextResponse("apiKey", "clientId", "clientSecret");
+            when(participantContextServiceMock.createParticipantContext(any())).thenReturn(ServiceResult.success(response));
+            when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.success());
+            var manifest = createManifest().build();
 
-        baseRequest()
-                .contentType(ContentType.JSON)
-                .body(manifest)
-                .post()
-                .then()
-                .statusCode(204);
-        verify(participantContextServiceMock).createParticipantContext(any(ParticipantManifest.class));
-    }
+            baseRequest()
+                    .accept(JSON)
+                    .contentType(JSON)
+                    .body(manifest)
+                    .post()
+                    .then()
+                    .statusCode(200)
+                    .contentType(JSON)
+                    .body("apiKey", is("apiKey"))
+                    .body("clientId", is("clientId"))
+                    .body("clientSecret", is("clientSecret"));
+            verify(participantContextServiceMock).createParticipantContext(any(ParticipantManifest.class));
+        }
 
-    @Test
-    void createParticipant_invalidManifest() {
-        var manifest = createManifest()
-                .participantId(null)
-                .build();
-        when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.failure(emptyList()));
+        @Test
+        void shouldReturnBadRequest_whenValidationFails() {
+            var manifest = createManifest()
+                    .participantId(null)
+                    .build();
+            when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.failure(emptyList()));
 
-        baseRequest()
-                .contentType(ContentType.JSON)
-                .body(manifest)
-                .post()
-                .then()
-                .statusCode(400);
+            baseRequest()
+                    .contentType(JSON)
+                    .body(manifest)
+                    .post()
+                    .then()
+                    .statusCode(400);
 
-        verifyNoInteractions(participantContextServiceMock);
-    }
+            verifyNoInteractions(participantContextServiceMock);
+        }
 
-    @Test
-    void createParticipant_invalidKeyDescriptor() {
-        var manifest = createManifest()
-                .key(createKey().publicKeyPem(null).publicKeyJwk(null).keyGeneratorParams(null).build())
-                .build();
-        when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.failure(emptyList()));
+        @Test
+        void shouldReturnBadRequest_whenInvalidKeyDescriptor() {
+            var manifest = createManifest()
+                    .key(createKey().publicKeyPem(null).publicKeyJwk(null).keyGeneratorParams(null).build())
+                    .build();
+            when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.failure(emptyList()));
 
-        baseRequest()
-                .contentType(ContentType.JSON)
-                .body(manifest)
-                .post()
-                .then()
-                .statusCode(400);
+            baseRequest()
+                    .contentType(JSON)
+                    .body(manifest)
+                    .post()
+                    .then()
+                    .statusCode(400);
 
-        verifyNoInteractions(participantContextServiceMock);
-    }
+            verifyNoInteractions(participantContextServiceMock);
+        }
 
-    @Test
-    void createParticipant_alreadyExists() {
-        when(participantContextServiceMock.createParticipantContext(any())).thenReturn(ServiceResult.conflict("already exists"));
-        var manifest = createManifest().build();
-        when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.success());
+        @Test
+        void shouldReturnConflict_whenAlreadyExists() {
+            when(participantContextServiceMock.createParticipantContext(any())).thenReturn(ServiceResult.conflict("already exists"));
+            var manifest = createManifest().build();
+            when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.success());
 
-        baseRequest()
-                .contentType(ContentType.JSON)
-                .body(manifest)
-                .post()
-                .then()
-                .statusCode(409);
+            baseRequest()
+                    .contentType(JSON)
+                    .body(manifest)
+                    .post()
+                    .then()
+                    .statusCode(409);
 
-        verify(participantContextServiceMock).createParticipantContext(any(ParticipantManifest.class));
+            verify(participantContextServiceMock).createParticipantContext(any(ParticipantManifest.class));
+        }
     }
 
     @Test
