@@ -228,6 +228,10 @@ paths:
         "200":
           description: "The ParticipantContext was created successfully, its API token\
             \ is returned in the response body."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateParticipantContextResponse"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1496,6 +1500,15 @@ components:
           type: string
       discriminator:
         propertyName: edctype
+    CreateParticipantContextResponse:
+      type: object
+      properties:
+        apiKey:
+          type: string
+        clientId:
+          type: string
+        clientSecret:
+          type: string
     CredentialStatus:
       type: object
       properties:
