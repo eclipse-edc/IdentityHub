@@ -25,13 +25,13 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 @OpenAPIDefinition(info = @Info(description = "This is the Identity API for manipulating ParticipantContexts", title = "ParticipantContext Management API", version = "1"))
 @Tag(name = "Participant Context")
@@ -42,7 +42,8 @@ public interface ParticipantContextApi {
             operationId = "createParticipant",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was created successfully, its API token is returned in the response body."),
+                    @ApiResponse(responseCode = "200", description = "The ParticipantContext was created successfully, its API token is returned in the response body.",
+                            content = @Content(schema = @Schema(implementation = CreateParticipantContextResponse.class))),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -51,7 +52,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Map<String, Object> createParticipant(ParticipantManifest manifest);
+    CreateParticipantContextResponse createParticipant(ParticipantManifest manifest);
 
 
     @Operation(description = "Gets ParticipantContexts by ID.",

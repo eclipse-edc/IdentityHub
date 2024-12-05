@@ -18,6 +18,7 @@ import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -28,9 +29,8 @@ import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.eclipse.edc.spi.result.ServiceResult.conflict;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
@@ -70,24 +70,24 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     @Override
-    public ServiceResult<Map<String, Object>> createParticipantContext(ParticipantManifest manifest) {
+    public ServiceResult<CreateParticipantContextResponse> createParticipantContext(ParticipantManifest manifest) {
         return transactionContext.execute(() -> {
             if (didResourceStore.findById(manifest.getDid()) != null) {
                 return ServiceResult.conflict("Another participant with the same DID '%s' already exists.".formatted(manifest.getDid()));
             }
-            var response = new HashMap<String, Object>();
             var context = convert(manifest);
-            var res = createParticipantContext(context)
-                    .compose(u -> createTokenAndStoreInVault(context)).onSuccess(k -> response.put("apiKey", k))
-                    .compose(apiKey -> stsAccountProvisioner.create(manifest))
-                    .onSuccess(accountInfo -> {
-                        if (accountInfo != null) {
-                            response.put("clientId", accountInfo.clientId());
-                            response.put("clientSecret", accountInfo.clientSecret());
-                        }
-                    })
+
+            return createParticipantContext(context)
+                    .compose(this::createTokenAndStoreInVault)
+                    .compose((Function<String, ServiceResult<CreateParticipantContextResponse>>) apiKey -> stsAccountProvisioner.create(manifest)
+                            .map(accountInfo -> {
+                                if (accountInfo == null) {
+                                    return new CreateParticipantContextResponse(apiKey, null, null);
+                                } else {
+                                    return new CreateParticipantContextResponse(apiKey, accountInfo.clientId(), accountInfo.clientSecret());
+                                }
+                            }))
                     .onSuccess(apiToken -> observable.invokeForEach(l -> l.created(context, manifest)));
-            return res.map(u -> response);
         });
     }
 
@@ -160,11 +160,9 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
 
-    private ServiceResult<Void> createParticipantContext(ParticipantContext context) {
-        var storeRes = participantContextStore.create(context);
-        return storeRes.succeeded() ?
-                success() :
-                fromFailure(storeRes);
+    private ServiceResult<ParticipantContext> createParticipantContext(ParticipantContext context) {
+        var result = participantContextStore.create(context);
+        return ServiceResult.from(result).map(it -> context);
     }
 
     private ParticipantContext findByIdInternal(String participantId) {

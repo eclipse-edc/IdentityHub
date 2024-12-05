@@ -17,9 +17,9 @@ package org.eclipse.edc.identityhub.participantcontext;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
-import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.AccountInfo;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -45,6 +45,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -62,15 +63,15 @@ class ParticipantContextServiceImplTest {
     private final ParticipantContextStore participantContextStore = mock();
     private final ParticipantContextObservable observableMock = mock();
     private final DidResourceStore didResourceStore = mock();
-    private final StsAccountProvisioner provisionerMock = mock();
+    private final StsAccountProvisioner stsAccountProvisioner = mock();
     private ParticipantContextServiceImpl participantContextService;
 
     @BeforeEach
     void setUp() {
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock, provisionerMock);
-        when(provisionerMock.create(any())).thenReturn(ServiceResult.success());
+        participantContextService = new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock, stsAccountProvisioner);
+        when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success());
     }
 
     @ParameterizedTest(name = "isActive: {0}")
@@ -92,8 +93,12 @@ class ParticipantContextServiceImplTest {
                         .publicKeyJwk(null)
                         .publicKeyPem(pem)
                         .build()).build();
-        assertThat(participantContextService.createParticipantContext(ctx))
-                .isSucceeded();
+
+        assertThat(participantContextService.createParticipantContext(ctx)).isSucceeded().satisfies(response -> {
+            assertThat(response.apiKey()).isNotBlank();
+            assertThat(response.clientId()).isNull();
+            assertThat(response.clientSecret()).isNull();
+        });
 
         verify(participantContextStore).create(any());
         verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
@@ -101,6 +106,35 @@ class ParticipantContextServiceImplTest {
         verify(observableMock).invokeForEach(any());
     }
 
+    @ParameterizedTest(name = "isActive: {0}")
+    @ValueSource(booleans = { true, false })
+    void shouldCreateParticipantContext_withAccountInfo(boolean isActive) {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success(new AccountInfo("clientId", "clientSecret")));
+
+        var pem = """
+                -----BEGIN PUBLIC KEY-----
+                MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE25DvKuU5+gvMdKkyiDDIsx3tcuPX
+                jgVyAjs1JcfFtvi9I0FemuqymDTu3WWdYmdaJQMJJx3qwEJGTVTxcKGtEg==
+                -----END PUBLIC KEY-----
+                """;
+
+        var ctx = createManifest()
+                .active(isActive)
+                .key(createKey()
+                        .publicKeyJwk(null)
+                        .publicKeyPem(pem)
+                        .build()).build();
+
+        var result = participantContextService.createParticipantContext(ctx);
+
+        assertThat(result).isSucceeded().satisfies(response -> {
+            assertThat(response.apiKey()).isNotBlank();
+            assertThat(response.clientId()).isEqualTo("clientId");
+            assertThat(response.clientSecret()).isEqualTo("clientSecret");
+        });
+    }
 
     @ParameterizedTest(name = "isActive: {0}")
     @ValueSource(booleans = { true, false })
@@ -161,7 +195,7 @@ class ParticipantContextServiceImplTest {
         var ctx = createManifest().build();
         assertThat(participantContextService.createParticipantContext(ctx))
                 .isFailed()
-                .satisfies(f -> Assertions.assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT));
+                .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT));
         verify(participantContextStore).create(any());
         verifyNoMoreInteractions(vault, participantContextStore, observableMock);
 
@@ -199,8 +233,8 @@ class ParticipantContextServiceImplTest {
         assertThat(participantContextService.getParticipantContext("test-id"))
                 .isFailed()
                 .satisfies(f -> {
-                    Assertions.assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
-                    Assertions.assertThat(f.getFailureDetail()).isEqualTo("foo");
+                    assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
+                    assertThat(f.getFailureDetail()).isEqualTo("foo");
                 });
 
         verify(participantContextStore).findById(anyString());
@@ -213,8 +247,8 @@ class ParticipantContextServiceImplTest {
         assertThat(participantContextService.getParticipantContext("test-id"))
                 .isFailed()
                 .satisfies(f -> {
-                    Assertions.assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
-                    Assertions.assertThat(f.getFailureDetail()).isEqualTo("foo bar");
+                    assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
+                    assertThat(f.getFailureDetail()).isEqualTo("foo bar");
                 });
 
         verify(participantContextStore).findById(anyString());
@@ -244,8 +278,8 @@ class ParticipantContextServiceImplTest {
         assertThat(participantContextService.deleteParticipantContext("test-id"))
                 .isFailed()
                 .satisfies(f -> {
-                    Assertions.assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
-                    Assertions.assertThat(f.getFailureDetail()).isEqualTo("foo bar");
+                    assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND);
+                    assertThat(f.getFailureDetail()).isEqualTo("foo bar");
                 });
 
         verify(observableMock, times(2)).invokeForEach(any()); //deleting
@@ -333,7 +367,7 @@ class ParticipantContextServiceImplTest {
 
         assertThat(participantContextService.query(QuerySpec.max()))
                 .isSucceeded()
-                .satisfies(res -> Assertions.assertThat(res).hasSize(3));
+                .satisfies(res -> assertThat(res).hasSize(3));
 
         verify(participantContextStore).query(any());
         verifyNoMoreInteractions(vault);

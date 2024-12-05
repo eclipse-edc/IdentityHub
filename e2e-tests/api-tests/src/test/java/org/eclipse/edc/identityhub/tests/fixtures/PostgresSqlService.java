@@ -73,7 +73,7 @@ public class PostgresSqlService {
     }
 
     private void createDatabase() {
-        var postgres = new PostgresqlLocalInstance(PostgresqlEndToEndInstance.USER, PostgresqlEndToEndInstance.PASSWORD, baseJdbcUrl(hostPort), dbName);
-        postgres.createDatabase();
+        var postgres = new PostgresqlLocalInstance(PostgresqlEndToEndInstance.USER, PostgresqlEndToEndInstance.PASSWORD, baseJdbcUrl(hostPort));
+        postgres.createDatabase(dbName);
     }
 }

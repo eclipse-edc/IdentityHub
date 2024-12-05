@@ -89,7 +89,9 @@ public class IdentityHubEndToEndTestContext {
                         .build())
                 .build();
         var srv = runtime.getService(ParticipantContextService.class);
-        return srv.createParticipantContext(manifest).orElseThrow(f -> new EdcException(f.getFailureDetail())).get("apiKey").toString();
+        return srv.createParticipantContext(manifest)
+                .orElseThrow(f -> new EdcException(f.getFailureDetail()))
+                .apiKey();
     }
 
 

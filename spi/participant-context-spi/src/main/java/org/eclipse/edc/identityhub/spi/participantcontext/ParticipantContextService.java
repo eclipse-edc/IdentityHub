@@ -14,13 +14,13 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext;
 
+import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -28,14 +28,13 @@ import java.util.function.Consumer;
  */
 public interface ParticipantContextService {
 
-
     /**
      * Creates a new participant context from a manifest. If one with the same ID exists, a failure is returned.
      *
      * @param manifest The new participant context
      * @return success if created, or a failure if already exists.
      */
-    ServiceResult<Map<String, Object>> createParticipantContext(ParticipantManifest manifest);
+    ServiceResult<CreateParticipantContextResponse> createParticipantContext(ParticipantManifest manifest);
 
     /**
      * Fetches the {@link ParticipantContext} by ID.

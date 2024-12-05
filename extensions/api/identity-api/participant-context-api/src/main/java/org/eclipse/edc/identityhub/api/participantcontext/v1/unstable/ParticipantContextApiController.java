@@ -32,6 +32,7 @@ import org.eclipse.edc.identityhub.api.v1.validation.ParticipantManifestValidato
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -40,7 +41,6 @@ import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
@@ -64,7 +64,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @POST
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-    public Map<String, Object> createParticipant(ParticipantManifest manifest) {
+    public CreateParticipantContextResponse createParticipant(ParticipantManifest manifest) {
         participantManifestValidator.validate(manifest).orElseThrow(ValidationFailureException::new);
         return participantContextService.createParticipantContext(manifest)
                 .orElseThrow(exceptionMapper(ParticipantManifest.class, manifest.getParticipantId()));
