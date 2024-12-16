@@ -48,8 +48,6 @@ public class LocalDidPublisherExtension implements ServiceExtension {
             .contextAlias(IdentityHubApiContext.IH_DID)
             .defaultPath(DEFAULT_DID_PATH)
             .defaultPort(DEFAULT_DID_PORT)
-            .useDefaultContext(false)
-            .name("DID:WEB Endpoint API")
             .build();
     @Inject
     private DidDocumentPublisherRegistry registry;
