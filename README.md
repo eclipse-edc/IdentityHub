@@ -71,7 +71,7 @@ java -Dweb.http.presentation.port=10001 \
 ```
 
 this will expose the Presentation API at `http://localhost:10001/api/presentation` and the Identity API
-at `http://localhost:8191/api/identity`. More information about IdentityHub's APIs can be
+at `http://localhost:8182/api/identity`. More information about IdentityHub's APIs can be
 found [here](docs/developer/architecture/identityhub-apis.md)
 
 ### Create the Docker image
