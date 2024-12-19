@@ -20,35 +20,34 @@ import org.eclipse.edc.identithub.spi.did.DidWebParser;
 import org.eclipse.edc.identithub.spi.did.events.DidDocumentObservable;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
+import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
-import org.eclipse.edc.runtime.metamodel.annotation.SettingContext;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.runtime.metamodel.annotation.Settings;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.web.spi.WebServer;
 import org.eclipse.edc.web.spi.WebService;
-import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
-import org.eclipse.edc.web.spi.configuration.WebServiceSettings;
+import org.eclipse.edc.web.spi.configuration.PortMapping;
+import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 
 import java.time.Clock;
 
 import static org.eclipse.edc.identityhub.publisher.did.local.LocalDidPublisherExtension.NAME;
+import static org.eclipse.edc.identityhub.spi.IdentityHubApiContext.IH_DID;
 
 @Extension(value = NAME)
 public class LocalDidPublisherExtension implements ServiceExtension {
+
     public static final String NAME = "Local DID publisher extension";
-    @SettingContext("DID API context setting key")
-    public static final String DID_CONTEXT_KEY = "web.http." + IdentityHubApiContext.IH_DID;
     private static final String DEFAULT_DID_PATH = "/";
     private static final int DEFAULT_DID_PORT = 10100;
-    public static final WebServiceSettings SETTINGS = WebServiceSettings.Builder.newInstance()
-            .apiConfigKey(DID_CONTEXT_KEY)
-            .contextAlias(IdentityHubApiContext.IH_DID)
-            .defaultPath(DEFAULT_DID_PATH)
-            .defaultPort(DEFAULT_DID_PORT)
-            .build();
+
+    @Configuration
+    private DidApiConfiguration apiConfiguration;
+
     @Inject
     private DidDocumentPublisherRegistry registry;
     @Inject
@@ -56,10 +55,7 @@ public class LocalDidPublisherExtension implements ServiceExtension {
     @Inject
     private WebService webService;
     @Inject
-    private WebServiceConfigurer configurator;
-    @Inject
-    private WebServer webServer;
-
+    private PortMappingRegistry portMappingRegistry;
     /**
      * Allow extensions to contribute their own DID WEB parser, in case some special url modification is needed.
      */
@@ -69,6 +65,7 @@ public class LocalDidPublisherExtension implements ServiceExtension {
     private Clock clock;
     @Inject
     private EventRouter eventRouter;
+
     private DidDocumentObservableImpl observable;
 
     @Override
@@ -78,7 +75,7 @@ public class LocalDidPublisherExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        configurator.configure(context.getConfig(DID_CONTEXT_KEY), webServer, SETTINGS);
+        portMappingRegistry.register(new PortMapping(IH_DID, apiConfiguration.port(), apiConfiguration.path()));
         var localPublisher = new LocalDidPublisher(didDocumentObservable(), didResourceStore, context.getMonitor());
         registry.addPublisher(DidConstants.DID_WEB_METHOD, localPublisher);
         webService.registerResource(IdentityHubApiContext.IH_DID, new DidWebController(context.getMonitor(), didResourceStore, getDidParser()));
@@ -95,5 +92,15 @@ public class LocalDidPublisherExtension implements ServiceExtension {
 
     private DidWebParser getDidParser() {
         return didWebParser != null ? didWebParser : new DidWebParser();
+    }
+
+    @Settings
+    record DidApiConfiguration(
+            @Setting(key = "web.http." + IH_DID + ".port", description = "Port for " + IH_DID + " api context", defaultValue = DEFAULT_DID_PORT + "")
+            int port,
+            @Setting(key = "web.http." + IH_DID + ".path", description = "Path for " + IH_DID + " api context", defaultValue = DEFAULT_DID_PATH)
+            String path
+    ) {
+
     }
 }

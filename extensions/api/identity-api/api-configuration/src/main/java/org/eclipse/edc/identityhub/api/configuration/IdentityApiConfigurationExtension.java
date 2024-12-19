@@ -18,48 +18,43 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.runtime.metamodel.annotation.Settings;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.apiversion.ApiVersionService;
 import org.eclipse.edc.spi.system.apiversion.VersionRecord;
 import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.web.spi.WebServer;
-import org.eclipse.edc.web.spi.WebService;
-import org.eclipse.edc.web.spi.configuration.WebServiceConfigurer;
+import org.eclipse.edc.web.spi.configuration.PortMapping;
+import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.identityhub.api.configuration.IdentityApiConfigurationExtension.NAME;
+import static org.eclipse.edc.identityhub.spi.IdentityHubApiContext.IDENTITY;
 
 @Extension(value = NAME)
 public class IdentityApiConfigurationExtension implements ServiceExtension {
 
-
     public static final String NAME = "Identity API Extension";
     private static final String API_VERSION_JSON_FILE = "identity-api-version.json";
-    @Inject
-    private WebService webService;
-    @Inject
-    private ParticipantContextService participantContextService;
-    @Inject
-    private WebServiceConfigurer configurer;
-    @Inject
-    private WebServer webServer;
-    @Inject
-    private Vault vault;
+
+    @Configuration
+    private IdentityApiConfiguration apiConfiguration;
+
     @Inject
     private TypeManager typeManager;
-
+    @Inject
+    private PortMappingRegistry portMappingRegistry;
     @Inject
     private ApiVersionService apiVersionService;
 
@@ -68,9 +63,10 @@ public class IdentityApiConfigurationExtension implements ServiceExtension {
         return NAME;
     }
 
-
     @Override
     public void initialize(ServiceExtensionContext context) {
+        portMappingRegistry.register(new PortMapping(IDENTITY, apiConfiguration.port(), apiConfiguration.path()));
+
         registerVersionInfo(getClass().getClassLoader());
     }
 
@@ -93,7 +89,18 @@ public class IdentityApiConfigurationExtension implements ServiceExtension {
         }
     }
 
+    @Settings
+    record IdentityApiConfiguration(
+            @Setting(key = "web.http." + IDENTITY + ".port", description = "Port for " + IDENTITY + " api context", defaultValue = 15151 + "")
+            int port,
+            @Setting(key = "web.http." + IDENTITY + ".path", description = "Path for " + IDENTITY + " api context", defaultValue = "/api/identity")
+            String path
+    ) {
+
+    }
+
     private static class AllowAllAuthorizationService implements AuthorizationService {
+
         @Override
         public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<? extends ParticipantResource> resourceClass) {
             return ServiceResult.success();
@@ -103,5 +110,6 @@ public class IdentityApiConfigurationExtension implements ServiceExtension {
         public void addLookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> checkFunction) {
 
         }
+
     }
 }
