@@ -22,6 +22,9 @@ dependencies {
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.sts.spi)
+
+    testCompileOnly(project(":dist:bom:identityhub-with-sts-bom"))
+    testCompileOnly(project(":dist:bom:identityhub-feature-sql-bom"))
 }
 
 edcBuild {

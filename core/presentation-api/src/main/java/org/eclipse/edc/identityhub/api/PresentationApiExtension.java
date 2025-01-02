@@ -25,8 +25,11 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.Verifiabl
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
 import org.eclipse.edc.jsonld.spi.JsonLd;
+import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.runtime.metamodel.annotation.Settings;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -39,6 +42,8 @@ import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.jersey.providers.jsonld.JerseyJsonLdInterceptor;
 import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
+import org.eclipse.edc.web.spi.configuration.PortMapping;
+import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -55,6 +60,10 @@ public class PresentationApiExtension implements ServiceExtension {
     public static final String NAME = "Presentation API Extension";
     public static final String PRESENTATION_SCOPE = "presentation-scope";
     private static final String API_VERSION_JSON_FILE = "presentation-api-version.json";
+
+    @Configuration
+    private PresentationApiConfiguration apiConfiguration;
+
     @Inject
     private TypeTransformerRegistry typeTransformer;
     @Inject
@@ -75,6 +84,8 @@ public class PresentationApiExtension implements ServiceExtension {
     private ParticipantContextService participantContextService;
     @Inject
     private ApiVersionService apiVersionService;
+    @Inject
+    private PortMappingRegistry portMappingRegistry;
 
     @Override
     public String name() {
@@ -83,16 +94,15 @@ public class PresentationApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        // setup validator
+        var contextString = determineApiContext(context);
+
+        portMappingRegistry.register(new PortMapping(contextString, apiConfiguration.port(), apiConfiguration.path()));
         validatorRegistry.register(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY, new PresentationQueryValidator());
-
-
-        var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, accessTokenVerifier, verifiablePresentationService, context.getMonitor(), participantContextService);
 
         var jsonLdMapper = typeManager.getMapper(JSON_LD);
 
-        var contextString = determineApiContext(context);
 
+        var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, accessTokenVerifier, verifiablePresentationService, context.getMonitor(), participantContextService);
         webService.registerResource(contextString, new ObjectMapperProvider(jsonLdMapper));
         webService.registerResource(contextString, new JerseyJsonLdInterceptor(jsonLd, jsonLdMapper, PRESENTATION_SCOPE));
         webService.registerResource(contextString, controller);
@@ -128,6 +138,16 @@ public class PresentationApiExtension implements ServiceExtension {
         } catch (IOException e) {
             throw new EdcException(e);
         }
+    }
+
+    @Settings
+    record PresentationApiConfiguration(
+            @Setting(key = "web.http." + PRESENTATION + ".port", description = "Port for " + PRESENTATION + " api context", defaultValue = 13131 + "")
+            int port,
+            @Setting(key = "web.http." + PRESENTATION + ".path", description = "Path for " + PRESENTATION + " api context", defaultValue = "/api/presentation")
+            String path
+    ) {
+
     }
 
 }
