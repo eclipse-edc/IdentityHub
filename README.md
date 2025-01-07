@@ -66,8 +66,8 @@ java -Dweb.http.presentation.port=10001 \
      -Dweb.http.path="/api" \
      -Dweb.http.identity.port=8182 \
      -Dweb.http.identity.path="/api/identity" \
-     -Dedc.ih.api.superuser.key="c3VwZXItdXNlcgo=c3VwZXItc2VjcmV0Cg==" \
-     -Dedc.api.accounts.key="bmV3LXVzZXI=\nbmV3LXNlY3JldA==" \
+     -Dedc.ih.api.superuser.key="demo-admin-key" \
+     -Dedc.api.accounts.key="demo-accounts-key" \
      -jar launcher/identityhub/build/libs/identity-hub.jar
 ```
 
