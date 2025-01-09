@@ -26,9 +26,10 @@
 ### 2.1 Authentication of ServicePrincipals
 
 When Identity API requests are received by the web server, it (or a related function) must be able to derive
-the `ServicePrincipal` from the request context. In other words, it must be able to determine which participant sent the
-request.
-For that, the Identity API should employ methods that are widely known, such as Basic Auth or API keys.
+the `ServicePrincipal` from the request context. The `ServicePrincipal` is the internal representation of a user. In
+IdentityHub, users are called "participant contexts". In other words, IdentityHub must be able to determine which
+participant sent the request.
+For that, the Identity API employs methods that are widely known, such as Basic Auth or API keys.
 
 Authentication (=user identification) should happen before the request is matched onto a controller method, so that the
 handling controller method can inject the `ServicePrincipal` using standard JAX-RS features:
@@ -44,7 +45,7 @@ public void someEndpoint(@Context SecurityContext securityContext) {
 ```
 
 Note that if the `ServicePrincipal` cannot be determined, the request **must** be rejected with a HTTP 401 or HTTP 404
-error code _before_ it reaches the controller.
+error code _before_ it reaches the controller. `@Context` is a standard JAX-RS annotation.
 
 ### 2.2 Authorization of requests
 
@@ -84,7 +85,7 @@ During request ingress, the API key is used to lookup the service principal by p
 - perform database lookup to obtain the `ServicePrincipal`
 - if no result, abort with HTTP 401
 - check that the `ServicePrincipal`'s credential matches the API key
-- if mismatch, abort with HTTP 401
+- if mismatched, abort with HTTP 401
 
 After the service principal is authenticated, it is attached to the request's `SecurityContext` to allow controllers to
 inject it for further processing.
@@ -223,15 +224,15 @@ pair resources or all participants, but is denied access to everything else.
 
 Out-of-the-box, IdentityHub comes with only one single built-in role called `"admin"`. This role is comparable to
 the `root` user on a Unix system. By default, there is one service principal that has the `"admin"` role, which is the
-super-user. While the service principal's name is "super-user", the role it assumes is `"admin"`. Other service
+super-user. While the service principal's name is arbitrary, the role it assumes is `"admin"`. Other service
 principals can assume the `"admin"` role.
 
 > Note: the name `"admin"` is available via a constant `ServicePrincipal.ROLE_ADMIN`
 
-All other service principals (ie. `ParticipantContexts`) have no roles assigned to them when they are created.
+All other service principals (i.e. `ParticipantContexts`) have no roles assigned to them when they are created.
 
-Built-in roles cannot be changed and they cannot be configured, they are essentially hard-wired into the code base. Some
-endpoints are accessible _only_ to the super-user (i.e. the `"admin"` role). The authorization decision is made based on
+Built-in roles cannot be changed, and they cannot be configured, they are essentially hard-wired into the code base.
+Some endpoints are accessible _only_ to principals with the `"admin"` role. The authorization decision is made based on
 the `jakarta.annotation.security.RolesAllowed` annotation on the controller method, even before the request hits the
 controller, therefor this value must be compile-time constant.
 
@@ -248,6 +249,8 @@ public String createParticipant(ParticipantManifest manifest) {
 
 > Using static role matching for the super-user was a conscientious architectural decision, as the business value of
 > configuring the name of the `"admin"` role was deemed minimal.
+
+Out-of-the-box, IdentityHub does **not have** any users/participant contexts/principals configured.
 
 ### 5.2 Extensibility
 
@@ -273,7 +276,8 @@ associated with each role. There is no rule engine or complicated permissions mo
 achieved by simply extending the `AuthorizationService`.
 There are several ways to implement RBAC:
 
-- based on the resource type
+- based on the resource type. Here, the principal with the `"security-admin"` role is granted access to objects of type
+  `KeyPairResource`:
   ```java
   public class ResourceTypeBasedAuthService implements AuthorizationService {
     @Override
@@ -286,7 +290,8 @@ There are several ways to implement RBAC:
   }
   ```
 
-- based on the individual resource ("by-ID")
+- based on the individual resource ("by-ID"). Here, the principal with the `"security-admin"` role is granted access to
+  objects with white-listed IDs:
 
   ```java
     public class ResourceInstanceBasedAuthService implements AuthorizationService {
