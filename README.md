@@ -91,7 +91,6 @@ docker run --rm --name identity-hub \
             -e "WEB_HTTP_PORT=8181" \
             -e "WEB_HTTP_IDENTITY_PORT=8182" \
             -e "WEB_HTTP_IDENTITY_PATH=/api/identity" \
-            -e "EDC_IH_API_SUPERUSER_KEY=c3VwZXItdXNlcgo=c3VwZXItc2VjcmV0Cg==" \
             identity-hub:latest
 ```
 
