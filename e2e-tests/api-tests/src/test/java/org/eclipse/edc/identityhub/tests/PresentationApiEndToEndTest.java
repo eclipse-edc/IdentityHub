@@ -268,7 +268,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.JWT, cred))
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -279,7 +279,7 @@ public class PresentationApiEndToEndTest {
             var cred2 = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE_2, VerifiableCredential.class);
             var res2 = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE_2, CredentialFormat.JWT, cred2))
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT, cred2))
                     .issuerId("https://example.edu/issuers/12345")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -321,8 +321,7 @@ public class PresentationApiEndToEndTest {
             assertThat(response)
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
                     .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
-                    .hasEntrySatisfying("presentation", jsonValue -> assertThat(extractCredentials(((JsonString) jsonValue).getString())).isEmpty());
-
+                    .doesNotContainKey("presentation");
         }
 
         @Test
@@ -331,7 +330,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.JWT, cred))
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -394,7 +393,7 @@ public class PresentationApiEndToEndTest {
             // create the credential in the store
             var res = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.from(vcStateCode))
-                    .credential(new VerifiableCredentialContainer(vcContent, CredentialFormat.JWT, cred))
+                    .credential(new VerifiableCredentialContainer(vcContent, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -421,12 +420,7 @@ public class PresentationApiEndToEndTest {
             assertThat(response)
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
                     .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
-                    .hasEntrySatisfying("presentation", jsonValue -> {
-                        assertThat(jsonValue.getValueType()).isEqualTo(JsonValue.ValueType.STRING);
-                        var vpToken = ((JsonString) jsonValue).getString();
-                        assertThat(vpToken).isNotNull();
-                        assertThat(extractCredentials(vpToken)).isEmpty(); // credential should be filtered out
-                    });
+                    .doesNotContainKey("presentation");
 
         }
 
@@ -438,7 +432,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.JWT, cred))
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -467,7 +461,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.JWT, cred))
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)

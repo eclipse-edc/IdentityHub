@@ -36,8 +36,8 @@ public interface PresentationCreatorRegistry {
      * Creates a VerifiablePresentation based on a list of verifiable credentials and a credential format. How the presentation will be represented
      * depends on the format. JWT-VPs will be represented as {@link String}, LDP-VPs will be represented as {@link jakarta.json.JsonObject}.
      *
-     * @param <T>                  The type of the presentation. Can be {@link String}, when format is {@link CredentialFormat#JWT}, or {@link jakarta.json.JsonObject},
-     *                             when the format is {@link CredentialFormat#JSON_LD}
+     * @param <T>                  The type of the presentation. Can be {@link String}, when format is {@link CredentialFormat#VC1_0_JWT}, or {@link jakarta.json.JsonObject},
+     *                             when the format is {@link CredentialFormat#VC1_0_LD}
      * @param participantContextId The ID of the {@code ParticipantContext} who creates the VP
      * @param credentials          The list of verifiable credentials to include in the presentation.
      * @param format               The format for the presentation.

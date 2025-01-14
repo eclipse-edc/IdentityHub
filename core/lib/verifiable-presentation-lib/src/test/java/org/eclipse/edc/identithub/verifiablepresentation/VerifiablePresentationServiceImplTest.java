@@ -33,8 +33,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.JSON_LD;
-import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.JWT;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_LD;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.TestData.EMPTY_LDP_VP;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.TestData.JWT_VP;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.TestData.LDP_VP_WITH_PROOF;
@@ -56,114 +57,73 @@ class VerifiablePresentationServiceImplTest {
     private final Monitor monitor = mock();
     private final PresentationCreatorRegistry registry = mock();
     private final ObjectMapper mapper = JacksonJsonLd.createObjectMapper();
-    private VerifiablePresentationServiceImpl presentationGenerator;
+    private VerifiablePresentationServiceImpl presentationService;
 
     @Test
     void generate_noCredentials() {
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), anyList(), eq(JSON_LD), any())).thenReturn(jsonObject(EMPTY_LDP_VP));
-        presentationGenerator = new VerifiablePresentationServiceImpl(JSON_LD, registry, monitor);
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), anyList(), eq(VC1_0_LD), any())).thenReturn(jsonObject(EMPTY_LDP_VP));
+        presentationService = new VerifiablePresentationServiceImpl(registry, monitor);
         List<VerifiableCredentialContainer> ldpVcs = List.of();
 
-        var result = presentationGenerator.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, ldpVcs, null, null);
+        var result = presentationService.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, ldpVcs, null, null);
         assertThat(result).isSucceeded().matches(pr -> pr.getPresentation().isEmpty(), "VP Tokens should be empty");
     }
 
     @Test
-    void generate_defaultFormatLdp_containsOnlyLdpVc() {
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JSON_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
-        presentationGenerator = new VerifiablePresentationServiceImpl(JSON_LD, registry, monitor);
+    void generate_containsOnlyLdpVc() {
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
+        presentationService = new VerifiablePresentationServiceImpl(registry, monitor);
 
-        var credentials = List.of(createCredential(JSON_LD), createCredential(JSON_LD));
-        var result = presentationGenerator.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, credentials, null, null);
+        var credentials = List.of(createCredential(VC1_0_LD), createCredential(VC1_0_LD));
+        var result = presentationService.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, credentials, null, null);
 
         assertThat(result).isSucceeded();
         verify(registry).createPresentation(
                 eq(TEST_PARTICIPANT_CONTEXT_ID),
                 argThat(argument -> argument.size() == 2),
-                eq(JSON_LD),
+                eq(VC1_0_LD),
                 argThat(additional -> additional.get("types") instanceof List<?> typesList && typesList.contains("VerifiablePresentation")));
     }
 
     @Test
-    void generate_defaultFormatLdp_mixedVcs() {
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JSON_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JWT), any())).thenReturn(JWT_VP);
-        presentationGenerator = new VerifiablePresentationServiceImpl(JSON_LD, registry, monitor);
+    void generate_mixedVcs() {
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_JWT), any())).thenReturn(JWT_VP);
+        presentationService = new VerifiablePresentationServiceImpl(registry, monitor);
 
-        var credentials = List.of(createCredential(JSON_LD), createCredential(JWT));
+        var credentials = List.of(createCredential(VC1_0_LD), createCredential(VC1_0_JWT));
 
-        var result = presentationGenerator.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, credentials, null, null);
+        var result = presentationService.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, credentials, null, null);
         assertThat(result).isSucceeded();
-        verify(registry).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), argThat(argument -> argument.size() == 1), eq(JWT), any());
-        verify(registry).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), argThat(argument -> argument.size() == 1), eq(JSON_LD), any());
-        verify(monitor).warning(eq("The VP was requested in JSON_LD format, but the request yielded 1 JWT-VCs, which cannot be transported in a LDP-VP. A second VP will be returned, containing JWT-VCs"));
+        assertThat(result.getContent().getPresentation()).hasSize(2);
+        verify(registry).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), argThat(argument -> argument.size() == 1), eq(VC1_0_JWT), any());
+        verify(registry).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), argThat(argument -> argument.size() == 1), eq(VC1_0_LD), any());
     }
 
     @Test
-    void generate_defaultFormatLdp_onlyJwtVcs() {
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JWT), any())).thenReturn(JWT_VP);
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JSON_LD), any())).thenReturn(jsonObject(EMPTY_LDP_VP));
-        presentationGenerator = new VerifiablePresentationServiceImpl(JSON_LD, registry, monitor);
+    void generate_onlyJwtVcs() {
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_JWT), any())).thenReturn(JWT_VP);
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_LD), any())).thenReturn(jsonObject(EMPTY_LDP_VP));
+        presentationService = new VerifiablePresentationServiceImpl(registry, monitor);
 
-        var credentials = List.of(createCredential(JWT), createCredential(JWT));
+        var credentials = List.of(createCredential(VC1_0_JWT), createCredential(VC1_0_JWT));
 
-        var result = presentationGenerator.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, credentials, null, TEST_AUDIENCE);
+        var result = presentationService.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, credentials, null, TEST_AUDIENCE);
         assertThat(result).isSucceeded();
+        assertThat(result.getContent().getPresentation()).hasSize(1);
         verify(registry).createPresentation(
                 eq(TEST_PARTICIPANT_CONTEXT_ID),
                 argThat(argument -> argument.size() == 2),
-                eq(JWT),
+                eq(VC1_0_JWT),
                 argThat(additional -> TEST_AUDIENCE.equals(additional.get(JwtRegisteredClaimNames.AUDIENCE)))
         );
-        verify(registry, never()).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JSON_LD), any());
-        verify(monitor).warning(eq("The VP was requested in JSON_LD format, but the request yielded 2 JWT-VCs, which cannot be transported in a LDP-VP. A second VP will be returned, containing JWT-VCs"));
-    }
-
-    @Test
-    void generate_defaultFormatJwt_onlyJwtVcs() {
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JWT), any())).thenReturn(JWT_VP);
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JSON_LD), any())).thenReturn(jsonObject(EMPTY_LDP_VP));
-        presentationGenerator = new VerifiablePresentationServiceImpl(JWT, registry, monitor);
-
-        var credentials = List.of(createCredential(JWT), createCredential(JWT));
-
-        var result = presentationGenerator.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, credentials, null, null);
-        assertThat(result).isSucceeded();
-        verify(registry).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), argThat(argument -> argument.size() == 2), eq(JWT), any());
-        verify(registry, never()).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JSON_LD), any());
-    }
-
-    @Test
-    void generate_defaultFormatJwt_mixedVcs() {
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JSON_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JWT), any())).thenReturn(JWT_VP);
-        presentationGenerator = new VerifiablePresentationServiceImpl(JWT, registry, monitor);
-
-        var credentials = List.of(createCredential(JSON_LD), createCredential(JWT));
-
-        var result = presentationGenerator.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, credentials, null, null);
-        assertThat(result).isSucceeded();
-        verify(registry).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), argThat(argument -> argument.size() == 2), eq(JWT), any());
-        verify(registry, never()).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JSON_LD), any());
-    }
-
-    @Test
-    void generate_defaultFormatJwt_onlyLdpVc() {
-        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JWT), any())).thenReturn(JWT_VP);
-        presentationGenerator = new VerifiablePresentationServiceImpl(JWT, registry, monitor);
-
-        var credentials = List.of(createCredential(JSON_LD), createCredential(JSON_LD));
-        var result = presentationGenerator.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, credentials, null, null);
-
-        assertThat(result).isSucceeded();
-        verify(registry).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), argThat(argument -> argument.size() == 2), eq(JWT), any());
-        verify(registry, never()).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(JSON_LD), any());
+        verify(registry, never()).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_LD), any());
     }
 
     @Test
     void generate_withPresentationDef_shouldLogWarning() {
-        presentationGenerator = new VerifiablePresentationServiceImpl(JSON_LD, registry, monitor);
-        presentationGenerator.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, List.of(), PresentationDefinition.Builder.newInstance().id("test-id").build(), null);
+        presentationService = new VerifiablePresentationServiceImpl(registry, monitor);
+        presentationService.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, List.of(), PresentationDefinition.Builder.newInstance().id("test-id").build(), null);
         verify(monitor).warning(contains("A PresentationDefinition was submitted, but is currently ignored by the generator."));
 
     }
