@@ -365,6 +365,45 @@ public class PresentationApiEndToEndTest {
 
         }
 
+        @Test
+        void query_success_containsEnvelopedCredential(IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
+
+            var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
+            var res = VerifiableCredentialResource.Builder.newInstance()
+                    .state(VcStatus.ISSUED)
+                    .credential(new VerifiableCredentialContainer(TestData.JWT_VC_EXAMPLE, CredentialFormat.VC2_0_JOSE, cred))
+                    .issuerId("https://example.edu/issuers/565049")
+                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
+                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .build();
+
+            store.create(res);
+            var token = generateSiToken();
+            registerToken(token, context);
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var response = context.getPresentationEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .body(VALID_QUERY_WITH_SCOPE)
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
+                    .hasEntrySatisfying("presentation", jsonValue -> {
+                        assertThat(jsonValue.getValueType()).isEqualTo(JsonValue.ValueType.STRING);
+                        var vpToken = ((JsonString) jsonValue).getString();
+                        assertThat(vpToken).isNotNull();
+                    });
+        }
+
         @ParameterizedTest(name = "VcState code: {0}")
         @ValueSource(ints = { 600, 700, 800, 900 })
         void query_shouldFilterOutInvalidCreds(int vcStateCode, IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {

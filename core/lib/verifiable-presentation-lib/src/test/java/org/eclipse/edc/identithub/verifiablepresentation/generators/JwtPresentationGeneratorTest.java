@@ -109,18 +109,6 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
     }
 
     @Test
-    @DisplayName("Should create a valid VP with no credential")
-    void create_whenVcsEmpty_shouldReturnEmptyVp() {
-        var vpJwt = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
-        assertThat(vpJwt).isNotNull();
-        assertThatNoException().isThrownBy(() -> SignedJWT.parse(vpJwt));
-
-        var claims = extractJwtClaims(vpJwt);
-
-        REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
-    }
-
-    @Test
     @DisplayName("Should throw an exception if no private key is found for a key-id")
     void create_whenPrivateKeyNotFound() {
         var vcc = new VerifiableCredentialContainer("foobar", CredentialFormat.JWT, createDummyCredential());
@@ -144,7 +132,7 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
 
     @Test
     @DisplayName("Should return an empty JWT when no credentials are passed")
-    void create_whenEmptyList() {
+    void create_whenEmptyCredentialsList() {
 
         var vpJwt = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(vpJwt).isNotNull();
@@ -153,6 +141,18 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
 
         REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
         assertThat(claims.getClaim("vp")).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should create a valid VP with no credential")
+    void create_whenVcsEmpty_shouldReturnEmptyVp() {
+        var vpJwt = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+        assertThat(vpJwt).isNotNull();
+        assertThatNoException().isThrownBy(() -> SignedJWT.parse(vpJwt));
+
+        var claims = extractJwtClaims(vpJwt);
+
+        REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
     }
 
     private JWTClaimsSet extractJwtClaims(String vpJwt) {

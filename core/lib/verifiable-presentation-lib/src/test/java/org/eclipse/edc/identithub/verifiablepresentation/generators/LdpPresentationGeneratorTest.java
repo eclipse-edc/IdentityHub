@@ -110,13 +110,6 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
 
     @Override
     @Test
-    public void create_whenVcsEmpty_shouldReturnEmptyVp() {
-        var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
-        assertThat(result).isNotNull();
-    }
-
-    @Override
-    @Test
     public void create_whenPrivateKeyNotFound() {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
@@ -145,11 +138,17 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Test
     @DisplayName("Should return an empty JWT when no credentials are passed")
     @Override
-    void create_whenEmptyList() {
+    void create_whenEmptyCredentialsList() {
 
         var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
+    }
+
+    @Test
+    public void create_whenVcsEmpty_shouldReturnEmptyVp() {
+        var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+        assertThat(result).isNotNull();
     }
 
     @NotNull

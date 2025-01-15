@@ -42,10 +42,6 @@ abstract class PresentationGeneratorTest {
     abstract void create_whenVcsNotSameFormat();
 
     @Test
-    @DisplayName("Should create a valid VP with no credential")
-    abstract void create_whenVcsEmpty_shouldReturnEmptyVp();
-
-    @Test
     @DisplayName("Should throw an exception if no key is found for a key-id")
     abstract void create_whenPrivateKeyNotFound();
 
@@ -54,8 +50,8 @@ abstract class PresentationGeneratorTest {
     abstract void create_whenRequiredAdditionalDataMissing_throwsIllegalArgumentException();
 
     @Test
-    @DisplayName("Should return an empty JWT when no credentials are passed")
-    abstract void create_whenEmptyList();
+    @DisplayName("Should return an empty, valid JWT when no credentials are passed")
+    abstract void create_whenEmptyCredentialsList();
 
     protected ECKey createKey(Curve p256, String centralIssuerKeyId) {
         try {

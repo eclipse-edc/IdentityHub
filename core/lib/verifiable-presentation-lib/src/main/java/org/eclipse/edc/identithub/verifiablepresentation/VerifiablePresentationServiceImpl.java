@@ -93,27 +93,7 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
             String jwt20Vp = registry.createPresentation(participantContextId, jwt20Vcs, VC2_0_JOSE, additionalDataJwt);
             vpToken.add(jwt20Vp);
         }
-//
-//        if (presentationDefaultFormat == VC1_0_LD) { // LDP-VPs cannot contain JWT VCs
-//            if (!ldp11Vcs.isEmpty()) {
-//
-//                // todo: once we support PresentationDefinition, the types list could be dynamic
-//                JsonObject ldpVp = registry.createPresentation(participantContextId, ldp11Vcs, VC1_0_LD, Map.of(
-//                        TYPE_ADDITIONAL_DATA, List.of(VERIFIABLE_PRESENTATION_TYPE)));
-//                vpToken.add(ldpVp);
-//            }
-//
-//            if (!jwt11Vcs.isEmpty()) {
-//                monitor.warning("The VP was requested in %s format, but the request yielded %s JWT-VCs, which cannot be transported in a LDP-VP. A second VP will be returned, containing JWT-VCs".formatted(presentationDefaultFormat, jwt11Vcs.size()));
-//                String jwtVp = registry.createPresentation(participantContextId, jwt11Vcs, VC1_0_JWT, additionalDataJwt);
-//                vpToken.add(jwtVp);
-//            }
-//
-//        } else if (presentationDefaultFormat == VC1_0_JWT) {
-//        } else { //defaultFormatVp == JWT
-//            vpToken.add(registry.createPresentation(participantContextId, credentials, VC1_0_JWT, additionalDataJwt));
-//        }
-
+        
         var presentationResponse = PresentationResponseMessage.Builder.newinstance().presentation(vpToken).build();
         return Result.success(presentationResponse);
     }

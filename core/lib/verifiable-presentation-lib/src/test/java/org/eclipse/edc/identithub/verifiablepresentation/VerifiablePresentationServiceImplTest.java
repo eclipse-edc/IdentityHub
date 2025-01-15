@@ -36,9 +36,11 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_LD;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.TestData.EMPTY_LDP_VP;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.TestData.JWT_VP;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.TestData.LDP_VP_WITH_PROOF;
+import static org.eclipse.edc.identithub.verifiablepresentation.generators.TestData.VCDM20_JWT_VP;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -118,6 +120,24 @@ class VerifiablePresentationServiceImplTest {
                 argThat(additional -> TEST_AUDIENCE.equals(additional.get(JwtRegisteredClaimNames.AUDIENCE)))
         );
         verify(registry, never()).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_LD), any());
+    }
+
+    @Test
+    void generate_mixedVcs_withVcdm2JwtVcs() {
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_LD), any())).thenReturn(jsonObject(LDP_VP_WITH_PROOF));
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC1_0_JWT), any())).thenReturn(JWT_VP);
+        when(registry.createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), any(), eq(VC2_0_JOSE), any())).thenReturn(VCDM20_JWT_VP);
+
+        presentationService = new VerifiablePresentationServiceImpl(registry, monitor);
+
+        var credentials = List.of(createCredential(VC1_0_LD), createCredential(VC1_0_JWT), createCredential(VC2_0_JOSE));
+
+        var result = presentationService.createPresentation(TEST_PARTICIPANT_CONTEXT_ID, credentials, null, null);
+        assertThat(result).isSucceeded();
+        assertThat(result.getContent().getPresentation()).hasSize(3);
+        verify(registry).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), argThat(argument -> argument.size() == 1), eq(VC1_0_JWT), any());
+        verify(registry).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), argThat(argument -> argument.size() == 1), eq(VC1_0_LD), any());
+        verify(registry).createPresentation(eq(TEST_PARTICIPANT_CONTEXT_ID), argThat(argument -> argument.size() == 1), eq(VC2_0_JOSE), any());
     }
 
     @Test

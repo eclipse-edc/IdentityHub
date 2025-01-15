@@ -21,6 +21,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegi
 import org.eclipse.edc.identithub.verifiablecredential.CredentialStatusCheckServiceImpl;
 import org.eclipse.edc.identithub.verifiablepresentation.PresentationCreatorRegistryImpl;
 import org.eclipse.edc.identithub.verifiablepresentation.VerifiablePresentationServiceImpl;
+import org.eclipse.edc.identithub.verifiablepresentation.generators.JwtEnvelopedPresentationGenerator;
 import org.eclipse.edc.identithub.verifiablepresentation.generators.JwtPresentationGenerator;
 import org.eclipse.edc.identithub.verifiablepresentation.generators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenVerifierImpl;
@@ -151,11 +152,15 @@ public class CoreServicesExtension implements ServiceExtension {
     public PresentationCreatorRegistry presentationCreatorRegistry(ServiceExtensionContext context) {
         if (presentationCreatorRegistry == null) {
             presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService);
-            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(clock, new JwtGenerationService(jwsSignerProvider)), CredentialFormat.VC1_0_JWT);
+            var jwtGenerationService = new JwtGenerationService(jwsSignerProvider);
+            presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(clock, jwtGenerationService), CredentialFormat.VC1_0_JWT);
 
-            var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(context.getMonitor()).build();
+            var monitor = context.getMonitor();
+            var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(monitor).build();
             presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager.getMapper(JSON_LD)),
                     CredentialFormat.VC1_0_LD);
+
+            presentationCreatorRegistry.addCreator(new JwtEnvelopedPresentationGenerator(monitor, jwtGenerationService), CredentialFormat.VC2_0_JOSE);
         }
         return presentationCreatorRegistry;
     }

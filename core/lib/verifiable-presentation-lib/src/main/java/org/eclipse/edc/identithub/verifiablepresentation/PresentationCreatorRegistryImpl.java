@@ -53,7 +53,7 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
     @SuppressWarnings("unchecked")
     @Override
     public <T> T createPresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, CredentialFormat format, Map<String, Object> additionalData) {
-        var creator = ofNullable(creators.get(format)).orElseThrow(() -> new EdcException("No PresentationCreator was found for CredentialFormat %s".formatted(format)));
+        var creator = ofNullable(creators.get(format)).orElseThrow(() -> new EdcException("No %s was found for CredentialFormat %s".formatted(PresentationGenerator.class.getSimpleName(), format)));
 
         var query = ParticipantResource.queryByParticipantId(participantContextId)
                 .filter(new Criterion("state", "=", KeyPairState.ACTIVATED.code()))
