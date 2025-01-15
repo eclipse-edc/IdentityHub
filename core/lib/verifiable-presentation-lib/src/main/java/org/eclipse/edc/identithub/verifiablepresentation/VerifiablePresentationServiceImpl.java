@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Metaform Systems, Inc. - initial API and implementation
+ *       Cofinity-X - Improvements for VC DataModel 2.0
  *
  */
 
@@ -93,7 +94,7 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
             String jwt20Vp = registry.createPresentation(participantContextId, jwt20Vcs, VC2_0_JOSE, additionalDataJwt);
             vpToken.add(jwt20Vp);
         }
-        
+
         var presentationResponse = PresentationResponseMessage.Builder.newinstance().presentation(vpToken).build();
         return Result.success(presentationResponse);
     }

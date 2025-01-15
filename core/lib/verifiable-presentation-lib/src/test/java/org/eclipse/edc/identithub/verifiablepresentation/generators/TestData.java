@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Metaform Systems, Inc. - initial API and implementation
+ *       Cofinity-X - Improvements for VC DataModel 2.0
  *
  */
 
@@ -205,14 +206,6 @@ public interface TestData {
               ]
             }
             """;
-
-    String EMPTY_JWT_VP = "eyJraWQiOiJodHRwczovL3Rlc3QuY29tL3Rlc3Qta2V5cyNrZXktMSIsImFsZyI6IkVTMzg0In0.eyJhdWQiOiJkaWQ6d2V" +
-                          "iOnRlc3QtYXVkaWVuY2UiLCJuYmYiOjE2OTk5Nzg2NTksImlzcyI6ImRpZDp3ZWI6dGVzdC1pc3N1ZXIiLCJ2cCI6IntcIkBjb250ZXh0XC" +
-                          "I6W1wiaHR0cHM6Ly93M2lkLm9yZy90cmFjdHVzeC10cnVzdC92MC44XCIsXCJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy" +
-                          "92MVwiLFwiaHR0cHM6Ly9pZGVudGl0eS5mb3VuZGF0aW9uL3ByZXNlbnRhdGlvbi1leGNoYW5nZS9zdWJtaXNzaW9uL3YxXCJdLFwidHlwZ" +
-                          "VwiOlwiVmVyaWZpYWJsZVByZXNlbnRhdGlvblwiLFwidmVyaWZpYWJsZUNyZWRlbnRpYWxcIjpbXX0iLCJleHAiOjE2OTk5Nzg3MjEsImlhd" +
-                          "CI6MTY5OTk3ODY1OSwianRpIjoiYTEzN2JkMDUtMjAxOS00Yjg3LTlhN2UtYzdlODBjOTNlNzFjIn0.TdeDOMpCCHOCHmVZjNOg0L4e2gFc" +
-                          "v6Pz_Adwg_SrGT0Cv94EzoGl9bl7LwcuK7mtTbbzLbOnwUpVk8xhDfiME8sVENjCMYJP9Vz1QaT32e6cGWdtAIgLHnZ7RelRd5DH";
 
     String ENVELOPED_CREDENTIAL_JSON = """
             {
