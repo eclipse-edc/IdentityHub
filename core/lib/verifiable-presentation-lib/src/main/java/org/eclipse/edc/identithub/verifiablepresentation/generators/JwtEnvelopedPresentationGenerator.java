@@ -31,11 +31,23 @@ import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.VC_PREFI
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
 
 /**
- * Creates verifiable presentations that are secured with an "enveloped proof" using the JOSE (= JWT) method.
+ * Creates verifiable presentations according to Version 2.0 of the Verifiable Credential Data Model, that are secured
+ * with an "enveloped proof" using the JOSE (= JWT) method.
+ * <p>
+ * This generator should be registered in the {@link org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry},
+ * for the {@link CredentialFormat#VC2_0_JOSE} format.
  *
  * @see <a href="https://www.w3.org/TR/vc-jose-cose/#securing-vps-with-jose">Securing VPs with Enveloped Proofs using JOSE</a>
  */
 public class JwtEnvelopedPresentationGenerator implements PresentationGenerator<String> {
+    public static final String CONTEXT_PROPERTY = "@context";
+    public static final String ID_PROPERTY = "id";
+    public static final String TYPE_PROPERTY = "type";
+    public static final String HOLDER_PROPERTY = "holder";
+    public static final String VERIFIABLE_CREDENTIAL_PROPERTY = "verifiableCredential";
+    public static final String VERIFIABLE_PRESENTATION_TYPE = "VerifiablePresentation";
+    public static final String ENVELOPED_VERIFIABLE_CREDENTIAL = "EnvelopedVerifiableCredential";
+    public static final String ENVELOPED_VERIFIABLE_PRESENTATION = "EnvelopedVerifiablePresentation";
     private final Monitor monitor;
     private final TokenGenerationService tokenGenerationService;
 
@@ -70,35 +82,30 @@ public class JwtEnvelopedPresentationGenerator implements PresentationGenerator<
         if (!publicKeyId.startsWith(controller)) {
             composedKeyId = controller + "#" + publicKeyId;
         }
+        var keyIdDecorator = new KeyIdDecorator(composedKeyId);
 
-        // create the presentation structure
-        var rawVcs = credentials.stream().map(VerifiableCredentialContainer::rawVc);
-        var credentialArray = rawVcs.map(vc -> Map.of(
-                "@context", VC_PREFIX_V2,
-                "id", "data:application/vc+jwt,%s".formatted(vc),
-                "type", "EnvelopedVerifiableCredential"
+        // create the enveloped VC JSON structure
+        var rawVc = credentials.stream().map(VerifiableCredentialContainer::rawVc);
+        var credentialArray = rawVc.map(vc -> Map.of(
+                CONTEXT_PROPERTY, VC_PREFIX_V2,
+                ID_PROPERTY, "data:application/vc+jwt,%s".formatted(vc),
+                TYPE_PROPERTY, ENVELOPED_VERIFIABLE_CREDENTIAL
         )).toList();
 
+        // create the payload for the VP token
+        TokenDecorator presentationTokenGenerator = builder -> builder.claims(CONTEXT_PROPERTY, List.of(VC_PREFIX_V2))
+                .claims(TYPE_PROPERTY, VERIFIABLE_PRESENTATION_TYPE)
+                .claims(HOLDER_PROPERTY, issuerId)
+                .claims(VERIFIABLE_CREDENTIAL_PROPERTY, credentialArray);
 
-        TokenDecorator presentationTokenGenerator = builder -> {
-            builder.claims("@context", List.of(VC_PREFIX_V2))
-                    .claims("type", "VerifiablePresentation")
-                    .claims("holder", issuerId)
-                    .claims("verifiableCredential", credentialArray);
-            return builder;
-        };
-
-        var keyIdDecorator = new KeyIdDecorator(composedKeyId);
+        // create the enveloped VP as JWT, signed again with the private key
         return tokenGenerationService.generate(privateKeyAlias, presentationTokenGenerator, keyIdDecorator)
                 .compose(tr -> {
                     // create the enveloped presentation structure
-                    TokenDecorator envelopedPresentationDecorator = builder -> {
-                        builder.claims("id", "data:application/vp+jwt,%s".formatted(tr.getToken()))
-                                .claims("type", "EnvelopedVerifiablePresentation")
-                                .claims("@context", List.of("https://www.w3.org/ns/credentials/v2"));
-                        return builder;
-                    };
-
+                    TokenDecorator envelopedPresentationDecorator = builder -> builder.claims(ID_PROPERTY, "data:application/vp+jwt,%s".formatted(tr.getToken()))
+                            .claims(TYPE_PROPERTY, ENVELOPED_VERIFIABLE_PRESENTATION)
+                            .claims(CONTEXT_PROPERTY, List.of(VC_PREFIX_V2));
+                    // ... and create a JWT out of it
                     return tokenGenerationService.generate(privateKeyAlias, envelopedPresentationDecorator, keyIdDecorator);
                 })
                 .map(TokenRepresentation::getToken)
