@@ -1781,6 +1781,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CredentialSubject"
+        dataModelVersion:
+          type: string
+          enum:
+          - V_1_1
+          - V_2_0
         description:
           type: string
         expirationDate:
@@ -1809,6 +1814,11 @@ components:
           enum:
           - JSON_LD
           - JWT
+          - VC1_0_LD
+          - VC1_0_JWT
+          - VC2_0_JOSE
+          - VC2_0_SD_JWT
+          - VC2_0_COSE
         rawVc:
           type: string
     VerifiableCredentialManifest:
