@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.verifiablecredentials;
 
-import org.eclipse.edc.identityhub.api.v1.validation.VerifiableCredentialManifestValidator;
+import org.eclipse.edc.identityhub.api.verifiablecredential.validation.VerifiableCredentialManifestValidator;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.GetAllCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.VerifiableCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.transformer.VerifiableCredentialManifestToVerifiableCredentialResourceTransformer;

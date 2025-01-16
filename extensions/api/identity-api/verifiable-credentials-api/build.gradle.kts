@@ -9,7 +9,7 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:verifiable-credential-spi"))
     implementation(project(":extensions:api:identity-api:api-configuration"))
-    implementation(project(":extensions:api:identity-api:validators"))
+    implementation(project(":extensions:api:identity-api:validators:verifiable-credential-validators"))
     implementation(libs.edc.spi.transform)
     implementation(libs.edc.spi.web)
     implementation(libs.edc.lib.util)

@@ -17,7 +17,7 @@ package org.eclipse.edc.identityhub.api.keypair.v1.unstable;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
+import org.eclipse.edc.identityhub.api.keypair.validation.KeyDescriptorValidator;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
@@ -160,7 +160,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     }
 
     @ParameterizedTest(name = "Make default: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void addKeyPair(boolean makeDefault) {
         var descriptor = createKeyDescriptor()
                 .build();

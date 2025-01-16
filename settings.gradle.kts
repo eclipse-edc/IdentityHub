@@ -62,6 +62,10 @@ include(":extensions:api:identity-api:participant-context-api")
 include(":extensions:api:identity-api:verifiable-credentials-api")
 include(":extensions:api:identity-api:did-api")
 include(":extensions:api:identity-api:keypair-api")
+// Identity API validators
+include(":extensions:api:identity-api:validators:keypair-validators")
+include(":extensions:api:identity-api:validators:participant-context-validators")
+include(":extensions:api:identity-api:validators:verifiable-credential-validators")
 
 // other modules
 include(":launcher:identityhub")

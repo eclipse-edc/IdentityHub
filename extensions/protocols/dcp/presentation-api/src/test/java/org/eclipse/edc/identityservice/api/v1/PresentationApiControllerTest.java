@@ -22,7 +22,7 @@ import org.eclipse.edc.iam.identitytrust.spi.model.PresentationResponseMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.credentialservice.InputDescriptorMapping;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.credentialservice.PresentationSubmission;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
-import org.eclipse.edc.identityhub.api.v1.PresentationApiController;
+import org.eclipse.edc.identityhub.api.verifiablecredential.PresentationApiController;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
