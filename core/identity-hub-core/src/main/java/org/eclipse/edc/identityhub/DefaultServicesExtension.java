@@ -46,10 +46,10 @@ import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.TOKEN_CLAIM;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
 
 @Extension(NAME)
 public class DefaultServicesExtension implements ServiceExtension {

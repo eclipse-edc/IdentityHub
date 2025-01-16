@@ -8,13 +8,13 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Metaform Systems, Inc. - initial API and implementation
+ *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityhub.accesstoken.verification;
+package org.eclipse.edc.identityhub.spi.verification;
 
-public interface AccessTokenConstants {
+public interface SelfIssuedTokenConstants {
     String DCP_SELF_ISSUED_TOKEN_CONTEXT = "dcp-si";
     String DCP_ACCESS_TOKEN_CONTEXT = "dcp-access-token";
     String TOKEN_CLAIM = "token";

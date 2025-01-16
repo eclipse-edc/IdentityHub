@@ -44,10 +44,10 @@ import java.security.PrivateKey;
 import java.security.spec.ECGenParameterSpec;
 import java.util.UUID;
 
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.TOKEN_CLAIM;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
