@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.store;
+package org.eclipse.edc.identityhub.spi.keypair.store;
 
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.spi.query.QuerySpec;

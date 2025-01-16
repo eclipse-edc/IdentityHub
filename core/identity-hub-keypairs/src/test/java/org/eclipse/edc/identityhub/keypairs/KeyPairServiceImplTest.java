@@ -20,11 +20,11 @@ import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
@@ -71,7 +71,7 @@ class KeyPairServiceImplTest {
     }
 
     @ParameterizedTest(name = "make default: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void addKeyPair_publicKeyGiven(boolean makeDefault) {
 
         when(keyPairResourceStore.create(any())).thenReturn(success());
@@ -87,7 +87,7 @@ class KeyPairServiceImplTest {
     }
 
     @ParameterizedTest(name = "make default: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void addKeyPair_shouldGenerate_storesInVault(boolean makeDefault) {
         when(keyPairResourceStore.create(any())).thenReturn(success());
 
@@ -391,7 +391,7 @@ class KeyPairServiceImplTest {
 
     @ParameterizedTest(name = "Valid state = {0}")
     // cannot use enum literals and the .code() method -> needs to be compile constant
-    @ValueSource(ints = { 100, 200 })
+    @ValueSource(ints = {100, 200})
     void activate(int validState) {
         var oldId = "old-id";
         var oldKey = createKeyPairResource().id(oldId).state(validState).build();
@@ -404,7 +404,7 @@ class KeyPairServiceImplTest {
 
     @ParameterizedTest(name = "Valid state = {0}")
     // cannot use enum literals and the .code() method -> needs to be compile constant
-    @ValueSource(ints = { 0, 30, 400, -10 })
+    @ValueSource(ints = {0, 30, 400, -10})
     void activate_invalidState(int validState) {
         var oldId = "old-id";
         var oldKey = createKeyPairResource().id(oldId).state(validState).build();

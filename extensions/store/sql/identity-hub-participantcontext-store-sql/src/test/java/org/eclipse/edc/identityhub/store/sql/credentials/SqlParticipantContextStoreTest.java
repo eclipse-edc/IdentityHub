@@ -14,11 +14,11 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials;
 
-import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.identityhub.participantcontext.store.ParticipantContextStoreTestBase;
+import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.store.sql.participantcontext.ParticipantContextStoreStatements;
 import org.eclipse.edc.identityhub.store.sql.participantcontext.SqlParticipantContextStore;
 import org.eclipse.edc.identityhub.store.sql.participantcontext.schema.postgres.PostgresDialectStatements;
-import org.eclipse.edc.identityhub.store.test.ParticipantContextStoreTestBase;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.junit.testfixtures.TestUtils;

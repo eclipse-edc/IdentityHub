@@ -34,13 +34,13 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegi
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubCustomizableEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
@@ -406,7 +406,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "VcState code: {0}")
-        @ValueSource(ints = { 600, 700, 800, 900 })
+        @ValueSource(ints = {600, 700, 800, 900})
         void query_shouldFilterOutInvalidCreds(int vcStateCode, IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             // modify VC content, so that it becomes either not-yet-valid or expired

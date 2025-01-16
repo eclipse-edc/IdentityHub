@@ -27,7 +27,6 @@ include(":spi:identity-hub-spi")
 include(":spi:participant-context-spi")
 include(":spi:verifiable-credential-spi")
 include(":spi:keypair-spi")
-include(":spi:identity-hub-store-spi")
 include(":spi:did-spi")
 
 // core modules

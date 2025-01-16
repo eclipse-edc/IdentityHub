@@ -5,7 +5,6 @@ plugins {
 
 dependencies {
     testImplementation(project(":spi:identity-hub-spi"))
-    testImplementation(project(":spi:identity-hub-store-spi"))
     testImplementation(project(":core:identity-hub-participants"))
     testImplementation(libs.edc.junit)
     testImplementation(libs.restAssured)

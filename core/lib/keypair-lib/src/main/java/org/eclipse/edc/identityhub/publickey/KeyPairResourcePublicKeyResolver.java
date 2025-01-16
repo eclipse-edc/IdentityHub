@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.publickey;
 
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.spi.monitor.Monitor;

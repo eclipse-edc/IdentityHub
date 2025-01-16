@@ -12,37 +12,42 @@
  *
  */
 
-package org.eclipse.edc.identityhub.store.test;
+package org.eclipse.edc.identityhub.participantcontext.store;
 
 import org.assertj.core.api.Assertions;
-import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.List;
-import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.ACTIVATED;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.CREATED;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.DEACTIVATED;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
-public abstract class KeyPairResourceStoreTestBase {
+public abstract class ParticipantContextStoreTestBase {
+
     @Test
     void create() {
-        var result = getStore().create(createKeyPairResource().build());
+        var participantContext = createParticipantContext();
+        var result = getStore().create(participantContext);
         assertThat(result).isSucceeded();
+        var query = getStore().query(QuerySpec.max());
+        assertThat(query).isSucceeded();
+        Assertions.assertThat(query.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(participantContext);
     }
 
     @Test
     void create_whenExists_shouldReturnFailure() {
-        var keyPairResource = createKeyPairResource().build();
-        var result = getStore().create(keyPairResource);
+        var context = createParticipantContext();
+        var result = getStore().create(context);
         assertThat(result).isSucceeded();
-        var result2 = getStore().create(keyPairResource);
+        var result2 = getStore().create(context);
 
         assertThat(result2).isFailed().detail().contains("already exists");
     }
@@ -50,11 +55,10 @@ public abstract class KeyPairResourceStoreTestBase {
     @Test
     void query_byId() {
         range(0, 5)
-                .mapToObj(i -> createKeyPairResource().id("id" + i).build())
+                .mapToObj(i -> createParticipantContextBuilder().participantId("id" + i).build())
                 .forEach(getStore()::create);
 
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("id", "=", "id2"))
+        var query = ParticipantResource.queryByParticipantId("id2")
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -63,24 +67,24 @@ public abstract class KeyPairResourceStoreTestBase {
 
     @Test
     void query_byProperty() {
-        var keyPairResource = createKeyPairResource().state(KeyPairState.CREATED).build();
-        getStore().create(keyPairResource);
+        var participantContext = createParticipantContextBuilder().state(DEACTIVATED).build();
+        getStore().create(participantContext);
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("state", "=", KeyPairState.CREATED.code()))
+                .filter(new Criterion("state", "=", 2))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
                 .satisfies(str -> Assertions.assertThat(str)
                         .hasSize(1)
                         .usingRecursiveFieldByFieldElementComparator()
-                        .containsExactly(keyPairResource));
+                        .containsExactly(participantContext));
     }
 
     @Test
     void query_noQuerySpec() {
         var resources = range(0, 5)
-                .mapToObj(i -> createKeyPairResource().participantId("id" + i).build())
+                .mapToObj(i -> createParticipantContextBuilder().participantId("id" + i).build())
                 .toList();
 
         resources.forEach(getStore()::create);
@@ -89,13 +93,13 @@ public abstract class KeyPairResourceStoreTestBase {
         assertThat(res).isSucceeded();
         Assertions.assertThat(res.getContent())
                 .usingRecursiveFieldByFieldElementComparator()
-                .containsExactlyInAnyOrder(resources.toArray(new KeyPairResource[0]));
+                .containsExactlyInAnyOrder(resources.toArray(new ParticipantContext[0]));
     }
 
     @Test
     void query_whenNotFound() {
         var resources = range(0, 5)
-                .mapToObj(i -> createKeyPairResource()
+                .mapToObj(i -> createParticipantContextBuilder()
                         .participantId("id" + i)
                         .build())
                 .toList();
@@ -112,7 +116,7 @@ public abstract class KeyPairResourceStoreTestBase {
     @Test
     void query_byInvalidField_shouldReturnEmptyList() {
         var resources = range(0, 5)
-                .mapToObj(i -> createKeyPairResource()
+                .mapToObj(i -> createParticipantContextBuilder()
                         .participantId("id" + i)
                         .build())
                 .toList();
@@ -128,58 +132,37 @@ public abstract class KeyPairResourceStoreTestBase {
     }
 
     @Test
-    void query_byIdAndState() {
-        var kp1 = createKeyPairResource().id("id1").state(KeyPairState.ACTIVATED).build();
-        var kp2 = createKeyPairResource().id("id2").state(KeyPairState.CREATED).build();
-        var kp3 = createKeyPairResource().id("id3").state(KeyPairState.REVOKED).build();
-        var kp4 = createKeyPairResource().id("id4").state(KeyPairState.ROTATED).build();
-
-        List.of(kp1, kp2, kp3, kp4).forEach(getStore()::create);
-
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("id", "=", "id3"))
-                .filter(new Criterion("state", "=", KeyPairState.REVOKED.code()))
-                .build();
-
-        assertThat(getStore().query(query))
-                .isSucceeded()
-                .satisfies(keyPairResources -> Assertions.assertThat(keyPairResources)
-                        .usingRecursiveFieldByFieldElementComparator()
-                        .containsExactly(kp3));
-    }
-
-    @Test
     void update() {
-        var keyPairResource = createKeyPairResource();
-        var result = getStore().create(keyPairResource.build());
+        var context = createParticipantContextBuilder();
+        var result = getStore().create(context.build());
         assertThat(result).isSucceeded();
 
-        var updateRes = getStore().update(keyPairResource.state(KeyPairState.REVOKED).build());
+        var updateRes = getStore().update(context.state(ACTIVATED).build());
         assertThat(updateRes).isSucceeded();
     }
 
     @Test
     void update_whenIdChanges_fails() {
-        var keyPairResource = createKeyPairResource();
-        getStore().create(keyPairResource.build());
+        var context = createParticipantContextBuilder();
+        var result = getStore().create(context.build());
 
-        var updateRes = getStore().update(keyPairResource.state(KeyPairState.ROTATED).id("another-id").build());
+        var updateRes = getStore().update(context.state(DEACTIVATED).participantId("another-id").build());
         assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
     void update_whenNotExists() {
-        var context = createKeyPairResource();
-        var updateRes = getStore().update(context.state(KeyPairState.ROTATED).participantId("another-id").build());
-        assertThat(updateRes).isFailed().detail().matches(".* with ID .* does not exist.");
+        var context = createParticipantContextBuilder();
+        var updateRes = getStore().update(context.state(DEACTIVATED).participantId("another-id").build());
+        assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
     void delete() {
-        var keyPairResource = createKeyPairResource().build();
-        getStore().create(keyPairResource);
+        var context = createParticipantContext();
+        getStore().create(context);
 
-        var deleteRes = getStore().deleteById(keyPairResource.getId());
+        var deleteRes = getStore().deleteById(context.getParticipantId());
         assertThat(deleteRes).isSucceeded();
     }
 
@@ -189,16 +172,22 @@ public abstract class KeyPairResourceStoreTestBase {
                 .detail().contains("with ID 'not-exist' does not exist.");
     }
 
-    protected abstract KeyPairResourceStore getStore();
+    protected abstract ParticipantContextStore getStore();
 
-    private KeyPairResource.Builder createKeyPairResource() {
-        return KeyPairResource.Builder.newInstance()
-                .id(UUID.randomUUID().toString())
-                .keyId("test-key-1")
-                .privateKeyAlias("private-key-alias")
+    private ParticipantContext createParticipantContext() {
+        return ParticipantContext.Builder.newInstance()
                 .participantId("test-participant")
-                .serializedPublicKey("this-is-a-pem-string")
-                .keyContext("JsonWebKey2020")
-                .useDuration(Duration.ofDays(6).toMillis());
+                .roles(List.of("role1", "role2"))
+                .state(CREATED)
+                .apiTokenAlias("test-alias")
+                .build();
+    }
+
+    private ParticipantContext.Builder createParticipantContextBuilder() {
+        return ParticipantContext.Builder.newInstance()
+                .participantId("test-participant")
+                .state(CREATED)
+                .roles(List.of("role1", "role2"))
+                .apiTokenAlias("test-alias");
     }
 }

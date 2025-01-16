@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.defaults.store;
 
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 

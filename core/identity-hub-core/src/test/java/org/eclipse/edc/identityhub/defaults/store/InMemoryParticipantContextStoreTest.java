@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.defaults.store;
 
-import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
-import org.eclipse.edc.identityhub.store.test.ParticipantContextStoreTestBase;
+import org.eclipse.edc.identityhub.participantcontext.store.ParticipantContextStoreTestBase;
+import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 
 class InMemoryParticipantContextStoreTest extends ParticipantContextStoreTestBase {
 

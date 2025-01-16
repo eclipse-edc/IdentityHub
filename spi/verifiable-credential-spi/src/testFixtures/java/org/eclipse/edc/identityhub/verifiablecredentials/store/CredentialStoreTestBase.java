@@ -11,8 +11,7 @@
  *       Metaform Systems, Inc. - initial API and implementation
  *
  */
-
-package org.eclipse.edc.identityhub.store.test;
+package org.eclipse.edc.identityhub.verifiablecredentials.store;
 
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
@@ -21,9 +20,9 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
-import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.jetbrains.annotations.NotNull;
@@ -149,7 +148,7 @@ public abstract class CredentialStoreTestBase {
     @Test
     void query_byParticipantIdAndType() {
         var cred1 = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential()
                         .type("UniversityDegreeCredential")
                         .build()))
                 .participantId(TEST_PARTICIPANT_CONTEXT_ID).build();
@@ -191,7 +190,7 @@ public abstract class CredentialStoreTestBase {
         var creds = createCredentials();
 
         var expectedCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC_WITH_PHD_DEGREE, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC_WITH_PHD_DEGREE, CredentialFormat.VC1_0_LD, createVerifiableCredential().build()))
                 .build();
         creds.add(expectedCred);
         creds.forEach(getStore()::create);
@@ -212,13 +211,13 @@ public abstract class CredentialStoreTestBase {
         var creds = createCredentials();
 
         var expectedCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JWT, createVerifiableCredential().build()))
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_JWT, createVerifiableCredential().build()))
                 .build();
         creds.add(expectedCred);
         creds.forEach(getStore()::create);
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("verifiableCredential.format", "=", CredentialFormat.JWT.ordinal()))
+                .filter(new Criterion("verifiableCredential.format", "=", CredentialFormat.VC1_0_JWT.ordinal()))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -232,7 +231,7 @@ public abstract class CredentialStoreTestBase {
         var creds = createCredentials();
 
         var expectedCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential()
                         .type("TestType")
                         .build()))
                 .build();
@@ -254,7 +253,7 @@ public abstract class CredentialStoreTestBase {
         var creds = createCredentials();
 
         var expectedCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential()
                         .credentialSubject(CredentialSubject.Builder.newInstance()
                                 .claim("degreeType", "PhdDegree")
                                 .build())
@@ -278,7 +277,7 @@ public abstract class CredentialStoreTestBase {
         var creds = createCredentials();
 
         var expectedCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential()
                         .credentialSubject(CredentialSubject.Builder.newInstance()
                                 .claim("foo", "bar")
                                 .id("test-subject-id")
@@ -303,7 +302,7 @@ public abstract class CredentialStoreTestBase {
         var creds = createCredentials();
 
         var expectedCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential()
                         .credentialSubject(CredentialSubject.Builder.newInstance()
                                 .claim("complexSubject", Map.of(
                                         "sub-key1", "sub-value1",
@@ -331,7 +330,7 @@ public abstract class CredentialStoreTestBase {
 
         var issuanceDate = Instant.parse("2023-12-11T10:15:30.00Z");
         var expectedCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential()
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential()
                         .issuanceDate(issuanceDate)
                         .build()))
                 .build();
@@ -368,15 +367,15 @@ public abstract class CredentialStoreTestBase {
         var creds = createCredentials();
 
         var expectedCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential().build()))
                 .state(REVOKED)
                 .build();
         var secondCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JWT, createVerifiableCredential().build()))
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_JWT, createVerifiableCredential().build()))
                 .state(REQUESTING)
                 .build();
         var thirdCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JWT, createVerifiableCredential().build()))
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_JWT, createVerifiableCredential().build()))
                 .state(REVOKED)
                 .build();
         creds.add(expectedCred);
@@ -400,15 +399,15 @@ public abstract class CredentialStoreTestBase {
         var creds = createCredentials();
 
         var expectedCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential().build()))
                 .state(REVOKED)
                 .build();
         var secondCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JWT, createVerifiableCredential().build()))
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_JWT, createVerifiableCredential().build()))
                 .state(INITIAL)
                 .build();
         var thirdCred = createCredentialBuilder()
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JWT, createVerifiableCredential().build()))
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_JWT, createVerifiableCredential().build()))
                 .state(VcStatus.NOT_YET_VALID)
                 .build();
         creds.add(expectedCred);
@@ -517,7 +516,7 @@ public abstract class CredentialStoreTestBase {
                 .holderId("test-holder")
                 .state(VcStatus.ISSUED)
                 .participantId(TEST_PARTICIPANT_CONTEXT_ID)
-                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.JSON_LD, createVerifiableCredential().build()))
+                .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential().build()))
                 .id(UUID.randomUUID().toString());
     }
 

@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.defaults.store;
 
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.store.test.KeyPairResourceStoreTestBase;
+import org.eclipse.edc.identityhub.keypair.store.KeyPairResourceStoreTestBase;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 
 class InMemoryKeyPairResourceStoreTest extends KeyPairResourceStoreTestBase {
 

@@ -26,7 +26,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.keyparsers.PemParser;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -75,7 +75,7 @@ class ParticipantContextServiceImplTest {
     }
 
     @ParameterizedTest(name = "isActive: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void createParticipantContext_withPublicKeyPem(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
@@ -107,7 +107,7 @@ class ParticipantContextServiceImplTest {
     }
 
     @ParameterizedTest(name = "isActive: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void shouldCreateParticipantContext_withAccountInfo(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
@@ -137,7 +137,7 @@ class ParticipantContextServiceImplTest {
     }
 
     @ParameterizedTest(name = "isActive: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void createParticipantContext_withPublicKeyJwk(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
@@ -155,7 +155,7 @@ class ParticipantContextServiceImplTest {
     }
 
     @ParameterizedTest(name = "isActive: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void createParticipantContext_withKeyGenParams(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());

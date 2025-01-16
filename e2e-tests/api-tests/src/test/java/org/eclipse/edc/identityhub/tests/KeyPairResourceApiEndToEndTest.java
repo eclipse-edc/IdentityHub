@@ -26,9 +26,9 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -374,7 +374,7 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "New KeyID {0}")
-        @ValueSource(strings = { "did:web:user1#new-key-id", "new-key-id" })
+        @ValueSource(strings = {"did:web:user1#new-key-id", "new-key-id"})
         void rotate_withUserToken(String keyId, IdentityHubEndToEndTestContext context, EventRouter router, StsAccountStore accountStore) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(KeyPairRotated.class, subscriber);
@@ -582,7 +582,7 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "New Key-ID: {0}")
-        @ValueSource(strings = { "new-keyId", "did:web:user1#new-keyId" })
+        @ValueSource(strings = {"new-keyId", "did:web:user1#new-keyId"})
         void revoke(String newKeyId, IdentityHubEndToEndTestContext context, StsAccountStore accountStore) {
             var superUserKey = context.createSuperUser();
             var participantId = "user1";

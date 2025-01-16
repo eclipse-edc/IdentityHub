@@ -27,12 +27,12 @@ import org.eclipse.edc.identithub.spi.did.model.DidState;
 import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -510,7 +510,7 @@ public class ParticipantContextApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "Expect 403, role = {0}")
-        @ValueSource(strings = { "some-role", "admin" })
+        @ValueSource(strings = {"some-role", "admin"})
         void updateRoles_whenNotSuperuser(String role, IdentityHubEndToEndTestContext context) {
             var participantId = "some-user";
             var userToken = context.createParticipant(participantId);
