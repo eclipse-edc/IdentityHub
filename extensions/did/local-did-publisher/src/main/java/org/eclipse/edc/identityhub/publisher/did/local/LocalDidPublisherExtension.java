@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.identityhub.publisher.did.local;
 
-import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
 import org.eclipse.edc.identityhub.spi.did.DidConstants;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentPublisherRegistry;
 import org.eclipse.edc.identityhub.spi.did.DidWebParser;
 import org.eclipse.edc.identityhub.spi.did.events.DidDocumentObservable;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -36,7 +36,7 @@ import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 import java.time.Clock;
 
 import static org.eclipse.edc.identityhub.publisher.did.local.LocalDidPublisherExtension.NAME;
-import static org.eclipse.edc.identityhub.spi.IdentityHubApiContext.IH_DID;
+import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.IH_DID;
 
 @Extension(value = NAME)
 public class LocalDidPublisherExtension implements ServiceExtension {

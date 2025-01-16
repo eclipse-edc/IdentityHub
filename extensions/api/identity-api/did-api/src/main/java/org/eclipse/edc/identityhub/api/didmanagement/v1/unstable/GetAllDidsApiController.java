@@ -31,7 +31,7 @@ import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.util.Collection;
 
-import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
+import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
 
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

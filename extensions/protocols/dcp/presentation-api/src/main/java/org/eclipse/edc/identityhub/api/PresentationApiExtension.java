@@ -50,8 +50,8 @@ import java.util.stream.Stream;
 
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DCP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.api.PresentationApiExtension.NAME;
-import static org.eclipse.edc.identityhub.spi.IdentityHubApiContext.PRESENTATION;
-import static org.eclipse.edc.identityhub.spi.IdentityHubApiContext.RESOLUTION;
+import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.PRESENTATION;
+import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.RESOLUTION;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
 @Extension(value = NAME)

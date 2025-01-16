@@ -16,9 +16,9 @@ package org.eclipse.edc.identityhub.api.configuration;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.identityhub.spi.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -40,7 +40,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.identityhub.api.configuration.IdentityApiConfigurationExtension.NAME;
-import static org.eclipse.edc.identityhub.spi.IdentityHubApiContext.IDENTITY;
+import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.IDENTITY;
 
 @Extension(value = NAME)
 public class IdentityApiConfigurationExtension implements ServiceExtension {

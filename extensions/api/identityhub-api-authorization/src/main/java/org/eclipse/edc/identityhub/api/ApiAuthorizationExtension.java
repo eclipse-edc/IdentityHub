@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.identityhub.api.authorization.AuthorizationServiceImpl;
-import org.eclipse.edc.identityhub.spi.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.system.ServiceExtension;
