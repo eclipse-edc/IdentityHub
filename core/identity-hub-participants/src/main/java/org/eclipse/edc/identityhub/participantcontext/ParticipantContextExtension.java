@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
@@ -42,8 +41,6 @@ public class ParticipantContextExtension implements ServiceExtension {
     private Vault vault;
     @Inject
     private TransactionContext transactionContext;
-    @Inject
-    private KeyPairService keyPairService;
     @Inject
     private Clock clock;
     @Inject

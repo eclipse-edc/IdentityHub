@@ -1,0 +1,436 @@
+openapi: 3.0.1
+info:
+  description: This is the Identity API for manipulating ParticipantContexts
+  title: ParticipantContext Management API
+  version: "1"
+paths:
+  /v1alpha/participants:
+    get:
+      description: Get all DID documents across all Participant Contexts. Requires
+        elevated access.
+      operationId: getAllParticipants
+      parameters:
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ParticipantContext"
+          description: The list of ParticipantContexts.
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: The query was malformed or was not understood by the server.
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+      tags:
+      - Participant Context
+    post:
+      description: Creates a new ParticipantContext object.
+      operationId: createParticipant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantManifest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateParticipantContextResponse"
+          description: "The ParticipantContext was created successfully, its API token\
+            \ is returned in the response body."
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "Request body was malformed, or the request could not be processed"
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "409":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "Can't create the ParticipantContext, because a object with\
+            \ the same ID already exists"
+      tags:
+      - Participant Context
+  /v1alpha/participants/{participantContextId}:
+    delete:
+      description: Delete a ParticipantContext.
+      operationId: deleteParticipant
+      parameters:
+      - in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: The ParticipantContext was deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "Request body was malformed, or the request could not be processed"
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: A ParticipantContext with the given ID does not exist.
+      tags:
+      - Participant Context
+    get:
+      description: Gets ParticipantContexts by ID.
+      operationId: getParticipant
+      parameters:
+      - in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParticipantContext"
+          description: The list of ParticipantContexts.
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "Request body was malformed, or the request could not be processed"
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: A ParticipantContext with the given ID does not exist.
+      tags:
+      - Participant Context
+  /v1alpha/participants/{participantContextId}/roles:
+    put:
+      description: "Updates a ParticipantContext's roles. Note that this is an absolute\
+        \ update, that means all roles that the Participant should have must be submitted\
+        \ in the body. Requires elevated privileges."
+      operationId: updateParticipantRoles
+      parameters:
+      - in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        "200":
+          description: The ParticipantContext was updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "Request body was malformed, or the request could not be processed"
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: A ParticipantContext with the given ID does not exist.
+      tags:
+      - Participant Context
+  /v1alpha/participants/{participantContextId}/state:
+    post:
+      description: "Activates a ParticipantContext. This operation is idempotent,\
+        \ i.e. activating an already active ParticipantContext is a NOOP."
+      operationId: activateParticipant
+      parameters:
+      - in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: isActive
+        schema:
+          type: boolean
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantManifest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: The ParticipantContext was activated/deactivated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "Request body was malformed, or the request could not be processed"
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: A ParticipantContext with the given ID does not exist.
+      tags:
+      - Participant Context
+  /v1alpha/participants/{participantContextId}/token:
+    post:
+      description: Regenerates the API token for a ParticipantContext and returns
+        the new token.
+      operationId: regenerateParticipantToken
+      parameters:
+      - in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantManifest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: The API token was regenerated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "Request body was malformed, or the request could not be processed"
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: A ParticipantContext with the given ID does not exist.
+      tags:
+      - Participant Context
+components:
+  schemas:
+    ApiErrorDetail:
+      type: object
+      properties:
+        invalidValue:
+          type: object
+        message:
+          type: string
+        path:
+          type: string
+        type:
+          type: string
+    CreateParticipantContextResponse:
+      type: object
+      properties:
+        apiKey:
+          type: string
+        clientId:
+          type: string
+        clientSecret:
+          type: string
+    KeyDescriptor:
+      type: object
+      properties:
+        active:
+          type: boolean
+        keyGeneratorParams:
+          type: object
+          additionalProperties:
+            type: object
+        keyId:
+          type: string
+        privateKeyAlias:
+          type: string
+        publicKeyJwk:
+          type: object
+          additionalProperties:
+            type: object
+        publicKeyPem:
+          type: string
+        resourceId:
+          type: string
+        type:
+          type: string
+    ParticipantContext:
+      type: object
+      properties:
+        apiTokenAlias:
+          type: string
+        createdAt:
+          type: integer
+          format: int64
+        did:
+          type: string
+        lastModified:
+          type: integer
+          format: int64
+        participantContextId:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        state:
+          type: integer
+          format: int32
+    ParticipantManifest:
+      type: object
+      properties:
+        active:
+          type: boolean
+        additionalProperties:
+          type: object
+          additionalProperties:
+            type: object
+        did:
+          type: string
+        key:
+          $ref: "#/components/schemas/KeyDescriptor"
+        participantId:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        serviceEndpoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+          uniqueItems: true
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+        serviceEndpoint:
+          type: string
+        type:
+          type: string

@@ -18,6 +18,7 @@ public interface IdentityHubApiContext {
     String IDENTITY = "identity";
     String IH_DID = "did";
     String PRESENTATION = "presentation";
+    String CREDENTIAL_REQUEST = "credential-request";
     @Deprecated(since = "0.9.0")
     String RESOLUTION = "resolution";
 }

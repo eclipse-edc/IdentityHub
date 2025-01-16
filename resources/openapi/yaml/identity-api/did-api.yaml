@@ -1,0 +1,481 @@
+openapi: 3.0.1
+info:
+  description: This is the Identity API for DID documents
+  title: DID Identity API
+  version: "1"
+paths:
+  /v1alpha/dids:
+    get:
+      description: Get all DID documents across all Participant Contexts. Requires
+        elevated access.
+      operationId: getAllDids
+      parameters:
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DidDocument"
+          description: The list of DID Documents.
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: The query was malformed or was not understood by the server.
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+      tags:
+      - DID
+  /v1alpha/participants/{participantContextId}/dids/publish:
+    post:
+      description: Publish an (existing) DID document. The DID is expected to exist
+        in the database.
+      operationId: publishDid
+      parameters:
+      - description: Base64-Url encode Participant Context ID
+        in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DidRequestPayload"
+      responses:
+        "200":
+          description: The DID document was successfully published.
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: The DID could not be published because it does not exist.
+      tags:
+      - DID
+  /v1alpha/participants/{participantContextId}/dids/query:
+    post:
+      description: Query for DID documents.
+      operationId: queryDids
+      parameters:
+      - description: Base64-Url encode Participant Context ID
+        in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuerySpec"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DidDocument"
+          description: The list of DID Documents.
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: The query was malformed or was not understood by the server.
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+      tags:
+      - DID
+  /v1alpha/participants/{participantContextId}/dids/state:
+    post:
+      description: Get state of a DID document
+      operationId: getDidState
+      parameters:
+      - description: Base64-Url encode Participant Context ID
+        in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DidRequestPayload"
+      responses:
+        "200":
+          description: The DID state was successfully obtained
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: The DID does not exist.
+      tags:
+      - DID
+  /v1alpha/participants/{participantContextId}/dids/unpublish:
+    post:
+      description: Un-Publish an (existing) DID document. The DID is expected to exist
+        in the database.
+      operationId: unpublishDid
+      parameters:
+      - description: Base64-Url encode Participant Context ID
+        in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DidRequestPayload"
+      responses:
+        "200":
+          description: The DID document was successfully un-published.
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: The DID could not be unpublished because the underlying VDR
+            does not support un-publishing.
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: The DID could not be un-published because it does not exist.
+      tags:
+      - DID
+  /v1alpha/participants/{participantContextId}/dids/{did}/endpoints:
+    delete:
+      description: Removes a service endpoint from a particular DID document.
+      operationId: deleteDidEndpoint
+      parameters:
+      - description: Base64-Url encode Participant Context ID
+        in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: did
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: serviceId
+        schema:
+          type: string
+      - in: query
+        name: autoPublish
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: The DID document was successfully updated.
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The DID document could not be updated, because a service endpoint\
+            \ with the same ID already exists."
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: The service endpoint could not be added because the DID does
+            not exist.
+      tags:
+      - DID
+    patch:
+      description: Replaces a service endpoint of a particular DID document.
+      operationId: replaceDidEndpoint
+      parameters:
+      - description: Base64-Url encode Participant Context ID
+        in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: did
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: autoPublish
+        schema:
+          type: boolean
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Service"
+      responses:
+        "200":
+          description: The DID document was successfully updated.
+        "400":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The DID document could not be updated, because a service endpoint\
+            \ with the given ID does not exist."
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: The service endpoint could not be replaced because the DID
+            does not exist.
+      tags:
+      - DID
+    post:
+      description: Adds a service endpoint to a particular DID document.
+      operationId: addDidEndpoint
+      parameters:
+      - description: Base64-Url encode Participant Context ID
+        in: path
+        name: participantContextId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: did
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: autoPublish
+        schema:
+          type: boolean
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Service"
+      responses:
+        "200":
+          description: The DID document was successfully updated.
+        "401":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+        "404":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: The service endpoint could not be added because the DID does
+            not exist.
+        "409":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+          description: "The DID document could not be updated, because a service endpoint\
+            \ with the same ID already exists."
+      tags:
+      - DID
+components:
+  schemas:
+    ApiErrorDetail:
+      type: object
+      properties:
+        invalidValue:
+          type: object
+        message:
+          type: string
+        path:
+          type: string
+        type:
+          type: string
+    Criterion:
+      type: object
+      properties:
+        operandLeft:
+          type: object
+        operandRight:
+          type: object
+        operator:
+          type: string
+    DidDocument:
+      type: object
+      properties:
+        '@context':
+          type: array
+          items:
+            type: object
+        authentication:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+        service:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+        verificationMethod:
+          type: array
+          items:
+            $ref: "#/components/schemas/VerificationMethod"
+    DidRequestPayload:
+      type: object
+      properties:
+        did:
+          type: string
+    QuerySpec:
+      type: object
+      properties:
+        filterExpression:
+          type: array
+          items:
+            $ref: "#/components/schemas/Criterion"
+        limit:
+          type: integer
+          format: int32
+        offset:
+          type: integer
+          format: int32
+        sortField:
+          type: string
+        sortOrder:
+          type: string
+          enum:
+          - ASC
+          - DESC
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+        serviceEndpoint:
+          type: string
+        type:
+          type: string
+    VerificationMethod:
+      type: object
+      properties:
+        controller:
+          type: string
+        id:
+          type: string
+        publicKeyJwk:
+          type: object
+          additionalProperties:
+            type: object
+        publicKeyMultibase:
+          type: string
+        type:
+          type: string

@@ -109,4 +109,28 @@ public class BomSmokeTests {
                         ":dist:bom:identityhub-with-sts-bom"
                 ));
     }
+
+    @Nested
+    @EndToEndTest
+    class IssuerService extends SmokeTest {
+        @RegisterExtension
+        protected RuntimeExtension runtime =
+                new RuntimePerMethodExtension(new EmbeddedRuntime("issuer-service-bom",
+                        new HashMap<>() {
+                            {
+                                put("web.http.port", DEFAULT_PORT);
+                                put("web.http.path", DEFAULT_PATH);
+                                put("web.http.version.port", valueOf(getFreePort()));
+                                put("web.http.version.path", "/api/version");
+                                put("web.http.did.port", valueOf(getFreePort()));
+                                put("web.http.did.path", "/api/did");
+                                put("web.http.credential-request.port", valueOf(getFreePort()));
+                                put("web.http.credential-request.path", "/api/issuance");
+                                put("edc.sts.account.api.url", "https://sts.com/accounts");
+                                put("edc.sts.accounts.api.auth.header.value", "password");
+                            }
+                        },
+                        ":dist:bom:issuerservice-bom"
+                ));
+    }
 }
