@@ -14,7 +14,6 @@ dependencies {
     testImplementation(libs.testcontainers.postgres)
 
     // needed for the Participant
-    testImplementation(project(":core:lib:credential-query-lib"))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(testFixtures(libs.edc.testfixtures.managementapi))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))

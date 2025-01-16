@@ -7,7 +7,6 @@ dependencies {
     api(project(":spi:identity-hub-store-spi"))
     implementation(project(":core:lib:verifiable-presentation-lib"))
     implementation(project(":core:lib:accesstoken-lib"))
-    implementation(project(":core:lib:credential-query-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
     implementation(libs.edc.spi.jwt.signer)
     implementation(libs.edc.core.connector) // for the CriterionToPredicateConverterImpl
