@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Metaform Systems, Inc. - initial API and implementation
+ *       Cofinity-X - Improvements for VC DataModel 2.0
  *
  */
 
@@ -35,21 +36,19 @@ import java.util.stream.Collectors;
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.VERIFIABLE_PRESENTATION_TYPE;
-import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.JSON_LD;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_LD;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.LdpPresentationGenerator.TYPE_ADDITIONAL_DATA;
 
 public class VerifiablePresentationServiceImpl implements VerifiablePresentationService {
-    private final CredentialFormat defaultFormatVp;
     private final PresentationCreatorRegistry registry;
     private final Monitor monitor;
 
     /**
      * Creates a PresentationGeneratorImpl object with the specified default formats for verifiable credentials and presentations.
-     *
-     * @param defaultFormatVp The default format for verifiable presentations.
      */
-    public VerifiablePresentationServiceImpl(CredentialFormat defaultFormatVp, PresentationCreatorRegistry registry, Monitor monitor) {
-        this.defaultFormatVp = defaultFormatVp;
+    public VerifiablePresentationServiceImpl(PresentationCreatorRegistry registry, Monitor monitor) {
         this.registry = registry;
         this.monitor = monitor;
     }
@@ -72,32 +71,28 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
             monitor.warning("A PresentationDefinition was submitted, but is currently ignored by the generator.");
         }
         var groups = credentials.stream().collect(Collectors.groupingBy(VerifiableCredentialContainer::format));
-        var jwtVcs = ofNullable(groups.get(CredentialFormat.JWT)).orElseGet(List::of);
-        var ldpVcs = ofNullable(groups.get(JSON_LD)).orElseGet(List::of);
+        var jwt11Vcs = ofNullable(groups.get(VC1_0_JWT)).orElseGet(List::of);
+        var ldp11Vcs = ofNullable(groups.get(VC1_0_LD)).orElseGet(List::of);
+        var jwt20Vcs = ofNullable(groups.get(VC2_0_JOSE)).orElseGet(List::of);
 
 
         var vpToken = new ArrayList<>();
-
         var additionalDataJwt = new HashMap<String, Object>();
         ofNullable(audience).ifPresent(aud -> additionalDataJwt.put(AUDIENCE, audience));
 
-        if (defaultFormatVp == JSON_LD) { // LDP-VPs cannot contain JWT VCs
-            if (!ldpVcs.isEmpty()) {
+        if (!jwt11Vcs.isEmpty()) {
+            String jwt11Vp = registry.createPresentation(participantContextId, jwt11Vcs, VC1_0_JWT, additionalDataJwt);
+            vpToken.add(jwt11Vp);
+        }
 
-                // todo: once we support PresentationDefinition, the types list could be dynamic
-                JsonObject ldpVp = registry.createPresentation(participantContextId, ldpVcs, JSON_LD, Map.of(
-                        TYPE_ADDITIONAL_DATA, List.of(VERIFIABLE_PRESENTATION_TYPE)));
-                vpToken.add(ldpVp);
-            }
+        if (!ldp11Vcs.isEmpty()) {
+            JsonObject ld11Vp = registry.createPresentation(participantContextId, ldp11Vcs, VC1_0_LD, Map.of(TYPE_ADDITIONAL_DATA, List.of(VERIFIABLE_PRESENTATION_TYPE)));
+            vpToken.add(ld11Vp);
+        }
 
-            if (!jwtVcs.isEmpty()) {
-                monitor.warning("The VP was requested in %s format, but the request yielded %s JWT-VCs, which cannot be transported in a LDP-VP. A second VP will be returned, containing JWT-VCs".formatted(JSON_LD, jwtVcs.size()));
-                String jwtVp = registry.createPresentation(participantContextId, jwtVcs, CredentialFormat.JWT, additionalDataJwt);
-                vpToken.add(jwtVp);
-            }
-
-        } else { //defaultFormatVp == JWT
-            vpToken.add(registry.createPresentation(participantContextId, credentials, CredentialFormat.JWT, additionalDataJwt));
+        if (!jwt20Vcs.isEmpty()) {
+            String jwt20Vp = registry.createPresentation(participantContextId, jwt20Vcs, VC2_0_JOSE, additionalDataJwt);
+            vpToken.add(jwt20Vp);
         }
 
         var presentationResponse = PresentationResponseMessage.Builder.newinstance().presentation(vpToken).build();

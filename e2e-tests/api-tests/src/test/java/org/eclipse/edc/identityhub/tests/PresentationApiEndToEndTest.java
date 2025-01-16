@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Cofinity-X - Improvements for VC DataModel 2.0
  *
  */
 
@@ -268,7 +269,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.JWT, cred))
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -279,7 +280,7 @@ public class PresentationApiEndToEndTest {
             var cred2 = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE_2, VerifiableCredential.class);
             var res2 = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE_2, CredentialFormat.JWT, cred2))
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT, cred2))
                     .issuerId("https://example.edu/issuers/12345")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -321,8 +322,7 @@ public class PresentationApiEndToEndTest {
             assertThat(response)
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
                     .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
-                    .hasEntrySatisfying("presentation", jsonValue -> assertThat(extractCredentials(((JsonString) jsonValue).getString())).isEmpty());
-
+                    .doesNotContainKey("presentation");
         }
 
         @Test
@@ -331,7 +331,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.JWT, cred))
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -366,6 +366,45 @@ public class PresentationApiEndToEndTest {
 
         }
 
+        @Test
+        void query_success_containsEnvelopedCredential(IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
+
+            var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
+            var res = VerifiableCredentialResource.Builder.newInstance()
+                    .state(VcStatus.ISSUED)
+                    .credential(new VerifiableCredentialContainer(TestData.JWT_VC_EXAMPLE, CredentialFormat.VC2_0_JOSE, cred))
+                    .issuerId("https://example.edu/issuers/565049")
+                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
+                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .build();
+
+            store.create(res);
+            var token = generateSiToken();
+            registerToken(token, context);
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var response = context.getPresentationEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .body(VALID_QUERY_WITH_SCOPE)
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
+                    .hasEntrySatisfying("presentation", jsonValue -> {
+                        assertThat(jsonValue.getValueType()).isEqualTo(JsonValue.ValueType.STRING);
+                        var vpToken = ((JsonString) jsonValue).getString();
+                        assertThat(vpToken).isNotNull();
+                    });
+        }
+
         @ParameterizedTest(name = "VcState code: {0}")
         @ValueSource(ints = { 600, 700, 800, 900 })
         void query_shouldFilterOutInvalidCreds(int vcStateCode, IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
@@ -394,7 +433,7 @@ public class PresentationApiEndToEndTest {
             // create the credential in the store
             var res = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.from(vcStateCode))
-                    .credential(new VerifiableCredentialContainer(vcContent, CredentialFormat.JWT, cred))
+                    .credential(new VerifiableCredentialContainer(vcContent, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -421,12 +460,7 @@ public class PresentationApiEndToEndTest {
             assertThat(response)
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
                     .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
-                    .hasEntrySatisfying("presentation", jsonValue -> {
-                        assertThat(jsonValue.getValueType()).isEqualTo(JsonValue.ValueType.STRING);
-                        var vpToken = ((JsonString) jsonValue).getString();
-                        assertThat(vpToken).isNotNull();
-                        assertThat(extractCredentials(vpToken)).isEmpty(); // credential should be filtered out
-                    });
+                    .doesNotContainKey("presentation");
 
         }
 
@@ -438,7 +472,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.JWT, cred))
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -467,7 +501,7 @@ public class PresentationApiEndToEndTest {
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newInstance()
                     .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.JWT, cred))
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
                     .participantId(TEST_PARTICIPANT_CONTEXT_ID)

@@ -32,7 +32,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
 import static org.eclipse.edc.identithub.verifiablepresentation.generators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
@@ -101,7 +100,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
 
         var rawVcs = credentials.stream()
                 .map(VerifiableCredentialContainer::rawVc)
-                .collect(Collectors.toList());
+                .toList();
         var tokenResult = tokenGenerationService.generate(privateKeyAlias, vpDecorator(rawVcs, issuerId), tp -> {
             additionalData.forEach(tp::claims);
             return tp;
