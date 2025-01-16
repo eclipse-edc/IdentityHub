@@ -56,6 +56,7 @@ import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 
 import java.net.URISyntaxException;
@@ -125,6 +126,8 @@ public class CoreServicesExtension implements ServiceExtension {
     private ParticipantContextService participantContextService;
     @Inject
     private JwsSignerProvider jwsSignerProvider;
+    @Inject
+    private TransactionContext transactionContext;
 
     @Override
     public String name() {
@@ -152,7 +155,7 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public PresentationCreatorRegistry presentationCreatorRegistry(ServiceExtensionContext context) {
         if (presentationCreatorRegistry == null) {
-            presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService);
+            presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService, transactionContext);
             var jwtGenerationService = new JwtGenerationService(jwsSignerProvider);
             presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(clock, jwtGenerationService), CredentialFormat.VC1_0_JWT);
 

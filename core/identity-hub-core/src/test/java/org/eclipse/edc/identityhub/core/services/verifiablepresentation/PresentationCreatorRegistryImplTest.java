@@ -23,6 +23,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantConte
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +50,7 @@ class PresentationCreatorRegistryImplTest {
     private static final String TEST_PARTICIPANT = "test-participant";
     private final KeyPairService keyPairService = mock();
     private final ParticipantContextService participantContextService = mock();
-    private final PresentationCreatorRegistryImpl registry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService);
+    private final PresentationCreatorRegistryImpl registry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService, new NoopTransactionContext());
 
     @BeforeEach
     void setup() {

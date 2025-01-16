@@ -27,6 +27,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.Presentat
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.HashMap;
 import java.util.List;
@@ -40,10 +41,12 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
     private final Map<CredentialFormat, PresentationGenerator<?>> creators = new HashMap<>();
     private final KeyPairService keyPairService;
     private final ParticipantContextService participantContextService;
+    private final TransactionContext transactionContext;
 
-    public PresentationCreatorRegistryImpl(KeyPairService keyPairService, ParticipantContextService participantContextService) {
+    public PresentationCreatorRegistryImpl(KeyPairService keyPairService, ParticipantContextService participantContextService, TransactionContext transactionContext) {
         this.keyPairService = keyPairService;
         this.participantContextService = participantContextService;
+        this.transactionContext = transactionContext;
     }
 
     @Override
@@ -60,24 +63,26 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
                 .filter(new Criterion("state", "=", KeyPairState.ACTIVATED.code()))
                 .build();
 
-        var keyPairResult = keyPairService.query(query)
-                .orElseThrow(f -> new EdcException("Error obtaining private key for participant '%s': %s".formatted(participantContextId, f.getFailureDetail())));
+        return transactionContext.execute(() -> {
+            var keyPairResult = keyPairService.query(query)
+                    .orElseThrow(f -> new EdcException("Error obtaining private key for participant '%s': %s".formatted(participantContextId, f.getFailureDetail())));
 
-        // check if there is a default key pair
-        var keyPair = keyPairResult.stream().filter(KeyPairResource::isDefaultPair).findAny()
-                .orElseGet(() -> keyPairResult.stream().findFirst().orElse(null));
+            // check if there is a default key pair
+            var keyPair = keyPairResult.stream().filter(KeyPairResource::isDefaultPair).findAny()
+                    .orElseGet(() -> keyPairResult.stream().findFirst().orElse(null));
 
-        if (keyPair == null) {
-            throw new EdcException("No active key pair found for participant '%s'".formatted(participantContextId));
-        }
+            if (keyPair == null) {
+                throw new EdcException("No active key pair found for participant '%s'".formatted(participantContextId));
+            }
 
-        var did = participantContextService.getParticipantContext(participantContextId)
-                .map(ParticipantContext::getDid)
-                .orElseThrow(f -> new EdcException(f.getFailureDetail()));
+            var did = participantContextService.getParticipantContext(participantContextId)
+                    .map(ParticipantContext::getDid)
+                    .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
-        var additionalDataWithController = new HashMap<>(additionalData);
-        additionalDataWithController.put(CONTROLLER_ADDITIONAL_DATA, did);
+            var additionalDataWithController = new HashMap<>(additionalData);
+            additionalDataWithController.put(CONTROLLER_ADDITIONAL_DATA, did);
 
-        return (T) creator.generatePresentation(credentials, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), did, additionalDataWithController);
+            return (T) creator.generatePresentation(credentials, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), did, additionalDataWithController);
+        });
     }
 }

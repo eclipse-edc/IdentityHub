@@ -25,8 +25,8 @@ dependencies {
     api(project(":extensions:store:sql:identity-hub-participantcontext-store-sql"))
 
     api(libs.edc.sql.core)
+    api(libs.edc.transaction.local)
     api(libs.edc.sql.pool)
-    api(libs.edc.sql.transactionlocal)
     api(libs.edc.sql.bootstrapper)
     api(libs.edc.sql.jtivdalidation)
 
