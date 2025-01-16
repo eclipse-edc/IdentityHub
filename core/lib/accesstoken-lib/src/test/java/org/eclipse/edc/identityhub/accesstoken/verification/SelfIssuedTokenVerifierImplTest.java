@@ -37,7 +37,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class AccessTokenVerifierImplTest {
+class SelfIssuedTokenVerifierImplTest {
     public static final String OWN_DID = "did:web:consumer";
     public static final String PARTICIPANT_CONTEXT_ID = "did:web:test_participant";
     private static final String OTHER_PARTICIPANT_DID = "did:web:provider";
@@ -50,7 +50,7 @@ class AccessTokenVerifierImplTest {
             .build();
     private final KeyPairResourcePublicKeyResolver localPublicKeyResolver = mock();
     private final ParticipantContextService participantContextService = mock();
-    private final AccessTokenVerifierImpl verifier = new AccessTokenVerifierImpl(tokenValidationSerivce, localPublicKeyResolver, tokenValidationRulesRegistry, pkResolver, participantContextService);
+    private final SelfIssuedTokenVerifierImpl verifier = new SelfIssuedTokenVerifierImpl(tokenValidationSerivce, localPublicKeyResolver, tokenValidationRulesRegistry, pkResolver, participantContextService);
 
     @Test
     void verify_validSiToken_validAccessToken() {

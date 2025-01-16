@@ -55,13 +55,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
-class AccessTokenVerifierImplComponentTest {
+class SelfIssuedTokenVerifierImplComponentTest {
 
     public static final String STS_PUBLIC_KEY_ID = "sts-key-123";
     public static final String PARTICIPANT_CONTEXT_ID = "test_participant";
     public static final String PARTICIPANT_DID = "did:web:test_participant";
     private final ParticipantContextService participantContextService = mock();
-    private AccessTokenVerifierImpl verifier;
+    private SelfIssuedTokenVerifierImpl verifier;
     private KeyPair stsKeyPair; // this is used to sign the acces token
     private KeyPair providerKeyPair; // this is used to sign the incoming SI token
     private KeyPairGenerator generator;
@@ -92,7 +92,7 @@ class AccessTokenVerifierImplComponentTest {
         when(resolverMock.resolveKey(anyString(), anyString())).thenReturn(Result.success(stsKeyPair.getPublic()));
 
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance().did(PARTICIPANT_DID).participantId(PARTICIPANT_CONTEXT_ID).apiTokenAlias("foobar").build()));
-        verifier = new AccessTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, (id) -> Result.success(providerKeyPair.getPublic()), participantContextService);
+        verifier = new SelfIssuedTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, (id) -> Result.success(providerKeyPair.getPublic()), participantContextService);
     }
 
 

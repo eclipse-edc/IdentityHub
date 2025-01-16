@@ -23,7 +23,7 @@ import org.eclipse.edc.identityhub.api.validation.PresentationQueryValidator;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
-import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
+import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -71,7 +71,7 @@ public class PresentationApiExtension implements ServiceExtension {
     @Inject
     private WebService webService;
     @Inject
-    private AccessTokenVerifier accessTokenVerifier;
+    private SelfIssuedTokenVerifier selfIssuedTokenVerifier;
     @Inject
     private CredentialQueryResolver credentialResolver;
     @Inject
@@ -102,7 +102,7 @@ public class PresentationApiExtension implements ServiceExtension {
         var jsonLdMapper = typeManager.getMapper(JSON_LD);
 
 
-        var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, accessTokenVerifier, verifiablePresentationService, context.getMonitor(), participantContextService);
+        var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, selfIssuedTokenVerifier, verifiablePresentationService, context.getMonitor(), participantContextService);
         webService.registerResource(contextString, new ObjectMapperProvider(jsonLdMapper));
         webService.registerResource(contextString, new JerseyJsonLdInterceptor(jsonLd, jsonLdMapper, PRESENTATION_SCOPE));
         webService.registerResource(contextString, controller);

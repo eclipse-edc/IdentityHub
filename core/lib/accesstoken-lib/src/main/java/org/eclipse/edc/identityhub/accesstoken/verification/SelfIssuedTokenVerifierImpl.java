@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.accesstoken.verification;
 
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
+import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.result.Result;
@@ -38,7 +38,7 @@ import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenCo
  * Default implementation used to verify Self-Issued tokens. The public key is expected to be found in the
  * issuer's DID
  */
-public class AccessTokenVerifierImpl implements AccessTokenVerifier {
+public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
 
 
     private static final String SCOPE_SEPARATOR = " ";
@@ -48,8 +48,8 @@ public class AccessTokenVerifierImpl implements AccessTokenVerifier {
     private final PublicKeyResolver publicKeyResolver;
     private final ParticipantContextService participantContextService;
 
-    public AccessTokenVerifierImpl(TokenValidationService tokenValidationService, KeyPairResourcePublicKeyResolver localPublicKeyService, TokenValidationRulesRegistry tokenValidationRulesRegistry,
-                                   PublicKeyResolver publicKeyResolver, ParticipantContextService participantContextService) {
+    public SelfIssuedTokenVerifierImpl(TokenValidationService tokenValidationService, KeyPairResourcePublicKeyResolver localPublicKeyService, TokenValidationRulesRegistry tokenValidationRulesRegistry,
+                                       PublicKeyResolver publicKeyResolver, ParticipantContextService participantContextService) {
         this.tokenValidationService = tokenValidationService;
         this.localPublicKeyService = localPublicKeyService;
         this.tokenValidationRulesRegistry = tokenValidationRulesRegistry;

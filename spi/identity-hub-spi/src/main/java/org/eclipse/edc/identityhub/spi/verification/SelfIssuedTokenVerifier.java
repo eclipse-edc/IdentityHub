@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * The AccessTokenVerifier interface represents a verifier for Self-Issued JWT tokens. It takes a base64-encoded ID token.
  */
-public interface AccessTokenVerifier {
+public interface SelfIssuedTokenVerifier {
     /**
      * Performs the verification on a self-issued ID token, asserting the following aspects:
      * <ul>

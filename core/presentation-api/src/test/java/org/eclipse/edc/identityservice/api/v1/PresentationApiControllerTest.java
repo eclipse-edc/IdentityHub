@@ -28,7 +28,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantConte
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.QueryResult;
-import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
+import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.Result;
@@ -75,7 +75,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     private final JsonObjectValidatorRegistry validatorRegistryMock = mock();
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final CredentialQueryResolver queryResolver = mock();
-    private final AccessTokenVerifier accessTokenVerifier = mock();
+    private final SelfIssuedTokenVerifier selfIssuedTokenVerifier = mock();
     private final VerifiablePresentationService generator = mock();
     private final ParticipantContextService participantContextService = mock(a -> ServiceResult.success(ParticipantContext.Builder.newInstance()
             .participantId(a.getArgument(0).toString())
@@ -106,7 +106,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
                 .isInstanceOf(InvalidRequestException.class)
                 .hasMessage("cannot transform");
-        verifyNoInteractions(accessTokenVerifier, queryResolver, generator);
+        verifyNoInteractions(selfIssuedTokenVerifier, queryResolver, generator);
     }
 
     @Test
@@ -122,7 +122,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
             assertThat(ed.getMessage()).isEqualTo("Not implemented.");
             assertThat(ed.getType()).isEqualTo("Not implemented.");
         });
-        verifyNoInteractions(accessTokenVerifier, queryResolver, generator);
+        verifyNoInteractions(selfIssuedTokenVerifier, queryResolver, generator);
     }
 
 
@@ -131,7 +131,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
-        when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.failure("test-failure"));
+        when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.failure("test-failure"));
 
         assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
@@ -144,7 +144,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
-        when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
+        when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(anyString(), any(), eq(List.of("test-scope1")))).thenReturn(QueryResult.unauthorized("test-failure"));
 
         assertThatThrownBy(() -> controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateJwt()))
@@ -158,7 +158,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
-        when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
+        when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(anyString(), any(), eq(List.of("test-scope1")))).thenReturn(QueryResult.success(Stream.empty()));
 
         when(generator.createPresentation(anyString(), anyList(), any(), any())).thenReturn(Result.failure("test-failure"));
@@ -173,7 +173,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY), any())).thenReturn(success());
         var presentationQueryBuilder = createPresentationQueryBuilder().build();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder));
-        when(accessTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
+        when(selfIssuedTokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("test-scope1")));
         when(queryResolver.query(anyString(), any(), eq(List.of("test-scope1")))).thenReturn(QueryResult.success(Stream.empty()));
 
         var pres = PresentationResponseMessage.Builder.newinstance().presentation(List.of(generateJwt()))
@@ -193,7 +193,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected PresentationApiController controller() {
-        return new PresentationApiController(validatorRegistryMock, typeTransformerRegistry, queryResolver, accessTokenVerifier, generator, mock(), participantContextService);
+        return new PresentationApiController(validatorRegistryMock, typeTransformerRegistry, queryResolver, selfIssuedTokenVerifier, generator, mock(), participantContextService);
     }
 
     private String generateJwt() {
