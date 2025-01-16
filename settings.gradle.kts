@@ -31,7 +31,7 @@ include(":spi:identity-hub-store-spi")
 include(":spi:did-spi")
 
 // core modules
-include(":core:presentation-api")
+
 include(":core:identity-hub-core")
 include(":core:identity-hub-participants")
 include(":core:identity-hub-keypairs")
@@ -43,6 +43,7 @@ include(":core:lib:keypair-lib")
 include(":core:lib:accesstoken-lib")
 
 // extension modules
+include(":extensions:protocols:dcp:presentation-api")
 include(":extensions:store:sql:identity-hub-did-store-sql")
 include(":extensions:store:sql:identity-hub-credentials-store-sql")
 include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
