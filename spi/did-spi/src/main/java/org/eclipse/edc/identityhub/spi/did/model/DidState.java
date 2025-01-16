@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identithub.spi.did.model;
+package org.eclipse.edc.identityhub.spi.did.model;
 
 import java.util.Arrays;
 

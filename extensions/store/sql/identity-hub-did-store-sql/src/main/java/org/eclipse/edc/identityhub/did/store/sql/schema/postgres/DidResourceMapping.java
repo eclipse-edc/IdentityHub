@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.did.store.sql.schema.postgres;
 
-import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.did.store.sql.DidResourceStatements;
+import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
 

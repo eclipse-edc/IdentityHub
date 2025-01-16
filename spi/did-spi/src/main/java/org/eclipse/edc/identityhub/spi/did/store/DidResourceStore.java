@@ -12,9 +12,9 @@
  *
  */
 
-package org.eclipse.edc.identithub.spi.did.store;
+package org.eclipse.edc.identityhub.spi.did.store;
 
-import org.eclipse.edc.identithub.spi.did.model.DidResource;
+import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;

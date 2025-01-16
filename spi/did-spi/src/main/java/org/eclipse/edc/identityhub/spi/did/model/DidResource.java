@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identithub.spi.did.model;
+package org.eclipse.edc.identityhub.spi.did.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;

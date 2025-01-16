@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.did;
 
-import org.eclipse.edc.identithub.spi.did.DidDocumentPublisher;
-import org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry;
+import org.eclipse.edc.identityhub.spi.did.DidDocumentPublisher;
+import org.eclipse.edc.identityhub.spi.did.DidDocumentPublisherRegistry;
 
 import java.util.HashMap;
 import java.util.Map;

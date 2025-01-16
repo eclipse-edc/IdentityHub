@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identithub.spi.did;
+package org.eclipse.edc.identityhub.spi.did;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;

@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.identityhub.api.didmanagement;
 
-import org.eclipse.edc.identithub.spi.did.DidDocumentService;
-import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.api.didmanagement.v1.unstable.DidManagementApiController;
 import org.eclipse.edc.identityhub.api.didmanagement.v1.unstable.GetAllDidsApiController;
 import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
+import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
+import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;

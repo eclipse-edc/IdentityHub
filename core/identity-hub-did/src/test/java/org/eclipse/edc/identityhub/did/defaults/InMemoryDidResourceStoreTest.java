@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.did.defaults;
 
-import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.did.store.test.DidResourceStoreTestBase;
+import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.query.CriterionOperatorRegistryImpl;
 
 class InMemoryDidResourceStoreTest extends DidResourceStoreTestBase {

@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identithub.spi.did;
+package org.eclipse.edc.identityhub.spi.did;
 
 import java.util.regex.Pattern;
 

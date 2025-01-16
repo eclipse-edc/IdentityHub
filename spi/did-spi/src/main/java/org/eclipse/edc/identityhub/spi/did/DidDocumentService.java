@@ -12,11 +12,11 @@
  *
  */
 
-package org.eclipse.edc.identithub.spi.did;
+package org.eclipse.edc.identityhub.spi.did;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.identithub.spi.did.model.DidResource;
+import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 

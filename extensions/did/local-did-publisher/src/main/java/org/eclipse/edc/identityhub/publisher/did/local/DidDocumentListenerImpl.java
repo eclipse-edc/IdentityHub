@@ -15,10 +15,10 @@
 package org.eclipse.edc.identityhub.publisher.did.local;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identithub.spi.did.events.DidDocumentEvent;
-import org.eclipse.edc.identithub.spi.did.events.DidDocumentListener;
-import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
-import org.eclipse.edc.identithub.spi.did.events.DidDocumentUnpublished;
+import org.eclipse.edc.identityhub.spi.did.events.DidDocumentEvent;
+import org.eclipse.edc.identityhub.spi.did.events.DidDocumentListener;
+import org.eclipse.edc.identityhub.spi.did.events.DidDocumentPublished;
+import org.eclipse.edc.identityhub.spi.did.events.DidDocumentUnpublished;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventRouter;
 

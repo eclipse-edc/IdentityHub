@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identithub.spi.did.events;
+package org.eclipse.edc.identityhub.spi.did.events;
 
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -21,14 +21,14 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
-class DidDocumentPublishedTest {
+class DidDocumentUnpublishedTest {
 
     private final TypeManager manager = new JacksonTypeManager();
 
     @Test
     void verify_serDes() {
 
-        var event = DidDocumentPublished.Builder.newInstance()
+        var event = DidDocumentUnpublished.Builder.newInstance()
                 .did("did:web:test")
                 .participantId("test-id")
                 .build();
@@ -36,6 +36,6 @@ class DidDocumentPublishedTest {
         var json = manager.writeValueAsString(event);
         assertThat(json).isNotNull();
 
-        assertThat(manager.readValue(json, DidDocumentPublished.class)).usingRecursiveComparison().isEqualTo(event);
+        assertThat(manager.readValue(json, DidDocumentUnpublished.class)).usingRecursiveComparison().isEqualTo(event);
     }
 }

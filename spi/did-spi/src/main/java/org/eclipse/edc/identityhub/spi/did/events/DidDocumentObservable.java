@@ -12,12 +12,12 @@
  *
  */
 
+package org.eclipse.edc.identityhub.spi.did.events;
+
+import org.eclipse.edc.spi.observe.Observable;
 
 /**
- * This module declares several service interfaces and extension points that are required to host, publish and store
- * DID documents.
+ * Manages and invokes {@link DidDocumentListener}s when a state change related to a DID document resource has happened.
  */
-@Spi(value = "Identity Hub DID services")
-package org.eclipse.edc.identithub.spi.did;
-
-import org.eclipse.edc.runtime.metamodel.annotation.Spi;
+public interface DidDocumentObservable extends Observable<DidDocumentListener> {
+}

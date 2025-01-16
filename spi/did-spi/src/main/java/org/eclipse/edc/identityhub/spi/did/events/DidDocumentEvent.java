@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identithub.spi.did.events;
+package org.eclipse.edc.identityhub.spi.did.events;
 
 import org.eclipse.edc.spi.event.Event;
 

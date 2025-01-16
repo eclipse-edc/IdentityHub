@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identithub.spi.did;
+package org.eclipse.edc.identityhub.spi.did;
 
 /**
  * Registry that hosts multiple {@link DidDocumentPublisher}s to dispatch the publishing of a DID document based on

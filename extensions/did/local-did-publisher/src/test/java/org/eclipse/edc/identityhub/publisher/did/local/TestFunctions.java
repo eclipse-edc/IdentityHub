@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.publisher.did.local;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identithub.spi.did.model.DidResource;
-import org.eclipse.edc.identithub.spi.did.model.DidState;
+import org.eclipse.edc.identityhub.spi.did.model.DidResource;
+import org.eclipse.edc.identityhub.spi.did.model.DidState;
 
 public interface TestFunctions {
     static DidResource.Builder createDidResource() {
