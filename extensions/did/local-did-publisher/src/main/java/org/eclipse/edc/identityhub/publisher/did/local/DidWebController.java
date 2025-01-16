@@ -68,7 +68,6 @@ public class DidWebController {
                 .filter(new Criterion("did", "=", did))
                 .build();
 
-        monitor.debug("Looking up '%s'".formatted(did));
         var dids = didResourceStore.query(q)
                 .stream()
                 .map(DidResource::getDocument)
