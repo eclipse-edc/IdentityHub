@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -12,8 +12,9 @@
  *
  */
 
-package org.eclipse.edc.identityhub.defaults;
+package org.eclipse.edc.identityhub.defaults.store;
 
+import org.eclipse.edc.identityhub.defaults.CredentialResourceLookup;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.spi.query.QueryResolver;

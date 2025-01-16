@@ -22,10 +22,10 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegi
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.statuslist2021.StatusList2021Status;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
-import org.eclipse.edc.identityhub.defaults.InMemoryCredentialStore;
-import org.eclipse.edc.identityhub.defaults.InMemoryKeyPairResourceStore;
-import org.eclipse.edc.identityhub.defaults.InMemoryParticipantContextStore;
-import org.eclipse.edc.identityhub.defaults.InMemorySignatureSuiteRegistry;
+import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialStore;
+import org.eclipse.edc.identityhub.defaults.store.InMemoryKeyPairResourceStore;
+import org.eclipse.edc.identityhub.defaults.store.InMemoryParticipantContextStore;
+import org.eclipse.edc.identityhub.defaults.store.InMemorySignatureSuiteRegistry;
 import org.eclipse.edc.identityhub.query.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
@@ -110,7 +110,7 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Provider(isDefault = true)
     public ScopeToCriterionTransformer createScopeTransformer(ServiceExtensionContext context) {
         context.getMonitor().warning("Using the default EdcScopeToCriterionTransformer. This is not intended for production use and should be replaced " +
-                                     "with a specialized implementation for your dataspace");
+                "with a specialized implementation for your dataspace");
         return new EdcScopeToCriterionTransformer();
     }
 
