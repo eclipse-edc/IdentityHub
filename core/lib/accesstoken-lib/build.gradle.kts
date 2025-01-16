@@ -12,5 +12,4 @@ dependencies {
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.edc.vc.jwt) // JtiValidationRule
     testImplementation(libs.edc.lib.token) // TokenValidationServiceImpl
-    testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
 }

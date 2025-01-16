@@ -25,7 +25,7 @@ import org.eclipse.edc.identithub.verifiablepresentation.VerifiablePresentationS
 import org.eclipse.edc.identithub.verifiablepresentation.generators.JwtEnvelopedPresentationGenerator;
 import org.eclipse.edc.identithub.verifiablepresentation.generators.JwtPresentationGenerator;
 import org.eclipse.edc.identithub.verifiablepresentation.generators.LdpPresentationGenerator;
-import org.eclipse.edc.identityhub.accesstoken.verification.SelfIssuedTokenVerifierImpl;
+import org.eclipse.edc.identityhub.core.services.SelfIssuedTokenVerifierImpl;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.query.CredentialQueryResolverImpl;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;

@@ -31,4 +31,6 @@ dependencies {
     testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
     testImplementation(testFixtures(libs.edc.vc.jwt)) // JWT generator
+    testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
+
 }
