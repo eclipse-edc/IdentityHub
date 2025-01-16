@@ -70,6 +70,8 @@ public class BomSmokeTests {
                                 put("web.http.identity.path", "/api/identity");
                                 put("web.http.version.port", valueOf(getFreePort()));
                                 put("web.http.version.path", "/api/version");
+                                put("web.http.did.port", valueOf(getFreePort()));
+                                put("web.http.did.path", "/api/did");
                                 put("edc.sts.account.api.url", "https://sts.com/accounts");
                                 put("edc.sts.accounts.api.auth.header.value", "password");
                             }

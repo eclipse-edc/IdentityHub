@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.query;
+package org.eclipse.edc.identityhub.core.services;
 
 import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
@@ -23,6 +23,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegi
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
+import org.eclipse.edc.identityhub.query.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.QueryFailure;
@@ -337,7 +338,7 @@ class CredentialQueryResolverImplTest {
 
     private VerifiableCredentialResource.Builder createCredentialResource(VerifiableCredential cred) {
         return VerifiableCredentialResource.Builder.newInstance()
-                .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.JSON_LD, cred))
+                .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.VC1_0_LD, cred))
                 .holderId("test-holder")
                 .issuerId("test-issuer")
                 .participantId(TEST_PARTICIPANT_CONTEXT_ID);

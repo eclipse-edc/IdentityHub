@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.query;
+package org.eclipse.edc.identityhub.core.services;
 
 import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
