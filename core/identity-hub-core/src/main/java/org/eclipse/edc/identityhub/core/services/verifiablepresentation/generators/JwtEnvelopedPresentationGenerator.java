@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Cofinity-X - initial API and implementation
+ *
  */
 
 package org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators;

@@ -11,6 +11,7 @@
  *       Metaform Systems, Inc. - initial API and implementation
  *
  */
+
 package org.eclipse.edc.identityhub.verifiablecredentials.store;
 
 import org.assertj.core.api.Assertions;
