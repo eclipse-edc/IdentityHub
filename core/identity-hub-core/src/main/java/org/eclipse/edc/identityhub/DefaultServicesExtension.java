@@ -22,11 +22,11 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegi
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.statuslist2021.StatusList2021Status;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
+import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryKeyPairResourceStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryParticipantContextStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemorySignatureSuiteRegistry;
-import org.eclipse.edc.identityhub.query.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;

@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.query;
+package org.eclipse.edc.identityhub.defaults;
 
 import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.spi.query.Criterion;

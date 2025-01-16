@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.query;
+package org.eclipse.edc.identityhub.defaults;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
