@@ -41,7 +41,7 @@ class VerifiableCredentialResourceTest {
         var vc = VerifiableCredentialResource.Builder.newInstance()
                 .issuerId("test-issuer")
                 .holderId("test-holder")
-                .participantId("test-participant")
+                .participantContextId("test-participant")
                 .build();
 
         assertThat(vc.getClock()).isNotNull();

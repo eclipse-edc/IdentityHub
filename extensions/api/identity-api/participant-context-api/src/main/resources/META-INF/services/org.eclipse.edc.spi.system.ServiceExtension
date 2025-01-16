@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.edc.identityhub.api.participantcontext.ParticipantContextManagementApiExtension
+org.eclipse.edc.identityhub.api.verifiablecredential.ParticipantContextManagementApiExtension

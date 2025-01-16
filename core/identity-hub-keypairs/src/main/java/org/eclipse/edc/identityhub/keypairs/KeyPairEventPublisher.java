@@ -40,7 +40,7 @@ public class KeyPairEventPublisher implements KeyPairEventListener {
     @Override
     public void added(KeyPairResource keyPair, String type) {
         var event = KeyPairAdded.Builder.newInstance()
-                .participantId(keyPair.getParticipantId())
+                .participantContextId(keyPair.getParticipantContextId())
                 .keyPairResource(keyPair)
                 .keyId(keyPair.getKeyId())
                 .publicKey(keyPair.getSerializedPublicKey(), type)
@@ -51,7 +51,7 @@ public class KeyPairEventPublisher implements KeyPairEventListener {
     @Override
     public void rotated(KeyPairResource keyPair, @Nullable KeyDescriptor newKeyDesc) {
         var event = KeyPairRotated.Builder.newInstance()
-                .participantId(keyPair.getParticipantId())
+                .participantContextId(keyPair.getParticipantContextId())
                 .keyPairResource(keyPair)
                 .keyId(keyPair.getKeyId())
                 .newKeyDescriptor(newKeyDesc)
@@ -62,7 +62,7 @@ public class KeyPairEventPublisher implements KeyPairEventListener {
     @Override
     public void revoked(KeyPairResource keyPair, @Nullable KeyDescriptor newKeyDesc) {
         var event = KeyPairRevoked.Builder.newInstance()
-                .participantId(keyPair.getParticipantId())
+                .participantContextId(keyPair.getParticipantContextId())
                 .keyPairResource(keyPair)
                 .keyId(keyPair.getKeyId())
                 .newKeyDescriptor(newKeyDesc)
@@ -73,7 +73,7 @@ public class KeyPairEventPublisher implements KeyPairEventListener {
     @Override
     public void activated(KeyPairResource activatedKeyPair, String type) {
         var event = KeyPairActivated.Builder.newInstance()
-                .participantId(activatedKeyPair.getParticipantId())
+                .participantContextId(activatedKeyPair.getParticipantContextId())
                 .keyPairResource(activatedKeyPair)
                 .publicKey(activatedKeyPair.getSerializedPublicKey(), type)
                 .keyId(activatedKeyPair.getKeyId())

@@ -14,12 +14,13 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials;
 
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.statement.SqlStatements;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 /**
- * Defines SQL-statements and column names for use with a SQL-based {@link org.eclipse.edc.identityhub.spi.store.CredentialStore}
+ * Defines SQL-statements and column names for use with a SQL-based {@link CredentialStore}
  */
 public interface CredentialStoreStatements extends SqlStatements {
     default String getCredentialResourceTable() {
@@ -66,8 +67,8 @@ public interface CredentialStoreStatements extends SqlStatements {
         return "verifiable_credential";
     }
 
-    default String getParticipantIdColumn() {
-        return "participant_id";
+    default String getParticipantContextIdColumn() {
+        return "participant_context_id";
     }
 
     String getInsertTemplate();

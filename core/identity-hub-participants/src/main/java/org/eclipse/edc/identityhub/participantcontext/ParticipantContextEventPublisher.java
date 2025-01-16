@@ -39,7 +39,7 @@ public class ParticipantContextEventPublisher implements ParticipantContextListe
     @Override
     public void created(ParticipantContext newContext, ParticipantManifest manifest) {
         var event = ParticipantContextCreated.Builder.newInstance()
-                .participantId(newContext.getParticipantId())
+                .participantContextId(newContext.getParticipantContextId())
                 .manifest(manifest)
                 .build();
         publish(event);
@@ -48,7 +48,7 @@ public class ParticipantContextEventPublisher implements ParticipantContextListe
     @Override
     public void updated(ParticipantContext updatedContext) {
         var event = ParticipantContextUpdated.Builder.newInstance()
-                .participantId(updatedContext.getParticipantId())
+                .participantContextId(updatedContext.getParticipantContextId())
                 .newState(updatedContext.getStateAsEnum())
                 .build();
         publish(event);
@@ -57,7 +57,7 @@ public class ParticipantContextEventPublisher implements ParticipantContextListe
     @Override
     public void deleting(ParticipantContext deletedContext) {
         var event = ParticipantContextDeleting.Builder.newInstance()
-                .participantId(deletedContext.getParticipantId())
+                .participantContextId(deletedContext.getParticipantContextId())
                 .participant(deletedContext)
                 .build();
         publish(event);
@@ -66,7 +66,7 @@ public class ParticipantContextEventPublisher implements ParticipantContextListe
     @Override
     public void deleted(ParticipantContext deletedContext) {
         var event = ParticipantContextDeleted.Builder.newInstance()
-                .participantId(deletedContext.getParticipantId())
+                .participantContextId(deletedContext.getParticipantContextId())
                 .build();
         publish(event);
     }

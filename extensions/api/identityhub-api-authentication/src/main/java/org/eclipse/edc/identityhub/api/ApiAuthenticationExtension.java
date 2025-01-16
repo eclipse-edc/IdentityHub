@@ -16,8 +16,8 @@ package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.identityhub.api.authentication.filter.RoleBasedAccessFeature;
 import org.eclipse.edc.identityhub.api.authentication.filter.ServicePrincipalAuthenticationFilter;
-import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.security.Vault;

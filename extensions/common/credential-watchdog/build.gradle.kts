@@ -20,7 +20,6 @@ plugins {
 dependencies {
 
     api(project(":spi:verifiable-credential-spi"))
-    api(project(":spi:identity-hub-store-spi"))
     implementation(libs.edc.spi.transaction)
 
     testImplementation(libs.edc.junit)

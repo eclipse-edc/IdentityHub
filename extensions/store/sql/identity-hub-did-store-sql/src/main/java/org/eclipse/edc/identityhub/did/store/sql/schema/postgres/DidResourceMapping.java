@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.did.store.sql.schema.postgres;
 
-import org.eclipse.edc.identithub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.did.store.sql.DidResourceStatements;
+import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
 
@@ -29,7 +29,7 @@ public class DidResourceMapping extends TranslationMapping {
     public static final String FIELD_CREATE_TIMESTAMP = "create_timestamp";
     public static final String FIELD_STATE_TIMESTAMP = "state_timestamp";
     public static final String FIELD_DOCUMENT = "document";
-    public static final String FIELD_PARTICIPANT_ID = "participantId";
+    public static final String FIELD_PARTICIPANT_CONTEXT_ID = "participantContextId";
 
 
     public DidResourceMapping(DidResourceStatements statements) {
@@ -38,6 +38,6 @@ public class DidResourceMapping extends TranslationMapping {
         add(FIELD_CREATE_TIMESTAMP, statements.getCreateTimestampColumn());
         add(FIELD_STATE_TIMESTAMP, statements.getStateTimestampColumn());
         add(FIELD_DOCUMENT, new DidDocumentMapping(statements));
-        add(FIELD_PARTICIPANT_ID, statements.getParticipantId());
+        add(FIELD_PARTICIPANT_CONTEXT_ID, statements.getParticipantContextId());
     }
 }

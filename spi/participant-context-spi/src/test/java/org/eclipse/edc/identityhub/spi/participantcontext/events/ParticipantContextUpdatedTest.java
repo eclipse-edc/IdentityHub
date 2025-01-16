@@ -27,7 +27,7 @@ class ParticipantContextUpdatedTest {
     @Test
     void verify_serDes() throws JsonProcessingException {
         var evt = ParticipantContextUpdated.Builder.newInstance()
-                .participantId("test-participantId")
+                .participantContextId("test-participantId")
                 .build();
 
         var json = manager.writeValueAsString(evt);

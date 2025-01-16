@@ -19,26 +19,26 @@ import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
-import org.eclipse.edc.identithub.verifiablecredential.CredentialStatusCheckServiceImpl;
-import org.eclipse.edc.identithub.verifiablepresentation.PresentationCreatorRegistryImpl;
-import org.eclipse.edc.identithub.verifiablepresentation.VerifiablePresentationServiceImpl;
-import org.eclipse.edc.identithub.verifiablepresentation.generators.JwtEnvelopedPresentationGenerator;
-import org.eclipse.edc.identithub.verifiablepresentation.generators.JwtPresentationGenerator;
-import org.eclipse.edc.identithub.verifiablepresentation.generators.LdpPresentationGenerator;
-import org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenVerifierImpl;
+import org.eclipse.edc.identityhub.core.services.query.CredentialQueryResolverImpl;
+import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialStatusCheckServiceImpl;
+import org.eclipse.edc.identityhub.core.services.verifiablepresentation.PresentationCreatorRegistryImpl;
+import org.eclipse.edc.identityhub.core.services.verifiablepresentation.VerifiablePresentationServiceImpl;
+import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.JwtEnvelopedPresentationGenerator;
+import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.JwtPresentationGenerator;
+import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.LdpPresentationGenerator;
+import org.eclipse.edc.identityhub.core.services.verification.SelfIssuedTokenVerifierImpl;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
-import org.eclipse.edc.identityhub.query.CredentialQueryResolverImpl;
-import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
-import org.eclipse.edc.identityhub.spi.verification.AccessTokenVerifier;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
@@ -56,6 +56,7 @@ import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 
 import java.net.URISyntaxException;
@@ -125,6 +126,8 @@ public class CoreServicesExtension implements ServiceExtension {
     private ParticipantContextService participantContextService;
     @Inject
     private JwsSignerProvider jwsSignerProvider;
+    @Inject
+    private TransactionContext transactionContext;
 
     @Override
     public String name() {
@@ -139,9 +142,9 @@ public class CoreServicesExtension implements ServiceExtension {
     }
 
     @Provider
-    public AccessTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
+    public SelfIssuedTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
         var keyResolver = new KeyPairResourcePublicKeyResolver(store, keyParserRegistry, context.getMonitor(), fallbackService);
-        return new AccessTokenVerifierImpl(tokenValidationService, keyResolver, tokenValidationRulesRegistry, publicKeyResolver, participantContextService);
+        return new SelfIssuedTokenVerifierImpl(tokenValidationService, keyResolver, tokenValidationRulesRegistry, publicKeyResolver, participantContextService);
     }
 
     @Provider
@@ -152,7 +155,7 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public PresentationCreatorRegistry presentationCreatorRegistry(ServiceExtensionContext context) {
         if (presentationCreatorRegistry == null) {
-            presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService);
+            presentationCreatorRegistry = new PresentationCreatorRegistryImpl(keyPairService, participantContextService, transactionContext);
             var jwtGenerationService = new JwtGenerationService(jwsSignerProvider);
             presentationCreatorRegistry.addCreator(new JwtPresentationGenerator(clock, jwtGenerationService), CredentialFormat.VC1_0_JWT);
 

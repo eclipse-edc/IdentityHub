@@ -17,12 +17,12 @@ plugins {
 }
 
 dependencies {
-    runtimeOnly(project(":core:presentation-api"))
     runtimeOnly(project(":core:identity-hub-did"))
     runtimeOnly(project(":core:identity-hub-core"))
     runtimeOnly(project(":core:identity-hub-participants"))
     runtimeOnly(project(":core:identity-hub-keypairs"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
+    runtimeOnly(project(":extensions:protocols:dcp:presentation-api"))
     runtimeOnly(project(":extensions:common:credential-watchdog"))
     runtimeOnly(project(":extensions:sts:sts-account-provisioner"))
     runtimeOnly(project(":extensions:api:identity-api:did-api"))
@@ -35,6 +35,7 @@ dependencies {
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
     runtimeOnly(libs.edc.api.version)
+    runtimeOnly(libs.edc.transaction.local) // needed by the PresentationCreatorRegistry
 
     runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.edc.jsonld)

@@ -25,8 +25,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
-import org.eclipse.edc.identityhub.spi.AuthorizationService;
+import org.eclipse.edc.identityhub.api.keypair.validation.KeyDescriptorValidator;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -43,12 +43,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.identityhub.spi.AuthorizationResultHandler.exceptionMapper;
+import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants/{participantId}/keypairs")
+@Path(Versions.UNSTABLE + "/participants/{participantContextId}/keypairs")
 public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     private final AuthorizationService authorizationService;
@@ -80,18 +80,18 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @GET
     @Override
-    public Collection<KeyPairResource> queryKeyPairByParticipantId(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        return onEncoded(participantId).map(decoded -> {
-            var query = ParticipantResource.queryByParticipantId(decoded).build();
+    public Collection<KeyPairResource> queryKeyPairByParticipantId(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
+        return onEncoded(participantContextId).map(decoded -> {
+            var query = ParticipantResource.queryByParticipantContextId(decoded).build();
             return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, decoded)).stream().filter(kpr -> authorizationService.isAuthorized(securityContext, kpr.getId(), KeyPairResource.class).succeeded()).toList();
         }).orElseThrow(InvalidRequestException::new);
     }
 
     @PUT
     @Override
-    public void addKeyPair(@PathParam("participantId") String participantId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault, @Context SecurityContext securityContext) {
+    public void addKeyPair(@PathParam("participantContextId") String participantContextId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault, @Context SecurityContext securityContext) {
         keyDescriptorValidator.validate(keyDescriptor).orElseThrow(ValidationFailureException::new);
-        onEncoded(participantId)
+        onEncoded(participantContextId)
                 .onSuccess(decoded ->
                         authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
                                 .compose(u -> keyPairService.addKeyPair(decoded, keyDescriptor, makeDefault))

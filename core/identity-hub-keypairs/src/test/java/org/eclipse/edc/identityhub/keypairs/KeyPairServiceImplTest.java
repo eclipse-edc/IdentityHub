@@ -20,11 +20,11 @@ import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
@@ -67,11 +67,11 @@ class KeyPairServiceImplTest {
     @BeforeEach
     void setup() {
         when(participantContextServiceMock.query(any(QuerySpec.class)))
-                .thenReturn(StoreResult.success(List.of(ParticipantContext.Builder.newInstance().participantId(PARTICIPANT_ID).apiTokenAlias("apitoken-alias").build())));
+                .thenReturn(StoreResult.success(List.of(ParticipantContext.Builder.newInstance().participantContextId(PARTICIPANT_ID).apiTokenAlias("apitoken-alias").build())));
     }
 
     @ParameterizedTest(name = "make default: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void addKeyPair_publicKeyGiven(boolean makeDefault) {
 
         when(keyPairResourceStore.create(any())).thenReturn(success());
@@ -79,7 +79,7 @@ class KeyPairServiceImplTest {
 
         assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, makeDefault)).isSucceeded();
 
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantId().equals(PARTICIPANT_ID)));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantContextId().equals(PARTICIPANT_ID)));
         // new key is set to active - expect an update in the DB
         verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
         verify(observableMock, times(2)).invokeForEach(any());
@@ -87,7 +87,7 @@ class KeyPairServiceImplTest {
     }
 
     @ParameterizedTest(name = "make default: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void addKeyPair_shouldGenerate_storesInVault(boolean makeDefault) {
         when(keyPairResourceStore.create(any())).thenReturn(success());
 
@@ -100,7 +100,7 @@ class KeyPairServiceImplTest {
 
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
         verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault &&
-                kpr.getParticipantId().equals(PARTICIPANT_ID) &&
+                kpr.getParticipantContextId().equals(PARTICIPANT_ID) &&
                 kpr.getState() == KeyPairState.ACTIVATED.code()));
         // new key is set to active - expect an update in the DB
         verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
@@ -126,7 +126,7 @@ class KeyPairServiceImplTest {
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
         //expect the query for other active keys at least once, if the new key is inactive
         verify(keyPairResourceStore, never()).query(any());
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.ACTIVATED.code()));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantContextId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.ACTIVATED.code()));
         // new key is set to active - expect an update in the DB
         verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
         verify(observableMock, times(2)).invokeForEach(any());
@@ -151,7 +151,7 @@ class KeyPairServiceImplTest {
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
         //expect the query for other active keys at least once, if the new key is inactive
         verify(keyPairResourceStore, times(1)).query(any());
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.CREATED.code()));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantContextId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.CREATED.code()));
         verify(observableMock, times(1)).invokeForEach(any());
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
@@ -168,7 +168,7 @@ class KeyPairServiceImplTest {
     @Test
     void addKeyPair_whenParticipantDeactivated_shouldFail() {
         var pc = ParticipantContext.Builder.newInstance()
-                .participantId(PARTICIPANT_ID)
+                .participantContextId(PARTICIPANT_ID)
                 .apiTokenAlias("apitoken-alias")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build();
@@ -391,7 +391,7 @@ class KeyPairServiceImplTest {
 
     @ParameterizedTest(name = "Valid state = {0}")
     // cannot use enum literals and the .code() method -> needs to be compile constant
-    @ValueSource(ints = { 100, 200 })
+    @ValueSource(ints = {100, 200})
     void activate(int validState) {
         var oldId = "old-id";
         var oldKey = createKeyPairResource().id(oldId).state(validState).build();
@@ -404,7 +404,7 @@ class KeyPairServiceImplTest {
 
     @ParameterizedTest(name = "Valid state = {0}")
     // cannot use enum literals and the .code() method -> needs to be compile constant
-    @ValueSource(ints = { 0, 30, 400, -10 })
+    @ValueSource(ints = {0, 30, 400, -10})
     void activate_invalidState(int validState) {
         var oldId = "old-id";
         var oldKey = createKeyPairResource().id(oldId).state(validState).build();
@@ -434,7 +434,7 @@ class KeyPairServiceImplTest {
                 .id(UUID.randomUUID().toString())
                 .keyId("test-key-1")
                 .privateKeyAlias("private-key-alias")
-                .participantId(PARTICIPANT_ID)
+                .participantContextId(PARTICIPANT_ID)
                 .serializedPublicKey("this-is-a-pem-string")
                 .useDuration(Duration.ofDays(6).toMillis());
     }

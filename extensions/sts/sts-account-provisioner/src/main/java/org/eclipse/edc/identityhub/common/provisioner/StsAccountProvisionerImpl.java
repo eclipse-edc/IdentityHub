@@ -64,11 +64,11 @@ public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountPro
         var payload = event.getPayload();
         ServiceResult<Void> result;
         if (payload instanceof ParticipantContextDeleted deletedEvent) {
-            result = stsAccountService.deleteAccount(deletedEvent.getParticipantId());
+            result = stsAccountService.deleteAccount(deletedEvent.getParticipantContextId());
         } else if (payload instanceof KeyPairRevoked kpe) {
-            result = updateStsClient(kpe.getKeyPairResource(), kpe.getParticipantId(), kpe.getNewKeyDescriptor());
+            result = updateStsClient(kpe.getKeyPairResource(), kpe.getParticipantContextId(), kpe.getNewKeyDescriptor());
         } else if (payload instanceof KeyPairRotated kpr) {
-            result = updateStsClient(kpr.getKeyPairResource(), kpr.getParticipantId(), kpr.getNewKeyDescriptor());
+            result = updateStsClient(kpr.getKeyPairResource(), kpr.getParticipantContextId(), kpr.getNewKeyDescriptor());
         } else {
             result = ServiceResult.badRequest("Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }

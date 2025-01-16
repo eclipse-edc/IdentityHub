@@ -17,8 +17,8 @@ package org.eclipse.edc.identityhub.api.keypair.v1.unstable;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
-import org.eclipse.edc.identityhub.spi.AuthorizationService;
+import org.eclipse.edc.identityhub.api.keypair.validation.KeyDescriptorValidator;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -113,7 +113,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
-            return criterion.getOperandLeft().equals("participantId") &&
+            return criterion.getOperandLeft().equals("participantContextId") &&
                     criterion.getOperator().equals("=") &&
                     criterion.getOperandRight().equals(PARTICIPANT_ID);
         }));
@@ -135,7 +135,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
-            return criterion.getOperandLeft().equals("participantId") &&
+            return criterion.getOperandLeft().equals("participantContextId") &&
                     criterion.getOperator().equals("=") &&
                     criterion.getOperandRight().equals(PARTICIPANT_ID);
         }));
@@ -153,14 +153,14 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
-            return criterion.getOperandLeft().equals("participantId") &&
+            return criterion.getOperandLeft().equals("participantContextId") &&
                     criterion.getOperator().equals("=") &&
                     criterion.getOperandRight().equals(PARTICIPANT_ID);
         }));
     }
 
     @ParameterizedTest(name = "Make default: {0}")
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     void addKeyPair(boolean makeDefault) {
         var descriptor = createKeyDescriptor()
                 .build();
@@ -354,7 +354,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     private KeyPairResource.Builder createKeyPair() {
         return KeyPairResource.Builder.newInstance()
                 .id("test-keypair")
-                .participantId(PARTICIPANT_ID)
+                .participantContextId(PARTICIPANT_ID)
                 .isDefaultPair(true)
                 .privateKeyAlias("test-alias")
                 .useDuration(Duration.ofDays(365).toMillis());

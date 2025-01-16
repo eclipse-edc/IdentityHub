@@ -40,7 +40,7 @@ public interface VerifiableCredentialsApi {
     @Operation(description = "Finds a VerifiableCredential by ID.",
             operationId = "getCredential",
             parameters = {
-                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The VerifiableCredential.",
@@ -58,7 +58,7 @@ public interface VerifiableCredentialsApi {
     @Operation(description = "Adds a new VerifiableCredential into the system.",
             operationId = "addCredential",
             parameters = {
-                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = VerifiableCredentialManifest.class))),
             responses = {
@@ -76,7 +76,7 @@ public interface VerifiableCredentialsApi {
     @Operation(description = "Update an existing VerifiableCredential.",
             operationId = "updateCredential",
             parameters = {
-                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = VerifiableCredentialManifest.class))),
             responses = {
@@ -95,7 +95,7 @@ public interface VerifiableCredentialsApi {
     @Operation(description = "Query VerifiableCredentials by type.",
             operationId = "queryCredentialsByType",
             parameters = {
-                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
                     @Parameter(name = "type", description = "Credential type. If omitted, all credentials are returned (limited to 50 elements).")
             },
             responses = {
@@ -112,10 +112,10 @@ public interface VerifiableCredentialsApi {
     @Operation(description = "Delete a VerifiableCredential.",
             operationId = "deleteCredential",
             parameters = {
-                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
             },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The VerifiableCredential was deleted successfully", content = { @Content(schema = @Schema(implementation = String.class)) }),
+                    @ApiResponse(responseCode = "200", description = "The VerifiableCredential was deleted successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "403", description = "The request could not be completed, because either the authentication was missing or was not valid.",

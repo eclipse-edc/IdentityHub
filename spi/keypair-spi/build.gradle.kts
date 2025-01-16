@@ -14,10 +14,9 @@
 
 plugins {
     `java-library`
+    `java-test-fixtures`
     `maven-publish`
 }
-
-val swagger: String by project
 
 dependencies {
 
@@ -25,4 +24,7 @@ dependencies {
     api(libs.edc.spi.core)
 
     testImplementation(libs.edc.lib.json)
+    testFixturesImplementation(libs.edc.junit)
+    testFixturesImplementation(libs.junit.jupiter.api)
+    testFixturesImplementation(libs.assertj)
 }

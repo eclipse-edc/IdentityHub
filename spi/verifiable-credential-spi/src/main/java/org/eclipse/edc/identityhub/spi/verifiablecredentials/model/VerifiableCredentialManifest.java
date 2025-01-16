@@ -47,7 +47,7 @@ public class VerifiableCredentialManifest {
     /**
      * The participant id.
      */
-    public String getParticipantId() {
+    public String getParticipantContextId() {
         return participantId;
     }
 
@@ -93,7 +93,7 @@ public class VerifiableCredentialManifest {
             return this;
         }
 
-        public Builder participantId(String participantId) {
+        public Builder participantContextId(String participantId) {
             manifest.participantId = participantId;
             return this;
         }

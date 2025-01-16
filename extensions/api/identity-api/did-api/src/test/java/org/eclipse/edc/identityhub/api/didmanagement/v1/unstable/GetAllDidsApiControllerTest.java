@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.api.didmanagement.v1.unstable;
 
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identithub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.api.Versions;
+import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.Test;

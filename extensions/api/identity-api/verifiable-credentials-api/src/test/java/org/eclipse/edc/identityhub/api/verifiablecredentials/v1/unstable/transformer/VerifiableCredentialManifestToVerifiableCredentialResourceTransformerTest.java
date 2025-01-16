@@ -43,7 +43,7 @@ class VerifiableCredentialManifestToVerifiableCredentialResourceTransformerTest 
                 .build();
         var manifest = VerifiableCredentialManifest.Builder.newInstance()
                 .id("id")
-                .participantId("participantId")
+                .participantContextId("participantId")
                 .issuancePolicy(mock())
                 .reissuancePolicy(mock())
                 .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, credential))
@@ -53,7 +53,7 @@ class VerifiableCredentialManifestToVerifiableCredentialResourceTransformerTest 
 
         assertNotNull(resource);
         assertThat(resource.getId()).isEqualTo(manifest.getId());
-        assertThat(resource.getParticipantId()).isEqualTo(manifest.getParticipantId());
+        assertThat(resource.getParticipantContextId()).isEqualTo(manifest.getParticipantContextId());
         assertThat(resource.getIssuancePolicy()).isEqualTo(manifest.getIssuancePolicy());
         assertThat(resource.getReissuancePolicy()).isEqualTo(manifest.getReissuancePolicy());
         assertThat(resource.getVerifiableCredential()).isEqualTo(manifest.getVerifiableCredentialContainer());

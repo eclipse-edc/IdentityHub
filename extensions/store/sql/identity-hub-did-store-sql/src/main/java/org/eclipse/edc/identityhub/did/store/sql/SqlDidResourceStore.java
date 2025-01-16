@@ -16,8 +16,8 @@ package org.eclipse.edc.identityhub.did.store.sql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identithub.spi.did.model.DidResource;
-import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.did.model.DidResource;
+import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -62,7 +62,7 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
                         resource.getCreateTimestamp(),
                         resource.getStateTimestamp(),
                         toJson(resource.getDocument()),
-                        resource.getParticipantId());
+                        resource.getParticipantContextId());
                 return StoreResult.success();
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
@@ -84,7 +84,7 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
                             resource.getCreateTimestamp(),
                             resource.getStateTimestamp(),
                             toJson(resource.getDocument()),
-                            resource.getParticipantId(),
+                            resource.getParticipantContextId(),
                             did);
                     return StoreResult.success();
                 }
@@ -144,7 +144,7 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
                 .stateTimeStamp(resultSet.getLong(statements.getStateTimestampColumn()))
                 .document(fromJson(resultSet.getString(statements.getDidDocumentColumn()), DidDocument.class))
                 .state(resultSet.getInt(statements.getStateColumn()))
-                .participantId(resultSet.getString(statements.getParticipantId()))
+                .participantContextId(resultSet.getString(statements.getParticipantContextId()))
                 .build();
     }
 }

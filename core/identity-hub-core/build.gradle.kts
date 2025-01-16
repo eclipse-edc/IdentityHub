@@ -4,10 +4,12 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
-    api(project(":spi:identity-hub-store-spi"))
+    api(project(":spi:verifiable-credential-spi"))
+    api(project(":spi:keypair-spi"))
+    api(project(":spi:participant-context-spi"))
+    api(project(":spi:did-spi"))
     implementation(project(":core:lib:verifiable-presentation-lib"))
     implementation(project(":core:lib:accesstoken-lib"))
-    implementation(project(":core:lib:credential-query-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
     implementation(libs.edc.spi.jwt.signer)
     implementation(libs.edc.core.connector) // for the CriterionToPredicateConverterImpl
@@ -29,6 +31,9 @@ dependencies {
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.jsonld)
-    testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
+    testImplementation(testFixtures(project(":spi:keypair-spi")))
+    testImplementation(testFixtures(project(":spi:participant-context-spi")))
+    testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(testFixtures(libs.edc.vc.jwt)) // JWT generator
+
 }

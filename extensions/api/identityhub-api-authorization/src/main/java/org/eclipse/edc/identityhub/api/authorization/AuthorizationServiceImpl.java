@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.api.authorization;
 
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.identityhub.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.spi.result.ServiceResult;
 
@@ -43,7 +43,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
         var result = function.apply(resourceId);
         if (result != null) {
-            return Objects.equals(result.getParticipantId(), name)
+            return Objects.equals(result.getParticipantContextId(), name)
                     ? ServiceResult.success()
                     : ServiceResult.unauthorized("User '%s' is not authorized to access resource of type %s with ID '%s'.".formatted(name, resourceClass, resourceId));
         }

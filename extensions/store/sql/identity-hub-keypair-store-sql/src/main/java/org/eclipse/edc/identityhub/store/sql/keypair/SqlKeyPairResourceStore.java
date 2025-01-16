@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.store.sql.keypair;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -55,7 +55,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                 }
                 var stmt = statements.getInsertTemplate();
                 queryExecutor.execute(connection, stmt, keyPairResource.getId(),
-                        keyPairResource.getParticipantId(),
+                        keyPairResource.getParticipantContextId(),
                         keyPairResource.getTimestamp(),
                         keyPairResource.getKeyId(),
                         keyPairResource.getGroupName(),
@@ -99,7 +99,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
 
                 var updateStmt = statements.getUpdateTemplate();
                 queryExecutor.execute(connection, updateStmt, id,
-                        keyPairResource.getParticipantId(),
+                        keyPairResource.getParticipantContextId(),
                         keyPairResource.getTimestamp(),
                         keyPairResource.getKeyId(),
                         keyPairResource.getGroupName(),
@@ -148,7 +148,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
 
         return KeyPairResource.Builder.newInstance()
                 .id(resultSet.getString(statements.getIdColumn()))
-                .participantId(resultSet.getString(statements.getParticipantIdColumn()))
+                .participantContextId(resultSet.getString(statements.getParticipantIdColumn()))
                 .timestamp(resultSet.getLong(statements.getTimestampColumn()))
                 .keyId(resultSet.getString(statements.getKeyIdColumn()))
                 .groupName(resultSet.getString(statements.getGroupNameColumn()))

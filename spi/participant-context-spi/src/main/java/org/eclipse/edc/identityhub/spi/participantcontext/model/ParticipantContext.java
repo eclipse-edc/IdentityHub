@@ -135,13 +135,13 @@ public class ParticipantContext extends ParticipantResource {
             return this;
         }
 
-        public Builder participantId(String participantId) {
-            this.entity.participantId = participantId;
+        public Builder participantContextId(String participantContextId) {
+            this.entity.participantContextId = participantContextId;
             return this;
         }
 
         public ParticipantContext build() {
-            Objects.requireNonNull(entity.participantId, "Participant ID cannot be null");
+            Objects.requireNonNull(entity.participantContextId, "Participant ID cannot be null");
             Objects.requireNonNull(entity.apiTokenAlias, "API Token Alias cannot be null");
 
             if (entity.getLastModified() == 0L) {

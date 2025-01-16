@@ -18,21 +18,21 @@ import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
-import org.eclipse.edc.identithub.spi.did.DidConstants;
-import org.eclipse.edc.identithub.spi.did.DidDocumentPublisher;
-import org.eclipse.edc.identithub.spi.did.DidDocumentPublisherRegistry;
-import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
-import org.eclipse.edc.identithub.spi.did.model.DidResource;
-import org.eclipse.edc.identithub.spi.did.model.DidState;
-import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.did.DidConstants;
+import org.eclipse.edc.identityhub.spi.did.DidDocumentPublisher;
+import org.eclipse.edc.identityhub.spi.did.DidDocumentPublisherRegistry;
+import org.eclipse.edc.identityhub.spi.did.events.DidDocumentPublished;
+import org.eclipse.edc.identityhub.spi.did.model.DidResource;
+import org.eclipse.edc.identityhub.spi.did.model.DidState;
+import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -82,7 +82,7 @@ public class ParticipantContextApiEndToEndTest {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
 
             didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
 
@@ -103,14 +103,14 @@ public class ParticipantContextApiEndToEndTest {
                     .then()
                     .statusCode(200)
                     .extract().body().as(ParticipantContext.class);
-            assertThat(su.getParticipantId()).isEqualTo(SUPER_USER);
+            assertThat(su.getParticipantContextId()).isEqualTo(SUPER_USER);
         }
 
         @Test
         void getUserById_notOwner_expect403(IdentityHubEndToEndTestContext context) {
             var user1 = "user1";
             var user1Context = ParticipantContext.Builder.newInstance()
-                    .participantId(user1)
+                    .participantContextId(user1)
                     .did("did:web:" + user1)
                     .apiTokenAlias(user1 + "-alias")
                     .build();
@@ -118,7 +118,7 @@ public class ParticipantContextApiEndToEndTest {
 
             var user2 = "user2";
             var user2Context = ParticipantContext.Builder.newInstance()
-                    .participantId(user2)
+                    .participantContextId(user2)
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();
@@ -154,7 +154,7 @@ public class ParticipantContextApiEndToEndTest {
                     .body("apiKey", notNullValue())
                     .body("clientSecret", notNullValue());
 
-            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
+            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantId())));
 
             assertThat(context.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1);
             assertThat(context.getDidForParticipant(manifest.getParticipantId())).hasSize(1)
@@ -187,7 +187,7 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
                     .body(notNullValue());
 
-            verify(subscriber).on(argThat(env -> env.getPayload() instanceof ParticipantContextCreated created && created.getParticipantId().equals(manifest.getParticipantId())));
+            verify(subscriber).on(argThat(env -> env.getPayload() instanceof ParticipantContextCreated created && created.getParticipantContextId().equals(manifest.getParticipantId())));
             verify(subscriber, times(1)).on(argThat(evt -> evt.getPayload() instanceof DidDocumentPublished));
 
             assertThat(context.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1)
@@ -248,7 +248,7 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
                     .body(notNullValue());
 
-            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
+            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantId())));
 
             assertThat(context.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1)
                     .allSatisfy(kpr -> assertThat(kpr.getState()).isEqualTo(KeyPairState.CREATED.code()));
@@ -267,7 +267,7 @@ public class ParticipantContextApiEndToEndTest {
 
             var principal = "another-user";
             var anotherUser = ParticipantContext.Builder.newInstance()
-                    .participantId(principal)
+                    .participantContextId(principal)
                     .did("did:web:" + principal)
                     .apiTokenAlias(principal + "-alias")
                     .build();
@@ -328,7 +328,7 @@ public class ParticipantContextApiEndToEndTest {
                     .log().ifValidationFails()
                     .statusCode(409);
 
-            verify(subscriber, never()).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantId().equals(manifest.getParticipantId())));
+            verify(subscriber, never()).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantId())));
         }
 
         @Test
@@ -413,7 +413,7 @@ public class ParticipantContextApiEndToEndTest {
             // verify the correct event was emitted
             verify(subscriber).on(argThat(env -> {
                 var evt = (ParticipantContextUpdated) env.getPayload();
-                return evt.getParticipantId().equals(participantId) && evt.getNewState() == ParticipantContextState.ACTIVATED;
+                return evt.getParticipantContextId().equals(participantId) && evt.getNewState() == ParticipantContextState.ACTIVATED;
             }));
         }
 
@@ -423,53 +423,53 @@ public class ParticipantContextApiEndToEndTest {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(ParticipantContextUpdated.class, subscriber);
 
-            var participantId = "test-user";
-            var did = "did:web:" + participantId;
+            var participantContextId = "test-user";
+            var did = "did:web:" + participantContextId;
 
-            context.createParticipant(participantId);
+            context.createParticipant(participantContextId);
             assertThat(context.getDidResourceForParticipant(did).getState()).isEqualTo(DidState.PUBLISHED.code());
 
             context.getIdentityApiEndpoint().baseRequest()
                     .header(new Header("x-api-key", superUserKey))
                     .contentType(ContentType.JSON)
-                    .post("/v1alpha/participants/%s/state?isActive=false".formatted(toBase64(participantId)))
+                    .post("/v1alpha/participants/%s/state?isActive=false".formatted(toBase64(participantContextId)))
                     .then()
                     .log().ifError()
                     .statusCode(204);
 
-            var updatedParticipant = participantContextService.getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+            var updatedParticipant = participantContextService.getParticipantContext(participantContextId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
             assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.DEACTIVATED.ordinal());
             assertThat(context.getDidResourceForParticipant(did).getState()).isEqualTo(DidState.UNPUBLISHED.code());
 
             // verify the correct event was emitted
             verify(subscriber).on(argThat(env -> {
                 var evt = (ParticipantContextUpdated) env.getPayload();
-                return evt.getParticipantId().equals(participantId) && evt.getNewState() == ParticipantContextState.DEACTIVATED;
+                return evt.getParticipantContextId().equals(participantContextId) && evt.getNewState() == ParticipantContextState.DEACTIVATED;
             }));
         }
 
         @Test
         void deleteParticipant(IdentityHubEndToEndTestContext context, Vault vault) {
             var superUserKey = context.createSuperUser();
-            var participantId = "another-user";
-            context.createParticipant(participantId);
-            assertThat(context.getDidForParticipant(participantId)).hasSize(1);
+            var participantContextId = "another-user";
+            context.createParticipant(participantContextId);
+            assertThat(context.getDidForParticipant(participantContextId)).hasSize(1);
 
-            var pc = context.getParticipant(participantId);
-            var alias = context.getKeyPairsForParticipant(participantId).stream().findFirst().map(KeyPairResource::getPrivateKeyAlias).orElseThrow();
+            var pc = context.getParticipant(participantContextId);
+            var alias = context.getKeyPairsForParticipant(participantContextId).stream().findFirst().map(KeyPairResource::getPrivateKeyAlias).orElseThrow();
             var apiTokenAlias = pc.getApiTokenAlias();
 
 
             context.getIdentityApiEndpoint().baseRequest()
                     .header(new Header("x-api-key", superUserKey))
                     .contentType(ContentType.JSON)
-                    .delete("/v1alpha/participants/%s".formatted(toBase64(participantId)))
+                    .delete("/v1alpha/participants/%s".formatted(toBase64(participantContextId)))
                     .then()
                     .log().ifError()
                     .statusCode(204);
 
-            assertThat(context.getDidForParticipant(participantId)).isEmpty();
-            assertThat(context.getKeyPairsForParticipant(participantId)).isEmpty();
+            assertThat(context.getDidForParticipant(participantContextId)).isEmpty();
+            assertThat(context.getKeyPairsForParticipant(participantContextId)).isEmpty();
             assertThat(vault.resolveSecret(alias)).isNull();
             assertThat(vault.resolveSecret(apiTokenAlias)).isNull();
         }
@@ -477,14 +477,14 @@ public class ParticipantContextApiEndToEndTest {
         @Test
         void regenerateToken(IdentityHubEndToEndTestContext context) {
             var superUserKey = context.createSuperUser();
-            var participantId = "another-user";
-            var userToken = context.createParticipant(participantId);
+            var participantContextId = "another-user";
+            var userToken = context.createParticipant(participantContextId);
 
             assertThat(Arrays.asList(userToken, superUserKey))
                     .allSatisfy(t -> context.getIdentityApiEndpoint().baseRequest()
                             .header(new Header("x-api-key", t))
                             .contentType(ContentType.JSON)
-                            .post("/v1alpha/participants/%s/token".formatted(toBase64(participantId)))
+                            .post("/v1alpha/participants/%s/token".formatted(toBase64(participantContextId)))
                             .then()
                             .log().ifError()
                             .statusCode(200)
@@ -494,32 +494,32 @@ public class ParticipantContextApiEndToEndTest {
         @Test
         void updateRoles(IdentityHubEndToEndTestContext context) {
             var superUserKey = context.createSuperUser();
-            var participantId = "some-user";
-            context.createParticipant(participantId);
+            var participantContextId = "some-user";
+            context.createParticipant(participantContextId);
 
             context.getIdentityApiEndpoint().baseRequest()
                     .header(new Header("x-api-key", superUserKey))
                     .contentType(ContentType.JSON)
                     .body(List.of("role1", "role2", "admin"))
-                    .put("/v1alpha/participants/%s/roles".formatted(toBase64(participantId)))
+                    .put("/v1alpha/participants/%s/roles".formatted(toBase64(participantContextId)))
                     .then()
                     .log().ifError()
                     .statusCode(204);
 
-            assertThat(context.getParticipant(participantId).getRoles()).containsExactlyInAnyOrder("role1", "role2", "admin");
+            assertThat(context.getParticipant(participantContextId).getRoles()).containsExactlyInAnyOrder("role1", "role2", "admin");
         }
 
         @ParameterizedTest(name = "Expect 403, role = {0}")
-        @ValueSource(strings = { "some-role", "admin" })
+        @ValueSource(strings = {"some-role", "admin"})
         void updateRoles_whenNotSuperuser(String role, IdentityHubEndToEndTestContext context) {
-            var participantId = "some-user";
-            var userToken = context.createParticipant(participantId);
+            var participantContextId = "some-user";
+            var userToken = context.createParticipant(participantContextId);
 
             context.getIdentityApiEndpoint().baseRequest()
                     .header(new Header("x-api-key", userToken))
                     .contentType(ContentType.JSON)
                     .body(List.of(role))
-                    .put("/v1alpha/participants/%s/roles".formatted(toBase64(participantId)))
+                    .put("/v1alpha/participants/%s/roles".formatted(toBase64(participantContextId)))
                     .then()
                     .log().ifError()
                     .statusCode(403);
@@ -530,8 +530,8 @@ public class ParticipantContextApiEndToEndTest {
             var superUserKey = context.createSuperUser();
             range(0, 10)
                     .forEach(i -> {
-                        var participantId = "user" + i;
-                        context.createParticipant(participantId);
+                        var participantContextId = "user" + i;
+                        context.createParticipant(participantContextId);
                     });
             var found = context.getIdentityApiEndpoint().baseRequest()
                     .contentType(JSON)
@@ -549,8 +549,8 @@ public class ParticipantContextApiEndToEndTest {
             var superUserKey = context.createSuperUser();
             range(0, 10)
                     .forEach(i -> {
-                        var participantId = "user" + i;
-                        context.createParticipant(participantId); // implicitly creates a keypair
+                        var participantContextId = "user" + i;
+                        context.createParticipant(participantContextId); // implicitly creates a keypair
                     });
             var found = context.getIdentityApiEndpoint().baseRequest()
                     .contentType(JSON)
@@ -568,8 +568,8 @@ public class ParticipantContextApiEndToEndTest {
             var superUserKey = context.createSuperUser();
             IntStream.range(0, 70)
                     .forEach(i -> {
-                        var participantId = "user" + i;
-                        context.createParticipant(participantId); // implicitly creates a keypair
+                        var participantContextId = "user" + i;
+                        context.createParticipant(participantContextId); // implicitly creates a keypair
                     });
             var found = context.getIdentityApiEndpoint().baseRequest()
                     .contentType(JSON)
@@ -588,8 +588,8 @@ public class ParticipantContextApiEndToEndTest {
 
             range(0, 10)
                     .forEach(i -> {
-                        var participantId = "user" + i;
-                        context.createParticipant(participantId); // implicitly creates a keypair
+                        var participantContextId = "user" + i;
+                        context.createParticipant(participantContextId); // implicitly creates a keypair
                     });
             context.getIdentityApiEndpoint().baseRequest()
                     .contentType(JSON)

@@ -16,10 +16,10 @@ package org.eclipse.edc.identityhub.publisher.did.local;
 
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identithub.spi.did.DidWebParser;
-import org.eclipse.edc.identithub.spi.did.model.DidResource;
-import org.eclipse.edc.identithub.spi.did.model.DidState;
-import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.did.DidWebParser;
+import org.eclipse.edc.identityhub.spi.did.model.DidResource;
+import org.eclipse.edc.identityhub.spi.did.model.DidState;
+import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.Test;

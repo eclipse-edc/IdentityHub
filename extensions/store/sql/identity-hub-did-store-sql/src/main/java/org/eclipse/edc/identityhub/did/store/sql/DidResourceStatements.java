@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.did.store.sql;
 
-import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.statement.SqlStatements;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
@@ -47,8 +47,8 @@ public interface DidResourceStatements extends SqlStatements {
         return "did_document";
     }
 
-    default String getParticipantId() {
-        return "participant_id";
+    default String getParticipantContextId() {
+        return "participant_context_id";
     }
 
     String getInsertTemplate();

@@ -39,37 +39,37 @@ public interface ParticipantContextService {
     /**
      * Fetches the {@link ParticipantContext} by ID.
      *
-     * @param participantId the ID to look for.
+     * @param participantContextId the ID to look for.
      * @return The participant context, or a failure if not found.
      */
-    ServiceResult<ParticipantContext> getParticipantContext(String participantId);
+    ServiceResult<ParticipantContext> getParticipantContext(String participantContextId);
 
     /**
      * Deletes the {@link ParticipantContext} by ID.
      *
-     * @param participantId the ID to delete.
+     * @param participantContextId the ID to delete.
      * @return Success if deleted, or a failure if not found.
      */
-    ServiceResult<Void> deleteParticipantContext(String participantId);
+    ServiceResult<Void> deleteParticipantContext(String participantContextId);
 
     /**
      * Re-generates the API token for a particular participant context. The API token will be overwritten in the vault using
      * the same alias as before.
      * Note that API tokens are <strong>never</strong> stored in the database.
      *
-     * @param participantId The participant ID to regenerate the API token for.
+     * @param participantContextId The participant ID to regenerate the API token for.
      * @return the new API token, or a failure
      */
-    ServiceResult<String> regenerateApiToken(String participantId);
+    ServiceResult<String> regenerateApiToken(String participantContextId);
 
     /**
      * Applies a modification function to the {@link ParticipantContext} and persists the changed object in the database.
      *
-     * @param participantId        The ID of the participant to modify
+     * @param participantContextId The ID of the participant to modify
      * @param modificationFunction A modification function that is applied to the participant context
      * @return success if the update could be performed, a failure otherwise
      */
-    ServiceResult<Void> updateParticipant(String participantId, Consumer<ParticipantContext> modificationFunction);
+    ServiceResult<Void> updateParticipant(String participantContextId, Consumer<ParticipantContext> modificationFunction);
 
     /**
      * Returns a collection of {@link ParticipantContext} objects that match the specified query.

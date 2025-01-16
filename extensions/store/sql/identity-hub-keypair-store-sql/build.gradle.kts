@@ -17,12 +17,12 @@ plugins {
 }
 
 dependencies {
-    api(project(":spi:identity-hub-store-spi"))
+    api(project(":spi:keypair-spi"))
     implementation(libs.edc.lib.sql)
     implementation(libs.edc.sql.bootstrapper)
     implementation(libs.edc.spi.transaction.datasource)
 
-    testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
+    testImplementation(testFixtures(project(":spi:keypair-spi")))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
     testImplementation(libs.edc.junit)
 }

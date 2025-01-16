@@ -16,12 +16,12 @@ package org.eclipse.edc.identityhub.api.keypair;
 
 import org.eclipse.edc.identityhub.api.keypair.v1.unstable.GetAllKeyPairsApiController;
 import org.eclipse.edc.identityhub.api.keypair.v1.unstable.KeyPairResourceApiController;
-import org.eclipse.edc.identityhub.api.v1.validation.KeyDescriptorValidator;
-import org.eclipse.edc.identityhub.spi.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.IdentityHubApiContext;
+import org.eclipse.edc.identityhub.api.keypair.validation.KeyDescriptorValidator;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.EdcException;

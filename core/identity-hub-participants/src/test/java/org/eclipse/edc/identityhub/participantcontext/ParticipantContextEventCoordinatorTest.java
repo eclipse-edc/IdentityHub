@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import org.eclipse.edc.identithub.spi.did.DidDocumentService;
+import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
@@ -63,7 +63,7 @@ class ParticipantContextEventCoordinatorTest {
         when(keyPairService.addKeyPair(eq(participantId), any(), anyBoolean())).thenReturn(ServiceResult.success());
 
         coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
-                .participantId(participantId)
+                .participantContextId(participantId)
                 .manifest(createManifest().build())
                 .build()));
 
@@ -78,7 +78,7 @@ class ParticipantContextEventCoordinatorTest {
         when(didDocumentService.store(any(), eq(participantId))).thenReturn(ServiceResult.badRequest("foobar"));
 
         coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
-                .participantId(participantId)
+                .participantContextId(participantId)
                 .manifest(createManifest().build())
                 .build()));
 
@@ -94,7 +94,7 @@ class ParticipantContextEventCoordinatorTest {
         when(keyPairService.addKeyPair(eq(participantId), any(), anyBoolean())).thenReturn(ServiceResult.success());
 
         coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
-                .participantId(participantId)
+                .participantContextId(participantId)
                 .manifest(createManifest().active(true).build())
                 .build()));
 
@@ -110,7 +110,7 @@ class ParticipantContextEventCoordinatorTest {
         when(keyPairService.addKeyPair(eq(participantId), any(), anyBoolean())).thenReturn(ServiceResult.success());
 
         coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
-                .participantId(participantId)
+                .participantContextId(participantId)
                 .manifest(createManifest().active(false).build())
                 .build()));
 
@@ -127,7 +127,7 @@ class ParticipantContextEventCoordinatorTest {
         when(keyPairService.addKeyPair(eq(participantId), any(KeyDescriptor.class), anyBoolean())).thenReturn(ServiceResult.notFound("foobar"));
 
         coordinator.on(envelope(ParticipantContextCreated.Builder.newInstance()
-                .participantId(participantId)
+                .participantContextId(participantId)
                 .manifest(createManifest().active(true).build())
                 .build()));
 

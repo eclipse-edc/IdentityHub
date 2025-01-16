@@ -18,14 +18,15 @@ plugins {
     `maven-publish`
 }
 
-val swagger: String by project
-
 dependencies {
 
     api(project(":spi:participant-context-spi"))
     api(libs.edc.spi.dcp)
 
     testImplementation(libs.edc.lib.json)
+    testFixturesImplementation(libs.edc.junit)
+    testFixturesImplementation(libs.junit.jupiter.api)
+    testFixturesImplementation(libs.assertj)
     testFixturesImplementation(libs.nimbus.jwt)
     testFixturesImplementation(libs.edc.spi.identity.did)
     testFixturesImplementation(libs.edc.lib.common.crypto)

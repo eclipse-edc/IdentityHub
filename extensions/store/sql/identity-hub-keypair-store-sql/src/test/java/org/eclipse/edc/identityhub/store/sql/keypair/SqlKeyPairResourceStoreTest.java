@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.identityhub.store.sql.keypair;
 
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.keypair.store.KeyPairResourceStoreTestBase;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.store.sql.keypair.schema.postgres.PostgresDialectStatements;
-import org.eclipse.edc.identityhub.store.test.KeyPairResourceStoreTestBase;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.junit.testfixtures.TestUtils;

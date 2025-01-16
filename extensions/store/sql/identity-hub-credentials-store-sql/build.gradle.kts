@@ -17,13 +17,13 @@ plugins {
 }
 
 dependencies {
-    api(project(":spi:identity-hub-store-spi"))
+    api(project(":spi:verifiable-credential-spi"))
     implementation(libs.edc.lib.sql)
     implementation(libs.edc.lib.util)
     implementation(libs.edc.sql.bootstrapper) // for the schema bootstrapper
     implementation(libs.edc.spi.transaction.datasource)
 
-    testImplementation(testFixtures(project(":spi:identity-hub-store-spi")))
+    testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
     testImplementation(libs.edc.junit)
 }

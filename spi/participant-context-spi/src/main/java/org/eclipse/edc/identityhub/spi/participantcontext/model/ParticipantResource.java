@@ -21,18 +21,18 @@ import org.eclipse.edc.spi.query.QuerySpec;
  * This is the base class for all resources that are owned by a {@link ParticipantContext}.
  */
 public abstract class ParticipantResource {
-    protected String participantId;
+    protected String participantContextId;
 
-    public static QuerySpec.Builder queryByParticipantId(String participantId) {
-        return QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", participantId));
+    public static QuerySpec.Builder queryByParticipantContextId(String participantContextId) {
+        return QuerySpec.Builder.newInstance().filter(new Criterion("participantContextId", "=", participantContextId));
     }
 
     /**
      * The {@link ParticipantContext} that this resource belongs to.
      */
 
-    public String getParticipantId() {
-        return participantId;
+    public String getParticipantContextId() {
+        return participantContextId;
     }
 
     public abstract static class Builder<T extends ParticipantResource, B extends ParticipantResource.Builder<T, B>> {
@@ -44,8 +44,8 @@ public abstract class ParticipantResource {
 
         public abstract B self();
 
-        public B participantId(String participantId) {
-            entity.participantId = participantId;
+        public B participantContextId(String participantContextId) {
+            entity.participantContextId = participantContextId;
             return self();
         }
 

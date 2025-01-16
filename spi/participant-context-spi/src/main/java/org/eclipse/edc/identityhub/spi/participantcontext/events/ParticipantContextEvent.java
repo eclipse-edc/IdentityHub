@@ -23,10 +23,10 @@ import java.util.Objects;
  * Base class for all events related to state changes and actions of {@link ParticipantContext}s
  */
 public abstract class ParticipantContextEvent extends Event {
-    protected String participantId;
+    protected String participantContextId;
 
-    public String getParticipantId() {
-        return participantId;
+    public String getParticipantContextId() {
+        return participantContextId;
     }
 
     public abstract static class Builder<T extends ParticipantContextEvent, B extends ParticipantContextEvent.Builder<T, B>> {
@@ -39,13 +39,13 @@ public abstract class ParticipantContextEvent extends Event {
 
         public abstract B self();
 
-        public B participantId(String participantId) {
-            event.participantId = participantId;
+        public B participantContextId(String participantContextId) {
+            event.participantContextId = participantContextId;
             return self();
         }
 
         public T build() {
-            Objects.requireNonNull((event.participantId));
+            Objects.requireNonNull((event.participantContextId));
             return event;
         }
     }

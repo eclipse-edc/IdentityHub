@@ -22,15 +22,15 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegi
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.statuslist2021.StatusList2021Status;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
-import org.eclipse.edc.identityhub.defaults.InMemoryCredentialStore;
-import org.eclipse.edc.identityhub.defaults.InMemoryKeyPairResourceStore;
-import org.eclipse.edc.identityhub.defaults.InMemoryParticipantContextStore;
-import org.eclipse.edc.identityhub.defaults.InMemorySignatureSuiteRegistry;
-import org.eclipse.edc.identityhub.query.EdcScopeToCriterionTransformer;
-import org.eclipse.edc.identityhub.spi.ScopeToCriterionTransformer;
-import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.store.ParticipantContextStore;
+import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialStore;
+import org.eclipse.edc.identityhub.defaults.store.InMemoryKeyPairResourceStore;
+import org.eclipse.edc.identityhub.defaults.store.InMemoryParticipantContextStore;
+import org.eclipse.edc.identityhub.defaults.store.InMemorySignatureSuiteRegistry;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
+import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
@@ -46,10 +46,10 @@ import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.accesstoken.verification.AccessTokenConstants.TOKEN_CLAIM;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
 
 @Extension(NAME)
 public class DefaultServicesExtension implements ServiceExtension {
@@ -110,7 +110,7 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Provider(isDefault = true)
     public ScopeToCriterionTransformer createScopeTransformer(ServiceExtensionContext context) {
         context.getMonitor().warning("Using the default EdcScopeToCriterionTransformer. This is not intended for production use and should be replaced " +
-                                     "with a specialized implementation for your dataspace");
+                "with a specialized implementation for your dataspace");
         return new EdcScopeToCriterionTransformer();
     }
 

@@ -30,7 +30,7 @@ public class BaseSqlDialectStatements implements DidResourceStatements {
                 .column(getCreateTimestampColumn())
                 .column(getStateTimestampColumn())
                 .jsonColumn(getDidDocumentColumn())
-                .column(getParticipantId())
+                .column(getParticipantContextId())
                 .insertInto(getDidResourceTableName());
     }
 
@@ -42,7 +42,7 @@ public class BaseSqlDialectStatements implements DidResourceStatements {
                 .column(getCreateTimestampColumn())
                 .column(getStateTimestampColumn())
                 .jsonColumn(getDidDocumentColumn())
-                .column(getParticipantId())
+                .column(getParticipantContextId())
                 .update(getDidResourceTableName(), getIdColumn());
     }
 

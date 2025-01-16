@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.common.provisioner;
 
 import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccount;
-import org.eclipse.edc.identithub.spi.did.DidDocumentService;
+import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
@@ -108,7 +108,7 @@ class StsAccountProvisionerImplTest {
         when(accountServiceMock.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.success(createStsClient().build()));
         when(accountServiceMock.updateAccount(any())).thenAnswer(a -> ServiceResult.success(a.getArguments()[0]));
         accountProvisioner.on(event(KeyPairRevoked.Builder.newInstance()
-                .participantId(PARTICIPANT_CONTEXT_ID)
+                .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                 .keyId(KEY_ID)
                 .build()));
@@ -124,7 +124,7 @@ class StsAccountProvisionerImplTest {
         when(accountServiceMock.updateAccount(any())).thenAnswer(a -> ServiceResult.success(a.getArguments()[0]));
 
         accountProvisioner.on(event(KeyPairRotated.Builder.newInstance()
-                .participantId(PARTICIPANT_CONTEXT_ID)
+                .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                 .keyId(KEY_ID)
                 .build()));
@@ -138,7 +138,7 @@ class StsAccountProvisionerImplTest {
     void onParticipantDeleted_shouldDelete() {
         when(accountServiceMock.deleteAccount(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.success());
         accountProvisioner.on(event(ParticipantContextDeleted.Builder.newInstance()
-                .participantId(PARTICIPANT_CONTEXT_ID)
+                .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .build()));
 
         verify(accountServiceMock).deleteAccount(PARTICIPANT_CONTEXT_ID);

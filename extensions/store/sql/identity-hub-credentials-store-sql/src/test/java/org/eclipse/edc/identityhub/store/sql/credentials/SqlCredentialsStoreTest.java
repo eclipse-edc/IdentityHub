@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials;
 
-import org.eclipse.edc.identityhub.spi.store.CredentialStore;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres.PostgresDialectStatements;
-import org.eclipse.edc.identityhub.store.test.CredentialStoreTestBase;
+import org.eclipse.edc.identityhub.verifiablecredentials.store.CredentialStoreTestBase;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.junit.testfixtures.TestUtils;

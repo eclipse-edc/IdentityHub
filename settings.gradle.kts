@@ -27,11 +27,10 @@ include(":spi:identity-hub-spi")
 include(":spi:participant-context-spi")
 include(":spi:verifiable-credential-spi")
 include(":spi:keypair-spi")
-include(":spi:identity-hub-store-spi")
 include(":spi:did-spi")
 
 // core modules
-include(":core:presentation-api")
+
 include(":core:identity-hub-core")
 include(":core:identity-hub-participants")
 include(":core:identity-hub-keypairs")
@@ -41,9 +40,9 @@ include(":core:identity-hub-did")
 include(":core:lib:verifiable-presentation-lib")
 include(":core:lib:keypair-lib")
 include(":core:lib:accesstoken-lib")
-include(":core:lib:credential-query-lib")
 
 // extension modules
+include(":extensions:protocols:dcp:presentation-api")
 include(":extensions:store:sql:identity-hub-did-store-sql")
 include(":extensions:store:sql:identity-hub-credentials-store-sql")
 include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
@@ -63,6 +62,10 @@ include(":extensions:api:identity-api:participant-context-api")
 include(":extensions:api:identity-api:verifiable-credentials-api")
 include(":extensions:api:identity-api:did-api")
 include(":extensions:api:identity-api:keypair-api")
+// Identity API validators
+include(":extensions:api:identity-api:validators:keypair-validators")
+include(":extensions:api:identity-api:validators:participant-context-validators")
+include(":extensions:api:identity-api:validators:verifiable-credential-validators")
 
 // other modules
 include(":launcher:identityhub")

@@ -27,8 +27,8 @@ public class ParticipantContextId {
     /**
      * Decode a base64-url encoded participantId.
      *
-     * @param encoded base64-url encoded participantId.
-     * @return human-readable participantId.
+     * @param encoded base64-url encoded participantContextId.
+     * @return human-readable participantContextId.
      */
     public static Result<String> onEncoded(String encoded) {
         var bytes = Base64.getUrlDecoder().decode(encoded.getBytes());

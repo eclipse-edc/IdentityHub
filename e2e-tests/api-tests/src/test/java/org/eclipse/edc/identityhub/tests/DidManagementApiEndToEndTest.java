@@ -17,12 +17,12 @@ package org.eclipse.edc.identityhub.tests;
 import io.restassured.http.Header;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
-import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
-import org.eclipse.edc.identithub.spi.did.events.DidDocumentUnpublished;
-import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.did.events.DidDocumentPublished;
+import org.eclipse.edc.identityhub.spi.did.events.DidDocumentUnpublished;
+import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -57,7 +57,7 @@ public class DidManagementApiEndToEndTest {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
 
             didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
 
@@ -80,7 +80,7 @@ public class DidManagementApiEndToEndTest {
             // create second user
             var user2 = "user2";
             var user2Context = ParticipantContext.Builder.newInstance()
-                    .participantId(user2)
+                    .participantContextId(user2)
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();
@@ -188,7 +188,7 @@ public class DidManagementApiEndToEndTest {
             // create second user
             var user2 = "user2";
             var user2Context = ParticipantContext.Builder.newInstance()
-                    .participantId(user2)
+                    .participantContextId(user2)
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();

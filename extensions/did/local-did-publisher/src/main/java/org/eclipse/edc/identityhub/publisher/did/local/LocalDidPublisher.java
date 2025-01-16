@@ -14,15 +14,15 @@
 
 package org.eclipse.edc.identityhub.publisher.did.local;
 
-import org.eclipse.edc.identithub.spi.did.DidDocumentPublisher;
-import org.eclipse.edc.identithub.spi.did.events.DidDocumentObservable;
-import org.eclipse.edc.identithub.spi.did.model.DidResource;
-import org.eclipse.edc.identithub.spi.did.model.DidState;
-import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.did.DidDocumentPublisher;
+import org.eclipse.edc.identityhub.spi.did.events.DidDocumentObservable;
+import org.eclipse.edc.identityhub.spi.did.model.DidResource;
+import org.eclipse.edc.identityhub.spi.did.model.DidState;
+import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 
-import static org.eclipse.edc.identithub.spi.did.DidConstants.DID_WEB_METHOD_REGEX;
+import static org.eclipse.edc.identityhub.spi.did.DidConstants.DID_WEB_METHOD_REGEX;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
 
@@ -64,7 +64,7 @@ public class LocalDidPublisher implements DidDocumentPublisher {
         return didResourceStore.update(existingDocument)
                 .map(v -> success())
                 .orElse(f -> failure(f.getFailureDetail()))
-                .onSuccess(v -> observable.invokeForEach(l -> l.published(existingDocument.getDocument(), existingDocument.getParticipantId())));
+                .onSuccess(v -> observable.invokeForEach(l -> l.published(existingDocument.getDocument(), existingDocument.getParticipantContextId())));
     }
 
     @Override
@@ -78,7 +78,7 @@ public class LocalDidPublisher implements DidDocumentPublisher {
         return didResourceStore.update(existingDocument)
                 .map(v -> success())
                 .orElse(f -> failure(f.getFailureDetail()))
-                .onSuccess(v -> observable.invokeForEach(l -> l.unpublished(existingDocument.getDocument(), existingDocument.getParticipantId())));
+                .onSuccess(v -> observable.invokeForEach(l -> l.unpublished(existingDocument.getDocument(), existingDocument.getParticipantContextId())));
 
     }
 

@@ -19,9 +19,9 @@ import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
@@ -51,7 +51,7 @@ public class VerifiableCredentialApiEndToEndTest {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
 
             didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
 
@@ -204,10 +204,10 @@ public class VerifiableCredentialApiEndToEndTest {
             return Base64.getUrlEncoder().encodeToString(s.getBytes());
         }
 
-        private VerifiableCredentialManifest.Builder createManifest(String participantId, VerifiableCredential vc) {
+        private VerifiableCredentialManifest.Builder createManifest(String participantContextId, VerifiableCredential vc) {
             return VerifiableCredentialManifest.Builder.newInstance()
                     .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, vc))
-                    .participantId(participantId);
+                    .participantContextId(participantContextId);
         }
 
     }

@@ -7,7 +7,6 @@ dependencies {
     api(project(":spi:did-spi"))
 
     implementation(project(":spi:keypair-spi"))
-    implementation(project(":spi:identity-hub-store-spi"))
     implementation(project(":spi:participant-context-spi"))
     implementation(libs.edc.core.connector) // for the reflection-based query resolver
     implementation(libs.edc.lib.common.crypto)

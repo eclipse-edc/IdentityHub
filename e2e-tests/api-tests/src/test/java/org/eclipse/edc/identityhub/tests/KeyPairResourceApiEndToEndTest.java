@@ -17,18 +17,18 @@ package org.eclipse.edc.identityhub.tests;
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
-import org.eclipse.edc.identithub.spi.did.events.DidDocumentPublished;
-import org.eclipse.edc.identithub.spi.did.model.DidState;
-import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.did.events.DidDocumentPublished;
+import org.eclipse.edc.identityhub.spi.did.model.DidState;
+import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -72,7 +72,7 @@ public class KeyPairResourceApiEndToEndTest {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
 
             didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
 
@@ -91,7 +91,7 @@ public class KeyPairResourceApiEndToEndTest {
             // create second user
             var user2 = "user2";
             var user2Context = ParticipantContext.Builder.newInstance()
-                    .participantId(user2)
+                    .participantContextId(user2)
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();
@@ -137,7 +137,7 @@ public class KeyPairResourceApiEndToEndTest {
             // create second user
             var user2 = "user2";
             var user2Context = ParticipantContext.Builder.newInstance()
-                    .participantId(user2)
+                    .participantContextId(user2)
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();
@@ -184,30 +184,30 @@ public class KeyPairResourceApiEndToEndTest {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(KeyPairAdded.class, subscriber);
 
-            var participantId = "user1";
-            var token = context.createParticipant(participantId);
+            var participantContextId = "user1";
+            var token = context.createParticipant(participantContextId);
 
             assertThat(Arrays.asList(token, superUserKey))
                     .allSatisfy(t -> {
-                        var keyDesc = context.createKeyDescriptor(participantId)
+                        var keyDesc = context.createKeyDescriptor(participantContextId)
                                 .keyId(UUID.randomUUID().toString())
                                 .build();
                         context.getIdentityApiEndpoint().baseRequest()
                                 .contentType(JSON)
                                 .header(new Header("x-api-key", t))
                                 .body(keyDesc)
-                                .put("/v1alpha/participants/%s/keypairs".formatted(toBase64(participantId)))
+                                .put("/v1alpha/participants/%s/keypairs".formatted(toBase64(participantContextId)))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(204)
                                 .body(notNullValue());
 
-                        assertThat(context.getKeyPairsForParticipant(participantId))
+                        assertThat(context.getKeyPairsForParticipant(participantContextId))
                                 .hasSizeGreaterThanOrEqualTo(2)
                                 .anyMatch(kpr -> kpr.getKeyId().equals(keyDesc.getKeyId()));
                         verify(subscriber).on(argThat(env -> {
                             var evt = (KeyPairAdded) env.getPayload();
-                            return evt.getParticipantId().equals(participantId) &&
+                            return evt.getParticipantContextId().equals(participantContextId) &&
                                     evt.getKeyPairResource().getId().equals(keyDesc.getResourceId()) &&
                                     evt.getKeyId().equals(keyDesc.getKeyId());
                         }));
@@ -359,7 +359,7 @@ public class KeyPairResourceApiEndToEndTest {
             // verify that the "rotated" event fired once
             verify(subscriber).on(argThat(env -> {
                 if (env.getPayload() instanceof KeyPairRotated evt) {
-                    return evt.getParticipantId().equals(user1);
+                    return evt.getParticipantContextId().equals(user1);
                 }
                 return false;
             }));
@@ -374,7 +374,7 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "New KeyID {0}")
-        @ValueSource(strings = { "did:web:user1#new-key-id", "new-key-id" })
+        @ValueSource(strings = {"did:web:user1#new-key-id", "new-key-id"})
         void rotate_withUserToken(String keyId, IdentityHubEndToEndTestContext context, EventRouter router, StsAccountStore accountStore) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(KeyPairRotated.class, subscriber);
@@ -403,7 +403,7 @@ public class KeyPairResourceApiEndToEndTest {
             // verify that the "rotated" event fired once
             verify(subscriber).on(argThat(env -> {
                 if (env.getPayload() instanceof KeyPairRotated evt) {
-                    return evt.getParticipantId().equals(participantId);
+                    return evt.getParticipantContextId().equals(participantId);
                 }
                 return false;
             }));
@@ -450,7 +450,7 @@ public class KeyPairResourceApiEndToEndTest {
             // verify that the "rotated" event fired once
             verify(subscriber).on(argThat(env -> {
                 if (env.getPayload() instanceof KeyPairRotated evt) {
-                    return evt.getParticipantId().equals(participantId);
+                    return evt.getParticipantContextId().equals(participantId);
                 }
                 return false;
             }));
@@ -493,7 +493,7 @@ public class KeyPairResourceApiEndToEndTest {
             // make sure that the event to add the _new_ keypair was never fired
             verify(subscriber, never()).on(argThat(env -> {
                 if (env.getPayload() instanceof KeyPairRotated evt) {
-                    return evt.getParticipantId().equals(user1) && evt.getKeyPairResource().equals(keyDesc.getKeyId());
+                    return evt.getParticipantContextId().equals(user1) && evt.getKeyPairResource().equals(keyDesc.getKeyId());
                 }
                 return false;
             }));
@@ -582,7 +582,7 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "New Key-ID: {0}")
-        @ValueSource(strings = { "new-keyId", "did:web:user1#new-keyId" })
+        @ValueSource(strings = {"new-keyId", "did:web:user1#new-keyId"})
         void revoke(String newKeyId, IdentityHubEndToEndTestContext context, StsAccountStore accountStore) {
             var superUserKey = context.createSuperUser();
             var participantId = "user1";
@@ -643,7 +643,7 @@ public class KeyPairResourceApiEndToEndTest {
             // verify that the "rotated" event fired once
             verify(subscriber).on(argThat(env -> {
                 if (env.getPayload() instanceof KeyPairRevoked evt) {
-                    return evt.getParticipantId().equals(participantId);
+                    return evt.getParticipantContextId().equals(participantId);
                 }
                 return false;
             }));

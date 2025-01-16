@@ -33,14 +33,14 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identithub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.store.CredentialStore;
-import org.eclipse.edc.identityhub.spi.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubCustomizableEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
@@ -139,7 +139,7 @@ public class PresentationApiEndToEndTest {
             // purge all participant contexts
 
             contextService.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> contextService.deleteParticipantContext(pc.getParticipantId()).getContent());
+                    .forEach(pc -> contextService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
 
             didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
 
@@ -272,7 +272,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
             store.create(res);
 
@@ -283,7 +283,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT, cred2))
                     .issuerId("https://example.edu/issuers/12345")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
             store.create(res2);
 
@@ -334,7 +334,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
 
             store.create(res);
@@ -375,7 +375,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.JWT_VC_EXAMPLE, CredentialFormat.VC2_0_JOSE, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
 
             store.create(res);
@@ -406,7 +406,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "VcState code: {0}")
-        @ValueSource(ints = { 600, 700, 800, 900 })
+        @ValueSource(ints = {600, 700, 800, 900})
         void query_shouldFilterOutInvalidCreds(int vcStateCode, IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             // modify VC content, so that it becomes either not-yet-valid or expired
@@ -436,7 +436,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(vcContent, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
             store.create(res);
 
@@ -475,7 +475,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
 
             store.create(res);
@@ -504,7 +504,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
 
             store.create(res);
