@@ -88,10 +88,10 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
                 .containsKey("id")
                 .containsEntry("type", "EnvelopedVerifiablePresentation");
 
-        var envelopedVP = claims.getClaim("id").toString();
-        assertThat(envelopedVP).startsWith("data:application/vp+jwt,");
+        var envelopedVp = claims.getClaim("id").toString();
+        assertThat(envelopedVp).startsWith("data:application/vp+jwt,");
 
-        var vpToken = envelopedVP.replace("data:application/vp+jwt", "");
+        var vpToken = envelopedVp.replace("data:application/vp+jwt", "");
         var vpClaims = extractJwtClaims(vpToken);
         assertThat(vpClaims.getClaims()).hasSize(4)
                 .containsEntry("holder", issuerId)
@@ -165,10 +165,10 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
                 .containsKey("id")
                 .containsEntry("type", "EnvelopedVerifiablePresentation");
 
-        var envelopedVP = claims.getClaim("id").toString();
-        assertThat(envelopedVP).startsWith("data:application/vp+jwt,");
+        var envelopedVp = claims.getClaim("id").toString();
+        assertThat(envelopedVp).startsWith("data:application/vp+jwt,");
 
-        var vpToken = envelopedVP.replace("data:application/vp+jwt", "");
+        var vpToken = envelopedVp.replace("data:application/vp+jwt", "");
         var vpClaims = extractJwtClaims(vpToken);
         assertThat(vpClaims.getClaims()).hasSize(4)
                 .containsEntry("holder", issuerId)
