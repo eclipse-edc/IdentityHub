@@ -113,7 +113,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
-            return criterion.getOperandLeft().equals("participantId") &&
+            return criterion.getOperandLeft().equals("participantContextId") &&
                     criterion.getOperator().equals("=") &&
                     criterion.getOperandRight().equals(PARTICIPANT_ID);
         }));
@@ -135,7 +135,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
-            return criterion.getOperandLeft().equals("participantId") &&
+            return criterion.getOperandLeft().equals("participantContextId") &&
                     criterion.getOperator().equals("=") &&
                     criterion.getOperandRight().equals(PARTICIPANT_ID);
         }));
@@ -153,7 +153,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
         verify(keyPairService).query(argThat(q -> {
             var criterion = q.getFilterExpression().get(0);
-            return criterion.getOperandLeft().equals("participantId") &&
+            return criterion.getOperandLeft().equals("participantContextId") &&
                     criterion.getOperator().equals("=") &&
                     criterion.getOperandRight().equals(PARTICIPANT_ID);
         }));
@@ -354,7 +354,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     private KeyPairResource.Builder createKeyPair() {
         return KeyPairResource.Builder.newInstance()
                 .id("test-keypair")
-                .participantId(PARTICIPANT_ID)
+                .participantContextId(PARTICIPANT_ID)
                 .isDefaultPair(true)
                 .privateKeyAlias("test-alias")
                 .useDuration(Duration.ofDays(365).toMillis());

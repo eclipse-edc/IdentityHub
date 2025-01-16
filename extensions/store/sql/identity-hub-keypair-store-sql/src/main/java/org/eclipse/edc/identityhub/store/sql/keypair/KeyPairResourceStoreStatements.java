@@ -32,7 +32,7 @@ public interface KeyPairResourceStoreStatements extends SqlStatements {
     }
 
     default String getParticipantIdColumn() {
-        return "participant_id";
+        return "participant_context_id";
     }
 
     default String getTimestampColumn() {

@@ -52,7 +52,7 @@ import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants/{participantId}/credentials")
+@Path(Versions.UNSTABLE + "/participants/{participantContextId}/credentials")
 public class VerifiableCredentialsApiController implements VerifiableCredentialsApi {
 
     private final CredentialStore credentialStore;
@@ -81,7 +81,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
     @POST
     @Override
-    public void addCredential(@PathParam("participantId") String participantId, VerifiableCredentialManifest manifest, @Context SecurityContext securityContext) {
+    public void addCredential(@PathParam("participantContextId") String participantId, VerifiableCredentialManifest manifest, @Context SecurityContext securityContext) {
         validator.validate(manifest).orElseThrow(ValidationFailureException::new);
 
         var decoded = onEncoded(participantId).orElseThrow(InvalidRequestException::new);

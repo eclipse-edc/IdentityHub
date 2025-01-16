@@ -71,11 +71,11 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     }
 
     @Override
-    public ServiceResult<Void> addKeyPair(String participantId, KeyDescriptor keyDescriptor, boolean makeDefault) {
+    public ServiceResult<Void> addKeyPair(String participantContextId, KeyDescriptor keyDescriptor, boolean makeDefault) {
 
         return transactionContext.execute(() -> {
 
-            var result = checkParticipantState(participantId, ACTIVATED, CREATED);
+            var result = checkParticipantState(participantContextId, ACTIVATED, CREATED);
 
             if (result.failed()) {
                 return result.mapEmpty();
@@ -89,7 +89,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             // check if the new key is not active, and no other active key exists
             if (!keyDescriptor.isActive()) {
 
-                var hasActiveKeys = keyPairResourceStore.query(ParticipantResource.queryByParticipantId(participantId).build())
+                var hasActiveKeys = keyPairResourceStore.query(ParticipantResource.queryByParticipantContextId(participantContextId).build())
                         .orElse(failure -> Collections.emptySet())
                         .stream().filter(kpr -> kpr.getState() == KeyPairState.ACTIVATED.code())
                         .findAny()
@@ -108,7 +108,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                     .privateKeyAlias(keyDescriptor.getPrivateKeyAlias())
                     .serializedPublicKey(key.getContent())
                     .timestamp(Instant.now().toEpochMilli())
-                    .participantId(participantId)
+                    .participantContextId(participantContextId)
                     .keyContext(keyDescriptor.getType())
                     .build();
 
@@ -131,7 +131,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                 return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(oldId));
             }
 
-            var participantId = oldKey.getParticipantId();
+            var participantContextId = oldKey.getParticipantContextId();
             boolean wasDefault = oldKey.isDefaultPair();
 
             // deactivate the old key
@@ -142,7 +142,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                     .onSuccess(v -> observable.invokeForEach(l -> l.rotated(oldKey, newKeyDesc)));
 
             if (newKeyDesc != null) {
-                return updateResult.compose(v -> addKeyPair(participantId, newKeyDesc, wasDefault));
+                return updateResult.compose(v -> addKeyPair(participantContextId, newKeyDesc, wasDefault));
             }
             monitor.warning("Rotating keys without a successor key may leave the participant without an active keypair.");
             return updateResult;
@@ -157,7 +157,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                 return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(id));
             }
 
-            var participantId = oldKey.getParticipantId();
+            var participantContextId = oldKey.getParticipantContextId();
             boolean wasDefault = oldKey.isDefaultPair();
 
             // deactivate the old key
@@ -168,7 +168,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                     .onSuccess(v -> observable.invokeForEach(l -> l.revoked(oldKey, newKeyDesc)));
 
             if (newKeyDesc != null) {
-                return updateResult.compose(v -> addKeyPair(participantId, newKeyDesc, wasDefault));
+                return updateResult.compose(v -> addKeyPair(participantContextId, newKeyDesc, wasDefault));
             }
             monitor.warning("Revoking keys without a successor key may leave the participant without an active keypair.");
             return updateResult;
@@ -205,22 +205,22 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     /**
      * checks if the participant exists, and that its {@link ParticipantContext#getState()} flag matches either of the given states
      *
-     * @param participantId the ParticipantContext ID of the participant context
-     * @param allowedStates a (possible empty) list of allowed states a participant may be in for a particular operation.
+     * @param participantContextId the ParticipantContext ID of the participant context
+     * @param allowedStates        a (possible empty) list of allowed states a participant may be in for a particular operation.
      * @return {@link ServiceResult#success()} if the participant context exists, and is in one of the allowed states, a failure otherwise.
      */
-    private ServiceResult<Void> checkParticipantState(String participantId, ParticipantContextState... allowedStates) {
-        var result = ServiceResult.from(participantContextService.query(ParticipantContext.queryByParticipantId(participantId).build()))
+    private ServiceResult<Void> checkParticipantState(String participantContextId, ParticipantContextState... allowedStates) {
+        var result = ServiceResult.from(participantContextService.query(ParticipantContext.queryByParticipantContextId(participantContextId).build()))
                 .compose(list -> list.stream().findFirst()
                         .map(pc -> {
                             var state = pc.getStateAsEnum();
                             if (!Arrays.asList(allowedStates).contains(state)) {
                                 return ServiceResult.badRequest("To add a key pair, the ParticipantContext with ID '%s' must be in state %s or %s but was %s."
-                                        .formatted(participantId, ACTIVATED, CREATED, state));
+                                        .formatted(participantContextId, ACTIVATED, CREATED, state));
                             }
                             return ServiceResult.success();
                         })
-                        .orElse(ServiceResult.notFound("No ParticipantContext with ID '%s' was found.".formatted(participantId))));
+                        .orElse(ServiceResult.notFound("No ParticipantContext with ID '%s' was found.".formatted(participantContextId))));
         return result.mapEmpty();
     }
 
@@ -236,13 +236,13 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     }
 
     private void created(ParticipantContextCreated event) {
-        addKeyPair(event.getParticipantId(), event.getManifest().getKey(), true)
+        addKeyPair(event.getParticipantContextId(), event.getManifest().getKey(), true)
                 .onFailure(f -> monitor.warning("Adding the key pair to a new ParticipantContext failed: %s".formatted(f.getFailureDetail())));
     }
 
     private void deleted(ParticipantContextDeleted event) {
         //hard-delete all keypairs that are associated with the deleted participant
-        var query = ParticipantResource.queryByParticipantId(event.getParticipantId()).build();
+        var query = ParticipantResource.queryByParticipantContextId(event.getParticipantContextId()).build();
         transactionContext.execute(() -> {
             keyPairResourceStore.query(query)
                     .compose(list -> {

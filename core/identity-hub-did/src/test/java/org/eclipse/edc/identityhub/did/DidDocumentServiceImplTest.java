@@ -84,7 +84,7 @@ class DidDocumentServiceImplTest {
         service = new DidDocumentServiceImpl(trx, didResourceStoreMock, publisherRegistry, participantContextServiceMock, monitorMock, registry);
 
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
-                .participantId(TEST_PARTICIPANT_ID)
+                .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.ACTIVATED)
                 .build()));
@@ -213,7 +213,7 @@ class DidDocumentServiceImplTest {
         when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
         when(publisherMock.unpublish(did)).thenReturn(Result.success());
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
-                .participantId(TEST_PARTICIPANT_ID)
+                .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));
@@ -244,7 +244,7 @@ class DidDocumentServiceImplTest {
         when(publisherRegistry.getPublisher(any())).thenReturn(null);
         when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
-                .participantId(TEST_PARTICIPANT_ID)
+                .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));
@@ -264,7 +264,7 @@ class DidDocumentServiceImplTest {
         when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
         when(publisherMock.unpublish(did)).thenReturn(Result.failure("test-failure"));
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
-                .participantId(TEST_PARTICIPANT_ID)
+                .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));
@@ -436,7 +436,7 @@ class DidDocumentServiceImplTest {
         when(publisherMock.unpublish(anyString())).thenReturn(Result.success());
 
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
-                .participantId(TEST_PARTICIPANT_ID)
+                .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));
@@ -444,7 +444,7 @@ class DidDocumentServiceImplTest {
         service.on(EventEnvelope.Builder.newInstance()
                 .payload(ParticipantContextUpdated.Builder.newInstance()
                         .newState(ParticipantContextState.DEACTIVATED)
-                        .participantId(participantId)
+                        .participantContextId(participantId)
                         .build())
                 .at(System.currentTimeMillis())
                 .id(UUID.randomUUID().toString())
@@ -467,7 +467,7 @@ class DidDocumentServiceImplTest {
         service.on(EventEnvelope.Builder.newInstance()
                 .payload(ParticipantContextUpdated.Builder.newInstance()
                         .newState(ParticipantContextState.DEACTIVATED)
-                        .participantId(participantId)
+                        .participantContextId(participantId)
                         .build())
                 .at(System.currentTimeMillis())
                 .id(UUID.randomUUID().toString())
@@ -488,7 +488,7 @@ class DidDocumentServiceImplTest {
         when(publisherMock.unpublish(anyString())).thenReturn(Result.success());
 
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
-                .participantId(TEST_PARTICIPANT_ID)
+                .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));
@@ -496,7 +496,7 @@ class DidDocumentServiceImplTest {
         service.on(EventEnvelope.Builder.newInstance()
                 .payload(ParticipantContextUpdated.Builder.newInstance()
                         .newState(ParticipantContextState.DEACTIVATED)
-                        .participantId(participantId)
+                        .participantContextId(participantId)
                         .build())
                 .at(System.currentTimeMillis())
                 .id(UUID.randomUUID().toString())
@@ -519,7 +519,7 @@ class DidDocumentServiceImplTest {
         service.on(EventEnvelope.Builder.newInstance()
                 .payload(ParticipantContextUpdated.Builder.newInstance()
                         .newState(ParticipantContextState.ACTIVATED)
-                        .participantId(participantId)
+                        .participantContextId(participantId)
                         .build())
                 .at(System.currentTimeMillis())
                 .id(UUID.randomUUID().toString())
@@ -548,7 +548,7 @@ class DidDocumentServiceImplTest {
                 .payload(KeyPairActivated.Builder.newInstance()
                         .keyId(keyId)
                         .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
-                        .participantId("test-participant")
+                        .participantContextId("test-participant")
                         .publicKey(key.toPublicJWK().toJSONString(), JSON_WEB_KEY_2020)
                         .build())
                 .build();
@@ -583,7 +583,7 @@ class DidDocumentServiceImplTest {
                 .payload(KeyPairRevoked.Builder.newInstance()
                         .keyId(keyId)
                         .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
-                        .participantId("test-participant")
+                        .participantContextId("test-participant")
                         .build())
                 .build();
 

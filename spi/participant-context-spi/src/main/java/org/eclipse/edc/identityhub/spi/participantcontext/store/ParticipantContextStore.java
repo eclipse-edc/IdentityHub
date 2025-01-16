@@ -65,12 +65,12 @@ public interface ParticipantContextStore {
         return "A ParticipantContext with ID '%s' does not exist.".formatted(id);
     }
 
-    default StoreResult<ParticipantContext> findById(String participantId) {
-        var res = query(ParticipantResource.queryByParticipantId(participantId).build());
+    default StoreResult<ParticipantContext> findById(String participantContextId) {
+        var res = query(ParticipantResource.queryByParticipantContextId(participantContextId).build());
         if (res.succeeded()) {
             return res.getContent().stream().findFirst()
                     .map(StoreResult::success)
-                    .orElse(StoreResult.notFound("ParticipantContext with ID '%s' does not exist.".formatted(participantId)));
+                    .orElse(StoreResult.notFound("ParticipantContext with ID '%s' does not exist.".formatted(participantContextId)));
         }
         return StoreResult.generalError(res.getFailureDetail());
     }

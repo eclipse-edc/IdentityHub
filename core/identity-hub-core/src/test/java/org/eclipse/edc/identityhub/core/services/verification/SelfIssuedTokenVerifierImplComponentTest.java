@@ -90,7 +90,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
         var resolverMock = mock(KeyPairResourcePublicKeyResolver.class);
         when(resolverMock.resolveKey(anyString(), anyString())).thenReturn(Result.success(stsKeyPair.getPublic()));
 
-        when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance().did(PARTICIPANT_DID).participantId(PARTICIPANT_CONTEXT_ID).apiTokenAlias("foobar").build()));
+        when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance().did(PARTICIPANT_DID).participantContextId(PARTICIPANT_CONTEXT_ID).apiTokenAlias("foobar").build()));
         verifier = new SelfIssuedTokenVerifierImpl(tokenValidationService, resolverMock, ruleRegistry, (id) -> Result.success(providerKeyPair.getPublic()), participantContextService);
     }
 
@@ -146,7 +146,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .build());
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID))).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
                 .did("did:web:someone_else")
-                .participantId(PARTICIPANT_CONTEXT_ID)
+                .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .apiTokenAlias("foobar")
                 .build()));
 

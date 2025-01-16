@@ -70,11 +70,11 @@ class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
 
     private ServicePrincipal toUser(ParticipantContext participantContext) {
         var credential = vault.resolveSecret(participantContext.getApiTokenAlias());
-        var participantId = participantContext.getParticipantId();
+        var participantContextId = participantContext.getParticipantContextId();
         return new ServicePrincipal() {
             @Override
             public String getPrincipal() {
-                return participantId;
+                return participantContextId;
             }
 
             @Override

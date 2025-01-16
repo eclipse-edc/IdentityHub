@@ -56,7 +56,7 @@ class PresentationCreatorRegistryImplTest {
     void setup() {
         when(participantContextService.getParticipantContext(anyString()))
                 .thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
-                        .participantId("test-participant")
+                        .participantContextId("test-participant")
                         .apiTokenAlias("test-token")
                         .did(ISSUER_ID).build()));
     }
@@ -125,12 +125,12 @@ class PresentationCreatorRegistryImplTest {
         verifyNoInteractions(generator);
     }
 
-    private KeyPairResource.Builder createKeyPair(String participantId, String keyId) {
+    private KeyPairResource.Builder createKeyPair(String participantContextId, String keyId) {
         return KeyPairResource.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .keyId(keyId)
                 .state(KeyPairState.ACTIVATED)
                 .isDefaultPair(true)
-                .privateKeyAlias("%s-%s-alias".formatted(participantId, keyId));
+                .privateKeyAlias("%s-%s-alias".formatted(participantContextId, keyId));
     }
 }

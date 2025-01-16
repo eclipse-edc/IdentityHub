@@ -25,7 +25,7 @@ import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 public class InMemoryParticipantContextStore extends InMemoryEntityStore<ParticipantContext> implements ParticipantContextStore {
     @Override
     protected String getId(ParticipantContext newObject) {
-        return newObject.getParticipantId();
+        return newObject.getParticipantContextId();
     }
 
     @Override

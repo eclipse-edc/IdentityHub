@@ -41,7 +41,7 @@ public interface DidManagementApi {
 
     @Operation(description = "Publish an (existing) DID document. The DID is expected to exist in the database.",
             operationId = "publishDid",
-            parameters = { @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH) },
+            parameters = {@Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully published."),
@@ -55,7 +55,7 @@ public interface DidManagementApi {
 
     @Operation(description = "Un-Publish an (existing) DID document. The DID is expected to exist in the database.",
             operationId = "unpublishDid",
-            parameters = { @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH) },
+            parameters = {@Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully un-published."),
@@ -71,7 +71,7 @@ public interface DidManagementApi {
 
     @Operation(description = "Query for DID documents.",
             operationId = "queryDids",
-            parameters = { @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH) },
+            parameters = {@Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of DID Documents.",
@@ -86,7 +86,7 @@ public interface DidManagementApi {
 
     @Operation(description = "Get state of a DID document",
             operationId = "getDidState",
-            parameters = { @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH) },
+            parameters = {@Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID state was successfully obtained"),
@@ -103,7 +103,7 @@ public interface DidManagementApi {
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
             parameters = {
                     @Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false."),
-                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
@@ -122,7 +122,7 @@ public interface DidManagementApi {
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
             parameters = {
                     @Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false."),
-                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
@@ -141,7 +141,7 @@ public interface DidManagementApi {
             parameters = {
                     @Parameter(name = "serviceId", description = "The ID of the service that should get removed"),
                     @Parameter(name = "autoPublish", description = "Whether the DID should " + "get republished after the removal. Defaults to false."),
-                    @Parameter(name = "participantId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),

@@ -134,11 +134,11 @@ public abstract class CredentialStoreTestBase {
         range(0, 5)
                 .mapToObj(i -> createCredentialBuilder()
                         .id("id" + i)
-                        .participantId("participant" + i)
+                        .participantContextId("participant" + i)
                         .build())
                 .forEach(getStore()::create);
 
-        var query = ParticipantResource.queryByParticipantId("participant2")
+        var query = ParticipantResource.queryByParticipantContextId("participant2")
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -151,13 +151,13 @@ public abstract class CredentialStoreTestBase {
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential()
                         .type("UniversityDegreeCredential")
                         .build()))
-                .participantId(TEST_PARTICIPANT_CONTEXT_ID).build();
-        var cred2 = createCredentialBuilder().participantId("participant-context2").build();
-        var cred3 = createCredentialBuilder().participantId("participant-context3").build();
+                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID).build();
+        var cred2 = createCredentialBuilder().participantContextId("participant-context2").build();
+        var cred3 = createCredentialBuilder().participantContextId("participant-context3").build();
 
         Arrays.asList(cred1, cred2, cred3).forEach(getStore()::create);
 
-        var query = ParticipantResource.queryByParticipantId(TEST_PARTICIPANT_CONTEXT_ID)
+        var query = ParticipantResource.queryByParticipantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .filter(new Criterion("verifiableCredential.credential.type", "contains", "UniversityDegreeCredential"))
                 .build();
 
@@ -515,7 +515,7 @@ public abstract class CredentialStoreTestBase {
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .state(VcStatus.ISSUED)
-                .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential().build()))
                 .id(UUID.randomUUID().toString());
     }

@@ -57,7 +57,7 @@ public class DidManagementApiEndToEndTest {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
 
             didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
 
@@ -80,7 +80,7 @@ public class DidManagementApiEndToEndTest {
             // create second user
             var user2 = "user2";
             var user2Context = ParticipantContext.Builder.newInstance()
-                    .participantId(user2)
+                    .participantContextId(user2)
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();
@@ -188,7 +188,7 @@ public class DidManagementApiEndToEndTest {
             // create second user
             var user2 = "user2";
             var user2Context = ParticipantContext.Builder.newInstance()
-                    .participantId(user2)
+                    .participantContextId(user2)
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();

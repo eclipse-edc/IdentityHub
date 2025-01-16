@@ -32,7 +32,7 @@ class KeyPairRevokedTest {
         var evt = KeyPairRevoked.Builder.newInstance()
                 .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                 .keyId("key-id")
-                .participantId("participant-id")
+                .participantContextId("participant-id")
                 .build();
 
         var json = typeManager.writeValueAsString(evt);

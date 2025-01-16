@@ -52,7 +52,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1/participants/{participantId}/presentations")
+@Path("/v1/participants/{participantContextId}/presentations")
 public class PresentationApiController implements PresentationApi {
 
     private final JsonObjectValidatorRegistry validatorRegistry;
@@ -78,7 +78,7 @@ public class PresentationApiController implements PresentationApi {
     @POST
     @Path("/query")
     @Override
-    public Response queryPresentation(@PathParam("participantId") String participantContextId, JsonObject query, @HeaderParam(AUTHORIZATION) String token) {
+    public Response queryPresentation(@PathParam("participantContextId") String participantContextId, JsonObject query, @HeaderParam(AUTHORIZATION) String token) {
         if (token == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }

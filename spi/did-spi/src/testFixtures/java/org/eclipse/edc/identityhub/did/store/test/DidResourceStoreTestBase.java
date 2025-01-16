@@ -155,11 +155,11 @@ public abstract class DidResourceStoreTestBase {
                 .mapToObj(i -> createDidResource(DID + i).build())
                 .toList());
 
-        var expected = createDidResource(DID + "69").participantId("the-odd-one-out").build();
+        var expected = createDidResource(DID + "69").participantContextId("the-odd-one-out").build();
         dids.add(expected);
         dids.forEach(getStore()::save);
 
-        var q = ParticipantResource.queryByParticipantId(expected.getParticipantId()).build();
+        var q = ParticipantResource.queryByParticipantContextId(expected.getParticipantContextId()).build();
         Assertions.assertThat(getStore().query(q))
                 .hasSize(1)
                 .usingRecursiveFieldByFieldElementComparator()
@@ -279,7 +279,7 @@ public abstract class DidResourceStoreTestBase {
     private DidResource.Builder createDidResource(String did) {
         return DidResource.Builder.newInstance()
                 .did(did)
-                .participantId("test-participant")
+                .participantContextId("test-participant")
                 .document(DidDocument.Builder.newInstance()
                         .id(did)
                         .build())

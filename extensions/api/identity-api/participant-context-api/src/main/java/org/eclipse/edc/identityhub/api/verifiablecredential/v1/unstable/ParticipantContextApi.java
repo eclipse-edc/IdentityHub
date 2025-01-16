@@ -68,7 +68,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    ParticipantContext getParticipant(String participantId, SecurityContext securityContext);
+    ParticipantContext getParticipant(String participantContextId, SecurityContext securityContext);
 
     @Operation(description = "Regenerates the API token for a ParticipantContext and returns the new token.",
             operationId = "regenerateParticipantToken",
@@ -83,7 +83,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    String regenerateParticipantToken(String participantId, SecurityContext securityContext);
+    String regenerateParticipantToken(String participantContextId, SecurityContext securityContext);
 
     @Operation(description = "Activates a ParticipantContext. This operation is idempotent, i.e. activating an already active ParticipantContext is a NOOP.",
             operationId = "activateParticipant",
@@ -99,7 +99,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void activateParticipant(String participantId, boolean isActive);
+    void activateParticipant(String participantContextId, boolean isActive);
 
     @Operation(description = "Delete a ParticipantContext.",
             operationId = "deleteParticipant",
@@ -113,7 +113,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void deleteParticipant(String participantId, SecurityContext securityContext);
+    void deleteParticipant(String participantContextId, SecurityContext securityContext);
 
     @Operation(description = "Updates a ParticipantContext's roles. Note that this is an absolute update, that means all roles that the Participant should have must be submitted in the body. Requires elevated privileges.",
             operationId = "updateParticipantRoles",
@@ -128,7 +128,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void updateParticipantRoles(String participantId, List<String> roles);
+    void updateParticipantRoles(String participantContextId, List<String> roles);
 
     @Operation(description = "Get all DID documents across all Participant Contexts. Requires elevated access.",
             operationId = "getAllParticipants",

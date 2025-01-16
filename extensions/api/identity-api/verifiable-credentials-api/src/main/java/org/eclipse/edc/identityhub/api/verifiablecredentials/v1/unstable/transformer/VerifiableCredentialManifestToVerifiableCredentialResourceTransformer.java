@@ -39,7 +39,7 @@ public class VerifiableCredentialManifestToVerifiableCredentialResourceTransform
         var container = manifest.getVerifiableCredentialContainer();
         return VerifiableCredentialResource.Builder.newInstance()
                 .id(manifest.getId())
-                .participantId(manifest.getParticipantId())
+                .participantContextId(manifest.getParticipantContextId())
                 .issuerId(container.credential().getIssuer().id())
                 .holderId(container.credential().getCredentialSubject().stream().findFirst().get().getId())
                 .state(VcStatus.ISSUED)

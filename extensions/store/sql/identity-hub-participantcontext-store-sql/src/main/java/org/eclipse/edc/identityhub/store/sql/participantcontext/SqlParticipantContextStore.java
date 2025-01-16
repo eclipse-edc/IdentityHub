@@ -59,7 +59,7 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
 
     @Override
     public StoreResult<Void> create(ParticipantContext participantContext) {
-        var id = participantContext.getParticipantId();
+        var id = participantContext.getParticipantContextId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 if (findByIdInternal(connection, id) != null) {
@@ -68,7 +68,7 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
 
                 var stmt = statements.getInsertTemplate();
                 queryExecutor.execute(connection, stmt,
-                        participantContext.getParticipantId(),
+                        participantContext.getParticipantContextId(),
                         participantContext.getCreatedAt(),
                         participantContext.getLastModified(),
                         participantContext.getState(),
@@ -98,7 +98,7 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
 
     @Override
     public StoreResult<Void> update(ParticipantContext participantContext) {
-        var id = participantContext.getParticipantId();
+        var id = participantContext.getParticipantContextId();
 
         Objects.requireNonNull(participantContext);
         Objects.requireNonNull(id);
@@ -159,7 +159,7 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
         var roles = fromJson(resultSet.getString(statements.getRolesRolumn()), LIST_REF);
 
         return ParticipantContext.Builder.newInstance()
-                .participantId(id)
+                .participantContextId(id)
                 .createdAt(created)
                 .lastModified(lastmodified)
                 .state(ParticipantContextState.values()[state])

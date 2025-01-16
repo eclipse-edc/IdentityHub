@@ -51,7 +51,7 @@ public class VerifiableCredentialApiEndToEndTest {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantId()).getContent());
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
 
             didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
 
@@ -204,10 +204,10 @@ public class VerifiableCredentialApiEndToEndTest {
             return Base64.getUrlEncoder().encodeToString(s.getBytes());
         }
 
-        private VerifiableCredentialManifest.Builder createManifest(String participantId, VerifiableCredential vc) {
+        private VerifiableCredentialManifest.Builder createManifest(String participantContextId, VerifiableCredential vc) {
             return VerifiableCredentialManifest.Builder.newInstance()
                     .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, vc))
-                    .participantId(participantId);
+                    .participantContextId(participantContextId);
         }
 
     }

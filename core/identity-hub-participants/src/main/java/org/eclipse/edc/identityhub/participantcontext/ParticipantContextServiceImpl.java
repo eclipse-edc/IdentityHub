@@ -92,23 +92,23 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     @Override
-    public ServiceResult<ParticipantContext> getParticipantContext(String participantId) {
-        return transactionContext.execute(() -> ServiceResult.from(participantContextStore.findById(participantId)));
+    public ServiceResult<ParticipantContext> getParticipantContext(String participantContextId) {
+        return transactionContext.execute(() -> ServiceResult.from(participantContextStore.findById(participantContextId)));
     }
 
     @Override
-    public ServiceResult<Void> deleteParticipantContext(String participantId) {
+    public ServiceResult<Void> deleteParticipantContext(String participantContextId) {
         return transactionContext.execute(() -> {
-            var participantContext = findByIdInternal(participantId);
+            var participantContext = findByIdInternal(participantContextId);
             if (participantContext == null) {
                 return ServiceResult.notFound("A ParticipantContext with ID '%s' does not exist.");
             }
             // deactivating the PC must be the first step, because unpublishing DIDs requires the PC to be in the DEACTIVATED state.
             // Unpublishing DIDs happens in callback of the "-Deleting" Event
-            return updateParticipant(participantId, ParticipantContext::deactivate)
+            return updateParticipant(participantContextId, ParticipantContext::deactivate)
                     .compose(v -> {
                         observable.invokeForEach(l -> l.deleting(participantContext));
-                        var res = participantContextStore.deleteById(participantId);
+                        var res = participantContextStore.deleteById(participantContextId);
                         vault.deleteSecret(participantContext.getApiTokenAlias());
                         if (res.failed()) {
                             return fromFailure(res);
@@ -121,9 +121,9 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     @Override
-    public ServiceResult<String> regenerateApiToken(String participantId) {
+    public ServiceResult<String> regenerateApiToken(String participantContextId) {
         return transactionContext.execute(() -> {
-            var participantContext = getParticipantContext(participantId);
+            var participantContext = getParticipantContext(participantContextId);
             if (participantContext.failed()) {
                 return participantContext.map(pc -> null);
             }
@@ -132,11 +132,11 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     @Override
-    public ServiceResult<Void> updateParticipant(String participantId, Consumer<ParticipantContext> modificationFunction) {
+    public ServiceResult<Void> updateParticipant(String participantContextId, Consumer<ParticipantContext> modificationFunction) {
         return transactionContext.execute(() -> {
-            var participant = findByIdInternal(participantId);
+            var participant = findByIdInternal(participantContextId);
             if (participant == null) {
-                return notFound("ParticipantContext with ID '%s' not found.".formatted(participantId));
+                return notFound("ParticipantContext with ID '%s' not found.".formatted(participantContextId));
             }
             modificationFunction.accept(participant);
             var res = participantContextStore.update(participant)
@@ -153,7 +153,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
 
     private ServiceResult<String> createTokenAndStoreInVault(ParticipantContext participantContext) {
         var alias = participantContext.getApiTokenAlias();
-        var newToken = tokenGenerator.generate(participantContext.getParticipantId());
+        var newToken = tokenGenerator.generate(participantContext.getParticipantContextId());
         return vault.storeSecret(alias, newToken)
                 .map(unused -> success(newToken))
                 .orElse(f -> conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
@@ -165,15 +165,15 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         return ServiceResult.from(result).map(it -> context);
     }
 
-    private ParticipantContext findByIdInternal(String participantId) {
-        var resultStream = participantContextStore.findById(participantId);
+    private ParticipantContext findByIdInternal(String participantContextId) {
+        var resultStream = participantContextStore.findById(participantContextId);
         return resultStream.orElse(f -> null);
     }
 
 
     private ParticipantContext convert(ParticipantManifest manifest) {
         return ParticipantContext.Builder.newInstance()
-                .participantId(manifest.getParticipantId())
+                .participantContextId(manifest.getParticipantId())
                 .roles(manifest.getRoles())
                 .did(manifest.getDid())
                 .apiTokenAlias("%s-%s".formatted(manifest.getParticipantId(), API_KEY_ALIAS_SUFFIX))

@@ -161,7 +161,7 @@ class CredentialQueryResolverImplTest {
     void query_whenParticipantIdMismatch_expectEmptyResult() {
         when(storeMock.query(any())).thenAnswer(i -> success(List.of()));
 
-        var res = resolver.query("another_participant_id",
+        var res = resolver.query("another_participant_context_id",
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
         assertThat(res.succeeded()).isTrue();
         assertThat(res.getContent()).isEmpty();
@@ -340,7 +340,7 @@ class CredentialQueryResolverImplTest {
                 .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.VC1_0_LD, cred))
                 .holderId("test-holder")
                 .issuerId("test-issuer")
-                .participantId(TEST_PARTICIPANT_CONTEXT_ID);
+                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID);
     }
 
     private VerifiableCredential.Builder createCredential(String... type) {

@@ -67,7 +67,7 @@ class KeyPairServiceImplTest {
     @BeforeEach
     void setup() {
         when(participantContextServiceMock.query(any(QuerySpec.class)))
-                .thenReturn(StoreResult.success(List.of(ParticipantContext.Builder.newInstance().participantId(PARTICIPANT_ID).apiTokenAlias("apitoken-alias").build())));
+                .thenReturn(StoreResult.success(List.of(ParticipantContext.Builder.newInstance().participantContextId(PARTICIPANT_ID).apiTokenAlias("apitoken-alias").build())));
     }
 
     @ParameterizedTest(name = "make default: {0}")
@@ -79,7 +79,7 @@ class KeyPairServiceImplTest {
 
         assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, makeDefault)).isSucceeded();
 
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantId().equals(PARTICIPANT_ID)));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault && kpr.getParticipantContextId().equals(PARTICIPANT_ID)));
         // new key is set to active - expect an update in the DB
         verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
         verify(observableMock, times(2)).invokeForEach(any());
@@ -100,7 +100,7 @@ class KeyPairServiceImplTest {
 
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
         verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() == makeDefault &&
-                kpr.getParticipantId().equals(PARTICIPANT_ID) &&
+                kpr.getParticipantContextId().equals(PARTICIPANT_ID) &&
                 kpr.getState() == KeyPairState.ACTIVATED.code()));
         // new key is set to active - expect an update in the DB
         verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
@@ -126,7 +126,7 @@ class KeyPairServiceImplTest {
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
         //expect the query for other active keys at least once, if the new key is inactive
         verify(keyPairResourceStore, never()).query(any());
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.ACTIVATED.code()));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantContextId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.ACTIVATED.code()));
         // new key is set to active - expect an update in the DB
         verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(key.getKeyId()) && kpr.getState() == KeyPairState.ACTIVATED.code()));
         verify(observableMock, times(2)).invokeForEach(any());
@@ -151,7 +151,7 @@ class KeyPairServiceImplTest {
         verify(vault).storeSecret(eq(key.getPrivateKeyAlias()), anyString());
         //expect the query for other active keys at least once, if the new key is inactive
         verify(keyPairResourceStore, times(1)).query(any());
-        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.CREATED.code()));
+        verify(keyPairResourceStore).create(argThat(kpr -> kpr.isDefaultPair() && kpr.getParticipantContextId().equals(PARTICIPANT_ID) && kpr.getState() == KeyPairState.CREATED.code()));
         verify(observableMock, times(1)).invokeForEach(any());
         verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
     }
@@ -168,7 +168,7 @@ class KeyPairServiceImplTest {
     @Test
     void addKeyPair_whenParticipantDeactivated_shouldFail() {
         var pc = ParticipantContext.Builder.newInstance()
-                .participantId(PARTICIPANT_ID)
+                .participantContextId(PARTICIPANT_ID)
                 .apiTokenAlias("apitoken-alias")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build();
@@ -434,7 +434,7 @@ class KeyPairServiceImplTest {
                 .id(UUID.randomUUID().toString())
                 .keyId("test-key-1")
                 .privateKeyAlias("private-key-alias")
-                .participantId(PARTICIPANT_ID)
+                .participantContextId(PARTICIPANT_ID)
                 .serializedPublicKey("this-is-a-pem-string")
                 .useDuration(Duration.ofDays(6).toMillis());
     }

@@ -173,7 +173,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
     }
 
     private QuerySpec convertToQuerySpec(Criterion criteria, String participantContextId) {
-        var filterByParticipant = new Criterion("participantId", "=", participantContextId);
+        var filterByParticipant = new Criterion("participantContextId", "=", participantContextId);
         var filterNotRevoked = new Criterion("state", "!=", VcStatus.REVOKED.code());
         var filterNotExpired = new Criterion("state", "!=", VcStatus.EXPIRED.code());
         return QuerySpec.Builder.newInstance()

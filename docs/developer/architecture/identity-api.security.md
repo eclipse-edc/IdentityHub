@@ -10,7 +10,7 @@
   single individual within that company / participant. **Individual users don't exist as first-level concept in
   IdentityHub!**
 - _Participant context_: this is the unit of management, that owns all resources. Its identifier must be equal to
-  the `participantId` that is defined
+  the `participantContextId` that is defined
   in [DSP](https://github.com/International-Data-Spaces-Association/ids-specification). For the purposes of Identity
   API operations, IdentityHub assumes the ID of the `ParticipantContext` to be equal to the ID of
   the `ServicePrincipal`.
@@ -123,7 +123,7 @@ Unfortunately it is not possible to derive that information from request context
 certain amount of guess work to determine which part of the request path is the resource ID, take this path for example:
 
 ```
-/v1/participants/<participantId>/keypairs/<keypairId>
+/v1/participants/<participantContextId>/keypairs/<keypairId>
 ```
 
 While it would be _theoretically_ possible to employ a string parsing method, where we interpret the third path
@@ -148,7 +148,7 @@ public KeyPairResource findById(@PathParam("keyPairId") String id, @Context Secu
 }
 ```
 
-Here, the `AuthorizationService` is consulted to determine whether `participantId` is permitted to access
+Here, the `AuthorizationService` is consulted to determine whether `participantContextId` is permitted to access
 a `KeyPairResource` with `id`.
 
 > There is one exception to this, which is authorizing [built-in roles](#51-built-in-roles).

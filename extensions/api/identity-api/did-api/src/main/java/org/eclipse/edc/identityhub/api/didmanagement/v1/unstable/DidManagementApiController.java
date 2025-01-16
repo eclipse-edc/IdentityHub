@@ -41,7 +41,7 @@ import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultH
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants/{participantId}/dids")
+@Path(Versions.UNSTABLE + "/participants/{participantContextId}/dids")
 public class DidManagementApiController implements DidManagementApi {
 
     private final DidDocumentService documentService;

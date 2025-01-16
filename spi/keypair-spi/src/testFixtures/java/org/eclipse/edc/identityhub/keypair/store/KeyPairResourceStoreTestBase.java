@@ -80,7 +80,7 @@ public abstract class KeyPairResourceStoreTestBase {
     @Test
     void query_noQuerySpec() {
         var resources = range(0, 5)
-                .mapToObj(i -> createKeyPairResource().participantId("id" + i).build())
+                .mapToObj(i -> createKeyPairResource().participantContextId("id" + i).build())
                 .toList();
 
         resources.forEach(getStore()::create);
@@ -96,13 +96,13 @@ public abstract class KeyPairResourceStoreTestBase {
     void query_whenNotFound() {
         var resources = range(0, 5)
                 .mapToObj(i -> createKeyPairResource()
-                        .participantId("id" + i)
+                        .participantContextId("id" + i)
                         .build())
                 .toList();
 
         resources.forEach(getStore()::create);
 
-        var query = ParticipantResource.queryByParticipantId("id7")
+        var query = ParticipantResource.queryByParticipantContextId("id7")
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
@@ -113,7 +113,7 @@ public abstract class KeyPairResourceStoreTestBase {
     void query_byInvalidField_shouldReturnEmptyList() {
         var resources = range(0, 5)
                 .mapToObj(i -> createKeyPairResource()
-                        .participantId("id" + i)
+                        .participantContextId("id" + i)
                         .build())
                 .toList();
 
@@ -170,7 +170,7 @@ public abstract class KeyPairResourceStoreTestBase {
     @Test
     void update_whenNotExists() {
         var context = createKeyPairResource();
-        var updateRes = getStore().update(context.state(KeyPairState.ROTATED).participantId("another-id").build());
+        var updateRes = getStore().update(context.state(KeyPairState.ROTATED).participantContextId("another-id").build());
         assertThat(updateRes).isFailed().detail().matches(".* with ID .* does not exist.");
     }
 
@@ -196,7 +196,7 @@ public abstract class KeyPairResourceStoreTestBase {
                 .id(UUID.randomUUID().toString())
                 .keyId("test-key-1")
                 .privateKeyAlias("private-key-alias")
-                .participantId("test-participant")
+                .participantContextId("test-participant")
                 .serializedPublicKey("this-is-a-pem-string")
                 .keyContext("JsonWebKey2020")
                 .useDuration(Duration.ofDays(6).toMillis());

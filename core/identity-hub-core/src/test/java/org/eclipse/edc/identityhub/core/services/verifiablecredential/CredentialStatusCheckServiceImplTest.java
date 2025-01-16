@@ -257,7 +257,7 @@ class CredentialStatusCheckServiceImplTest {
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .state(VcStatus.ISSUED)
-                .participantId("participant-id")
+                .participantContextId("participant-id")
                 .credential(new VerifiableCredentialContainer("raw-vc-content", CredentialFormat.JSON_LD, credential))
                 .id(UUID.randomUUID().toString());
     }

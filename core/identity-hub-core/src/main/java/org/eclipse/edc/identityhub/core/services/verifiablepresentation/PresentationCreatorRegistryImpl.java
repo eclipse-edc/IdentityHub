@@ -59,7 +59,7 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
     public <T> T createPresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, CredentialFormat format, Map<String, Object> additionalData) {
         var creator = ofNullable(creators.get(format)).orElseThrow(() -> new EdcException("No %s was found for CredentialFormat %s".formatted(PresentationGenerator.class.getSimpleName(), format)));
 
-        var query = ParticipantResource.queryByParticipantId(participantContextId)
+        var query = ParticipantResource.queryByParticipantContextId(participantContextId)
                 .filter(new Criterion("state", "=", KeyPairState.ACTIVATED.code()))
                 .build();
 

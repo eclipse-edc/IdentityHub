@@ -55,10 +55,10 @@ public abstract class ParticipantContextStoreTestBase {
     @Test
     void query_byId() {
         range(0, 5)
-                .mapToObj(i -> createParticipantContextBuilder().participantId("id" + i).build())
+                .mapToObj(i -> createParticipantContextBuilder().participantContextId("id" + i).build())
                 .forEach(getStore()::create);
 
-        var query = ParticipantResource.queryByParticipantId("id2")
+        var query = ParticipantResource.queryByParticipantContextId("id2")
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -84,7 +84,7 @@ public abstract class ParticipantContextStoreTestBase {
     @Test
     void query_noQuerySpec() {
         var resources = range(0, 5)
-                .mapToObj(i -> createParticipantContextBuilder().participantId("id" + i).build())
+                .mapToObj(i -> createParticipantContextBuilder().participantContextId("id" + i).build())
                 .toList();
 
         resources.forEach(getStore()::create);
@@ -100,13 +100,13 @@ public abstract class ParticipantContextStoreTestBase {
     void query_whenNotFound() {
         var resources = range(0, 5)
                 .mapToObj(i -> createParticipantContextBuilder()
-                        .participantId("id" + i)
+                        .participantContextId("id" + i)
                         .build())
                 .toList();
 
         resources.forEach(getStore()::create);
 
-        var query = ParticipantResource.queryByParticipantId("id7")
+        var query = ParticipantResource.queryByParticipantContextId("id7")
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
@@ -117,7 +117,7 @@ public abstract class ParticipantContextStoreTestBase {
     void query_byInvalidField_shouldReturnEmptyList() {
         var resources = range(0, 5)
                 .mapToObj(i -> createParticipantContextBuilder()
-                        .participantId("id" + i)
+                        .participantContextId("id" + i)
                         .build())
                 .toList();
 
@@ -146,14 +146,14 @@ public abstract class ParticipantContextStoreTestBase {
         var context = createParticipantContextBuilder();
         var result = getStore().create(context.build());
 
-        var updateRes = getStore().update(context.state(DEACTIVATED).participantId("another-id").build());
+        var updateRes = getStore().update(context.state(DEACTIVATED).participantContextId("another-id").build());
         assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
     @Test
     void update_whenNotExists() {
         var context = createParticipantContextBuilder();
-        var updateRes = getStore().update(context.state(DEACTIVATED).participantId("another-id").build());
+        var updateRes = getStore().update(context.state(DEACTIVATED).participantContextId("another-id").build());
         assertThat(updateRes).isFailed().detail().contains("with ID 'another-id' does not exist.");
     }
 
@@ -162,7 +162,7 @@ public abstract class ParticipantContextStoreTestBase {
         var context = createParticipantContext();
         getStore().create(context);
 
-        var deleteRes = getStore().deleteById(context.getParticipantId());
+        var deleteRes = getStore().deleteById(context.getParticipantContextId());
         assertThat(deleteRes).isSucceeded();
     }
 
@@ -176,7 +176,7 @@ public abstract class ParticipantContextStoreTestBase {
 
     private ParticipantContext createParticipantContext() {
         return ParticipantContext.Builder.newInstance()
-                .participantId("test-participant")
+                .participantContextId("test-participant")
                 .roles(List.of("role1", "role2"))
                 .state(CREATED)
                 .apiTokenAlias("test-alias")
@@ -185,7 +185,7 @@ public abstract class ParticipantContextStoreTestBase {
 
     private ParticipantContext.Builder createParticipantContextBuilder() {
         return ParticipantContext.Builder.newInstance()
-                .participantId("test-participant")
+                .participantContextId("test-participant")
                 .state(CREATED)
                 .roles(List.of("role1", "role2"))
                 .apiTokenAlias("test-alias");

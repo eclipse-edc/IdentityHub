@@ -102,7 +102,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     private VerifiableCredentialManifest createManifest(VerifiableCredential credential) {
         return VerifiableCredentialManifest.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
-                .participantId(PARTICIPANT_ID)
+                .participantContextId(PARTICIPANT_ID)
                 .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JSON_LD, credential))
                 .build();
     }

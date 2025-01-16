@@ -78,7 +78,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
         when(participantContextServiceMock.getParticipantContext(any())).thenReturn(ServiceResult.success(pc));
 
         var participantContext = baseRequest()
-                .get("/%s".formatted(pc.getParticipantId()))
+                .get("/%s".formatted(pc.getParticipantContextId()))
                 .then()
                 .statusCode(200)
                 .log().ifError()
@@ -194,7 +194,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
 
     @Test
     void getAll() {
-        var list = IntStream.range(0, 10).mapToObj(i -> createParticipantContext().participantId("participant" + i).build()).toList();
+        var list = IntStream.range(0, 10).mapToObj(i -> createParticipantContext().participantContextId("participant" + i).build()).toList();
         when(participantContextServiceMock.query(any())).thenReturn(ServiceResult.success(list));
 
         var participantContexts = baseRequest()
@@ -216,7 +216,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
 
     private ParticipantContext.Builder createParticipantContext() {
         return ParticipantContext.Builder.newInstance()
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .createdAt(Instant.now().toEpochMilli())
                 .state(ParticipantContextState.ACTIVATED)
                 .apiTokenAlias("test-alias");

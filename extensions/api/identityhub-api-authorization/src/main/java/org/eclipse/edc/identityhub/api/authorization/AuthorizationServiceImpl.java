@@ -43,7 +43,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
 
         var result = function.apply(resourceId);
         if (result != null) {
-            return Objects.equals(result.getParticipantId(), name)
+            return Objects.equals(result.getParticipantContextId(), name)
                     ? ServiceResult.success()
                     : ServiceResult.unauthorized("User '%s' is not authorized to access resource of type %s with ID '%s'.".formatted(name, resourceClass, resourceId));
         }

@@ -15,7 +15,7 @@
 -- only intended for and tested with Postgres!
 CREATE TABLE IF NOT EXISTS participant_context
 (
-    participant_id     VARCHAR PRIMARY KEY NOT NULL, -- ID of the ParticipantContext
+    participant_context_id     VARCHAR PRIMARY KEY NOT NULL, -- ID of the ParticipantContext
     created_date       BIGINT              NOT NULL, -- POSIX timestamp of the creation of the PC
     last_modified_date BIGINT,                       -- POSIX timestamp of the last modified date
     state              INTEGER             NOT NULL, -- 0 = CREATED, 1 = ACTIVE, 2 = DEACTIVATED
@@ -23,5 +23,5 @@ CREATE TABLE IF NOT EXISTS participant_context
     did                VARCHAR,                      -- the DID with which this participant is identified
     roles              JSON                          -- JSON array containing all the roles a user has. may be empty
 );
-CREATE UNIQUE INDEX IF NOT EXISTS participant_context_participant_id_uindex ON participant_context USING btree (participant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS participant_context_participant_context_id_uindex ON participant_context USING btree (participant_context_id);
 

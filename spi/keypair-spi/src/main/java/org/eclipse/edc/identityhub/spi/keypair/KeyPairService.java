@@ -29,12 +29,12 @@ public interface KeyPairService {
     /**
      * Adds a new key pair to a participant and optionally makes it the default key pair. (Database) IDs are assigned automatically, by default using a GUID.
      *
-     * @param participantId The participant ID to which the new key pair is supposed to belong.
-     * @param keyDescriptor Contains either the new key in serialized form, or instructions how to generate it.
-     * @param makeDefault   Whether this new key is supposed to be the default key for the participant.
+     * @param participantContextId The participant context ID to which the new key pair is supposed to belong.
+     * @param keyDescriptor        Contains either the new key in serialized form, or instructions how to generate it.
+     * @param makeDefault          Whether this new key is supposed to be the default key for the participant.
      * @return a failure if the new key could not get created, success otherwise
      */
-    ServiceResult<Void> addKeyPair(String participantId, KeyDescriptor keyDescriptor, boolean makeDefault);
+    ServiceResult<Void> addKeyPair(String participantContextId, KeyDescriptor keyDescriptor, boolean makeDefault);
 
     /**
      * Phases out an old key and creates a new one. The old key pair's private key gets deleted from the vault, so it cannot be used

@@ -25,14 +25,14 @@ class ParticipantContextTest {
     @Test
     void verifyCreateTimestamp() {
         var context = ParticipantContext.Builder.newInstance()
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .build();
 
         assertThat(context.getCreatedAt()).isNotZero().isLessThanOrEqualTo(Instant.now().toEpochMilli());
 
         var context2 = ParticipantContext.Builder.newInstance()
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .createdAt(42)
                 .build();
@@ -43,14 +43,14 @@ class ParticipantContextTest {
     @Test
     void verifyLastModifiedTimestamp() {
         var context = ParticipantContext.Builder.newInstance()
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .build();
 
         assertThat(context.getLastModified()).isNotZero().isEqualTo(context.getCreatedAt());
 
         var context2 = ParticipantContext.Builder.newInstance()
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .lastModified(42)
                 .build();
@@ -61,7 +61,7 @@ class ParticipantContextTest {
     @Test
     void verifyState() {
         var context = ParticipantContext.Builder.newInstance()
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .state(ParticipantContextState.CREATED);
 

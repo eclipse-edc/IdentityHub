@@ -23,14 +23,14 @@ import java.util.Objects;
  */
 public abstract class DidDocumentEvent extends Event {
     protected String did;
-    protected String participantId;
+    protected String participantContextId;
 
     public String getDid() {
         return did;
     }
 
-    public String getParticipantId() {
-        return participantId;
+    public String getParticipantContextId() {
+        return participantContextId;
     }
 
     public abstract static class Builder<T extends DidDocumentEvent, B extends DidDocumentEvent.Builder<T, B>> {
@@ -43,8 +43,8 @@ public abstract class DidDocumentEvent extends Event {
 
         public abstract B self();
 
-        public B participantId(String assetId) {
-            event.participantId = assetId;
+        public B participantContextId(String participantContextId) {
+            event.participantContextId = participantContextId;
             return self();
         }
 
@@ -54,7 +54,7 @@ public abstract class DidDocumentEvent extends Event {
         }
 
         public T build() {
-            Objects.requireNonNull((event.participantId));
+            Objects.requireNonNull((event.participantContextId));
             return event;
         }
     }

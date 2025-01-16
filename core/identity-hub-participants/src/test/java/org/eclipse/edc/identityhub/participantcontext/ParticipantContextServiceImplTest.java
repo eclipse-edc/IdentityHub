@@ -148,7 +148,7 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(argThat(pc -> pc.getDid() != null &&
-                pc.getParticipantId().equalsIgnoreCase("test-id")));
+                pc.getParticipantContextId().equalsIgnoreCase("test-id")));
         verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
         verify(observableMock).invokeForEach(any());
@@ -325,7 +325,7 @@ class ParticipantContextServiceImplTest {
         var context = createContext();
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(context));
         when(participantContextStore.update(any())).thenReturn(StoreResult.success());
-        assertThat(participantContextService.updateParticipant(context.getParticipantId(), ParticipantContext::deactivate)).isSucceeded();
+        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), ParticipantContext::deactivate)).isSucceeded();
 
         verify(participantContextStore).findById(anyString());
         verify(participantContextStore).update(any());
@@ -336,7 +336,7 @@ class ParticipantContextServiceImplTest {
     void update_whenNotFound() {
         var context = createContext();
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.notFound("foobar"));
-        assertThat(participantContextService.updateParticipant(context.getParticipantId(), ParticipantContext::deactivate)).isFailed()
+        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), ParticipantContext::deactivate)).isFailed()
                 .detail().isEqualTo("ParticipantContext with ID 'test-id' not found.");
 
         verify(participantContextStore).findById(anyString());
@@ -349,7 +349,7 @@ class ParticipantContextServiceImplTest {
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(context));
         when(participantContextStore.update(any())).thenReturn(StoreResult.alreadyExists("test-msg"));
 
-        assertThat(participantContextService.updateParticipant(context.getParticipantId(), ParticipantContext::deactivate)).isFailed()
+        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), ParticipantContext::deactivate)).isFailed()
                 .detail().isEqualTo("test-msg");
 
         verify(participantContextStore).findById(anyString());
@@ -390,7 +390,7 @@ class ParticipantContextServiceImplTest {
 
     private ParticipantContext createContext() {
         return ParticipantContext.Builder.newInstance()
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .did("did:web:test-id")
                 .state(ParticipantContextState.CREATED)
                 .apiTokenAlias("test-alias")

@@ -16,7 +16,7 @@
 CREATE TABLE IF NOT EXISTS keypair_resource
 (
     id                    VARCHAR PRIMARY KEY NOT NULL,               -- primary key
-    participant_id        VARCHAR,                                    -- ID of the owning ParticipantContext. this is a loose business key, not a FK!
+    participant_context_id        VARCHAR,                                    -- ID of the owning ParticipantContext. this is a loose business key, not a FK!
     timestamp             BIGINT              NOT NULL,               -- creation timestamp
     key_id                VARCHAR             NOT NULL,               -- name/key-id of this key pair. for use in JWTs etc.
     group_name            VARCHAR,

@@ -78,7 +78,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     private final SelfIssuedTokenVerifier selfIssuedTokenVerifier = mock();
     private final VerifiablePresentationService generator = mock();
     private final ParticipantContextService participantContextService = mock(a -> ServiceResult.success(ParticipantContext.Builder.newInstance()
-            .participantId(a.getArgument(0).toString())
+            .participantContextId(a.getArgument(0).toString())
             .apiTokenAlias("test-alias")
             .build()));
 

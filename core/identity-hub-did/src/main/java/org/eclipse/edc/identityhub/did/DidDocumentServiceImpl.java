@@ -72,12 +72,12 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     }
 
     @Override
-    public ServiceResult<Void> store(DidDocument document, String participantId) {
+    public ServiceResult<Void> store(DidDocument document, String participantContextId) {
         return transactionContext.execute(() -> {
             var res = DidResource.Builder.newInstance()
                     .document(document)
                     .did(document.getId())
-                    .participantId(participantId)
+                    .participantContextId(participantContextId)
                     .state(DidState.GENERATED.code())
                     .build();
             var result = didResourceStore.save(res);
@@ -111,8 +111,8 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             if (existingResource == null) {
                 return ServiceResult.notFound(notFoundMessage(did));
             }
-            var participantId = existingResource.getParticipantId();
-            return ServiceResult.from(participantContextStore.findById(participantId))
+            var participantContextId = existingResource.getParticipantContextId();
+            return ServiceResult.from(participantContextStore.findById(participantContextId))
                     .map(ParticipantContext::getStateAsEnum)
                     .compose(state -> {
                         var canPublish = state.equals(ParticipantContextState.ACTIVATED);
@@ -128,7 +128,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                         }
                         return ServiceResult.badRequest(("Cannot publish DID '%s' for participant '%s' because the ParticipantContext state is not '%s', " +
                                 "but '%s'.")
-                                .formatted(did, participantId, ParticipantContextState.ACTIVATED, state));
+                                .formatted(did, participantContextId, ParticipantContextState.ACTIVATED, state));
                     });
         });
     }
@@ -141,8 +141,8 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                 return ServiceResult.notFound(notFoundMessage(did));
             }
 
-            var participantId = existingResource.getParticipantId();
-            return ServiceResult.from(participantContextStore.findById(participantId))
+            var participantContextId = existingResource.getParticipantContextId();
+            return ServiceResult.from(participantContextStore.findById(participantContextId))
                     .map(ParticipantContext::getStateAsEnum)
                     .compose(state -> {
                         var canUnpublish = state.equals(ParticipantContextState.DEACTIVATED);
@@ -163,7 +163,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                         }
                         return ServiceResult.badRequest(("Cannot un-publish DID '%s' for participant '%s' because the ParticipantContext is not '%s' state, " +
                                 "but was '%s'.")
-                                .formatted(did, participantId, ParticipantContextState.DEACTIVATED, state));
+                                .formatted(did, participantContextId, ParticipantContextState.DEACTIVATED, state));
                     });
         });
     }
@@ -257,9 +257,9 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
     private void keyPairActivated(KeyPairActivated event) {
         transactionContext.execute(() -> {
-            var didResources = findByParticipantId(event.getParticipantId());
+            var didResources = findByParticipantContextId(event.getParticipantContextId());
             if (didResources.isEmpty()) {
-                monitor.warning("No DidResources were found for participant '%s'. No updated will be performed.".formatted(event.getParticipantId()));
+                monitor.warning("No DidResources were found for participant '%s'. No updated will be performed.".formatted(event.getParticipantContextId()));
             }
 
             // add the public key as verification method to all did resources
@@ -267,7 +267,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             var publicKey = keyParserRegistry.parse(serialized);
 
             if (publicKey.failed()) {
-                monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyPairResource().getId(), event.getParticipantId(), publicKey.getFailureDetail()));
+                monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyPairResource().getId(), event.getParticipantContextId(), publicKey.getFailureDetail()));
                 return;
             }
 
@@ -295,7 +295,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     }
 
     private void keypairRevoked(KeyPairRevoked event) {
-        var didResources = findByParticipantId(event.getParticipantId());
+        var didResources = findByParticipantContextId(event.getParticipantContextId());
         var keyId = event.getKeyId();
 
         var errors = didResources.stream()
@@ -312,7 +312,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
     private void updated(ParticipantContextUpdated event) {
         var newState = event.getNewState();
-        var forParticipant = findByParticipantId(event.getParticipantId());
+        var forParticipant = findByParticipantContextId(event.getParticipantContextId());
         var errors = forParticipant
                 .stream()
                 .map(resource -> switch (newState) {
@@ -329,8 +329,8 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         }
     }
 
-    private Collection<DidResource> findByParticipantId(String participantId) {
-        return didResourceStore.query(ParticipantResource.queryByParticipantId(participantId).build());
+    private Collection<DidResource> findByParticipantContextId(String participantContextId) {
+        return didResourceStore.query(ParticipantResource.queryByParticipantContextId(participantContextId).build());
     }
 
 }

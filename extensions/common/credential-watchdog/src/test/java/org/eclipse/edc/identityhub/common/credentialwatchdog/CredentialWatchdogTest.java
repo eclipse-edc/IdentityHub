@@ -126,7 +126,7 @@ class CredentialWatchdogTest {
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .state(VcStatus.ISSUED)
-                .participantId("participant-id")
+                .participantContextId("participant-id")
                 .credential(new VerifiableCredentialContainer("raw-vc-content", CredentialFormat.JSON_LD, createVerifiableCredential().build()))
                 .id(UUID.randomUUID().toString());
     }

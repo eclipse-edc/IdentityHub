@@ -72,9 +72,9 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @GET
-    @Path("/{participantId}")
-    public ParticipantContext getParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        return onEncoded(participantId)
+    @Path("/{participantContextId}")
+    public ParticipantContext getParticipant(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
+        return onEncoded(participantContextId)
                 .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
                         .compose(u -> participantContextService.getParticipantContext(decoded))
                         .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
@@ -83,9 +83,9 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @POST
-    @Path("/{participantId}/token")
-    public String regenerateParticipantToken(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        return onEncoded(participantId)
+    @Path("/{participantContextId}/token")
+    public String regenerateParticipantToken(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
+        return onEncoded(participantContextId)
                 .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
                         .compose(u -> participantContextService.regenerateApiToken(decoded))
                         .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
@@ -94,10 +94,10 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @POST
-    @Path("/{participantId}/state")
+    @Path("/{participantContextId}/state")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-    public void activateParticipant(@PathParam("participantId") String participantId, @QueryParam("isActive") boolean isActive) {
-        onEncoded(participantId)
+    public void activateParticipant(@PathParam("participantContextId") String participantContextId, @QueryParam("isActive") boolean isActive) {
+        onEncoded(participantContextId)
                 .onSuccess(decoded -> participantContextService.updateParticipant(decoded, isActive ? ParticipantContext::activate : ParticipantContext::deactivate)
                         .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
                 .orElseThrow(InvalidRequestException::new);
@@ -105,10 +105,10 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @DELETE
-    @Path("/{participantId}")
+    @Path("/{participantContextId}")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-    public void deleteParticipant(@PathParam("participantId") String participantId, @Context SecurityContext securityContext) {
-        onEncoded(participantId)
+    public void deleteParticipant(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
+        onEncoded(participantContextId)
                 .onSuccess(decoded -> participantContextService.deleteParticipantContext(decoded)
                         .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
                 .orElseThrow(InvalidRequestException::new);
@@ -116,10 +116,10 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @Override
     @PUT
-    @Path("/{participantId}/roles")
+    @Path("/{participantContextId}/roles")
     @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
-    public void updateParticipantRoles(@PathParam("participantId") String participantId, List<String> roles) {
-        onEncoded(participantId)
+    public void updateParticipantRoles(@PathParam("participantContextId") String participantContextId, List<String> roles) {
+        onEncoded(participantContextId)
                 .onSuccess(decoded -> participantContextService.updateParticipant(decoded, participantContext -> participantContext.setRoles(roles))
                         .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
                 .orElseThrow(InvalidRequestException::new);

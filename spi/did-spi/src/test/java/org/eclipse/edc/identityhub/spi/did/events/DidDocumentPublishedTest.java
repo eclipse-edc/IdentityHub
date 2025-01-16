@@ -30,7 +30,7 @@ class DidDocumentPublishedTest {
 
         var event = DidDocumentPublished.Builder.newInstance()
                 .did("did:web:test")
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .build();
 
         var json = manager.writeValueAsString(event);

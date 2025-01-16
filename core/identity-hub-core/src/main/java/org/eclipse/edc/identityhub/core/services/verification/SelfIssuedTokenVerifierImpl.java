@@ -57,8 +57,8 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
     }
 
     @Override
-    public Result<List<String>> verify(String token, String participantId) {
-        Objects.requireNonNull(participantId, "Participant ID is mandatory.");
+    public Result<List<String>> verify(String token, String participantContextId) {
+        Objects.requireNonNull(participantContextId, "Participant Context ID is mandatory.");
         var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(DCP_SELF_ISSUED_TOKEN_CONTEXT));
         if (res.failed()) {
             return res.mapFailure();
@@ -73,7 +73,7 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
             if (aud == null || aud.isEmpty()) {
                 return Result.failure("Mandatory claim 'aud' on 'token' was null.");
             }
-            var participantDidResult = participantContextService.getParticipantContext(participantId);
+            var participantDidResult = participantContextService.getParticipantContext(participantContextId);
 
             if (participantDidResult.failed()) {
                 return Result.failure(participantDidResult.getFailureDetail());
@@ -98,7 +98,7 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
         rules.add(subClaimsMatch);
         rules.add(audMustMatchParticipantIdRule);
         // todo: verify that the resolved public key belongs to the participant ID
-        var result = tokenValidationService.validate(accessTokenString, keyId -> localPublicKeyService.resolveKey(keyId, participantId), rules);
+        var result = tokenValidationService.validate(accessTokenString, keyId -> localPublicKeyService.resolveKey(keyId, participantContextId), rules);
         if (result.failed()) {
             return result.mapFailure();
         }

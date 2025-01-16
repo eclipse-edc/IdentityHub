@@ -53,12 +53,12 @@ public class KeyPairResourcePublicKeyResolver {
      * <p>
      * As a fallback, if the PublicKey is not found in storage, the resolver falls back to the {@link LocalPublicKeyService}.
      *
-     * @param publicKeyId   The fully-qualified ID of the public key. For example: {@code did:web:someparticipant#key-123}.
-     * @param participantId The participant ID of the requestor
+     * @param publicKeyId          The fully-qualified ID of the public key. For example: {@code did:web:someparticipant#key-123}.
+     * @param participantContextId The participant context ID of the requestor
      * @return A result with the public key, resolved from storage, or a failed result.
      */
-    public Result<PublicKey> resolveKey(String publicKeyId, String participantId) {
-        var query = ParticipantResource.queryByParticipantId(participantId).filter(new Criterion("keyId", "=", publicKeyId)).build();
+    public Result<PublicKey> resolveKey(String publicKeyId, String participantContextId) {
+        var query = ParticipantResource.queryByParticipantContextId(participantContextId).filter(new Criterion("keyId", "=", publicKeyId)).build();
         var result = keyPairResourceStore.query(query);
         // store failed, e.g. data model does not match query, etc.
         if (result.failed()) {
@@ -73,7 +73,7 @@ public class KeyPairResourcePublicKeyResolver {
         return resources.stream().findAny()
                 .map(kpr -> parseKey(kpr.getSerializedPublicKey()))
                 .orElseGet(() -> {
-                    monitor.warning("No KeyPairResource with keyId '%s' was found for participant '%s' in the store. Will attempt to resolve from the Vault. ".formatted(publicKeyId, participantId) +
+                    monitor.warning("No KeyPairResource with keyId '%s' was found for participant '%s' in the store. Will attempt to resolve from the Vault. ".formatted(publicKeyId, participantContextId) +
                             "This could be an indication of a data inconsistency, it is recommended to revoke and regenerate keys!");
                     return fallbackResolver.resolveKey(publicKeyId); // attempt to resolve from vault
                 });

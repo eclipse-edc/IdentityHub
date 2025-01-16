@@ -139,7 +139,7 @@ public class PresentationApiEndToEndTest {
             // purge all participant contexts
 
             contextService.query(QuerySpec.max()).getContent()
-                    .forEach(pc -> contextService.deleteParticipantContext(pc.getParticipantId()).getContent());
+                    .forEach(pc -> contextService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
 
             didResourceStore.query(QuerySpec.max()).forEach(dr -> didResourceStore.deleteById(dr.getDid()).getContent());
 
@@ -272,7 +272,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
             store.create(res);
 
@@ -283,7 +283,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT, cred2))
                     .issuerId("https://example.edu/issuers/12345")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
             store.create(res2);
 
@@ -334,7 +334,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
 
             store.create(res);
@@ -375,7 +375,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.JWT_VC_EXAMPLE, CredentialFormat.VC2_0_JOSE, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
 
             store.create(res);
@@ -436,7 +436,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(vcContent, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
             store.create(res);
 
@@ -475,7 +475,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
 
             store.create(res);
@@ -504,7 +504,7 @@ public class PresentationApiEndToEndTest {
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
                     .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                     .build();
 
             store.create(res);

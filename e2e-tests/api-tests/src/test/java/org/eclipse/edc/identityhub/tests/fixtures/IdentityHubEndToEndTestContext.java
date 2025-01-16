@@ -70,21 +70,21 @@ public class IdentityHubEndToEndTestContext {
         return runtime;
     }
 
-    public String createParticipant(String participantId) {
-        return createParticipant(participantId, List.of());
+    public String createParticipant(String participantContextId) {
+        return createParticipant(participantContextId, List.of());
     }
 
-    public String createParticipant(String participantId, List<String> roles, boolean isActive) {
+    public String createParticipant(String participantContextId, List<String> roles, boolean isActive) {
         var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId(participantId)
+                .participantId(participantContextId)
                 .active(isActive)
                 .roles(roles)
                 .serviceEndpoint(new Service("test-service-id", "test-type", "http://foo.bar.com"))
-                .did("did:web:" + participantId)
+                .did("did:web:" + participantContextId)
                 .key(KeyDescriptor.Builder.newInstance()
-                        .privateKeyAlias(participantId + "-alias")
-                        .resourceId(participantId + "-resource")
-                        .keyId(participantId + "-key")
+                        .privateKeyAlias(participantContextId + "-alias")
+                        .resourceId(participantContextId + "-resource")
+                        .keyId(participantContextId + "-key")
                         .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"))
                         .build())
                 .build();
@@ -95,8 +95,8 @@ public class IdentityHubEndToEndTestContext {
     }
 
 
-    public String createParticipant(String participantId, List<String> roles) {
-        return createParticipant(participantId, roles, true);
+    public String createParticipant(String participantContextId, List<String> roles) {
+        return createParticipant(participantContextId, roles, true);
     }
 
     public VerifiableCredential createCredential() {
@@ -109,11 +109,11 @@ public class IdentityHubEndToEndTestContext {
                 .build();
     }
 
-    public String storeCredential(VerifiableCredential credential, String participantId) {
+    public String storeCredential(VerifiableCredential credential, String participantContextId) {
         var resource = VerifiableCredentialResource.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .state(VcStatus.ISSUED)
-                .participantId(participantId)
+                .participantContextId(participantContextId)
                 .holderId("holderId")
                 .issuerId("issuerId")
                 .credential(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, credential))
@@ -131,7 +131,7 @@ public class IdentityHubEndToEndTestContext {
         var store = runtime.getService(ParticipantContextStore.class);
 
         var vault = runtime.getService(Vault.class);
-        var token = createTokenFor(pc.getParticipantId());
+        var token = createTokenFor(pc.getParticipantContextId());
         vault.storeSecret(pc.getApiTokenAlias(), token);
         store.create(pc).orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
         return token;
@@ -145,38 +145,38 @@ public class IdentityHubEndToEndTestContext {
         return configuration.getPresentationEndpoint();
     }
 
-    public Collection<DidDocument> getDidForParticipant(String participantId) {
+    public Collection<DidDocument> getDidForParticipant(String participantContextId) {
         return runtime.getService(DidDocumentService.class).queryDocuments(QuerySpec.Builder.newInstance()
-                .filter(new Criterion("participantId", "=", participantId))
+                .filter(new Criterion("participantContextId", "=", participantContextId))
                 .build()).getContent();
     }
 
-    public Collection<KeyPairResource> getKeyPairsForParticipant(String participantId) {
-        return runtime.getService(KeyPairResourceStore.class).query(ParticipantResource.queryByParticipantId(participantId).build())
+    public Collection<KeyPairResource> getKeyPairsForParticipant(String participantContextId) {
+        return runtime.getService(KeyPairResourceStore.class).query(ParticipantResource.queryByParticipantContextId(participantContextId).build())
                 .getContent();
     }
 
-    public KeyDescriptor createKeyPair(String participantId) {
+    public KeyDescriptor createKeyPair(String participantContextId) {
 
-        var descriptor = createKeyDescriptor(participantId).build();
-        return createKeyPair(participantId, descriptor);
+        var descriptor = createKeyDescriptor(participantContextId).build();
+        return createKeyPair(participantContextId, descriptor);
     }
 
-    public KeyDescriptor createKeyPair(String participantId, KeyDescriptor descriptor) {
+    public KeyDescriptor createKeyPair(String participantContextId, KeyDescriptor descriptor) {
         var service = runtime.getService(KeyPairService.class);
-        service.addKeyPair(participantId, descriptor, true)
+        service.addKeyPair(participantContextId, descriptor, true)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
         return descriptor;
     }
 
-    public KeyDescriptor.Builder createKeyDescriptor(String participantId) {
+    public KeyDescriptor.Builder createKeyDescriptor(String participantContextId) {
         var keyId = "key-id-%s".formatted(UUID.randomUUID());
         return KeyDescriptor.Builder.newInstance()
                 .keyId(keyId)
                 .active(false)
                 .resourceId(UUID.randomUUID().toString())
                 .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))
-                .privateKeyAlias("%s-%s-alias".formatted(participantId, keyId));
+                .privateKeyAlias("%s-%s-alias".formatted(participantContextId, keyId));
     }
 
     public ParticipantManifest.Builder createNewParticipant() {
@@ -199,9 +199,9 @@ public class IdentityHubEndToEndTestContext {
         return new ApiTokenGenerator().generate(userId);
     }
 
-    public ParticipantContext getParticipant(String participantId) {
+    public ParticipantContext getParticipant(String participantContextId) {
         return runtime.getService(ParticipantContextService.class)
-                .getParticipantContext(participantId)
+                .getParticipantContext(participantContextId)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 

@@ -24,7 +24,7 @@ import java.util.Objects;
  * Base class for all events that relate to state changes or actions regarding KeyPairs
  */
 public abstract class KeyPairEvent extends Event {
-    protected String participantId;
+    protected String participantContextId;
     protected KeyPairResource keyPairResource;
     protected String keyId;
 
@@ -45,8 +45,8 @@ public abstract class KeyPairEvent extends Event {
     /**
      * The ID of the {@link ParticipantContext} that owns the KeyPair resource.
      */
-    public String getParticipantId() {
-        return participantId;
+    public String getParticipantContextId() {
+        return participantContextId;
     }
 
     public abstract static class Builder<T extends KeyPairEvent, B extends KeyPairEvent.Builder<T, B>> {
@@ -59,8 +59,8 @@ public abstract class KeyPairEvent extends Event {
 
         public abstract B self();
 
-        public B participantId(String assetId) {
-            event.participantId = assetId;
+        public B participantContextId(String participantContextId) {
+            event.participantContextId = participantContextId;
             return self();
         }
 
@@ -75,7 +75,7 @@ public abstract class KeyPairEvent extends Event {
         }
 
         public T build() {
-            Objects.requireNonNull((event.participantId));
+            Objects.requireNonNull((event.participantContextId));
             return event;
         }
     }

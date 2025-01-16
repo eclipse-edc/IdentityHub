@@ -35,7 +35,7 @@ class VerifiableCredentialManifestValidatorTest {
     void validManifest_shouldPassValidation() {
         var manifest = VerifiableCredentialManifest.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
-                .participantId(UUID.randomUUID().toString())
+                .participantContextId(UUID.randomUUID().toString())
                 .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, VerifiableCredential.Builder.newInstance()
                         .type("type")
                         .credentialSubject(CredentialSubject.Builder.newInstance()
@@ -56,7 +56,7 @@ class VerifiableCredentialManifestValidatorTest {
     void validate_missingVerifiableCredentialContainer_shouldFailValidation() {
         var manifest = VerifiableCredentialManifest.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
-                .participantId(UUID.randomUUID().toString())
+                .participantContextId(UUID.randomUUID().toString())
                 .build();
 
         var result = validator.validate(manifest);
@@ -79,7 +79,7 @@ class VerifiableCredentialManifestValidatorTest {
     void validate_missingVerifiableCredential_shouldFailValidation() {
         var manifest = VerifiableCredentialManifest.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
-                .participantId(UUID.randomUUID().toString())
+                .participantContextId(UUID.randomUUID().toString())
                 .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, null))
                 .build();
 

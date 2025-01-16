@@ -28,8 +28,8 @@ public class VerifiableCredentialManifestValidator implements Validator<Verifiab
             return failure(violation("Input was null", "."));
         }
 
-        if (input.getParticipantId() == null) {
-            return failure(violation("Participant id was null", "participantId"));
+        if (input.getParticipantContextId() == null) {
+            return failure(violation("participantContextId id was null", "participantContextId"));
         }
 
         var container = input.getVerifiableCredentialContainer();
