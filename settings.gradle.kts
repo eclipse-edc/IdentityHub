@@ -54,9 +54,7 @@ include(":extensions:sts:sts-account-service-remote")
 
 // DCP protocol modules
 include(":extensions:protocols:dcp:presentation-api")
-include(":extensions:protocols:dcp:credential-request-api")
-include(":extensions:protocols:dcp:issuer-metadata-api")
-include(":extensions:protocols:dcp:credential-request-status-api")
+include(":extensions:protocols:dcp:issuer-api")
 
 // Identity APIs
 include(":extensions:api:identity-api:validators")

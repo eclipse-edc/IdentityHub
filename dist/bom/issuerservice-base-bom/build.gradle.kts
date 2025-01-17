@@ -23,9 +23,7 @@ dependencies {
     runtimeOnly(project(":core:identity-hub-keypairs"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
     // API modules
-    runtimeOnly(project(":extensions:protocols:dcp:credential-request-api"))
-    runtimeOnly(project(":extensions:protocols:dcp:credential-request-status-api"))
-    runtimeOnly(project(":extensions:protocols:dcp:issuer-metadata-api"))
+    runtimeOnly(project(":extensions:protocols:dcp:issuer-api"))
 
     runtimeOnly(project(":extensions:sts:sts-account-provisioner"))
     runtimeOnly(libs.edc.identity.did.core)
