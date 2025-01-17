@@ -37,7 +37,6 @@ include(":core:identity-hub-keypairs")
 include(":core:identity-hub-did")
 
 // lib modules
-include(":core:lib:verifiable-presentation-lib")
 include(":core:lib:keypair-lib")
 include(":core:lib:accesstoken-lib")
 

@@ -8,7 +8,6 @@ dependencies {
     api(project(":spi:keypair-spi"))
     api(project(":spi:participant-context-spi"))
     api(project(":spi:did-spi"))
-    implementation(project(":core:lib:verifiable-presentation-lib"))
     implementation(project(":core:lib:accesstoken-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
     implementation(libs.edc.spi.jwt.signer)
