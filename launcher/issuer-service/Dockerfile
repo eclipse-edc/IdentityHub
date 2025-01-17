@@ -10,7 +10,7 @@ RUN apt update \
 
 WORKDIR /app
 
-COPY ./build/libs/identity-hub.jar /app
+COPY ./build/libs/issuer-service.jar /app
 
 EXPOSE 8188
 
@@ -22,4 +22,4 @@ HEALTHCHECK --interval=5s --timeout=5s --retries=10 CMD curl --fail http://local
 # Use "exec" for graceful termination (SIGINT) to reach JVM.
 # ARG can not be used in ENTRYPOINT so storing value in an ENV variable
 ENV ENV_JVM_ARGS=$JVM_ARGS
-ENTRYPOINT [ "sh", "-c", "exec java $ENV_JVM_ARGS -jar identity-hub.jar"]
+ENTRYPOINT [ "sh", "-c", "exec java $ENV_JVM_ARGS -jar issuer-service.jar"]

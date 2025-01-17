@@ -74,6 +74,7 @@ include(":extensions:api:identity-api:validators:verifiable-credential-validator
 
 // other modules
 include(":launcher:identityhub")
+include(":launcher:issuer-service")
 
 include(":version-catalog")
 // test modules
