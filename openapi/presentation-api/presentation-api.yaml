@@ -6,7 +6,7 @@ info:
 servers:
 - url: /
 paths:
-  /v1/participants/{participantId}/presentations/query:
+  /v1/participants/{participantContextId}/presentations/query:
     post:
       tags:
       - Presentation API
@@ -14,7 +14,7 @@ paths:
         \ definition, or a list of scopes"
       operationId: queryPresentation
       parameters:
-      - name: participantId
+      - name: participantContextId
         in: path
         required: true
         style: simple

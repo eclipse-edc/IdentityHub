@@ -1,0 +1,193 @@
+openapi: 3.0.1
+info:
+  title: issuer-api
+  description: REST API documentation for the issuer-api
+  version: 1.0.0
+servers:
+- url: /
+paths:
+  /v1alpha/.well-known/vci:
+    get:
+      tags:
+      - Issuer Metadata API
+      description: Requests information about the capabilities of this issuer.
+      operationId: getIssuerMetadata
+      responses:
+        "200":
+          description: Gets the issuer metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssuerMetadata"
+  /v1alpha/credentials:
+    post:
+      tags:
+      - Credential Request API
+      description: Requests the issuance of one or several verifiable credentials
+        from an issuer
+      operationId: requestCredentials
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialRequestMessage"
+      responses:
+        "201":
+          description: The request was successfully received and is being processed.
+          headers:
+            Location:
+              description: contains the relative URL where the status of the request
+                can be queried (Credential Request Status API)
+              style: simple
+              explode: false
+        "400":
+          description: "Request body was malformed, e.g. required parameter or properties\
+            \ were missing"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: No Authorization header was provided.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "403":
+          description: The given authentication token could not be validated or the
+            client is not authorized to call this endpoint.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/requests/{credentialRequestId}:
+    get:
+      tags:
+      - Credential Request Status API
+      description: Requests status information about an issuance request from an issuer
+      operationId: getCredentialRequestStatus
+      parameters:
+      - name: credentialRequestId
+        in: path
+        description: ID of the Credential Request that was sent previously
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: credentialRequestId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Gets the status of a credentials request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialRequestStatus"
+        "400":
+          description: "Request was malformed, e.g. required parameter or properties\
+            \ were missing"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: No Authorization header was provided.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "403":
+          description: The given authentication token could not be validated or the
+            client is not authorized to call this endpoint.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: No credential request was found for the given ID.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+components:
+  schemas:
+    ApiErrorDetail:
+      type: object
+      properties:
+        invalidValue:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        type:
+          type: string
+      example:
+        message: error message
+        type: ErrorType
+        path: object.error.path
+        invalidValue: this value is not valid
+    CredentialRequest:
+      type: object
+      properties:
+        credentialType:
+          type: string
+        format:
+          type: string
+        payload:
+          type: object
+    CredentialRequestMessage:
+      type: object
+      properties:
+        contexts:
+          type: array
+          items:
+            type: string
+        credentials:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialRequest"
+        type:
+          type: string
+    CredentialRequestStatus:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            type: string
+        requestId:
+          type: string
+        requestStatus:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    IssuerMetadata:
+      type: object
+  securitySchemes:
+    Authentication:
+      type: http
+      description: Self-Issued ID token containing an access_token
+      scheme: bearer
+      bearerFormat: JWT
