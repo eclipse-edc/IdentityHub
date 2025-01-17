@@ -42,7 +42,6 @@ include(":core:lib:keypair-lib")
 include(":core:lib:accesstoken-lib")
 
 // extension modules
-include(":extensions:protocols:dcp:presentation-api")
 include(":extensions:store:sql:identity-hub-did-store-sql")
 include(":extensions:store:sql:identity-hub-credentials-store-sql")
 include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
@@ -52,6 +51,10 @@ include(":extensions:common:credential-watchdog")
 include(":extensions:sts:sts-account-provisioner")
 include(":extensions:sts:sts-account-service-local")
 include(":extensions:sts:sts-account-service-remote")
+
+// DCP protocol modules
+include(":extensions:protocols:dcp:presentation-api")
+include(":extensions:protocols:dcp:issuer-api")
 
 // Identity APIs
 include(":extensions:api:identity-api:validators")
@@ -69,6 +72,7 @@ include(":extensions:api:identity-api:validators:verifiable-credential-validator
 
 // other modules
 include(":launcher:identityhub")
+include(":launcher:issuer-service")
 
 include(":version-catalog")
 // test modules
@@ -85,3 +89,6 @@ include(":dist:bom:identityhub-bom")
 include(":dist:bom:identityhub-with-sts-bom")
 include(":dist:bom:identityhub-feature-sql-bom")
 include(":dist:bom:identityhub-feature-sql-sts-bom")
+include(":dist:bom:issuerservice-base-bom")
+include(":dist:bom:issuerservice-bom")
+include(":dist:bom:issuerservice-feature-sql-bom")

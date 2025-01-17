@@ -35,7 +35,7 @@ jobs:
       - name: Run Javadoc
         run: ./gradlew javadoc
 
-  Verify-Launcher:
+  Verify-Identityhub-Launcher:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +61,31 @@ jobs:
         uses: raschmitt/wait-for-healthy-container@v1
         with:
           container-name: identity-hub
+          timeout: 60
+
+  Verify-Issuer-Service-Launcher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: eclipse-edc/.github/.github/actions/setup-build@main
+
+      - name: 'Build launcher'
+        run: ./gradlew :launcher:issuer-service:shadowJar
+
+      - name: 'Build Docker image'
+        run: docker build -t issuer-service ./launcher/issuer-service
+
+      - name: 'Start Identity Hub'
+        run: |
+          docker run -d --rm --name issuer-service \
+            -e "EDC_STS_ACCOUNT_API_URL=https://sts.com" \
+            -e "EDC_STS_ACCOUNTS_API_AUTH_HEADER_VALUE=auth-header" \
+            issuer-service:latest
+
+      - name: 'Wait for Issuer-Service to be healthy'
+        uses: raschmitt/wait-for-healthy-container@v1
+        with:
+          container-name: issuer-service
           timeout: 60
 
   Test:
