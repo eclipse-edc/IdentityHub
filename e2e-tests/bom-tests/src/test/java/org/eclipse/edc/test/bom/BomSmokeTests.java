@@ -103,7 +103,8 @@ public class BomSmokeTests {
                                 put("web.http.version.path", "/api/version");
                                 put("web.http.sts.port", valueOf(getFreePort()));
                                 put("web.http.sts.path", "/api/sts");
-                                put("edc.api.accounts.key", "password");
+                                put("web.http.did.port", valueOf(getFreePort()));
+                                put("web.http.did.path", "/api/did");
                             }
                         },
                         ":dist:bom:identityhub-with-sts-bom"

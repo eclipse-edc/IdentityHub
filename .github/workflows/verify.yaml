@@ -54,7 +54,6 @@ jobs:
             -e "WEB_HTTP_IDENTITY_PATH=/api/identity" \
             -e "WEB_HTTP_PRESENTATION_PORT=10001" \
             -e "WEB_HTTP_PRESENTATION_PATH=/api/presentation" \
-            -e "EDC_API_ACCOUNTS_KEY=password" \
             identity-hub:latest
 
       - name: 'Wait for Identity Hub to be healthy'

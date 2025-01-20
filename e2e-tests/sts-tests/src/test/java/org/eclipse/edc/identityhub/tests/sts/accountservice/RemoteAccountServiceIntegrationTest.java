@@ -50,8 +50,7 @@ public class RemoteAccountServiceIntegrationTest {
                     "web.http.path", "/",
                     "web.http.accounts.port", "" + ACCOUNTS_PORT,
                     "web.http.accounts.path", "/sts",
-                    "web.http.version.port", "" + getFreePort(), // avoid conflicts with other tests if they run in parallel
-                    "edc.api.accounts.key", STS_ACCOUNTS_API_KEY
+                    "web.http.version.port", "" + getFreePort()
 
             ),
             ":e2e-tests:runtimes:sts"

@@ -55,7 +55,6 @@ public class IdentityHubRuntimeConfiguration {
                 put("edc.runtime.id", name);
                 put("edc.ih.iam.id", "did:web:consumer");
                 put("edc.sql.schema.autocreate", "true");
-                put("edc.api.accounts.key", "password");
                 put("edc.iam.accesstoken.jti.validation", String.valueOf(true));
             }
         };
