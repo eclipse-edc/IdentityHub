@@ -161,7 +161,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
             var monitor = context.getMonitor();
             var ldpIssuer = LdpIssuer.Builder.newInstance().jsonLd(jsonLd).monitor(monitor).build();
-            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager.getMapper(JSON_LD)),
+            presentationCreatorRegistry.addCreator(new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistry, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer, typeManager, JSON_LD),
                     CredentialFormat.VC1_0_LD);
 
             presentationCreatorRegistry.addCreator(new JwtEnvelopedPresentationGenerator(monitor, jwtGenerationService), CredentialFormat.VC2_0_JOSE);
