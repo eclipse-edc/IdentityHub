@@ -26,6 +26,7 @@ import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.verifiablecredentials.jwt.JwtCreationUtils;
 import org.eclipse.edc.verifiablecredentials.jwt.TestConstants;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
@@ -58,7 +59,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     );
 
     private final PrivateKeyResolver privateKeyResolver = mock();
-
+    private final TypeManager typeManager = mock();
     private LdpPresentationGenerator creator;
 
     @BeforeEach
@@ -79,7 +80,9 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
                 .monitor(mock())
                 .build();
         creator = new LdpPresentationGenerator(privateKeyResolver, signatureSuiteRegistryMock, IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, ldpIssuer,
-                JacksonJsonLd.createObjectMapper());
+                typeManager, "test");
+
+        when(typeManager.getMapper("test")).thenReturn(JacksonJsonLd.createObjectMapper());
     }
 
     @Override

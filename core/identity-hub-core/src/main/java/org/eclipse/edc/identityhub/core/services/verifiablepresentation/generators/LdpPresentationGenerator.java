@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.core.services.verifiablepresentation.generat
 
 import com.apicatalog.vc.suite.SignatureSuite;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonArrayBuilder;
@@ -33,6 +32,7 @@ import org.eclipse.edc.security.signature.jws2020.JsonWebKeyPair;
 import org.eclipse.edc.security.signature.jws2020.Jws2020ProofDraft;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.verifiablecredentials.linkeddata.LdpIssuer;
 import org.jetbrains.annotations.NotNull;
 
@@ -64,15 +64,18 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
     private final SignatureSuiteRegistry signatureSuiteRegistry;
     private final String defaultSignatureSuite;
     private final LdpIssuer ldpIssuer;
-    private final ObjectMapper mapper;
+    private final TypeManager typeManager;
+    private final String typeContext;
 
     public LdpPresentationGenerator(PrivateKeyResolver privateKeyResolver,
-                                    SignatureSuiteRegistry signatureSuiteRegistry, String defaultSignatureSuite, LdpIssuer ldpIssuer, ObjectMapper mapper) {
+                                    SignatureSuiteRegistry signatureSuiteRegistry, String defaultSignatureSuite, LdpIssuer ldpIssuer,
+                                    TypeManager typeManager, String typeContext) {
         this.privateKeyResolver = privateKeyResolver;
         this.signatureSuiteRegistry = signatureSuiteRegistry;
         this.defaultSignatureSuite = defaultSignatureSuite;
         this.ldpIssuer = ldpIssuer;
-        this.mapper = mapper;
+        this.typeManager = typeManager;
+        this.typeContext = typeContext;
     }
 
     /**
@@ -144,7 +147,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
                 .map(VerifiableCredentialContainer::rawVc)
                 .map(str -> {
                     try {
-                        return mapper.readValue(str, JsonObject.class);
+                        return typeManager.getMapper(typeContext).readValue(str, JsonObject.class);
                     } catch (JsonProcessingException e) {
                         throw new EdcException(e);
                     }
@@ -166,7 +169,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
                 .proofPurpose(ASSERTION_METHOD)
                 .verificationMethod(new JsonWebKeyPair(URI.create(controller + "#" + publicKeyId), verificationMethodType, controllerUri, null))
                 .created(Instant.now())
-                .mapper(mapper)
+                .mapper(typeManager.getMapper(typeContext))
                 .build();
 
         return ldpIssuer.signDocument(suite, presentationObject, keypair, proofDraft)

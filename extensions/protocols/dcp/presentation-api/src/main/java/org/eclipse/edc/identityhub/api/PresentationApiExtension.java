@@ -99,19 +99,17 @@ public class PresentationApiExtension implements ServiceExtension {
         portMappingRegistry.register(new PortMapping(contextString, apiConfiguration.port(), apiConfiguration.path()));
         validatorRegistry.register(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY, new PresentationQueryValidator());
 
-        var jsonLdMapper = typeManager.getMapper(JSON_LD);
-
 
         var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, selfIssuedTokenVerifier, verifiablePresentationService, context.getMonitor(), participantContextService);
-        webService.registerResource(contextString, new ObjectMapperProvider(jsonLdMapper));
-        webService.registerResource(contextString, new JerseyJsonLdInterceptor(jsonLd, jsonLdMapper, PRESENTATION_SCOPE));
+        webService.registerResource(contextString, new ObjectMapperProvider(typeManager, JSON_LD));
+        webService.registerResource(contextString, new JerseyJsonLdInterceptor(jsonLd, typeManager, JSON_LD, PRESENTATION_SCOPE));
         webService.registerResource(contextString, controller);
 
         jsonLd.registerContext(DCP_CONTEXT_URL, PRESENTATION_SCOPE);
 
         // register transformer -- remove once registration is handled in EDC
-        typeTransformer.register(new JsonObjectToPresentationQueryTransformer(jsonLdMapper));
-        typeTransformer.register(new JsonValueToGenericTypeTransformer(jsonLdMapper));
+        typeTransformer.register(new JsonObjectToPresentationQueryTransformer(typeManager, JSON_LD));
+        typeTransformer.register(new JsonValueToGenericTypeTransformer(typeManager, JSON_LD));
         typeTransformer.register(new JsonObjectFromPresentationResponseMessageTransformer());
 
         registerVersionInfo(getClass().getClassLoader());
