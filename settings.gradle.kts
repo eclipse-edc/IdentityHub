@@ -56,7 +56,6 @@ include(":extensions:protocols:dcp:presentation-api")
 include(":extensions:protocols:dcp:issuer-api")
 
 // Identity APIs
-include(":extensions:api:identity-api:validators")
 include(":extensions:api:identity-api:api-configuration")
 include(":extensions:api:identityhub-api-authentication")
 include(":extensions:api:identityhub-api-authorization")

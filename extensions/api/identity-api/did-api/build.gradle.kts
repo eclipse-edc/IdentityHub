@@ -23,7 +23,6 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:did-spi"))
     implementation(project(":extensions:api:identity-api:api-configuration"))
-    implementation(project(":extensions:api:identity-api:validators"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
     implementation(libs.edc.lib.jerseyproviders)
