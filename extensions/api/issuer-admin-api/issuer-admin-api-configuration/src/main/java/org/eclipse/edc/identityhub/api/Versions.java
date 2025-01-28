@@ -12,14 +12,10 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.webcontext;
+package org.eclipse.edc.identityhub.api;
 
-public interface IdentityHubApiContext {
-    String IDENTITY = "identity";
-    String IH_DID = "did";
-    String PRESENTATION = "presentation";
-    String ISSUER_API = "issuer-api";
-    @Deprecated(since = "0.9.0")
-    String RESOLUTION = "resolution";
-    String ISSUERADMIN = "issueradmin";
+public interface Versions {
+    String UNSTABLE = "/v1alpha";
+    // Once /v1 has become stable, there will be a String STABLE = "/v1"
+    // Once /v2 has become stable, there will be a String DEPRECATED = "/v1", and STABLE = "/v2"
 }

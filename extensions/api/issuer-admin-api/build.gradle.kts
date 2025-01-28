@@ -12,14 +12,14 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.webcontext;
+plugins {
+    `java-library`
+    `maven-publish`
+}
 
-public interface IdentityHubApiContext {
-    String IDENTITY = "identity";
-    String IH_DID = "did";
-    String PRESENTATION = "presentation";
-    String ISSUER_API = "issuer-api";
-    @Deprecated(since = "0.9.0")
-    String RESOLUTION = "resolution";
-    String ISSUERADMIN = "issueradmin";
+dependencies {
+    api(project(":extensions:api:issuer-admin-api:administration-api"))
+    api(project(":extensions:api:issuer-admin-api:attestation-api"))
+    api(project(":extensions:api:issuer-admin-api:credentials-api"))
+    api(project(":extensions:api:issuer-admin-api:participant-api"))
 }

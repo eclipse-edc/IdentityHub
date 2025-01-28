@@ -17,6 +17,7 @@ plugins {
 }
 
 dependencies {
+    runtimeOnly(project(":extensions:api:issuer-admin-api"))
     runtimeOnly(project(":core:identity-hub-did"))
     runtimeOnly(project(":core:identity-hub-core"))
     runtimeOnly(project(":core:identity-hub-participants"))
