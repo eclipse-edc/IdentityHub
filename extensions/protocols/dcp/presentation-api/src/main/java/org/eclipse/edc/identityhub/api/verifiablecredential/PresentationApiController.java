@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.api.verifiablecredential;
 
 import com.nimbusds.jwt.SignedJWT;
+import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.HeaderParam;
@@ -29,9 +30,13 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantConte
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
+import org.eclipse.edc.jsonld.spi.JsonLd;
+import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
+import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
@@ -42,11 +47,16 @@ import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
 
 import java.text.ParseException;
+import java.util.Map;
 import java.util.Optional;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY;
+import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_0_8;
+import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
+import static org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TERM;
+import static org.eclipse.edc.identityhub.api.DcpApiConstants.DCP_SCOPE_V_0_8;
+import static org.eclipse.edc.identityhub.api.DcpApiConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
@@ -62,9 +72,15 @@ public class PresentationApiController implements PresentationApi {
     private final VerifiablePresentationService verifiablePresentationService;
     private final Monitor monitor;
     private final ParticipantContextService participantContextService;
+    private final JsonLd jsonLd;
+
+    private final Map<JsonLdNamespace, String> protocols = Map.of(
+            DSPACE_DCP_NAMESPACE_V_0_8, DCP_SCOPE_V_0_8,
+            DSPACE_DCP_NAMESPACE_V_1_0, DCP_SCOPE_V_1_0
+    );
 
     public PresentationApiController(JsonObjectValidatorRegistry validatorRegistry, TypeTransformerRegistry transformerRegistry, CredentialQueryResolver queryResolver,
-                                     SelfIssuedTokenVerifier selfIssuedTokenVerifier, VerifiablePresentationService verifiablePresentationService, Monitor monitor, ParticipantContextService participantContextService) {
+                                     SelfIssuedTokenVerifier selfIssuedTokenVerifier, VerifiablePresentationService verifiablePresentationService, Monitor monitor, ParticipantContextService participantContextService, JsonLd jsonLd) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
         this.queryResolver = queryResolver;
@@ -72,6 +88,7 @@ public class PresentationApiController implements PresentationApi {
         this.verifiablePresentationService = verifiablePresentationService;
         this.monitor = monitor;
         this.participantContextService = participantContextService;
+        this.jsonLd = jsonLd;
     }
 
 
@@ -85,10 +102,16 @@ public class PresentationApiController implements PresentationApi {
 
         token = token.replace("Bearer", "").trim();
 
-        validatorRegistry.validate(PRESENTATION_QUERY_MESSAGE_TYPE_PROPERTY, query).orElseThrow(ValidationFailureException::new);
+        query = jsonLd.expand(query).orElseThrow(InvalidRequestException::new);
+
+        var protocol = parseProtocol(query).orElseThrow(InvalidRequestException::new);
+
+        validatorRegistry.validate(protocol.namespace().toIri(PRESENTATION_QUERY_MESSAGE_TERM), query).orElseThrow(ValidationFailureException::new);
+
+        var protocolRegistry = transformerRegistry.forContext(protocol.scope());
 
         participantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        var presentationQuery = transformerRegistry.transform(query, PresentationQueryMessage.class).orElseThrow(InvalidRequestException::new);
+        var presentationQuery = protocolRegistry.forContext(protocol.scope()).transform(query, PresentationQueryMessage.class).orElseThrow(InvalidRequestException::new);
 
         if (presentationQuery.getPresentationDefinition() != null) {
             monitor.warning("DIF Presentation Queries are not supported yet. This will get implemented in future iterations.");
@@ -109,7 +132,8 @@ public class PresentationApiController implements PresentationApi {
         // package the credentials in a VP and sign
         var audience = getAudience(token);
         var presentationResponse = verifiablePresentationService.createPresentation(participantContextId, credentials.toList(), presentationQuery.getPresentationDefinition(), audience)
-                .compose(presentation -> transformerRegistry.transform(presentation, JsonObject.class))
+                .compose(presentation -> protocolRegistry.transform(presentation, JsonObject.class))
+                .compose(json -> jsonLd.compact(json, protocol.scope()))
                 .orElseThrow(failure -> new EdcException("Error creating VerifiablePresentation: %s".formatted(failure.getFailureDetail())));
         return Response.ok()
                 .entity(presentationResponse)
@@ -126,6 +150,19 @@ public class PresentationApiController implements PresentationApi {
         }
     }
 
+    private Result<DcpProtocol> parseProtocol(JsonObject query) {
+        var type = query.getJsonArray(JsonLdKeywords.TYPE);
+        if (type == null) {
+            return Result.failure("Missing type in query");
+        }
+        return protocols.entrySet().stream()
+                .filter(p -> type.contains(Json.createValue(p.getKey().toIri(PRESENTATION_QUERY_MESSAGE_TERM))))
+                .map(entry -> new DcpProtocol(entry.getKey(), entry.getValue()))
+                .map(Result::success)
+                .findAny()
+                .orElseGet(() -> Result.failure("Unsupported protocol"));
+    }
+
     private Response notImplemented() {
         var error = ApiErrorDetail.Builder.newInstance()
                 .message("Not implemented.")
@@ -134,6 +171,10 @@ public class PresentationApiController implements PresentationApi {
         return Response.status(503)
                 .entity(error)
                 .build();
+    }
+
+    private record DcpProtocol(JsonLdNamespace namespace, String scope) {
+
     }
 
 }

@@ -23,6 +23,7 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
+import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
@@ -75,6 +76,8 @@ import java.util.Map;
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DCP_CONTEXT_URL;
+import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_DID;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_KEY;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.PROVIDER_DID;
@@ -93,15 +96,16 @@ import static org.mockito.Mockito.when;
 
 public class PresentationApiEndToEndTest {
 
+
     abstract static class Tests {
 
         protected static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
         protected static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
-        private static final String VALID_QUERY_WITH_SCOPE = """
+        private static final String VALID_QUERY_WITH_SCOPE_TEMPLATE = """
                 {
                   "@context": [
                     "https://identity.foundation/presentation-exchange/submission/v1",
-                    "https://w3id.org/tractusx-trust/v0.8"
+                     "%s"
                   ],
                   "@type": "PresentationQueryMessage",
                   "scope":[
@@ -109,6 +113,7 @@ public class PresentationApiEndToEndTest {
                   ]
                 }
                 """;
+        private static final String VALID_QUERY_WITH_SCOPE = VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted("https://w3id.org/tractusx-trust/v0.8");
         private static final String VALID_QUERY_WITH_ADDITIONAL_SCOPE = """
                 {
                   "@context": [
@@ -300,8 +305,9 @@ public class PresentationApiEndToEndTest {
                     .body("[0].message", equalTo("Invalid query: requested Credentials outside of scope."));
         }
 
-        @Test
-        void query_success_noCredentials(IdentityHubEndToEndTestContext context) throws JOSEException {
+        @ParameterizedTest
+        @ValueSource(strings = { DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT })
+        void query_success_noCredentials(String dcpContext, IdentityHubEndToEndTestContext context) throws JOSEException {
 
             var token = generateSiToken();
             registerToken(token, context);
@@ -312,7 +318,7 @@ public class PresentationApiEndToEndTest {
             var response = context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
-                    .body(VALID_QUERY_WITH_SCOPE)
+                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
                     .statusCode(200)
@@ -321,12 +327,15 @@ public class PresentationApiEndToEndTest {
 
             assertThat(response)
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
-                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
-                    .doesNotContainKey("presentation");
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1));
+
+
+            assertThat(vpTokensExtractor(response)).hasSize(0);
         }
 
-        @Test
-        void query_success_containsCredential(IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
+        @ParameterizedTest
+        @ValueSource(strings = { DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT })
+        void query_success_containsCredential(String dcpContext, IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newInstance()
@@ -347,7 +356,7 @@ public class PresentationApiEndToEndTest {
             var response = context.getPresentationEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
-                    .body(VALID_QUERY_WITH_SCOPE)
+                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
                     .statusCode(200)
@@ -358,10 +367,62 @@ public class PresentationApiEndToEndTest {
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
                     .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
                     .hasEntrySatisfying("presentation", jsonValue -> {
-                        assertThat(jsonValue.getValueType()).isEqualTo(JsonValue.ValueType.STRING);
-                        var vpToken = ((JsonString) jsonValue).getString();
-                        assertThat(vpToken).isNotNull();
-                        assertThat(extractCredentials(vpToken)).isNotEmpty();
+                        assertThat(vpTokensExtractor(jsonValue)).hasSize(1)
+                                .first()
+                                .satisfies(vpToken -> {
+                                    assertThat(vpToken).isNotNull();
+                                    assertThat(extractCredentials(vpToken)).isNotEmpty();
+                                });
+                    });
+
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = { DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT })
+        void query_success_containsMultiplePresentations(String dcpContext, IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
+
+            var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
+            var res = VerifiableCredentialResource.Builder.newInstance()
+                    .state(VcStatus.ISSUED)
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
+                    .issuerId("https://example.edu/issuers/565049")
+                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .build();
+            store.create(res);
+
+            var res1 = VerifiableCredentialResource.Builder.newInstance()
+                    .state(VcStatus.ISSUED)
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC2_0_JOSE, cred))
+                    .issuerId("https://example.edu/issuers/565049")
+                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .build();
+
+            store.create(res1);
+
+            var token = generateSiToken();
+            registerToken(token, context);
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var response = context.getPresentationEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
+                    .hasEntrySatisfying("presentation", jsonValue -> {
+                        assertThat(jsonValue.getValueType()).isEqualTo(JsonValue.ValueType.ARRAY);
+                        assertThat(jsonValue.asJsonArray()).hasSize(2);
                     });
 
         }
@@ -406,7 +467,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "VcState code: {0}")
-        @ValueSource(ints = {600, 700, 800, 900})
+        @ValueSource(ints = { 600, 700, 800, 900 })
         void query_shouldFilterOutInvalidCreds(int vcStateCode, IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             // modify VC content, so that it becomes either not-yet-valid or expired
@@ -459,9 +520,9 @@ public class PresentationApiEndToEndTest {
 
             assertThat(response)
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
-                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
-                    .doesNotContainKey("presentation");
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1));
 
+            assertThat(vpTokensExtractor(response)).hasSize(0);
         }
 
         @Test
@@ -585,6 +646,26 @@ public class PresentationApiEndToEndTest {
                     .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
         }
 
+        private List<String> vpTokensExtractor(JsonObject response) {
+            if (!response.containsKey("presentation")) {
+                return List.of();
+            }
+
+            var value = response.get("presentation");
+            return vpTokensExtractor(value);
+        }
+
+        private List<String> vpTokensExtractor(JsonValue jsonValue) {
+            if (jsonValue.getValueType() == JsonValue.ValueType.ARRAY) {
+                return ((JsonArray) jsonValue).stream()
+                        .map(JsonString.class::cast)
+                        .map(JsonString::getString)
+                        .toList();
+            } else {
+                return List.of(((JsonString) jsonValue).getString());
+            }
+
+        }
     }
 
     @Nested
