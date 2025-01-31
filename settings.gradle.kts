@@ -40,6 +40,7 @@ include(":core:identity-hub-did")
 
 // IssuerService core modules
 include(":core:issuerservice:issuerservice-core")
+include(":core:issuerservice:issuerservice-participants")
 
 // lib modules
 include(":core:lib:keypair-lib")
