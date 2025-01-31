@@ -19,9 +19,12 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
+import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
 
+import static org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_DEFINITION_TERM;
+import static org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_SCOPE_TERM;
 import static org.eclipse.edc.validator.spi.ValidationResult.failure;
 import static org.eclipse.edc.validator.spi.ValidationResult.success;
 import static org.eclipse.edc.validator.spi.Violation.violation;
@@ -31,14 +34,21 @@ import static org.eclipse.edc.validator.spi.Violation.violation;
  * <em>or</em> a {@code presentationDefinition} query.
  */
 public class PresentationQueryValidator implements Validator<JsonObject> {
+
+    private final JsonLdNamespace namespace;
+
+    public PresentationQueryValidator(JsonLdNamespace namespace) {
+        this.namespace = namespace;
+    }
+
     @Override
     public ValidationResult validate(JsonObject input) {
         if (input == null) {
             return failure(violation("Presentation query was null", "."));
         }
-        var scope = input.get(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_SCOPE_PROPERTY);
+        var scope = input.get(namespace.toIri(PRESENTATION_QUERY_MESSAGE_SCOPE_TERM));
 
-        var presentationDef = input.get(PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_DEFINITION_PROPERTY);
+        var presentationDef = input.get(namespace.toIri(PRESENTATION_QUERY_MESSAGE_DEFINITION_TERM));
 
         if (isNullObject(scope) && isNullObject(presentationDef)) {
             return failure(violation("Must contain either a 'scope' or a 'presentationDefinition' property.", null));

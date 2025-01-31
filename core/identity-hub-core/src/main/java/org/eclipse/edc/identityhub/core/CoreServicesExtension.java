@@ -63,6 +63,7 @@ import java.net.URISyntaxException;
 import java.time.Clock;
 
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DCP_CONTEXT_URL;
+import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.identityhub.core.CoreServicesExtension.NAME;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.DID_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.JWS_2020_URL;
@@ -81,6 +82,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     public static final String PRESENTATION_EXCHANGE_V_1_JSON = "presentation-exchange.v1.json";
     public static final String PRESENTATION_QUERY_V_08_JSON = "dcp.v08.json";
+    public static final String DSPACE_DCP_V_1_0_JSON_LD = "dcp.v1.0.jsonld";
     public static final String PRESENTATION_SUBMISSION_V1_JSON = "presentation-submission.v1.json";
     public static final String DID_JSON = "did.json";
     public static final String JWS_2020_JSON = "jws2020.json";
@@ -185,6 +187,7 @@ public class CoreServicesExtension implements ServiceExtension {
         try {
             jsonLd.registerCachedDocument(PRESENTATION_EXCHANGE_URL, classLoader.getResource(PRESENTATION_EXCHANGE_V_1_JSON).toURI());
             jsonLd.registerCachedDocument(DCP_CONTEXT_URL, classLoader.getResource(PRESENTATION_QUERY_V_08_JSON).toURI());
+            jsonLd.registerCachedDocument(DSPACE_DCP_V_1_0_CONTEXT, classLoader.getResource(DSPACE_DCP_V_1_0_JSON_LD).toURI());
             jsonLd.registerCachedDocument(DID_CONTEXT_URL, classLoader.getResource(DID_JSON).toURI());
             jsonLd.registerCachedDocument(JWS_2020_URL, classLoader.getResource(JWS_2020_JSON).toURI());
             jsonLd.registerCachedDocument(W3C_CREDENTIALS_URL, classLoader.getResource(CREDENTIALS_V_1_JSON).toURI());

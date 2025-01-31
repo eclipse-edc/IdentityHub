@@ -36,12 +36,13 @@ import java.util.UUID;
 
 import static jakarta.json.Json.createArrayBuilder;
 import static jakarta.json.Json.createObjectBuilder;
+import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_0_8;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
 class PresentationQueryValidatorTest {
     public static final ObjectMapper MAPPER = JacksonJsonLd.createObjectMapper();
-    private final PresentationQueryValidator validator = new PresentationQueryValidator();
+    private final PresentationQueryValidator validator = new PresentationQueryValidator(DSPACE_DCP_NAMESPACE_V_0_8);
     private final JsonLd jsonLd = new TitaniumJsonLd(mock());
 
 
