@@ -14,5 +14,5 @@
 
 package org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model;
 
-public record GetParticipantResponse(String participantId) {
+public record GetParticipantResponse(String participantId, String participantDid, String participantName) {
 }

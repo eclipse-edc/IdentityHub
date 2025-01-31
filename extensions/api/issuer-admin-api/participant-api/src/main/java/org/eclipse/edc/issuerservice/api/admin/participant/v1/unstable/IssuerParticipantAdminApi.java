@@ -26,9 +26,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.AddParticipantRequest;
-import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.GetParticipantResponse;
-import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.UpdateParticipantRequest;
+import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
@@ -41,7 +39,7 @@ public interface IssuerParticipantAdminApi {
 
     @Operation(description = "Adds a new participant.",
             operationId = "addParticipant",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = AddParticipantRequest.class), mediaType = "application/json")),
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Participant.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "201", description = "The participant was added successfully."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
@@ -52,11 +50,11 @@ public interface IssuerParticipantAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response addParticipant(AddParticipantRequest participant);
+    Response addParticipant(Participant participant);
 
     @Operation(description = "Updates participant data.",
             operationId = "updateParticipant",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = UpdateParticipantRequest.class), mediaType = "application/json")),
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Participant.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The participant was updated successfully."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
@@ -67,14 +65,14 @@ public interface IssuerParticipantAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response updateParticipant(UpdateParticipantRequest participant);
+    Response updateParticipant(Participant participant);
 
     @Operation(description = "Gets metadata for a certain participant.",
             operationId = "getParticipantById",
             parameters = {@Parameter(name = "participantId", description = "ID of the participant who should be returned", required = true, in = ParameterIn.PATH)},
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of verifiable credential metadata. Note that these are not actual VerifiableCredentials.",
-                            content = @Content(schema = @Schema(implementation = GetParticipantResponse.class), mediaType = "application/json")),
+                            content = @Content(schema = @Schema(implementation = Participant.class), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -83,14 +81,14 @@ public interface IssuerParticipantAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    GetParticipantResponse getParticipantById(String participantId);
+    Participant getParticipantById(String participantId);
 
     @Operation(description = "Gets all participants for a certain query.",
             operationId = "queryParticipants",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of participant metadata.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = GetParticipantResponse.class)), mediaType = "application/json")),
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = Participant.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -99,5 +97,5 @@ public interface IssuerParticipantAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    List<GetParticipantResponse> queryParticipants(QuerySpec querySpec);
+    List<Participant> queryParticipants(QuerySpec querySpec);
 }

@@ -12,7 +12,15 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model;
+plugins {
+    `java-library`
+    `java-test-fixtures`
+    `maven-publish`
+}
 
-public record UpdateParticipantRequest(String participantId) {
+dependencies {
+    api(libs.edc.spi.core)
+    testFixturesImplementation(libs.edc.junit)
+    testFixturesImplementation(libs.assertj)
+    testFixturesImplementation(libs.junit.jupiter.api)
 }

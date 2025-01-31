@@ -14,5 +14,7 @@
 
 package org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model;
 
-public class AddParticipantRequest {
+import org.jetbrains.annotations.Nullable;
+
+public record AddParticipantRequest(String participantId, String participantDid, @Nullable String participantName) {
 }

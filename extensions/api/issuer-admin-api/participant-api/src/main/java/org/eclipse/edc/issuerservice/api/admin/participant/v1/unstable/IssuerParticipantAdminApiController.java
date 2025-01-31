@@ -23,9 +23,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.AddParticipantRequest;
-import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.GetParticipantResponse;
-import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.UpdateParticipantRequest;
+import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
 import org.eclipse.edc.spi.query.QuerySpec;
 
 import java.net.URI;
@@ -41,27 +39,27 @@ public class IssuerParticipantAdminApiController implements IssuerParticipantAdm
 
     @POST
     @Override
-    public Response addParticipant(AddParticipantRequest participant) {
+    public Response addParticipant(Participant participant) {
         return Response.created(URI.create("/participants/dummy-id")).build();
     }
 
     @PUT
     @Override
-    public Response updateParticipant(UpdateParticipantRequest participant) {
+    public Response updateParticipant(Participant participant) {
         return Response.ok().build();
     }
 
     @GET
     @Path("/{participantId}")
     @Override
-    public GetParticipantResponse getParticipantById(@PathParam("participantId") String participantId) {
-        return new GetParticipantResponse(participantId);
+    public Participant getParticipantById(@PathParam("participantId") String participantId) {
+        return null;
     }
 
     @POST
     @Path("/query")
     @Override
-    public List<GetParticipantResponse> queryParticipants(QuerySpec querySpec) {
-        return List.of(new GetParticipantResponse("dummy-id"));
+    public List<Participant> queryParticipants(QuerySpec querySpec) {
+        return List.of(new Participant("dummy-id", "did:web:dummy", "dummy"));
     }
 }

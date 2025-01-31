@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2024 Metaform Systems, Inc.
+ *  Copyright (c) 2025 Cofinity-X
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,11 +8,11 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Metaform Systems Inc. - initial API and implementation
+ *       Cofinity-X - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityhub.defaults.store;
+package org.eclipse.edc.identityhub.store;
 
 import org.eclipse.edc.query.CriterionOperatorRegistryImpl;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
@@ -33,7 +33,7 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
 /**
  * Base class for in-mem entity stores, that implement basic CRUD operations.
  */
-abstract class InMemoryEntityStore<T> {
+public abstract class InMemoryEntityStore<T> {
     protected final Map<String, T> store = new HashMap<>();
     protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
     protected final QueryResolver<T> queryResolver;

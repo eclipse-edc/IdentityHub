@@ -22,23 +22,29 @@ dependencyResolutionManagement {
         mavenLocal()
     }
 }
-// SPI modules
+// IdentityHub SPI modules
 include(":spi:identity-hub-spi")
 include(":spi:participant-context-spi")
 include(":spi:verifiable-credential-spi")
 include(":spi:keypair-spi")
 include(":spi:did-spi")
 
-// core modules
+// IssuerService SPI modules
+include(":spi:issuerservice:participant-spi")
 
+// IdentityHub core modules
 include(":core:identity-hub-core")
 include(":core:identity-hub-participants")
 include(":core:identity-hub-keypairs")
 include(":core:identity-hub-did")
 
+// IssuerService core modules
+include(":core:issuerservice:issuerservice-core")
+
 // lib modules
 include(":core:lib:keypair-lib")
 include(":core:lib:accesstoken-lib")
+include(":core:lib:common-lib")
 
 // extension modules
 include(":extensions:store:sql:identity-hub-did-store-sql")
