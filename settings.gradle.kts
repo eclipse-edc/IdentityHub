@@ -30,7 +30,7 @@ include(":spi:keypair-spi")
 include(":spi:did-spi")
 
 // IssuerService SPI modules
-include(":spi:issuerservice:participant-spi")
+include(":spi:issuerservice:issuerservice-participant-spi")
 
 // IdentityHub core modules
 include(":core:identity-hub-core")
@@ -90,7 +90,7 @@ include(":launcher:issuer-service")
 include(":version-catalog")
 // test modules
 include(":e2e-tests")
-include(":e2e-tests:api-tests")
+include(":e2e-tests:identity-api-tests")
 include(":e2e-tests:sts-tests")
 include(":e2e-tests:runtimes:identityhub-remote-sts")
 include(":e2e-tests:runtimes:sts")
