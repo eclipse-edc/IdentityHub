@@ -29,6 +29,30 @@ _None_
 - `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
 - `org.eclipse.edc.spi.system.apiversion.ApiVersionService` (required)
 
+Module `attestation-api`
+------------------------
+**Artifact:** org.eclipse.edc:attestation-api:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.issuerservice.api.admin.credentials.IssuerCredentialsAdminApiExtension`
+**Name:** "Issuer Service Credentials Admin API Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.web.spi.WebService` (required)
+
 Module `credential-watchdog`
 ----------------------------
 **Artifact:** org.eclipse.edc:credential-watchdog:0.12.0-SNAPSHOT
@@ -60,6 +84,30 @@ _None_
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService` (required)
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+
+Module `credentials-api`
+------------------------
+**Artifact:** org.eclipse.edc:credentials-api:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.issuerservice.api.admin.credentials.IssuerCredentialsAdminApiExtension`
+**Name:** "Issuer Service Credentials Admin API Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.web.spi.WebService` (required)
 
 Module `did-api`
 ----------------
@@ -481,6 +529,37 @@ _None_
 #### Referenced (injected) services
 _None_
 
+Module `issuer-admin-api-configuration`
+---------------------------------------
+**Artifact:** org.eclipse.edc:issuer-admin-api-configuration:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.identityhub.api.configuration.IssuerAdminApiConfigurationExtension`
+**Name:** "Issuer Admin API Configuration Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                         | Required | Type     | Default             | Pattern | Min | Max | Description                      |
+| --------------------------- | -------- | -------- | ------------------- | ------- | --- | --- | -------------------------------- |
+| `web.http.issueradmin.port` | `*`      | `string` | `15152`             |         |     |     | Port for issueradmin api context |
+| `web.http.issueradmin.path` | `*`      | `string` | `/api/issuer/admin` |         |     |     | Path for issueradmin api context |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.types.TypeManager` (required)
+- `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
+- `org.eclipse.edc.spi.system.apiversion.ApiVersionService` (required)
+
 Module `issuer-api`
 -------------------
 **Artifact:** org.eclipse.edc:issuer-api:0.12.0-SNAPSHOT
@@ -574,6 +653,30 @@ _None_
 - `org.eclipse.edc.identityhub.spi.did.DidWebParser` (optional)
 - `java.time.Clock` (required)
 - `org.eclipse.edc.spi.event.EventRouter` (required)
+
+Module `participant-api`
+------------------------
+**Artifact:** org.eclipse.edc:participant-api:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.issuerservice.api.admin.participant.IssuerParticipantAdminApiExtension`
+**Name:** "Issuer Service Participant Admin API Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.web.spi.WebService` (required)
 
 Module `participant-context-api`
 --------------------------------
