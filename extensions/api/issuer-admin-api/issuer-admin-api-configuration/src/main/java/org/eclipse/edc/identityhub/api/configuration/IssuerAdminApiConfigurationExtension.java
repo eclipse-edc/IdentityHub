@@ -82,7 +82,7 @@ public class IssuerAdminApiConfigurationExtension implements ServiceExtension {
             Stream.of(typeManager.getMapper()
                             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
                             .readValue(versionContent, VersionRecord[].class))
-                    .forEach(vr -> apiVersionService.addRecord(ISSUERADMIN, vr));
+                    .forEach(vr -> apiVersionService.addRecord("issuer-admin-api", vr));
         } catch (IOException e) {
             throw new EdcException(e);
         }
