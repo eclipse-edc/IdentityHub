@@ -21,4 +21,5 @@ public interface IdentityHubApiContext {
     String ISSUER_API = "issuer-api";
     @Deprecated(since = "0.9.0")
     String RESOLUTION = "resolution";
+    String ISSUERADMIN = "issueradmin";
 }
