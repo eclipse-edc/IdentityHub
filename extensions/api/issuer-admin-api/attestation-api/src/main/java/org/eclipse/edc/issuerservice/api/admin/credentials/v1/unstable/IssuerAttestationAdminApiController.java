@@ -71,7 +71,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     }
 
     @POST
-    @Path("/attestations")
+    @Path("/attestations/query")
     @Override
     public AttestationResponse queryAttestations(QuerySpec query) {
         return new AttestationResponse("dummy-attestation-id", "dummy-participant-id");

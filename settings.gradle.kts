@@ -67,7 +67,6 @@ include(":extensions:api:identity-api:keypair-api")
 // Issuer Admin API
 include(":extensions:api:issuer-admin-api:issuer-admin-api-configuration")
 include(":extensions:api:issuer-admin-api:participant-api")
-include(":extensions:api:issuer-admin-api:administration-api")
 include(":extensions:api:issuer-admin-api:credentials-api")
 include(":extensions:api:issuer-admin-api:attestation-api")
 

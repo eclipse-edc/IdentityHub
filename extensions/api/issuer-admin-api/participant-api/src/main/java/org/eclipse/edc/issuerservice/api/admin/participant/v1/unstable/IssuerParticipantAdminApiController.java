@@ -59,6 +59,7 @@ public class IssuerParticipantAdminApiController implements IssuerParticipantAdm
     }
 
     @POST
+    @Path("/query")
     @Override
     public List<GetParticipantResponse> queryParticipants(QuerySpec querySpec) {
         return List.of(new GetParticipantResponse("dummy-id"));

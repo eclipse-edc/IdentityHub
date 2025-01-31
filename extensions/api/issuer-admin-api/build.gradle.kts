@@ -18,7 +18,6 @@ plugins {
 }
 
 dependencies {
-    api(project(":extensions:api:issuer-admin-api:administration-api"))
     api(project(":extensions:api:issuer-admin-api:attestation-api"))
     api(project(":extensions:api:issuer-admin-api:credentials-api"))
     api(project(":extensions:api:issuer-admin-api:participant-api"))
