@@ -19,8 +19,10 @@ import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStoreTestB
 
 class InMemoryParticipantStoreTest extends ParticipantStoreTestBase {
 
+    private final InMemoryParticipantStore store = new InMemoryParticipantStore();
+
     @Override
     protected ParticipantStore getStore() {
-        return new InMemoryParticipantStore();
+        return store;
     }
 }

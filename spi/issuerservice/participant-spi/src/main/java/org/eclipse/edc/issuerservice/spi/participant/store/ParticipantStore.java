@@ -63,4 +63,12 @@ public interface ParticipantStore {
      * @return success if deleted, a failure otherwise
      */
     StoreResult<Void> deleteById(String participantId);
+
+    default String alreadyExistsErrorMessage(String id) {
+        return "A Participant with ID '%s' already exists.".formatted(id);
+    }
+
+    default String notFoundErrorMessage(String id) {
+        return "A Participant with ID '%s' does not exist.".formatted(id);
+    }
 }

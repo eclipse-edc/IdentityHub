@@ -52,7 +52,7 @@ public abstract class ParticipantStoreTestBase {
                 .forEach(getStore()::create);
 
         var q = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("id", "=", "p4"))
+                .filter(new Criterion("participantId", "=", "p4"))
                 .build();
 
         assertThat(getStore().query(q)).isSucceeded()
@@ -63,6 +63,7 @@ public abstract class ParticipantStoreTestBase {
     void query_byDid() {
 
         var participantContext = createParticipant();
+        getStore().create(participantContext);
 
         var q = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("did", "=", "did:web:participant"))
@@ -129,7 +130,7 @@ public abstract class ParticipantStoreTestBase {
         var result = getStore().create(participant);
         assertThat(result).isSucceeded();
 
-        var updated = new Participant("p14", "did:web:participant-changed", "participant-changed");
+        var updated = new Participant("p-id", "did:web:participant-changed", "participant-changed");
         var updateRes = getStore().update(updated);
         assertThat(updateRes).isSucceeded();
     }
@@ -148,7 +149,7 @@ public abstract class ParticipantStoreTestBase {
         var participant = createParticipant();
 
         var updateRes = getStore().update(participant);
-        assertThat(updateRes).isFailed().detail().contains("with ID 'p14' does not exist.");
+        assertThat(updateRes).isFailed().detail().contains("with ID 'p-id' does not exist.");
     }
 
     @Test
