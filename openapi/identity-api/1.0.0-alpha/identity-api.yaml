@@ -1509,6 +1509,13 @@ components:
           type: string
         clientSecret:
           type: string
+    CredentialSchema:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
     CredentialStatus:
       type: object
       properties:
@@ -1773,6 +1780,10 @@ components:
     VerifiableCredential:
       type: object
       properties:
+        credentialSchema:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialSchema"
         credentialStatus:
           type: array
           items:
