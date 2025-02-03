@@ -78,22 +78,6 @@ the VPP specification. They are used to determine which VCs or other prerequisit
 The `state` and `timestamp` fields are used to determine when the resource entered a particular state, for example, when
 the resource was requested.
 
-On the issuer the record for an already issued VC would look like this:
-
-```java
-class VerifiableCredentialRecord {
-    VcState state; // 
-    String credentialType; // what VC was issued
-    String holderId; //who the VC was issued to
-    long expiryDate; // when the VC will expire
-    Long renewalDateSent; // non-null if a credential offer request was sent  
-}
-```
-
-> The `issuerId` should be resolved using an EDC registry extension
-
-> Do we need a list of multiple credentials?
-
 Credential states are defined as follows:
 
 ```java
@@ -101,6 +85,16 @@ enum VcState {
     INITIAL, REQUESTING, REQUESTED, ISSUING, ISSUED, REISSUE_REQUESTING, REISSUE_REQUESTED, TERMINATED, ERROR
 }
 ```
+
+There are three areas in which a `VerifiableCredentialResource` will be used:
+
+1. _on the holder side_: the older manages credentials and uses them in verifiable presentations
+2. _on the issuer side_, to track issued credentials. The issuer must keep track of which credentials were issued to
+   which
+   holder. In this case, the signed credential **must not be stored** by the issuer.
+3. _on the issuer side_, to manage revocation credentials. Issuers must resolve a revocation list credential. In this
+   case, metadata about the credential, in particular the `credentialSubject` (containing the bit string) **must not be
+   stored** by the issuer.
 
 #### 2.2.1.1 The VerifiableCredentialManager
 
