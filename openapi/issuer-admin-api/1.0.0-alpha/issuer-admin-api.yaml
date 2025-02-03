@@ -135,7 +135,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateParticipantRequest"
+              $ref: "#/components/schemas/ParticipantDto"
       responses:
         "200":
           description: The participant was updated successfully.
@@ -173,7 +173,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AddParticipantRequest"
+              $ref: "#/components/schemas/ParticipantDto"
       responses:
         "201":
           description: The participant was added successfully.
@@ -222,7 +222,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/GetParticipantResponse"
+                  $ref: "#/components/schemas/ParticipantDto"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -277,7 +277,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetParticipantResponse"
+                $ref: "#/components/schemas/Participant"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -818,8 +818,6 @@ paths:
                   $ref: "#/components/schemas/ApiErrorDetail"
 components:
   schemas:
-    AddParticipantRequest:
-      type: object
     ApiErrorDetail:
       type: object
       properties:
@@ -888,11 +886,6 @@ components:
           type: object
         operator:
           type: string
-    GetParticipantResponse:
-      type: object
-      properties:
-        participantId:
-          type: string
     Issuer:
       type: object
       properties:
@@ -901,6 +894,27 @@ components:
           additionalProperties:
             type: object
         id:
+          type: string
+    Participant:
+      type: object
+      properties:
+        did:
+          type: string
+        participantId:
+          type: string
+        participantName:
+          type: string
+    ParticipantDto:
+      required:
+      - did
+      - participantId
+      type: object
+      properties:
+        did:
+          type: string
+        name:
+          type: string
+        participantId:
           type: string
     QuerySpec:
       type: object
@@ -922,11 +936,6 @@ components:
           enum:
           - ASC
           - DESC
-    UpdateParticipantRequest:
-      type: object
-      properties:
-        participantId:
-          type: string
     VerifiableCredential:
       type: object
       properties:
