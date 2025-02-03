@@ -56,7 +56,7 @@ public class SqlParticipantStoreExtension implements ServiceExtension {
     }
 
     @Provider
-    public ParticipantStore createSqlStore(ServiceExtensionContext context) {
+    public ParticipantStore createSqlStore() {
         return new SqlParticipantStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
                 queryExecutor, getStatementImpl());
     }
