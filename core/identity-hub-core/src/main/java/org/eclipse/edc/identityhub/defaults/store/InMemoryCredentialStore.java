@@ -19,7 +19,10 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.store.InMemoryEntityStore;
 import org.eclipse.edc.spi.query.QueryResolver;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.store.ReflectionBasedQueryResolver;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * In-memory variant of the {@link CredentialStore} that is thread-safe.
@@ -35,5 +38,12 @@ public class InMemoryCredentialStore extends InMemoryEntityStore<VerifiableCrede
     protected QueryResolver<VerifiableCredentialResource> createQueryResolver() {
         criterionOperatorRegistry.registerPropertyLookup(new CredentialResourceLookup());
         return new ReflectionBasedQueryResolver<>(VerifiableCredentialResource.class, criterionOperatorRegistry);
+    }
+
+    @Override
+    public StoreResult<VerifiableCredentialResource> findById(String credentialId) {
+        return ofNullable(this.store.get(credentialId))
+                .map(StoreResult::success)
+                .orElseGet(() -> StoreResult.notFound(notFoundErrorMessage(credentialId)));
     }
 }

@@ -29,6 +29,7 @@ import java.util.Set;
 import static java.util.Collections.emptyMap;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
 import static org.mockito.ArgumentMatchers.eq;
@@ -41,7 +42,7 @@ import static org.mockito.Mockito.when;
 class AttestationPipelineImplTest {
 
     @Test
-    void verify_pipeline() {
+    void evaluate_whenSingle_success() {
         var attestationDefinition = new AttestationDefinition("a123", "testType", Map.of());
 
         var store = mock(AttestationDefinitionStore.class);
@@ -58,7 +59,7 @@ class AttestationPipelineImplTest {
         pipeline.registerFactory("testType", sourceFactory);
 
         var results = pipeline.evaluate(Set.of("a123"), new DefaultAttestationContext("123", emptyMap()));
-        assertThat(results.succeeded()).isTrue();
+        assertThat(results).isSucceeded();
         assertThat(results.getContent()).contains(entry("test", "value"));
 
 
@@ -69,7 +70,7 @@ class AttestationPipelineImplTest {
 
 
     @Test
-    void verify_failFast() {
+    void evaluate_whenMultipleInvalid_shouldFailOnFirst() {
         var attestationDefinition1 = new AttestationDefinition("a123", "testType1", Map.of());
         var attestationDefinition2 = new AttestationDefinition("a456", "testType1", Map.of());
 
@@ -88,12 +89,11 @@ class AttestationPipelineImplTest {
         pipeline.registerFactory("testType1", sourceFactory);
 
         var results = pipeline.evaluate(new LinkedHashSet<>(List.of("a123", "a456")), new DefaultAttestationContext("123", emptyMap()));
-        assertThat(results.failed()).isTrue();
+        assertThat(results).isFailed();
 
         verify(store).resolveDefinition("a123");
         verify(sourceFactory, times(1)).createSource(isA(AttestationDefinition.class));
         verify(failedSource, times(1)).execute(isA(AttestationContext.class));
     }
-
 
 }

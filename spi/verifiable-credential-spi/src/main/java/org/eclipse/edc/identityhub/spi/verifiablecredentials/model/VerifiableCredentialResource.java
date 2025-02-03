@@ -99,6 +99,10 @@ public class VerifiableCredentialResource extends IdentityResource {
         timeOfLastStatusUpdate = Instant.now();
     }
 
+    public Builder toBuilder() {
+        return new Builder(this);
+    }
+
     public static class Builder extends IdentityResource.Builder<VerifiableCredentialResource, Builder> {
 
         protected Builder(VerifiableCredentialResource resource) {

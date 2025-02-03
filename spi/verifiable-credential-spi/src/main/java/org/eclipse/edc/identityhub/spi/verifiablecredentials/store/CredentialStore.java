@@ -65,4 +65,12 @@ public interface CredentialStore {
     default String notFoundErrorMessage(String id) {
         return "A VerifiableCredentialResource with ID '%s' does not exist.".formatted(id);
     }
+
+    /**
+     * Obtains a single credential by its ID
+     *
+     * @param credentialId the credential ID
+     * @return a result containing the {@link VerifiableCredentialResource}, or an error if not found etc.
+     */
+    StoreResult<VerifiableCredentialResource> findById(String credentialId);
 }
