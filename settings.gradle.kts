@@ -88,6 +88,7 @@ include(":launcher:identityhub")
 include(":launcher:issuer-service")
 
 include(":version-catalog")
+
 // test modules
 include(":e2e-tests")
 include(":e2e-tests:identity-api-tests")
@@ -95,6 +96,8 @@ include(":e2e-tests:sts-tests")
 include(":e2e-tests:runtimes:identityhub-remote-sts")
 include(":e2e-tests:runtimes:sts")
 include(":e2e-tests:bom-tests")
+include(":e2e-tests:fixtures")
+include(":e2e-tests:admin-api-tests")
 
 // BOM modules
 include(":dist:bom:identityhub-base-bom")

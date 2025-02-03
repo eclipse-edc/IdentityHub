@@ -32,7 +32,6 @@ dependencies {
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
     runtimeOnly(libs.edc.api.version)
-    runtimeOnly(libs.edc.transaction.local) // needed by the PresentationCreatorRegistry
 
     runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.bundles.connector)

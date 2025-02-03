@@ -17,7 +17,9 @@ package org.eclipse.edc.issuerservice.defaults.store;
 import org.eclipse.edc.identityhub.store.InMemoryEntityStore;
 import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QueryResolver;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 
@@ -37,6 +39,15 @@ public class InMemoryParticipantStore extends InMemoryEntityStore<Participant> i
 
     @Override
     public StoreResult<Participant> findById(String id) {
-        return null;
+        var q = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("participantId", "=", id))
+                .build();
+        var result = query(q);
+        if (result.succeeded()) {
+            return result.getContent().isEmpty()
+                    ? StoreResult.notFound(notFoundErrorMessage(id))
+                    : StoreResult.success(result.getContent().iterator().next());
+        }
+        return result.mapFailure();
     }
 }

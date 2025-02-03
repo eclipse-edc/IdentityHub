@@ -28,14 +28,14 @@ import static org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService.jdbc
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 
 /**
- * Base extension of {@link RuntimePerClassExtension} that injects the {@link IdentityHubEndToEndTestContext}
+ * Base extension of {@link RuntimePerClassExtension} that injects the {@link IssuerServiceEndToEndTestContext}
  * when required.
  */
-public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtension {
+public abstract class IssuerServiceEndToEndExtension extends RuntimePerClassExtension {
 
-    private final IdentityHubEndToEndTestContext context;
+    private final IssuerServiceEndToEndTestContext context;
 
-    protected IdentityHubEndToEndExtension(IdentityHubEndToEndTestContext context) {
+    protected IssuerServiceEndToEndExtension(IssuerServiceEndToEndTestContext context) {
         super(context.getRuntime());
         this.context = context;
     }
@@ -43,7 +43,7 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
         var type = parameterContext.getParameter().getParameterizedType();
-        if (type.equals(IdentityHubEndToEndTestContext.class)) {
+        if (type.equals(IssuerServiceEndToEndTestContext.class)) {
             return true;
         }
         return super.supportsParameter(parameterContext, extensionContext);
@@ -52,44 +52,44 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
         var type = parameterContext.getParameter().getParameterizedType();
-        if (type.equals(IdentityHubEndToEndTestContext.class)) {
+        if (type.equals(IssuerServiceEndToEndTestContext.class)) {
             return context;
         }
         return super.resolveParameter(parameterContext, extensionContext);
     }
 
     /**
-     * In-Memory variant of {@link IdentityHubEndToEndExtension}
+     * In-Memory variant of {@link IssuerServiceEndToEndExtension}
      */
-    public static class InMemory extends IdentityHubEndToEndExtension {
+    public static class InMemory extends IssuerServiceEndToEndExtension {
 
         protected InMemory() {
             super(context());
         }
 
-        public static IdentityHubEndToEndTestContext context() {
-            var configuration = IdentityHubRuntimeConfiguration.Builder.newInstance()
-                    .name("identity-hub")
-                    .id("identity-hub")
+        public static IssuerServiceEndToEndTestContext context() {
+            var configuration = IssuerServiceRuntimeConfiguration.Builder.newInstance()
+                    .name("issuerservice")
+                    .id("issuerservice")
                     .build();
 
             var runtime = new EmbeddedRuntime(
-                    "identity-hub",
+                    "issuerservice",
                     configuration.config(),
-                    ":dist:bom:identityhub-with-sts-bom"
+                    ":dist:bom:issuerservice-bom"
             );
 
-            return new IdentityHubEndToEndTestContext(runtime, configuration);
+            return new IssuerServiceEndToEndTestContext(runtime, configuration);
         }
 
     }
 
     /**
-     * PG variant of {@link IdentityHubEndToEndExtension}
+     * PG variant of {@link IssuerServiceEndToEndExtension}
      */
-    public static class Postgres extends IdentityHubEndToEndExtension {
+    public static class Postgres extends IssuerServiceEndToEndExtension {
 
-        private static final String DB_NAME = "runtime";
+        private static final String DB_NAME = "issuerservice";
         private static final Integer DB_PORT = getFreePort();
         private final PostgresSqlService postgresSqlService;
 
@@ -99,25 +99,25 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
 
         }
 
-        public static IdentityHubEndToEndTestContext context(String dbName, Integer port) {
+        public static IssuerServiceEndToEndTestContext context(String dbName, Integer port) {
 
-            var configuration = IdentityHubRuntimeConfiguration.Builder.newInstance()
-                    .name("identity-hub")
-                    .id("identity-hub")
+            var configuration = IssuerServiceRuntimeConfiguration.Builder.newInstance()
+                    .name("issuerservice")
+                    .id("issuerservice")
                     .build();
 
             var cfg = new HashMap<>(configuration.config());
             cfg.putAll(postgresqlConfiguration(dbName, port));
 
             var runtime = new EmbeddedRuntime(
-                    "identityhub-pg",
+                    "issuerservice-pg",
                     cfg,
-                    ":dist:bom:identityhub-with-sts-bom",
-                    ":dist:bom:identityhub-feature-sql-bom"
+                    ":dist:bom:issuerservice-bom",
+                    ":dist:bom:issuerservice-feature-sql-bom"
 
             );
 
-            return new IdentityHubEndToEndTestContext(runtime, configuration);
+            return new IssuerServiceEndToEndTestContext(runtime, configuration);
         }
 
         private static Map<String, String> postgresqlConfiguration(String dbName, Integer port) {
