@@ -18,15 +18,11 @@ import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndExtension
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 public class AttestationApiEndToEndTest {
     abstract static class Tests {
 
-        @Test
-        void foo() {
-        }
     }
 
     @Nested
