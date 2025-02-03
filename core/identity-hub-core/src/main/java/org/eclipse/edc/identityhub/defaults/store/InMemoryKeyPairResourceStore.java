@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.defaults.store;
 
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.store.InMemoryEntityStore;
 import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.store.ReflectionBasedQueryResolver;
 

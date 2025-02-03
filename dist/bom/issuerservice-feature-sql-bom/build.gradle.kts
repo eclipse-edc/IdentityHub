@@ -19,10 +19,7 @@ plugins {
 
 dependencies {
     // sql modules
-    api(project(":extensions:store:sql:identity-hub-credentials-store-sql"))
-    api(project(":extensions:store:sql:identity-hub-did-store-sql"))
-    api(project(":extensions:store:sql:identity-hub-keypair-store-sql"))
-    api(project(":extensions:store:sql:identity-hub-participantcontext-store-sql"))
+    api(project(":extensions:store:sql:issuerservice-participant-store-sql"))
 
     api(libs.edc.sql.core)
     api(libs.edc.transaction.local)

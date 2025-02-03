@@ -9,6 +9,7 @@ dependencies {
     api(project(":spi:participant-context-spi"))
     api(project(":spi:did-spi"))
     implementation(project(":core:lib:accesstoken-lib"))
+    implementation(project(":core:lib:common-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
     implementation(libs.edc.spi.jwt.signer)
     implementation(libs.edc.core.connector) // for the CriterionToPredicateConverterImpl

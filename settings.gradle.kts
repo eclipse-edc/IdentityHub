@@ -22,29 +22,37 @@ dependencyResolutionManagement {
         mavenLocal()
     }
 }
-// SPI modules
+// IdentityHub SPI modules
 include(":spi:identity-hub-spi")
 include(":spi:participant-context-spi")
 include(":spi:verifiable-credential-spi")
 include(":spi:keypair-spi")
 include(":spi:did-spi")
 
-// core modules
+// IssuerService SPI modules
+include(":spi:issuerservice:issuerservice-participant-spi")
 
+// IdentityHub core modules
 include(":core:identity-hub-core")
 include(":core:identity-hub-participants")
 include(":core:identity-hub-keypairs")
 include(":core:identity-hub-did")
 
+// IssuerService core modules
+include(":core:issuerservice:issuerservice-core")
+include(":core:issuerservice:issuerservice-participants")
+
 // lib modules
 include(":core:lib:keypair-lib")
 include(":core:lib:accesstoken-lib")
+include(":core:lib:common-lib")
 
 // extension modules
 include(":extensions:store:sql:identity-hub-did-store-sql")
 include(":extensions:store:sql:identity-hub-credentials-store-sql")
 include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:store:sql:identity-hub-keypair-store-sql")
+include(":extensions:store:sql:issuerservice-participant-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:common:credential-watchdog")
 include(":extensions:sts:sts-account-provisioner")
@@ -80,13 +88,16 @@ include(":launcher:identityhub")
 include(":launcher:issuer-service")
 
 include(":version-catalog")
+
 // test modules
 include(":e2e-tests")
-include(":e2e-tests:api-tests")
+include(":e2e-tests:identity-api-tests")
 include(":e2e-tests:sts-tests")
 include(":e2e-tests:runtimes:identityhub-remote-sts")
 include(":e2e-tests:runtimes:sts")
 include(":e2e-tests:bom-tests")
+include(":e2e-tests:fixtures")
+include(":e2e-tests:admin-api-tests")
 
 // BOM modules
 include(":dist:bom:identityhub-base-bom")
