@@ -26,50 +26,50 @@ class ExpressionCredentialRuleTest {
     @Test
     void verify_equal_boolean() {
         var rule = new ExpressionCredentialRule("onboarding.active", Operator.EQ, true);
-        assertThat(rule.evaluate(()-> Map.of("onboarding", Map.of("active", true))).succeeded()).isTrue();
+        assertThat(rule.evaluate(() -> Map.of("onboarding", Map.of("active", true))).succeeded()).isTrue();
     }
 
     @Test
     void verify_equal_string() {
         var rule = new ExpressionCredentialRule("onboarding.active", Operator.EQ, "true");
-        assertThat(rule.evaluate(()-> Map.of("onboarding", Map.of("active", "true"))).succeeded()).isTrue();
+        assertThat(rule.evaluate(() -> Map.of("onboarding", Map.of("active", "true"))).succeeded()).isTrue();
     }
 
     @Test
     void verify_equal_mixed_numerics() {
         var rule = new ExpressionCredentialRule("onboarding.active", Operator.EQ, 1L);
-        assertThat(rule.evaluate(()-> Map.of("onboarding", Map.of("active", 1))).succeeded()).isTrue();
+        assertThat(rule.evaluate(() -> Map.of("onboarding", Map.of("active", 1))).succeeded()).isTrue();
     }
 
     @Test
     void verify_not_equal() {
         var rule = new ExpressionCredentialRule("onboarding.active", Operator.EQ, false);
-        assertThat(rule.evaluate(()-> Map.of("onboarding", Map.of("active", true))).succeeded()).isFalse();
+        assertThat(rule.evaluate(() -> Map.of("onboarding", Map.of("active", true))).succeeded()).isFalse();
     }
 
     @Test
     void verify_gt() {
         var rule = new ExpressionCredentialRule("value", Operator.GT, 1);
-        assertThat(rule.evaluate(()-> Map.of("value", 2)).succeeded()).isTrue();
+        assertThat(rule.evaluate(() -> Map.of("value", 2)).succeeded()).isTrue();
     }
 
 
     @Test
     void verify_geq() {
         var rule = new ExpressionCredentialRule("value", Operator.GEQ, 2);
-        assertThat(rule.evaluate(()-> Map.of("value", 2)).succeeded()).isTrue();
+        assertThat(rule.evaluate(() -> Map.of("value", 2)).succeeded()).isTrue();
     }
 
     @Test
     void verify_lt() {
         var rule = new ExpressionCredentialRule("value", Operator.LT, 1);
-        assertThat(rule.evaluate(()-> Map.of("value", 0)).succeeded()).isTrue();
+        assertThat(rule.evaluate(() -> Map.of("value", 0)).succeeded()).isTrue();
     }
 
     @Test
     void verify_let() {
         var rule = new ExpressionCredentialRule("value", Operator.LEQ, 1);
-        assertThat(rule.evaluate(()-> Map.of("value", 1)).succeeded()).isTrue();
+        assertThat(rule.evaluate(() -> Map.of("value", 1)).succeeded()).isTrue();
     }
 
 
