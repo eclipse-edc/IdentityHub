@@ -28,6 +28,7 @@ include(":spi:participant-context-spi")
 include(":spi:verifiable-credential-spi")
 include(":spi:keypair-spi")
 include(":spi:did-spi")
+include(":spi:issuance-credentials-spi")
 
 // IssuerService SPI modules
 include(":spi:issuerservice:issuerservice-participant-spi")
@@ -82,6 +83,9 @@ include(":extensions:api:issuer-admin-api:attestation-api")
 include(":extensions:api:identity-api:validators:keypair-validators")
 include(":extensions:api:identity-api:validators:participant-context-validators")
 include(":extensions:api:identity-api:validators:verifiable-credential-validators")
+
+// issuance modules
+include(":extensions:issuance:issuance-credentials")
 
 // other modules
 include(":launcher:identityhub")
