@@ -20,6 +20,7 @@ import org.eclipse.edc.spi.result.Result;
 /**
  * Evaluates the context according to a rule.
  */
+@FunctionalInterface
 public interface CredentialRule {
 
     /**

@@ -21,6 +21,7 @@ import java.util.Map;
 /**
  * Writes an attestation to persistent storage.
  */
+@FunctionalInterface
 public interface AttestationWriter {
 
     /**
