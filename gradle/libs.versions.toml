@@ -105,5 +105,5 @@ tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
 connector = ["edc-boot", "edc-core-connector", "edc-http", "edc-observability", "edc-jsonld", "edc-config-fs"]
 
 [plugins]
-shadow = { id = "com.gradleup.shadow", version = "8.3.5" }
+shadow = { id = "com.gradleup.shadow", version = "8.3.6" }
 
