@@ -1,8 +1,8 @@
 [
   {
     "version": "1.0.0",
-    "urlPath": "/v1",
+    "urlPath": "/v1alpha",
     "lastUpdated": "2025-02-05T12:00:00Z",
-    "maturity": "stable"
+    "maturity": null
   }
 ]
