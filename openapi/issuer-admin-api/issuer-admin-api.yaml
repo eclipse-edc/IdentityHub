@@ -859,6 +859,7 @@ components:
           type: object
           additionalProperties:
             type: object
+          writeOnly: true
         id:
           type: string
         type:
