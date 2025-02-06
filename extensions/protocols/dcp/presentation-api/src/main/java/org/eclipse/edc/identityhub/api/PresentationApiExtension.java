@@ -52,9 +52,9 @@ import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAME
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TERM;
-import static org.eclipse.edc.identityhub.api.DcpApiConstants.DCP_SCOPE_V_0_8;
-import static org.eclipse.edc.identityhub.api.DcpApiConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.api.PresentationApiExtension.NAME;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_0_8;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.PRESENTATION;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.RESOLUTION;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;

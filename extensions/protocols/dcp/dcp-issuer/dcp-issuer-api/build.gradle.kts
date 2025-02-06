@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2025 Cofinity-X
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,9 +8,10 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Cofinity-X - initial API and implementation
  *
  */
+
 
 plugins {
     `java-library`
@@ -25,12 +26,12 @@ dependencies {
     api(libs.edc.spi.jsonld)
     api(libs.edc.spi.jwt)
     api(libs.edc.spi.core)
-    implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
     implementation(libs.edc.spi.dcp)
     implementation(libs.edc.lib.jerseyproviders)
     implementation(libs.edc.lib.transform)
     implementation(libs.edc.dcp.transform)
+    implementation(project(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-transform-lib"))
     implementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.jsonld)
@@ -41,6 +42,6 @@ dependencies {
 
 edcBuild {
     swagger {
-        apiGroup.set("presentation-api")
+        apiGroup.set("issuer-api")
     }
 }

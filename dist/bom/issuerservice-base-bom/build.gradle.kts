@@ -26,7 +26,7 @@ dependencies {
     runtimeOnly(project(":core:issuerservice:issuerservice-participants"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
     // API modules
-    runtimeOnly(project(":extensions:protocols:dcp:issuer-api"))
+    runtimeOnly(project(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-api"))
 
     runtimeOnly(project(":extensions:sts:sts-account-provisioner"))
     runtimeOnly(libs.edc.identity.did.core)
