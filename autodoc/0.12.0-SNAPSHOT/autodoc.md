@@ -109,6 +109,40 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 
+Module `dcp-issuer-api`
+-----------------------
+**Artifact:** org.eclipse.edc:dcp-issuer-api:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.identityhub.protocols.dcp.issuer.IssuerApiExtension`
+**Name:** "Issuer API extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                        | Required | Type     | Default       | Pattern | Min | Max | Description                     |
+| -------------------------- | -------- | -------- | ------------- | ------- | --- | --- | ------------------------------- |
+| `web.http.issuer-api.port` | `*`      | `string` | `13132`       |         |     |     | Port for issuer-api api context |
+| `web.http.issuer-api.path` | `*`      | `string` | `/api/issuer` |         |     |     | Path for issuer-api api context |
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.types.TypeManager` (required)
+- `org.eclipse.edc.spi.system.apiversion.ApiVersionService` (required)
+- `org.eclipse.edc.web.spi.WebService` (required)
+- `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
+- `org.eclipse.edc.transform.spi.TypeTransformerRegistry` (required)
+- `org.eclipse.edc.jsonld.spi.JsonLd` (required)
+
 Module `did-api`
 ----------------
 **Artifact:** org.eclipse.edc:did-api:0.12.0-SNAPSHOT
@@ -268,6 +302,20 @@ Module `identity-hub-did`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
+**Name:** "DID Default Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
+
 #### Class: `org.eclipse.edc.identityhub.did.DidServicesExtension`
 **Name:** "DID Service Extension"
 
@@ -286,20 +334,6 @@ _None_
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.keys.spi.KeyParserRegistry` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore` (required)
-
-#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
-**Name:** "DID Default Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `identity-hub-did-store-sql`
 -----------------------------------
@@ -560,38 +594,6 @@ _None_
 - `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
 - `org.eclipse.edc.spi.system.apiversion.ApiVersionService` (required)
 
-Module `issuer-api`
--------------------
-**Artifact:** org.eclipse.edc:issuer-api:0.12.0-SNAPSHOT
-
-**Categories:** _None_
-
-### Extension points
-_None_
-
-### Extensions
-#### Class: `org.eclipse.edc.identityhub.protocols.dcp.issuer.IssuerApiExtension`
-**Name:** "Issuer API extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration
-
-| Key                        | Required | Type     | Default       | Pattern | Min | Max | Description                     |
-| -------------------------- | -------- | -------- | ------------- | ------- | --- | --- | ------------------------------- |
-| `web.http.issuer-api.port` | `*`      | `string` | `13132`       |         |     |     | Port for issuer-api api context |
-| `web.http.issuer-api.path` | `*`      | `string` | `/api/issuer` |         |     |     | Path for issuer-api api context |
-
-#### Provided services
-_None_
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.types.TypeManager` (required)
-- `org.eclipse.edc.spi.system.apiversion.ApiVersionService` (required)
-- `org.eclipse.edc.web.spi.WebService` (required)
-- `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
-
 Module `issuerservice-core`
 ---------------------------
 **Artifact:** org.eclipse.edc:issuerservice-core:0.12.0-SNAPSHOT
@@ -615,6 +617,38 @@ _None_
 
 #### Referenced (injected) services
 _None_
+
+Module `issuerservice-credential-revocation`
+--------------------------------------------
+**Artifact:** org.eclipse.edc:issuerservice-credential-revocation:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.issuerservice.statuslist.StatusListServiceExtension`
+**Name:** "Status List Service Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                       | Required | Type     | Default | Pattern | Min | Max | Description                                                                    |
+| ----------------------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------------------------------------------------ |
+| `edc.issuer.statuslist.signing.key.alias` | `*`      | `string` | ``      |         |     |     | Alias for the private key that is intended for signing status list credentials |
+
+#### Provided services
+- `org.eclipse.edc.issuerservice.spi.statuslist.StatusListService`
+- `org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactoryRegistry`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore` (required)
+- `org.eclipse.edc.spi.types.TypeManager` (required)
+- `org.eclipse.edc.token.spi.TokenGenerationService` (required)
 
 Module `issuerservice-participant-store-sql`
 --------------------------------------------
