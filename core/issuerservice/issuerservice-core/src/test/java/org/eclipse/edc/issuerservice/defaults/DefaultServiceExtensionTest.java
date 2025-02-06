@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.issuerservice.defaults;
 
+import org.eclipse.edc.issuerservice.defaults.store.InMemoryAttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.defaults.store.InMemoryCredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.defaults.store.InMemoryParticipantStore;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,8 @@ class DefaultServiceExtensionTest {
     @Test
     void verifyDefaultServices(DefaultServiceExtension extension) {
         assertThat(extension.createInMemoryParticipantStore()).isInstanceOf(InMemoryParticipantStore.class);
+        assertThat(extension.createInMemoryCredentialDefinitionStore()).isInstanceOf(InMemoryCredentialDefinitionStore.class);
+        assertThat(extension.createInMemoryAttestationStore()).isInstanceOf(InMemoryAttestationDefinitionStore.class);
     }
 
 }

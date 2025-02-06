@@ -22,6 +22,7 @@ dependencies {
     testImplementation(project(":extensions:api:issuer-admin-api:participant-api")) // for the DTOs
     testImplementation(project(":spi:issuerservice:issuerservice-participant-spi"))
     testImplementation(project(":spi:issuerservice:issuerservice-credential-spi"))
+    testImplementation(project(":spi:issuerservice:issuerservice-credential-definition-spi"))
     testImplementation(libs.edc.junit)
     testImplementation(libs.restAssured)
     testImplementation(libs.awaitility)
