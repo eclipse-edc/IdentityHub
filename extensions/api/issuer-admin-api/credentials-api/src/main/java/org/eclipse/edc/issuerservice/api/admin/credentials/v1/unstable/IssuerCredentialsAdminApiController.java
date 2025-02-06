@@ -24,12 +24,12 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialStatusResponse;
-import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialResponse;
+import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
+import org.eclipse.edc.issuerservice.spi.CredentialService;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
 import org.eclipse.edc.spi.query.QuerySpec;
 
 import java.util.Collection;
-import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
@@ -39,22 +39,30 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 @Path(Versions.UNSTABLE + "/credentials")
 public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdminApi {
     private final StatusListService statuslistService;
+    private final CredentialService credentialService;
 
-    public IssuerCredentialsAdminApiController(StatusListService statuslistService) {
+    public IssuerCredentialsAdminApiController(StatusListService statuslistService, CredentialService credentialService) {
         this.statuslistService = statuslistService;
+        this.credentialService = credentialService;
     }
 
     @GET
     @Path("/{participantId}")
     @Override
-    public Collection<VerifiableCredentialResponse> getAllCredentials(@PathParam("participantId") String participantId) {
-        return List.of();
+    public Collection<VerifiableCredentialDto> getAllCredentials(@PathParam("participantId") String participantId) {
+        return credentialService.getForParticipant(participantId)
+                .map(coll -> coll.stream().map(resource ->
+                        new VerifiableCredentialDto(resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
+                .orElseThrow(exceptionMapper(VerifiableCredential.class, participantId));
     }
 
     @POST
+    @Path("/query")
     @Override
-    public VerifiableCredentialResponse queryCredentials(QuerySpec query) {
-        return null;
+    public Collection<VerifiableCredentialDto> queryCredentials(QuerySpec query) {
+        return credentialService.query(query).map(coll -> coll.stream().map(resource ->
+                        new VerifiableCredentialDto(resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
+                .orElseThrow(exceptionMapper(VerifiableCredential.class, null));
     }
 
     @POST

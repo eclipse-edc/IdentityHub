@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.api.admin.credentials;
 
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.IssuerCredentialsAdminApiController;
+import org.eclipse.edc.issuerservice.spi.CredentialService;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -33,6 +34,8 @@ public class IssuerCredentialsAdminApiExtension implements ServiceExtension {
     private WebService webService;
     @Inject
     private StatusListService statusListService;
+    @Inject
+    private CredentialService credentialService;
 
     @Override
     public String name() {
@@ -41,7 +44,7 @@ public class IssuerCredentialsAdminApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var controller = new IssuerCredentialsAdminApiController(statusListService);
+        var controller = new IssuerCredentialsAdminApiController(statusListService, credentialService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
     }
 }

@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 
@@ -23,7 +24,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
  * @param format               The {@link CredentialFormat} of the credential
  * @param verifiableCredential Structured metadata about the VC, not the actual VC. This will not contain the proof!
  */
-public record VerifiableCredentialResponse(CredentialFormat format,
-                                           VerifiableCredential verifiableCredential) {
+public record VerifiableCredentialDto(@JsonProperty("format") CredentialFormat format,
+                                      @JsonProperty("credential") VerifiableCredential verifiableCredential) {
 
 }

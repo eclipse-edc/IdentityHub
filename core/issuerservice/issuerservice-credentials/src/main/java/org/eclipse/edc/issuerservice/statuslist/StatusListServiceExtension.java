@@ -53,7 +53,7 @@ public class StatusListServiceExtension implements ServiceExtension {
         var fact = getFactory();
 
         // Bitstring StatusList is provided by default. others can be added via extensions
-        fact.register("BitStringStatusListEntry", new BitstringStatusListFactory(store, typeManager.getMapper()));
+        fact.register("BitstringStatusListEntry", new BitstringStatusListFactory(store, typeManager.getMapper()));
 
         var tokenGenerationService = new JwtGenerationService(jwsSignerProvider);
         return new StatusListServiceImpl(store, transactionContext, typeManager.getMapper(JSON_LD), context.getMonitor(), tokenGenerationService,

@@ -22,7 +22,6 @@ dependencies {
 
     api(project(":spi:verifiable-credential-spi"))
     api(libs.edc.spi.core)
-    api(libs.edc.spi.vc)
 
     testFixturesImplementation(libs.edc.junit)
     testFixturesImplementation(libs.assertj)

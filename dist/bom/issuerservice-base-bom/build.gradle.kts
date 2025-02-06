@@ -24,7 +24,7 @@ dependencies {
     runtimeOnly(project(":core:identity-hub-keypairs"))
     runtimeOnly(project(":core:issuerservice:issuerservice-core"))
     runtimeOnly(project(":core:issuerservice:issuerservice-participants"))
-    runtimeOnly(project(":core:issuerservice:issuerservice-credential-revocation"))
+    runtimeOnly(project(":core:issuerservice:issuerservice-credentials"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
     // API modules
     runtimeOnly(project(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-api"))
