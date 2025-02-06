@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.spi.issuance.credentials.model;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -24,23 +26,23 @@ import static java.util.Objects.requireNonNull;
  * Defines credential type that can be issued, its schema, and requirements for issuance.
  */
 public class CredentialDefinition {
-    public enum DataModelType { VCDM_1_1, VCDM_2_0 }
 
+    private final List<String> attestations = new ArrayList<>();
+    private final List<CredentialRuleDefinition> rules = new ArrayList<>();
+    private final List<MappingDefinition> mappings = new ArrayList<>();
     private String credentialType;
     private String schema;
     private long validity;
+    private DataModelVersion dataModel = DataModelVersion.V_1_1;
 
-    private DataModelType dataModel = DataModelType.VCDM_1_1;
-
-    private List<String> attestations = new ArrayList<>();
-    private List<CredentialRuleDefinition> rules = new ArrayList<>();
-    private List<MappingDefinition> mappings = new ArrayList<>();
+    private CredentialDefinition() {
+    }
 
     public String getCredentialType() {
         return credentialType;
     }
 
-    public DataModelType getDataModel() {
+    public DataModelVersion getDataModel() {
         return dataModel;
     }
 
@@ -64,11 +66,12 @@ public class CredentialDefinition {
         return mappings;
     }
 
-    private CredentialDefinition() {
-    }
-
     public static final class Builder {
-        private CredentialDefinition definition;
+        private final CredentialDefinition definition;
+
+        private Builder() {
+            definition = new CredentialDefinition();
+        }
 
         public static Builder newInstance() {
             return new Builder();
@@ -89,7 +92,7 @@ public class CredentialDefinition {
             return this;
         }
 
-        public Builder dataModel(DataModelType dataModel) {
+        public Builder dataModel(DataModelVersion dataModel) {
             this.definition.dataModel = dataModel;
             return this;
         }
@@ -128,10 +131,6 @@ public class CredentialDefinition {
             requireNonNull(definition.credentialType, "credentialType");
             requireNonNull(definition.schema, "schema");
             return definition;
-        }
-
-        private Builder() {
-            definition = new CredentialDefinition();
         }
 
     }

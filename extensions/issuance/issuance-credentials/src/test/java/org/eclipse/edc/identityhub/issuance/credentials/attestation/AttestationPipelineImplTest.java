@@ -21,6 +21,8 @@ import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.Attestat
 import org.eclipse.edc.identityhub.spi.issuance.credentials.model.AttestationDefinition;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -85,7 +87,7 @@ class AttestationPipelineImplTest {
 
         pipeline.registerFactory("testType1", sourceFactory);
 
-        var results = pipeline.evaluate(Set.of("a123", "a456"), new DefaultAttestationContext("123", emptyMap()));
+        var results = pipeline.evaluate(new LinkedHashSet<>(List.of("a123", "a456")), new DefaultAttestationContext("123", emptyMap()));
         assertThat(results.failed()).isTrue();
 
         verify(store).resolveDefinition("a123");
