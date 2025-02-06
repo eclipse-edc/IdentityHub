@@ -8,7 +8,7 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Cofinity-X - initial API and implementation
  *
  */
 
@@ -19,16 +19,12 @@ plugins {
 }
 
 dependencies {
-    api(project(":spi:issuance-credentials-spi"))
+
+    api(project(":spi:verifiable-credential-spi"))
     api(libs.edc.spi.core)
+    api(libs.edc.spi.vc)
 
-    implementation(libs.edc.spi.validator)
-
-    testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.lib.json)
-
-    testFixturesImplementation(libs.edc.spi.identity.did)
-    testFixturesImplementation(libs.junit.jupiter.api)
     testFixturesImplementation(libs.edc.junit)
     testFixturesImplementation(libs.assertj)
+    testFixturesImplementation(libs.junit.jupiter.api)
 }

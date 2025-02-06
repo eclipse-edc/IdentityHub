@@ -32,6 +32,7 @@ include(":spi:issuance-credentials-spi")
 
 // IssuerService SPI modules
 include(":spi:issuerservice:issuerservice-participant-spi")
+include(":spi:issuerservice:credential-revocation-spi")
 
 // IdentityHub core modules
 include(":core:identity-hub-core")
@@ -42,6 +43,7 @@ include(":core:identity-hub-did")
 // IssuerService core modules
 include(":core:issuerservice:issuerservice-core")
 include(":core:issuerservice:issuerservice-participants")
+include(":core:issuerservice:issuerservice-credential-revocation")
 
 // lib modules
 include(":core:lib:keypair-lib")

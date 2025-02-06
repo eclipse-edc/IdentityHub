@@ -36,6 +36,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Objects;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 
@@ -136,6 +137,20 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                     return success();
                 }
                 return StoreResult.notFound(notFoundErrorMessage(id));
+            } catch (SQLException e) {
+                throw new EdcPersistenceException(e);
+            }
+        });
+    }
+
+    @Override
+    public StoreResult<VerifiableCredentialResource> findById(String credentialId) {
+        Objects.requireNonNull(credentialId);
+        return transactionContext.execute(() -> {
+            try (var connection = getConnection()) {
+                return ofNullable(findByIdInternal(connection, credentialId))
+                        .map(StoreResult::success)
+                        .orElseGet(() -> StoreResult.notFound(notFoundErrorMessage(credentialId)));
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
