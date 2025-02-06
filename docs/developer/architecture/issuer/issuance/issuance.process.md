@@ -144,18 +144,16 @@ This is deserialized to:
 
 ```java
 public class CredentialDefinition {
-    public enum DataModelType {VCDM_1_1, VCDM_2_0}
-
     private String credentialType;
     private String schema;
     private String format;
     private long validity;
 
-    private DataModelType dataModel = DataModelType.VCDM_1_1;
+    private DataModelVersion dataModel = DataModelVersion.V_1_1;
 
     private List<String> attestations = new ArrayList<>();
     private List<CredentialRuleDefinition> rules = new ArrayList<>();
-    private List<MappingDefinition> mappings = new ArrayList<>();
+    private final List<MappingDefinition> mappings = new ArrayList<>();
 }
 ```
 
@@ -343,7 +341,7 @@ public class IssuanceProcess {
         SUBMITTED, APPROVED, DELIVERED, ERRORED
     }
 
-    private State state = State.SUBMITTED;
+    private final State state = State.SUBMITTED;
     private long stateTimestamp;
     private int retries;
     private int errorCode;

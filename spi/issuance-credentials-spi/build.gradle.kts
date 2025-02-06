@@ -21,6 +21,7 @@ plugins {
 dependencies {
     api(libs.edc.spi.core)
     api(libs.edc.spi.validator)
+    api(libs.edc.spi.vc)
 
     testImplementation(libs.edc.lib.json)
 
