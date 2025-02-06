@@ -17,7 +17,7 @@ package org.eclipse.edc.issuerservice.spi.statuslist;
 /**
  * Maintains specific implementations for statuslist factories.
  */
-public interface StatusListCredentialFactoryRegistry {
+public interface StatusListInfoFactoryRegistry {
     /**
      * Register a {@link StatusListInfoFactory} for a particular "type". This type must be the {@code credentialStatus.type}
      * field of a holder verifiable credential, for example {@code "BitStringStatusListEntry}

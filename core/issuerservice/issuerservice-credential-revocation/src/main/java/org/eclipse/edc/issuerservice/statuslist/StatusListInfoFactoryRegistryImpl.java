@@ -14,13 +14,13 @@
 
 package org.eclipse.edc.issuerservice.statuslist;
 
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListCredentialFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactory;
+import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactoryRegistry;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class StatusListCredentialFactoryRegistryImpl implements StatusListCredentialFactoryRegistry {
+public class StatusListInfoFactoryRegistryImpl implements StatusListInfoFactoryRegistry {
     private final Map<String, StatusListInfoFactory> registry = new HashMap<>();
 
     @Override

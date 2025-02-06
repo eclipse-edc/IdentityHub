@@ -15,7 +15,7 @@
 package org.eclipse.edc.issuerservice.statuslist;
 
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListCredentialFactoryRegistry;
+import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
 import org.eclipse.edc.issuerservice.statuslist.bitstring.BitstringStatusListFactory;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -45,7 +45,7 @@ public class StatusListServiceExtension implements ServiceExtension {
     private TypeManager typeManager;
     @Inject
     private TokenGenerationService tokenGenerationService;
-    private StatusListCredentialFactoryRegistry factory;
+    private StatusListInfoFactoryRegistry factory;
 
     @Provider
     public StatusListService getStatusListService(ServiceExtensionContext context) {
@@ -59,9 +59,9 @@ public class StatusListServiceExtension implements ServiceExtension {
     }
 
     @Provider
-    public StatusListCredentialFactoryRegistry getFactory() {
+    public StatusListInfoFactoryRegistry getFactory() {
         if (factory == null) {
-            factory = new StatusListCredentialFactoryRegistryImpl();
+            factory = new StatusListInfoFactoryRegistryImpl();
         }
         return factory;
     }

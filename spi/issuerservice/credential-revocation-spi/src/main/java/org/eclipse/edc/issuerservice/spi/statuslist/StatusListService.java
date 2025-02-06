@@ -32,10 +32,9 @@ public interface StatusListService {
      * {@code credentialSubject.statusListCredential} field.
      *
      * @param credentialId The ID of the credential.
-     * @param reason       An optional string indicating the reason for revocation, e.g. "offboarding", etc.
      * @return a service result indicating success or failure
      */
-    ServiceResult<Void> revokeCredential(String credentialId, @Nullable String reason);
+    ServiceResult<Void> revokeCredential(String credentialId);
 
     /**
      * Suspends a credential by adding its ID to the revocation list credential. Implementations may choose to also track

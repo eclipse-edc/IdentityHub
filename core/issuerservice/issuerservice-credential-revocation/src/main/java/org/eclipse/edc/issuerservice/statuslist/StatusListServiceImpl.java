@@ -21,8 +21,8 @@ import com.nimbusds.jose.JOSEException;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListCredentialFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfo;
+import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -50,7 +50,7 @@ public class StatusListServiceImpl implements StatusListService {
     private final Monitor monitor;
     private final TokenGenerationService tokenGenerationService;
     private final Supplier<String> privateKeyAlias;
-    private final StatusListCredentialFactoryRegistry statusListCredentialFactoryRegistry;
+    private final StatusListInfoFactoryRegistry statusListInfoFactoryRegistry;
 
     public StatusListServiceImpl(CredentialStore credentialStore,
                                  TransactionContext transactionContext,
@@ -58,7 +58,7 @@ public class StatusListServiceImpl implements StatusListService {
                                  Monitor monitor,
                                  TokenGenerationService tokenGenerationService,
                                  Supplier<String> privateKeyAlias,
-                                 StatusListCredentialFactoryRegistry statusListCredentialFactoryRegistry) {
+                                 StatusListInfoFactoryRegistry statusListInfoFactoryRegistry) {
         this.credentialStore = credentialStore;
         this.transactionContext = transactionContext;
         this.objectMapper = objectMapper.copy()
@@ -67,11 +67,11 @@ public class StatusListServiceImpl implements StatusListService {
         this.monitor = monitor;
         this.tokenGenerationService = tokenGenerationService;
         this.privateKeyAlias = privateKeyAlias;
-        this.statusListCredentialFactoryRegistry = statusListCredentialFactoryRegistry;
+        this.statusListInfoFactoryRegistry = statusListInfoFactoryRegistry;
     }
 
     @Override
-    public ServiceResult<Void> revokeCredential(String holderCredentialId, @Nullable String reason) {
+    public ServiceResult<Void> revokeCredential(String holderCredentialId) {
         return transactionContext.execute(() -> {
 
             var credentialResult = getCredential(holderCredentialId);
@@ -167,10 +167,10 @@ public class StatusListServiceImpl implements StatusListService {
     }
 
     private ServiceResult<StatusListInfo> getRevocationInfo(VerifiableCredentialResource resource) {
-        return getRevocationInfo(resource, REVOCATION);
+        return getStatusInfo(resource, REVOCATION);
     }
 
-    private ServiceResult<StatusListInfo> getRevocationInfo(VerifiableCredentialResource holderCredential, String statusPurpose) {
+    private ServiceResult<StatusListInfo> getStatusInfo(VerifiableCredentialResource holderCredential, String statusPurpose) {
 
         var statusObjects = holderCredential.getVerifiableCredential().credential().getCredentialStatus();
 
@@ -183,7 +183,7 @@ public class StatusListServiceImpl implements StatusListService {
         }
 
         var status = revocationStatus.get();
-        var revocationInfo = ofNullable(statusListCredentialFactoryRegistry.getStatusListCredential(status.type()))
+        var revocationInfo = ofNullable(statusListInfoFactoryRegistry.getStatusListCredential(status.type()))
                 .map(cred -> cred.create(status));
 
         return revocationInfo.orElseGet(() -> badRequest("No StatusList implementation for type '%s' found.".formatted(status.type())));

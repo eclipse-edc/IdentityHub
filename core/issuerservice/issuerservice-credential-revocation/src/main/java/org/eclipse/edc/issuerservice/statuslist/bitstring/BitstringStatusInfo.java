@@ -43,6 +43,7 @@ record BitstringStatusInfo(int index, VerifiableCredentialResource statusListCre
      *
      * @return a string indicating the status, or null if the status is not set.
      */
+    @Override
     public Result<String> getStatus() {
 
         var uncompressedBitString = decode();
@@ -54,6 +55,7 @@ record BitstringStatusInfo(int index, VerifiableCredentialResource statusListCre
      *
      * @return the new compressed, encoded bitstring
      */
+    @Override
     public Result<Void> setStatus(boolean status) {
 
         var uncompressedBitString = decode();

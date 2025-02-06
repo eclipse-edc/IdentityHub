@@ -94,7 +94,7 @@ class StatusListServiceImplTest {
         tokenGenerationService = mock(TokenGenerationService.class);
         when(tokenGenerationService.generate(any(), any())).thenReturn(Result.success(TokenRepresentation.Builder.newInstance().token("new-token").build()));
         monitor = mock();
-        var reg = new StatusListCredentialFactoryRegistryImpl();
+        var reg = new StatusListInfoFactoryRegistryImpl();
         reg.register("BitstringStatusListEntry", new BitstringStatusListFactory(credentialStore, objectMapper));
         revocationService = new StatusListServiceImpl(credentialStore, new NoopTransactionContext(), objectMapper,
                 monitor, tokenGenerationService, () -> "some-private-key", reg);
@@ -142,7 +142,7 @@ class StatusListServiceImplTest {
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(success());
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID, "foo-reason");
+            var result = revocationService.revokeCredential(CREDENTIAL_ID);
             assertThat(result).isSucceeded();
             verify(tokenGenerationService).generate(any(), any());
             verify(credentialStore, times(2)).update(any());
@@ -154,7 +154,7 @@ class StatusListServiceImplTest {
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(notFound("foo"));
             when(credentialStore.update(any())).thenReturn(success());
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID, "foo-reason");
+            var result = revocationService.revokeCredential(CREDENTIAL_ID);
             assertThat(result).isFailed().detail().isEqualTo("foo");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
 
@@ -168,7 +168,7 @@ class StatusListServiceImplTest {
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(success());
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID, "foo-reason");
+            var result = revocationService.revokeCredential(CREDENTIAL_ID);
             assertThat(result).isSucceeded();
             verifyNoInteractions(tokenGenerationService);
             verify(credentialStore, never()).update(any());
@@ -190,7 +190,7 @@ class StatusListServiceImplTest {
                     .thenReturn(success(createCredential(objectMapper.writeValueAsString(jwt.getJWTClaimsSet().getClaims()), jwt.serialize())));
 
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID, "foo-reason");
+            var result = revocationService.revokeCredential(CREDENTIAL_ID);
             assertThat(result).isFailed();
             assertThat(result.getFailure().getReason()).isEqualTo(BAD_REQUEST);
             verifyNoInteractions(tokenGenerationService);
@@ -212,7 +212,7 @@ class StatusListServiceImplTest {
             when(credentialStore.findById(eq(CREDENTIAL_ID)))
                     .thenReturn(success(createCredential(objectMapper.writeValueAsString(jwt.getJWTClaimsSet().getClaims()), jwt.serialize())));
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID, "foo-reason");
+            var result = revocationService.revokeCredential(CREDENTIAL_ID);
             assertThat(result).isFailed()
                     .detail().containsSequence("is invalid, the 'statusListCredential' field is missing");
             assertThat(result.getFailure().getReason()).isEqualTo(UNEXPECTED);
@@ -235,7 +235,7 @@ class StatusListServiceImplTest {
             when(credentialStore.findById(eq(CREDENTIAL_ID)))
                     .thenReturn(success(createCredential(objectMapper.writeValueAsString(jwt.getJWTClaimsSet().getClaims()), jwt.serialize())));
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID, "foo-reason");
+            var result = revocationService.revokeCredential(CREDENTIAL_ID);
             assertThat(result).isFailed()
                     .detail().containsSequence("is invalid, the 'statusListIndex' field is missing");
             assertThat(result.getFailure().getReason()).isEqualTo(UNEXPECTED);
@@ -249,7 +249,7 @@ class StatusListServiceImplTest {
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(success());
 
-            var result = revocationService.revokeCredential(CREDENTIAL_ID, "foo-reason");
+            var result = revocationService.revokeCredential(CREDENTIAL_ID);
             assertThat(result).isFailed().detail().isEqualTo("foo");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
 
