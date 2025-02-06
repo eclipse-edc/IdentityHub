@@ -22,10 +22,10 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
 
-import static org.eclipse.edc.issuerservice.api.admin.credentials.IssuerCredentialsAdminApiExtension.NAME;
+import static org.eclipse.edc.issuerservice.api.admin.credentials.IssuerAttestationAdminApiExtension.NAME;
 
 @Extension(value = NAME)
-public class IssuerCredentialsAdminApiExtension implements ServiceExtension {
+public class IssuerAttestationAdminApiExtension implements ServiceExtension {
 
     public static final String NAME = "Issuer Service Credentials Admin API Extension";
     @Inject

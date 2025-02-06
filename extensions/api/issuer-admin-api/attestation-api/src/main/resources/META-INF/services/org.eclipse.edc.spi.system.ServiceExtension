@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.edc.issuerservice.api.admin.credentials.IssuerCredentialsAdminApiExtension
+org.eclipse.edc.issuerservice.api.admin.credentials.IssuerAttestationAdminApiExtension

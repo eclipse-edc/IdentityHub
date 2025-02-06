@@ -18,6 +18,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialSto
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
 import org.eclipse.edc.issuerservice.statuslist.bitstring.BitstringStatusListFactory;
+import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -25,7 +26,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.token.spi.TokenGenerationService;
+import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import static org.eclipse.edc.issuerservice.statuslist.StatusListServiceExtension.NAME;
@@ -44,7 +45,7 @@ public class StatusListServiceExtension implements ServiceExtension {
     @Inject
     private TypeManager typeManager;
     @Inject
-    private TokenGenerationService tokenGenerationService;
+    private JwsSignerProvider jwsSignerProvider;
     private StatusListInfoFactoryRegistry factory;
 
     @Provider
@@ -54,6 +55,7 @@ public class StatusListServiceExtension implements ServiceExtension {
         // Bitstring StatusList is provided by default. others can be added via extensions
         fact.register("BitStringStatusListEntry", new BitstringStatusListFactory(store, typeManager.getMapper()));
 
+        var tokenGenerationService = new JwtGenerationService(jwsSignerProvider);
         return new StatusListServiceImpl(store, transactionContext, typeManager.getMapper(JSON_LD), context.getMonitor(), tokenGenerationService,
                 () -> privateKeyAlias, fact);
     }

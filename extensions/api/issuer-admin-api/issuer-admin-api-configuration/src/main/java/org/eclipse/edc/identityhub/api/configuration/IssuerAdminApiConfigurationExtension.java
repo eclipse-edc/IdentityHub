@@ -92,7 +92,7 @@ public class IssuerAdminApiConfigurationExtension implements ServiceExtension {
     record IdentityApiConfiguration(
             @Setting(key = "web.http." + ISSUERADMIN + ".port", description = "Port for " + ISSUERADMIN + " api context", defaultValue = 15152 + "")
             int port,
-            @Setting(key = "web.http." + ISSUERADMIN + ".path", description = "Path for " + ISSUERADMIN + " api context", defaultValue = "/api/issuer/admin")
+            @Setting(key = "web.http." + ISSUERADMIN + ".path", description = "Path for " + ISSUERADMIN + " api context", defaultValue = "/api/issuer")
             String path
     ) {
 

@@ -5,7 +5,9 @@ plugins {
 dependencies {
     api(project(":spi:verifiable-credential-spi"))
     api(project(":spi:issuerservice:credential-revocation-spi"))
+    implementation(libs.edc.lib.token)
     implementation(libs.nimbus.jwt)
+
 
     implementation(libs.edc.spi.transaction)
     implementation(libs.edc.lib.store)
