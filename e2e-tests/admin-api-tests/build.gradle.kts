@@ -35,8 +35,6 @@ dependencies {
     testImplementation(libs.edc.sts.spi)
     testImplementation(testFixtures(project(":e2e-tests:fixtures")))
 
-//    testCompileOnly(project(":dist:bom:identityhub-with-sts-bom"))
-//    testCompileOnly(project(":dist:bom:identityhub-feature-sql-bom"))
 }
 
 edcBuild {
