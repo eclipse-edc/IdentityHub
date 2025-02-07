@@ -199,7 +199,8 @@ public class CredentialDefinitionServiceImplTest {
     }
 
     private CredentialDefinition credentialDefinition(String id, String type) {
-        return CredentialDefinition.Builder.newInstance().id(id).schema("")
+        return CredentialDefinition.Builder.newInstance().id(id).jsonSchema("")
+                .jsonSchemaUrl("http://example.com/schema").validity(1000)
                 .attestation("test-attestation")
                 .credentialType(type).build();
     }

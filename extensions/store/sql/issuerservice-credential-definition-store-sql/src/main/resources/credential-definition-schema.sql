@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS credential_definitions
     rules                        JSON     NOT NULL        ,
     mappings                     JSON     NOT NULL        ,
     json_schema                  VARCHAR  NOT NULL        ,
+    json_schema_url              VARCHAR  NOT NULL        ,
     validity                     BIGINT   NOT NULL        ,
     data_model                   VARCHAR  NOT NULL        ,
     created_date                 BIGINT   NOT NULL        , -- POSIX timestamp of the creation of the PC

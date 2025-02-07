@@ -38,7 +38,8 @@ public class CredentialDefinition {
     private final List<CredentialRuleDefinition> rules = new ArrayList<>();
     private final List<MappingDefinition> mappings = new ArrayList<>();
     private String credentialType;
-    private String schema;
+    private String jsonSchema;
+    private String jsonSchemaUrl;
     private long validity;
     private DataModelVersion dataModel = DataModelVersion.V_1_1;
     private String id;
@@ -58,8 +59,12 @@ public class CredentialDefinition {
         return dataModel;
     }
 
-    public String getSchema() {
-        return schema;
+    public String getJsonSchema() {
+        return jsonSchema;
+    }
+
+    public String getJsonSchemaUrl() {
+        return jsonSchemaUrl;
     }
 
     public long getValidity() {
@@ -102,8 +107,13 @@ public class CredentialDefinition {
             return this;
         }
 
-        public Builder schema(String schema) {
-            this.definition.schema = schema;
+        public Builder jsonSchema(String jsonSchema) {
+            this.definition.jsonSchema = jsonSchema;
+            return this;
+        }
+
+        public Builder jsonSchemaUrl(String jsonSchemaUrl) {
+            this.definition.jsonSchemaUrl = jsonSchemaUrl;
             return this;
         }
 
@@ -155,7 +165,8 @@ public class CredentialDefinition {
                 definition.id = UUID.randomUUID().toString();
             }
             requireNonNull(definition.credentialType, "credentialType");
-            requireNonNull(definition.schema, "schema");
+            requireNonNull(definition.jsonSchema, "jsonSchema");
+            requireNonNull(definition.jsonSchemaUrl, "jsonSchemaUrl");
             return definition;
         }
 

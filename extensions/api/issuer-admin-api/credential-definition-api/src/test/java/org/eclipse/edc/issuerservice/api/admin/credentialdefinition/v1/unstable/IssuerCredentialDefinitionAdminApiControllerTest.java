@@ -169,7 +169,8 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
         return CredentialDefinition.Builder.newInstance()
                 .id("test-id")
                 .credentialType("Membership")
-                .schema("json-schema")
+                .jsonSchema("json-schema")
+                .jsonSchemaUrl("json-schema-url")
                 .build();
     }
 }

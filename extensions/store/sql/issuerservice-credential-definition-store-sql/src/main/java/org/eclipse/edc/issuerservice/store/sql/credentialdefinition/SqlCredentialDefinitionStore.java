@@ -105,7 +105,8 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                         toJson(credentialDefinition.getAttestations()),
                         toJson(credentialDefinition.getRules()),
                         toJson(credentialDefinition.getMappings()),
-                        credentialDefinition.getSchema(),
+                        credentialDefinition.getJsonSchema(),
+                        credentialDefinition.getJsonSchemaUrl(),
                         credentialDefinition.getValidity(),
                         credentialDefinition.getDataModel().name(),
                         timestamp,
@@ -140,7 +141,8 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                             toJson(credentialDefinition.getAttestations()),
                             toJson(credentialDefinition.getRules()),
                             toJson(credentialDefinition.getMappings()),
-                            credentialDefinition.getSchema(),
+                            credentialDefinition.getJsonSchema(),
+                            credentialDefinition.getJsonSchemaUrl(),
                             credentialDefinition.getValidity(),
                             credentialDefinition.getDataModel().name(),
                             clock.millis(),
@@ -206,7 +208,8 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                 .attestations(fromJson(resultSet.getString(statements.getAttestationsColumn()), ATTESTATIONS_LIST_REF))
                 .rules(fromJson(resultSet.getString(statements.getRulesColumn()), RULES_LIST_REF))
                 .mappings(fromJson(resultSet.getString(statements.getMappingsColumn()), MAPPINGS_LIST_REF))
-                .schema(resultSet.getString(statements.getSchemaColumn()))
+                .jsonSchema(resultSet.getString(statements.getJsonSchemaColumn()))
+                .jsonSchemaUrl(resultSet.getString(statements.getJsonSchemaUrlColumn()))
                 .validity(resultSet.getLong(statements.getValidityColumn()))
                 .dataModel(DataModelVersion.valueOf(resultSet.getString(statements.getDataModelColumn())))
                 .build();

@@ -191,7 +191,10 @@ public abstract class CredentialDefinitionStoreTestBase {
     }
 
     private CredentialDefinition createCredentialDefinition(String id, String type) {
-        return CredentialDefinition.Builder.newInstance().id(id).schema("").credentialType(type).build();
+        return CredentialDefinition.Builder.newInstance().id(id).jsonSchema("")
+                .credentialType(type)
+                .jsonSchemaUrl("http://example.com/schema")
+                .build();
     }
 
 }

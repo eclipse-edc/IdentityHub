@@ -48,8 +48,12 @@ public interface CredentialDefinitionStoreStatements extends SqlStatements {
         return "mappings";
     }
 
-    default String getSchemaColumn() {
+    default String getJsonSchemaColumn() {
         return "json_schema";
+    }
+
+    default String getJsonSchemaUrlColumn() {
+        return "json_schema_url";
     }
 
     default String getValidityColumn() {

@@ -59,7 +59,8 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var definition = CredentialDefinition.Builder.newInstance()
                     .id("test-definition-id")
-                    .schema("https://example.org/my-schema.json")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("https://example.org/membership-credential-schema.json")
                     .credentialType("MembershipCredential")
                     .mapping(new MappingDefinition("input", "output", true))
                     .validity(1000)
@@ -85,7 +86,8 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var definition = CredentialDefinition.Builder.newInstance()
                     .id("test-definition-id")
-                    .schema("https://example.org/my-schema.json")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("https://example.org/membership-credential-schema.json")
                     .credentialType("MyType")
                     .build();
 
@@ -97,11 +99,13 @@ public class CredentialDefinitionApiEndToEndTest {
                             {
                               "id": "test-definition-id",
                               "credentialType": "MembershipCredential",
-                              "schema": "https://example.org/membership-credential-schema.json"
+                              "jsonSchema": "{}",
+                              "jsonSchemaUrl": "https://example.org/membership-credential-schema.json"
                             }
                             """)
                     .post("/v1alpha/credentialdefinitions")
                     .then()
+                    .log().all()
                     .statusCode(409);
         }
 
@@ -110,7 +114,8 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var definition = CredentialDefinition.Builder.newInstance()
                     .id("id")
-                    .schema("https://example.org/my-schema.json")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("https://example.org/membership-credential-schema.json")
                     .credentialType("MembershipCredential")
                     .build();
 
@@ -122,11 +127,13 @@ public class CredentialDefinitionApiEndToEndTest {
                             {
                               "id": "test-definition-id",
                               "credentialType": "MembershipCredential",
-                              "schema": "https://example.org/membership-credential-schema.json"
+                              "jsonSchema": "{}",
+                              "jsonSchemaUrl": "https://example.org/membership-credential-schema.json"
                             }
                             """)
                     .post("/v1alpha/credentialdefinitions")
                     .then()
+                    .log().all()
                     .statusCode(409);
         }
 
@@ -154,7 +161,8 @@ public class CredentialDefinitionApiEndToEndTest {
                             {
                               "id": "test-definition-id",
                               "credentialType": "MembershipCredential",
-                              "schema": "https://example.org/membership-credential-schema.json",
+                              "jsonSchema": "{}",
+                              "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
                               "attestations": ["notfound"]
                             }
                             """)
@@ -170,7 +178,8 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var definition = CredentialDefinition.Builder.newInstance()
                     .id("id")
-                    .schema("https://example.org/my-schema.json")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .build();
 
@@ -208,7 +217,8 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var definition = CredentialDefinition.Builder.newInstance()
                     .id("test-credential-definition-id")
-                    .schema("https://example.org/my-schema.json")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .build();
 
@@ -241,7 +251,8 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var definition = CredentialDefinition.Builder.newInstance()
                     .id("test-credential-definition-id")
-                    .schema("https://example.org/my-schema.json")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .build();
 
@@ -249,7 +260,8 @@ public class CredentialDefinitionApiEndToEndTest {
 
             definition = CredentialDefinition.Builder.newInstance()
                     .id("test-credential-definition-id")
-                    .schema("https://example.org/new-schema.json")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .build();
 
@@ -270,7 +282,8 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var definition = CredentialDefinition.Builder.newInstance()
                     .id("test-credential-definition-id")
-                    .schema("https://example.org/my-schema.json")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .build();
 
@@ -288,7 +301,8 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var definition = CredentialDefinition.Builder.newInstance()
                     .id("test-credential-definition-id")
-                    .schema("https://example.org/my-schema.json")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .build();
 
