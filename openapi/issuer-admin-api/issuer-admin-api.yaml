@@ -89,6 +89,228 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/credentialdefinitions:
+    put:
+      tags:
+      - Issuer Service Credential Definition Admin API
+      description: Updates credential definition.
+      operationId: updateCredentialDefinition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialDefinition"
+      responses:
+        "200":
+          description: The credential definition was updated successfully.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: Can't update the credential definition because it was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+    post:
+      tags:
+      - Issuer Service Credential Definition Admin API
+      description: Adds a new credential definition.
+      operationId: createCredentialDefinition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialDefinition"
+      responses:
+        "201":
+          description: The credential definition was created successfully.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "409":
+          description: "Can't create the credential definition, because a object with\
+            \ the same ID already exists"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/credentialdefinitions/query:
+    post:
+      tags:
+      - Issuer Service Credential Definition Admin API
+      description: Gets all credential definitions for a certain query.
+      operationId: queryCredentialDefinitions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuerySpec"
+      responses:
+        "200":
+          description: A list of credentials definitions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CredentialDefinition"
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/credentialdefinitions/{credentialDefinitionId}:
+    get:
+      tags:
+      - Issuer Service Credential Definition Admin API
+      description: Gets a credential definition by its ID.
+      operationId: getParticipantById
+      parameters:
+      - name: credentialDefinitionId
+        in: path
+        description: ID of the credential definition that should be returned
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: credentialDefinitionId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The credential definition was found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialDefinition"
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The credential definition was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+    delete:
+      tags:
+      - Issuer Service Credential Definition Admin API
+      description: Deletes a credential definition by its ID.
+      operationId: deleteCredentialDefinitionById
+      parameters:
+      - name: credentialDefinitionId
+        in: path
+        description: ID of the credential definition that should be returned
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: credentialDefinitionId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The credential definition was deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialDefinition"
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The credential definition was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/credentials/query:
     post:
       tags:
@@ -793,6 +1015,46 @@ components:
           type: string
         participantId:
           type: string
+    CredentialDefinition:
+      type: object
+      properties:
+        attestations:
+          type: array
+          items:
+            type: string
+        credentialType:
+          type: string
+        dataModel:
+          type: string
+          enum:
+          - V_1_1
+          - V_2_0
+        id:
+          type: string
+        jsonSchema:
+          type: string
+        jsonSchemaUrl:
+          type: string
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/MappingDefinition"
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialRuleDefinition"
+        validity:
+          type: integer
+          format: int64
+    CredentialRuleDefinition:
+      type: object
+      properties:
+        configuration:
+          type: object
+          additionalProperties:
+            type: object
+        type:
+          type: string
     CredentialSchema:
       type: object
       properties:
@@ -844,6 +1106,15 @@ components:
             type: object
         id:
           type: string
+    MappingDefinition:
+      type: object
+      properties:
+        input:
+          type: string
+        output:
+          type: string
+        required:
+          type: boolean
     Participant:
       type: object
       properties:
