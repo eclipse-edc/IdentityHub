@@ -89,7 +89,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/credentials:
+  /v1alpha/credentials/query:
     post:
       tags:
       - Issuer Service Credentials Admin API
@@ -107,7 +107,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/VerifiableCredentialResponse"
+                type: array
+                items:
+                  $ref: "#/components/schemas/VerifiableCredentialDto"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -119,6 +121,271 @@ paths:
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/credentials/{credentialId}/resume:
+    post:
+      tags:
+      - Issuer Service Credentials Admin API
+      description: Resumes a credential with the given ID for the given participant.
+        Resumed credentials will be removed from the Revocation List.
+      operationId: resumeCredential
+      parameters:
+      - name: credentialId
+        in: path
+        description: ID of the credential to resume
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: credentialId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: The credential was resumed successfully. Check the Revocation
+            List credential to confirm.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The credential or the participant was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/credentials/{credentialId}/revoke:
+    post:
+      tags:
+      - Issuer Service Credentials Admin API
+      description: Revokes a credential with the given ID for the given participant.
+        Revoked credentials will be added to the Revocation List
+      operationId: revokeCredential
+      parameters:
+      - name: credentialId
+        in: path
+        description: ID of the credential to revoke
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: credentialId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: The credential was revoked successfully. Check the Revocation
+            List credential to confirm.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The credential or the participant was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/credentials/{credentialId}/status:
+    get:
+      tags:
+      - Issuer Service Credentials Admin API
+      description: Checks the revocation status of a credential with the given ID
+        for the given participant.
+      operationId: checkCredentialStatus
+      parameters:
+      - name: credentialId
+        in: path
+        description: ID of the credential to check
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: credentialId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The credential status.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The credential or the participant was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/credentials/{credentialId}/suspend:
+    post:
+      tags:
+      - Issuer Service Credentials Admin API
+      description: Suspends a credential with the given ID for the given participant.
+        Suspended credentials will be added to the Revocation List. Suspension is
+        reversible.
+      operationId: suspendCredential
+      parameters:
+      - name: credentialId
+        in: path
+        description: ID of the credential to revoke
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: credentialId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: The credential was suspended successfully. Check the Revocation
+            List credential to confirm.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The credential or the participant was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/credentials/{participantId}:
+    get:
+      tags:
+      - Issuer Service Credentials Admin API
+      description: Gets all credentials for a certain participant.
+      operationId: getCredentials
+      parameters:
+      - name: participantId
+        in: path
+        description: ID of the participant whos credentials should be returned
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: A list of verifiable credential metadata. Note that these are
+            not actual VerifiableCredentials.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VerifiableCredentialDto"
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The participant was not found.
           content:
             application/json:
               schema:
@@ -497,325 +764,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantId}/credentials:
-    get:
-      tags:
-      - Issuer Service Credentials Admin API
-      description: Gets all credentials for a certain participant.
-      operationId: getCredentials
-      parameters:
-      - name: participantId
-        in: path
-        description: ID of the participant whos credentials should be returned
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: A list of verifiable credential metadata. Note that these are
-            not actual VerifiableCredentials.
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantId}/credentials/{credentialId}/resume:
-    post:
-      tags:
-      - Issuer Service Credentials Admin API
-      description: Resumes a credential with the given ID for the given participant.
-        Resumed credentials will be removed from the Revocation List.
-      operationId: resumeCredential
-      parameters:
-      - name: participantId
-        in: path
-        description: ID of the participant whos credential should be resumed
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        description: ID of the credential to resume
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "204":
-          description: The credential was resumed successfully. Check the Revocation
-            List credential to confirm.
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The credential or the participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantId}/credentials/{credentialId}/revoke:
-    post:
-      tags:
-      - Issuer Service Credentials Admin API
-      description: Revokes a credential with the given ID for the given participant.
-        Revoked credentials will be added to the Revocation List
-      operationId: revokeCredential
-      parameters:
-      - name: participantId
-        in: path
-        description: ID of the participant whos credential should be revoked
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        description: ID of the credential to revoke
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "204":
-          description: The credential was revoked successfully. Check the Revocation
-            List credential to confirm.
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The credential or the participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantId}/credentials/{credentialId}/status:
-    get:
-      tags:
-      - Issuer Service Credentials Admin API
-      description: Checks the revocation status of a credential with the given ID
-        for the given participant.
-      operationId: checkCredentialStatus
-      parameters:
-      - name: participantId
-        in: path
-        description: ID of the participant whos credential should be checked
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        description: ID of the credential to check
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: The credential status.
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The credential or the participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantId}/credentials/{credentialId}/suspend:
-    post:
-      tags:
-      - Issuer Service Credentials Admin API
-      description: Suspends a credential with the given ID for the given participant.
-        Suspended credentials will be added to the Revocation List. Suspension is
-        reversible.
-      operationId: suspendCredential
-      parameters:
-      - name: participantId
-        in: path
-        description: ID of the participant whos credential should be suspended
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        description: ID of the credential to revoke
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "204":
-          description: The credential was suspended successfully. Check the Revocation
-            List credential to confirm.
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The credential or the participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
 components:
   schemas:
     ApiErrorDetail:
@@ -975,9 +923,11 @@ components:
           type: array
           items:
             type: string
-    VerifiableCredentialResponse:
+    VerifiableCredentialDto:
       type: object
       properties:
+        credential:
+          $ref: "#/components/schemas/VerifiableCredential"
         format:
           type: string
           enum:
@@ -988,5 +938,3 @@ components:
           - VC2_0_JOSE
           - VC2_0_SD_JWT
           - VC2_0_COSE
-        verifiableCredential:
-          $ref: "#/components/schemas/VerifiableCredential"

@@ -94,7 +94,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CredentialRequestStatus"
+                $ref: "#/components/schemas/CredentialStatus"
         "400":
           description: "Request was malformed, e.g. required parameter or properties\
             \ were missing"
@@ -148,43 +148,132 @@ components:
         path: object.error.path
         invalidValue: this value is not valid
     CredentialRequest:
+      required:
+      - credentialType
+      - format
       type: object
       properties:
         credentialType:
           type: string
         format:
           type: string
-        payload:
-          type: object
+      example:
+        credentialType: MembershipCredential
+        format: vcdm11_jwt
     CredentialRequestMessage:
+      required:
+      - '@context'
+      - credentials
       type: object
       properties:
-        contexts:
-          type: array
-          items:
-            type: string
+        '@context':
+          type: object
         credentials:
           type: array
           items:
             $ref: "#/components/schemas/CredentialRequest"
-        type:
-          type: string
-    CredentialRequestStatus:
+      example:
+        '@context':
+        - https://w3id.org/dspace-dcp/v1.0/dcp.jsonld
+        type: CredentialRequestMessage
+        credentials:
+        - credentialType: MembershipCredential
+          format: vcdm11_jwt
+        - credentialType: OrganizationCredential
+          format: vcdm11_ld
+        - credentialType: Iso9001Credential
+          format: vcdm20_jose
+    CredentialStatus:
+      required:
+      - '@context'
+      - status
+      - type
       type: object
       properties:
-        messages:
-          type: array
-          items:
-            type: string
-        requestId:
+        '@context':
+          type: object
+        status:
           type: string
-        requestStatus:
+        type:
           type: string
-        timestamp:
-          type: string
-          format: date-time
+      example:
+        '@context':
+        - https://w3id.org/dspace-dcp/v1.0/dcp.jsonld
+        type: CredentialStatus
+        requestId: requestId
+        status: RECEIVED
     IssuerMetadata:
+      required:
+      - '@context'
+      - credentialIssuer
+      - status
+      - type
       type: object
+      properties:
+        '@context':
+          type: object
+        credentialIssuer:
+          type: string
+        status:
+          type: string
+        type:
+          type: string
+      example:
+        '@context':
+        - https://w3id.org/dspace-dcp/v1.0/dcp.jsonld
+        type: IssuerMetadata
+        credentialIssuer: did:web:issuer-url
+        credentialsSupported:
+        - type: CredentialObject
+          credentialType: MembershipCredential
+          offerReason: reissue
+          bindingMethods:
+          - did:web
+          profiles:
+          - vc20-bssl/jwt
+          - vc10-sl2021/jwt
+          - '...'
+          issuancePolicy:
+            id: Scalable trust example
+            input_descriptors:
+            - id: pd-id
+              constraints:
+                fields:
+                - path:
+                  - $.vc.type
+                  filter:
+                    type: string
+                    pattern: ^AttestationCredential$
+    JsonObject:
+      type: object
+      properties:
+        empty:
+          type: boolean
+        valueType:
+          type: string
+          enum:
+          - ARRAY
+          - OBJECT
+          - STRING
+          - NUMBER
+          - "TRUE"
+          - "FALSE"
+          - "NULL"
+      additionalProperties:
+        $ref: "#/components/schemas/JsonValue"
+    JsonValue:
+      type: object
+      properties:
+        valueType:
+          type: string
+          enum:
+          - ARRAY
+          - OBJECT
+          - STRING
+          - NUMBER
+          - "TRUE"
+          - "FALSE"
+          - "NULL"
   securitySchemes:
     Authentication:
       type: http
