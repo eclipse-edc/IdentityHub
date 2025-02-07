@@ -20,15 +20,49 @@ import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.Collection;
 
+/**
+ * Service interface for managing credential definitions.
+ */
 public interface CredentialDefinitionService {
 
+    /**
+     * Creates a new credential definition.
+     *
+     * @param credentialDefinition the credential definition to create
+     * @return a service result indicating success or failure
+     */
     ServiceResult<Void> createCredentialDefinition(CredentialDefinition credentialDefinition);
 
+    /**
+     * Deletes a credential definition.
+     *
+     * @param credentialDefinitionId the ID of the credential definition to delete
+     * @return a service result indicating success or failure
+     */
     ServiceResult<Void> deleteCredentialDefinition(String credentialDefinitionId);
+
+    /**
+     * Updates an existing credential definition.
+     *
+     * @param credentialDefinition the credential definition to update
+     * @return a service result indicating success or failure
+     */
 
     ServiceResult<Void> updateCredentialDefinition(CredentialDefinition credentialDefinition);
 
+    /**
+     * Queries credential definitions.
+     *
+     * @param querySpec the query specification
+     * @return a service result containing the matching credential definitions
+     */
     ServiceResult<Collection<CredentialDefinition>> queryCredentialDefinitions(QuerySpec querySpec);
 
+    /**
+     * Finds a credential definition by ID.
+     *
+     * @param credentialDefinitionId the ID of the credential definition to find
+     * @return a service result containing the credential definition, if found
+     */
     ServiceResult<CredentialDefinition> findCredentialDefinitionById(String credentialDefinitionId);
 }

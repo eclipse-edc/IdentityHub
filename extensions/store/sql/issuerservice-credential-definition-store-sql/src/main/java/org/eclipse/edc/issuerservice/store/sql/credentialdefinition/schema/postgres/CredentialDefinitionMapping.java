@@ -19,7 +19,7 @@ import org.eclipse.edc.sql.translation.TranslationMapping;
 
 
 /**
- * Provides a mapping from the canonical format to SQL column names for a {@code VerifiableCredentialResource}
+ * Provides a mapping from the canonical format to SQL column names for a {@code CredentialDefinition}
  */
 public class CredentialDefinitionMapping extends TranslationMapping {
 
