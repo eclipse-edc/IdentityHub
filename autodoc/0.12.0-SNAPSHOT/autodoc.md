@@ -39,7 +39,7 @@ Module `attestation-api`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.issuerservice.api.admin.credentials.IssuerCredentialsAdminApiExtension`
+#### Class: `org.eclipse.edc.issuerservice.api.admin.credentials.IssuerAttestationAdminApiExtension`
 **Name:** "Issuer Service Credentials Admin API Extension"
 
 **Overview:** No overview provided.
@@ -108,6 +108,7 @@ _None_
 
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
+- `org.eclipse.edc.issuerservice.spi.credentials.CredentialService` (required)
 
 Module `dcp-issuer-api`
 -----------------------
@@ -127,10 +128,10 @@ _None_
 
 ### Configuration
 
-| Key                        | Required | Type     | Default       | Pattern | Min | Max | Description                     |
-| -------------------------- | -------- | -------- | ------------- | ------- | --- | --- | ------------------------------- |
-| `web.http.issuer-api.port` | `*`      | `string` | `13132`       |         |     |     | Port for issuer-api api context |
-| `web.http.issuer-api.path` | `*`      | `string` | `/api/issuer` |         |     |     | Path for issuer-api api context |
+| Key                      | Required | Type     | Default         | Pattern | Min | Max | Description                   |
+| ------------------------ | -------- | -------- | --------------- | ------- | --- | --- | ----------------------------- |
+| `web.http.issuance.port` | `*`      | `string` | `13132`         |         |     |     | Port for issuance api context |
+| `web.http.issuance.path` | `*`      | `string` | `/api/issuance` |         |     |     | Path for issuance api context |
 
 #### Provided services
 _None_
@@ -192,35 +193,6 @@ Module `identity-hub-core`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.DefaultServicesExtension`
-**Name:** "IdentityHub Default Services Extension"
-
-**Overview:**  This extension provides core services for the IdentityHub that are not intended to be user-replaceable.
-
-
-
-### Configuration
-
-| Key                                            | Required | Type     | Default  | Pattern | Min | Max | Description                                                                                  |
-| ---------------------------------------------- | -------- | -------- | -------- | ------- | --- | --- | -------------------------------------------------------------------------------------------- |
-| `edc.iam.accesstoken.jti.validation`           | `*`      | `string` | `false`  |         |     |     | Activates the JTI check: access tokens can only be used once to guard against replay attacks |
-| `edc.iam.credential.revocation.cache.validity` | `*`      | `string` | `900000` |         |     |     | Validity period of cached StatusList2021 credential entries in milliseconds.                 |
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore`
-- `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore`
-- `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore`
-- `org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer`
-- `org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry`
-- `org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry`
-- `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.token.spi.TokenValidationRulesRegistry` (required)
-- `org.eclipse.edc.spi.types.TypeManager` (required)
-- `org.eclipse.edc.keys.spi.PrivateKeyResolver` (required)
-- `org.eclipse.edc.jwt.validation.jti.JtiValidationStore` (required)
-
 #### Class: `org.eclipse.edc.identityhub.core.CoreServicesExtension`
 **Name:** "IdentityHub Core Services Extension"
 
@@ -258,6 +230,35 @@ _None_
 - `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 - `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+
+#### Class: `org.eclipse.edc.identityhub.DefaultServicesExtension`
+**Name:** "IdentityHub Default Services Extension"
+
+**Overview:**  This extension provides core services for the IdentityHub that are not intended to be user-replaceable.
+
+
+
+### Configuration
+
+| Key                                            | Required | Type     | Default  | Pattern | Min | Max | Description                                                                                  |
+| ---------------------------------------------- | -------- | -------- | -------- | ------- | --- | --- | -------------------------------------------------------------------------------------------- |
+| `edc.iam.accesstoken.jti.validation`           | `*`      | `string` | `false`  |         |     |     | Activates the JTI check: access tokens can only be used once to guard against replay attacks |
+| `edc.iam.credential.revocation.cache.validity` | `*`      | `string` | `900000` |         |     |     | Validity period of cached StatusList2021 credential entries in milliseconds.                 |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore`
+- `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore`
+- `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore`
+- `org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer`
+- `org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry`
+- `org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry`
+- `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.token.spi.TokenValidationRulesRegistry` (required)
+- `org.eclipse.edc.spi.types.TypeManager` (required)
+- `org.eclipse.edc.keys.spi.PrivateKeyResolver` (required)
+- `org.eclipse.edc.jwt.validation.jti.JtiValidationStore` (required)
 
 Module `identity-hub-credentials-store-sql`
 -------------------------------------------
@@ -581,10 +582,10 @@ _None_
 
 ### Configuration
 
-| Key                         | Required | Type     | Default             | Pattern | Min | Max | Description                      |
-| --------------------------- | -------- | -------- | ------------------- | ------- | --- | --- | -------------------------------- |
-| `web.http.issueradmin.port` | `*`      | `string` | `15152`             |         |     |     | Port for issueradmin api context |
-| `web.http.issueradmin.path` | `*`      | `string` | `/api/issuer/admin` |         |     |     | Path for issueradmin api context |
+| Key                         | Required | Type     | Default       | Pattern | Min | Max | Description                      |
+| --------------------------- | -------- | -------- | ------------- | ------- | --- | --- | -------------------------------- |
+| `web.http.issueradmin.port` | `*`      | `string` | `15152`       |         |     |     | Port for issueradmin api context |
+| `web.http.issueradmin.path` | `*`      | `string` | `/api/issuer` |         |     |     | Path for issueradmin api context |
 
 #### Provided services
 - `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService`
@@ -618,9 +619,9 @@ _None_
 #### Referenced (injected) services
 _None_
 
-Module `issuerservice-credential-revocation`
---------------------------------------------
-**Artifact:** org.eclipse.edc:issuerservice-credential-revocation:0.12.0-SNAPSHOT
+Module `issuerservice-credentials`
+----------------------------------
+**Artifact:** org.eclipse.edc:issuerservice-credentials:0.12.0-SNAPSHOT
 
 **Categories:** _None_
 
@@ -628,8 +629,8 @@ Module `issuerservice-credential-revocation`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.issuerservice.statuslist.StatusListServiceExtension`
-**Name:** "Status List Service Extension"
+#### Class: `org.eclipse.edc.issuerservice.credentials.CredentialServiceExtension`
+**Name:** "Issuer Service Credential Service Extension"
 
 **Overview:** No overview provided.
 
@@ -641,14 +642,14 @@ _None_
 | `edc.issuer.statuslist.signing.key.alias` | `*`      | `string` | ``      |         |     |     | Alias for the private key that is intended for signing status list credentials |
 
 #### Provided services
-- `org.eclipse.edc.issuerservice.spi.statuslist.StatusListService`
-- `org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactoryRegistry`
+- `org.eclipse.edc.issuerservice.spi.credentials.CredentialService`
+- `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry`
 
 #### Referenced (injected) services
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
-- `org.eclipse.edc.token.spi.TokenGenerationService` (required)
+- `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider` (required)
 
 Module `issuerservice-participant-store-sql`
 --------------------------------------------
