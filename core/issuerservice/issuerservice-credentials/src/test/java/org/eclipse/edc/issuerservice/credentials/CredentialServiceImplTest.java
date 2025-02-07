@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.statuslist;
+package org.eclipse.edc.issuerservice.credentials;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -33,7 +33,8 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.issuerservice.statuslist.bitstring.BitstringStatusListFactory;
+import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
+import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListFactory;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -51,12 +52,12 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.edc.issuerservice.statuslist.TestData.EXAMPLE_CREDENTIAL;
-import static org.eclipse.edc.issuerservice.statuslist.TestData.EXAMPLE_CREDENTIAL_JWT;
-import static org.eclipse.edc.issuerservice.statuslist.TestData.EXAMPLE_REVOCATION_CREDENTIAL;
-import static org.eclipse.edc.issuerservice.statuslist.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT;
-import static org.eclipse.edc.issuerservice.statuslist.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET;
-import static org.eclipse.edc.issuerservice.statuslist.TestData.EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.TestData.EXAMPLE_CREDENTIAL;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.TestData.EXAMPLE_CREDENTIAL_JWT;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.TestData.EXAMPLE_REVOCATION_CREDENTIAL;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET;
+import static org.eclipse.edc.issuerservice.credentials.statuslist.TestData.EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.ServiceFailure.Reason.BAD_REQUEST;
 import static org.eclipse.edc.spi.result.ServiceFailure.Reason.NOT_FOUND;
@@ -73,7 +74,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unchecked")
-class StatusListServiceImplTest {
+class CredentialServiceImplTest {
 
     public static final TypeReference<Map<String, Object>> MAP_REF = new TypeReference<>() {
     };
@@ -83,7 +84,7 @@ class StatusListServiceImplTest {
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     private final CredentialStore credentialStore = mock();
-    private StatusListServiceImpl revocationService;
+    private CredentialServiceImpl revocationService;
     private TokenGenerationService tokenGenerationService;
     private Monitor monitor;
     private ECKey signingKey;
@@ -96,7 +97,7 @@ class StatusListServiceImplTest {
         monitor = mock();
         var reg = new StatusListInfoFactoryRegistryImpl();
         reg.register("BitstringStatusListEntry", new BitstringStatusListFactory(credentialStore, objectMapper));
-        revocationService = new StatusListServiceImpl(credentialStore, new NoopTransactionContext(), objectMapper,
+        revocationService = new CredentialServiceImpl(credentialStore, new NoopTransactionContext(), objectMapper,
                 monitor, tokenGenerationService, () -> "some-private-key", reg);
     }
 

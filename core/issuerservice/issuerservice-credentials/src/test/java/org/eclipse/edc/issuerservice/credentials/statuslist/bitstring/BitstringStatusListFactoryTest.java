@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.statuslist.bitstring;
+package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;

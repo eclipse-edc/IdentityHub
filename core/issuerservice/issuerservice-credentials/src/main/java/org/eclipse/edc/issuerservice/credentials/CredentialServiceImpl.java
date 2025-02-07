@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.statuslist;
+package org.eclipse.edc.issuerservice.credentials;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -22,9 +22,9 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfo;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactoryRegistry;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -43,7 +43,7 @@ import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.eclipse.edc.spi.result.ServiceResult.unexpected;
 
-public class StatusListServiceImpl implements StatusListService {
+public class CredentialServiceImpl implements CredentialService {
     public static final TypeReference<Map<String, Object>> MAP_REF = new TypeReference<>() {
     };
     private static final String REVOCATION = "revocation";
@@ -55,7 +55,7 @@ public class StatusListServiceImpl implements StatusListService {
     private final Supplier<String> privateKeyAlias;
     private final StatusListInfoFactoryRegistry statusListInfoFactoryRegistry;
 
-    public StatusListServiceImpl(CredentialStore credentialStore,
+    public CredentialServiceImpl(CredentialStore credentialStore,
                                  TransactionContext transactionContext,
                                  ObjectMapper objectMapper,
                                  Monitor monitor,

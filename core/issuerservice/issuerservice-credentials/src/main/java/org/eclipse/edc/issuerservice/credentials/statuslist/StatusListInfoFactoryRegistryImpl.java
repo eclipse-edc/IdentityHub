@@ -12,10 +12,10 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.statuslist;
+package org.eclipse.edc.issuerservice.credentials.statuslist;
 
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactory;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactoryRegistry;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactory;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 
 import java.util.HashMap;
 import java.util.Map;

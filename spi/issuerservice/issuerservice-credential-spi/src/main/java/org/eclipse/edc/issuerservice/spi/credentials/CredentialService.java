@@ -12,9 +12,10 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.spi.statuslist;
+package org.eclipse.edc.issuerservice.spi.credentials;
 
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +27,7 @@ import java.util.Collection;
  * implementation, as it delegates down to {@link StatusListInfo} objects that handle the concrete status list implementation.
  * This service handles various operations on a high level.
  */
-public interface StatusListService {
+public interface CredentialService {
 
     /**
      * Revokes a credential by adding its ID to the revocation list credential. Implementations may choose to also track

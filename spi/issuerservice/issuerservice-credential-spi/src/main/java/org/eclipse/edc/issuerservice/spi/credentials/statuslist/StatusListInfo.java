@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.spi.statuslist;
+package org.eclipse.edc.issuerservice.spi.credentials.statuslist;
 
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.spi.result.Result;

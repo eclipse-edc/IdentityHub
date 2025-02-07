@@ -12,13 +12,13 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.statuslist.bitstring;
+package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfo;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactory;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactory;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.BITSTRING_STATUS_LIST_PREFIX;

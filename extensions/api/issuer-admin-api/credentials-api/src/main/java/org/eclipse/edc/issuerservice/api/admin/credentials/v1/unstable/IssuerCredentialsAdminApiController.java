@@ -25,7 +25,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialStatusResponse;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
 import org.eclipse.edc.spi.query.QuerySpec;
 
 import java.util.Collection;
@@ -37,9 +37,9 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 @Produces(APPLICATION_JSON)
 @Path(Versions.UNSTABLE + "/credentials")
 public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdminApi {
-    private final StatusListService statuslistService;
+    private final CredentialService statuslistService;
 
-    public IssuerCredentialsAdminApiController(StatusListService statuslistService) {
+    public IssuerCredentialsAdminApiController(CredentialService statuslistService) {
         this.statuslistService = statuslistService;
     }
 

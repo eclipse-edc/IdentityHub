@@ -12,12 +12,12 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.statuslist.bitstring;
+package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.BitString;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListCredential;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfo;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.spi.result.Result;
 
 import java.util.Base64;

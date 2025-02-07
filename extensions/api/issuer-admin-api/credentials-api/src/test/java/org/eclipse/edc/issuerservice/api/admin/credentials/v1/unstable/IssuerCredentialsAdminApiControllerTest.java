@@ -24,7 +24,7 @@ import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 
 class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
-    private final StatusListService statuslistService = mock();
+    private final CredentialService statuslistService = mock();
 
     @Test
     void getAllCredentials() {

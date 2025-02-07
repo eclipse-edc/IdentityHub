@@ -11,4 +11,4 @@
 #       Cofinity-X - initial API and implementation
 #
 #
-org.eclipse.edc.issuerservice.statuslist.StatusListServiceExtension
+org.eclipse.edc.issuerservice.credentials.CredentialServiceExtension

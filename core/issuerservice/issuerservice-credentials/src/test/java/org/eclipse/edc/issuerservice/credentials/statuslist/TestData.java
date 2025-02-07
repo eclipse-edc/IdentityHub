@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.statuslist;
+package org.eclipse.edc.issuerservice.credentials.statuslist;
 
 public class TestData {
     public static final String EXAMPLE_CREDENTIAL = """

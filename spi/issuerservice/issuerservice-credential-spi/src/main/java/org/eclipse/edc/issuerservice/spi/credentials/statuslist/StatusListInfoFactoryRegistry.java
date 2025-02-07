@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.spi.statuslist;
+package org.eclipse.edc.issuerservice.spi.credentials.statuslist;
 
 /**
  * Maintains specific implementations for statuslist factories.

@@ -12,12 +12,13 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.statuslist;
+package org.eclipse.edc.issuerservice.credentials;
 
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactoryRegistry;
-import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
-import org.eclipse.edc.issuerservice.statuslist.bitstring.BitstringStatusListFactory;
+import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
+import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListFactory;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -29,12 +30,12 @@ import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import static org.eclipse.edc.issuerservice.statuslist.StatusListServiceExtension.NAME;
+import static org.eclipse.edc.issuerservice.credentials.CredentialServiceExtension.NAME;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
 @Extension(value = NAME)
-public class StatusListServiceExtension implements ServiceExtension {
-    public static final String NAME = "Status List Service Extension";
+public class CredentialServiceExtension implements ServiceExtension {
+    public static final String NAME = "Issuer Service Credential Service Extension";
 
     @Setting(description = "Alias for the private key that is intended for signing status list credentials", key = "edc.issuer.statuslist.signing.key.alias")
     private String privateKeyAlias;
@@ -49,14 +50,14 @@ public class StatusListServiceExtension implements ServiceExtension {
     private StatusListInfoFactoryRegistry factory;
 
     @Provider
-    public StatusListService getStatusListService(ServiceExtensionContext context) {
+    public CredentialService getStatusListService(ServiceExtensionContext context) {
         var fact = getFactory();
 
         // Bitstring StatusList is provided by default. others can be added via extensions
         fact.register("BitstringStatusListEntry", new BitstringStatusListFactory(store, typeManager.getMapper()));
 
         var tokenGenerationService = new JwtGenerationService(jwsSignerProvider);
-        return new StatusListServiceImpl(store, transactionContext, typeManager.getMapper(JSON_LD), context.getMonitor(), tokenGenerationService,
+        return new CredentialServiceImpl(store, transactionContext, typeManager.getMapper(JSON_LD), context.getMonitor(), tokenGenerationService,
                 () -> privateKeyAlias, fact);
     }
 
