@@ -21,64 +21,76 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialStatusResponse;
-import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialResponse;
+import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
 import org.eclipse.edc.spi.query.QuerySpec;
 
+import java.util.Collection;
+
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE)
+@Path(Versions.UNSTABLE + "/credentials")
 public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdminApi {
+    private final CredentialService statuslistService;
 
-
-    @GET
-    @Path("/participants/{participantId}/credentials")
-    @Override
-    public VerifiableCredentialResponse getAllCredentials(@PathParam("participantId") String participantId) {
-        return new VerifiableCredentialResponse(CredentialFormat.VC1_0_JWT, VerifiableCredential.Builder.newInstance().build());
-    }
-
-    @POST
-    @Path("/credentials")
-    @Override
-    public VerifiableCredentialResponse queryCredentials(QuerySpec query) {
-        return null;
-    }
-
-    @POST
-    @Path("/participants/{participantId}/credentials/{credentialId}/revoke")
-    @Override
-    public Response revokeCredential(@PathParam("participantId") String participantId,
-                                     @PathParam("credentialId") String credentialId) {
-        return Response.noContent().build();
-    }
-
-    @POST
-    @Path("/participants/{participantId}/credentials/{credentialId}/suspend")
-    @Override
-    public Response suspendCredential(@PathParam("participantId") String participantId,
-                                      @PathParam("credentialId") String credentialId) {
-        return null;
-    }
-
-    @POST
-    @Path("/participants/{participantId}/credentials/{credentialId}/resume")
-    @Override
-    public Response resumeCredential(@PathParam("participantId") String participantId,
-                                     @PathParam("credentialId") String credentialId) {
-        return null;
+    public IssuerCredentialsAdminApiController(CredentialService statuslistService) {
+        this.statuslistService = statuslistService;
     }
 
     @GET
-    @Path("/participants/{participantId}/credentials/{credentialId}/status")
+    @Path("/{participantId}")
     @Override
-    public CredentialStatusResponse checkRevocationStatus(@PathParam("participantId") String participantId,
-                                                          @PathParam("credentialId") String credentialId) {
-        return null;
+    public Collection<VerifiableCredentialDto> getAllCredentials(@PathParam("participantId") String participantId) {
+        return statuslistService.getCredentialForParticipant(participantId)
+                .map(coll -> coll.stream().map(resource ->
+                        new VerifiableCredentialDto(resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
+                .orElseThrow(exceptionMapper(VerifiableCredential.class, participantId));
+    }
+
+    @POST
+    @Path("/query")
+    @Override
+    public Collection<VerifiableCredentialDto> queryCredentials(QuerySpec query) {
+        return statuslistService.queryCredentials(query).map(coll -> coll.stream().map(resource ->
+                        new VerifiableCredentialDto(resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
+                .orElseThrow(exceptionMapper(VerifiableCredential.class, null));
+    }
+
+    @POST
+    @Path("/{credentialId}/revoke")
+    @Override
+    public Response revokeCredential(@PathParam("credentialId") String credentialId) {
+        return statuslistService.revokeCredential(credentialId)
+                .map(v -> Response.noContent().build())
+                .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
+    }
+
+    @POST
+    @Path("/{credentialId}/suspend")
+    @Override
+    public Response suspendCredential(@PathParam("credentialId") String credentialId) {
+        return Response.status(501).build();
+    }
+
+    @POST
+    @Path("/{credentialId}/resume")
+    @Override
+    public Response resumeCredential(@PathParam("credentialId") String credentialId) {
+        return Response.status(501).build();
+    }
+
+    @GET
+    @Path("/{credentialId}/status")
+    @Override
+    public CredentialStatusResponse checkRevocationStatus(@PathParam("credentialId") String credentialId) {
+        return statuslistService.getCredentialStatus(credentialId)
+                .map(status -> new CredentialStatusResponse(credentialId, status, null))
+                .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }
 }

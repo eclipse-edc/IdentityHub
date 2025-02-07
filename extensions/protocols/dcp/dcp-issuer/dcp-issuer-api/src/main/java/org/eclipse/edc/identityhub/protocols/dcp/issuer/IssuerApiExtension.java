@@ -49,7 +49,7 @@ import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAME
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.identityhub.protocols.dcp.issuer.IssuerApiExtension.NAME;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
-import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.ISSUER_API;
+import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.ISSUANCE_API;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
 @Extension(value = NAME)
@@ -79,18 +79,18 @@ public class IssuerApiExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
 
-        portMappingRegistry.register(new PortMapping(ISSUER_API, apiConfiguration.port(), apiConfiguration.path()));
+        portMappingRegistry.register(new PortMapping(ISSUANCE_API, apiConfiguration.port(), apiConfiguration.path()));
 
         var dcpRegistry = transformerRegistry.forContext(DCP_SCOPE_V_1_0);
         registerTransformers(dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0);
 
 
-        webService.registerResource(ISSUER_API, new CredentialRequestApiController(dcpRegistry));
-        webService.registerResource(ISSUER_API, new CredentialRequestStatusApiController(dcpRegistry));
-        webService.registerResource(ISSUER_API, new IssuerMetadataApiController(dcpRegistry));
+        webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(dcpRegistry));
+        webService.registerResource(ISSUANCE_API, new CredentialRequestStatusApiController(dcpRegistry));
+        webService.registerResource(ISSUANCE_API, new IssuerMetadataApiController(dcpRegistry));
 
-        webService.registerResource(ISSUER_API, new ObjectMapperProvider(typeManager, JSON_LD));
-        webService.registerResource(ISSUER_API, new JerseyJsonLdInterceptor(jsonLd, typeManager, JSON_LD, DCP_SCOPE_V_1_0));
+        webService.registerResource(ISSUANCE_API, new ObjectMapperProvider(typeManager, JSON_LD));
+        webService.registerResource(ISSUANCE_API, new JerseyJsonLdInterceptor(jsonLd, typeManager, JSON_LD, DCP_SCOPE_V_1_0));
 
         jsonLd.registerContext(DSPACE_DCP_V_1_0_CONTEXT, DCP_SCOPE_V_1_0);
 
@@ -124,9 +124,9 @@ public class IssuerApiExtension implements ServiceExtension {
 
     @Settings
     record CredentialRequestApiConfiguration(
-            @Setting(key = "web.http." + ISSUER_API + ".port", description = "Port for " + ISSUER_API + " api context", defaultValue = 13132 + "")
+            @Setting(key = "web.http." + ISSUANCE_API + ".port", description = "Port for " + ISSUANCE_API + " api context", defaultValue = 13132 + "")
             int port,
-            @Setting(key = "web.http." + ISSUER_API + ".path", description = "Path for " + ISSUER_API + " api context", defaultValue = "/api/issuer")
+            @Setting(key = "web.http." + ISSUANCE_API + ".path", description = "Path for " + ISSUANCE_API + " api context", defaultValue = "/api/issuance")
             String path
     ) {
 

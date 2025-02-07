@@ -125,10 +125,10 @@ public class BomSmokeTests {
                                 put("web.http.version.path", "/api/version");
                                 put("web.http.did.port", valueOf(getFreePort()));
                                 put("web.http.did.path", "/api/did");
-                                put("web.http.issuer-api.port", valueOf(getFreePort()));
-                                put("web.http.issuer-api.path", "/api/issuer");
+                                put("web.http.issuance.port", valueOf(getFreePort()));
                                 put("edc.sts.account.api.url", "https://sts.com/accounts");
                                 put("edc.sts.accounts.api.auth.header.value", "password");
+                                put("edc.issuer.statuslist.signing.key.alias", "signing-key");
                             }
                         },
                         ":dist:bom:issuerservice-bom"

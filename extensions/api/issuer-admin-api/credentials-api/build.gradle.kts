@@ -20,6 +20,7 @@ plugins {
 
 dependencies {
     api(libs.edc.spi.core)
+    api(project(":spi:issuerservice:issuerservice-credential-spi"))
     implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-configuration"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)

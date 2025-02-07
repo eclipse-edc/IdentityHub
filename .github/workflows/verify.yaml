@@ -79,6 +79,7 @@ jobs:
           docker run -d --rm --name issuer-service \
             -e "EDC_STS_ACCOUNT_API_URL=https://sts.com" \
             -e "EDC_STS_ACCOUNTS_API_AUTH_HEADER_VALUE=auth-header" \
+            -e "EDC_ISSUER_STATUSLIST_SIGNING_KEY_ALIAS=foo-alias" \
             issuer-service:latest
 
       - name: 'Wait for Issuer-Service to be healthy'
