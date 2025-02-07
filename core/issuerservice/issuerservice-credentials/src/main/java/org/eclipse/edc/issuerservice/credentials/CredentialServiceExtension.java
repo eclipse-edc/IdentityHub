@@ -36,6 +36,7 @@ import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 @Extension(value = NAME)
 public class CredentialServiceExtension implements ServiceExtension {
     public static final String NAME = "Issuer Service Credential Service Extension";
+    public static final String BITSTRING_STATUS_LIST_ENTRY = "BitstringStatusListEntry";
 
     @Setting(description = "Alias for the private key that is intended for signing status list credentials", key = "edc.issuer.statuslist.signing.key.alias")
     private String privateKeyAlias;
@@ -47,6 +48,7 @@ public class CredentialServiceExtension implements ServiceExtension {
     private TypeManager typeManager;
     @Inject
     private JwsSignerProvider jwsSignerProvider;
+
     private StatusListInfoFactoryRegistry factory;
 
     @Provider
@@ -54,7 +56,7 @@ public class CredentialServiceExtension implements ServiceExtension {
         var fact = getFactory();
 
         // Bitstring StatusList is provided by default. others can be added via extensions
-        fact.register("BitstringStatusListEntry", new BitstringStatusListFactory(store, typeManager.getMapper()));
+        fact.register(BITSTRING_STATUS_LIST_ENTRY, new BitstringStatusListFactory(store));
 
         var tokenGenerationService = new JwtGenerationService(jwsSignerProvider);
         return new CredentialServiceImpl(store, transactionContext, typeManager.getMapper(JSON_LD), context.getMonitor(), tokenGenerationService,

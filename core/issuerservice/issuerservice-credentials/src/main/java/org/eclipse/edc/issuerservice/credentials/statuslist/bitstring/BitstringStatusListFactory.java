@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
@@ -28,11 +27,9 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 public class BitstringStatusListFactory implements StatusListInfoFactory {
     private final CredentialStore credentialStore;
-    private final ObjectMapper objectMapper;
 
-    public BitstringStatusListFactory(CredentialStore credentialStore, ObjectMapper objectMapper) {
+    public BitstringStatusListFactory(CredentialStore credentialStore) {
         this.credentialStore = credentialStore;
-        this.objectMapper = objectMapper;
     }
 
     @Override

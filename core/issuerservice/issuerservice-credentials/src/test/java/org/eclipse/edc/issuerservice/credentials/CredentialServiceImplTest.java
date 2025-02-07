@@ -96,7 +96,7 @@ class CredentialServiceImplTest {
         when(tokenGenerationService.generate(any(), any())).thenReturn(Result.success(TokenRepresentation.Builder.newInstance().token("new-token").build()));
         monitor = mock();
         var reg = new StatusListInfoFactoryRegistryImpl();
-        reg.register("BitstringStatusListEntry", new BitstringStatusListFactory(credentialStore, objectMapper));
+        reg.register("BitstringStatusListEntry", new BitstringStatusListFactory(credentialStore));
         revocationService = new CredentialServiceImpl(credentialStore, new NoopTransactionContext(), objectMapper,
                 monitor, tokenGenerationService, () -> "some-private-key", reg);
     }

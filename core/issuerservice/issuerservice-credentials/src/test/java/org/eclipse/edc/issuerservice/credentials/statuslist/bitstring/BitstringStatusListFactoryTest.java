@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -31,8 +30,7 @@ import static org.mockito.Mockito.when;
 class BitstringStatusListFactoryTest {
 
     private final CredentialStore credentialStore = mock();
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final BitstringStatusListFactory factory = new BitstringStatusListFactory(credentialStore, objectMapper);
+    private final BitstringStatusListFactory factory = new BitstringStatusListFactory(credentialStore);
 
 
     @Test

@@ -14,6 +14,7 @@
 
 plugins {
     `java-library`
+
 }
 
 val edcScmConnection: String by project
