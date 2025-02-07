@@ -126,7 +126,7 @@ public class IssuerApiExtension implements ServiceExtension {
     record CredentialRequestApiConfiguration(
             @Setting(key = "web.http." + ISSUANCE_API + ".port", description = "Port for " + ISSUANCE_API + " api context", defaultValue = 13132 + "")
             int port,
-            @Setting(key = "web.http." + ISSUANCE_API + ".path", description = "Path for " + ISSUANCE_API + " api context", defaultValue = "/api/issuer")
+            @Setting(key = "web.http." + ISSUANCE_API + ".path", description = "Path for " + ISSUANCE_API + " api context", defaultValue = "/api/issuance")
             String path
     ) {
 
