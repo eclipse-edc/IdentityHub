@@ -14,7 +14,11 @@
 
 package org.eclipse.edc.issuerservice.defaults;
 
+import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.defaults.store.InMemoryAttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.defaults.store.InMemoryCredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.defaults.store.InMemoryParticipantStore;
+import org.eclipse.edc.issuerservice.spi.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -31,4 +35,14 @@ public class DefaultServiceExtension implements ServiceExtension {
         return new InMemoryParticipantStore();
     }
 
+
+    @Provider(isDefault = true)
+    public AttestationDefinitionStore createInMemoryAttestationStore() {
+        return new InMemoryAttestationDefinitionStore();
+    }
+
+    @Provider(isDefault = true)
+    public CredentialDefinitionStore createInMemoryCredentialDefinitionStore() {
+        return new InMemoryCredentialDefinitionStore();
+    }
 }

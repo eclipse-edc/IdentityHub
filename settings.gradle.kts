@@ -33,6 +33,8 @@ include(":spi:issuance-credentials-spi")
 // IssuerService SPI modules
 include(":spi:issuerservice:issuerservice-participant-spi")
 include(":spi:issuerservice:issuerservice-credential-spi")
+include(":spi:issuerservice:credential-revocation-spi")
+include(":spi:issuerservice:issuerservice-credential-definition-spi")
 
 // IdentityHub core modules
 include(":core:identity-hub-core")
@@ -44,6 +46,8 @@ include(":core:identity-hub-did")
 include(":core:issuerservice:issuerservice-core")
 include(":core:issuerservice:issuerservice-participants")
 include(":core:issuerservice:issuerservice-credentials")
+include(":core:issuerservice:issuerservice-credential-revocation")
+include(":core:issuerservice:issuerservice-credential-definitions")
 
 // lib modules
 include(":core:lib:keypair-lib")
@@ -56,6 +60,7 @@ include(":extensions:store:sql:identity-hub-credentials-store-sql")
 include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:store:sql:identity-hub-keypair-store-sql")
 include(":extensions:store:sql:issuerservice-participant-store-sql")
+include(":extensions:store:sql:issuerservice-credential-definition-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:common:credential-watchdog")
 include(":extensions:sts:sts-account-provisioner")
@@ -85,6 +90,7 @@ include(":extensions:api:issuer-admin-api:issuer-admin-api-configuration")
 include(":extensions:api:issuer-admin-api:participant-api")
 include(":extensions:api:issuer-admin-api:credentials-api")
 include(":extensions:api:issuer-admin-api:attestation-api")
+include(":extensions:api:issuer-admin-api:credential-definition-api")
 
 // Identity API validators
 include(":extensions:api:identity-api:validators:keypair-validators")

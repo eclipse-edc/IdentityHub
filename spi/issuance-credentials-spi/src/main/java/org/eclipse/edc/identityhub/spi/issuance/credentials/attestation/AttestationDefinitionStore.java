@@ -15,8 +15,11 @@
 package org.eclipse.edc.identityhub.spi.issuance.credentials.attestation;
 
 import org.eclipse.edc.identityhub.spi.issuance.credentials.model.AttestationDefinition;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
 
 /**
  * Persists attestation definitions.
@@ -43,5 +46,13 @@ public interface AttestationDefinitionStore {
      * Removes an attestation from persistent storage.
      */
     StoreResult<Void> delete(String id);
+
+    /**
+     * Queries for attestation definitions
+     *
+     * @param querySpec the query to use.
+     * @return A (potentially empty) list of attestation definitions.
+     */
+    StoreResult<Collection<AttestationDefinition>> query(QuerySpec querySpec);
 
 }

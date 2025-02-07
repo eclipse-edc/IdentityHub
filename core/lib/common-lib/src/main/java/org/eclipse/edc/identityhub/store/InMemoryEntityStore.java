@@ -44,6 +44,17 @@ public abstract class InMemoryEntityStore<T> {
         queryResolver = createQueryResolver();
     }
 
+
+    public StoreResult<T> findById(String id) {
+        lock.readLock().lock();
+        try {
+            var result = store.get(id);
+            return result == null ? notFound("An entity with ID '%s' does not exist.".formatted(id)) : success(result);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
     /**
      * Creates a new entity if none exists.
      *

@@ -25,6 +25,7 @@ dependencies {
     runtimeOnly(project(":core:issuerservice:issuerservice-core"))
     runtimeOnly(project(":core:issuerservice:issuerservice-participants"))
     runtimeOnly(project(":core:issuerservice:issuerservice-credentials"))
+    runtimeOnly(project(":core:issuerservice:issuerservice-credential-definitions"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
     // API modules
     runtimeOnly(project(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-api"))
