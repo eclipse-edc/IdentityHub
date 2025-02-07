@@ -14,11 +14,14 @@
 
 package org.eclipse.edc.identityhub.spi.issuance.credentials.model;
 
+import org.eclipse.edc.spi.entity.StatefulEntity;
+
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Objects.requireNonNull;
+import java.util.Objects;
 
 /**
  * Tracks credential issuance.
@@ -29,40 +32,30 @@ import static java.util.Objects.requireNonNull;
  * If successful, an issuance process is created with claims gathered from attestations. The issuance process is then approved
  * asynchronously and generated credentials sent to the holder.
  */
-public class IssuanceProcess {
-    public enum State {
-        SUBMITTED, APPROVED, DELIVERED, ERRORED
+public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
+    private final Map<String, Object> claims = new HashMap<>();
+    private final List<String> credentialDefinitions = new ArrayList<>();
+    private String participantId;
+
+    private IssuanceProcess() {
     }
 
-    private String id;
-    private State state = State.SUBMITTED;
-    private long stateTimestamp;
-    private int retries;
-    private int errorCode;
-
-    private long creationTime;
-
-    private Map<String, Object> claims;
-    private List<String> credentialDefinitions;
-
-    public State getState() {
-        return state;
+    @Override
+    public IssuanceProcess copy() {
+        var builder = Builder.newInstance()
+                .claims(claims)
+                .credentialDefinitions(credentialDefinitions)
+                .participantId(participantId);
+        return copy(builder);
     }
 
-    public long getStateTimestamp() {
-        return stateTimestamp;
+    @Override
+    public String stateAsString() {
+        return IssuanceProcessStates.from(state).name();
     }
 
-    public int getRetries() {
-        return retries;
-    }
-
-    public int getErrorCode() {
-        return errorCode;
-    }
-
-    public long getCreationTime() {
-        return creationTime;
+    public String getParticipantId() {
+        return participantId;
     }
 
     public Map<String, Object> getClaims() {
@@ -73,68 +66,71 @@ public class IssuanceProcess {
         return credentialDefinitions;
     }
 
-    private IssuanceProcess() {
+    public Builder toBuilder() {
+        return new Builder(this);
     }
 
-    public static final class Builder {
-        private IssuanceProcess process;
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        var that = (IssuanceProcess) o;
+        return id.equals(that.id);
+    }
+
+    public static final class Builder extends StatefulEntity.Builder<IssuanceProcess, Builder> {
+
+        private Builder(IssuanceProcess process) {
+            super(process);
+        }
 
         public static Builder newInstance() {
-            return new Builder();
+            return new Builder(new IssuanceProcess());
         }
 
-        public Builder id(String id) {
-            this.process.id = id;
-            return this;
-        }
-
-        public Builder state(State state) {
-            this.process.state = state;
-            return this;
-        }
-
-        public Builder stateTimestamp(long timestamp) {
-            this.process.stateTimestamp = timestamp;
-            return this;
-        }
-
-        public Builder retries(int retries) {
-            this.process.retries = retries;
-            return this;
-        }
-
-        public Builder errorCode(int errorCode) {
-            this.process.errorCode = errorCode;
-            return this;
-        }
-
-        public Builder creationTime(int creationTime) {
-            this.process.creationTime = creationTime;
+        @Override
+        public Builder self() {
             return this;
         }
 
         public Builder claims(Map<String, Object> claims) {
-            this.process.claims.putAll(claims);
+            this.entity.claims.putAll(claims);
             return this;
         }
 
         public Builder credentialDefinitions(Collection<String> definitions) {
-            this.process.credentialDefinitions.addAll(definitions);
+            this.entity.credentialDefinitions.addAll(definitions);
             return this;
         }
 
         public Builder credentialDefinitions(String id) {
-            this.process.credentialDefinitions.add(id);
+            this.entity.credentialDefinitions.add(id);
+            return this;
+        }
+
+        public Builder participantId(String participantId) {
+            this.entity.participantId = participantId;
             return this;
         }
 
         public IssuanceProcess build() {
-            requireNonNull(process.id, "id");
-            return process;
-        }
+            super.build();
 
-        private Builder() {
-            process = new IssuanceProcess();
+            if (entity.state == 0) {
+                throw new IllegalStateException("Issuance process state must be set");
+            }
+            Objects.requireNonNull(entity.participantId, "Participant ID must be set");
+            return entity;
         }
 
     }
