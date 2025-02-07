@@ -25,7 +25,6 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialStatusResponse;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
-import org.eclipse.edc.issuerservice.spi.CredentialService;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
 import org.eclipse.edc.spi.query.QuerySpec;
 
@@ -39,18 +38,16 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 @Path(Versions.UNSTABLE + "/credentials")
 public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdminApi {
     private final StatusListService statuslistService;
-    private final CredentialService credentialService;
 
-    public IssuerCredentialsAdminApiController(StatusListService statuslistService, CredentialService credentialService) {
+    public IssuerCredentialsAdminApiController(StatusListService statuslistService) {
         this.statuslistService = statuslistService;
-        this.credentialService = credentialService;
     }
 
     @GET
     @Path("/{participantId}")
     @Override
     public Collection<VerifiableCredentialDto> getAllCredentials(@PathParam("participantId") String participantId) {
-        return credentialService.getForParticipant(participantId)
+        return statuslistService.getCredentialForParticipant(participantId)
                 .map(coll -> coll.stream().map(resource ->
                         new VerifiableCredentialDto(resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, participantId));
@@ -60,7 +57,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Path("/query")
     @Override
     public Collection<VerifiableCredentialDto> queryCredentials(QuerySpec query) {
-        return credentialService.query(query).map(coll -> coll.stream().map(resource ->
+        return statuslistService.queryCredentials(query).map(coll -> coll.stream().map(resource ->
                         new VerifiableCredentialDto(resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, null));
     }

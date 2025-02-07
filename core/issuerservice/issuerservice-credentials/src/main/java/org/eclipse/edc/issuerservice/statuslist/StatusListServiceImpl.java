@@ -19,17 +19,20 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfo;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.spi.TokenGenerationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -132,6 +135,17 @@ public class StatusListServiceImpl implements StatusListService {
         return transactionContext.execute(() -> getCredential(credentialId)
                 .compose(this::getRevocationInfo)
                 .compose(r -> from(r.getStatus())));
+    }
+
+    @Override
+    public ServiceResult<Collection<VerifiableCredentialResource>> getCredentialForParticipant(String participantId) {
+        var query = IdentityResource.queryByParticipantContextId(participantId).build();
+        return queryCredentials(query);
+    }
+
+    @Override
+    public ServiceResult<Collection<VerifiableCredentialResource>> queryCredentials(QuerySpec query) {
+        return ServiceResult.from(credentialStore.query(query));
     }
 
     private ServiceResult<VerifiableCredentialResource> getCredential(String credentialId) {

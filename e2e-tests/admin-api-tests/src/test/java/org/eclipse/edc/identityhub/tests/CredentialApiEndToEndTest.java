@@ -203,7 +203,6 @@ public class CredentialApiEndToEndTest {
                     .log().ifValidationFails()
                     .statusCode(404)
                     .body(Matchers.containsString("was not found"));
-
         }
 
         @Test
@@ -212,9 +211,7 @@ public class CredentialApiEndToEndTest {
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
 
             // track the original bitstring
-            var originalBitstring = res.getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
             credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
-
 
             // create credential with invalid status type
             var credential = createCredential("test-cred");

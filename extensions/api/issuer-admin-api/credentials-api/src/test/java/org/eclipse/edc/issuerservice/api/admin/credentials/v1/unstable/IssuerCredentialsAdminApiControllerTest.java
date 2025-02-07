@@ -24,7 +24,6 @@ import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
-import org.eclipse.edc.issuerservice.spi.CredentialService;
 import org.eclipse.edc.issuerservice.spi.statuslist.StatusListService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -52,12 +51,11 @@ import static org.mockito.Mockito.when;
 class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     private final StatusListService statuslistService = mock();
-    private final CredentialService credentialService = mock();
 
     @Test
     void getAllCredentials() {
 
-        when(credentialService.getForParticipant(eq("test-participant")))
+        when(statuslistService.getCredentialForParticipant(eq("test-participant")))
                 .thenReturn(ServiceResult.success(List.of(createCredential(), createCredential())));
         var credentials = baseRequest()
                 .get("/test-participant")
@@ -66,12 +64,11 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .extract().body().as(VerifiableCredentialDto[].class);
 
         assertThat(credentials).hasSize(2);
-        verifyNoInteractions(statuslistService);
     }
 
     @Test
     void getAllCredentials_whenNoResult() {
-        when(credentialService.getForParticipant(eq("test-participant")))
+        when(statuslistService.getCredentialForParticipant(eq("test-participant")))
                 .thenReturn(ServiceResult.success(List.of()));
         var credentials = baseRequest()
                 .get("/test-participant")
@@ -80,12 +77,11 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .extract().body().as(VerifiableCredentialDto[].class);
 
         assertThat(credentials).isEmpty();
-        verifyNoInteractions(statuslistService);
     }
 
     @Test
     void queryCredentials() {
-        when(credentialService.query(any(QuerySpec.class)))
+        when(statuslistService.queryCredentials(any(QuerySpec.class)))
                 .thenReturn(ServiceResult.success(List.of(createCredential(), createCredential())));
 
         var credentials = baseRequest()
@@ -96,13 +92,12 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .extract().body().as(VerifiableCredentialDto[].class);
 
         assertThat(credentials).hasSize(2);
-        verifyNoInteractions(statuslistService);
     }
 
 
     @Test
     void queryCredentials_whenNoResult() {
-        when(credentialService.query(any(QuerySpec.class)))
+        when(statuslistService.queryCredentials(any(QuerySpec.class)))
                 .thenReturn(ServiceResult.success(Collections.emptyList()));
 
         var credentials = baseRequest()
@@ -113,7 +108,6 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .extract().body().as(VerifiableCredentialDto[].class);
 
         assertThat(credentials).isEmpty();
-        verifyNoInteractions(statuslistService);
     }
 
     @Test
@@ -147,7 +141,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .post("/test-credential-id/suspend")
                 .then()
                 .statusCode(501);
-        verifyNoInteractions(credentialService, statuslistService);
+        verifyNoInteractions(statuslistService);
     }
 
     @Test
@@ -156,7 +150,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .post("/test-credential-id/resume")
                 .then()
                 .statusCode(501);
-        verifyNoInteractions(credentialService, statuslistService);
+        verifyNoInteractions(statuslistService);
     }
 
     @Test
@@ -168,7 +162,6 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .then()
                 .statusCode(200)
                 .body(matchesRegex(".*\"status\":.*null.*"));
-        verifyNoInteractions(credentialService);
     }
 
     @Test
@@ -181,7 +174,6 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .then()
                 .statusCode(200)
                 .body(matchesRegex(".*\"status\":.*\"revocation\".*"));
-        verifyNoInteractions(credentialService);
     }
 
     @Test
@@ -195,12 +187,11 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .statusCode(404)
                 .body(notNullValue());
 
-        verifyNoInteractions(credentialService);
     }
 
     @Override
     protected Object controller() {
-        return new IssuerCredentialsAdminApiController(statuslistService, credentialService);
+        return new IssuerCredentialsAdminApiController(statuslistService);
     }
 
     private @NotNull VerifiableCredentialResource createCredential() {

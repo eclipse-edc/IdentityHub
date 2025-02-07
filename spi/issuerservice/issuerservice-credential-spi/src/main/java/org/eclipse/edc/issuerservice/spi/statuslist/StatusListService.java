@@ -14,8 +14,12 @@
 
 package org.eclipse.edc.issuerservice.spi.statuslist;
 
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
 
 /**
  * Service to revoke, suspend, resume and query the status of VerifiableCredentials. This is agnostic of the status list
@@ -67,4 +71,8 @@ public interface StatusListService {
      * @return A string containing the credential status, null if the status is not set, or a failure to indicate an error.
      */
     ServiceResult<String> getCredentialStatus(String credentialId);
+
+    ServiceResult<Collection<VerifiableCredentialResource>> getCredentialForParticipant(String participantId);
+
+    ServiceResult<Collection<VerifiableCredentialResource>> queryCredentials(QuerySpec query);
 }

@@ -12,4 +12,3 @@
 #
 #
 org.eclipse.edc.issuerservice.statuslist.StatusListServiceExtension
-org.eclipse.edc.issuerservice.credentials.CredentialServiceExtension
