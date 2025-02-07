@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.spi.credentialdefinition.store;
 
 import org.eclipse.edc.identityhub.spi.issuance.credentials.model.CredentialDefinition;
+import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 
@@ -23,6 +24,7 @@ import java.util.Collection;
 /**
  * Stores {@link CredentialDefinition} objects and provides basic CRUD operations
  */
+@ExtensionPoint
 public interface CredentialDefinitionStore {
 
     /**

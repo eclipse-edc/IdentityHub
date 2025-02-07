@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.spi.credentialdefinition;
 
 import org.eclipse.edc.identityhub.spi.issuance.credentials.model.CredentialDefinition;
+import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 
@@ -23,6 +24,7 @@ import java.util.Collection;
 /**
  * Service interface for managing credential definitions.
  */
+@ExtensionPoint
 public interface CredentialDefinitionService {
 
     /**
