@@ -53,6 +53,31 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 
+Module `credential-definition-api`
+----------------------------------
+**Artifact:** org.eclipse.edc:credential-definition-api:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.issuerservice.api.admin.credentialdefinition.IssuerCredentialDefinitionAdminApiExtension`
+**Name:** "Issuer Service Credential Definition Admin API Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.web.spi.WebService` (required)
+- `org.eclipse.edc.issuerservice.spi.credentialdefinition.CredentialDefinitionService` (required)
+
 Module `credential-watchdog`
 ----------------------------
 **Artifact:** org.eclipse.edc:credential-watchdog:0.12.0-SNAPSHOT
@@ -193,6 +218,35 @@ Module `identity-hub-core`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.identityhub.DefaultServicesExtension`
+**Name:** "IdentityHub Default Services Extension"
+
+**Overview:**  This extension provides core services for the IdentityHub that are not intended to be user-replaceable.
+
+
+
+### Configuration
+
+| Key                                            | Required | Type     | Default  | Pattern | Min | Max | Description                                                                                  |
+| ---------------------------------------------- | -------- | -------- | -------- | ------- | --- | --- | -------------------------------------------------------------------------------------------- |
+| `edc.iam.accesstoken.jti.validation`           | `*`      | `string` | `false`  |         |     |     | Activates the JTI check: access tokens can only be used once to guard against replay attacks |
+| `edc.iam.credential.revocation.cache.validity` | `*`      | `string` | `900000` |         |     |     | Validity period of cached StatusList2021 credential entries in milliseconds.                 |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore`
+- `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore`
+- `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore`
+- `org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer`
+- `org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry`
+- `org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry`
+- `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.token.spi.TokenValidationRulesRegistry` (required)
+- `org.eclipse.edc.spi.types.TypeManager` (required)
+- `org.eclipse.edc.keys.spi.PrivateKeyResolver` (required)
+- `org.eclipse.edc.jwt.validation.jti.JtiValidationStore` (required)
+
 #### Class: `org.eclipse.edc.identityhub.core.CoreServicesExtension`
 **Name:** "IdentityHub Core Services Extension"
 
@@ -230,35 +284,6 @@ _None_
 - `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 - `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-
-#### Class: `org.eclipse.edc.identityhub.DefaultServicesExtension`
-**Name:** "IdentityHub Default Services Extension"
-
-**Overview:**  This extension provides core services for the IdentityHub that are not intended to be user-replaceable.
-
-
-
-### Configuration
-
-| Key                                            | Required | Type     | Default  | Pattern | Min | Max | Description                                                                                  |
-| ---------------------------------------------- | -------- | -------- | -------- | ------- | --- | --- | -------------------------------------------------------------------------------------------- |
-| `edc.iam.accesstoken.jti.validation`           | `*`      | `string` | `false`  |         |     |     | Activates the JTI check: access tokens can only be used once to guard against replay attacks |
-| `edc.iam.credential.revocation.cache.validity` | `*`      | `string` | `900000` |         |     |     | Validity period of cached StatusList2021 credential entries in milliseconds.                 |
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore`
-- `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore`
-- `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore`
-- `org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer`
-- `org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry`
-- `org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry`
-- `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.token.spi.TokenValidationRulesRegistry` (required)
-- `org.eclipse.edc.spi.types.TypeManager` (required)
-- `org.eclipse.edc.keys.spi.PrivateKeyResolver` (required)
-- `org.eclipse.edc.jwt.validation.jti.JtiValidationStore` (required)
 
 Module `identity-hub-credentials-store-sql`
 -------------------------------------------
@@ -615,9 +640,71 @@ _None_
 
 #### Provided services
 - `org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore`
+- `org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationDefinitionStore`
+- `org.eclipse.edc.issuerservice.spi.credentialdefinition.store.CredentialDefinitionStore`
 
 #### Referenced (injected) services
 _None_
+
+Module `issuerservice-credential-definition-store-sql`
+------------------------------------------------------
+**Artifact:** org.eclipse.edc:issuerservice-credential-definition-store-sql:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.issuerservice.store.sql.credentialdefinition.SqlCredentialDefinitionStoreExtension`
+**Name:** "IssuerService Credential definition SQL Store Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                              | Required | Type     | Default   | Pattern | Min | Max | Description               |
+| ------------------------------------------------ | -------- | -------- | --------- | ------- | --- | --- | ------------------------- |
+| `edc.sql.store.credentialdefinitions.datasource` | `*`      | `string` | `default` |         |     |     | The datasource to be used |
+
+#### Provided services
+- `org.eclipse.edc.issuerservice.spi.credentialdefinition.store.CredentialDefinitionStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry` (required)
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.spi.types.TypeManager` (required)
+- `org.eclipse.edc.sql.QueryExecutor` (required)
+- `org.eclipse.edc.issuerservice.store.sql.credentialdefinition.CredentialDefinitionStoreStatements` (optional)
+- `org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper` (required)
+- `java.time.Clock` (required)
+
+Module `issuerservice-credential-definitions`
+---------------------------------------------
+**Artifact:** org.eclipse.edc:issuerservice-credential-definitions:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.issuerservice.credentialdefinition.CredentialDefinitionServiceExtension`
+**Name:** "IssuerService Credential Definition Service Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.issuerservice.spi.credentialdefinition.CredentialDefinitionService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.issuerservice.spi.credentialdefinition.store.CredentialDefinitionStore` (required)
+- `org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationDefinitionStore` (required)
 
 Module `issuerservice-credentials`
 ----------------------------------
