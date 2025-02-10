@@ -35,6 +35,7 @@ dependencies {
     testImplementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.sts.spi)
     testImplementation(testFixtures(project(":e2e-tests:fixtures")))
+    testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
 
 }
 

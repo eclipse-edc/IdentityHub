@@ -51,8 +51,8 @@ public class IssuerServiceRuntimeConfiguration {
                 put("web.http.issueradmin.port", String.valueOf(adminEndpoint.getUrl().getPort()));
                 put("web.http.issueradmin.path", adminEndpoint.getUrl().getPath());
 
-                put("web.http.issuer-api.port", String.valueOf(issuerApiEndpoint.getUrl().getPort()));
-                put("web.http.issuer-api.path", issuerApiEndpoint.getUrl().getPath());
+                put("web.http.issuance.port", String.valueOf(issuerApiEndpoint.getUrl().getPort()));
+                put("web.http.issuance.path", issuerApiEndpoint.getUrl().getPath());
                 put("web.http.version.port", String.valueOf(getFreePort()));
                 put("web.http.version.path", "/.well-known/api");
                 put("web.http.did.port", String.valueOf(getFreePort()));
@@ -63,6 +63,7 @@ public class IssuerServiceRuntimeConfiguration {
                 put("edc.sts.accounts.api.auth.header.value", "password");
                 put("edc.iam.accesstoken.jti.validation", String.valueOf(false));
                 put("edc.issuer.statuslist.signing.key.alias", "signing-key");
+                put("edc.issuer.id", "did:web:issuer");
             }
         };
     }

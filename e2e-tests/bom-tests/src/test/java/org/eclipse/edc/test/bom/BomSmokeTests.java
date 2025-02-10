@@ -129,6 +129,7 @@ public class BomSmokeTests {
                                 put("edc.sts.account.api.url", "https://sts.com/accounts");
                                 put("edc.sts.accounts.api.auth.header.value", "password");
                                 put("edc.issuer.statuslist.signing.key.alias", "signing-key");
+                                put("edc.issuer.id", "did:web:issuer");
                             }
                         },
                         ":dist:bom:issuerservice-bom"

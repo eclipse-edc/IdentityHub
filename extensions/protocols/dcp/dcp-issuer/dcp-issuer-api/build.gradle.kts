@@ -31,6 +31,7 @@ dependencies {
     implementation(libs.edc.lib.jerseyproviders)
     implementation(libs.edc.lib.transform)
     implementation(libs.edc.dcp.transform)
+    implementation(libs.edc.lib.validator)
     implementation(project(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-transform-lib"))
     implementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.junit)

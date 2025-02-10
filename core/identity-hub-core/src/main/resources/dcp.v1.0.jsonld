@@ -69,11 +69,9 @@
     "CredentialRequestMessage": {
       "@id": "dcp:CredentialRequestMessage",
       "@context": {
-        "format": "dcp:format",
-        "credentialType": {
-          "@id": "dcp:credentialType",
-          "@type": "@vocab",
-          "@container": "@set"
+        "credentials": {
+          "@id": "dcp:credentials",
+          "@type": "@json"
         }
       }
     },
