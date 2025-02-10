@@ -33,7 +33,6 @@ include(":spi:issuance-credentials-spi")
 // IssuerService SPI modules
 include(":spi:issuerservice:issuerservice-participant-spi")
 include(":spi:issuerservice:issuerservice-credential-spi")
-include(":spi:issuerservice:credential-revocation-spi")
 include(":spi:issuerservice:issuerservice-credential-definition-spi")
 
 // IdentityHub core modules

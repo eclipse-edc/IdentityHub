@@ -18,8 +18,6 @@ plugins {
     `maven-publish`
 }
 
-val swagger: String by project
-
 dependencies {
 
     api(project(":spi:did-spi"))

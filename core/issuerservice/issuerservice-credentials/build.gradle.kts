@@ -10,7 +10,6 @@ dependencies {
 
 
     implementation(libs.edc.spi.transaction)
-    implementation(libs.edc.lib.store)
     testImplementation(libs.edc.junit)
 
 }

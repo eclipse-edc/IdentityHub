@@ -17,11 +17,10 @@ plugins {
 }
 
 dependencies {
-    api(project(":spi:identity-hub-spi"))
     api(project(":spi:keypair-spi"))
     api(libs.edc.spi.transaction)
     implementation(project(":core:lib:keypair-lib"))
     implementation(libs.edc.lib.common.crypto)
-    implementation(libs.edc.core.connector)
+    runtimeOnly(libs.edc.core.connector)
     testImplementation(libs.edc.junit)
 }

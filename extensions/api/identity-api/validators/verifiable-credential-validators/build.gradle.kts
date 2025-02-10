@@ -4,9 +4,7 @@ plugins {
 }
 
 dependencies {
-    api(libs.edc.spi.core)
-    api(project(":spi:identity-hub-spi"))
-    api(project(":spi:did-spi"))
+    api(libs.edc.spi.validator)
     api(project(":spi:verifiable-credential-spi"))
     implementation(libs.edc.lib.util)
 

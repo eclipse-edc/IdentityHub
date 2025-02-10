@@ -21,13 +21,11 @@ plugins {
 dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
-    api(project(":spi:did-spi"))
     implementation(project(":extensions:api:identity-api:api-configuration"))
     implementation(project(":extensions:api:identity-api:validators:participant-context-validators"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
     implementation(libs.edc.lib.util)
-    implementation(libs.edc.lib.jerseyproviders)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
 
@@ -35,7 +33,6 @@ dependencies {
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(libs.edc.core.jersey))
-    testImplementation(testFixtures(project(":spi:identity-hub-spi")))
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.restAssured)
     testImplementation(libs.tink)
