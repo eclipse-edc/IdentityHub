@@ -14,7 +14,6 @@
 
 plugins {
     `java-library`
-    id("com.autonomousapps.dependency-analysis") version ("2.8.1")
 }
 
 val edcScmConnection: String by project
@@ -29,7 +28,6 @@ buildscript {
 
 allprojects {
     apply(plugin = "${group}.edc-build")
-    apply(plugin = "com.autonomousapps.dependency-analysis")
 
     configure<org.eclipse.edc.plugins.edcbuild.extensions.BuildExtension> {
         pom {

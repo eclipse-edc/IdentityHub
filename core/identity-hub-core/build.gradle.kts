@@ -13,7 +13,6 @@ dependencies {
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
     implementation(libs.edc.spi.transaction)
     implementation(libs.edc.spi.jwt.signer)
-//    implementation(libs.edc.core.connector) // for the CriterionToPredicateConverterImpl
     implementation(libs.edc.jsonld) // for the JSON-LD mapper
     implementation(libs.edc.lib.util)
     implementation(libs.edc.lib.store)
@@ -26,8 +25,6 @@ dependencies {
     implementation(libs.edc.spi.identity.did)
     implementation(libs.edc.vc.ldp)
     implementation(libs.edc.vc.jwt) // JtiValidationRule
-//    implementation(libs.edc.core.token)
-    implementation(libs.edc.verifiablecredentials) // revocation list service
 
 
     testImplementation(libs.edc.junit)
