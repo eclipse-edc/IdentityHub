@@ -5,8 +5,8 @@ plugins {
 dependencies {
     api(project(":spi:issuerservice:issuerservice-participant-spi"))
     api(project(":spi:issuerservice:issuerservice-credential-definition-spi"))
+    api(project(":core:lib:common-lib"))
 
-    implementation(project(":core:lib:common-lib"))
     implementation(libs.edc.lib.store)
     testImplementation(libs.edc.junit)
     testImplementation(testFixtures(project(":spi:issuerservice:issuerservice-participant-spi")))
