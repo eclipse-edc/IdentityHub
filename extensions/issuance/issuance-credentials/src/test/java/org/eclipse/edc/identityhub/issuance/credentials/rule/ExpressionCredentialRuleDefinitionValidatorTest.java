@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.rule;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.CredentialRuleDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ class ExpressionCredentialRuleDefinitionValidatorTest {
 
     @Test
     void verify_invalid_no_claim() {
-        var config =  new CredentialRuleDefinition("expression", Map.of("operator", "eq", "value", true));
+        var config = new CredentialRuleDefinition("expression", Map.of("operator", "eq", "value", true));
         var result = validator.validate(config);
         assertThat(result.succeeded()).isFalse();
         assertThat(result.getFailureDetail().toLowerCase()).contains("claim");
@@ -42,7 +42,7 @@ class ExpressionCredentialRuleDefinitionValidatorTest {
 
     @Test
     void verify_invalid_no_operator() {
-        var config =  new CredentialRuleDefinition("expression", Map.of("claim", "eq", "value", true));
+        var config = new CredentialRuleDefinition("expression", Map.of("claim", "eq", "value", true));
         var result = validator.validate(config);
         assertThat(result.succeeded()).isFalse();
         assertThat(result.getFailureDetail().toLowerCase()).contains("operator");
@@ -50,7 +50,7 @@ class ExpressionCredentialRuleDefinitionValidatorTest {
 
     @Test
     void verify_invalid_no_value() {
-        var config =  new CredentialRuleDefinition("expression", Map.of("claim", "onboarding.active", "operator", "eq"));
+        var config = new CredentialRuleDefinition("expression", Map.of("claim", "onboarding.active", "operator", "eq"));
         var result = validator.validate(config);
         assertThat(result.succeeded()).isFalse();
         assertThat(result.getFailureDetail().toLowerCase()).contains("value");

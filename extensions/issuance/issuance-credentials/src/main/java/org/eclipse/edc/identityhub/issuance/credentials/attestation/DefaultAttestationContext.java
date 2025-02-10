@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.attestation;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationContext;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationContext;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,8 +26,13 @@ import static java.util.Objects.requireNonNull;
  * Default context.
  */
 public class DefaultAttestationContext implements AttestationContext {
-    private Map<String, ClaimToken> claims;
-    private String participantId;
+    private final Map<String, ClaimToken> claims;
+    private final String participantId;
+
+    public DefaultAttestationContext(String participantId, Map<String, ClaimToken> claims) {
+        this.participantId = requireNonNull(participantId, "participantId");
+        this.claims = requireNonNull(claims, "claims");
+    }
 
     @Override
     public @Nullable ClaimToken getClaimToken(String type) {
@@ -41,10 +46,5 @@ public class DefaultAttestationContext implements AttestationContext {
 
     public Map<String, ClaimToken> getClaims() {
         return claims;
-    }
-
-    public DefaultAttestationContext(String participantId, Map<String, ClaimToken> claims) {
-        this.participantId = requireNonNull(participantId, "participantId");
-        this.claims = requireNonNull(claims, "claims");
     }
 }

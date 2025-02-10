@@ -15,7 +15,7 @@
 package org.eclipse.edc.issuerservice.defaults.store;
 
 import org.eclipse.edc.identityhub.store.InMemoryEntityStore;
-import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
+import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QueryResolver;
@@ -28,16 +28,6 @@ import org.eclipse.edc.store.ReflectionBasedQueryResolver;
  */
 public class InMemoryParticipantStore extends InMemoryEntityStore<Participant> implements ParticipantStore {
     @Override
-    protected String getId(Participant newObject) {
-        return newObject.participantId();
-    }
-
-    @Override
-    protected QueryResolver<Participant> createQueryResolver() {
-        return new ReflectionBasedQueryResolver<>(Participant.class, criterionOperatorRegistry);
-    }
-
-    @Override
     public StoreResult<Participant> findById(String id) {
         var q = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("participantId", "=", id))
@@ -49,5 +39,15 @@ public class InMemoryParticipantStore extends InMemoryEntityStore<Participant> i
                     : StoreResult.success(result.getContent().iterator().next());
         }
         return result.mapFailure();
+    }
+
+    @Override
+    protected String getId(Participant newObject) {
+        return newObject.participantId();
+    }
+
+    @Override
+    protected QueryResolver<Participant> createQueryResolver() {
+        return new ReflectionBasedQueryResolver<>(Participant.class, criterionOperatorRegistry);
     }
 }

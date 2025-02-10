@@ -19,7 +19,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":spi:issuerservice:issuerservice-credential-definition-spi"))
+    api(project(":spi:issuerservice:issuerservice-issuance-spi"))
     implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-configuration"))
     implementation(libs.edc.spi.web)
     implementation(libs.jakarta.rsApi)

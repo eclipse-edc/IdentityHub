@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.attestation;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationContext;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationDefinitionStore;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationPipeline;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationSourceFactory;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationSourceFactoryRegistry;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.AttestationDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationContext;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
+import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.spi.result.Result;
 
 import java.util.HashMap;
@@ -32,8 +32,8 @@ import static java.util.Objects.requireNonNull;
  * Holds registered {@link AttestationSourceFactory}s that performs attestation pipeline evaluations.
  */
 public class AttestationPipelineImpl implements AttestationPipeline, AttestationSourceFactoryRegistry {
-    private Map<String, AttestationSourceFactory> factories = new HashMap<>();
-    private AttestationDefinitionStore store;
+    private final Map<String, AttestationSourceFactory> factories = new HashMap<>();
+    private final AttestationDefinitionStore store;
 
     public AttestationPipelineImpl(AttestationDefinitionStore store) {
         this.store = store;

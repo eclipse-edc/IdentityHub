@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.rule;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.rule.CredentialRuleFactory;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.rule.CredentialRuleFactoryRegistry;
+import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactory;
+import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -24,7 +24,7 @@ import java.util.Map;
 import static java.util.Objects.requireNonNull;
 
 public class CredentialRuleFactoryRegistryImpl implements CredentialRuleFactoryRegistry {
-    private Map<String, CredentialRuleFactory> factories = new HashMap<>();
+    private final Map<String, CredentialRuleFactory> factories = new HashMap<>();
 
     @Override
     public void registerFactory(String type, CredentialRuleFactory factory) {

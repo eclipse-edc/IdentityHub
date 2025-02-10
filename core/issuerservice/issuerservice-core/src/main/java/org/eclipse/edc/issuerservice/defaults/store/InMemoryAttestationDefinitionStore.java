@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.issuerservice.defaults.store;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationDefinitionStore;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.AttestationDefinition;
 import org.eclipse.edc.identityhub.store.InMemoryEntityStore;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.store.ReflectionBasedQueryResolver;
@@ -30,7 +30,7 @@ public class InMemoryAttestationDefinitionStore extends InMemoryEntityStore<Atte
     }
 
     @Override
-    public StoreResult<Void> delete(String id) {
+    public StoreResult<Void> deleteById(String id) {
         return super.deleteById(id);
     }
 

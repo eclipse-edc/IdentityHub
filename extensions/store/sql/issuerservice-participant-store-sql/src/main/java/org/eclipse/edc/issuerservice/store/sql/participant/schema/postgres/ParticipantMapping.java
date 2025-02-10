@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.store.sql.participant.schema.postgres;
 
 import org.eclipse.edc.issuerservice.store.sql.participant.ParticipantStoreStatements;
+import org.eclipse.edc.sql.translation.JsonArrayTranslator;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
 
@@ -28,6 +29,7 @@ public class ParticipantMapping extends TranslationMapping {
     public static final String FIELD_LASTMODIFIED_TIMESTAMP = "lastModified";
     public static final String FIELD_DID = "did";
     public static final String FIELD_NAME = "participantName";
+    public static final String FIELD_ATTESTATIONS = "attestations";
 
     public ParticipantMapping(ParticipantStoreStatements statements) {
         add(FIELD_ID, statements.getIdColumn());
@@ -35,5 +37,6 @@ public class ParticipantMapping extends TranslationMapping {
         add(FIELD_LASTMODIFIED_TIMESTAMP, statements.getLastModifiedTimestampColumn());
         add(FIELD_NAME, statements.getParticipantNameColumn());
         add(FIELD_DID, statements.getDidColumn());
+        add(FIELD_ATTESTATIONS, new JsonArrayTranslator());
     }
 }

@@ -14,13 +14,15 @@
 
 package org.eclipse.edc.issuerservice.spi.participant.store;
 
-import org.assertj.core.api.Assertions;
-import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
+import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static java.util.stream.IntStream.range;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public abstract class ParticipantStoreTestBase {
@@ -32,7 +34,7 @@ public abstract class ParticipantStoreTestBase {
         assertThat(result).isSucceeded();
         var query = getStore().query(QuerySpec.max());
         assertThat(query).isSucceeded();
-        Assertions.assertThat(query.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(participantContext);
+        assertThat(query.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(participantContext);
     }
 
     @Test
@@ -56,7 +58,7 @@ public abstract class ParticipantStoreTestBase {
                 .build();
 
         assertThat(getStore().query(q)).isSucceeded()
-                .satisfies(str -> Assertions.assertThat(str).hasSize(1));
+                .satisfies(str -> assertThat(str).hasSize(1));
     }
 
     @Test
@@ -70,7 +72,7 @@ public abstract class ParticipantStoreTestBase {
                 .build();
 
         assertThat(getStore().query(q)).isSucceeded()
-                .satisfies(str -> Assertions.assertThat(str)
+                .satisfies(str -> assertThat(str)
                         .hasSize(1)
                         .usingRecursiveFieldByFieldElementComparator()
                         .containsExactly(participantContext));
@@ -86,7 +88,7 @@ public abstract class ParticipantStoreTestBase {
 
         var res = getStore().query(QuerySpec.none());
         assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent())
+        assertThat(res.getContent())
                 .usingRecursiveFieldByFieldElementComparator()
                 .containsExactlyInAnyOrder(resources.toArray(new Participant[0]));
     }
@@ -104,7 +106,7 @@ public abstract class ParticipantStoreTestBase {
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent()).isEmpty();
+        assertThat(res.getContent()).isEmpty();
     }
 
     @Test
@@ -121,7 +123,7 @@ public abstract class ParticipantStoreTestBase {
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent()).isNotNull().isEmpty();
+        assertThat(res.getContent()).isNotNull().isEmpty();
     }
 
     @Test
@@ -170,7 +172,7 @@ public abstract class ParticipantStoreTestBase {
     protected abstract ParticipantStore getStore();
 
     private Participant createParticipant() {
-        return new Participant("p-id", "did:web:participant", "participant display name");
+        return new Participant("p-id", "did:web:participant", "participant display name", List.of("att1", "att2"));
     }
 
 }

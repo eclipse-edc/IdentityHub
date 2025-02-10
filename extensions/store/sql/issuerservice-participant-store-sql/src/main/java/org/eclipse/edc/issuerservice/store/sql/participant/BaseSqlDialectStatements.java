@@ -30,6 +30,7 @@ public class BaseSqlDialectStatements implements ParticipantStoreStatements {
                 .column(getParticipantNameColumn())
                 .column(getCreateTimestampColumn())
                 .column(getLastModifiedTimestampColumn())
+                .jsonColumn(getAttestationsColumn())
                 .insertInto(getParticipantsTable());
     }
 
@@ -41,6 +42,7 @@ public class BaseSqlDialectStatements implements ParticipantStoreStatements {
                 .column(getParticipantNameColumn())
                 .column(getCreateTimestampColumn())
                 .column(getLastModifiedTimestampColumn())
+                .jsonColumn(getAttestationsColumn())
                 .update(getParticipantsTable(), getIdColumn());
     }
 

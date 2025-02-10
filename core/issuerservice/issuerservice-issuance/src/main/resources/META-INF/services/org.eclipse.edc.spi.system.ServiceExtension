@@ -11,5 +11,6 @@
 #       Cofinity-X - initial API and implementation
 #
 #
+org.eclipse.edc.issuerservice.issuance.IssuanceServicesExtension
 
 org.eclipse.edc.issuerservice.issuance.IssuanceCoreExtension

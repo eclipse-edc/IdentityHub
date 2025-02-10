@@ -14,11 +14,11 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.attestation;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationContext;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationDefinitionStore;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationSource;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationSourceFactory;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.AttestationDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationContext;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
+import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;

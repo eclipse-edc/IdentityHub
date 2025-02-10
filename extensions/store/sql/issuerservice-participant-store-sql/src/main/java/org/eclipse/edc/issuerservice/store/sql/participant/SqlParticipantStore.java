@@ -14,8 +14,9 @@
 
 package org.eclipse.edc.issuerservice.store.sql.participant;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
+import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -29,6 +30,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 import static java.util.Optional.ofNullable;
@@ -42,6 +44,8 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
 public class SqlParticipantStore extends AbstractSqlStore implements ParticipantStore {
 
 
+    private static final TypeReference<List<String>> LIST_REF = new TypeReference<>() {
+    };
     private final ParticipantStoreStatements statements;
 
     public SqlParticipantStore(DataSourceRegistry dataSourceRegistry,
@@ -82,7 +86,8 @@ public class SqlParticipantStore extends AbstractSqlStore implements Participant
                         participant.did(),
                         participant.participantName(),
                         0, //participant.createdAt(),
-                        0 //participant.lastModifiedAt());
+                        0, //participant.lastModifiedAt());
+                        toJson(participant.attestations())
                 );
                 return success();
 
@@ -120,6 +125,7 @@ public class SqlParticipantStore extends AbstractSqlStore implements Participant
                             participant.participantName(),
                             0, //participant.createdAt(),
                             0, //participant.lastModifiedAt());
+                            toJson(participant.attestations()),
                             participant.participantId()
                     );
                     return StoreResult.success();
@@ -162,7 +168,7 @@ public class SqlParticipantStore extends AbstractSqlStore implements Participant
         var name = resultSet.getString(statements.getParticipantNameColumn());
         var created = resultSet.getLong(statements.getCreateTimestampColumn());
         var lastmodified = resultSet.getLong(statements.getLastModifiedTimestampColumn());
-
-        return new Participant(id, did, name);
+        var attestations = fromJson(resultSet.getString(statements.getAttestationsColumn()), LIST_REF);
+        return new Participant(id, did, name, attestations);
     }
 }

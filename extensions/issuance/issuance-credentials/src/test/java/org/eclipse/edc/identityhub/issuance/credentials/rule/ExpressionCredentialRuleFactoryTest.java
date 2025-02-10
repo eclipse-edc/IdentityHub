@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.rule;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.CredentialRuleDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -16,7 +16,7 @@ package org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
+import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 
 public record ParticipantDto(@JsonProperty(value = "participantId", required = true) String id,
                              @JsonProperty(value = "did", required = true) String did,
