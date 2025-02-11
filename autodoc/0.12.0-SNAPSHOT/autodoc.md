@@ -52,6 +52,7 @@ _None_
 
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService` (required)
 
 Module `credential-definition-api`
 ----------------------------------
@@ -76,7 +77,7 @@ _None_
 
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
-- `org.eclipse.edc.issuerservice.spi.credentialdefinition.CredentialDefinitionService` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService` (required)
 
 Module `credential-watchdog`
 ----------------------------
@@ -612,7 +613,7 @@ _None_
 | `edc.sql.store.issuanceprocess.datasource` | `*`      | `string` | `default` |         |     |     | The datasource to be used |
 
 #### Provided services
-- `org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStore`
+- `org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore`
 
 #### Referenced (injected) services
 - `org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry` (required)
@@ -654,6 +655,40 @@ _None_
 - `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
 - `org.eclipse.edc.spi.system.apiversion.ApiVersionService` (required)
 
+Module `issuerservice-attestation-definition-store-sql`
+-------------------------------------------------------
+**Artifact:** org.eclipse.edc:issuerservice-attestation-definition-store-sql:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.issuerservice.store.sql.attestationdefinition.SqlAttestationDefinitionStoreExtension`
+**Name:** "IssuerService Attestation Definition SQL Store Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                               | Required | Type     | Default   | Pattern | Min | Max | Description               |
+| ------------------------------------------------- | -------- | -------- | --------- | ------- | --- | --- | ------------------------- |
+| `edc.sql.store.attestationdefinitions.datasource` | `*`      | `string` | `default` |         |     |     | The datasource to be used |
+
+#### Provided services
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry` (required)
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.spi.types.TypeManager` (required)
+- `org.eclipse.edc.sql.QueryExecutor` (required)
+- `org.eclipse.edc.issuerservice.store.sql.attestationdefinition.AttestationDefinitionStoreStatements` (optional)
+- `org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper` (required)
+- `java.time.Clock` (required)
+
 Module `issuerservice-core`
 ---------------------------
 **Artifact:** org.eclipse.edc:issuerservice-core:0.12.0-SNAPSHOT
@@ -674,9 +709,9 @@ _None_
 
 #### Provided services
 - `org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore`
-- `org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationDefinitionStore`
-- `org.eclipse.edc.issuerservice.spi.credentialdefinition.store.CredentialDefinitionStore`
-- `org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStore`
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore`
+- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore`
+- `org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore`
 
 #### Referenced (injected) services
 - `java.time.Clock` (required)
@@ -692,7 +727,7 @@ Module `issuerservice-credential-definition-store-sql`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.issuerservice.store.sql.credentialdefinition.SqlCredentialDefinitionStoreExtension`
+#### Class: `org.eclipse.edc.issuerservice.store.sql.attestationdefinition.SqlCredentialDefinitionStoreExtension`
 **Name:** "IssuerService Credential definition SQL Store Extension"
 
 **Overview:** No overview provided.
@@ -705,42 +740,16 @@ _None_
 | `edc.sql.store.credentialdefinitions.datasource` | `*`      | `string` | `default` |         |     |     | The datasource to be used |
 
 #### Provided services
-- `org.eclipse.edc.issuerservice.spi.credentialdefinition.store.CredentialDefinitionStore`
+- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore`
 
 #### Referenced (injected) services
 - `org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
 - `org.eclipse.edc.sql.QueryExecutor` (required)
-- `org.eclipse.edc.issuerservice.store.sql.credentialdefinition.CredentialDefinitionStoreStatements` (optional)
+- `org.eclipse.edc.issuerservice.store.sql.attestationdefinition.CredentialDefinitionStoreStatements` (optional)
 - `org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper` (required)
 - `java.time.Clock` (required)
-
-Module `issuerservice-credential-definitions`
----------------------------------------------
-**Artifact:** org.eclipse.edc:issuerservice-credential-definitions:0.12.0-SNAPSHOT
-
-**Categories:** _None_
-
-### Extension points
-_None_
-
-### Extensions
-#### Class: `org.eclipse.edc.issuerservice.credentialdefinition.CredentialDefinitionServiceExtension`
-**Name:** "IssuerService Credential Definition Service Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.issuerservice.spi.credentialdefinition.CredentialDefinitionService`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-- `org.eclipse.edc.issuerservice.spi.credentialdefinition.store.CredentialDefinitionStore` (required)
-- `org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationDefinitionStore` (required)
 
 Module `issuerservice-credentials`
 ----------------------------------
@@ -784,6 +793,24 @@ Module `issuerservice-issuance`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceServicesExtension`
+**Name:** "IssuerService Issuance Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService`
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore` (required)
+- `org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore` (required)
+
 #### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceCoreExtension`
 **Name:** "Issuance Core Extension"
 
@@ -800,15 +827,15 @@ _None_
 | `edc.issuer.issuance.send.retry.base-delay.ms`            | `*`      | `string` | `1000`  |         |     |     | The base delay for the issuance retry mechanism in millisecond                                    |
 
 #### Provided services
-- `org.eclipse.edc.identityhub.spi.issuance.credentials.process.IssuanceProcessManager`
-- `org.eclipse.edc.identityhub.spi.issuance.credentials.process.IssuanceProcessService`
+- `org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager`
+- `org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService`
 
 #### Referenced (injected) services
-- `org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStore` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore` (required)
 - `org.eclipse.edc.spi.monitor.Monitor` (required)
 - `org.eclipse.edc.spi.telemetry.Telemetry` (required)
 - `org.eclipse.edc.spi.system.ExecutorInstrumentation` (required)
-- `org.eclipse.edc.identityhub.spi.issuance.credentials.process.retry.IssuanceProcessRetryStrategy` (optional)
+- `org.eclipse.edc.issuerservice.spi.issuance.process.retry.IssuanceProcessRetryStrategy` (optional)
 - `java.time.Clock` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 
