@@ -17,13 +17,13 @@ plugins {
 }
 
 dependencies {
-    api(project(":spi:issuance-credentials-spi"))
+    api(project(":spi:issuerservice:issuerservice-issuance-spi"))
     implementation(libs.edc.lib.sql)
     implementation(libs.edc.sql.bootstrapper)
     implementation(libs.edc.sql.lease)
     implementation(libs.edc.spi.transaction.datasource)
 
-    testImplementation(testFixtures(project(":spi:issuance-credentials-spi")))
+    testImplementation(testFixtures(project(":spi:issuerservice:issuerservice-issuance-spi")))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
     testImplementation(libs.edc.junit)
 }

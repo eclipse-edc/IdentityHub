@@ -12,9 +12,9 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.issuance.credentials.process;
+package org.eclipse.edc.issuerservice.spi.issuance.process;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 
@@ -24,7 +24,7 @@ import java.util.List;
  * Service for managing {@link IssuanceProcess}.
  */
 public interface IssuanceProcessService {
-    
+
     /**
      * Find a {@link IssuanceProcess} by its ID.
      *

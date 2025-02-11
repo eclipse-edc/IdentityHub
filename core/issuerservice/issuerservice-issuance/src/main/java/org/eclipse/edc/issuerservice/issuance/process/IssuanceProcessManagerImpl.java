@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.issuerservice.issuance.process;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.IssuanceProcess;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.IssuanceProcessManager;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStore;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.statemachine.AbstractStateEntityManager;
 import org.eclipse.edc.statemachine.StateMachineManager;
 

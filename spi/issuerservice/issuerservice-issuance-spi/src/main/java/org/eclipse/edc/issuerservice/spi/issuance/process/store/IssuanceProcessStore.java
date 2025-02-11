@@ -12,9 +12,9 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.issuance.credentials.process.store;
+package org.eclipse.edc.issuerservice.spi.issuance.process.store;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.persistence.StateEntityStore;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  */
 @ExtensionPoint
 public interface IssuanceProcessStore extends StateEntityStore<IssuanceProcess> {
-    
+
     Stream<IssuanceProcess> query(QuerySpec querySpec);
 
 }

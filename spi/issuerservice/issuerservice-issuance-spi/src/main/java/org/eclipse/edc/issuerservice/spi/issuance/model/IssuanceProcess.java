@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
+
+
 /**
  * Tracks credential issuance.
  * <p>
@@ -51,7 +54,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
 
     @Override
     public String stateAsString() {
-        return IssuanceProcessStates.from(state).name();
+        return from(state).name();
     }
 
     public String getParticipantId() {

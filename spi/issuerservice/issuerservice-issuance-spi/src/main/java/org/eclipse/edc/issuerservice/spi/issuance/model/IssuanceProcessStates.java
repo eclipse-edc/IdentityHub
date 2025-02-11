@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.issuance.credentials.model;
+package org.eclipse.edc.issuerservice.spi.issuance.model;
 
 import java.util.Arrays;
 

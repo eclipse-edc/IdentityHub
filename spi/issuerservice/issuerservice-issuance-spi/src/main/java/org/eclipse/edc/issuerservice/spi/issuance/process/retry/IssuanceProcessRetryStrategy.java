@@ -12,9 +12,9 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.issuance.credentials.process.retry;
+package org.eclipse.edc.issuerservice.spi.issuance.process.retry;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.retry.WaitStrategy;
 

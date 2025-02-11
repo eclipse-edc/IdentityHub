@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.issuerservice.issuance;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.IssuanceProcessManager;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.IssuanceProcessService;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.retry.IssuanceProcessRetryStrategy;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessManagerImpl;
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessServiceImpl;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
+import org.eclipse.edc.issuerservice.spi.issuance.process.retry.IssuanceProcessRetryStrategy;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;

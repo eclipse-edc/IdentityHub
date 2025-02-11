@@ -12,11 +12,11 @@
  *
  */
 
-package org.eclipse.edc.identityhub.spi.issuance.credentials.process.store;
+package org.eclipse.edc.issuerservice.spi.issuance.process.store;
 
 import org.awaitility.Awaitility;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.IssuanceProcess;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.IssuanceProcessStates;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
@@ -34,8 +34,8 @@ import java.util.UUID;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.edc.identityhub.spi.issuance.credentials.model.IssuanceProcessStates.APPROVED;
-import static org.eclipse.edc.identityhub.spi.issuance.credentials.model.IssuanceProcessStates.DELIVERED;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.APPROVED;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERED;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 import static org.eclipse.edc.spi.query.Criterion.criterion;
 import static org.hamcrest.Matchers.hasSize;

@@ -14,14 +14,13 @@
 
 package org.eclipse.edc.issuerservice.defaults;
 
-import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationDefinitionStore;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.defaults.store.InMemoryAttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.defaults.store.InMemoryCredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.defaults.store.InMemoryIssuanceProcessStore;
 import org.eclipse.edc.issuerservice.defaults.store.InMemoryParticipantStore;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;

@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.store.sql.issuanceprocess;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStore;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.store.sql.issuanceprocess.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;

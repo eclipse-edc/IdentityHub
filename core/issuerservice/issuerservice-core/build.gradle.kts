@@ -5,7 +5,6 @@ plugins {
 dependencies {
     api(project(":spi:issuerservice:issuerservice-participant-spi"))
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))
-    api(project(":spi:issuerservice:issuerservice-credential-definition-spi"))
     api(project(":core:lib:common-lib"))
     api(project(":core:lib:common-lib"))
 
