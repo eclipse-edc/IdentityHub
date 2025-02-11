@@ -7,19 +7,71 @@ servers:
 - url: /
 paths:
   /v1alpha/attestations:
+    get:
+      tags:
+      - Issuer Service Attestation Admin API
+      description: Get all attestations for a given participant.
+      operationId: getAttestations
+      parameters:
+      - name: participantId
+        in: path
+        description: ID of the participant
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantId
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuerySpec"
+      responses:
+        "200":
+          description: A list of attestation metadata.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttestationDefinition"
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
     post:
       tags:
       - Issuer Service Attestation Admin API
-      description: Creates an attestation in the runtime.
+      description: Creates an attestation definition in the runtime.
       operationId: createAttestation
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AttestationRequest"
+              $ref: "#/components/schemas/AttestationDefinition"
       responses:
         "201":
-          description: The attestation was added successfully.
+          description: The attestation definition was added successfully.
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -58,7 +110,7 @@ paths:
     post:
       tags:
       - Issuer Service Attestation Admin API
-      description: "Query attestations, possibly across multiple participants."
+      description: Query attestation definitions
       operationId: queryAttestations
       requestBody:
         content:
@@ -71,7 +123,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AttestationResponse"
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttestationDefinition"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -83,6 +137,211 @@ paths:
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/attestations/{attestationDefinitionId}:
+    delete:
+      tags:
+      - Issuer Service Attestation Admin API
+      description: Deletes an attestation definition.
+      operationId: deleteAttestation
+      parameters:
+      - name: attestationDefinitionId
+        in: path
+        description: ID of the attestation to be removed
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: attestationDefinitionId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuerySpec"
+      responses:
+        "204":
+          description: The attestation was successfully deleted.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The attestation or the participant was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/attestations/{attestationDefinitionId}/link:
+    post:
+      tags:
+      - Issuer Service Attestation Admin API
+      description: Links an attestation definition to a participant. This enables
+        a certain attestation definition for a participant.
+      operationId: linkAttestation
+      parameters:
+      - name: participantId
+        in: path
+        description: ID of the participant
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: attestationId
+        in: path
+        description: ID of the attestation
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: attestationDefinitionId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantId
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: The attestation was linked successfully.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The participant was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "409":
+          description: "Can't add the participant, because a object with the same\
+            \ ID already exists"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/attestations/{attestationDefinitionId}/unlink:
+    post:
+      tags:
+      - Issuer Service Attestation Admin API
+      description: Un-Links an attestation definition to a participant. This disables
+        a certain attestation definition for a participant.
+      operationId: unlinkAttestation
+      parameters:
+      - name: participantId
+        in: path
+        description: ID of the participant
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: attestationId
+        in: path
+        description: ID of the attestation
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: attestationDefinitionId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantId
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: The attestation was unlinked successfully.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The participant was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "409":
+          description: "Can't add the participant, because a object with the same\
+            \ ID already exists"
           content:
             application/json:
               schema:
@@ -792,200 +1051,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantId}/attestations:
-    get:
-      tags:
-      - Issuer Service Attestation Admin API
-      description: Get all attestations for a given participant.
-      operationId: getAttestations
-      parameters:
-      - name: participantId
-        in: path
-        description: ID of the participant
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/QuerySpec"
-      responses:
-        "200":
-          description: A list of attestation metadata.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AttestationResponse"
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantId}/attestations/{attestationId}:
-    post:
-      tags:
-      - Issuer Service Attestation Admin API
-      description: Links an attestation to a participant.
-      operationId: linkAttestation
-      parameters:
-      - name: participantId
-        in: path
-        description: ID of the participant
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: attestationId
-        in: path
-        description: ID of the attestation
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: attestationId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "201":
-          description: The attestation was added successfully.
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "409":
-          description: "Can't add the participant, because a object with the same\
-            \ ID already exists"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-    delete:
-      tags:
-      - Issuer Service Attestation Admin API
-      description: Deletes a particular attestation for a given participant.
-      operationId: deleteAttestation
-      parameters:
-      - name: participantId
-        in: path
-        description: ID of the participant
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: attestationId
-        in: path
-        description: ID of the attestation to be removed
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: attestationId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/QuerySpec"
-      responses:
-        "204":
-          description: The attestation was successfully deleted.
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The attestation or the participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
 components:
   schemas:
     ApiErrorDetail:
@@ -999,21 +1064,16 @@ components:
           type: string
         type:
           type: string
-    AttestationRequest:
+    AttestationDefinition:
       type: object
       properties:
-        attestationId:
+        attestationType:
           type: string
-        properties:
+        configuration:
           type: object
           additionalProperties:
             type: object
-    AttestationResponse:
-      type: object
-      properties:
-        attestationId:
-          type: string
-        participantId:
+        id:
           type: string
     CredentialDefinition:
       type: object
@@ -1118,6 +1178,10 @@ components:
     Participant:
       type: object
       properties:
+        attestations:
+          type: array
+          items:
+            type: string
         did:
           type: string
         participantId:
