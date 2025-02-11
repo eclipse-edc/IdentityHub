@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.store.sql.attestationdefinition;
 
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.statement.SqlStatements;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
