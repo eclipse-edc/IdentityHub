@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.issuerservice.store.sql.issuanceprocess;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStore;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStoreTestBase;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStoreTestBase;
 import org.eclipse.edc.issuerservice.store.sql.issuanceprocess.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;

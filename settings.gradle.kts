@@ -28,12 +28,12 @@ include(":spi:participant-context-spi")
 include(":spi:verifiable-credential-spi")
 include(":spi:keypair-spi")
 include(":spi:did-spi")
-include(":spi:issuance-credentials-spi")
 
 // IssuerService SPI modules
 include(":spi:issuerservice:issuerservice-participant-spi")
 include(":spi:issuerservice:issuerservice-credential-spi")
-include(":spi:issuerservice:issuerservice-credential-definition-spi")
+include(":spi:issuerservice:credential-revocation-spi")
+include(":spi:issuerservice:issuerservice-issuance-spi")
 
 // IdentityHub core modules
 include(":core:identity-hub-core")
@@ -46,7 +46,6 @@ include(":core:issuerservice:issuerservice-core")
 include(":core:issuerservice:issuerservice-participants")
 include(":core:issuerservice:issuerservice-credentials")
 include(":core:issuerservice:issuerservice-credential-revocation")
-include(":core:issuerservice:issuerservice-credential-definitions")
 include(":core:issuerservice:issuerservice-issuance")
 
 // lib modules
@@ -61,6 +60,7 @@ include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:store:sql:identity-hub-keypair-store-sql")
 include(":extensions:store:sql:issuerservice-participant-store-sql")
 include(":extensions:store:sql:issuerservice-credential-definition-store-sql")
+include(":extensions:store:sql:issuerservice-attestation-definition-store-sql")
 include(":extensions:store:sql:issuance-process-store-sql")
 include(":extensions:did:local-did-publisher")
 include(":extensions:common:credential-watchdog")

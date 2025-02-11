@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.attestation.presentation;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationContext;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationSource;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationContext;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
 import org.eclipse.edc.spi.result.Result;
 
 import java.util.Map;

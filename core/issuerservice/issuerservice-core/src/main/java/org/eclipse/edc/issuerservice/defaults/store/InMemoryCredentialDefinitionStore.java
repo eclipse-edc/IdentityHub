@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.issuerservice.defaults.store;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.CredentialDefinition;
 import org.eclipse.edc.identityhub.store.InMemoryEntityStore;
-import org.eclipse.edc.issuerservice.spi.credentialdefinition.store.CredentialDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.spi.query.QueryResolver;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.store.ReflectionBasedQueryResolver;

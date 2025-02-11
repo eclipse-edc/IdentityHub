@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.store.sql.participant;
 
-import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
+import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.statement.SqlStatements;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
@@ -45,6 +45,10 @@ public interface ParticipantStoreStatements extends SqlStatements {
 
     default String getDidColumn() {
         return "did";
+    }
+
+    default String getAttestationsColumn() {
+        return "attestations";
     }
 
 

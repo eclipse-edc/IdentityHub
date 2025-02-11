@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.issuerservice.defaults.store;
 
-import org.eclipse.edc.issuerservice.spi.credentialdefinition.store.CredentialDefinitionStore;
-import org.eclipse.edc.issuerservice.spi.credentialdefinition.store.CredentialDefinitionStoreTestBase;
+import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStoreTestBase;
 
 public class InMemoryCredentialDefinitionStoreTest extends CredentialDefinitionStoreTestBase {
 

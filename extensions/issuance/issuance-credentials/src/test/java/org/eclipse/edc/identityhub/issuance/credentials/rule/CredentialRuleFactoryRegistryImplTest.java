@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.rule;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.rule.CredentialRuleFactory;
+import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

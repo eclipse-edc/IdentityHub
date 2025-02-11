@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.issuerservice.defaults.store;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStore;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.process.store.IssuanceProcessStoreTestBase;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStoreTestBase;
 import org.eclipse.edc.query.CriterionOperatorRegistryImpl;
 
 import java.time.Duration;

@@ -14,9 +14,10 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.attestation.presentation;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationSource;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.attestation.AttestationSourceFactory;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.AttestationDefinition;
+
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
+import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 
 /**
  * Creates an attestation source that requires a verifiable credential.

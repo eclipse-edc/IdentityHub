@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.rule;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.IssuanceContext;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.rule.CredentialRule;
+import org.eclipse.edc.issuerservice.spi.issuance.IssuanceContext;
+import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRule;
 import org.eclipse.edc.spi.result.Result;
 
 import static org.eclipse.edc.identityhub.issuance.credentials.json.JsonNavigator.navigateProperty;
@@ -26,12 +26,8 @@ import static org.eclipse.edc.spi.result.Result.success;
  * the comparison. Other comparison operators are supported only for int and long types.
  */
 public class ExpressionCredentialRule implements CredentialRule {
-    public enum Operator {
-        EQ, NEQ, GT, GEQ, LT, LEQ
-    }
-
-    private String[] path;
-    private Operator operator;
+    private final String[] path;
+    private final Operator operator;
     private Object value;
 
     public ExpressionCredentialRule(String path, Operator operator, Object value) {
@@ -102,6 +98,10 @@ public class ExpressionCredentialRule implements CredentialRule {
 
     private boolean comparableInt(Result<Object> result) {
         return result.getContent() instanceof Integer;
+    }
+
+    public enum Operator {
+        EQ, NEQ, GT, GEQ, LT, LEQ
     }
 
 }

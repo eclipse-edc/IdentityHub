@@ -27,7 +27,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.ParticipantDto;
-import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
+import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 

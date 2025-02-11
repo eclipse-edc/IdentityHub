@@ -18,7 +18,7 @@ import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.ParticipantDto;
 import org.eclipse.edc.issuerservice.spi.participant.ParticipantService;
-import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
+import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;

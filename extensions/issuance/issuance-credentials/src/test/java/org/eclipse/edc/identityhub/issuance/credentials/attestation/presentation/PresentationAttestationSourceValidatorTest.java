@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.attestation.presentation;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.AttestationDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

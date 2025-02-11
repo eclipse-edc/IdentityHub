@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.issuance.credentials.rule;
 
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.CredentialRuleDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
 

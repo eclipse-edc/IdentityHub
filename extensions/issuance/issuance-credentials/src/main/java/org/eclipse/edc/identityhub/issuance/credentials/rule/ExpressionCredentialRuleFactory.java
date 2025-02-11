@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.issuance.credentials.rule;
 
 import org.eclipse.edc.identityhub.issuance.credentials.rule.ExpressionCredentialRule.Operator;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.model.CredentialRuleDefinition;
-import org.eclipse.edc.identityhub.spi.issuance.credentials.rule.CredentialRuleFactory;
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactory;
 
 /**
  * Creates {@link ExpressionCredentialRule}s.

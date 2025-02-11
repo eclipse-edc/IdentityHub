@@ -14,14 +14,14 @@
 
 package org.eclipse.edc.issuerservice.spi.participant;
 
-import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
+import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.Collection;
 
 public interface ParticipantService {
-    
+
     ServiceResult<Void> createParticipant(Participant participant);
 
     ServiceResult<Void> deleteParticipant(String participantId);

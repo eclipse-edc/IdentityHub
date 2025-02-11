@@ -21,59 +21,103 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.AttestationRequest;
-import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.AttestationResponse;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
+import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.net.URI;
-import java.util.UUID;
+import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE)
+@Path(Versions.UNSTABLE + "/attestations")
 public class IssuerAttestationAdminApiController implements IssuerAttestationAdminApi {
 
+    private final AttestationDefinitionService attestationDefinitionService;
 
-    @POST
-    @Path("/participants/{participantId}/attestations/{attestationId}")
-    @Override
-    public Response linkAttestation(@PathParam("participantId") String participantId,
-                                    @PathParam("attestationId") String attestationId) {
-        var id = UUID.randomUUID().toString();
-        return Response.created(URI.create("/participants/" + participantId + "/attestations/" + id)).build();
+    public IssuerAttestationAdminApiController(AttestationDefinitionService attestationDefinitionService) {
+        this.attestationDefinitionService = attestationDefinitionService;
     }
 
     @POST
-    @Path("/attestations")
+    @Path("/{attestationDefinitionId}/link")
     @Override
-    public Response createAttestation(AttestationRequest attestationRequest) {
-        return null;
+    public Response linkAttestation(@PathParam("attestationDefinitionId") String attestationDefinitionId,
+                                    @QueryParam("participantId") String participantId) {
+
+        if (participantId == null) {
+            throw new InvalidRequestException("participantId is null");
+        }
+
+        var wasCreated = attestationDefinitionService.linkAttestation(attestationDefinitionId, participantId)
+                .orElseThrow(InvalidRequestException::new);
+
+        return wasCreated
+                ? Response.created(URI.create("/attestations/" + attestationDefinitionId)).build()
+                : Response.noContent().build();
+
+
+    }
+
+    @POST
+    @Path("/{attestationDefinitionId}/unlink")
+    @Override
+    public Response unlinkAttestation(@PathParam("attestationDefinitionId") String attestationDefinitionId,
+                                      @QueryParam("participantId") String participantId) {
+
+        if (participantId == null) {
+            throw new InvalidRequestException("participantId is null");
+        }
+
+
+        var wasCreated = attestationDefinitionService.unlinkAttestation(participantId, attestationDefinitionId)
+                .orElseThrow(InvalidRequestException::new);
+
+        return wasCreated
+                ? Response.ok().build()
+                : Response.noContent().build();
+    }
+
+    @POST
+    @Override
+    public Response createAttestationDefinition(AttestationDefinition attestationDefinition) {
+        attestationDefinitionService.createAttestation(attestationDefinition)
+                .orElseThrow(exceptionMapper(AttestationDefinition.class, null));
+        return Response.created(URI.create("/attestations/" + attestationDefinition.id())).build();
     }
 
 
     @DELETE
-    @Path("/participants/{participantId}/attestations/{attestationId}")
+    @Path("/{attestationDefinitionId}")
     @Override
-    public Response deleteAttestation(@PathParam("participantId") String participantId,
-                                      @PathParam("attestationId") String attestationId) {
+    public Response deleteAttestationDefinition(@PathParam("attestationDefinitionId") String attestationDefinitionId) {
+        attestationDefinitionService.deleteAttestation(attestationDefinitionId)
+                .orElseThrow(InvalidRequestException::new);
         return Response.noContent().build();
     }
 
     @GET
-    @Path("/participants/{participantId}/attestations")
     @Override
-    public AttestationResponse getAttestations(@PathParam("participantId") String participantId) {
-        return new AttestationResponse("dummy-attestation-id", "dummy-participant-id");
+    public Collection<AttestationDefinition> getAttestationDefinitionsForParticipant(@QueryParam("participantId") String participantId) {
+        if (participantId == null) {
+            throw new InvalidRequestException("participantId is null");
+        }
+        return attestationDefinitionService.getAttestationsForParticipant(participantId)
+                .orElseThrow(InvalidRequestException::new);
     }
 
     @POST
-    @Path("/attestations/query")
+    @Path("/query")
     @Override
-    public AttestationResponse queryAttestations(QuerySpec query) {
-        return new AttestationResponse("dummy-attestation-id", "dummy-participant-id");
+    public Collection<AttestationDefinition> queryAttestationDefinitions(QuerySpec query) {
+        var result = attestationDefinitionService.queryAttestations(query);
+        return result.orElseThrow(exceptionMapper(AttestationDefinition.class, null));
     }
 }

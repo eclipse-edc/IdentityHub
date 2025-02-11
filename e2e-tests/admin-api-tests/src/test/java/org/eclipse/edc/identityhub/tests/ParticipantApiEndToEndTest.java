@@ -19,18 +19,23 @@ import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndExtension
 import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.ParticipantDto;
 import org.eclipse.edc.issuerservice.spi.participant.ParticipantService;
-import org.eclipse.edc.issuerservice.spi.participant.models.Participant;
+import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.query.SortOrder;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 public class ParticipantApiEndToEndTest {
     abstract static class Tests {
@@ -126,6 +131,28 @@ public class ParticipantApiEndToEndTest {
             assertThat(res).isEmpty();
         }
 
+        @Test
+        void queryParticipant_byAttestationId(IssuerServiceEndToEndTestContext context, ParticipantService service) {
+            service.createParticipant(new Participant("test-participant-id1", "did:web:barbaz", "barbaz", List.of("att1", "att2")));
+            service.createParticipant(new Participant("test-participant-id2", "did:web:quizzquazz", "quizzquazz", List.of("att2", "att3")));
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("attestations", "contains", "att2"))
+                    .sortField("participantId")
+                    .sortOrder(SortOrder.ASC)
+                    .build();
+
+            context.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .body(query)
+                    .post("/v1alpha/participants/query")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("size()", is(2))
+                    .body("[0].participantId", equalTo("test-participant-id1"))
+                    .body("[1].participantId", equalTo("test-participant-id2"));
+        }
 
         @Test
         void getById(IssuerServiceEndToEndTestContext context, ParticipantService service) {

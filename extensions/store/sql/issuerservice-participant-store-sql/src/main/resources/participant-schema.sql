@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS participants
     did                VARCHAR            NOT NULL, -- the DID with which this participant is identified
     participant_name   VARCHAR,                      -- the display name of the participant
     created_date       BIGINT              NOT NULL, -- POSIX timestamp of the creation of the PC
-    last_modified_date BIGINT                        -- POSIX timestamp of the last modified date
+    last_modified_date BIGINT,                        -- POSIX timestamp of the last modified date
+    attestations       JSON       DEFAULT '[]'       -- enabled attestations for this participant
 );
 CREATE UNIQUE INDEX IF NOT EXISTS participants_participant_id_uindex ON participants USING btree (participant_id);
 
