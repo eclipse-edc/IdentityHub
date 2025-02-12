@@ -14,18 +14,29 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store;
 
-import org.assertj.core.api.Assertions;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
 import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public abstract class CredentialDefinitionStoreTestBase {
+
+    protected static CredentialDefinition.@NotNull Builder createCredentialDefinitionBuilder(String id, String type) {
+        return CredentialDefinition.Builder.newInstance()
+                .id(id)
+                .credentialType(type)
+                .jsonSchemaUrl("http://example.com/schema");
+    }
 
     @Test
     void create() {
@@ -34,7 +45,7 @@ public abstract class CredentialDefinitionStoreTestBase {
         assertThat(result).isSucceeded();
         var query = getStore().query(QuerySpec.max());
         assertThat(query).isSucceeded();
-        Assertions.assertThat(query.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(credentialDefinition);
+        assertThat(query.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(credentialDefinition);
     }
 
     @Test
@@ -58,69 +69,6 @@ public abstract class CredentialDefinitionStoreTestBase {
         var result2 = getStore().create(newCredentialDefinition);
 
         assertThat(result2).isFailed().detail().contains("already exists");
-    }
-
-    @Test
-    void query_byId() {
-        range(0, 5)
-                .mapToObj(i -> createCredentialDefinition("id" + i, "Membership" + i))
-                .forEach(getStore()::create);
-
-        var q = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("credentialType", "=", "Membership4"))
-                .build();
-
-        assertThat(getStore().query(q)).isSucceeded()
-                .satisfies(str -> Assertions.assertThat(str).hasSize(1));
-    }
-
-
-    @Test
-    void query_noQuerySpec() {
-        var resources = range(0, 5)
-                .mapToObj(i -> createCredentialDefinition("id" + i, "Membership" + i))
-                .toList();
-
-        resources.forEach(getStore()::create);
-
-        var res = getStore().query(QuerySpec.none());
-        assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent())
-                .usingRecursiveFieldByFieldElementComparator()
-                .containsExactlyInAnyOrder(resources.toArray(new CredentialDefinition[0]));
-    }
-
-    @Test
-    void query_whenNotFound() {
-        var resources = range(0, 5)
-                .mapToObj(i -> createCredentialDefinition("id" + i, "Membership" + i))
-                .toList();
-
-        resources.forEach(getStore()::create);
-
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("credentialType", "=", "Membership99"))
-                .build();
-        var res = getStore().query(query);
-        assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent()).isEmpty();
-    }
-
-    @Test
-    void query_byInvalidField_shouldReturnEmptyList() {
-        var resources = range(0, 5)
-                .mapToObj(i -> createCredentialDefinition("id" + i, "Membership" + i))
-                .toList();
-
-
-        resources.forEach(getStore()::create);
-
-        var query = QuerySpec.Builder.newInstance()
-                .filter(new Criterion("invalidField", "=", "test-value"))
-                .build();
-        var res = getStore().query(query);
-        assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent()).isNotNull().isEmpty();
     }
 
     @Test
@@ -191,10 +139,127 @@ public abstract class CredentialDefinitionStoreTestBase {
     }
 
     private CredentialDefinition createCredentialDefinition(String id, String type) {
-        return CredentialDefinition.Builder.newInstance().id(id).jsonSchema("")
-                .credentialType(type)
-                .jsonSchemaUrl("http://example.com/schema")
+        return createCredentialDefinitionBuilder(id, type)
                 .build();
+    }
+
+    @Nested
+    class Query {
+        @Test
+        void byId() {
+            range(0, 5)
+                    .mapToObj(i -> createCredentialDefinition("id" + i, "Membership" + i))
+                    .forEach(getStore()::create);
+
+            var q = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("credentialType", "=", "Membership4"))
+                    .build();
+
+            assertThat(getStore().query(q)).isSucceeded()
+                    .satisfies(str -> assertThat(str).hasSize(1));
+        }
+
+
+        @Test
+        void noQuerySpec() {
+            var resources = range(0, 5)
+                    .mapToObj(i -> createCredentialDefinition("id" + i, "Membership" + i))
+                    .toList();
+
+            resources.forEach(getStore()::create);
+
+            var res = getStore().query(QuerySpec.none());
+            assertThat(res).isSucceeded();
+            assertThat(res.getContent())
+                    .usingRecursiveFieldByFieldElementComparator()
+                    .containsExactlyInAnyOrder(resources.toArray(new CredentialDefinition[0]));
+        }
+
+        @Test
+        void whenNotFound() {
+            var resources = range(0, 5)
+                    .mapToObj(i -> createCredentialDefinition("id" + i, "Membership" + i))
+                    .toList();
+
+            resources.forEach(getStore()::create);
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("credentialType", "=", "Membership99"))
+                    .build();
+            var res = getStore().query(query);
+            assertThat(res).isSucceeded();
+            assertThat(res.getContent()).isEmpty();
+        }
+
+        @Test
+        void byInvalidField_shouldReturnEmptyList() {
+            var resources = range(0, 5)
+                    .mapToObj(i -> createCredentialDefinition("id" + i, "Membership" + i))
+                    .toList();
+
+
+            resources.forEach(getStore()::create);
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("invalidField", "=", "test-value"))
+                    .build();
+            var res = getStore().query(query);
+            assertThat(res).isSucceeded();
+            assertThat(res.getContent()).isNotNull().isEmpty();
+        }
+
+        @Test
+        void byAttestation() {
+            var def1 = createCredentialDefinitionBuilder("id1", "Membership")
+                    .attestations(Set.of("att1", "att2"))
+                    .build();
+            var def2 = createCredentialDefinitionBuilder("id2", "Iso9001Cert")
+                    .attestations(Set.of("att2", "att3"))
+                    .build();
+
+            var r = getStore().create(def1).compose(v -> getStore().create(def2));
+            assertThat(r).isSucceeded();
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("attestations", "contains", "att2"))
+                    .build();
+
+            var result = getStore().query(query);
+            assertThat(result).isSucceeded();
+
+            assertThat(result.getContent())
+                    .hasSize(2)
+                    .usingRecursiveFieldByFieldElementComparator()
+                    .containsExactlyInAnyOrder(def1, def2);
+        }
+
+
+        @Test
+        void byMappings() {
+            var def1 = createCredentialDefinitionBuilder("id1", "Membership")
+                    .mapping(new MappingDefinition("test-input", "test-output", true))
+                    .attestations(Set.of("att1", "att2"))
+                    .build();
+            var def2 = createCredentialDefinitionBuilder("id2", "Iso9001Cert")
+                    .mapping(new MappingDefinition("test-input", "another-test-output", true))
+                    .attestations(Set.of("att2", "att3"))
+                    .build();
+
+            var r = getStore().create(def1).compose(v -> getStore().create(def2));
+            assertThat(r).isSucceeded();
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("mappings.input", "=", "test-input"))
+                    .build();
+
+            var result = getStore().query(query);
+            assertThat(result).isSucceeded();
+
+            assertThat(result.getContent())
+                    .hasSize(2)
+                    .usingRecursiveFieldByFieldElementComparator()
+                    .containsExactlyInAnyOrder(def1, def2);
+        }
     }
 
 }

@@ -165,8 +165,11 @@ public class CredentialDefinition {
                 definition.id = UUID.randomUUID().toString();
             }
             requireNonNull(definition.credentialType, "credentialType");
-            requireNonNull(definition.jsonSchema, "jsonSchema");
-            requireNonNull(definition.jsonSchemaUrl, "jsonSchemaUrl");
+
+            if (definition.jsonSchema == null && definition.jsonSchemaUrl == null) {
+                throw new IllegalStateException("Either jsonSchema or jsonSchemaUrl must be non-null");
+            }
+
             return definition;
         }
 
