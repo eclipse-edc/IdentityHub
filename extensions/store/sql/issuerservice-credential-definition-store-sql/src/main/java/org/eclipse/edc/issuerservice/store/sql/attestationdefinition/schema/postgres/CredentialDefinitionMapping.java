@@ -15,7 +15,12 @@
 package org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres;
 
 import org.eclipse.edc.issuerservice.store.sql.attestationdefinition.CredentialDefinitionStoreStatements;
+import org.eclipse.edc.sql.translation.JsonArrayTranslator;
+import org.eclipse.edc.sql.translation.JsonFieldTranslator;
 import org.eclipse.edc.sql.translation.TranslationMapping;
+
+import static org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres.PostgresDialectStatements.MAPPING_ALIAS;
+import static org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres.PostgresDialectStatements.RULES_ALIAS;
 
 
 /**
@@ -27,6 +32,13 @@ public class CredentialDefinitionMapping extends TranslationMapping {
     public static final String FIELD_CREDENTIAL_TYPE = "credentialType";
     public static final String FIELD_CREATE_TIMESTAMP = "createdAt";
     public static final String FIELD_LASTMODIFIED_TIMESTAMP = "lastModified";
+    public static final String FIELD_JSON_SCHEMA = "jsonSchema";
+    public static final String FIELD_JSON_SCHEMA_URL = "jsonSchemaUrl";
+    public static final String FIELD_VALIDITY = "validity";
+    public static final String FIELD_DATAMODEL = "dataModel";
+    public static final String FIELD_ATTESTATIONS = "attestations";
+    public static final String FIELD_RULES = "rules";
+    public static final String FIELD_MAPPINGS = "mappings";
 
 
     public CredentialDefinitionMapping(CredentialDefinitionStoreStatements statements) {
@@ -34,5 +46,12 @@ public class CredentialDefinitionMapping extends TranslationMapping {
         add(FIELD_CREDENTIAL_TYPE, statements.getCredentialTypeColumn());
         add(FIELD_CREATE_TIMESTAMP, statements.getCreateTimestampColumn());
         add(FIELD_LASTMODIFIED_TIMESTAMP, statements.getLastModifiedTimestampColumn());
+        add(FIELD_JSON_SCHEMA, new JsonFieldTranslator(statements.getJsonSchemaColumn()));
+        add(FIELD_JSON_SCHEMA_URL, statements.getJsonSchemaUrlColumn());
+        add(FIELD_VALIDITY, statements.getValidityColumn());
+        add(FIELD_DATAMODEL, statements.getDataModelColumn());
+        add(FIELD_ATTESTATIONS, new JsonArrayTranslator());
+        add(FIELD_RULES, new JsonFieldTranslator(RULES_ALIAS));
+        add(FIELD_MAPPINGS, new JsonFieldTranslator(MAPPING_ALIAS));
     }
 }

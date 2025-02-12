@@ -22,6 +22,13 @@ import org.eclipse.edc.sql.translation.SqlQueryStatement;
 import static java.lang.String.format;
 
 public class BaseSqlDialectStatements implements CredentialDefinitionStoreStatements {
+
+    protected final PostgresqlOperatorTranslator operatorTranslator;
+
+    public BaseSqlDialectStatements(PostgresqlOperatorTranslator operatorTranslator) {
+        this.operatorTranslator = operatorTranslator;
+    }
+
     @Override
     public String getInsertTemplate() {
         return executeStatement()
@@ -30,7 +37,7 @@ public class BaseSqlDialectStatements implements CredentialDefinitionStoreStatem
                 .jsonColumn(getAttestationsColumn())
                 .jsonColumn(getRulesColumn())
                 .jsonColumn(getMappingsColumn())
-                .column(getJsonSchemaColumn())
+                .jsonColumn(getJsonSchemaColumn())
                 .column(getJsonSchemaUrlColumn())
                 .column(getValidityColumn())
                 .column(getDataModelColumn())
@@ -46,7 +53,7 @@ public class BaseSqlDialectStatements implements CredentialDefinitionStoreStatem
                 .jsonColumn(getAttestationsColumn())
                 .jsonColumn(getRulesColumn())
                 .jsonColumn(getMappingsColumn())
-                .column(getJsonSchemaColumn())
+                .jsonColumn(getJsonSchemaColumn())
                 .column(getJsonSchemaUrlColumn())
                 .column(getValidityColumn())
                 .column(getDataModelColumn())
@@ -74,7 +81,7 @@ public class BaseSqlDialectStatements implements CredentialDefinitionStoreStatem
     @Override
     public SqlQueryStatement createQuery(QuerySpec querySpec) {
         var select = getSelectStatement();
-        return new SqlQueryStatement(select, querySpec, new CredentialDefinitionMapping(this), new PostgresqlOperatorTranslator());
+        return new SqlQueryStatement(select, querySpec, new CredentialDefinitionMapping(this), operatorTranslator);
     }
 
     @Override
