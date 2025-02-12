@@ -68,7 +68,7 @@ public class SqlIssuanceProcessStoreExtension implements ServiceExtension {
     }
 
     private IssuanceProcessStoreStatements getStatementImpl() {
-        return statements != null ? statements : new PostgresDialectStatements(typemanager.getMapper());
+        return statements != null ? statements : new PostgresDialectStatements();
     }
 
 }

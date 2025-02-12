@@ -50,7 +50,7 @@ public class CredentialDefinitionMapping extends TranslationMapping {
         add(FIELD_JSON_SCHEMA_URL, statements.getJsonSchemaUrlColumn());
         add(FIELD_VALIDITY, statements.getValidityColumn());
         add(FIELD_DATAMODEL, statements.getDataModelColumn());
-        add(FIELD_ATTESTATIONS, new JsonArrayTranslator());
+        add(FIELD_ATTESTATIONS, new JsonArrayTranslator(statements.getAttestationsColumn()));
         add(FIELD_RULES, new JsonFieldTranslator(RULES_ALIAS));
         add(FIELD_MAPPINGS, new JsonFieldTranslator(MAPPING_ALIAS));
     }
