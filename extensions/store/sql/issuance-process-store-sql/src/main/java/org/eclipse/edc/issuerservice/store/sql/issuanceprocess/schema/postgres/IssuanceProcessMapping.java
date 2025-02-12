@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.store.sql.issuanceprocess.schema.postgres;
 
 import org.eclipse.edc.issuerservice.store.sql.issuanceprocess.IssuanceProcessStoreStatements;
 import org.eclipse.edc.sql.lease.StatefulEntityMapping;
+import org.eclipse.edc.sql.translation.JsonArrayTranslator;
 import org.eclipse.edc.sql.translation.JsonFieldTranslator;
 
 
@@ -34,6 +35,6 @@ public class IssuanceProcessMapping extends StatefulEntityMapping {
         add(FIELD_ID, statements.getIdColumn());
         add(FIELD_PARTICIPANT_ID, statements.getParticipantIdColumn());
         add(FIELD_CLAIMS, new JsonFieldTranslator(FIELD_CLAIMS));
-        add(FIELD_CREDENTIAL_DEFINITIONS, statements.getCredentialDefinitionsColumn());
+        add(FIELD_CREDENTIAL_DEFINITIONS, new JsonArrayTranslator(statements.getCredentialDefinitionsColumn()));
     }
 }

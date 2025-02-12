@@ -42,7 +42,7 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
         var typeManager = new JacksonTypeManager();
 
-        statements = new PostgresDialectStatements(typeManager.getMapper());
+        statements = new PostgresDialectStatements();
         store = new SqlIssuanceProcessStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
                 extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements, RUNTIME_ID, Clock.systemUTC());
 
