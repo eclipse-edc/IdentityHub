@@ -204,9 +204,9 @@ Module `did-spi`
 **Categories:** _None_
 
 ### Extension points
-  - `org.eclipse.edc.identityhub.spi.did.DidWebParser`
   - `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
   - `org.eclipse.edc.identityhub.spi.did.DidDocumentPublisher`
+  - `org.eclipse.edc.identityhub.spi.did.DidWebParser`
 
 ### Extensions
 Module `identity-hub-core`
@@ -219,35 +219,6 @@ Module `identity-hub-core`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.DefaultServicesExtension`
-**Name:** "IdentityHub Default Services Extension"
-
-**Overview:**  This extension provides core services for the IdentityHub that are not intended to be user-replaceable.
-
-
-
-### Configuration
-
-| Key                                            | Required | Type     | Default  | Pattern | Min | Max | Description                                                                                  |
-| ---------------------------------------------- | -------- | -------- | -------- | ------- | --- | --- | -------------------------------------------------------------------------------------------- |
-| `edc.iam.accesstoken.jti.validation`           | `*`      | `string` | `false`  |         |     |     | Activates the JTI check: access tokens can only be used once to guard against replay attacks |
-| `edc.iam.credential.revocation.cache.validity` | `*`      | `string` | `900000` |         |     |     | Validity period of cached StatusList2021 credential entries in milliseconds.                 |
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore`
-- `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore`
-- `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore`
-- `org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer`
-- `org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry`
-- `org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry`
-- `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.token.spi.TokenValidationRulesRegistry` (required)
-- `org.eclipse.edc.spi.types.TypeManager` (required)
-- `org.eclipse.edc.keys.spi.PrivateKeyResolver` (required)
-- `org.eclipse.edc.jwt.validation.jti.JtiValidationStore` (required)
-
 #### Class: `org.eclipse.edc.identityhub.core.CoreServicesExtension`
 **Name:** "IdentityHub Core Services Extension"
 
@@ -285,6 +256,35 @@ _None_
 - `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 - `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+
+#### Class: `org.eclipse.edc.identityhub.DefaultServicesExtension`
+**Name:** "IdentityHub Default Services Extension"
+
+**Overview:**  This extension provides core services for the IdentityHub that are not intended to be user-replaceable.
+
+
+
+### Configuration
+
+| Key                                            | Required | Type     | Default  | Pattern | Min | Max | Description                                                                                  |
+| ---------------------------------------------- | -------- | -------- | -------- | ------- | --- | --- | -------------------------------------------------------------------------------------------- |
+| `edc.iam.accesstoken.jti.validation`           | `*`      | `string` | `false`  |         |     |     | Activates the JTI check: access tokens can only be used once to guard against replay attacks |
+| `edc.iam.credential.revocation.cache.validity` | `*`      | `string` | `900000` |         |     |     | Validity period of cached StatusList2021 credential entries in milliseconds.                 |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore`
+- `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore`
+- `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore`
+- `org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer`
+- `org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry`
+- `org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry`
+- `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.token.spi.TokenValidationRulesRegistry` (required)
+- `org.eclipse.edc.spi.types.TypeManager` (required)
+- `org.eclipse.edc.keys.spi.PrivateKeyResolver` (required)
+- `org.eclipse.edc.jwt.validation.jti.JtiValidationStore` (required)
 
 Module `identity-hub-credentials-store-sql`
 -------------------------------------------
@@ -329,20 +329,6 @@ Module `identity-hub-did`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
-**Name:** "DID Default Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
-
 #### Class: `org.eclipse.edc.identityhub.did.DidServicesExtension`
 **Name:** "DID Service Extension"
 
@@ -361,6 +347,20 @@ _None_
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.keys.spi.KeyParserRegistry` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore` (required)
+
+#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
+**Name:** "DID Default Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `identity-hub-did-store-sql`
 -----------------------------------
@@ -501,24 +501,6 @@ Module `identity-hub-participants`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension`
-**Name:** "ParticipantContext Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-_None_
-
-#### Referenced (injected) services
-- `org.eclipse.edc.identityhub.spi.did.DidDocumentService` (required)
-- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
-- `java.time.Clock` (required)
-- `org.eclipse.edc.spi.event.EventRouter` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
-
 #### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextExtension`
 **Name:** "ParticipantContext Extension"
 
@@ -539,6 +521,24 @@ _None_
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner` (required)
+
+#### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension`
+**Name:** "ParticipantContext Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.identityhub.spi.did.DidDocumentService` (required)
+- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
+- `java.time.Clock` (required)
+- `org.eclipse.edc.spi.event.EventRouter` (required)
+- `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 
 Module `identityhub-api-authentication`
 ---------------------------------------
