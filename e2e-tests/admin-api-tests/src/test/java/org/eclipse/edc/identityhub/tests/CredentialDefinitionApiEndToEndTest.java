@@ -57,6 +57,11 @@ public class CredentialDefinitionApiEndToEndTest {
 
             store.create(new AttestationDefinition("test-attestation", "type", Map.of()));
 
+            Map<String, Object> credentialRuleConfiguration = Map.of(
+                    "claim", "onboarding.signedDocuments",
+                    "operator", "eq",
+                    "value", true);
+
             var definition = CredentialDefinition.Builder.newInstance()
                     .id("test-definition-id")
                     .jsonSchema("{}")
@@ -64,7 +69,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .credentialType("MembershipCredential")
                     .mapping(new MappingDefinition("input", "output", true))
                     .validity(1000)
-                    .rule(new CredentialRuleDefinition("rule", Map.of("key", "value")))
+                    .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
                     .attestation("test-attestation")
                     .build();
 
@@ -79,6 +84,32 @@ public class CredentialDefinitionApiEndToEndTest {
             assertThat(service.findCredentialDefinitionById(definition.getId())).isSucceeded()
                     .usingRecursiveComparison()
                     .isEqualTo(definition);
+        }
+
+        @Test
+        void createCredentialDefinition_whenRuleValidationFails(IssuerServiceEndToEndTestContext context, CredentialDefinitionService service, AttestationDefinitionStore store) {
+
+
+            store.create(new AttestationDefinition("test-attestation", "type", Map.of()));
+
+            var definition = CredentialDefinition.Builder.newInstance()
+                    .id("test-definition-id")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("https://example.org/membership-credential-schema.json")
+                    .credentialType("MembershipCredential")
+                    .mapping(new MappingDefinition("input", "output", true))
+                    .validity(1000)
+                    .rule(new CredentialRuleDefinition("notFound", Map.of()))
+                    .attestation("test-attestation")
+                    .build();
+
+            context.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .body(definition)
+                    .post("/v1alpha/credentialdefinitions")
+                    .then()
+                    .statusCode(400);
+            
         }
 
         @Test
