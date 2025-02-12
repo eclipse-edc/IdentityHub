@@ -66,6 +66,8 @@ public class BomSmokeTests {
                                 put("edc.ih.iam.publickey.path", "/some/path/to/key.pem");
                                 put("web.http.presentation.port", valueOf(getFreePort()));
                                 put("web.http.presentation.path", "/api/resolution");
+                                put("web.http.storage.port", valueOf(getFreePort()));
+                                put("web.http.storage.path", "/api/storage");
                                 put("web.http.identity.port", valueOf(getFreePort()));
                                 put("web.http.identity.path", "/api/identity");
                                 put("web.http.version.port", valueOf(getFreePort()));
@@ -95,6 +97,8 @@ public class BomSmokeTests {
                                 put("edc.ih.iam.publickey.path", "/some/path/to/key.pem");
                                 put("web.http.presentation.port", valueOf(getFreePort()));
                                 put("web.http.presentation.path", "/api/resolution");
+                                put("web.http.storage.port", valueOf(getFreePort()));
+                                put("web.http.storage.path", "/api/storage");
                                 put("web.http.identity.port", valueOf(getFreePort()));
                                 put("web.http.identity.path", "/api/identity");
                                 put("web.http.accounts.port", valueOf(getFreePort()));
