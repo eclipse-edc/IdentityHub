@@ -37,6 +37,6 @@ public class ParticipantMapping extends TranslationMapping {
         add(FIELD_LASTMODIFIED_TIMESTAMP, statements.getLastModifiedTimestampColumn());
         add(FIELD_NAME, statements.getParticipantNameColumn());
         add(FIELD_DID, statements.getDidColumn());
-        add(FIELD_ATTESTATIONS, new JsonArrayTranslator());
+        add(FIELD_ATTESTATIONS, new JsonArrayTranslator(statements.getAttestationsColumn()));
     }
 }
