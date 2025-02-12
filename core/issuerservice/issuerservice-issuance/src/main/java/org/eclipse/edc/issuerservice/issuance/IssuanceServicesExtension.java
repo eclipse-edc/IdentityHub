@@ -15,11 +15,18 @@
 package org.eclipse.edc.issuerservice.issuance;
 
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationDefinitionServiceImpl;
+import org.eclipse.edc.issuerservice.issuance.attestation.AttestationPipelineImpl;
 import org.eclipse.edc.issuerservice.issuance.credentialdefinition.CredentialDefinitionServiceImpl;
+import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleDefinitionEvaluatorImpl;
+import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleFactoryRegistryImpl;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
+import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -36,11 +43,14 @@ public class IssuanceServicesExtension implements ServiceExtension {
     private TransactionContext transactionContext;
     @Inject
     private CredentialDefinitionStore store;
-
     @Inject
     private AttestationDefinitionStore attestationDefinitionStore;
     @Inject
     private ParticipantStore participantStore;
+    
+    private AttestationPipelineImpl attestationPipeline;
+
+    private CredentialRuleFactoryRegistry ruleFactoryRegistry;
 
     @Provider
     public CredentialDefinitionService createParticipantService() {
@@ -50,5 +60,36 @@ public class IssuanceServicesExtension implements ServiceExtension {
     @Provider
     public AttestationDefinitionService createAttestationService() {
         return new AttestationDefinitionServiceImpl(transactionContext, attestationDefinitionStore, participantStore);
+    }
+
+    @Provider
+    public AttestationPipeline createAttestationPipeline() {
+        return createAttestationPipelineImpl();
+    }
+
+    @Provider
+    public AttestationSourceFactoryRegistry createAttestationSourceFactoryRegistry() {
+        return createAttestationPipelineImpl();
+    }
+
+    @Provider
+    public CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator() {
+        return new CredentialRuleDefinitionEvaluatorImpl(credentialRuleFactoryRegistry());
+    }
+
+    @Provider
+    public CredentialRuleFactoryRegistry credentialRuleFactoryRegistry() {
+
+        if (ruleFactoryRegistry == null) {
+            ruleFactoryRegistry = new CredentialRuleFactoryRegistryImpl();
+        }
+        return ruleFactoryRegistry;
+    }
+
+    private AttestationPipelineImpl createAttestationPipelineImpl() {
+        if (attestationPipeline == null) {
+            attestationPipeline = new AttestationPipelineImpl(attestationDefinitionStore);
+        }
+        return attestationPipeline;
     }
 }

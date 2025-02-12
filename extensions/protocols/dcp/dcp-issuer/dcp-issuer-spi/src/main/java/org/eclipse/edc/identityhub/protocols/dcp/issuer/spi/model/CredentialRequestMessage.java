@@ -66,4 +66,11 @@ public class CredentialRequestMessage {
             return instance;
         }
     }
+
+    /**
+     * Represents a response for a {@link CredentialRequestMessage}
+     */
+    public record Response(String requestId) {
+
+    }
 }

@@ -38,4 +38,8 @@ public class IssuerServiceEndToEndTestContext {
     public IssuerServiceRuntimeConfiguration.Endpoint getAdminEndpoint() {
         return configuration.getAdminEndpoint();
     }
+
+    public IssuerServiceRuntimeConfiguration.Endpoint getDcpIssuanceEndpoint() {
+        return configuration.getIssuerApiEndpoint();
+    }
 }

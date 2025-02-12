@@ -73,6 +73,7 @@ include(":extensions:protocols:dcp:dcp-spi")
 include(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-spi")
 include(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-transform-lib")
 include(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-api")
+include(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-core")
 
 include(":extensions:protocols:dcp:presentation-api")
 
@@ -99,7 +100,8 @@ include(":extensions:api:identity-api:validators:participant-context-validators"
 include(":extensions:api:identity-api:validators:verifiable-credential-validators")
 
 // issuance modules
-include(":extensions:issuance:issuance-credentials")
+include(":extensions:issuance:issuerservice-issuance-attestations")
+include(":extensions:issuance:issuerservice-issuance-rules")
 
 // other modules
 include(":launcher:identityhub")

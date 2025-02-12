@@ -16,8 +16,11 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest.CredentialRequestApiController;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest.validation.CredentialRequestMessageValidator;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequeststatus.CredentialRequestStatusApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata.IssuerMetadataApiController;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerSelfIssuedTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.from.JsonObjectFromCredentialObjectTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.from.JsonObjectFromCredentialRequestStatusTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.from.JsonObjectFromIssuerMetadataTransformer;
@@ -36,6 +39,7 @@ import org.eclipse.edc.spi.system.apiversion.ApiVersionService;
 import org.eclipse.edc.spi.system.apiversion.VersionRecord;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
+import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.jersey.providers.jsonld.JerseyJsonLdInterceptor;
 import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
@@ -48,6 +52,7 @@ import java.util.stream.Stream;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.identityhub.protocols.dcp.issuer.IssuerApiExtension.NAME;
+import static org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.ISSUANCE_API;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
@@ -76,6 +81,15 @@ public class IssuerApiExtension implements ServiceExtension {
     @Inject
     private JsonLd jsonLd;
 
+    @Inject
+    private DcpIssuerService dcpIssuerService;
+
+    @Inject
+    private DcpIssuerSelfIssuedTokenVerifier dcpIssuerSelfIssuedTokenVerifier;
+
+    @Inject
+    private JsonObjectValidatorRegistry validatorRegistry;
+
     @Override
     public void initialize(ServiceExtensionContext context) {
 
@@ -83,9 +97,9 @@ public class IssuerApiExtension implements ServiceExtension {
 
         var dcpRegistry = transformerRegistry.forContext(DCP_SCOPE_V_1_0);
         registerTransformers(dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0);
+        registerValidators(DSPACE_DCP_NAMESPACE_V_1_0);
 
-
-        webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(dcpRegistry));
+        webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(dcpIssuerService, dcpIssuerSelfIssuedTokenVerifier, validatorRegistry, dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0));
         webService.registerResource(ISSUANCE_API, new CredentialRequestStatusApiController(dcpRegistry));
         webService.registerResource(ISSUANCE_API, new IssuerMetadataApiController(dcpRegistry));
 
@@ -106,6 +120,11 @@ public class IssuerApiExtension implements ServiceExtension {
 
         // to
         dcpRegistry.register(new JsonObjectToCredentialRequestMessageTransformer(typeManager, JSON_LD, namespace));
+    }
+
+    private void registerValidators(JsonLdNamespace namespace) {
+
+        validatorRegistry.register(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM), CredentialRequestMessageValidator.instance(namespace));
     }
 
     private void registerVersionInfo(ClassLoader resourceClassLoader) {

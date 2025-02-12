@@ -63,7 +63,7 @@ public abstract class IssuerServiceEndToEndExtension extends RuntimePerClassExte
      */
     public static class InMemory extends IssuerServiceEndToEndExtension {
 
-        protected InMemory() {
+        public InMemory() {
             super(context());
         }
 
@@ -93,7 +93,7 @@ public abstract class IssuerServiceEndToEndExtension extends RuntimePerClassExte
         private static final Integer DB_PORT = getFreePort();
         private final PostgresSqlService postgresSqlService;
 
-        protected Postgres() {
+        public Postgres() {
             super(context(DB_NAME, DB_PORT));
             postgresSqlService = new PostgresSqlService(DB_NAME, DB_PORT);
 

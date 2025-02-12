@@ -71,6 +71,7 @@ edc-lib-token = { module = "org.eclipse.edc:token-lib", version.ref = "edc" }
 edc-lib-transform = { module = "org.eclipse.edc:transform-lib", version.ref = "edc" }
 edc-lib-util = { module = "org.eclipse.edc:util-lib", version.ref = "edc" }
 edc-lib-statemachine = { module = "org.eclipse.edc:state-machine-lib", version.ref = "edc" }
+edc-lib-validator = { module = "org.eclipse.edc:validator-lib", version.ref = "edc" }
 
 # SQL dependencies
 edc-sql-bootstrapper = { module = "org.eclipse.edc:sql-bootstrapper", version.ref = "edc" }
