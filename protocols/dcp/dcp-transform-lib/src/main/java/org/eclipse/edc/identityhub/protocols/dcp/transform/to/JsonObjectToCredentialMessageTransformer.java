@@ -53,7 +53,7 @@ public class JsonObjectToCredentialMessageTransformer extends AbstractNamespaceA
 
         var requestMessage = CredentialMessage.Builder.newInstance();
         var credentials = jsonObject.get(forNamespace(CREDENTIALS_TERM));
-        var requestId = jsonObject.getString(forNamespace(REQUEST_ID_TERM));
+        var requestId = transformString(jsonObject.get(forNamespace(REQUEST_ID_TERM)), transformerContext);
         requestMessage.requestId(requestId);
         if (credentials != null) {
             ofNullable(readCredentialContainers(credentials, transformerContext))

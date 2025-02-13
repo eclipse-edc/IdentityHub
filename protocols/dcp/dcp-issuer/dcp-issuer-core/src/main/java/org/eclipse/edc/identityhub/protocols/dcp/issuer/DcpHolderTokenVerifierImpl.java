@@ -16,8 +16,13 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.iam.identitytrust.spi.validation.TokenValidationAction;
+<<<<<<<< HEAD:protocols/dcp/dcp-issuer/dcp-issuer-core/src/main/java/org/eclipse/edc/identityhub/protocols/dcp/issuer/DcpIssuerSelfIssuedTokenVerifierImpl.java
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerSelfIssuedTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
+========
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpHolderTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.DcpRequestContext;
+>>>>>>>> 3864ba87 (feat: add credential writer and issuer token verifier):protocols/dcp/dcp-issuer/dcp-issuer-core/src/main/java/org/eclipse/edc/identityhub/protocols/dcp/issuer/DcpHolderTokenVerifierImpl.java
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
@@ -31,12 +36,12 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
-public class DcpIssuerSelfIssuedTokenVerifierImpl implements DcpIssuerSelfIssuedTokenVerifier {
+public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
 
     private final ParticipantStore store;
     private final TokenValidationAction tokenValidation;
 
-    public DcpIssuerSelfIssuedTokenVerifierImpl(ParticipantStore store, TokenValidationAction tokenValidation) {
+    public DcpHolderTokenVerifierImpl(ParticipantStore store, TokenValidationAction tokenValidation) {
         this.store = store;
         this.tokenValidation = tokenValidation;
     }

@@ -18,13 +18,16 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import io.restassured.specification.RequestSpecification;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import org.eclipse.edc.identityhub.protocols.dcp.identityhub.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialContainer;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
-import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.junit.annotations.ApiTest;
+import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.validator.spi.ValidationResult;
@@ -36,7 +39,6 @@ import org.junit.jupiter.api.Test;
 import java.sql.Date;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.List;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
@@ -45,7 +47,9 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCO
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.validator.spi.Violation.violation;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -59,20 +63,24 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
     private final JsonObjectValidatorRegistry validatorRegistry = mock();
     private final TypeTransformerRegistry transformerRegistry = mock();
-    private final SelfIssuedTokenVerifier tokenVerifier = mock(SelfIssuedTokenVerifier.class);
     private final Monitor monitor = mock();
+    private final CredentialWriter credentialWriter = mock();
+    private final DcpIssuerTokenVerifier issuerTokenVerifier = mock();
 
     @BeforeEach
     void setUp() {
         when(transformerRegistry.forContext(eq(DCP_SCOPE_V_1_0))).thenReturn(transformerRegistry);
         when(transformerRegistry.transform(isA(JsonObject.class), eq(CredentialMessage.class)))
                 .thenReturn(Result.success(credentialMessage()));
+
+        when(issuerTokenVerifier.verify(anyString())).thenReturn(Result.success(claimToken()));
+
+        when(credentialWriter.write(anyCollection(), anyString())).thenReturn(ServiceResult.success());
     }
 
     @Test
     void storeCredential_success_expect200() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
-        when(tokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("foo-scope")));
         baseRequest()
                 .header("Authorization", "Bearer: " + generateJwt())
                 .body(credentialMessageJson())
@@ -92,7 +100,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(401);
-        verifyNoMoreInteractions(tokenVerifier, validatorRegistry, transformerRegistry);
+        verifyNoMoreInteractions(issuerTokenVerifier, validatorRegistry, transformerRegistry);
     }
 
     @Test
@@ -105,7 +113,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(400);
-        verifyNoInteractions(tokenVerifier, transformerRegistry);
+        verifyNoInteractions(issuerTokenVerifier, transformerRegistry);
     }
 
     @Test
@@ -119,13 +127,13 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(400);
-        verifyNoMoreInteractions(tokenVerifier);
+        verifyNoMoreInteractions(issuerTokenVerifier);
     }
 
     @Test
     void storeCredential_tokenValidationFails_shouldReturn401() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
-        when(tokenVerifier.verify(anyString(), anyString())).thenReturn(Result.failure("foo"));
+        when(issuerTokenVerifier.verify(anyString())).thenReturn(Result.failure("foo"));
         baseRequest()
                 .header("Authorization", "Bearer: " + generateJwt())
                 .body(credentialMessageJson())
@@ -140,7 +148,6 @@ class StorageApiControllerTest extends RestControllerTestBase {
     void storeCredential_whenWriteFails_shouldReturn500() {
         // todo: add mock for credential storing service
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
-        when(tokenVerifier.verify(anyString(), anyString())).thenReturn(Result.success(List.of("foo-scope")));
         baseRequest()
                 .header("Authorization", "Bearer: " + generateJwt())
                 .body(credentialMessageJson())
@@ -150,12 +157,34 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .statusCode(500);
     }
 
+    @Test
+    void storeCredential_writerFails_shouldReturn400() {
+        when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        when(credentialWriter.write(anyCollection(), anyString())).thenReturn(ServiceResult.badRequest("foo"));
+
+        baseRequest()
+                .header("Authorization", "Bearer: " + generateJwt())
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400)
+                .body(containsString("foo"));
+    }
+
     @Override
     protected Object controller() {
         return new StorageApiController(validatorRegistry,
                 transformerRegistry,
-                tokenVerifier,
-                new TitaniumJsonLd(monitor));
+                new TitaniumJsonLd(monitor),
+                credentialWriter,
+                mock(),
+                issuerTokenVerifier
+        );
+    }
+
+    private ClaimToken claimToken() {
+        return ClaimToken.Builder.newInstance().build();
     }
 
     private CredentialMessage credentialMessage() {

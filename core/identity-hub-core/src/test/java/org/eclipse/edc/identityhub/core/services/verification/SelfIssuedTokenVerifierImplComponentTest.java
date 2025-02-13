@@ -45,8 +45,8 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.UUID;
 
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -62,7 +62,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
     public static final String PARTICIPANT_DID = "did:web:test_participant";
     private final ParticipantContextService participantContextService = mock();
     private SelfIssuedTokenVerifierImpl verifier;
-    private KeyPair stsKeyPair; // this is used to sign the acces token
+    private KeyPair stsKeyPair; // this is used to sign the access token
     private KeyPair providerKeyPair; // this is used to sign the incoming SI token
     private KeyPairGenerator generator;
     private JtiValidationStore jtiValidationStore;
@@ -79,14 +79,14 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
         // would normally get registered in an extension.
         var accessTokenRule = new ClaimIsPresentRule(TOKEN_CLAIM);
-        ruleRegistry.addRule(DCP_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
+        ruleRegistry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
-        ruleRegistry.addRule(DCP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
+        ruleRegistry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
 
         jtiValidationStore = mock(JtiValidationStore.class);
         when(jtiValidationStore.findById(anyString())).thenReturn(new JtiValidationEntry("test-jti", null));
-        ruleRegistry.addRule(DCP_ACCESS_TOKEN_CONTEXT, new JtiValidationRule(jtiValidationStore, mock()));
+        ruleRegistry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new JtiValidationRule(jtiValidationStore, mock()));
 
         var resolverMock = mock(KeyPairResourcePublicKeyResolver.class);
         when(resolverMock.resolveKey(anyString(), anyString())).thenReturn(Result.success(stsKeyPair.getPublic()));

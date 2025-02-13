@@ -22,9 +22,14 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:verifiable-credential-spi"))
     api(project(":protocols:dcp:dcp-spi"))
+    api(project(":protocols:dcp:dcp-identityhub:dcp-identityhub-spi"))
+
     api(libs.edc.spi.jsonld)
     api(libs.edc.spi.jwt)
     api(libs.edc.spi.core)
+    api(libs.edc.spi.identity.did)
+
+    implementation(project(":protocols:dcp:dcp-identityhub:dcp-identityhub-transform-lib"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
     implementation(libs.edc.spi.dcp)

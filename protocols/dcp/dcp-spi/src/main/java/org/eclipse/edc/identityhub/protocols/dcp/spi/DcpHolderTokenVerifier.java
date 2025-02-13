@@ -24,7 +24,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
  */
 
 @ExtensionPoint
-public interface DcpIssuerSelfIssuedTokenVerifier {
+public interface DcpHolderTokenVerifier {
 
     ServiceResult<DcpRequestContext> verify(TokenRepresentation tokenRepresentation);
 

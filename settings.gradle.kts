@@ -77,7 +77,9 @@ include(":protocols:dcp:dcp-issuer:dcp-issuer-core")
 
 include(":protocols:dcp:dcp-identityhub:presentation-api")
 include(":protocols:dcp:dcp-identityhub:storage-api")
-
+include(":protocols:dcp:dcp-identityhub:dcp-identityhub-transform-lib")
+include(":protocols:dcp:dcp-identityhub:dcp-identityhub-spi")
+include(":protocols:dcp:dcp-identityhub:dcp-identityhub-core")
 
 // Identity APIs
 include(":extensions:api:identity-api:api-configuration")

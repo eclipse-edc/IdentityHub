@@ -24,6 +24,8 @@ dependencies {
     runtimeOnly(project(":extensions:did:local-did-publisher"))
     runtimeOnly(project(":protocols:dcp:dcp-identityhub:presentation-api"))
     runtimeOnly(project(":protocols:dcp:dcp-identityhub:storage-api"))
+    runtimeOnly(project(":protocols:dcp:dcp-identityhub:dcp-identityhub-core"))
+
     runtimeOnly(project(":extensions:common:credential-watchdog"))
     runtimeOnly(project(":extensions:sts:sts-account-provisioner"))
     runtimeOnly(project(":extensions:api:identity-api:did-api"))

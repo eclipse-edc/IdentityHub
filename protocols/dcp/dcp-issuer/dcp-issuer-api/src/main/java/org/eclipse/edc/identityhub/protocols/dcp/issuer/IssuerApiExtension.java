@@ -19,7 +19,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialre
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest.validation.CredentialRequestMessageValidator;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequeststatus.CredentialRequestStatusApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata.IssuerMetadataApiController;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerSelfIssuedTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialObjectTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialRequestStatusTransformer;
@@ -85,7 +85,7 @@ public class IssuerApiExtension implements ServiceExtension {
     private DcpIssuerService dcpIssuerService;
 
     @Inject
-    private DcpIssuerSelfIssuedTokenVerifier dcpIssuerSelfIssuedTokenVerifier;
+    private DcpHolderTokenVerifier dcpHolderTokenVerifier;
 
     @Inject
     private JsonObjectValidatorRegistry validatorRegistry;
@@ -99,7 +99,7 @@ public class IssuerApiExtension implements ServiceExtension {
         registerTransformers(dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0);
         registerValidators(DSPACE_DCP_NAMESPACE_V_1_0);
 
-        webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(dcpIssuerService, dcpIssuerSelfIssuedTokenVerifier, validatorRegistry, dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0));
+        webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(dcpIssuerService, dcpHolderTokenVerifier, validatorRegistry, dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0));
         webService.registerResource(ISSUANCE_API, new CredentialRequestStatusApiController(dcpRegistry));
         webService.registerResource(ISSUANCE_API, new IssuerMetadataApiController(dcpRegistry));
 

@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialr
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerSelfIssuedTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
@@ -66,7 +66,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
     private final JsonObjectValidatorRegistry validatorRegistryMock = mock();
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final DcpIssuerService dcpIssuerService = mock();
-    private final DcpIssuerSelfIssuedTokenVerifier dcpIssuerTokenVerifier = mock();
+    private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = mock();
     private final JsonLdNamespace namespace = DSPACE_DCP_NAMESPACE_V_1_0;
 
     @Test

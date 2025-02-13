@@ -37,9 +37,6 @@ dependencies {
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
 
-    // not needed:
-    // runtimeOnly(libs.edc.api.version)
-
     runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.edc.jsonld)
     runtimeOnly(libs.bundles.connector)

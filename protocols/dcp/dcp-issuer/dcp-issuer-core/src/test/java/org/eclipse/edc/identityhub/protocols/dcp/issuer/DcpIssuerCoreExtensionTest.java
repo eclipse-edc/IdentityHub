@@ -53,7 +53,7 @@ public class DcpIssuerCoreExtensionTest {
 
         var extension = factory.constructInstance(DcpIssuerCoreExtension.class);
         assertThat(extension.createIssuerService()).isInstanceOf(DcpIssuerServiceImpl.class);
-        assertThat(extension.createTokenVerifier()).isInstanceOf(DcpIssuerSelfIssuedTokenVerifierImpl.class);
+        assertThat(extension.createTokenVerifier()).isInstanceOf(DcpHolderTokenVerifierImpl.class);
     }
 
     @Test
