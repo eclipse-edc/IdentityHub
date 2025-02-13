@@ -14,6 +14,10 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.spi.model;
 
-public record CredentialContainer(String credentialType, String format, String payload) {
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record CredentialContainer(@JsonProperty(required = true) String credentialType,
+                                  @JsonProperty(required = true) String format,
+                                  @JsonProperty(required = true) String payload) {
 
 }

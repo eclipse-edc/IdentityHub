@@ -18,6 +18,11 @@ plugins {
 }
 
 dependencies {
-    api(libs.jackson.annotation) // JsonProperty
+    api(libs.edc.spi.jsonld)
+    api(libs.edc.spi.dcp)
+    api(project(":extensions:protocols:dcp:dcp-spi"))
+    testImplementation(libs.edc.lib.jsonld)
+    testImplementation(libs.edc.lib.transform)
+
 }
 
