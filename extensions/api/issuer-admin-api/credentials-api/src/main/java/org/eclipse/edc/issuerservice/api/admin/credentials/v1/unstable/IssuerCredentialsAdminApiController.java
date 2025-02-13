@@ -37,17 +37,17 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 @Produces(APPLICATION_JSON)
 @Path(Versions.UNSTABLE + "/credentials")
 public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdminApi {
-    private final CredentialService statuslistService;
+    private final CredentialService credentialService;
 
-    public IssuerCredentialsAdminApiController(CredentialService statuslistService) {
-        this.statuslistService = statuslistService;
+    public IssuerCredentialsAdminApiController(CredentialService credentialService) {
+        this.credentialService = credentialService;
     }
 
     @GET
     @Path("/{participantId}")
     @Override
     public Collection<VerifiableCredentialDto> getAllCredentials(@PathParam("participantId") String participantId) {
-        return statuslistService.getCredentialForParticipant(participantId)
+        return credentialService.getCredentialForParticipant(participantId)
                 .map(coll -> coll.stream().map(resource ->
                         new VerifiableCredentialDto(resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, participantId));
@@ -57,7 +57,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Path("/query")
     @Override
     public Collection<VerifiableCredentialDto> queryCredentials(QuerySpec query) {
-        return statuslistService.queryCredentials(query).map(coll -> coll.stream().map(resource ->
+        return credentialService.queryCredentials(query).map(coll -> coll.stream().map(resource ->
                         new VerifiableCredentialDto(resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, null));
     }
@@ -66,7 +66,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Path("/{credentialId}/revoke")
     @Override
     public Response revokeCredential(@PathParam("credentialId") String credentialId) {
-        return statuslistService.revokeCredential(credentialId)
+        return credentialService.revokeCredential(credentialId)
                 .map(v -> Response.noContent().build())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }
@@ -89,7 +89,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Path("/{credentialId}/status")
     @Override
     public CredentialStatusResponse checkRevocationStatus(@PathParam("credentialId") String credentialId) {
-        return statuslistService.getCredentialStatus(credentialId)
+        return credentialService.getCredentialStatus(credentialId)
                 .map(status -> new CredentialStatusResponse(credentialId, status, null))
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }
