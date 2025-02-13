@@ -14,7 +14,9 @@
 
 package org.eclipse.edc.issuerservice.issuance.rules;
 
+import org.eclipse.edc.issuerservice.issuance.rules.expression.ExpressionCredentialRuleDefinitionValidator;
 import org.eclipse.edc.issuerservice.issuance.rules.expression.ExpressionCredentialRuleFactory;
+import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -32,8 +34,12 @@ public class IssuanceRulesExtension implements ServiceExtension {
     @Inject
     private CredentialRuleFactoryRegistry registry;
 
+    @Inject
+    private CredentialRuleDefinitionValidatorRegistry validatorRegistry;
+
     @Override
     public void initialize(ServiceExtensionContext context) {
         registry.registerFactory("expression", new ExpressionCredentialRuleFactory());
+        validatorRegistry.registerValidator("expression", new ExpressionCredentialRuleDefinitionValidator());
     }
 }

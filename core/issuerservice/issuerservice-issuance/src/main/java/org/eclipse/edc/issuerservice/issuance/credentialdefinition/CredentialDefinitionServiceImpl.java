@@ -19,10 +19,12 @@ import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.Credentia
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.eclipse.edc.validator.spi.ValidationResult;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -33,11 +35,16 @@ public class CredentialDefinitionServiceImpl implements CredentialDefinitionServ
     private final TransactionContext transactionContext;
     private final CredentialDefinitionStore credentialDefinitionStore;
     private final AttestationDefinitionStore attestationDefinitionStore;
+    private final CredentialRuleDefinitionValidatorRegistry ruleDefinitionValidatorRegistry;
 
-    public CredentialDefinitionServiceImpl(TransactionContext transactionContext, CredentialDefinitionStore credentialDefinitionStore, AttestationDefinitionStore attestationDefinitionStore) {
+    public CredentialDefinitionServiceImpl(TransactionContext transactionContext,
+                                           CredentialDefinitionStore credentialDefinitionStore,
+                                           AttestationDefinitionStore attestationDefinitionStore,
+                                           CredentialRuleDefinitionValidatorRegistry ruleDefinitionValidatorRegistry) {
         this.transactionContext = transactionContext;
         this.credentialDefinitionStore = credentialDefinitionStore;
         this.attestationDefinitionStore = attestationDefinitionStore;
+        this.ruleDefinitionValidatorRegistry = ruleDefinitionValidatorRegistry;
     }
 
     @Override
@@ -70,11 +77,13 @@ public class CredentialDefinitionServiceImpl implements CredentialDefinitionServ
 
     private ServiceResult<Void> internalCreate(CredentialDefinition credentialDefinition) {
         return validateAttestations(credentialDefinition)
+                .compose(u -> validateRules(credentialDefinition))
                 .compose(u -> from(credentialDefinitionStore.create(credentialDefinition)));
     }
 
     private ServiceResult<Void> internalUpdate(CredentialDefinition credentialDefinition) {
         return validateAttestations(credentialDefinition)
+                .compose(u -> validateRules(credentialDefinition))
                 .compose(u -> from(credentialDefinitionStore.update(credentialDefinition)));
     }
 
@@ -84,6 +93,19 @@ public class CredentialDefinitionServiceImpl implements CredentialDefinitionServ
                 .build();
         return from(attestationDefinitionStore.query(query))
                 .compose(attestationDefinitions -> checkAttestations(credentialDefinition, attestationDefinitions));
+    }
+
+    private ServiceResult<Void> validateRules(CredentialDefinition credentialDefinition) {
+        return credentialDefinition.getRules().stream()
+                .map(ruleDefinitionValidatorRegistry::validateDefinition)
+                .reduce(ValidationResult::merge)
+                .map(this::toServiceResult)
+                .orElseGet(ServiceResult::success);
+    }
+
+
+    private ServiceResult<Void> toServiceResult(ValidationResult validationResult) {
+        return validationResult.failed() ? ServiceResult.badRequest(validationResult.getFailureDetail()) : ServiceResult.success();
     }
 
     private ServiceResult<Void> checkAttestations(CredentialDefinition credentialDefinition, Collection<AttestationDefinition> attestationDefinitions) {

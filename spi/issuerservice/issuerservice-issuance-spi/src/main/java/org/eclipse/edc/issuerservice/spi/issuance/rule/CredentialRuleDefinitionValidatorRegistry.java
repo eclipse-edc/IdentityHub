@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.spi.issuance.rule;
 
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
+import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
 
 
@@ -31,6 +32,6 @@ public interface CredentialRuleDefinitionValidatorRegistry {
     /**
      * Validates the definition.
      */
-    void validateDefinition(CredentialRuleDefinition definition);
+    ValidationResult validateDefinition(CredentialRuleDefinition definition);
 
 }

@@ -20,8 +20,12 @@ import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.Credentia
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
+import org.eclipse.edc.validator.spi.ValidationResult;
+import org.eclipse.edc.validator.spi.Violation;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -41,9 +45,8 @@ public class CredentialDefinitionServiceImplTest {
 
     private final CredentialDefinitionStore credentialDefinitionStore = mock();
     private final AttestationDefinitionStore attestationDefinitionStore = mock();
-
-    private final CredentialDefinitionService credentialDefinitionService = new CredentialDefinitionServiceImpl(new NoopTransactionContext(), credentialDefinitionStore, attestationDefinitionStore);
-
+    private final CredentialRuleDefinitionValidatorRegistry ruleDefinitionValidatorRegistry = mock();
+    private final CredentialDefinitionService credentialDefinitionService = new CredentialDefinitionServiceImpl(new NoopTransactionContext(), credentialDefinitionStore, attestationDefinitionStore, ruleDefinitionValidatorRegistry);
 
     @Test
     void createCredentialDefinition() {
@@ -55,6 +58,7 @@ public class CredentialDefinitionServiceImplTest {
 
         when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
         when(credentialDefinitionStore.create(definition)).thenReturn(StoreResult.success());
+        when(ruleDefinitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.success());
 
         assertThat(credentialDefinitionService.createCredentialDefinition(definition)).isSucceeded();
 
@@ -70,13 +74,31 @@ public class CredentialDefinitionServiceImplTest {
 
         when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
         when(credentialDefinitionStore.create(definition)).thenReturn(StoreResult.alreadyExists("already exists"));
-
+        when(ruleDefinitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.success());
         assertThat(credentialDefinitionService.createCredentialDefinition(definition)).isFailed();
 
     }
 
     @Test
     void createCredentialDefinition_whenAttestationsValidationFails() {
+
+        var definition = credentialDefinition();
+        var attestations = definition.getAttestations().stream().map(id -> new AttestationDefinition(id, "type", Map.of()))
+                .toList();
+
+        when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
+        when(credentialDefinitionStore.create(definition)).thenReturn(StoreResult.success());
+        when(ruleDefinitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.failure(Violation.violation("violation", "path")));
+
+        assertThat(credentialDefinitionService.createCredentialDefinition(definition)).isFailed()
+                .detail().contains("violation");
+
+
+        verifyNoInteractions(credentialDefinitionStore);
+    }
+
+    @Test
+    void createCredentialDefinition_whenRulesValidationFails() {
 
         var definition = credentialDefinition();
 
@@ -99,6 +121,7 @@ public class CredentialDefinitionServiceImplTest {
 
         when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
         when(credentialDefinitionStore.update(definition)).thenReturn(StoreResult.success());
+        when(ruleDefinitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.success());
 
         assertThat(credentialDefinitionService.updateCredentialDefinition(definition)).isSucceeded();
 
@@ -115,7 +138,23 @@ public class CredentialDefinitionServiceImplTest {
 
         assertThat(credentialDefinitionService.updateCredentialDefinition(definition)).isFailed();
 
-        assertThat(credentialDefinitionService.createCredentialDefinition(definition)).isFailed();
+        verifyNoInteractions(credentialDefinitionStore);
+    }
+
+    @Test
+    void updateCredentialDefinition_whenRulesValidationFails() {
+
+        var definition = credentialDefinition();
+
+        var attestations = definition.getAttestations().stream().map(id -> new AttestationDefinition(id, "type", Map.of()))
+                .toList();
+
+        when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
+        when(credentialDefinitionStore.update(definition)).thenReturn(StoreResult.success());
+        when(ruleDefinitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.failure(Violation.violation("violation", "path")));
+
+        assertThat(credentialDefinitionService.updateCredentialDefinition(definition)).isFailed()
+                .detail().contains("violation");
 
         verifyNoInteractions(credentialDefinitionStore);
     }
@@ -129,6 +168,7 @@ public class CredentialDefinitionServiceImplTest {
 
         when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
         when(credentialDefinitionStore.update(definition)).thenReturn(StoreResult.alreadyExists("already exists"));
+        when(ruleDefinitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.success());
 
         assertThat(credentialDefinitionService.updateCredentialDefinition(definition)).isFailed();
 
@@ -203,6 +243,7 @@ public class CredentialDefinitionServiceImplTest {
         return CredentialDefinition.Builder.newInstance().id(id).jsonSchema("")
                 .jsonSchemaUrl("http://example.com/schema").validity(1000)
                 .attestation("test-attestation")
+                .rule(new CredentialRuleDefinition("test-rule", Map.of()))
                 .credentialType(type).build();
     }
 }
