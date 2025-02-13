@@ -180,7 +180,7 @@ IssuerService.
 Execute the following REST request against the IssuerService's Admin API:
 
 ```http request
-GET /v1alpha/credentials//{credentialId}/status
+GET /v1alpha/credentials/{credentialId}/status
 ```
 
 the response will be `HTTP 200` if the status information has been obtained. An empty response body indicates that the
