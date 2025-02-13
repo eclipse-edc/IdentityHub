@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.tests;
 import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
@@ -25,7 +26,10 @@ import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
+import org.eclipse.edc.validator.spi.ValidationResult;
+import org.eclipse.edc.validator.spi.Violation;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +45,13 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class AttestationApiEndToEndTest {
     abstract static class Tests {
+
+        @BeforeAll
+        static void setup(IssuerServiceEndToEndTestContext context) {
+            var registry = context.getRuntime().getService(AttestationDefinitionValidatorRegistry.class);
+            registry.registerValidator("test-type", def -> ValidationResult.success());
+            registry.registerValidator("test-failure-type", def -> ValidationResult.failure(Violation.violation("test", null)));
+        }
 
         @AfterEach
         void teardown(AttestationDefinitionStore store, ParticipantStore participantStore) {
@@ -62,6 +73,18 @@ public class AttestationApiEndToEndTest {
                     .statusCode(201);
 
             assertThat(store.resolveDefinition("test-id")).isNotNull();
+        }
+
+        @Test
+        void createAttestationDefinition_shouldReturn400_whenValidationFails(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store) {
+            context.getAdminEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .body(new AttestationDefinition("test-id", "test-failure-type", Map.of("foo", "bar")))
+                    .post("/v1alpha/attestations")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+
         }
 
         @Test

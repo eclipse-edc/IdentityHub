@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.issuance.attestation;
 
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
@@ -23,6 +24,8 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
+import org.eclipse.edc.validator.spi.ValidationResult;
+import org.eclipse.edc.validator.spi.Violation;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -42,18 +45,32 @@ class AttestationDefinitionServiceImplTest {
 
     private final AttestationDefinitionStore attestationDefinitionStore = mock();
     private final ParticipantStore participantStore = mock();
+    private final AttestationDefinitionValidatorRegistry definitionValidatorRegistry = mock();
+
     private final AttestationDefinitionService attestationDefinitionService = new AttestationDefinitionServiceImpl(new NoopTransactionContext(),
             attestationDefinitionStore,
-            participantStore);
+            participantStore,
+            definitionValidatorRegistry);
 
     @Test
     void createAttestation() {
         when(attestationDefinitionStore.create(any())).thenReturn(StoreResult.success());
+        when(definitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.success());
 
         assertThat(attestationDefinitionService.createAttestation(new AttestationDefinition("id", "type", Map.of())))
                 .isSucceeded();
         verify(attestationDefinitionStore).create(any());
         verifyNoMoreInteractions(attestationDefinitionStore);
+    }
+
+    @Test
+    void createAttestation_shouldFail_whenValidationFails() {
+        when(attestationDefinitionStore.create(any())).thenReturn(StoreResult.success());
+        when(definitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.failure(Violation.violation("failure", "bar")));
+
+        assertThat(attestationDefinitionService.createAttestation(new AttestationDefinition("id", "type", Map.of())))
+                .isFailed()
+                .detail().contains("failure");
     }
 
     @Test
