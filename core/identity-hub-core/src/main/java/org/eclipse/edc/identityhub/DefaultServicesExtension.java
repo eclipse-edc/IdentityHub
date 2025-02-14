@@ -30,6 +30,7 @@ import org.eclipse.edc.identityhub.defaults.store.InMemorySignatureSuiteRegistry
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
@@ -39,6 +40,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.security.token.jwt.DefaultJwsSignerProvider;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -122,6 +124,11 @@ public class DefaultServicesExtension implements ServiceExtension {
             revocationService.addService(BitstringStatusListStatus.TYPE, new BitstringStatusListRevocationService(typeManager.getMapper(), revocationCacheValidity));
         }
         return revocationService;
+    }
+
+    @Provider(isDefault = true)
+    public CredentialRequestService createDefaultCredentialRequestService(ServiceExtensionContext context) {
+        return (issuerDid, requestId, typesAndFormats) -> ServiceResult.success("this is a dummy implementation that will be replaced soon!");
     }
 
     @Provider(isDefault = true)

@@ -72,7 +72,11 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     private final TypeTransformerRegistry typeTransformerRegistry;
     private final CredentialRequestService credentialRequestService;
 
-    public VerifiableCredentialsApiController(CredentialStore credentialStore, AuthorizationService authorizationService, VerifiableCredentialManifestValidator validator, TypeTransformerRegistry typeTransformerRegistry, CredentialRequestService credentialRequestService) {
+    public VerifiableCredentialsApiController(CredentialStore credentialStore,
+                                              AuthorizationService authorizationService,
+                                              VerifiableCredentialManifestValidator validator,
+                                              TypeTransformerRegistry typeTransformerRegistry,
+                                              CredentialRequestService credentialRequestService) {
         this.credentialStore = credentialStore;
         this.authorizationService = authorizationService;
         this.validator = validator;

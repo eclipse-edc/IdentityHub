@@ -27,7 +27,7 @@ public interface CredentialRequestService {
      *
      * @param issuerDid       The DID of the issuer
      * @param requestId       The holder-defined request ID.
-     * @param typesAndFormats A map containing credential-type <-> credential-format entries
+     * @param typesAndFormats A map containing credential-type - credential-format entries
      * @return A ServiceResult containing the issuer-assigned process ID, or a failure otherwise.
      */
     ServiceResult<String> initiateRequest(String issuerDid, String requestId, Map<String, String> typesAndFormats);
