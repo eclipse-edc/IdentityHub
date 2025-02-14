@@ -16,8 +16,8 @@ package org.eclipse.edc.issuerservice.issuance;
 
 
 import org.eclipse.edc.boot.system.injection.ObjectFactory;
-import org.eclipse.edc.issuerservice.issuance.process.IssuerCredentialIssuanceProcessServiceImpl;
 import org.eclipse.edc.issuerservice.issuance.process.IssuerCredentialIssuanceProcessManagerImpl;
+import org.eclipse.edc.issuerservice.issuance.process.IssuerCredentialIssuanceProcessServiceImpl;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.junit.jupiter.api.Test;

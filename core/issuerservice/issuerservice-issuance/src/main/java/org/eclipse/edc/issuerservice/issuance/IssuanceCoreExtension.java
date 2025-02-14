@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.issuerservice.issuance;
 
-import org.eclipse.edc.issuerservice.issuance.process.IssuerCredentialIssuanceProcessServiceImpl;
 import org.eclipse.edc.issuerservice.issuance.process.IssuerCredentialIssuanceProcessManagerImpl;
-import org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessService;
+import org.eclipse.edc.issuerservice.issuance.process.IssuerCredentialIssuanceProcessServiceImpl;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessManager;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.retry.IssuanceProcessRetryStrategy;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;

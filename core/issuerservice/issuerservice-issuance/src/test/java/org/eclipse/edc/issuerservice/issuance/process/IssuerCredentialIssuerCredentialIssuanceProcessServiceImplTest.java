@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.issuerservice.issuance.process;
 
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.spi.query.QuerySpec;
