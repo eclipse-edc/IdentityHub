@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.issuance.rules.expression;
 
-import org.eclipse.edc.issuerservice.spi.issuance.IssuanceContext;
+import org.eclipse.edc.issuerservice.spi.issuance.IssuerCredentialIssuanceContext;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRule;
 import org.eclipse.edc.spi.result.Result;
 
@@ -43,7 +43,7 @@ public class ExpressionCredentialRule implements CredentialRule {
     }
 
     @Override
-    public Result<Void> evaluate(IssuanceContext context) {
+    public Result<Void> evaluate(IssuerCredentialIssuanceContext context) {
         var result = navigateProperty(path, context.getClaims(), true);
         if (result.failed()) {
             return result.mapFailure();

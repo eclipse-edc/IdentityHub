@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.issuance.rule;
 
-import org.eclipse.edc.issuerservice.spi.issuance.IssuanceContext;
+import org.eclipse.edc.issuerservice.spi.issuance.IssuerCredentialIssuanceContext;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry;
@@ -31,7 +31,7 @@ public class CredentialRuleDefinitionEvaluatorImpl implements CredentialRuleDefi
     }
 
     @Override
-    public Result<Void> evaluate(Collection<CredentialRuleDefinition> definitions, IssuanceContext context) {
+    public Result<Void> evaluate(Collection<CredentialRuleDefinition> definitions, IssuerCredentialIssuanceContext context) {
         for (var definition : definitions) {
             var factory = credentialRuleFactoryRegistry.resolveFactory(definition.type());
             var rule = factory.createRule(definition);

@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.process.retry;
 
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.retry.WaitStrategy;
 
 /**
- * Implements a wait strategy for the {@link IssuanceProcess}.
+ * Implements a wait strategy for the {@link IssuerCredentialIssuanceProcess}.
  * <p>
  * Implementations may choose to enforce an incremental backoff period when successive errors are encountered.
  */

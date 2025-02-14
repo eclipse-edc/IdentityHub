@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.issuerservice.issuance;
 
-import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessManagerImpl;
-import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessServiceImpl;
-import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
-import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
+import org.eclipse.edc.issuerservice.issuance.process.IssuerCredentialIssuanceProcessManagerImpl;
+import org.eclipse.edc.issuerservice.issuance.process.IssuerCredentialIssuanceProcessServiceImpl;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessManager;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.retry.IssuanceProcessRetryStrategy;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -61,7 +61,7 @@ public class IssuanceCoreExtension implements ServiceExtension {
     @Setting(description = "The base delay for the issuance retry mechanism in millisecond", key = "edc.issuer.issuance.send.retry.base-delay.ms", defaultValue = DEFAULT_SEND_RETRY_BASE_DELAY + "")
     private long sendRetryBaseDelay;
 
-    private IssuanceProcessManager issuanceProcessManager;
+    private IssuerCredentialIssuanceProcessManager issuerCredentialIssuanceProcessManager;
 
     @Inject
     private IssuanceProcessStore issuanceProcessStore;
@@ -85,11 +85,11 @@ public class IssuanceCoreExtension implements ServiceExtension {
     private TransactionContext transactionContext;
 
     @Provider
-    public IssuanceProcessManager createIssuanceProcessManager() {
+    public IssuerCredentialIssuanceProcessManager createIssuanceProcessManager() {
 
-        if (issuanceProcessManager == null) {
+        if (issuerCredentialIssuanceProcessManager == null) {
             var waitStrategy = retryStrategy != null ? retryStrategy : new ExponentialWaitStrategy(stateMachineIterationWaitMillis);
-            issuanceProcessManager = IssuanceProcessManagerImpl.Builder.newInstance()
+            issuerCredentialIssuanceProcessManager = IssuerCredentialIssuanceProcessManagerImpl.Builder.newInstance()
                     .store(issuanceProcessStore)
                     .monitor(monitor)
                     .batchSize(stateMachineBatchSize)
@@ -100,23 +100,23 @@ public class IssuanceCoreExtension implements ServiceExtension {
                     .entityRetryProcessConfiguration(getEntityRetryProcessConfiguration())
                     .build();
         }
-        return issuanceProcessManager;
+        return issuerCredentialIssuanceProcessManager;
     }
 
     @Provider
-    public IssuanceProcessService createIssuanceProcessService() {
-        return new IssuanceProcessServiceImpl(transactionContext, issuanceProcessStore);
+    public IssuerCredentialIssuanceProcessService createIssuanceProcessService() {
+        return new IssuerCredentialIssuanceProcessServiceImpl(transactionContext, issuanceProcessStore);
     }
 
     @Override
     public void start() {
-        issuanceProcessManager.start();
+        issuerCredentialIssuanceProcessManager.start();
     }
 
     @Override
     public void shutdown() {
-        if (issuanceProcessManager != null) {
-            issuanceProcessManager.stop();
+        if (issuerCredentialIssuanceProcessManager != null) {
+            issuerCredentialIssuanceProcessManager.stop();
         }
     }
 

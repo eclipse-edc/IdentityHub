@@ -15,7 +15,7 @@
 package org.eclipse.edc.issuerservice.store.sql.issuanceprocess;
 
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
-import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStoreTestBase;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuerCredentialIssuanceProcessStoreTestBase;
 import org.eclipse.edc.issuerservice.store.sql.issuanceprocess.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
@@ -32,7 +32,7 @@ import java.time.Duration;
 
 @PostgresqlIntegrationTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
-class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
+class SqlIssuerCredentialIssuanceProcessStoreTest extends IssuerCredentialIssuanceProcessStoreTestBase {
 
     private IssuanceProcessStoreStatements statements;
     private SqlIssuanceProcessStore store;

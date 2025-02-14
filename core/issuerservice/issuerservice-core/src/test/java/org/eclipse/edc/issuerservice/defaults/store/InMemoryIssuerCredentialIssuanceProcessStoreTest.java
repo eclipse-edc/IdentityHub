@@ -15,14 +15,14 @@
 package org.eclipse.edc.issuerservice.defaults.store;
 
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
-import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStoreTestBase;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuerCredentialIssuanceProcessStoreTestBase;
 import org.eclipse.edc.query.CriterionOperatorRegistryImpl;
 
 import java.time.Duration;
 
-public class InMemoryIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
+public class InMemoryIssuerCredentialIssuanceProcessStoreTest extends IssuerCredentialIssuanceProcessStoreTestBase {
 
-    private final InMemoryIssuanceProcessStore store = new InMemoryIssuanceProcessStore(IssuanceProcessStoreTestBase.RUNTIME_ID, clock, CriterionOperatorRegistryImpl.ofDefaults());
+    private final InMemoryIssuanceProcessStore store = new InMemoryIssuanceProcessStore(IssuerCredentialIssuanceProcessStoreTestBase.RUNTIME_ID, clock, CriterionOperatorRegistryImpl.ofDefaults());
 
     @Override
     protected IssuanceProcessStore getStore() {
