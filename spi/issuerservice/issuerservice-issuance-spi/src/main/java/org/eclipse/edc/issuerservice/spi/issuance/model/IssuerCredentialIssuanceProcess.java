@@ -126,6 +126,7 @@ public class IssuerCredentialIssuanceProcess extends StatefulEntity<IssuerCreden
             return this;
         }
 
+        @Override
         public IssuerCredentialIssuanceProcess build() {
             super.build();
 
