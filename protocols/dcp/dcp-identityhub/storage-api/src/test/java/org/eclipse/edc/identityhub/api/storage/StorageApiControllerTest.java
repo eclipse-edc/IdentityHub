@@ -18,7 +18,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import io.restassured.specification.RequestSpecification;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.identityhub.protocols.dcp.identityhub.spi.DcpIssuerTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialContainer;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;

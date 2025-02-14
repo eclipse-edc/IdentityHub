@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.edc.identityhub.protocols.dcp.identityhub.spi.DcpIssuerTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;

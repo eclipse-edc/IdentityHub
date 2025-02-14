@@ -19,8 +19,8 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialre
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest.validation.CredentialRequestMessageValidator;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequeststatus.CredentialRequestStatusApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata.IssuerMetadataApiController;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialObjectTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialRequestStatusTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromIssuerMetadataTransformer;

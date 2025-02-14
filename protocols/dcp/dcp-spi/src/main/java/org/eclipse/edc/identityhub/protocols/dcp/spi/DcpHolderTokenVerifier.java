@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.spi;
+package org.eclipse.edc.identityhub.protocols.dcp.spi;
 
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;

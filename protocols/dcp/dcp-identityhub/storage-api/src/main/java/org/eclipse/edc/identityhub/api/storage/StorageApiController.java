@@ -22,7 +22,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.edc.identityhub.protocols.dcp.identityhub.spi.DcpIssuerTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;

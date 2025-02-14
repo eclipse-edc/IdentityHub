@@ -16,8 +16,8 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.identitytrust.spi.validation.TokenValidationAction;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;

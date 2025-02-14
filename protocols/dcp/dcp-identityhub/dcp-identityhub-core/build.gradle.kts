@@ -19,7 +19,7 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
-    api(project(":extensions:protocols:dcp:dcp-identityhub:dcp-identityhub-spi"))
+    api(project(":protocols:dcp:dcp-spi"))
     api(libs.edc.spi.identity.did)
     implementation(libs.edc.vc.jwt)
     implementation(libs.edc.lib.token)

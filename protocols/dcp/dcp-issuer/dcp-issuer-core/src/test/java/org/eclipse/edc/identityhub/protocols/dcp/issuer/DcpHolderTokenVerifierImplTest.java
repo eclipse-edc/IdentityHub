@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.edc.iam.identitytrust.spi.validation.TokenValidationAction;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpHolderTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.spi.iam.ClaimToken;
