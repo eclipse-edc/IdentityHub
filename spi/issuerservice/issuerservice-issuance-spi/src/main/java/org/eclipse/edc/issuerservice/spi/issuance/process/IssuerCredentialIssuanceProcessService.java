@@ -14,31 +14,31 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.process;
 
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.List;
 
 /**
- * Service for managing {@link IssuanceProcess}.
+ * Service for managing {@link IssuerCredentialIssuanceProcess}.
  */
-public interface IssuanceProcessService {
+public interface IssuerCredentialIssuanceProcessService {
 
     /**
-     * Find a {@link IssuanceProcess} by its ID.
+     * Find a {@link IssuerCredentialIssuanceProcess} by its ID.
      *
      * @param id The ID
-     * @return {@link IssuanceProcess} or null if not found
+     * @return {@link IssuerCredentialIssuanceProcess} or null if not found
      */
-    IssuanceProcess findById(String id);
+    IssuerCredentialIssuanceProcess findById(String id);
 
     /**
-     * Search {@link IssuanceProcess}.
+     * Search {@link IssuerCredentialIssuanceProcess}.
      *
      * @param query The query
-     * @return The collection of {@link IssuanceProcess} that match the query
+     * @return The collection of {@link IssuerCredentialIssuanceProcess} that match the query
      */
-    ServiceResult<List<IssuanceProcess>> search(QuerySpec query);
+    ServiceResult<List<IssuerCredentialIssuanceProcess>> search(QuerySpec query);
 
 }

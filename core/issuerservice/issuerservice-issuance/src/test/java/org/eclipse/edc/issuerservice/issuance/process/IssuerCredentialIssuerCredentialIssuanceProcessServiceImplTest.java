@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.issuerservice.issuance.process;
 
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
-import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcessStates;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
@@ -34,11 +34,11 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class IssuanceProcessServiceImplTest {
+public class IssuerCredentialIssuerCredentialIssuanceProcessServiceImplTest {
 
     private final TransactionContext transactionContext = spy(new NoopTransactionContext());
     private final IssuanceProcessStore store = mock();
-    private final IssuanceProcessService service = new IssuanceProcessServiceImpl(transactionContext, store);
+    private final IssuerCredentialIssuanceProcessService service = new IssuerCredentialIssuanceProcessServiceImpl(transactionContext, store);
 
     @Test
     void findById_whenFound() {
@@ -65,15 +65,15 @@ public class IssuanceProcessServiceImplTest {
 
         var result = service.search(query);
 
-        assertThat(result).isSucceeded().asInstanceOf(list(IssuanceProcess.class)).containsExactly(process);
+        assertThat(result).isSucceeded().asInstanceOf(list(IssuerCredentialIssuanceProcess.class)).containsExactly(process);
         verify(transactionContext).execute(any(TransactionContext.ResultTransactionBlock.class));
     }
 
-    private IssuanceProcess createIssuanceProcess() {
+    private IssuerCredentialIssuanceProcess createIssuanceProcess() {
 
-        return IssuanceProcess.Builder.newInstance()
+        return IssuerCredentialIssuanceProcess.Builder.newInstance()
                 .id("id")
-                .state(IssuanceProcessStates.APPROVED.code())
+                .state(IssuerCredentialIssuanceProcessStates.APPROVED.code())
                 .participantId("participantId")
                 .build();
     }

@@ -14,13 +14,13 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.process;
 
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.entity.StateEntityManager;
 
 /**
- * Manages {@link IssuanceProcess}.
+ * Manages {@link IssuerCredentialIssuanceProcess}.
  */
 @ExtensionPoint
-public interface IssuanceProcessManager extends StateEntityManager {
+public interface IssuerCredentialIssuanceProcessManager extends StateEntityManager {
 }

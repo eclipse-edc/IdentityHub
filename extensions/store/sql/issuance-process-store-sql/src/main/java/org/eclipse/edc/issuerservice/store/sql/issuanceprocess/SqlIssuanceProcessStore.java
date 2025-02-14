@@ -16,7 +16,7 @@ package org.eclipse.edc.issuerservice.store.sql.issuanceprocess;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.toList;
 
 
 /**
- * SQL-based {@link IssuanceProcess} store intended for use with PostgreSQL
+ * SQL-based {@link IssuerCredentialIssuanceProcess} store intended for use with PostgreSQL
  */
 public class SqlIssuanceProcessStore extends AbstractSqlStore implements IssuanceProcessStore {
 
@@ -71,7 +71,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     }
 
     @Override
-    public IssuanceProcess findById(String id) {
+    public IssuerCredentialIssuanceProcess findById(String id) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 return findByIdInternal(connection, id);
@@ -82,7 +82,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     }
 
     @Override
-    public @NotNull List<IssuanceProcess> nextNotLeased(int max, Criterion... criteria) {
+    public @NotNull List<IssuerCredentialIssuanceProcess> nextNotLeased(int max, Criterion... criteria) {
         return transactionContext.execute(() -> {
             var filter = Arrays.stream(criteria).collect(toList());
             var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(max).build();
@@ -103,7 +103,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     }
 
     @Override
-    public StoreResult<IssuanceProcess> findByIdAndLease(String id) {
+    public StoreResult<IssuerCredentialIssuanceProcess> findByIdAndLease(String id) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 var entity = findByIdInternal(connection, id);
@@ -122,14 +122,14 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     }
 
     @Override
-    public void save(IssuanceProcess issuanceProcess) {
+    public void save(IssuerCredentialIssuanceProcess issuerCredentialIssuanceProcess) {
         try (var conn = getConnection()) {
-            var existing = findByIdInternal(conn, issuanceProcess.getId());
+            var existing = findByIdInternal(conn, issuerCredentialIssuanceProcess.getId());
             if (existing != null) {
-                leaseContext.by(leaseHolderName).withConnection(conn).breakLease(issuanceProcess.getId());
-                update(conn, issuanceProcess);
+                leaseContext.by(leaseHolderName).withConnection(conn).breakLease(issuerCredentialIssuanceProcess.getId());
+                update(conn, issuerCredentialIssuanceProcess);
             } else {
-                insert(conn, issuanceProcess);
+                insert(conn, issuerCredentialIssuanceProcess);
             }
         } catch (SQLException e) {
             throw new EdcPersistenceException(e);
@@ -137,7 +137,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     }
 
     @Override
-    public Stream<IssuanceProcess> query(QuerySpec querySpec) {
+    public Stream<IssuerCredentialIssuanceProcess> query(QuerySpec querySpec) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 var query = statements.createQuery(querySpec);
@@ -148,7 +148,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
         });
     }
 
-    private void insert(Connection conn, IssuanceProcess process) {
+    private void insert(Connection conn, IssuerCredentialIssuanceProcess process) {
         var insertTpStatement = statements.getInsertTemplate();
         queryExecutor.execute(conn, insertTpStatement, process.getId(),
                 process.getState(),
@@ -164,7 +164,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
         );
     }
 
-    private void update(Connection conn, IssuanceProcess process) {
+    private void update(Connection conn, IssuerCredentialIssuanceProcess process) {
         var updateStmt = statements.getUpdateTemplate();
         queryExecutor.execute(conn, updateStmt,
                 process.getState(),
@@ -179,7 +179,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
 
     }
 
-    private IssuanceProcess findByIdInternal(Connection connection, String id) {
+    private IssuerCredentialIssuanceProcess findByIdInternal(Connection connection, String id) {
         return transactionContext.execute(() -> {
             var stmt = statements.getFindByIdTemplate();
             return queryExecutor.single(connection, false, this::mapResultSet, stmt, id);
@@ -187,8 +187,8 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     }
 
 
-    private IssuanceProcess mapResultSet(ResultSet resultSet) throws Exception {
-        return IssuanceProcess.Builder.newInstance()
+    private IssuerCredentialIssuanceProcess mapResultSet(ResultSet resultSet) throws Exception {
+        return IssuerCredentialIssuanceProcess.Builder.newInstance()
                 .id(resultSet.getString(statements.getIdColumn()))
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
                 .updatedAt(resultSet.getLong(statements.getUpdatedAtColumn()))

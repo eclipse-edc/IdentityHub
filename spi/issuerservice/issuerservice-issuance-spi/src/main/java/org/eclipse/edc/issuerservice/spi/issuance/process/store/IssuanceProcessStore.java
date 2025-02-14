@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.process.store;
 
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.persistence.StateEntityStore;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -22,11 +22,11 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import java.util.stream.Stream;
 
 /**
- * Stores {@link IssuanceProcess}.
+ * Stores {@link IssuerCredentialIssuanceProcess}.
  */
 @ExtensionPoint
-public interface IssuanceProcessStore extends StateEntityStore<IssuanceProcess> {
+public interface IssuanceProcessStore extends StateEntityStore<IssuerCredentialIssuanceProcess> {
 
-    Stream<IssuanceProcess> query(QuerySpec querySpec);
+    Stream<IssuerCredentialIssuanceProcess> query(QuerySpec querySpec);
 
 }

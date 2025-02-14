@@ -16,7 +16,7 @@ package org.eclipse.edc.issuerservice.spi.issuance.model;
 
 import java.util.Arrays;
 
-public enum IssuanceProcessStates {
+public enum IssuerCredentialIssuanceProcessStates {
     SUBMITTED(50),
     APPROVED(100),
     DELIVERED(200),
@@ -24,11 +24,11 @@ public enum IssuanceProcessStates {
 
     private final int code;
 
-    IssuanceProcessStates(int code) {
+    IssuerCredentialIssuanceProcessStates(int code) {
         this.code = code;
     }
 
-    public static IssuanceProcessStates from(int code) {
+    public static IssuerCredentialIssuanceProcessStates from(int code) {
         return Arrays.stream(values()).filter(ips -> ips.code == code).findFirst().orElse(null);
     }
 
