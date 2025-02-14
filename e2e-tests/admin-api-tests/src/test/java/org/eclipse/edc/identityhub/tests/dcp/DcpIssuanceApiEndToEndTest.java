@@ -21,7 +21,8 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndTestContext;
-import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
@@ -36,6 +37,7 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.validator.spi.ValidationResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -93,7 +95,9 @@ public class DcpIssuanceApiEndToEndTest {
         @BeforeAll
         static void beforeAll(IssuerServiceEndToEndTestContext context) {
             var pipelineFactory = context.getRuntime().getService(AttestationSourceFactoryRegistry.class);
+            var validationRegistry = context.getRuntime().getService(AttestationDefinitionValidatorRegistry.class);
             pipelineFactory.registerFactory("Attestation", ATTESTATION_SOURCE_FACTORY);
+            validationRegistry.registerValidator("Attestation", def -> ValidationResult.success());
         }
 
         @AfterEach
@@ -108,13 +112,13 @@ public class DcpIssuanceApiEndToEndTest {
         @Test
         void requestCredential(IssuerServiceEndToEndTestContext context, ParticipantService participantService,
                                CredentialDefinitionService credentialDefinitionService,
-                               AttestationDefinitionStore attestationDefinitionStore,
+                               AttestationDefinitionService attestationDefinitionService,
                                IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             participantService.createParticipant(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
             var attestationDefinition = new AttestationDefinition("attestation-id", "Attestation", Map.of());
-            attestationDefinitionStore.create(attestationDefinition);
+            attestationDefinitionService.createAttestation(attestationDefinition);
 
             Map<String, Object> credentialRuleConfiguration = Map.of(
                     "claim", "onboarding.signedDocuments",
@@ -274,12 +278,12 @@ public class DcpIssuanceApiEndToEndTest {
         @Test
         void requestCredential_attestationsNotFulfilled_shouldReturn403(IssuerServiceEndToEndTestContext context,
                                                                         ParticipantService participantService,
-                                                                        AttestationDefinitionStore attestationDefinitionStore,
+                                                                        AttestationDefinitionService attestationDefinitionService,
                                                                         CredentialDefinitionService credentialDefinitionService) throws JOSEException {
 
             participantService.createParticipant(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
             var attestationDefinition = new AttestationDefinition("attestation-id", "Attestation", Map.of());
-            attestationDefinitionStore.create(attestationDefinition);
+            attestationDefinitionService.createAttestation(attestationDefinition);
 
             Map<String, Object> credentialRuleConfiguration = Map.of(
                     "claim", "onboarding.signedDocuments",
@@ -346,7 +350,7 @@ public class DcpIssuanceApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
-        
+
         @RegisterExtension
         static IssuerServiceEndToEndExtension runtime;
 

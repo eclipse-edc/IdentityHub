@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.issuance;
 
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationDefinitionServiceImpl;
+import org.eclipse.edc.issuerservice.issuance.attestation.AttestationDefinitionValidatorRegistryImpl;
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationPipelineImpl;
 import org.eclipse.edc.issuerservice.issuance.credentialdefinition.CredentialDefinitionServiceImpl;
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleDefinitionEvaluatorImpl;
@@ -22,6 +23,7 @@ import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleDefinitionValid
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleFactoryRegistryImpl;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
@@ -56,6 +58,8 @@ public class IssuanceServicesExtension implements ServiceExtension {
 
     private CredentialRuleDefinitionValidatorRegistry ruleDefinitionValidatorRegistry;
 
+    private AttestationDefinitionValidatorRegistry attestationDefinitionValidatorRegistry;
+
     @Provider
     public CredentialDefinitionService createParticipantService() {
         return new CredentialDefinitionServiceImpl(transactionContext, store, attestationDefinitionStore, credentialRuleDefinitionValidatorRegistry());
@@ -63,7 +67,7 @@ public class IssuanceServicesExtension implements ServiceExtension {
 
     @Provider
     public AttestationDefinitionService createAttestationService() {
-        return new AttestationDefinitionServiceImpl(transactionContext, attestationDefinitionStore, participantStore);
+        return new AttestationDefinitionServiceImpl(transactionContext, attestationDefinitionStore, participantStore, createAttestationDefinitionValidatorRegistry());
     }
 
     @Provider
@@ -98,6 +102,14 @@ public class IssuanceServicesExtension implements ServiceExtension {
         }
 
         return ruleDefinitionValidatorRegistry;
+    }
+
+    @Provider
+    public AttestationDefinitionValidatorRegistry createAttestationDefinitionValidatorRegistry() {
+        if (attestationDefinitionValidatorRegistry == null) {
+            attestationDefinitionValidatorRegistry = new AttestationDefinitionValidatorRegistryImpl();
+        }
+        return attestationDefinitionValidatorRegistry;
     }
 
     private AttestationPipelineImpl createAttestationPipelineImpl() {

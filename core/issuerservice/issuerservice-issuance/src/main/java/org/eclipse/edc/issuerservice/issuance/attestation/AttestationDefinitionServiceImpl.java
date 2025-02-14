@@ -16,12 +16,14 @@ package org.eclipse.edc.issuerservice.issuance.attestation;
 
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.eclipse.edc.validator.spi.ValidationResult;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -34,18 +36,22 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     private final TransactionContext transactionContext;
     private final AttestationDefinitionStore attestationDefinitionStore;
     private final ParticipantStore participantStore;
+    private final AttestationDefinitionValidatorRegistry definitionValidatorRegistry;
 
     public AttestationDefinitionServiceImpl(TransactionContext transactionContext,
                                             AttestationDefinitionStore attestationDefinitionStore,
-                                            ParticipantStore participantStore) {
+                                            ParticipantStore participantStore,
+                                            AttestationDefinitionValidatorRegistry definitionValidatorRegistry) {
         this.transactionContext = transactionContext;
         this.attestationDefinitionStore = attestationDefinitionStore;
         this.participantStore = participantStore;
+        this.definitionValidatorRegistry = definitionValidatorRegistry;
     }
 
     @Override
     public ServiceResult<Void> createAttestation(AttestationDefinition attestationDefinition) {
-        return transactionContext.execute(() -> from(attestationDefinitionStore.create(attestationDefinition)));
+        return transactionContext.execute(() -> validateAttestationDefinition(attestationDefinition)
+                .compose(v -> from(attestationDefinitionStore.create(attestationDefinition))));
     }
 
     @Override
@@ -104,6 +110,16 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     @Override
     public ServiceResult<Collection<AttestationDefinition>> queryAttestations(QuerySpec querySpec) {
         return transactionContext.execute(() -> from(attestationDefinitionStore.query(querySpec)));
+    }
+
+
+    private ServiceResult<Void> validateAttestationDefinition(AttestationDefinition attestationDefinition) {
+        return definitionValidatorRegistry.validateDefinition(attestationDefinition)
+                .flatMap(this::toServiceResult);
+    }
+
+    private ServiceResult<Void> toServiceResult(ValidationResult validationResult) {
+        return validationResult.failed() ? ServiceResult.badRequest(validationResult.getFailureDetail()) : ServiceResult.success();
     }
 
     private Collection<AttestationDefinition> findForIds(Collection<String> ids) {

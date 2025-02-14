@@ -15,6 +15,8 @@
 package org.eclipse.edc.issuerservice.issuance.attestations;
 
 import org.eclipse.edc.issuerservice.issuance.attestations.presentation.PresentationAttestationSourceFactory;
+import org.eclipse.edc.issuerservice.issuance.attestations.presentation.PresentationAttestatonSourceValidator;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -31,8 +33,12 @@ public class IssuanceAttestationsExtension implements ServiceExtension {
     @Inject
     private AttestationSourceFactoryRegistry registry;
 
+    @Inject
+    private AttestationDefinitionValidatorRegistry validatorRegistry;
+
     @Override
     public void initialize(ServiceExtensionContext context) {
         registry.registerFactory("presentation", new PresentationAttestationSourceFactory());
+        validatorRegistry.registerValidator("presentation", new PresentationAttestatonSourceValidator());
     }
 }

@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.spi.issuance.attestation;
 
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
+import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Validator;
 
 
@@ -31,6 +32,6 @@ public interface AttestationDefinitionValidatorRegistry {
     /**
      * Validates the definition.
      */
-    void validateDefinition(AttestationDefinition definition);
+    ValidationResult validateDefinition(AttestationDefinition definition);
 
 }
