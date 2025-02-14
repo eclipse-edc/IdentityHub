@@ -136,6 +136,36 @@ _None_
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.issuerservice.spi.credentials.CredentialService` (required)
 
+Module `dcp-identityhub-core`
+-----------------------------
+**Artifact:** org.eclipse.edc:dcp-identityhub-core:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.identityhub.protocols.dcp.issuer.DcpHolderCoreExtension`
+**Name:** "DCP Holder Core Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key             | Required | Type     | Default | Pattern | Min | Max | Description       |
+| --------------- | -------- | -------- | ------- | ------- | --- | --- | ----------------- |
+| `edc.ih.iam.id` | `*`      | `string` | ``      |         |     |     | DID of the holder |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier`
+
+#### Referenced (injected) services
+- `java.time.Clock` (required)
+- `org.eclipse.edc.token.spi.TokenValidationService` (required)
+- `org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver` (required)
+
 Module `dcp-issuer-api`
 -----------------------
 **Artifact:** org.eclipse.edc:dcp-issuer-api:0.12.0-SNAPSHOT
@@ -170,7 +200,7 @@ _None_
 - `org.eclipse.edc.transform.spi.TypeTransformerRegistry` (required)
 - `org.eclipse.edc.jsonld.spi.JsonLd` (required)
 - `org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService` (required)
-- `org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerSelfIssuedTokenVerifier` (required)
+- `org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier` (required)
 - `org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry` (required)
 
 Module `dcp-issuer-core`
@@ -197,7 +227,7 @@ _None_
 
 #### Provided services
 - `org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService`
-- `org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerSelfIssuedTokenVerifier`
+- `org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier`
 
 #### Referenced (injected) services
 - `org.eclipse.edc.token.spi.TokenValidationRulesRegistry` (required)
@@ -303,6 +333,7 @@ _None_
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver`
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry`
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService`
+- `org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter`
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService`
 
 #### Referenced (injected) services
@@ -326,6 +357,7 @@ _None_
 - `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 - `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.transform.spi.TypeTransformerRegistry` (required)
 
 Module `identity-hub-credentials-store-sql`
 -------------------------------------------
@@ -370,20 +402,6 @@ Module `identity-hub-did`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
-**Name:** "DID Default Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
-
 #### Class: `org.eclipse.edc.identityhub.did.DidServicesExtension`
 **Name:** "DID Service Extension"
 
@@ -402,6 +420,20 @@ _None_
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.keys.spi.KeyParserRegistry` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore` (required)
+
+#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
+**Name:** "DID Default Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `identity-hub-did-store-sql`
 -----------------------------------
@@ -834,6 +866,30 @@ Module `issuerservice-issuance`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceServicesExtension`
+**Name:** "IssuerService Issuance Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService`
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService`
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline`
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry`
+- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator`
+- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry`
+- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry`
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore` (required)
+- `org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore` (required)
+
 #### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceCoreExtension`
 **Name:** "Issuance Core Extension"
 
@@ -861,30 +917,6 @@ _None_
 - `org.eclipse.edc.issuerservice.spi.issuance.process.retry.IssuanceProcessRetryStrategy` (optional)
 - `java.time.Clock` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-
-#### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceServicesExtension`
-**Name:** "IssuerService Issuance Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService`
-- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService`
-- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline`
-- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry`
-- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator`
-- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry`
-- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry`
-- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore` (required)
-- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore` (required)
-- `org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore` (required)
 
 Module `issuerservice-issuance-attestations`
 --------------------------------------------
@@ -1177,11 +1209,13 @@ _None_
 - `org.eclipse.edc.transform.spi.TypeTransformerRegistry` (required)
 - `org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry` (required)
 - `org.eclipse.edc.web.spi.WebService` (required)
-- `org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier` (required)
 - `org.eclipse.edc.jsonld.spi.JsonLd` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
 - `org.eclipse.edc.spi.system.apiversion.ApiVersionService` (required)
 - `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
+- `org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter` (required)
+- `org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier` (required)
+- `org.eclipse.edc.spi.monitor.Monitor` (required)
 
 Module `sts-account-provisioner`
 --------------------------------
