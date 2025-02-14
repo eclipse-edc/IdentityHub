@@ -21,10 +21,10 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialre
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata.IssuerMetadataApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerSelfIssuedTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.from.JsonObjectFromCredentialObjectTransformer;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.from.JsonObjectFromCredentialRequestStatusTransformer;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.from.JsonObjectFromIssuerMetadataTransformer;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.to.JsonObjectToCredentialRequestMessageTransformer;
+import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialObjectTransformer;
+import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialRequestStatusTransformer;
+import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromIssuerMetadataTransformer;
+import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialRequestMessageTransformer;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
