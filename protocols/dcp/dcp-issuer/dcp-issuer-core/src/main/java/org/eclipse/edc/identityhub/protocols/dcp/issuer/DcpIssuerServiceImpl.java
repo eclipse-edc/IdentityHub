@@ -21,8 +21,8 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcessStates;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
 import org.eclipse.edc.spi.query.Criterion;
@@ -120,15 +120,15 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         return ServiceResult.success(evaluationResponse);
     }
 
-    private ServiceResult<IssuerCredentialIssuanceProcess> createIssuanceProcess(DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
+    private ServiceResult<IssuanceProcess> createIssuanceProcess(DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
 
         var credentialDefinitionIds = evaluationResponse.credentialDefinitions().stream()
                 .map(CredentialDefinition::getId)
                 .collect(Collectors.toSet());
 
-        var issuanceProcess = IssuerCredentialIssuanceProcess.Builder.newInstance()
+        var issuanceProcess = IssuanceProcess.Builder.newInstance()
                 .participantId(context.participant().participantId())
-                .state(IssuerCredentialIssuanceProcessStates.APPROVED.code())
+                .state(IssuanceProcessStates.APPROVED.code())
                 .credentialDefinitions(credentialDefinitionIds)
                 .claims(evaluationResponse.claims())
                 .build();

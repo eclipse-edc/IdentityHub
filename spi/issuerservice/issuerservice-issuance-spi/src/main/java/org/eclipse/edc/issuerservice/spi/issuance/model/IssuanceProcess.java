@@ -23,28 +23,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcessStates.from;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
 
 
 /**
- * Tracks credential issuance on the Issuer side.
+ * Tracks credential issuance.
  * <p>
- * A credential issuance process is created in response to an issuance request by a holder and involves generating one or more credentials.
+ * An issuance process is created in response to an issuance request by a holder and involves generating one or more credentials.
  * The credentials are defined by a {@link CredentialDefinition}, which specifies claim attestations, rules which must be satisfied,
  * and mappings from claim data to credential data. When a request is received, attestations are sourced and rules are verified.
  * If successful, an issuance process is created with claims gathered from attestations. The issuance process is then approved
  * asynchronously and generated credentials sent to the holder.
  */
-public class IssuerCredentialIssuanceProcess extends StatefulEntity<IssuerCredentialIssuanceProcess> {
+public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
     private final Map<String, Object> claims = new HashMap<>();
     private final List<String> credentialDefinitions = new ArrayList<>();
     private String participantId;
 
-    private IssuerCredentialIssuanceProcess() {
+    private IssuanceProcess() {
     }
 
     @Override
-    public IssuerCredentialIssuanceProcess copy() {
+    public IssuanceProcess copy() {
         var builder = Builder.newInstance()
                 .claims(claims)
                 .credentialDefinitions(credentialDefinitions)
@@ -87,18 +87,18 @@ public class IssuerCredentialIssuanceProcess extends StatefulEntity<IssuerCreden
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        var that = (IssuerCredentialIssuanceProcess) o;
+        var that = (IssuanceProcess) o;
         return id.equals(that.id);
     }
 
-    public static final class Builder extends StatefulEntity.Builder<IssuerCredentialIssuanceProcess, Builder> {
+    public static final class Builder extends StatefulEntity.Builder<IssuanceProcess, Builder> {
 
-        private Builder(IssuerCredentialIssuanceProcess process) {
+        private Builder(IssuanceProcess process) {
             super(process);
         }
 
         public static Builder newInstance() {
-            return new Builder(new IssuerCredentialIssuanceProcess());
+            return new Builder(new IssuanceProcess());
         }
 
         @Override
@@ -126,8 +126,7 @@ public class IssuerCredentialIssuanceProcess extends StatefulEntity<IssuerCreden
             return this;
         }
 
-        @Override
-        public IssuerCredentialIssuanceProcess build() {
+        public IssuanceProcess build() {
             super.build();
 
             if (entity.state == 0) {

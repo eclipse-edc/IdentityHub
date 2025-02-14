@@ -15,8 +15,8 @@
 package org.eclipse.edc.issuerservice.spi.issuance.process.store;
 
 import org.awaitility.Awaitility;
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcessStates;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
@@ -34,13 +34,13 @@ import java.util.UUID;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcessStates.APPROVED;
-import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcessStates.DELIVERED;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.APPROVED;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERED;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
 import static org.eclipse.edc.spi.query.Criterion.criterion;
 import static org.hamcrest.Matchers.hasSize;
 
-public abstract class IssuerCredentialIssuanceProcessStoreTestBase {
+public abstract class IssuanceProcessStoreTestBase {
 
     protected static final String RUNTIME_ID = "runtime-id";
     protected final Clock clock = Clock.systemUTC();
@@ -64,20 +64,20 @@ public abstract class IssuerCredentialIssuanceProcessStoreTestBase {
 
     protected abstract boolean isLeasedBy(String issuanceId, String owner);
 
-    private IssuerCredentialIssuanceProcess createIssuanceProcess() {
+    private IssuanceProcess createIssuanceProcess() {
         return createIssuanceProcess(UUID.randomUUID().toString());
     }
 
-    private IssuerCredentialIssuanceProcess createIssuanceProcess(String id, IssuerCredentialIssuanceProcessStates state) {
+    private IssuanceProcess createIssuanceProcess(String id, IssuanceProcessStates state) {
         return createIssuanceProcessBuilder().id(id).state(state.code()).build();
     }
 
-    private IssuerCredentialIssuanceProcess createIssuanceProcess(String id) {
+    private IssuanceProcess createIssuanceProcess(String id) {
         return createIssuanceProcess(id, APPROVED);
     }
 
-    private IssuerCredentialIssuanceProcess.Builder createIssuanceProcessBuilder() {
-        return IssuerCredentialIssuanceProcess.Builder.newInstance()
+    private IssuanceProcess.Builder createIssuanceProcessBuilder() {
+        return IssuanceProcess.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .participantId(UUID.randomUUID().toString())
                 .state(APPROVED.code());
@@ -130,8 +130,8 @@ public abstract class IssuerCredentialIssuanceProcessStoreTestBase {
 
             assertThat(getStore().nextNotLeased(5, hasState(state.code())))
                     .hasSize(5)
-                    .extracting(IssuerCredentialIssuanceProcess::getId)
-                    .isSubsetOf(all.stream().map(IssuerCredentialIssuanceProcess::getId).toList())
+                    .extracting(IssuanceProcess::getId)
+                    .isSubsetOf(all.stream().map(IssuanceProcess::getId).toList())
                     .allMatch(id -> isLeasedBy(id, RUNTIME_ID));
         }
 
@@ -198,7 +198,7 @@ public abstract class IssuerCredentialIssuanceProcessStoreTestBase {
                     .forEach(getStore()::save);
 
             assertThat(getStore().nextNotLeased(20, hasState(state.code())))
-                    .extracting(IssuerCredentialIssuanceProcess::getId)
+                    .extracting(IssuanceProcess::getId)
                     .map(Integer::parseInt)
                     .isSortedAccordingTo(Integer::compareTo);
         }
@@ -288,14 +288,14 @@ public abstract class IssuerCredentialIssuanceProcessStoreTestBase {
 
             all.stream().limit(5)
                     .peek(this::delayByTenMillis)
-                    .sorted(Comparator.comparing(IssuerCredentialIssuanceProcess::getStateTimestamp).reversed())
+                    .sorted(Comparator.comparing(IssuanceProcess::getStateTimestamp).reversed())
                     .forEach(f -> getStore().save(f));
 
             var elements = getStore().nextNotLeased(10, hasState(APPROVED.code()));
-            assertThat(elements).hasSize(10).extracting(IssuerCredentialIssuanceProcess::getStateTimestamp).isSorted();
+            assertThat(elements).hasSize(10).extracting(IssuanceProcess::getStateTimestamp).isSorted();
         }
 
-        private void delayByTenMillis(IssuerCredentialIssuanceProcess t) {
+        private void delayByTenMillis(IssuanceProcess t) {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException ignored) {
@@ -376,7 +376,7 @@ public abstract class IssuerCredentialIssuanceProcessStoreTestBase {
 
             var result = getStore().query(querySpec);
 
-            assertThat(result).extracting(IssuerCredentialIssuanceProcess::getId).containsOnly("test-neg-3");
+            assertThat(result).extracting(IssuanceProcess::getId).containsOnly("test-neg-3");
         }
 
         @Test
@@ -464,7 +464,7 @@ public abstract class IssuerCredentialIssuanceProcessStoreTestBase {
 
             assertThat(getStore().query(QuerySpec.Builder.newInstance().sortField("id").sortOrder(SortOrder.ASC).build()))
                     .hasSize(10)
-                    .isSortedAccordingTo(Comparator.comparing(IssuerCredentialIssuanceProcess::getId));
+                    .isSortedAccordingTo(Comparator.comparing(IssuanceProcess::getId));
             assertThat(getStore().query(QuerySpec.Builder.newInstance().sortField("id").sortOrder(SortOrder.DESC).build()))
                     .hasSize(10)
                     .isSortedAccordingTo((c1, c2) -> c2.getId().compareTo(c1.getId()));
@@ -478,7 +478,7 @@ public abstract class IssuerCredentialIssuanceProcessStoreTestBase {
 
             var qs = QuerySpec.Builder.newInstance().limit(5).offset(3).build();
             assertThat(getStore().query(qs)).hasSize(5)
-                    .extracting(IssuerCredentialIssuanceProcess::getId)
+                    .extracting(IssuanceProcess::getId)
                     .map(Integer::parseInt)
                     .allMatch(id -> id >= 3 && id < 8);
         }
@@ -493,7 +493,7 @@ public abstract class IssuerCredentialIssuanceProcessStoreTestBase {
             var qs = QuerySpec.Builder.newInstance().limit(20).offset(3).build();
             assertThat(getStore().query(qs))
                     .hasSize(7)
-                    .extracting(IssuerCredentialIssuanceProcess::getId)
+                    .extracting(IssuanceProcess::getId)
                     .map(Integer::parseInt)
                     .allMatch(id -> id >= 3 && id < 10);
         }

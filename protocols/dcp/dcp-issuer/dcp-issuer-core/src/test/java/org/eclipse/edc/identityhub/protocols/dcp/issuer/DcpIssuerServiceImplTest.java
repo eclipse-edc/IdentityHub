@@ -22,8 +22,8 @@ import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipelin
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcessStates;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
@@ -88,7 +88,7 @@ public class DcpIssuerServiceImplTest {
 
         assertThat(result).isSucceeded();
 
-        var captor = ArgumentCaptor.forClass(IssuerCredentialIssuanceProcess.class);
+        var captor = ArgumentCaptor.forClass(IssuanceProcess.class);
         verify(issuanceProcessStore).save(captor.capture());
 
         var issuanceProcess = captor.getValue();
@@ -97,7 +97,7 @@ public class DcpIssuerServiceImplTest {
         assertThat(issuanceProcess.getId()).isEqualTo(result.getContent().requestId());
         assertThat(issuanceProcess.getCredentialDefinitions()).containsExactly("credentialDefinitionId");
         assertThat(issuanceProcess.getParticipantId()).isEqualTo("participantId");
-        assertThat(issuanceProcess.getState()).isEqualTo(IssuerCredentialIssuanceProcessStates.APPROVED.code());
+        assertThat(issuanceProcess.getState()).isEqualTo(IssuanceProcessStates.APPROVED.code());
         assertThat(issuanceProcess.getClaims()).containsAllEntriesOf(claims);
     }
 }

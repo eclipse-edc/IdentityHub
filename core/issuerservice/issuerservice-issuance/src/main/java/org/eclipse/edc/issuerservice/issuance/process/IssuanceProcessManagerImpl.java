@@ -14,16 +14,16 @@
 
 package org.eclipse.edc.issuerservice.issuance.process;
 
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
-import org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessManager;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.statemachine.AbstractStateEntityManager;
 import org.eclipse.edc.statemachine.StateMachineManager;
 
-public class IssuerCredentialIssuanceProcessManagerImpl extends AbstractStateEntityManager<IssuerCredentialIssuanceProcess, IssuanceProcessStore> implements IssuerCredentialIssuanceProcessManager {
+public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<IssuanceProcess, IssuanceProcessStore> implements IssuanceProcessManager {
 
 
-    private IssuerCredentialIssuanceProcessManagerImpl() {
+    private IssuanceProcessManagerImpl() {
     }
 
     @Override
@@ -32,10 +32,10 @@ public class IssuerCredentialIssuanceProcessManagerImpl extends AbstractStateEnt
     }
 
     public static class Builder
-            extends AbstractStateEntityManager.Builder<IssuerCredentialIssuanceProcess, IssuanceProcessStore, IssuerCredentialIssuanceProcessManagerImpl, Builder> {
+            extends AbstractStateEntityManager.Builder<IssuanceProcess, IssuanceProcessStore, IssuanceProcessManagerImpl, Builder> {
 
         private Builder() {
-            super(new IssuerCredentialIssuanceProcessManagerImpl());
+            super(new IssuanceProcessManagerImpl());
         }
 
         public static Builder newInstance() {
@@ -48,7 +48,7 @@ public class IssuerCredentialIssuanceProcessManagerImpl extends AbstractStateEnt
         }
 
         @Override
-        public IssuerCredentialIssuanceProcessManagerImpl build() {
+        public IssuanceProcessManagerImpl build() {
             super.build();
             return manager;
         }

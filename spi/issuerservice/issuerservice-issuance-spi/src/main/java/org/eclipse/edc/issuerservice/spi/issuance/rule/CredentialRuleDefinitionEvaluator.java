@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.rule;
 
-import org.eclipse.edc.issuerservice.spi.issuance.IssuerCredentialIssuanceContext;
+import org.eclipse.edc.issuerservice.spi.issuance.IssuanceContext;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.result.Result;
@@ -34,5 +34,5 @@ public interface CredentialRuleDefinitionEvaluator {
      * @param context     the issuance context
      * @return the result of the evaluation
      */
-    Result<Void> evaluate(Collection<CredentialRuleDefinition> definitions, IssuerCredentialIssuanceContext context);
+    Result<Void> evaluate(Collection<CredentialRuleDefinition> definitions, IssuanceContext context);
 }

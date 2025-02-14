@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * A context containing data used during the issuance process.
  */
-public interface IssuerCredentialIssuanceContext {
+public interface IssuanceContext {
 
     /**
      * Returns a claim or null if not found.
