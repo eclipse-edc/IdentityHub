@@ -69,15 +69,14 @@ include(":extensions:sts:sts-account-service-local")
 include(":extensions:sts:sts-account-service-remote")
 
 // DCP protocol modules
-include(":extensions:protocols:dcp:dcp-spi")
-include(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-spi")
-include(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-transform-lib")
-include(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-api")
-include(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-core")
+include(":protocols:dcp:dcp-spi")
+include(":protocols:dcp:dcp-issuer:dcp-issuer-spi")
+include(":protocols:dcp:dcp-transform-lib")
+include(":protocols:dcp:dcp-issuer:dcp-issuer-api")
+include(":protocols:dcp:dcp-issuer:dcp-issuer-core")
 
-include(":extensions:protocols:dcp:dcp-identityhub:presentation-api")
-include(":extensions:protocols:dcp:dcp-identityhub:storage-api")
-include(":extensions:protocols:dcp:dcp-identityhub:dcp-identityhub-transform-lib")
+include(":protocols:dcp:dcp-identityhub:presentation-api")
+include(":protocols:dcp:dcp-identityhub:storage-api")
 
 
 // Identity APIs
