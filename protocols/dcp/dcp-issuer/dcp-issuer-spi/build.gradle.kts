@@ -18,6 +18,6 @@ plugins {
 }
 
 dependencies {
-    api(project(":extensions:protocols:dcp:dcp-spi"))
+    api(project(":protocols:dcp:dcp-spi"))
 }
 

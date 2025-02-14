@@ -21,7 +21,7 @@ dependencies {
     api(project(":spi:verifiable-credential-spi"))
     api(project(":spi:issuerservice:issuerservice-participant-spi"))
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))
-    api(project(":extensions:protocols:dcp:dcp-issuer:dcp-issuer-spi"))
+    api(project(":protocols:dcp:dcp-issuer:dcp-issuer-spi"))
     api(libs.edc.spi.jwt)
     api(libs.edc.spi.identity.did)
     api(libs.edc.spi.transaction)

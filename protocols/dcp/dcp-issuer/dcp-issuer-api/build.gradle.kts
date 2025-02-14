@@ -22,7 +22,7 @@ plugins {
 dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:verifiable-credential-spi"))
-    api(project(":extensions:protocols:dcp:dcp-spi"))
+    api(project(":protocols:dcp:dcp-spi"))
     api(libs.edc.spi.jsonld)
     api(libs.edc.spi.jwt)
     api(libs.edc.spi.core)
@@ -32,7 +32,7 @@ dependencies {
     implementation(libs.edc.lib.transform)
     implementation(libs.edc.dcp.transform)
     implementation(libs.edc.lib.validator)
-    implementation(project(":extensions:protocols:dcp:dcp-transform-lib"))
+    implementation(project(":protocols:dcp:dcp-transform-lib"))
     implementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.jsonld)
