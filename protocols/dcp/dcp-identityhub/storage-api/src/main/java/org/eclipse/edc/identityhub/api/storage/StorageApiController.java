@@ -22,9 +22,12 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
-import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.spi.JsonLd;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
@@ -37,6 +40,7 @@ import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAME
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIAL_MESSAGE_TERM;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
+import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -45,15 +49,23 @@ public class StorageApiController implements StorageApi {
 
     private final JsonObjectValidatorRegistry validatorRegistry;
     private final TypeTransformerRegistry transformerRegistry;
-    private final SelfIssuedTokenVerifier selfIssuedTokenVerifier;
     private final JsonLd jsonLd;
+    private final CredentialWriter credentialWriter;
+    private final Monitor monitor;
+    private final DcpIssuerTokenVerifier issuerTokenVerifier;
 
-    public StorageApiController(JsonObjectValidatorRegistry validatorRegistry, TypeTransformerRegistry transformerRegistry,
-                                SelfIssuedTokenVerifier selfIssuedTokenVerifier, JsonLd jsonLd) {
+    public StorageApiController(JsonObjectValidatorRegistry validatorRegistry,
+                                TypeTransformerRegistry transformerRegistry,
+                                JsonLd jsonLd,
+                                CredentialWriter credentialWriter,
+                                Monitor monitor,
+                                DcpIssuerTokenVerifier issuerTokenVerifier) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
-        this.selfIssuedTokenVerifier = selfIssuedTokenVerifier;
         this.jsonLd = jsonLd;
+        this.credentialWriter = credentialWriter;
+        this.monitor = monitor;
+        this.issuerTokenVerifier = issuerTokenVerifier;
     }
 
 
@@ -63,7 +75,7 @@ public class StorageApiController implements StorageApi {
         if (authHeader == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
-        var authtoken = authHeader.replace("Bearer", "").trim();
+        var authToken = authHeader.replace("Bearer", "").trim();
         credentialMessageJson = jsonLd.expand(credentialMessageJson).orElseThrow(InvalidRequestException::new);
         validatorRegistry.validate(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_MESSAGE_TERM), credentialMessageJson).orElseThrow(ValidationFailureException::new);
         var protocolRegistry = transformerRegistry.forContext(DCP_SCOPE_V_1_0);
@@ -72,11 +84,18 @@ public class StorageApiController implements StorageApi {
 
         var credentialMessage = protocolRegistry.forContext(DCP_SCOPE_V_1_0).transform(credentialMessageJson, CredentialMessage.class).orElseThrow(InvalidRequestException::new);
 
-        var issuerScopes = selfIssuedTokenVerifier.verify(authtoken, participantContextId).orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+        // validate Issuer's SI token
+        issuerTokenVerifier.verify(authToken)
+                .orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
-        //todo: implement credential write
 
-        return Response.ok().build();
+        // todo: implement response validation by fetching the original CredentialRequest from the DB (using the requestId)
+        // and comparing the credential types therein
+        monitor.warning("Validation of requested credential types against received credential types is not yet implemented.");
+
+        return credentialWriter.write(credentialMessage.getCredentials().stream().map(c -> new CredentialWriteRequest(c.payload(), c.format())).toList(), participantContextId)
+                .map(v -> Response.ok().build())
+                .orElseThrow(exceptionMapper(CredentialMessage.class, null));
     }
 
 }

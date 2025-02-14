@@ -31,6 +31,7 @@ public class IdentityHubRuntimeConfiguration {
 
     private Endpoint presentationEndpoint;
     private Endpoint identityEndpoint;
+    private Endpoint storageEndpoint;
     private String id;
     private String name;
 
@@ -46,6 +47,8 @@ public class IdentityHubRuntimeConfiguration {
                 put("web.http.path", "/api/v1");
                 put("web.http.presentation.port", String.valueOf(presentationEndpoint.getUrl().getPort()));
                 put("web.http.presentation.path", presentationEndpoint.getUrl().getPath());
+                put("web.http.storage.port", String.valueOf(storageEndpoint.getUrl().getPort()));
+                put("web.http.storage.path", String.valueOf(storageEndpoint.getUrl().getPath()));
                 put("web.http.identity.port", String.valueOf(identityEndpoint.getUrl().getPort()));
                 put("web.http.identity.path", identityEndpoint.getUrl().getPath());
                 put("web.http.sts.port", String.valueOf(getFreePort()));
@@ -62,6 +65,10 @@ public class IdentityHubRuntimeConfiguration {
 
     public Endpoint getIdentityApiEndpoint() {
         return identityEndpoint;
+    }
+
+    public Endpoint getStorageEndpoint() {
+        return storageEndpoint;
     }
 
     public static final class Builder {
@@ -88,6 +95,7 @@ public class IdentityHubRuntimeConfiguration {
         public IdentityHubRuntimeConfiguration build() {
             participant.presentationEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/presentation"), Map.of());
             participant.identityEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/identity"), Map.of());
+            participant.storageEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/storage"), Map.of());
             return participant;
         }
     }

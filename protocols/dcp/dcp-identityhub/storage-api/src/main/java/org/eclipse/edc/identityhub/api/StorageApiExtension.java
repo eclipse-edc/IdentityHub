@@ -15,11 +15,13 @@
 package org.eclipse.edc.identityhub.api;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import org.eclipse.edc.iam.identitytrust.transform.from.JsonObjectFromPresentationResponseMessageTransformer;
-import org.eclipse.edc.iam.identitytrust.transform.to.JsonObjectToPresentationQueryTransformer;
+import org.eclipse.edc.iam.identitytrust.transform.to.JwtToVerifiableCredentialTransformer;
 import org.eclipse.edc.identityhub.api.storage.StorageApiController;
 import org.eclipse.edc.identityhub.api.validation.CredentialMessageValidator;
-import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialMessageTransformer;
+import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialMessageTransformer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
@@ -28,6 +30,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.runtime.metamodel.annotation.Settings;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.apiversion.ApiVersionService;
@@ -67,8 +70,6 @@ public class StorageApiExtension implements ServiceExtension {
     @Inject
     private WebService webService;
     @Inject
-    private SelfIssuedTokenVerifier selfIssuedTokenVerifier;
-    @Inject
     private JsonLd jsonLd;
     @Inject
     private TypeManager typeManager;
@@ -76,6 +77,12 @@ public class StorageApiExtension implements ServiceExtension {
     private ApiVersionService apiVersionService;
     @Inject
     private PortMappingRegistry portMappingRegistry;
+    @Inject
+    private CredentialWriter writer;
+    @Inject
+    private DcpIssuerTokenVerifier issuerTokenVerifier;
+    @Inject
+    private Monitor monitor;
 
     @Override
     public String name() {
@@ -91,7 +98,7 @@ public class StorageApiExtension implements ServiceExtension {
         validatorRegistry.register(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_MESSAGE_TERM), new CredentialMessageValidator());
 
 
-        var controller = new StorageApiController(validatorRegistry, typeTransformer, selfIssuedTokenVerifier, jsonLd);
+        var controller = new StorageApiController(validatorRegistry, typeTransformer, jsonLd, writer, context.getMonitor(), issuerTokenVerifier);
         webService.registerResource(contextString, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(contextString, controller);
 
@@ -104,9 +111,14 @@ public class StorageApiExtension implements ServiceExtension {
 
     void registerTransformers(String scope, JsonLdNamespace namespace) {
         var scopedTransformerRegistry = typeTransformer.forContext(scope);
-        scopedTransformerRegistry.register(new JsonObjectToPresentationQueryTransformer(typeManager, JSON_LD, namespace));
+        scopedTransformerRegistry.register(new JsonObjectToCredentialMessageTransformer(typeManager, JSON_LD, namespace));
         scopedTransformerRegistry.register(new JsonValueToGenericTypeTransformer(typeManager, JSON_LD));
-        scopedTransformerRegistry.register(new JsonObjectFromPresentationResponseMessageTransformer(namespace));
+        scopedTransformerRegistry.register(new JsonObjectFromCredentialMessageTransformer(typeManager, JSON_LD, namespace));
+
+        typeTransformer.register(new JwtToVerifiableCredentialTransformer(monitor));
+
+        // no need to register a JsonObject -> VerifiableCredential transformer here, because LD-Credentials
+        // in the CredentialContainer would be JSON-literals, so they can be converted using an ObjectMapper
     }
 
     private void registerVersionInfo(ClassLoader resourceClassLoader) {
@@ -117,7 +129,7 @@ public class StorageApiExtension implements ServiceExtension {
             Stream.of(typeManager.getMapper()
                             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
                             .readValue(versionContent, VersionRecord[].class))
-                    .forEach(vr -> apiVersionService.addRecord("presentation", vr));
+                    .forEach(vr -> apiVersionService.addRecord("storage", vr));
         } catch (IOException e) {
             throw new EdcException(e);
         }

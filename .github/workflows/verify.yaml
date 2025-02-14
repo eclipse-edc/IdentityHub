@@ -50,6 +50,7 @@ jobs:
       - name: 'Start Identity Hub'
         run: |
           docker run -d --rm --name identity-hub \
+            -e "EDC_IH_IAM_ID=did:web:test" \
             -e "WEB_HTTP_IDENTITY_PORT=8182" \
             -e "WEB_HTTP_IDENTITY_PATH=/api/identity" \
             -e "WEB_HTTP_PRESENTATION_PORT=10001" \

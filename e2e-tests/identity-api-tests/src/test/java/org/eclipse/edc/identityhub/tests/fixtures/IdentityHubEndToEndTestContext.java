@@ -145,6 +145,10 @@ public class IdentityHubEndToEndTestContext {
         return configuration.getPresentationEndpoint();
     }
 
+    public IdentityHubRuntimeConfiguration.Endpoint getStorageEndpoint() {
+        return configuration.getStorageEndpoint();
+    }
+
     public Collection<DidDocument> getDidForParticipant(String participantContextId) {
         return runtime.getService(DidDocumentService.class).queryDocuments(QuerySpec.Builder.newInstance()
                 .filter(new Criterion("participantContextId", "=", participantContextId))

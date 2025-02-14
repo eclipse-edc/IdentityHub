@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.edc.iam.identitytrust.spi.validation.TokenValidationAction;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerSelfIssuedTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.spi.iam.ClaimToken;
@@ -37,7 +37,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DcpIssuerSelfIssuedTokenVerifierImplTest {
+public class DcpHolderTokenVerifierImplTest {
 
     public static final String ISSUER_DID = "did:web:issuer";
     public static final String PARTICIPANT_DID = "did:web:participant";
@@ -46,7 +46,7 @@ public class DcpIssuerSelfIssuedTokenVerifierImplTest {
 
     private final TokenValidationAction tokenValidationAction = mock();
     private final ParticipantStore participantStore = mock();
-    private final DcpIssuerSelfIssuedTokenVerifier dcpIssuerTokenVerifier = new DcpIssuerSelfIssuedTokenVerifierImpl(participantStore, tokenValidationAction);
+    private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = new DcpHolderTokenVerifierImpl(participantStore, tokenValidationAction);
 
 
     @Test
@@ -101,7 +101,7 @@ public class DcpIssuerSelfIssuedTokenVerifierImplTest {
         assertThat(result).isFailed();
 
     }
-    
+
     private String generateToken() {
         return generateJwt(ISSUER_DID, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), PARTICIPANT_KEY);
     }

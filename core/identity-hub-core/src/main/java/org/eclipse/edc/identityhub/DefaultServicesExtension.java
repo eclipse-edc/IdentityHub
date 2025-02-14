@@ -47,8 +47,8 @@ import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
 
 @Extension(NAME)
@@ -80,13 +80,13 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         var accessTokenRule = new ClaimIsPresentRule(TOKEN_CLAIM);
-        registry.addRule(DCP_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
+        registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
-        registry.addRule(DCP_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
+        registry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
 
         if (activateJtiCheck) {
-            registry.addRule(DCP_ACCESS_TOKEN_CONTEXT, new JtiValidationRule(jwtValidationStore, context.getMonitor()));
+            registry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new JtiValidationRule(jwtValidationStore, context.getMonitor()));
         } else {
             context.getMonitor().warning("JWT Token ID (\"jti\" claim) Validation is not active. Please consider setting '%s=true' for protection against replay attacks".formatted(ACCESSTOKEN_JTI_VALIDATION_ACTIVATE));
         }

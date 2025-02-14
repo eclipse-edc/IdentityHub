@@ -1,0 +1,124 @@
+/*
+ *  Copyright (c) 2025 Cofinity-X
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Cofinity-X - initial API and implementation
+ *
+ */
+
+package org.eclipse.edc.identityhub.core.services.verifiablecredential;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.json.JsonObject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+import static org.eclipse.edc.spi.result.ServiceResult.from;
+import static org.eclipse.edc.spi.result.ServiceResult.success;
+
+
+public class CredentialWriterImpl implements CredentialWriter {
+    private static final List<String> VALID_CREDENTIAL_FORMATS = Arrays.stream(CredentialFormat.values()).map(Object::toString).toList();
+    private final CredentialStore credentialStore;
+    private final TypeTransformerRegistry credentialTransformerRegistry;
+    private final TransactionContext transactionContext;
+    private final ObjectMapper objectMapper;
+
+
+    public CredentialWriterImpl(CredentialStore credentialStore, TypeTransformerRegistry credentialTransformerRegistry, TransactionContext transactionContext, ObjectMapper objectMapper) {
+        this.credentialStore = credentialStore;
+        this.credentialTransformerRegistry = credentialTransformerRegistry;
+        this.transactionContext = transactionContext;
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public ServiceResult<Void> write(Collection<CredentialWriteRequest> requests, String participantContextId) {
+        return transactionContext.execute(() -> {
+
+            for (var rq : requests) { // use for loop to abort early: merging ServiceResults in a stream operation is not really possible
+                var convertResult = convertToResource(rq, participantContextId);
+                if (convertResult.failed()) {
+                    return convertResult.mapEmpty();
+                }
+                var createResult = credentialStore.create(convertResult.getContent());
+
+                if (createResult.failed()) {
+                    return from(createResult);
+                }
+            }
+            return success();
+        });
+    }
+
+    private ServiceResult<VerifiableCredentialResource> convertToResource(CredentialWriteRequest credentialWriteRequest, String participantContextId) {
+
+        CredentialFormat credentialFormat;
+        try {
+            credentialFormat = CredentialFormat.valueOf(credentialWriteRequest.credentialFormat().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ServiceResult.badRequest(String.format("Invalid format: '%s', expected one of %s".formatted(credentialWriteRequest.credentialFormat(), VALID_CREDENTIAL_FORMATS)));
+        }
+
+        //attempt to convert the raw credential to JSON -> would mean LD, or JWT otherwise
+        var transformationResult = tryConvertToJson(credentialWriteRequest.rawCredential())
+                .map(jsonObjectCredential -> Result.success(objectMapper.convertValue(jsonObjectCredential, VerifiableCredential.class)))
+                .orElseGet(() -> credentialTransformerRegistry.transform(credentialWriteRequest.rawCredential(), VerifiableCredential.class));
+
+        if (transformationResult.failed()) {
+            return ServiceResult.unexpected(transformationResult.getFailureDetail());
+        }
+        var credential = transformationResult.getContent();
+
+        var container = new VerifiableCredentialContainer(credentialWriteRequest.rawCredential(), credentialFormat, credential);
+
+        var resource = VerifiableCredentialResource.Builder.newInstance()
+                .credential(container)
+                .id(credential.getId())
+                .state(VcStatus.ISSUED)
+                .holderId(extractHolder(credential))
+                .issuerId(credential.getIssuer().id())
+                .timestamp(Instant.now().toEpochMilli())
+                .participantContextId(participantContextId)
+                .build();
+
+        return ServiceResult.success(resource);
+    }
+
+    private Optional<JsonObject> tryConvertToJson(@NotNull String rawCredential) {
+        try {
+            return Optional.of(objectMapper.readValue(rawCredential, JsonObject.class));
+        } catch (IOException e) {
+            return Optional.empty();
+        }
+    }
+
+    private String extractHolder(VerifiableCredential credential) {
+        return credential.getCredentialSubject().stream().findFirst().map(CredentialSubject::getId).orElse(null);
+    }
+}

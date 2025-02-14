@@ -50,10 +50,12 @@ public class VerifiableCredentialResource extends IdentityResource {
         return VcStatus.from(state);
     }
 
+    @Deprecated(since = "0.11.0")
     public Policy getIssuancePolicy() {
         return issuancePolicy;
     }
 
+    @Deprecated(since = "0.11.0")
     public Policy getReissuancePolicy() {
         return reissuancePolicy;
     }

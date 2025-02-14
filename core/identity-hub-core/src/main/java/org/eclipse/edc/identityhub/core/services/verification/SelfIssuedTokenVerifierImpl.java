@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
-import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_ACCESS_TOKEN_CONTEXT;
-import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
 
 /**
@@ -48,8 +48,11 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
     private final PublicKeyResolver publicKeyResolver;
     private final ParticipantContextService participantContextService;
 
-    public SelfIssuedTokenVerifierImpl(TokenValidationService tokenValidationService, KeyPairResourcePublicKeyResolver localPublicKeyService, TokenValidationRulesRegistry tokenValidationRulesRegistry,
-                                       PublicKeyResolver publicKeyResolver, ParticipantContextService participantContextService) {
+    public SelfIssuedTokenVerifierImpl(TokenValidationService tokenValidationService,
+                                       KeyPairResourcePublicKeyResolver localPublicKeyService,
+                                       TokenValidationRulesRegistry tokenValidationRulesRegistry,
+                                       PublicKeyResolver publicKeyResolver,
+                                       ParticipantContextService participantContextService) {
         this.tokenValidationService = tokenValidationService;
         this.localPublicKeyService = localPublicKeyService;
         this.tokenValidationRulesRegistry = tokenValidationRulesRegistry;
@@ -60,7 +63,7 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
     @Override
     public Result<List<String>> verify(String token, String participantContextId) {
         Objects.requireNonNull(participantContextId, "Participant Context ID is mandatory.");
-        var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(DCP_SELF_ISSUED_TOKEN_CONTEXT));
+        var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT));
         if (res.failed()) {
             return res.mapFailure();
         }
@@ -95,7 +98,7 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
         };
 
         // verify the correctness of the 'access_token'
-        var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(DCP_ACCESS_TOKEN_CONTEXT));
+        var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT));
         rules.add(subClaimsMatch);
         rules.add(audMustMatchParticipantIdRule);
         // todo: verify that the resolved public key belongs to the participant ID
