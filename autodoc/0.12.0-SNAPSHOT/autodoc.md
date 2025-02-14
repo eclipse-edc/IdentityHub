@@ -906,8 +906,8 @@ _None_
 | `edc.issuer.issuance.send.retry.base-delay.ms`            | `*`      | `string` | `1000`  |         |     |     | The base delay for the issuance retry mechanism in millisecond                                    |
 
 #### Provided services
-- `org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager`
-- `org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService`
+- `org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessManager`
+- `org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessService`
 
 #### Referenced (injected) services
 - `org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore` (required)
