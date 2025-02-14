@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.to;
 
 import jakarta.json.Json;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.IssuerMetadata;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +28,7 @@ public class JsonObjectToIssuerMetadataTransformerTest {
 
     private final JsonObjectToIssuerMetadataTransformer transformer = new JsonObjectToIssuerMetadataTransformer(DSPACE_DCP_NAMESPACE_V_1_0);
     private final TransformerContext context = mock();
-    
+
     @Test
     void transform() {
 

@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer.spi;
 
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.DcpRequestContext;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.ServiceResult;

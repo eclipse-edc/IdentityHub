@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model;
+package org.eclipse.edc.identityhub.protocols.dcp.spi.model;
 
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.spi.iam.ClaimToken;

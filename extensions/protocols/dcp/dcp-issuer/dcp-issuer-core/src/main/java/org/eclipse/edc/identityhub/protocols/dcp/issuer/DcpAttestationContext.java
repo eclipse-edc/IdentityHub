@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.DcpRequestContext;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationContext;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.jetbrains.annotations.Nullable;

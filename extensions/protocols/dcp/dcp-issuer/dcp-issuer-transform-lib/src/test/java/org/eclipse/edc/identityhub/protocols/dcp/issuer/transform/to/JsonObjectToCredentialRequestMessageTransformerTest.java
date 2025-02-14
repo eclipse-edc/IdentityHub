@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.to;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.Json;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -46,7 +46,7 @@ public class JsonObjectToCredentialRequestMessageTransformerTest {
 
     @Test
     void transform() {
-        
+
         var credentialRequests = Json.createArrayBuilder().add(Json.createObjectBuilder()
                         .add("credentialType", "MembershipCredential")
                         .add("format", "myFormat")

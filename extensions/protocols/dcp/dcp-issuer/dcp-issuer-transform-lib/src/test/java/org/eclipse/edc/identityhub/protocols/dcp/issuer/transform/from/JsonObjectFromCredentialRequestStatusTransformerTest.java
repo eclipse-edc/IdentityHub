@@ -14,15 +14,15 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.from;
 
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestStatus;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
-import static org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_REQUEST_ID_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_STATUS_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_REQUEST_ID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_STATUS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_TERM;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 import static org.mockito.Mockito.mock;
 

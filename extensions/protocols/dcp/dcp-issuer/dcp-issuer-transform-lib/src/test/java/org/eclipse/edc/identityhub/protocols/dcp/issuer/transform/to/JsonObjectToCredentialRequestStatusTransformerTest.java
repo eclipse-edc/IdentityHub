@@ -15,14 +15,14 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.to;
 
 import jakarta.json.Json;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestStatus;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
-import static org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_REQUEST_ID_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_STATUS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_REQUEST_ID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_STATUS_TERM;
 import static org.mockito.Mockito.mock;
 
 public class JsonObjectToCredentialRequestStatusTransformerTest {
@@ -37,7 +37,7 @@ public class JsonObjectToCredentialRequestStatusTransformerTest {
                 .add(toIri(CREDENTIAL_REQUEST_REQUEST_ID_TERM), "requestId")
                 .add(toIri(CREDENTIAL_REQUEST_STATUS_TERM), "ISSUED")
                 .build();
-        
+
         var status = transformer.transform(input, context);
 
         assertThat(status).isNotNull();

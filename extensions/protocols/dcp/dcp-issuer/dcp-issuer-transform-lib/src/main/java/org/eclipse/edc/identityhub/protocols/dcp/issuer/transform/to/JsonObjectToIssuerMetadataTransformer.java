@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.to;
 
 import jakarta.json.JsonObject;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialObject;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.IssuerMetadata;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.jsonld.spi.transformer.AbstractNamespaceAwareJsonLdTransformer;
 import org.eclipse.edc.transform.spi.TransformerContext;

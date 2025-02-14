@@ -17,7 +17,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.iam.identitytrust.spi.validation.TokenValidationAction;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerSelfIssuedTokenVerifier;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.DcpRequestContext;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;

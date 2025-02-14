@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer.spi;
 
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestMessage;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.DcpRequestContext;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 /**

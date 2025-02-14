@@ -15,9 +15,9 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequest;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialRequestMessage;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.DcpRequestContext;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;

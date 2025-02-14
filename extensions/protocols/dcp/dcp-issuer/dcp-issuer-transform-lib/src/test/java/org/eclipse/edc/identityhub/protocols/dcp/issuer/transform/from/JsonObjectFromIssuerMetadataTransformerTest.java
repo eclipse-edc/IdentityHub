@@ -15,16 +15,16 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer.transform.from;
 
 import jakarta.json.JsonObject;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.CredentialObject;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.IssuerMetadata;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
-import static org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.IssuerMetadata.ISSUER_METADATA_CREDENTIALS_SUPPORTED_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.IssuerMetadata.ISSUER_METADATA_CREDENTIAL_ISSUER_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.model.IssuerMetadata.ISSUER_METADATA_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata.ISSUER_METADATA_CREDENTIALS_SUPPORTED_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata.ISSUER_METADATA_CREDENTIAL_ISSUER_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata.ISSUER_METADATA_TERM;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;

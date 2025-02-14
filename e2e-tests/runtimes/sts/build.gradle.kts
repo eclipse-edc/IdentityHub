@@ -25,6 +25,7 @@ dependencies {
     runtimeOnly(libs.edc.sts.api.accounts)
     runtimeOnly(libs.edc.sts.core)
     runtimeOnly(libs.edc.core.token)
+    runtimeOnly(libs.edc.core.api)
 
     // optional modules
     runtimeOnly(libs.edc.api.version)
