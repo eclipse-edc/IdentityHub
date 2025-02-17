@@ -8,6 +8,7 @@ dependencies {
     api(project(":spi:keypair-spi"))
     api(project(":spi:participant-context-spi"))
     api(project(":spi:did-spi"))
+    api(project(":spi:holder-credential-request-spi"))
     implementation(project(":core:lib:accesstoken-lib"))
     implementation(project(":core:lib:common-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
@@ -33,6 +34,7 @@ dependencies {
     testImplementation(testFixtures(project(":spi:keypair-spi")))
     testImplementation(testFixtures(project(":spi:participant-context-spi")))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
+    testImplementation(testFixtures(project(":spi:holder-credential-request-spi")))
     testImplementation(testFixtures(libs.edc.vc.jwt)) // JWT generator
 
 }
