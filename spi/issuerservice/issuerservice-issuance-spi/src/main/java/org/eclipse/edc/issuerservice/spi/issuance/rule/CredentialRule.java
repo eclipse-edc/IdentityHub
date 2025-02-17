@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.rule;
 
-import org.eclipse.edc.issuerservice.spi.issuance.IssuerCredentialIssuanceContext;
+import org.eclipse.edc.issuerservice.spi.issuance.IssuanceContext;
 import org.eclipse.edc.spi.result.Result;
 
 /**
@@ -26,6 +26,6 @@ public interface CredentialRule {
     /**
      * Performs the evaluation.
      */
-    Result<Void> evaluate(IssuerCredentialIssuanceContext context);
+    Result<Void> evaluate(IssuanceContext context);
 
 }

@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.issuerservice.issuance.process;
 
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
-import org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessService;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -23,27 +23,27 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.List;
 
-public class IssuerCredentialIssuanceProcessServiceImpl implements IssuerCredentialIssuanceProcessService {
+public class IssuanceProcessServiceImpl implements IssuanceProcessService {
 
     private final TransactionContext transactionContext;
     private final IssuanceProcessStore issuanceProcessStore;
 
-    public IssuerCredentialIssuanceProcessServiceImpl(TransactionContext transactionContext, IssuanceProcessStore issuanceProcessStore) {
+    public IssuanceProcessServiceImpl(TransactionContext transactionContext, IssuanceProcessStore issuanceProcessStore) {
         this.transactionContext = transactionContext;
         this.issuanceProcessStore = issuanceProcessStore;
     }
 
     @Override
-    public IssuerCredentialIssuanceProcess findById(String id) {
+    public IssuanceProcess findById(String id) {
         return transactionContext.execute(() -> issuanceProcessStore.findById(id));
     }
 
     @Override
-    public ServiceResult<List<IssuerCredentialIssuanceProcess>> search(QuerySpec query) {
+    public ServiceResult<List<IssuanceProcess>> search(QuerySpec query) {
         return ServiceResult.success(queryIssuanceProcesses(query));
     }
 
-    private List<IssuerCredentialIssuanceProcess> queryIssuanceProcesses(QuerySpec query) {
+    private List<IssuanceProcess> queryIssuanceProcesses(QuerySpec query) {
         return transactionContext.execute(() -> {
             try (var stream = issuanceProcessStore.query(query)) {
                 return stream.toList();

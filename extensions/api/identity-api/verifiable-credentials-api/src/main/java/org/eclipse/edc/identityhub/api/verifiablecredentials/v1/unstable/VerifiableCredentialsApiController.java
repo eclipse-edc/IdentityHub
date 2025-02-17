@@ -25,27 +25,38 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.verifiablecredential.validation.VerifiableCredentialManifestValidator;
+import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialDescriptor;
+import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialRequestDto;
+import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.HolderCredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.util.string.StringUtils;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
+import org.eclipse.edc.web.spi.exception.ObjectConflictException;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
@@ -59,12 +70,18 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     private final AuthorizationService authorizationService;
     private final VerifiableCredentialManifestValidator validator;
     private final TypeTransformerRegistry typeTransformerRegistry;
+    private final CredentialRequestService credentialRequestService;
 
-    public VerifiableCredentialsApiController(CredentialStore credentialStore, AuthorizationService authorizationService, VerifiableCredentialManifestValidator validator, TypeTransformerRegistry typeTransformerRegistry) {
+    public VerifiableCredentialsApiController(CredentialStore credentialStore,
+                                              AuthorizationService authorizationService,
+                                              VerifiableCredentialManifestValidator validator,
+                                              TypeTransformerRegistry typeTransformerRegistry,
+                                              CredentialRequestService credentialRequestService) {
         this.credentialStore = credentialStore;
         this.authorizationService = authorizationService;
         this.validator = validator;
         this.typeTransformerRegistry = typeTransformerRegistry;
+        this.credentialRequestService = credentialRequestService;
     }
 
     @GET
@@ -132,6 +149,44 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         if (res.failed()) {
             throw exceptionMapper(VerifiableCredentialResource.class, id).apply(ServiceResult.fromFailure(res).getFailure());
         }
+    }
+
+    @POST
+    @Path("/request")
+    @Override
+    public Response requestCredential(@PathParam("participantContextId") String participantContextId, CredentialRequestDto credentialRequestDto, @Context SecurityContext securityContext) {
+
+        authorizationService.isAuthorized(securityContext, participantContextId, VerifiableCredentialResource.class)
+                .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, participantContextId));
+
+        var requestId = ofNullable(credentialRequestDto.requestId());
+        var requestParameters = credentialRequestDto.credentials().stream().collect(Collectors.toMap(CredentialDescriptor::credentialType, CredentialDescriptor::format));
+
+        ServiceResult<String> credentialRequestResult = credentialRequestService.initiateRequest(credentialRequestDto.issuerDid(),
+                requestId.orElseGet(() -> UUID.randomUUID().toString()),
+                requestParameters);
+
+        return credentialRequestResult.map(id -> Response.status(201).entity(id).build())
+                .orElseThrow(sf -> {
+                    if (sf.getReason().equals(ServiceFailure.Reason.CONFLICT)) {
+                        throw new ObjectConflictException(sf.getFailureDetail());
+                    }
+                    throw new InvalidRequestException(sf.getMessages());
+                });
+    }
+
+    @GET
+    @Path("/request/{issuanceProcessId}")
+    @Override
+    public HolderCredentialRequestDto getCredentialRequest(@PathParam("participantContextId") String participantContextId,
+                                                           @PathParam("issuanceProcessId") String issuanceProcessId,
+                                                           @Context SecurityContext securityContext) {
+
+        authorizationService.isAuthorized(securityContext, participantContextId, VerifiableCredentialResource.class)
+                .orElseThrow(exceptionMapper(HolderCredentialRequestDto.class, participantContextId));
+
+        //todo: implement service call to fetch the HolderCredentialRequest from the database
+        return new HolderCredentialRequestDto("did:web:issuer", "dummy-request-id", "issuance-process-ic", "ISSUED", List.of(UUID.randomUUID().toString()), List.of());
     }
 
 }

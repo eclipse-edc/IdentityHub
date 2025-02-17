@@ -16,8 +16,8 @@ package org.eclipse.edc.issuerservice.issuance;
 
 
 import org.eclipse.edc.boot.system.injection.ObjectFactory;
-import org.eclipse.edc.issuerservice.issuance.process.IssuerCredentialIssuanceProcessManagerImpl;
-import org.eclipse.edc.issuerservice.issuance.process.IssuerCredentialIssuanceProcessServiceImpl;
+import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessManagerImpl;
+import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessServiceImpl;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.junit.jupiter.api.Test;
@@ -32,8 +32,8 @@ public class IssuanceCoreExtensionTest {
     @Test
     void verifyProviders(ServiceExtensionContext context, ObjectFactory factory) {
         var extension = factory.constructInstance(IssuanceCoreExtension.class);
-        assertThat(extension.createIssuanceProcessManager()).isInstanceOf(IssuerCredentialIssuanceProcessManagerImpl.class);
-        assertThat(extension.createIssuanceProcessService()).isInstanceOf(IssuerCredentialIssuanceProcessServiceImpl.class);
+        assertThat(extension.createIssuanceProcessManager()).isInstanceOf(IssuanceProcessManagerImpl.class);
+        assertThat(extension.createIssuanceProcessService()).isInstanceOf(IssuanceProcessServiceImpl.class);
 
     }
 }

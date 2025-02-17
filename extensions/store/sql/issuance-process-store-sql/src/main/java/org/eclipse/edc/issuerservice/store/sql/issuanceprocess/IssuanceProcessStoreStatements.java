@@ -14,14 +14,14 @@
 
 package org.eclipse.edc.issuerservice.store.sql.issuanceprocess;
 
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.lease.LeaseStatements;
 import org.eclipse.edc.sql.lease.StatefulEntityStatements;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 /**
- * Defines SQL-statements and column names for use with a SQL-based {@link IssuerCredentialIssuanceProcess}
+ * Defines SQL-statements and column names for use with a SQL-based {@link IssuanceProcess}
  */
 public interface IssuanceProcessStoreStatements extends StatefulEntityStatements, LeaseStatements {
 

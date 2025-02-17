@@ -22,8 +22,11 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.verifiablecredential.validation.VerifiableCredentialManifestValidator;
+import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialDescriptor;
+import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -52,11 +55,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.ServiceResult.unauthorized;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -69,6 +76,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     private final AuthorizationService authorizationService = mock();
     private final VerifiableCredentialManifestValidator validator = mock();
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
+    private final CredentialRequestService credentialRequestService = mock();
 
     @BeforeEach
     void setUp() {
@@ -77,7 +85,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new VerifiableCredentialsApiController(credentialStore, authorizationService, validator, typeTransformerRegistry);
+        return new VerifiableCredentialsApiController(credentialStore, authorizationService, validator, typeTransformerRegistry, credentialRequestService);
     }
 
     private VerifiableCredential createCredential(String... types) {
@@ -441,6 +449,74 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
             verify(credentialStore).query(any());
             verifyNoMoreInteractions(credentialStore);
+        }
+    }
+
+    @Nested
+    class CreateCredentialRequest {
+        @Test
+        void success() {
+            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
+                    new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential")
+            ));
+            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyMap())).thenReturn(ServiceResult.success("issuer-id"));
+            baseRequest()
+                    .contentType(JSON)
+                    .body(request)
+                    .post("/request")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201)
+                    .body(equalTo("issuer-id"));
+        }
+
+        @Test
+        void whenConflict_returns409() {
+            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
+                    new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential")
+            ));
+            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyMap())).thenReturn(ServiceResult.conflict("foo"));
+            baseRequest()
+                    .contentType(JSON)
+                    .body(request)
+                    .post("/request")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(409)
+                    .body(containsString("foo"));
+        }
+
+        @Test
+        void whenDcpError_returns400() {
+            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
+                    new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential")
+            ));
+            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyMap())).thenReturn(ServiceResult.unexpected("foo"));
+            baseRequest()
+                    .contentType(JSON)
+                    .body(request)
+                    .post("/request")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400)
+                    .body(containsString("foo"));
+        }
+
+        @Test
+        void whenNotAuthorized_returns403() {
+            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
+                    new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential")
+            ));
+            when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(unauthorized("test-message"));
+            baseRequest()
+                    .contentType(JSON)
+                    .body(request)
+                    .post("/request")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403)
+                    .body(containsString("test-message"));
+            verifyNoInteractions(credentialRequestService);
         }
     }
 }

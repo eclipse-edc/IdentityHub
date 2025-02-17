@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.defaults.store;
 
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuerCredentialIssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -24,18 +24,18 @@ import java.time.Clock;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-public class InMemoryIssuanceProcessStore extends InMemoryStatefulEntityStore<IssuerCredentialIssuanceProcess> implements IssuanceProcessStore {
+public class InMemoryIssuanceProcessStore extends InMemoryStatefulEntityStore<IssuanceProcess> implements IssuanceProcessStore {
 
     public InMemoryIssuanceProcessStore(Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
         this(UUID.randomUUID().toString(), clock, criterionOperatorRegistry);
     }
 
     public InMemoryIssuanceProcessStore(String leaserId, Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
-        super(IssuerCredentialIssuanceProcess.class, leaserId, clock, criterionOperatorRegistry);
+        super(IssuanceProcess.class, leaserId, clock, criterionOperatorRegistry);
     }
 
     @Override
-    public Stream<IssuerCredentialIssuanceProcess> query(QuerySpec querySpec) {
+    public Stream<IssuanceProcess> query(QuerySpec querySpec) {
         return super.findAll(querySpec);
     }
 }

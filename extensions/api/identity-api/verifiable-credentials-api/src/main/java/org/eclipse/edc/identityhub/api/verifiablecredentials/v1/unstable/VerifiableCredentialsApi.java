@@ -25,7 +25,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialRequestDto;
+import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.HolderCredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
@@ -125,4 +128,42 @@ public interface VerifiableCredentialsApi {
             }
     )
     void deleteCredential(String id, SecurityContext securityContext);
+
+    @Operation(description = "Triggers a credential request that is send to the issuer via the DCP protocol.",
+            operationId = "requestCredential",
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = CredentialRequestDto.class))),
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "The request was processed and sent to the issuer. The issuer-created ID is returned in the response.",
+                            content = {@Content(schema = @Schema(implementation = String.class))}),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "403", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "409", description = "Could not create a credential request, because a credential request with that ID already exists",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    Response requestCredential(String participantContextId, CredentialRequestDto credentialRequestDto, SecurityContext securityContext);
+
+    @Operation(description = "Finds a credential request by ID.",
+            operationId = "getCredentialRequest",
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "issuanceProcessId", description = "The issuer-assigned ID of the issuance process", required = true, in = ParameterIn.PATH),
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The VerifiableCredential.",
+                            content = @Content(schema = @Schema(implementation = VerifiableCredentialResource.class))),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "403", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "404", description = "A VerifiableCredential with the given ID does not exist.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    HolderCredentialRequestDto getCredentialRequest(String participantContextId, String issuanceProcessId, SecurityContext securityContext);
 }
