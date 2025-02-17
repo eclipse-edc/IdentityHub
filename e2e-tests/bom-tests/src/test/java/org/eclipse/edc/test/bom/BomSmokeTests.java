@@ -113,6 +113,10 @@ public class BomSmokeTests {
                                 put("web.http.sts.path", "/api/sts");
                                 put("web.http.did.port", valueOf(getFreePort()));
                                 put("web.http.did.path", "/api/did");
+                                // interaction with embedded STS
+                                put("edc.iam.sts.publickey.id", "test-public-key");
+                                put("edc.iam.sts.privatekey.alias", "test-private-key");
+
                             }
                         },
                         ":dist:bom:identityhub-with-sts-bom"

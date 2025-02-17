@@ -75,6 +75,7 @@ import java.time.Clock;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DCP_CONTEXT_URL;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.identityhub.core.CoreServicesExtension.NAME;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.DID_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.JWS_2020_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
@@ -216,7 +217,7 @@ public class CoreServicesExtension implements ServiceExtension {
     public CredentialRequestService createDefaultCredentialRequestService(ServiceExtensionContext context) {
         return new CredentialRequestServiceImpl(credentialRequestStore,
                 didResolverRegistry,
-                typeTransformerRegistry,
+                typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0),
                 httpClient,
                 secureTokenService,
                 ownDid

@@ -64,6 +64,10 @@ public class IssuerServiceRuntimeConfiguration {
                 put("edc.iam.accesstoken.jti.validation", String.valueOf(false));
                 put("edc.issuer.statuslist.signing.key.alias", "signing-key");
                 put("edc.issuer.id", "did:web:issuer");
+                // config for the remote STS
+                put("edc.iam.sts.oauth.token.url", "https://sts.com/oauth/token");
+                put("edc.iam.sts.oauth.client.secret.alias", "secret");
+                put("edc.iam.sts.oauth.client.id", "clientId");
             }
         };
     }

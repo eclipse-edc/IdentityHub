@@ -43,9 +43,9 @@ public class LocalStsServiceExtension implements ServiceExtension {
     @Inject
     private JwsSignerProvider externalSigner;
 
-    @Setting(description = "Alias of private key used for signing tokens, retrieved from private key resolver. Required when using Embedded STS", key = "edc.iam.sts.privatekey.alias", required = false)
+    @Setting(description = "Alias of private key used for signing tokens, retrieved from private key resolver. Required when using Embedded STS", key = "edc.iam.sts.privatekey.alias", required = true)
     private String privateKeyAlias;
-    @Setting(description = "Key Identifier used by the counterparty to resolve the public key for token validation, e.g. did:example:123#public-key-1. Required when using Embedded STS", key = "edc.iam.sts.publickey.id", required = false)
+    @Setting(description = "Key Identifier used by the counterparty to resolve the public key for token validation, e.g. did:example:123#public-key-1. Required when using Embedded STS", key = "edc.iam.sts.publickey.id", required = true)
     private String publicKeyId;
     @Setting(description = "Self-issued ID Token expiration in minutes. By default is 5 minutes", defaultValue = "" + DEFAULT_STS_TOKEN_EXPIRATION_MIN, key = "edc.iam.sts.token.expiration")
     private long stsTokenExpirationMin;
@@ -64,6 +64,7 @@ public class LocalStsServiceExtension implements ServiceExtension {
                     "This could be an indication of a configuration problem.");
         }
 
+        //todo: this must be replaced with an Embedded STS, that can resolve the key IDs/aliases dynamically based on the participant context
         return new EmbeddedSecureTokenService(new JwtGenerationService(externalSigner), () -> privateKeyAlias, () -> publicKeyId, clock, TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin), jtiValidationStore);
     }
 }

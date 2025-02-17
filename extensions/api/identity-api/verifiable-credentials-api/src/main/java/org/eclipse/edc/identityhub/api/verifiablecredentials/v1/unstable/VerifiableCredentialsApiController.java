@@ -156,13 +156,15 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @Override
     public Response requestCredential(@PathParam("participantContextId") String participantContextId, CredentialRequestDto credentialRequestDto, @Context SecurityContext securityContext) {
 
-        authorizationService.isAuthorized(securityContext, participantContextId, VerifiableCredentialResource.class)
-                .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, participantContextId));
+        var participantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+
+        authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
+                .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, participantId));
 
         var requestId = ofNullable(credentialRequestDto.requestId());
         var requestParameters = credentialRequestDto.credentials().stream().collect(Collectors.toMap(CredentialDescriptor::credentialType, CredentialDescriptor::format));
 
-        ServiceResult<String> credentialRequestResult = credentialRequestService.initiateRequest(participantContextId, credentialRequestDto.issuerDid(),
+        ServiceResult<String> credentialRequestResult = credentialRequestService.initiateRequest(participantId, credentialRequestDto.issuerDid(),
                 requestId.orElseGet(() -> UUID.randomUUID().toString()),
                 requestParameters);
 
