@@ -310,6 +310,7 @@ _None_
 - `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore`
 - `org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer`
 - `org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry`
+- `org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService`
 - `org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry`
 - `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider`
 
@@ -866,6 +867,34 @@ Module `issuerservice-issuance`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceCoreExtension`
+**Name:** "Issuance Core Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                                       | Required | Type     | Default | Pattern | Min | Max | Description                                                                                       |
+| --------------------------------------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------------------------------------------------------------------- |
+| `edc.issuer.issuance.state-machine.iteration-wait-millis` | `*`      | `string` | `1000`  |         |     |     | The iteration wait time in milliseconds in the issuance process state machine. Default value 1000 |
+| `edc.issuer.issuance.state-machine.batch-size`            | `*`      | `string` | `20`    |         |     |     | The batch size in the issuance process state machine. Default value 20                            |
+| `edc.issuer.issuance.send.retry.limit`                    | `*`      | `string` | `7`     |         |     |     | How many times a specific operation must be tried before terminating the issuance with error      |
+| `edc.issuer.issuance.send.retry.base-delay.ms`            | `*`      | `string` | `1000`  |         |     |     | The base delay for the issuance retry mechanism in millisecond                                    |
+
+#### Provided services
+- `org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager`
+- `org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore` (required)
+- `org.eclipse.edc.spi.monitor.Monitor` (required)
+- `org.eclipse.edc.spi.telemetry.Telemetry` (required)
+- `org.eclipse.edc.spi.system.ExecutorInstrumentation` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.process.retry.IssuanceProcessRetryStrategy` (optional)
+- `java.time.Clock` (required)
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+
 #### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceServicesExtension`
 **Name:** "IssuerService Issuance Services Extension"
 
@@ -889,34 +918,6 @@ _None_
 - `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore` (required)
 - `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore` (required)
 - `org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore` (required)
-
-#### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceCoreExtension`
-**Name:** "Issuance Core Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration
-
-| Key                                                       | Required | Type     | Default | Pattern | Min | Max | Description                                                                                       |
-| --------------------------------------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------------------------------------------------------------------- |
-| `edc.issuer.issuance.state-machine.iteration-wait-millis` | `*`      | `string` | `1000`  |         |     |     | The iteration wait time in milliseconds in the issuance process state machine. Default value 1000 |
-| `edc.issuer.issuance.state-machine.batch-size`            | `*`      | `string` | `20`    |         |     |     | The batch size in the issuance process state machine. Default value 20                            |
-| `edc.issuer.issuance.send.retry.limit`                    | `*`      | `string` | `7`     |         |     |     | How many times a specific operation must be tried before terminating the issuance with error      |
-| `edc.issuer.issuance.send.retry.base-delay.ms`            | `*`      | `string` | `1000`  |         |     |     | The base delay for the issuance retry mechanism in millisecond                                    |
-
-#### Provided services
-- `org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessManager`
-- `org.eclipse.edc.issuerservice.spi.issuance.process.IssuerCredentialIssuanceProcessService`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore` (required)
-- `org.eclipse.edc.spi.monitor.Monitor` (required)
-- `org.eclipse.edc.spi.telemetry.Telemetry` (required)
-- `org.eclipse.edc.spi.system.ExecutorInstrumentation` (required)
-- `org.eclipse.edc.issuerservice.spi.issuance.process.retry.IssuanceProcessRetryStrategy` (optional)
-- `java.time.Clock` (required)
-- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 
 Module `issuerservice-issuance-attestations`
 --------------------------------------------
@@ -1326,4 +1327,5 @@ _None_
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore` (required)
 - `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
+- `org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService` (required)
 
