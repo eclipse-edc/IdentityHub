@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Metaform Systems, Inc.
+ *  Copyright (c) 2025 Cofinity-X
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,14 +8,14 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Metaform Systems, Inc. - initial API and implementation
+ *       Cofinity-X - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityhub.did.store.sql;
+package org.eclipse.edc.identityhub.store.sql.credentialrequest.schema;
 
-import org.eclipse.edc.identityhub.did.store.sql.schema.postgres.PostgresDialectStatements;
-import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
+import org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -28,13 +28,13 @@ import org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import static org.eclipse.edc.identityhub.did.store.sql.SqlDidResourceStoreExtension.NAME;
+import java.time.Clock;
 
-@Extension(value = NAME)
-public class SqlDidResourceStoreExtension implements ServiceExtension {
-    public static final String NAME = "DID Resource SQL Store Extension";
+@Extension(value = SqlHolderCredentialRequestStoreExtension.NAME)
+public class SqlHolderCredentialRequestStoreExtension implements ServiceExtension {
+    public static final String NAME = "Issuance Process SQL Store Extension";
 
-    @Setting(description = "The datasource to be used", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE, key = "edc.sql.store.didresource.datasource")
+    @Setting(description = "The datasource to be used", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE, key = "edc.sql.store.credentialrequest.datasource")
     private String dataSourceName;
 
     @Inject
@@ -46,22 +46,27 @@ public class SqlDidResourceStoreExtension implements ServiceExtension {
     @Inject
     private QueryExecutor queryExecutor;
     @Inject(required = false)
-    private DidResourceStatements statements;
+    private HolderCredentialRequestStoreStatements statements;
     @Inject
     private SqlSchemaBootstrapper sqlSchemaBootstrapper;
 
+    @Inject
+    private Clock clock;
+
+
     @Override
     public void initialize(ServiceExtensionContext context) {
-        sqlSchemaBootstrapper.addStatementFromResource(dataSourceName, "did-schema.sql");
+        sqlSchemaBootstrapper.addStatementFromResource(dataSourceName, "holder-credential-request-schema.sql");
     }
 
     @Provider
-    public DidResourceStore createSqlStore(ServiceExtensionContext context) {
-        return new SqlDidResourceStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
-                queryExecutor, getStatementImpl());
+    public HolderCredentialRequestStore createSqlStore(ServiceExtensionContext context) {
+        return new SqlHolderCredentialRequestStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
+                queryExecutor, getStatementImpl(), context.getRuntimeId(), clock);
     }
 
-    private DidResourceStatements getStatementImpl() {
+    private HolderCredentialRequestStoreStatements getStatementImpl() {
         return statements != null ? statements : new PostgresDialectStatements();
     }
+
 }

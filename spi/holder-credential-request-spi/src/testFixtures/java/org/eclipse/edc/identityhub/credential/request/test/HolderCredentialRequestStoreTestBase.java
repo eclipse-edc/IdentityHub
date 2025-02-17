@@ -25,6 +25,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
@@ -45,6 +46,7 @@ import static org.hamcrest.Matchers.hasSize;
  */
 public abstract class HolderCredentialRequestStoreTestBase {
     protected static final String RUNTIME_ID = "runtime-Id";
+    protected final Clock clock = Clock.systemUTC();
 
     protected abstract HolderCredentialRequestStore getStore();
 
@@ -84,6 +86,7 @@ public abstract class HolderCredentialRequestStoreTestBase {
                 .credentialType("TestCredential")
                 .state(CREATED.code())
                 .id("test-id")
+                .participantContext("test-participant")
                 .issuerDid("did:web:testissuer");
     }
 

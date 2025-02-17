@@ -18,12 +18,11 @@ import org.eclipse.edc.identityhub.credential.request.test.HolderCredentialReque
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.query.CriterionOperatorRegistryImpl;
 
-import java.time.Clock;
 import java.time.Duration;
 
 class InMemoryHolderCredentialRequestStoreTest extends HolderCredentialRequestStoreTestBase {
 
-    private final InMemoryHolderCredentialRequestStore store = new InMemoryHolderCredentialRequestStore(RUNTIME_ID, Clock.systemUTC(), CriterionOperatorRegistryImpl.ofDefaults());
+    private final InMemoryHolderCredentialRequestStore store = new InMemoryHolderCredentialRequestStore(RUNTIME_ID, clock, CriterionOperatorRegistryImpl.ofDefaults());
 
     @Override
     protected HolderCredentialRequestStore getStore() {

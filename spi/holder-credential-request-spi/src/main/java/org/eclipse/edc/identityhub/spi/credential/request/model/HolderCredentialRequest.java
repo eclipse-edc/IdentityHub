@@ -33,11 +33,16 @@ import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderReq
  */
 public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequest> {
 
+    private String participantContextId;
     private String issuerDid;
     private List<String> credentialTypes = new ArrayList<>();
 
     private HolderCredentialRequest() {
         this.state = HolderRequestState.CREATED.code();
+    }
+
+    public String getParticipantContextId() {
+        return participantContextId;
     }
 
     public String getIssuerDid() {
@@ -99,7 +104,6 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         return new Builder(this);
     }
 
-
     public static final class Builder extends StatefulEntity.Builder<HolderCredentialRequest, Builder> {
 
         Builder(HolderCredentialRequest entity) {
@@ -135,6 +139,11 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
             return this;
         }
 
+        public Builder participantContext(String participantContextId) {
+            this.entity.participantContextId = participantContextId;
+            return this;
+        }
+
         @Override
         public Builder self() {
             return this;
@@ -143,8 +152,9 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         @Override
         public HolderCredentialRequest build() {
             super.build();
-            Objects.requireNonNull(entity.issuerDid, "IssuerDID cannot be null");
-            Objects.requireNonNull(entity.credentialTypes, "CredentialTypes cannot be null");
+            Objects.requireNonNull(entity.issuerDid, "'issuerDid' cannot be null");
+            Objects.requireNonNull(entity.credentialTypes, "'credentialTypes' cannot be null");
+            Objects.requireNonNull(entity.participantContextId, "'participantContextId' cannot be null");
             if (entity.credentialTypes.isEmpty()) {
                 throw new IllegalArgumentException("CredentialTypes cannot be empty");
             }
