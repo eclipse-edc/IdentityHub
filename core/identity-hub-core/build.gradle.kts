@@ -9,6 +9,7 @@ dependencies {
     api(project(":spi:participant-context-spi"))
     api(project(":spi:did-spi"))
     api(project(":spi:holder-credential-request-spi"))
+    api(project(":protocols:dcp:dcp-spi"))
     implementation(project(":core:lib:accesstoken-lib"))
     implementation(project(":core:lib:common-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry

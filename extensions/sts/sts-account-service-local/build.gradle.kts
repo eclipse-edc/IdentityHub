@@ -20,6 +20,8 @@ plugins {
 dependencies {
 
     api(project(":spi:participant-context-spi"))
+    implementation(libs.edc.lib.token)
+    implementation(libs.edc.sts)
     implementation(libs.edc.sts.spi)
     implementation(libs.edc.spi.core)
     implementation(libs.edc.spi.transaction)

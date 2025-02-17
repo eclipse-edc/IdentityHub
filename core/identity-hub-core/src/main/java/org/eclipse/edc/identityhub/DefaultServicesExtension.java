@@ -24,13 +24,14 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.statuslist
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialStore;
+import org.eclipse.edc.identityhub.defaults.store.InMemoryHolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryKeyPairResourceStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryParticipantContextStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemorySignatureSuiteRegistry;
+import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
@@ -40,12 +41,14 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.security.token.jwt.DefaultJwsSignerProvider;
-import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
+
+import java.time.Clock;
 
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
@@ -72,6 +75,10 @@ public class DefaultServicesExtension implements ServiceExtension {
     private PrivateKeyResolver privateKeyResolver;
     @Inject
     private JtiValidationStore jwtValidationStore;
+    @Inject
+    private Clock clock;
+    @Inject
+    private CriterionOperatorRegistry criterionOperatorRegistry;
 
     @Override
     public String name() {
@@ -127,11 +134,6 @@ public class DefaultServicesExtension implements ServiceExtension {
     }
 
     @Provider(isDefault = true)
-    public CredentialRequestService createDefaultCredentialRequestService(ServiceExtensionContext context) {
-        return (issuerDid, requestId, typesAndFormats) -> ServiceResult.success("this is a dummy implementation that will be replaced soon!");
-    }
-
-    @Provider(isDefault = true)
     public SignatureSuiteRegistry createSignatureSuiteRegistry() {
         return new InMemorySignatureSuiteRegistry();
     }
@@ -140,4 +142,11 @@ public class DefaultServicesExtension implements ServiceExtension {
     public JwsSignerProvider defaultSignerProvider() {
         return new DefaultJwsSignerProvider(privateKeyResolver);
     }
+
+    @Provider(isDefault = true)
+    public HolderCredentialRequestStore createHolderCredentialRequestStore(ServiceExtensionContext context) {
+        return new InMemoryHolderCredentialRequestStore(clock, criterionOperatorRegistry);
+    }
+
+
 }

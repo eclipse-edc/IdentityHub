@@ -162,7 +162,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         var requestId = ofNullable(credentialRequestDto.requestId());
         var requestParameters = credentialRequestDto.credentials().stream().collect(Collectors.toMap(CredentialDescriptor::credentialType, CredentialDescriptor::format));
 
-        ServiceResult<String> credentialRequestResult = credentialRequestService.initiateRequest(credentialRequestDto.issuerDid(),
+        ServiceResult<String> credentialRequestResult = credentialRequestService.initiateRequest(participantContextId, credentialRequestDto.issuerDid(),
                 requestId.orElseGet(() -> UUID.randomUUID().toString()),
                 requestParameters);
 

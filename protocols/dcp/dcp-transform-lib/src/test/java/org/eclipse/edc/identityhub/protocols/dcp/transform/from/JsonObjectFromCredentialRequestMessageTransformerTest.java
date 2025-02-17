@@ -52,7 +52,7 @@ public class JsonObjectFromCredentialRequestMessageTransformerTest {
 
         when(context.transform(isA(CredentialRequest.class), eq(JsonObject.class))).thenReturn(JsonObject.EMPTY_JSON_OBJECT);
         var status = CredentialRequestMessage.Builder.newInstance()
-                .credential(new CredentialRequest("MembershipCredential", "myFormat", null))
+                .credential(new CredentialRequest("test-request-id", "MembershipCredential", "myFormat", null))
                 .build();
 
         var jsonLd = transformer.transform(status, context);

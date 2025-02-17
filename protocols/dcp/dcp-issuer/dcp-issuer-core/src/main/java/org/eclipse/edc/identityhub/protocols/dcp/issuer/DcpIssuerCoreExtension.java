@@ -45,7 +45,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     public static final String DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT = "dcp-issuer-si";
 
 
-    @Setting(description = "DID of this issuer", key = "edc.issuer.id")
+    @Setting(description = "DID of this issuer", key = "edc.ih.iam.id")
     private String issuerId;
 
     @Inject

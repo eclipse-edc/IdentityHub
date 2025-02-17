@@ -44,6 +44,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 public class VerifiableCredentialApiEndToEndTest {
 
+    @SuppressWarnings("JUnitMalformedDeclaration")
     abstract static class Tests {
 
         @AfterEach
@@ -181,7 +182,7 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         @Test
-        void queryByTyp_noTypeSpecified(IdentityHubEndToEndTestContext context) {
+        void queryByType_noTypeSpecified(IdentityHubEndToEndTestContext context) {
             var superUserKey = context.createSuperUser();
             var user = "user1";
             var token = context.createParticipant(user);
@@ -198,6 +199,32 @@ public class VerifiableCredentialApiEndToEndTest {
                             .log().ifValidationFails()
                             .statusCode(200)
                             .body(notNullValue()));
+        }
+
+
+        @Test
+        void createCredentialRequest(IdentityHubEndToEndTestContext context) {
+            context.createSuperUser();
+            var user = "user1";
+            var token = context.createParticipant(user);
+            var request = """
+                    {
+                      "issuerDid": "did:web:issuer",
+                      "requestId": "test-request-id",
+                      "credentials": [
+                      { "format": "VC1_0_JWT", "type": "TestCredential"}
+                      ]
+                    }
+                    """;
+            var body = context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(request)
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(toBase64(user)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201)
+                    .extract().body().asString();
         }
 
         private String toBase64(String s) {

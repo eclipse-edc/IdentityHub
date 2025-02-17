@@ -76,6 +76,10 @@ public class BomSmokeTests {
                                 put("web.http.did.path", "/api/did");
                                 put("edc.sts.account.api.url", "https://sts.com/accounts");
                                 put("edc.sts.accounts.api.auth.header.value", "password");
+                                // config for the remote STS
+                                put("edc.iam.sts.oauth.token.url", "https://sts.com/oauth/token");
+                                put("edc.iam.sts.oauth.client.secret.alias", "secret");
+                                put("edc.iam.sts.oauth.client.id", "clientId");
                             }
                         },
                         ":dist:bom:identityhub-bom"
@@ -133,10 +137,40 @@ public class BomSmokeTests {
                                 put("edc.sts.account.api.url", "https://sts.com/accounts");
                                 put("edc.sts.accounts.api.auth.header.value", "password");
                                 put("edc.issuer.statuslist.signing.key.alias", "signing-key");
-                                put("edc.issuer.id", "did:web:issuer");
+                                put("edc.ih.iam.id", "did:web:issuer");
+                                // config for the remote STS
+                                put("edc.iam.sts.oauth.token.url", "https://sts.com/oauth/token");
+                                put("edc.iam.sts.oauth.client.secret.alias", "secret");
+                                put("edc.iam.sts.oauth.client.id", "clientId");
                             }
                         },
                         ":dist:bom:issuerservice-bom"
+                ));
+    }
+
+    @Nested
+    @EndToEndTest
+    class IssuerServiceWithSts extends SmokeTest {
+        @RegisterExtension
+        protected RuntimeExtension runtime =
+                new RuntimePerMethodExtension(new EmbeddedRuntime("issuer-service-with-sts-bom",
+                        new HashMap<>() {
+                            {
+                                put("web.http.port", DEFAULT_PORT);
+                                put("web.http.path", DEFAULT_PATH);
+                                put("web.http.version.port", valueOf(getFreePort()));
+                                put("web.http.version.path", "/api/version");
+                                put("web.http.did.port", valueOf(getFreePort()));
+                                put("web.http.did.path", "/api/did");
+                                put("web.http.issuance.port", valueOf(getFreePort()));
+                                put("edc.sts.account.api.url", "https://sts.com/accounts");
+                                put("edc.sts.accounts.api.auth.header.value", "password");
+                                put("edc.issuer.statuslist.signing.key.alias", "signing-key");
+                                put("edc.ih.iam.id", "did:web:issuer");
+                                // config for the embedded STS
+                            }
+                        },
+                        ":dist:bom:issuerservice-with-sts-bom"
                 ));
     }
 }

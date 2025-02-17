@@ -15,11 +15,15 @@
 
 package org.eclipse.edc.identityhub.core;
 
+import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
+import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
+import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.core.services.query.CredentialQueryResolverImpl;
+import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialRequestServiceImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialStatusCheckServiceImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialWriterImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablepresentation.PresentationCreatorRegistryImpl;
@@ -29,11 +33,13 @@ import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generato
 import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.core.services.verification.SelfIssuedTokenVerifierImpl;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
+import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
@@ -50,6 +56,7 @@ import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -136,6 +143,18 @@ public class CoreServicesExtension implements ServiceExtension {
     @Inject
     private TypeTransformerRegistry typeTransformerRegistry;
 
+    @Inject
+    private DidResolverRegistry didResolverRegistry;
+    @Inject
+    private HolderCredentialRequestStore credentialRequestStore;
+    @Inject
+    private SecureTokenService secureTokenService;
+    @Inject
+    private EdcHttpClient httpClient;
+
+    @Setting(key = "edc.ih.iam.id", description = "DID of the holder")
+    private String ownDid;
+
     @Override
     public String name() {
         return NAME;
@@ -191,6 +210,17 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public CredentialStatusCheckService createStatusCheckService() {
         return new CredentialStatusCheckServiceImpl(revocationServiceRegistry, clock);
+    }
+
+    @Provider
+    public CredentialRequestService createDefaultCredentialRequestService(ServiceExtensionContext context) {
+        return new CredentialRequestServiceImpl(credentialRequestStore,
+                didResolverRegistry,
+                typeTransformerRegistry,
+                httpClient,
+                secureTokenService,
+                ownDid
+        );
     }
 
     private void cacheContextDocuments(ClassLoader classLoader) {

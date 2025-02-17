@@ -22,8 +22,13 @@ import org.eclipse.edc.store.InMemoryStatefulEntityStore;
 
 import java.time.Clock;
 import java.util.Collection;
+import java.util.UUID;
 
 public class InMemoryHolderCredentialRequestStore extends InMemoryStatefulEntityStore<HolderCredentialRequest> implements HolderCredentialRequestStore {
+    public InMemoryHolderCredentialRequestStore(Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
+        this(UUID.randomUUID().toString(), clock, criterionOperatorRegistry);
+    }
+
     public InMemoryHolderCredentialRequestStore(String leaserId, Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
         super(HolderCredentialRequest.class, leaserId, clock, criterionOperatorRegistry);
     }

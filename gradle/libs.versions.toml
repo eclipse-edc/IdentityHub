@@ -55,7 +55,7 @@ edc-observability = { module = "org.eclipse.edc:api-observability", version.ref 
 edc-transaction-local = { module = "org.eclipse.edc:transaction-local", version.ref = "edc" }
 edc-testfixtures-managementapi = { module = "org.eclipse.edc:management-api-test-fixtures", version.ref = "edc" }
 edc-api-version = { module = "org.eclipse.edc:version-api", version.ref = "edc" }
-
+edc-oauth2-client = { module = "org.eclipse.edc:oauth2-client", version.ref = "edc" }
 
 # EDC libs
 edc-lib-common-crypto = { module = "org.eclipse.edc:crypto-common-lib", version.ref = "edc" }
@@ -89,6 +89,8 @@ edc-sts-core = { module = "org.eclipse.edc:identity-trust-sts-core", version.ref
 edc-sts = { module = "org.eclipse.edc:identity-trust-sts-embedded", version.ref = "edc" }
 edc-sts-api = { module = "org.eclipse.edc:identity-trust-sts-api", version.ref = "edc" }
 edc-sts-api-accounts = { module = "org.eclipse.edc:identity-trust-sts-accounts-api", version.ref = "edc" }
+edc-sts-client-remote = { module = "org.eclipse.edc:identity-trust-sts-remote-client", version.ref = "edc" }
+
 
 # Third party libs
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }

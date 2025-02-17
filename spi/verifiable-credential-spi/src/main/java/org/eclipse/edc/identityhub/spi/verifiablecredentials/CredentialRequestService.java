@@ -25,10 +25,11 @@ public interface CredentialRequestService {
     /**
      * Initiates the holder-side credential request by sending the DCP message to the issuer
      *
-     * @param issuerDid       The DID of the issuer
-     * @param requestId       The holder-defined request ID.
-     * @param typesAndFormats A map containing credential-type - credential-format entries
+     * @param participantContext The Participant Context ID of the requestor
+     * @param issuerDid          The DID of the issuer
+     * @param requestId          The holder-defined request ID.
+     * @param typesAndFormats    A map containing credential-type - credential-format entries
      * @return A ServiceResult containing the issuer-assigned process ID, or a failure otherwise.
      */
-    ServiceResult<String> initiateRequest(String issuerDid, String requestId, Map<String, String> typesAndFormats);
+    ServiceResult<String> initiateRequest(String participantContext, String issuerDid, String requestId, Map<String, String> typesAndFormats);
 }
