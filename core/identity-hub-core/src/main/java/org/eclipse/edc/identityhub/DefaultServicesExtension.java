@@ -144,7 +144,7 @@ public class DefaultServicesExtension implements ServiceExtension {
     }
 
     @Provider(isDefault = true)
-    public HolderCredentialRequestStore createHolderCredentialRequestStore(ServiceExtensionContext context) {
+    public HolderCredentialRequestStore createHolderCredentialRequestStore() {
         return new InMemoryHolderCredentialRequestStore(clock, criterionOperatorRegistry);
     }
 

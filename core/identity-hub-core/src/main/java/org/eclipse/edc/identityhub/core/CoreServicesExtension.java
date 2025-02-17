@@ -214,7 +214,7 @@ public class CoreServicesExtension implements ServiceExtension {
     }
 
     @Provider
-    public CredentialRequestService createDefaultCredentialRequestService(ServiceExtensionContext context) {
+    public CredentialRequestService createDefaultCredentialRequestService() {
         return new CredentialRequestServiceImpl(credentialRequestStore,
                 didResolverRegistry,
                 typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0),
