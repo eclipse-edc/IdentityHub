@@ -167,7 +167,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
 
     private CredentialRequestMessage createCredentialRequestMessage() {
         return createCredentialRequestMessageBuilder()
-                .credential(new CredentialRequest(UUID.randomUUID().toString(), "test-credential1", "test-issuer1", null))
+                .credential(new CredentialRequest("test-credential1", "test-issuer1", null))
                 .build();
     }
 

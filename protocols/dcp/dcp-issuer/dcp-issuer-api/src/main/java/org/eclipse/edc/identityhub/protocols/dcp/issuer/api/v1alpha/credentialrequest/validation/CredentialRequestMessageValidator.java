@@ -30,6 +30,7 @@ public class CredentialRequestMessageValidator {
     public static Validator<JsonObject> instance(JsonLdNamespace namespace) {
         return JsonObjectValidator.newValidator()
                 .verify(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM), MandatoryObject::new)
+                //.verify(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_REQUEST_ID_TERM), MandatoryValue::new) //todo: enable this, once the DCP context is updated
                 .build();
     }
 }

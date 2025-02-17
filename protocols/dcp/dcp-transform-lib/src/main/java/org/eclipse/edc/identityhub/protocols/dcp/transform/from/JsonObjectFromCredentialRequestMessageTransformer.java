@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_REQUEST_ID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_TERM;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 
@@ -45,7 +46,6 @@ public class JsonObjectFromCredentialRequestMessageTransformer extends AbstractN
     public @Nullable JsonObject transform(@NotNull CredentialRequestMessage credentialRequestMessage, @NotNull TransformerContext transformerContext) {
 
         var credentials = typeManager.getMapper(typeContext).convertValue(credentialRequestMessage.getCredentials(), JsonArray.class);
-
         var jsonCredentials = Json.createArrayBuilder().add(Json.createObjectBuilder()
                         .add(JsonLdKeywords.TYPE, JsonLdKeywords.JSON)
                         .add(JsonLdKeywords.VALUE, credentials))
@@ -54,6 +54,7 @@ public class JsonObjectFromCredentialRequestMessageTransformer extends AbstractN
         return Json.createObjectBuilder()
                 .add(TYPE, forNamespace(CREDENTIAL_REQUEST_MESSAGE_TERM))
                 .add(forNamespace(CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM), jsonCredentials)
+                .add(forNamespace(CREDENTIAL_REQUEST_MESSAGE_REQUEST_ID_TERM), credentialRequestMessage.getRequestId())
                 .build();
     }
 

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_REQUEST_ID_TERM;
 
 public class JsonObjectToCredentialRequestMessageTransformer extends AbstractNamespaceAwareJsonLdTransformer<JsonObject, CredentialRequestMessage> {
 
@@ -54,6 +55,7 @@ public class JsonObjectToCredentialRequestMessageTransformer extends AbstractNam
             Optional.ofNullable(readCredentialRequests(credentials, transformerContext))
                     .map(requestMessage::credentials);
         }
+        requestMessage.requestId(transformString(jsonObject.get(forNamespace(CREDENTIAL_REQUEST_MESSAGE_REQUEST_ID_TERM)), transformerContext));
         return requestMessage.build();
     }
 

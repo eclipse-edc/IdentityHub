@@ -57,13 +57,12 @@ public class IssuerServiceRuntimeConfiguration {
                 put("web.http.version.path", "/.well-known/api");
                 put("web.http.did.port", String.valueOf(getFreePort()));
                 put("web.http.did.path", "/");
-                put("edc.ih.iam.id", "did:web:consumer");
+                put("edc.ih.iam.id", "did:web:issuer");
                 put("edc.sql.schema.autocreate", "true");
                 put("edc.sts.account.api.url", "http://sts.com/accounts");
                 put("edc.sts.accounts.api.auth.header.value", "password");
                 put("edc.iam.accesstoken.jti.validation", String.valueOf(false));
                 put("edc.issuer.statuslist.signing.key.alias", "signing-key");
-                put("edc.issuer.id", "did:web:issuer");
                 // config for the remote STS
                 put("edc.iam.sts.oauth.token.url", "https://sts.com/oauth/token");
                 put("edc.iam.sts.oauth.client.secret.alias", "secret");

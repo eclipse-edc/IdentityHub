@@ -17,8 +17,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.spi.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record CredentialRequest(@JsonProperty(value = "requestId", required = true) String requestId,
-                                @JsonProperty(value = "credentialType", required = true) String credentialType,
+public record CredentialRequest(@JsonProperty(value = "credentialType", required = true) String credentialType,
                                 @JsonProperty(value = "format", required = true) String format,
                                 @JsonInclude(JsonInclude.Include.NON_NULL)
                                 @JsonProperty("payload") Object payload) {

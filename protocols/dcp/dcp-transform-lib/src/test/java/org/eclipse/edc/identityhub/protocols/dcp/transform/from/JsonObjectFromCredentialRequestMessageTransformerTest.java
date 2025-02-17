@@ -52,13 +52,15 @@ public class JsonObjectFromCredentialRequestMessageTransformerTest {
 
         when(context.transform(isA(CredentialRequest.class), eq(JsonObject.class))).thenReturn(JsonObject.EMPTY_JSON_OBJECT);
         var status = CredentialRequestMessage.Builder.newInstance()
-                .credential(new CredentialRequest("test-request-id", "MembershipCredential", "myFormat", null))
+                .credential(new CredentialRequest("MembershipCredential", "myFormat", null))
+                .requestId("test-request-id")
                 .build();
 
         var jsonLd = transformer.transform(status, context);
 
         assertThat(jsonLd).isNotNull();
         assertThat(jsonLd.getString(TYPE)).isEqualTo(toIri(CREDENTIAL_REQUEST_MESSAGE_TERM));
+        assertThat(jsonLd.getString(toIri("requestId"))).isEqualTo("test-request-id");
         assertThat(jsonLd.getJsonArray(toIri(CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM))).hasSize(1)
                 .first().satisfies(jsonValue -> {
                     var credentials = jsonValue.asJsonObject().getJsonArray(JsonLdKeywords.VALUE);

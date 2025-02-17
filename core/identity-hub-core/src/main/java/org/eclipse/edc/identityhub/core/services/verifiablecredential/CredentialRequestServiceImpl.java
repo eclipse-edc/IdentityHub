@@ -108,8 +108,9 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
 
     private Result<String> sendCredentialsRequest(String issuerDid, String issuerRequestEndpointUrl, String requestId, Map<String, String> typesAndFormats) {
         var rqMessage = CredentialRequestMessage.Builder.newInstance();
+        rqMessage.requestId(requestId);
 
-        typesAndFormats.forEach((type, format) -> rqMessage.credential(new CredentialRequest(requestId, type, format, null))); //todo: add requestId to credential request
+        typesAndFormats.forEach((type, format) -> rqMessage.credential(new CredentialRequest(type, format, null)));
 
         var token = getAuthToken(issuerDid, ownDid);
         if (token.failed()) {
