@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS edc_issuance_process
     participant_id              VARCHAR           NOT NULL,
     issuer_context_id           VARCHAR           NOT NULL,
     claims                      JSON              NOT NULL,
-    credential_definitions      JSONB             NOT NULL
+    credential_definitions      JSONB             NOT NULL,
+    credential_formats          JSONB             NOT NULL
 );
 
 

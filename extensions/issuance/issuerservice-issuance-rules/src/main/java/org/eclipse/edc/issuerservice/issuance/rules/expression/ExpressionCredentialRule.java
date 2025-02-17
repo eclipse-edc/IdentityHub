@@ -18,7 +18,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.IssuanceContext;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRule;
 import org.eclipse.edc.spi.result.Result;
 
-import static org.eclipse.edc.issuerservice.issuance.rules.JsonNavigator.navigateProperty;
+import static org.eclipse.edc.issuerservice.issuance.common.JsonNavigator.navigateProperty;
 import static org.eclipse.edc.spi.result.Result.success;
 
 /**

@@ -14,10 +14,16 @@
 
 package org.eclipse.edc.issuerservice.issuance;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationDefinitionServiceImpl;
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationDefinitionValidatorRegistryImpl;
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationPipelineImpl;
 import org.eclipse.edc.issuerservice.issuance.credentialdefinition.CredentialDefinitionServiceImpl;
+import org.eclipse.edc.issuerservice.issuance.generator.CredentialGeneratorRegistryImpl;
+import org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator;
+import org.eclipse.edc.issuerservice.issuance.mapping.IssuanceClaimsMapperImpl;
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleDefinitionEvaluatorImpl;
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleDefinitionValidatorRegistryImpl;
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleFactoryRegistryImpl;
@@ -28,21 +34,30 @@ import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipelin
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
+import org.eclipse.edc.issuerservice.spi.issuance.mapping.IssuanceClaimsMapper;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry;
+import org.eclipse.edc.issuerservice.spi.participant.ParticipantService;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
+import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.system.ServiceExtension;
+import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+
+import java.time.Clock;
 
 import static org.eclipse.edc.issuerservice.issuance.IssuanceServicesExtension.NAME;
 
 @Extension(value = NAME)
 public class IssuanceServicesExtension implements ServiceExtension {
+
     public static final String NAME = "IssuerService Issuance Services Extension";
+
     @Inject
     private TransactionContext transactionContext;
     @Inject
@@ -52,6 +67,21 @@ public class IssuanceServicesExtension implements ServiceExtension {
     @Inject
     private ParticipantStore participantStore;
 
+    @Inject
+    private KeyPairService keyPairService;
+
+    @Inject
+    private JwsSignerProvider jwsSignerProvider;
+
+    @Inject
+    private ParticipantService participantService;
+
+    @Inject
+    private Clock clock;
+
+    @Inject
+    private ParticipantContextService participantContextService;
+
     private AttestationPipelineImpl attestationPipeline;
 
     private CredentialRuleFactoryRegistry ruleFactoryRegistry;
@@ -59,6 +89,8 @@ public class IssuanceServicesExtension implements ServiceExtension {
     private CredentialRuleDefinitionValidatorRegistry ruleDefinitionValidatorRegistry;
 
     private AttestationDefinitionValidatorRegistry attestationDefinitionValidatorRegistry;
+
+    private IssuanceClaimsMapper issuanceClaimsMapper;
 
     @Provider
     public CredentialDefinitionService createParticipantService() {
@@ -85,6 +117,15 @@ public class IssuanceServicesExtension implements ServiceExtension {
         return new CredentialRuleDefinitionEvaluatorImpl(credentialRuleFactoryRegistry());
     }
 
+
+    @Provider
+    public IssuanceClaimsMapper issuanceClaimsMapper() {
+        if (issuanceClaimsMapper == null) {
+            issuanceClaimsMapper = new IssuanceClaimsMapperImpl();
+        }
+        return issuanceClaimsMapper;
+    }
+
     @Provider
     public CredentialRuleFactoryRegistry credentialRuleFactoryRegistry() {
 
@@ -96,12 +137,19 @@ public class IssuanceServicesExtension implements ServiceExtension {
 
     @Provider
     public CredentialRuleDefinitionValidatorRegistry credentialRuleDefinitionValidatorRegistry() {
-
         if (ruleDefinitionValidatorRegistry == null) {
             ruleDefinitionValidatorRegistry = new CredentialRuleDefinitionValidatorRegistryImpl();
         }
-
         return ruleDefinitionValidatorRegistry;
+    }
+
+    @Provider
+    public CredentialGeneratorRegistry createCredentialGeneratorRegistry() {
+        var generator = new CredentialGeneratorRegistryImpl(issuanceClaimsMapper(), participantContextService, participantService, keyPairService);
+
+        var jwtGenerationService = new JwtGenerationService(jwsSignerProvider);
+        generator.addGenerator(CredentialFormat.VC1_0_JWT, new JwtCredentialGenerator(jwtGenerationService, clock));
+        return generator;
     }
 
     @Provider

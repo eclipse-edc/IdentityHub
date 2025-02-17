@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.spi.issuance.process.store;
 
 import org.awaitility.Awaitility;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.spi.query.Criterion;
@@ -81,6 +82,7 @@ public abstract class IssuanceProcessStoreTestBase {
                 .id(UUID.randomUUID().toString())
                 .issuerContextId(UUID.randomUUID().toString())
                 .participantId(UUID.randomUUID().toString())
+                .credentialFormats(Map.of("format", CredentialFormat.VC1_0_JWT))
                 .state(APPROVED.code());
     }
 
@@ -314,7 +316,7 @@ public abstract class IssuanceProcessStoreTestBase {
             var issuanceProcess = createIssuanceProcess();
             getStore().save(issuanceProcess);
 
-            issuanceProcess = issuanceProcess.toBuilder().state(DELIVERED.code()).build();
+            issuanceProcess.transitionToDelivered();
 
             getStore().save(issuanceProcess);
 

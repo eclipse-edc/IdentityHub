@@ -14,15 +14,22 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.model;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.spi.entity.StatefulEntity;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
+import static java.lang.String.format;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.APPROVED;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERED;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.ERRORED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
 
 
@@ -38,6 +45,7 @@ import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessSt
 public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
     private final Map<String, Object> claims = new HashMap<>();
     private final List<String> credentialDefinitions = new ArrayList<>();
+    private final Map<String, CredentialFormat> credentialFormats = new HashMap<>();
     private String participantId;
     private String issuerContextId;
 
@@ -50,6 +58,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
                 .claims(claims)
                 .credentialDefinitions(credentialDefinitions)
                 .participantId(participantId)
+                .credentialFormats(credentialFormats)
                 .issuerContextId(issuerContextId);
         return copy(builder);
     }
@@ -75,10 +84,25 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
         return credentialDefinitions;
     }
 
+    public Map<String, CredentialFormat> getCredentialFormats() {
+        return credentialFormats;
+    }
+
     public Builder toBuilder() {
         return new Builder(this);
     }
 
+    public void transitionToDelivered() {
+        transition(DELIVERED, APPROVED);
+    }
+
+    public void transitionToApproved() {
+        transition(APPROVED, APPROVED);
+    }
+
+    public void transitionToError() {
+        transition(ERRORED, APPROVED);
+    }
 
     @Override
     public int hashCode() {
@@ -95,6 +119,25 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
         }
         var that = (IssuanceProcess) o;
         return id.equals(that.id);
+    }
+
+    private void transition(IssuanceProcessStates end, IssuanceProcessStates... starts) {
+        transition(end, (state) -> Arrays.stream(starts).anyMatch(s -> s == state));
+    }
+
+    /**
+     * Transition to a given end state if the passed predicate test correctly. Increases the
+     * state count if transitioned to the same state and updates the state timestamp.
+     *
+     * @param end          The desired state.
+     * @param canTransitTo Tells if the issuance process can transit to that state.
+     */
+    private void transition(IssuanceProcessStates end, Predicate<IssuanceProcessStates> canTransitTo) {
+        var targetState = end.code();
+        if (!canTransitTo.test(IssuanceProcessStates.from(state))) {
+            throw new IllegalStateException(format("Cannot transition from state %s to %s", IssuanceProcessStates.from(state), IssuanceProcessStates.from(targetState)));
+        }
+        transitionTo(targetState);
     }
 
     public static final class Builder extends StatefulEntity.Builder<IssuanceProcess, Builder> {
@@ -124,6 +167,11 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
 
         public Builder credentialDefinitions(String id) {
             this.entity.credentialDefinitions.add(id);
+            return this;
+        }
+
+        public Builder credentialFormats(Map<String, CredentialFormat> formats) {
+            this.entity.credentialFormats.putAll(formats);
             return this;
         }
 

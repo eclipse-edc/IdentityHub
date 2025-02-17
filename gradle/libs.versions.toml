@@ -18,6 +18,7 @@ swagger = "2.2.28"
 rsApi = "4.0.0"
 testcontainers = "1.20.3"
 tink = "1.15.0"
+opentelemetry = "1.32.0"
 
 [libraries]
 
@@ -73,7 +74,6 @@ edc-lib-transform = { module = "org.eclipse.edc:transform-lib", version.ref = "e
 edc-lib-util = { module = "org.eclipse.edc:util-lib", version.ref = "edc" }
 edc-lib-statemachine = { module = "org.eclipse.edc:state-machine-lib", version.ref = "edc" }
 edc-lib-validator = { module = "org.eclipse.edc:validator-lib", version.ref = "edc" }
-
 # SQL dependencies
 edc-sql-bootstrapper = { module = "org.eclipse.edc:sql-bootstrapper", version.ref = "edc" }
 edc-sql-core = { module = "org.eclipse.edc:sql-core", version.ref = "edc" }
@@ -111,6 +111,7 @@ testcontainers-postgres = { module = "org.testcontainers:postgresql", version.re
 jakarta-annotation = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
 jersey-common = { module = "org.glassfish.jersey.core:jersey-common", version.ref = "jersey" }
 tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
+opentelemetry-instrumentation-annotations = { module = "io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations", version.ref = "opentelemetry" }
 
 [bundles]
 connector = ["edc-boot", "edc-core-connector", "edc-http", "edc-observability", "edc-jsonld", "edc-config-fs"]

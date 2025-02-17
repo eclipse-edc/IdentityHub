@@ -18,7 +18,12 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
+import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
+import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
@@ -30,7 +35,9 @@ import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.Credentia
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
-import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
+import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.issuerservice.spi.participant.ParticipantService;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -45,24 +52,30 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockserver.integration.ClientAndServer;
 
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
+import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
 
 public class DcpIssuanceApiEndToEndTest {
 
     protected static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
-
+    protected static final DidResolverRegistry DID_RESOLVER_REGISTRY = mock();
 
     abstract static class Tests {
 
@@ -71,10 +84,8 @@ public class DcpIssuanceApiEndToEndTest {
         public static final String DID_WEB_PARTICIPANT_KEY_1 = "did:web:participant#key1";
         public static final ECKey PARTICIPANT_KEY = generateEcKey(DID_WEB_PARTICIPANT_KEY_1);
         protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
-
         protected static final String ISSUER_ID = "issuer";
         private static final String ISSUER_ID_ENCODED = Base64.getUrlEncoder().encodeToString(ISSUER_ID.getBytes());
-
         private static final String VALID_CREDENTIAL_REQUEST_MESSAGE = """
                 {
                   "@context": [
@@ -84,7 +95,7 @@ public class DcpIssuanceApiEndToEndTest {
                   "credentials":[
                     {
                         "credentialType": "MembershipCredential",
-                        "format": "vcdm11_jwt"
+                        "format": "vc1_0_jwt"
                     }
                   ]
                 }
@@ -104,11 +115,30 @@ public class DcpIssuanceApiEndToEndTest {
             var validationRegistry = context.getRuntime().getService(AttestationDefinitionValidatorRegistry.class);
             pipelineFactory.registerFactory("Attestation", ATTESTATION_SOURCE_FACTORY);
             validationRegistry.registerValidator("Attestation", def -> ValidationResult.success());
-            context.createParticipant(ISSUER_ID);
+            context.createParticipantContext(ISSUER_ID);
         }
 
         private static @NotNull String issuanceUrl() {
             return "/v1alpha/participants/%s/credentials".formatted(ISSUER_ID_ENCODED);
+        }
+
+        @NotNull
+        private static KeyDescriptor.Builder createKey() {
+            return KeyDescriptor.Builder.newInstance().keyId("test-key")
+                    .privateKeyAlias("private-alias")
+                    .active(true)
+                    .publicKeyJwk(createJwk());
+        }
+
+
+        private static Map<String, Object> createJwk() {
+            try {
+                return new OctetKeyPairGenerator(Curve.Ed25519)
+                        .generate()
+                        .toJSONObject();
+            } catch (JOSEException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @AfterEach
@@ -124,62 +154,86 @@ public class DcpIssuanceApiEndToEndTest {
         void requestCredential(IssuerServiceEndToEndTestContext context, ParticipantService participantService,
                                CredentialDefinitionService credentialDefinitionService,
                                AttestationDefinitionService attestationDefinitionService,
-                               IssuanceProcessStore issuanceProcessStore) throws JOSEException {
+                               IssuanceProcessService issuanceProcessService) throws JOSEException, InterruptedException {
 
-            participantService.createParticipant(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            var port = getFreePort();
 
-            var attestationDefinition = new AttestationDefinition("attestation-id", "Attestation", Map.of());
-            attestationDefinitionService.createAttestation(attestationDefinition);
+            try (var mockedCredentialService = ClientAndServer.startClientAndServer(port)) {
 
-            Map<String, Object> credentialRuleConfiguration = Map.of(
-                    "claim", "onboarding.signedDocuments",
-                    "operator", "eq",
-                    "value", true);
+                var issuanceProcessId = "dummy-issuance-id";
+                mockedCredentialService.when(request()
+                                .withMethod("POST")
+                                .withPath("/api/credentials"))
+                        .respond(response()
+                                .withBody(issuanceProcessId)
+                                .withStatusCode(201));
 
-            var credentialDefinition = CredentialDefinition.Builder.newInstance()
-                    .id("credential-id")
-                    .credentialType("MembershipCredential")
-                    .jsonSchemaUrl("https://example.com/schema")
-                    .jsonSchema("{}")
-                    .attestation("attestation-id")
-                    .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
-                    .build();
 
-            credentialDefinitionService.createCredentialDefinition(credentialDefinition);
+                var endpoint = "http://localhost:%s/api".formatted(mockedCredentialService.getLocalPort());
 
-            var token = generateSiToken();
+                participantService.createParticipant(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
-            Map<String, Object> claims = Map.of("onboarding", Map.of("signedDocuments", true));
+                var attestationDefinition = new AttestationDefinition("attestation-id", "Attestation", Map.of());
+                attestationDefinitionService.createAttestation(attestationDefinition);
 
-            var attestationSource = mock(AttestationSource.class);
+                Map<String, Object> credentialRuleConfiguration = Map.of(
+                        "claim", "onboarding.signedDocuments",
+                        "operator", "eq",
+                        "value", true);
 
-            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
-            when(ATTESTATION_SOURCE_FACTORY.createSource(eq(attestationDefinition))).thenReturn(attestationSource);
-            when(attestationSource.execute(any())).thenReturn(Result.success(claims));
+                var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                        .id("credential-id")
+                        .credentialType("MembershipCredential")
+                        .jsonSchemaUrl("https://example.com/schema")
+                        .jsonSchema("{}")
+                        .attestation("attestation-id")
+                        .validity(3600)
+                        .mapping(new MappingDefinition("participant.name", "credentialSubject.name", true))
+                        .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
+                        .build();
 
-            var location = context.getDcpIssuanceEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(AUTHORIZATION, token)
-                    .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
-                    .post(issuanceUrl())
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201)
-                    .extract()
-                    .header("Location");
 
-            assertThat(location).contains("/v1alpha/participants/%s/requests".formatted(ISSUER_ID_ENCODED));
+                credentialDefinitionService.createCredentialDefinition(credentialDefinition);
 
-            var processId = location.substring(location.lastIndexOf('/') + 1);
-            var issuanceProcess = issuanceProcessStore.findById(processId);
+                var token = generateSiToken();
 
-            assertThat(issuanceProcess).isNotNull()
-                    .satisfies(process -> {
-                        assertThat(process.getParticipantId()).isEqualTo(PARTICIPANT_DID);
-                        assertThat(process.getCredentialDefinitions()).containsExactly("credential-id");
-                        assertThat(process.getClaims()).containsAllEntriesOf(claims);
-                        assertThat(process.getIssuerContextId()).isEqualTo(ISSUER_ID);
-                    });
+                Map<String, Object> claims = Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice"));
+
+                var attestationSource = mock(AttestationSource.class);
+
+                when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
+                when(DID_RESOLVER_REGISTRY.resolve(PARTICIPANT_DID)).thenReturn(Result.success(generateDidDocument(endpoint)));
+                when(ATTESTATION_SOURCE_FACTORY.createSource(eq(attestationDefinition))).thenReturn(attestationSource);
+                when(attestationSource.execute(any())).thenReturn(Result.success(claims));
+
+                var location = context.getDcpIssuanceEndpoint().baseRequest()
+                        .contentType(JSON)
+                        .header(AUTHORIZATION, token)
+                        .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
+                        .post(issuanceUrl())
+                        .then()
+                        .log().ifValidationFails()
+                        .statusCode(201)
+                        .extract()
+                        .header("Location");
+
+                assertThat(location).contains("/v1alpha/participants/%s/requests".formatted(ISSUER_ID_ENCODED));
+
+                var processId = location.substring(location.lastIndexOf('/') + 1);
+
+                await().untilAsserted(() -> {
+                    var issuanceProcess = issuanceProcessService.findById(processId);
+
+                    assertThat(issuanceProcess).isNotNull()
+                            .satisfies(process -> {
+                                assertThat(process.getParticipantId()).isEqualTo(PARTICIPANT_DID);
+                                assertThat(process.getCredentialDefinitions()).containsExactly("credential-id");
+                                assertThat(process.getClaims()).containsAllEntriesOf(claims);
+                                assertThat(process.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
+                                assertThat(process.getIssuerContextId()).isEqualTo(ISSUER_ID);
+                            });
+                });
+            }
 
         }
 
@@ -333,6 +387,15 @@ public class DcpIssuanceApiEndToEndTest {
 
         }
 
+        private DidDocument generateDidDocument(String endpoint) {
+
+            return DidDocument.Builder.newInstance()
+                    .id(PARTICIPANT_DID)
+                    .service(List.of(new Service("id", "CredentialService", endpoint)))
+                    .build();
+
+        }
+
         private String generateSiToken() {
             return generateSiToken(ISSUER_DID);
         }
@@ -340,6 +403,7 @@ public class DcpIssuanceApiEndToEndTest {
         private String generateSiToken(String audience) {
             return generateJwt(audience, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), PARTICIPANT_KEY);
         }
+
     }
 
 
@@ -355,6 +419,7 @@ public class DcpIssuanceApiEndToEndTest {
         static {
             runtime = new IssuerServiceEndToEndExtension.InMemory();
             runtime.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
+            runtime.registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
         }
 
     }
@@ -369,6 +434,7 @@ public class DcpIssuanceApiEndToEndTest {
         static {
             runtime = new IssuerServiceEndToEndExtension.Postgres();
             runtime.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
+            runtime.registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
         }
     }
 }

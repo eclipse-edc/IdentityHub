@@ -45,6 +45,7 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
                 .column(getIssuerContextIdColumn())
                 .jsonColumn(getClaimsColumn())
                 .jsonColumn(getCredentialDefinitionsColumn())
+                .jsonColumn(getCredentialFormatsColumn())
                 .insertInto(getIssuanceProcessTable());
     }
 
@@ -59,6 +60,7 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
                 .column(getErrorDetailColumn())
                 .jsonColumn(getClaimsColumn())
                 .jsonColumn(getCredentialDefinitionsColumn())
+                .jsonColumn(getCredentialFormatsColumn())
                 .update(getIssuanceProcessTable(), getIdColumn());
     }
 
