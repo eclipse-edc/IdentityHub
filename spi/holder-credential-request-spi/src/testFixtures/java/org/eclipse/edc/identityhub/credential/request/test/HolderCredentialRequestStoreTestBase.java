@@ -358,7 +358,7 @@ public abstract class HolderCredentialRequestStoreTestBase {
     }
 
     @Nested
-    class FindAll {
+    class Query {
 
         @Test
         void noQuerySpec() {
@@ -417,6 +417,48 @@ public abstract class HolderCredentialRequestStoreTestBase {
 
             var query = QuerySpec.Builder.newInstance()
                     .filter(List.of(new Criterion("issuerDid", "=", request.getIssuerDid())))
+                    .build();
+
+            var result = getStore().query(query);
+            assertThat(result).hasSize(1).usingRecursiveFieldByFieldElementComparator().containsExactly(request);
+        }
+
+        @Test
+        void queryByParticipantContextId() {
+
+            range(0, 10)
+                    .mapToObj(i -> createHolderRequestBuilder().id("id" + i).participantContext("participantContext").build())
+                    .forEach(getStore()::save);
+
+            var request = createHolderRequestBuilder()
+                    .id("testprocess1")
+                    .participantContext("another-participant-context").build();
+
+            getStore().save(request);
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(List.of(new Criterion("participantContextId", "=", request.getParticipantContextId())))
+                    .build();
+
+            var result = getStore().query(query);
+            assertThat(result).hasSize(1).usingRecursiveFieldByFieldElementComparator().containsExactly(request);
+        }
+
+        @Test
+        void queryByIssuanceProcessId() {
+
+            range(0, 10)
+                    .mapToObj(i -> createHolderRequest("id" + i))
+                    .forEach(getStore()::save);
+
+            var request = createHolderRequestBuilder()
+                    .id("testprocess1")
+                    .issuanceProcessId("test-issuance-process").build();
+
+            getStore().save(request);
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(List.of(new Criterion("issuanceProcessId", "=", request.getIssuanceProcessId())))
                     .build();
 
             var result = getStore().query(query);

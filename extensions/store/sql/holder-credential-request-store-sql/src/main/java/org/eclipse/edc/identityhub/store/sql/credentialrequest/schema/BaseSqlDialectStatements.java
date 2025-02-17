@@ -43,6 +43,7 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
                 .column(getErrorDetailColumn())
                 .column(getParticipantIdColumn())
                 .column(getIssuerDidColumn())
+                .column(getIssuanceProcessIdColumn())
                 .jsonColumn(getCredentialTypesColumn())
                 .insertInto(getHolderCredentialRequestTable());
     }
@@ -57,6 +58,7 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
                 .jsonColumn(getTraceContextColumn())
                 .column(getErrorDetailColumn())
                 .column(getIssuerDidColumn())
+                .column(getIssuanceProcessIdColumn())
                 .jsonColumn(getCredentialTypesColumn())
                 .update(getHolderCredentialRequestTable(), getIdColumn());
     }

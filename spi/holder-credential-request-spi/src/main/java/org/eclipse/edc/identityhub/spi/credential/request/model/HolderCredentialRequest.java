@@ -36,6 +36,7 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
     private String participantContextId;
     private String issuerDid;
     private List<String> credentialTypes = new ArrayList<>();
+    private String issuanceProcessId;
 
     private HolderCredentialRequest() {
         this.state = HolderRequestState.CREATED.code();
@@ -67,6 +68,8 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
                 .id(id)
                 .credentialTypes(List.copyOf(credentialTypes))
                 .issuerDid(issuerDid)
+                .participantContext(participantContextId)
+                .issuanceProcessId(issuanceProcessId)
                 .errorDetail(errorDetail)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
@@ -102,6 +105,14 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
 
     public Builder toBuilder() {
         return new Builder(this);
+    }
+
+    /**
+     * The process ID that the issuer returned in the response to the credential request. Note that this is <strong>not</strong>
+     * the ID assigned by the holder, when <em>making</em> the request! This ID is needed for status inquiries, etc.
+     */
+    public String getIssuanceProcessId() {
+        return issuanceProcessId;
     }
 
     public static final class Builder extends StatefulEntity.Builder<HolderCredentialRequest, Builder> {
@@ -141,6 +152,11 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
 
         public Builder participantContext(String participantContextId) {
             this.entity.participantContextId = participantContextId;
+            return this;
+        }
+
+        public Builder issuanceProcessId(String issuanceProcessId) {
+            this.entity.issuanceProcessId = issuanceProcessId;
             return this;
         }
 

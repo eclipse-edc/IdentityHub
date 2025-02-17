@@ -27,11 +27,13 @@ public class HolderCredentialRequestMapping extends StatefulEntityMapping {
     public static final String FIELD_PARTICIPANT_ID = "participantContextId";
     public static final String FIELD_ISSUER_DID = "issuerDid";
     public static final String FIELD_CREDENTIAL_TYPES = "credentialTypes";
+    public static final String FIELD_ISSUANCE_PROCESS = "issuanceProcessId";
 
     public HolderCredentialRequestMapping(HolderCredentialRequestStoreStatements statements) {
         super(statements);
         add(FIELD_PARTICIPANT_ID, statements.getParticipantIdColumn());
         add(FIELD_ISSUER_DID, statements.getIssuerDidColumn());
         add(FIELD_CREDENTIAL_TYPES, new JsonArrayTranslator(statements.getCredentialTypesColumn()));
+        add(FIELD_ISSUANCE_PROCESS, statements.getIssuanceProcessIdColumn());
     }
 }

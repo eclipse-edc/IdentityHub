@@ -57,4 +57,8 @@ public interface HolderCredentialRequestStoreStatements extends StatefulEntitySt
     SqlQueryStatement createQuery(QuerySpec query);
 
     String getSelectStatement();
+
+    default String getIssuanceProcessIdColumn() {
+        return "issuance_process_id";
+    }
 }

@@ -160,6 +160,7 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 process.getErrorDetail(),
                 process.getParticipantContextId(),
                 process.getIssuerDid(),
+                process.getIssuanceProcessId(),
                 toJson(process.getCredentialTypes()));
     }
 
@@ -173,6 +174,7 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 toJson(process.getTraceContext()),
                 process.getErrorDetail(),
                 process.getIssuerDid(),
+                process.getIssuanceProcessId(),
                 toJson(process.getCredentialTypes()),
                 process.getId());
 
@@ -198,6 +200,7 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 .errorDetail(resultSet.getString(statements.getErrorDetailColumn()))
                 .credentialTypes(fromJson(resultSet.getString(statements.getCredentialTypesColumn()), getTypeRef()))
                 .issuerDid(resultSet.getString(statements.getIssuerDidColumn()))
+                .issuanceProcessId(resultSet.getString(statements.getIssuanceProcessIdColumn()))
                 .participantContext(resultSet.getString(statements.getParticipantIdColumn()))
                 .build();
     }
