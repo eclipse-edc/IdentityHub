@@ -12,13 +12,13 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.store.sql.attestationdefinition;
+package org.eclipse.edc.issuerservice.store.sql.credentialdefinition;
 
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStoreTestBase;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
-import org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres.PostgresDialectStatements;
+import org.eclipse.edc.issuerservice.store.sql.credentialdefinition.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.testfixtures.TestUtils;

@@ -12,10 +12,10 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.store.sql.attestationdefinition;
+package org.eclipse.edc.issuerservice.store.sql.credentialdefinition;
 
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
-import org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres.PostgresDialectStatements;
+import org.eclipse.edc.issuerservice.store.sql.credentialdefinition.schema.postgres.PostgresDialectStatements;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -30,7 +30,7 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.time.Clock;
 
-import static org.eclipse.edc.issuerservice.store.sql.attestationdefinition.SqlCredentialDefinitionStoreExtension.NAME;
+import static org.eclipse.edc.issuerservice.store.sql.credentialdefinition.SqlCredentialDefinitionStoreExtension.NAME;
 
 @Extension(value = NAME)
 public class SqlCredentialDefinitionStoreExtension implements ServiceExtension {

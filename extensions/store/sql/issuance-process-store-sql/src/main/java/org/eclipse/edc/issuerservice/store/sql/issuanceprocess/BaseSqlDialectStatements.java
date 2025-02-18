@@ -42,6 +42,7 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
                 .jsonColumn(getTraceContextColumn())
                 .column(getErrorDetailColumn())
                 .column(getParticipantIdColumn())
+                .column(getIssuerContextIdColumn())
                 .jsonColumn(getClaimsColumn())
                 .jsonColumn(getCredentialDefinitionsColumn())
                 .insertInto(getIssuanceProcessTable());

@@ -21,6 +21,8 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.junit.annotations.ApiTest;
@@ -37,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 
@@ -68,10 +71,13 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
     private final DcpIssuerService dcpIssuerService = mock();
     private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = mock();
     private final JsonLdNamespace namespace = DSPACE_DCP_NAMESPACE_V_1_0;
+    private final ParticipantContextService participantContextService = mock();
+    private final String participantContextId = "participantContextId";
+    private final String participantContextIdEncoded = Base64.getEncoder().encodeToString(participantContextId.getBytes());
 
     @Test
     void requestCredential_tokenNotPresent_shouldReturn401() {
-        assertThatThrownBy(() -> controller().requestCredential(createObjectBuilder().build(), null))
+        assertThatThrownBy(() -> controller().requestCredential(participantContextId, createObjectBuilder().build(), null))
                 .isInstanceOf(AuthenticationFailedException.class)
                 .hasMessage("Authorization header missing");
 
@@ -83,7 +89,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
     void requestCredential_validationError_shouldReturn400() {
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(failure(violation("foo", "bar")));
 
-        assertThatThrownBy(() -> controller().requestCredential(createObjectBuilder().build(), generateJwt()))
+        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), generateJwt()))
                 .isInstanceOf(ValidationFailureException.class)
                 .hasMessage("foo");
         verifyNoInteractions(dcpIssuerService, dcpIssuerTokenVerifier, typeTransformerRegistry);
@@ -94,8 +100,8 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
     void requestCredential_transformationError_shouldReturn400() {
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.failure("cannot transform"));
-
-        assertThatThrownBy(() -> controller().requestCredential(createObjectBuilder().build(), generateJwt()))
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
+        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), generateJwt()))
                 .isInstanceOf(InvalidRequestException.class)
                 .hasMessage("cannot transform");
 
@@ -107,11 +113,26 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
         var requestMessage = createCredentialRequestMessage();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
-        when(dcpIssuerTokenVerifier.verify(any())).thenReturn(ServiceResult.unauthorized("unauthorized"));
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.unauthorized("unauthorized"));
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
 
-        assertThatThrownBy(() -> controller().requestCredential(createObjectBuilder().build(), generateJwt()))
+        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessageContaining("unauthorized");
+
+        verifyNoInteractions(dcpIssuerService);
+    }
+
+    @Test
+    void requestCredential_participantNotFound_shouldReturn401() {
+        when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
+        var requestMessage = createCredentialRequestMessage();
+        when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.notFound("not found"));
+
+        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), generateJwt()))
+                .isExactlyInstanceOf(AuthenticationFailedException.class)
+                .hasMessageContaining("Invalid issuer");
 
         verifyNoInteractions(dcpIssuerService);
     }
@@ -125,19 +146,22 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
 
         var ctx = new DcpRequestContext(participant, Map.of());
         var token = generateJwt();
-        when(dcpIssuerTokenVerifier.verify(any())).thenReturn(ServiceResult.success(ctx));
-        when(dcpIssuerService.initiateCredentialsIssuance(any(), any())).thenReturn(ServiceResult.unauthorized("cannot initiate unauthorized"));
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
+        when(dcpIssuerService.initiateCredentialsIssuance(eq(participantContextId), any(), any())).thenReturn(ServiceResult.unauthorized("cannot initiate unauthorized"));
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
 
-        assertThatThrownBy(() -> controller().requestCredential(createObjectBuilder().build(), token))
+        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), token))
                 .isExactlyInstanceOf(NotAuthorizedException.class)
                 .hasMessage("cannot initiate unauthorized");
 
-        verify(dcpIssuerTokenVerifier).verify(argThat(tr -> tr.getToken().equals(token)));
-        verify(dcpIssuerService).initiateCredentialsIssuance(requestMessage, ctx);
+        verify(dcpIssuerTokenVerifier).verify(any(), argThat(tr -> tr.getToken().equals(token)));
+        verify(dcpIssuerService).initiateCredentialsIssuance(participantContextId, requestMessage, ctx);
     }
 
     @Test
     void requestCredential() {
+
+
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
         var requestMessage = createCredentialRequestMessage();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
@@ -146,22 +170,23 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
 
         var token = generateJwt();
         var responseMessage = new CredentialRequestMessage.Response(UUID.randomUUID().toString());
-        when(dcpIssuerTokenVerifier.verify(any())).thenReturn(ServiceResult.success(ctx));
-        when(dcpIssuerService.initiateCredentialsIssuance(any(), any())).thenReturn(ServiceResult.success(responseMessage));
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
+        when(dcpIssuerService.initiateCredentialsIssuance(eq(participantContextId), any(), any())).thenReturn(ServiceResult.success(responseMessage));
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
 
-        var response = controller().requestCredential(createObjectBuilder().build(), token);
+        var response = controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), token);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(201);
-        assertThat(response.getHeaderString("Location")).contains("/v1alpha/requests/%s".formatted(responseMessage.requestId()));
+        assertThat(response.getHeaderString("Location")).contains("/v1alpha/participants/%s/requests/%s".formatted(participantContextIdEncoded, responseMessage.requestId()));
 
-        verify(dcpIssuerTokenVerifier).verify(argThat(tr -> tr.getToken().equals(token)));
-        verify(dcpIssuerService).initiateCredentialsIssuance(requestMessage, ctx);
+        verify(dcpIssuerTokenVerifier).verify(any(), argThat(tr -> tr.getToken().equals(token)));
+        verify(dcpIssuerService).initiateCredentialsIssuance(participantContextId, requestMessage, ctx);
     }
 
     @Override
     protected CredentialRequestApiController controller() {
-        return new CredentialRequestApiController(dcpIssuerService, dcpIssuerTokenVerifier, validatorRegistryMock, typeTransformerRegistry, namespace);
+        return new CredentialRequestApiController(participantContextService, dcpIssuerService, dcpIssuerTokenVerifier, validatorRegistryMock, typeTransformerRegistry, namespace);
     }
 
 
@@ -173,6 +198,14 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
 
     private CredentialRequestMessage.Builder createCredentialRequestMessageBuilder() {
         return CredentialRequestMessage.Builder.newInstance();
+    }
+
+    private ParticipantContext createParticipantContext() {
+        return ParticipantContext.Builder.newInstance()
+                .participantContextId(participantContextId)
+                .did("did")
+                .apiTokenAlias("apiTokenAlias")
+                .build();
     }
 
     private String generateJwt() {

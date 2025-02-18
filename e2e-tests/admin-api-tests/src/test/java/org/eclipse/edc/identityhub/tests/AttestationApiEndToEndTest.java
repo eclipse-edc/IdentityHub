@@ -90,7 +90,7 @@ public class AttestationApiEndToEndTest {
         @Test
         void getForParticipant(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, ParticipantStore participantStore) {
             var att1 = new AttestationDefinition("att1", "test-type", Map.of("bar", "baz"));
-            var att2 = new AttestationDefinition("att2", "test-type", Map.of("bar", "baz"));
+            var att2 = new AttestationDefinition("att2", "test-type-1", Map.of("bar", "baz"));
             var p = new Participant("foobar", "did:web:foobar", "Foo Bar", List.of("att1", "att2"));
             var r = store.create(att1).compose(v -> store.create(att2)).compose(participant -> participantStore.create(p));
             assertThat(r).isSucceeded();
@@ -148,7 +148,7 @@ public class AttestationApiEndToEndTest {
             var r = participantStore.create(p1).compose(participant -> participantStore.create(p2));
             assertThat(r).isSucceeded();
             store.create(new AttestationDefinition("att1", "test-type", Map.of("key1", "val1")));
-            store.create(new AttestationDefinition("att2", "test-type", Map.of("key2", "val2")));
+            store.create(new AttestationDefinition("att2", "test-type-1", Map.of("key2", "val2")));
 
             //query by attestation type
             context.getAdminEndpoint().baseRequest()
@@ -162,9 +162,8 @@ public class AttestationApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
-                    .body("size()", equalTo(2))
-                    .body("[0].id", equalTo("att1"))
-                    .body("[1].id", equalTo("att2"));
+                    .body("size()", equalTo(1))
+                    .body("[0].id", equalTo("att1"));
 
         }
     }

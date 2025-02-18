@@ -20,6 +20,9 @@ plugins {
 dependencies {
     // sql modules
     api(project(":extensions:store:sql:issuerservice-participant-store-sql"))
+    api(project(":extensions:store:sql:issuerservice-attestation-definition-store-sql"))
+    api(project(":extensions:store:sql:issuerservice-credential-definition-store-sql"))
+    api(project(":extensions:store:sql:issuance-process-store-sql"))
 
     api(libs.edc.sql.core)
     api(libs.edc.transaction.local)

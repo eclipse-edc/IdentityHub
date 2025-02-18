@@ -56,14 +56,14 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
     }
 
     @Override
-    public ServiceResult<CredentialRequestMessage.Response> initiateCredentialsIssuance(CredentialRequestMessage message, DcpRequestContext context) {
+    public ServiceResult<CredentialRequestMessage.Response> initiateCredentialsIssuance(String issuerContextId, CredentialRequestMessage message, DcpRequestContext context) {
         if (message.getCredentials().isEmpty()) {
             return ServiceResult.badRequest("No credentials requested");
         }
         return transactionContext.execute(() -> getCredentialsDefinitions(message)
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
                 .compose(this::evaluateRules)
-                .compose(evaluation -> createIssuanceProcess(context, evaluation))
+                .compose(evaluation -> createIssuanceProcess(issuerContextId, context, evaluation))
                 .map(issuanceProcess -> new CredentialRequestMessage.Response(issuanceProcess.getId())));
 
     }
@@ -120,7 +120,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         return ServiceResult.success(evaluationResponse);
     }
 
-    private ServiceResult<IssuanceProcess> createIssuanceProcess(DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
+    private ServiceResult<IssuanceProcess> createIssuanceProcess(String issuerContextId, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
 
         var credentialDefinitionIds = evaluationResponse.credentialDefinitions().stream()
                 .map(CredentialDefinition::getId)
@@ -131,6 +131,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 .state(IssuanceProcessStates.APPROVED.code())
                 .credentialDefinitions(credentialDefinitionIds)
                 .claims(evaluationResponse.claims())
+                .issuerContextId(issuerContextId)
                 .build();
 
         issuanceProcessStore.save(issuanceProcess);

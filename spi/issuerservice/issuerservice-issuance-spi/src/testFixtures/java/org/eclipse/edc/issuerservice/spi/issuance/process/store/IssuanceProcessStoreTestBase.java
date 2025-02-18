@@ -79,6 +79,7 @@ public abstract class IssuanceProcessStoreTestBase {
     private IssuanceProcess.Builder createIssuanceProcessBuilder() {
         return IssuanceProcess.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
+                .issuerContextId(UUID.randomUUID().toString())
                 .participantId(UUID.randomUUID().toString())
                 .state(APPROVED.code());
     }
@@ -413,6 +414,25 @@ public abstract class IssuanceProcessStoreTestBase {
 
             var query = QuerySpec.Builder.newInstance()
                     .filter(List.of(new Criterion("participantId", "=", issuanceProcess.getParticipantId())))
+                    .build();
+
+            var result = getStore().query(query).toList();
+            assertThat(result).hasSize(1).usingRecursiveFieldByFieldElementComparator().containsExactly(issuanceProcess);
+        }
+
+        @Test
+        void queryByIssuanceContextId() {
+
+            range(0, 10)
+                    .mapToObj(i -> createIssuanceProcess("id" + i))
+                    .forEach(getStore()::save);
+
+            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").participantId("participant1").build();
+
+            getStore().save(issuanceProcess);
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(List.of(new Criterion("issuerContextId", "=", issuanceProcess.getIssuerContextId())))
                     .build();
 
             var result = getStore().query(query).toList();

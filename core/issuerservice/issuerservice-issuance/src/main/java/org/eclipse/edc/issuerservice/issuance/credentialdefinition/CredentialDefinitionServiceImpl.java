@@ -88,6 +88,9 @@ public class CredentialDefinitionServiceImpl implements CredentialDefinitionServ
     }
 
     private ServiceResult<Void> validateAttestations(CredentialDefinition credentialDefinition) {
+        if (credentialDefinition.getAttestations().isEmpty()) {
+            return ServiceResult.success();
+        }
         var query = QuerySpec.Builder.newInstance()
                 .filter(Criterion.criterion("id", "in", credentialDefinition.getAttestations()))
                 .build();

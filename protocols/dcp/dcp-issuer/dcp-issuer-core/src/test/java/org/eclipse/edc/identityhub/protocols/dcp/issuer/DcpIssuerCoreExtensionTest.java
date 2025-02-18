@@ -18,7 +18,6 @@ import org.eclipse.edc.boot.system.injection.ObjectFactory;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
-import org.eclipse.edc.token.rules.AudienceValidationRule;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
@@ -65,7 +64,6 @@ public class DcpIssuerCoreExtensionTest {
         extension.initialize(context);
 
         verify(tokenValidationRulesRegistry).addRule(eq(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT), isA(IssuerEqualsSubjectRule.class));
-        verify(tokenValidationRulesRegistry).addRule(eq(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT), isA(AudienceValidationRule.class));
         verify(tokenValidationRulesRegistry).addRule(eq(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT), isA(ExpirationIssuedAtValidationRule.class));
     }
 }

@@ -12,9 +12,9 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres;
+package org.eclipse.edc.issuerservice.store.sql.credentialdefinition.schema.postgres;
 
-import org.eclipse.edc.issuerservice.store.sql.attestationdefinition.BaseSqlDialectStatements;
+import org.eclipse.edc.issuerservice.store.sql.credentialdefinition.BaseSqlDialectStatements;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.dialect.PostgresDialect;
 import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;

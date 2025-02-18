@@ -141,7 +141,6 @@ public class BomSmokeTests {
                                 put("edc.sts.account.api.url", "https://sts.com/accounts");
                                 put("edc.sts.accounts.api.auth.header.value", "password");
                                 put("edc.issuer.statuslist.signing.key.alias", "signing-key");
-                                put("edc.ih.iam.id", "did:web:issuer");
                                 // config for the remote STS
                                 put("edc.iam.sts.oauth.token.url", "https://sts.com/oauth/token");
                                 put("edc.iam.sts.oauth.client.secret.alias", "secret");
@@ -170,7 +169,6 @@ public class BomSmokeTests {
                                 put("edc.sts.account.api.url", "https://sts.com/accounts");
                                 put("edc.sts.accounts.api.auth.header.value", "password");
                                 put("edc.issuer.statuslist.signing.key.alias", "signing-key");
-                                put("edc.ih.iam.id", "did:web:issuer");
                                 // interaction with embedded STS
                                 put("edc.iam.sts.publickey.id", "test-public-key");
                                 put("edc.iam.sts.privatekey.alias", "test-private-key");
