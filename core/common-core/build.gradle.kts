@@ -30,7 +30,6 @@ dependencies {
     implementation(libs.edc.vc.jwt) // JtiValidationRule
 
 
-    testImplementation(project(":core:common-core"))
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(project(":spi:keypair-spi")))

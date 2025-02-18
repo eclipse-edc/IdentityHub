@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.edc.identityhub.core.CoreServicesExtension
+org.eclipse.edc.identityhub.DefaultServicesExtension

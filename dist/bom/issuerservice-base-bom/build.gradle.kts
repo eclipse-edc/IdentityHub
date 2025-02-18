@@ -18,8 +18,8 @@ plugins {
 
 dependencies {
     runtimeOnly(project(":extensions:api:issuer-admin-api"))
+    runtimeOnly(project(":core:common-core"))
     runtimeOnly(project(":core:identity-hub-did"))
-    runtimeOnly(project(":core:identity-hub-core"))
     runtimeOnly(project(":core:identity-hub-participants"))
     runtimeOnly(project(":core:identity-hub-keypairs"))
     runtimeOnly(project(":core:issuerservice:issuerservice-core"))
@@ -33,7 +33,7 @@ dependencies {
 
     runtimeOnly(project(":extensions:issuance:issuerservice-issuance-attestations"))
     runtimeOnly(project(":extensions:issuance:issuerservice-issuance-rules"))
-    
+
     runtimeOnly(project(":extensions:sts:sts-account-provisioner"))
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
