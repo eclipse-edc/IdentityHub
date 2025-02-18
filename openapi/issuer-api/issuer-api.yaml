@@ -19,7 +19,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IssuerMetadata"
-  /v1alpha/credentials:
+  /v1alpha/participants/{participantContextId}/credentials:
     post:
       tags:
       - Credential Request API
@@ -27,6 +27,13 @@ paths:
         from an issuer
       operationId: requestCredentials
       parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       - name: Authorization
         in: header
         required: false
