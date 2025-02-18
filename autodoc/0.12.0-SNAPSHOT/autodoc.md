@@ -244,6 +244,7 @@ _None_
 - `org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService` (required)
 - `org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier` (required)
 - `org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry` (required)
+- `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 
 Module `dcp-issuer-core`
 ------------------------
@@ -261,11 +262,7 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration
-
-| Key             | Required | Type     | Default | Pattern | Min | Max | Description        |
-| --------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------ |
-| `edc.ih.iam.id` | `*`      | `string` | ``      |         |     |     | DID of this issuer |
+### Configuration_None_
 
 #### Provided services
 - `org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService`
@@ -458,20 +455,6 @@ Module `identity-hub-did`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
-**Name:** "DID Default Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
-
 #### Class: `org.eclipse.edc.identityhub.did.DidServicesExtension`
 **Name:** "DID Service Extension"
 
@@ -490,6 +473,20 @@ _None_
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.keys.spi.KeyParserRegistry` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore` (required)
+
+#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
+**Name:** "DID Default Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `identity-hub-did-store-sql`
 -----------------------------------
@@ -856,7 +853,7 @@ Module `issuerservice-credential-definition-store-sql`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.issuerservice.store.sql.attestationdefinition.SqlCredentialDefinitionStoreExtension`
+#### Class: `org.eclipse.edc.issuerservice.store.sql.credentialdefinition.SqlCredentialDefinitionStoreExtension`
 **Name:** "IssuerService Credential definition SQL Store Extension"
 
 **Overview:** No overview provided.
@@ -876,7 +873,7 @@ _None_
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
 - `org.eclipse.edc.sql.QueryExecutor` (required)
-- `org.eclipse.edc.issuerservice.store.sql.attestationdefinition.CredentialDefinitionStoreStatements` (optional)
+- `org.eclipse.edc.issuerservice.store.sql.credentialdefinition.CredentialDefinitionStoreStatements` (optional)
 - `org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper` (required)
 - `java.time.Clock` (required)
 
