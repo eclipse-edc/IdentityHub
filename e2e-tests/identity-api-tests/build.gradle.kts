@@ -6,9 +6,11 @@ plugins {
 dependencies {
     testImplementation(project(":spi:identity-hub-spi"))
     testImplementation(project(":core:identity-hub-participants"))
+    testImplementation(project(":spi:holder-credential-request-spi"))
     testImplementation(libs.edc.junit)
     testImplementation(libs.restAssured)
     testImplementation(libs.awaitility)
+    testImplementation(libs.mockserver.netty)
 
 
     // needed for the Participant

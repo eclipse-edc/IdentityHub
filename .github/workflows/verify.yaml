@@ -45,22 +45,24 @@ jobs:
         run: ./gradlew :launcher:identityhub:shadowJar
 
       - name: 'Build Docker image'
-        run: docker build -t identity-hub ./launcher/identityhub
+        run: docker build -t identityhub ./launcher/identityhub
 
       - name: 'Start Identity Hub'
         run: |
-          docker run -d --rm --name identity-hub \
+          docker run -d --rm --name identityhub \
             -e "EDC_IH_IAM_ID=did:web:test" \
             -e "WEB_HTTP_IDENTITY_PORT=8182" \
             -e "WEB_HTTP_IDENTITY_PATH=/api/identity" \
             -e "WEB_HTTP_PRESENTATION_PORT=10001" \
             -e "WEB_HTTP_PRESENTATION_PATH=/api/presentation" \
-            identity-hub:latest
+            -e "EDC_IAM_STS_PRIVATEKEY_ALIAS=privatekey-alias" \
+            -e "EDC_IAM_STS_PUBLICKEY_ID=publickey-id" \
+            identityhub:latest
 
       - name: 'Wait for Identity Hub to be healthy'
         uses: raschmitt/wait-for-healthy-container@v1
         with:
-          container-name: identity-hub
+          container-name: identityhub
           timeout: 60
 
   Verify-Issuer-Service-Launcher:
@@ -78,10 +80,14 @@ jobs:
       - name: 'Start Identity Hub'
         run: |
           docker run -d --rm --name issuer-service \
+            -e "EDC_IH_IAM_ID=did:web:issuer" \
             -e "EDC_STS_ACCOUNT_API_URL=https://sts.com" \
             -e "EDC_STS_ACCOUNTS_API_AUTH_HEADER_VALUE=auth-header" \
             -e "EDC_ISSUER_STATUSLIST_SIGNING_KEY_ALIAS=foo-alias" \
             -e "EDC_ISSUER_ID=did:web:issuer" \
+            -e "EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS=secret-alias" \
+            -e "EDC_IAM_STS_OAUTH_CLIENT_ID=client-id" \
+            -e "EDC_IAM_STS_OAUTH_TOKEN_URL=https://sts.com/auth/token" \
             issuer-service:latest
 
       - name: 'Wait for Issuer-Service to be healthy'

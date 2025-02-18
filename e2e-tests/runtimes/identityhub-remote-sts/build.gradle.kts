@@ -36,6 +36,8 @@ dependencies {
     runtimeOnly(project(":extensions:api:identityhub-api-authorization"))
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
+    runtimeOnly(libs.edc.sts.client.remote)
+    runtimeOnly(libs.edc.oauth2.client)
 
     runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.edc.jsonld)

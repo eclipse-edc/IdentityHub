@@ -49,7 +49,7 @@ public class DcpIssuerCoreExtensionTest {
 
     @Test
     void verifyProviders(ServiceExtensionContext context, ObjectFactory factory) {
-        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of("edc.issuer.id", "did::web:issuer")));
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of("edc.ih.iam.id", "did:web:issuer")));
 
         var extension = factory.constructInstance(DcpIssuerCoreExtension.class);
         assertThat(extension.createIssuerService()).isInstanceOf(DcpIssuerServiceImpl.class);
@@ -59,7 +59,7 @@ public class DcpIssuerCoreExtensionTest {
     @Test
     void verifyTokenValidationRules(ServiceExtensionContext context, ObjectFactory factory) {
 
-        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of("edc.issuer.id", "did::web:issuer")));
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of("edc.ih.iam.id", "did:web:issuer")));
 
         var extension = factory.constructInstance(DcpIssuerCoreExtension.class);
         extension.initialize(context);

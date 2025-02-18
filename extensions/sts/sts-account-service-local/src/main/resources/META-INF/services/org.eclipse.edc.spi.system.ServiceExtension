@@ -13,3 +13,4 @@
 #
 
 org.eclipse.edc.identityhub.sts.accountservice.LocalStsAccountServiceExtension
+org.eclipse.edc.identityhub.sts.LocalStsServiceExtension

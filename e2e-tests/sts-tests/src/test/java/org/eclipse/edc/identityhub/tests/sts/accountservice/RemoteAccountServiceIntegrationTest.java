@@ -75,6 +75,10 @@ public class RemoteAccountServiceIntegrationTest {
                     put("edc.ih.iam.id", "did:web:consumer");
                     put("edc.sts.account.api.url", "http://localhost:" + ACCOUNTS_PORT + "/sts");
                     put("edc.sts.accounts.api.auth.header.value", STS_ACCOUNTS_API_KEY);
+                    // config for the remote STS
+                    put("edc.iam.sts.oauth.token.url", "https://sts.com/oauth/token");
+                    put("edc.iam.sts.oauth.client.secret.alias", "secret");
+                    put("edc.iam.sts.oauth.client.id", "clientId");
                 }
             },
             ":e2e-tests:runtimes:identityhub-remote-sts"

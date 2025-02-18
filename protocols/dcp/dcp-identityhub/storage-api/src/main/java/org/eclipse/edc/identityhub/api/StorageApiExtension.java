@@ -20,6 +20,7 @@ import org.eclipse.edc.identityhub.api.storage.StorageApiController;
 import org.eclipse.edc.identityhub.api.validation.CredentialMessageValidator;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialMessageTransformer;
+import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialRequestMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialMessageTransformer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.spi.JsonLd;
@@ -114,6 +115,7 @@ public class StorageApiExtension implements ServiceExtension {
         scopedTransformerRegistry.register(new JsonObjectToCredentialMessageTransformer(typeManager, JSON_LD, namespace));
         scopedTransformerRegistry.register(new JsonValueToGenericTypeTransformer(typeManager, JSON_LD));
         scopedTransformerRegistry.register(new JsonObjectFromCredentialMessageTransformer(typeManager, JSON_LD, namespace));
+        scopedTransformerRegistry.register(new JsonObjectFromCredentialRequestMessageTransformer(typeManager, JSON_LD, DSPACE_DCP_NAMESPACE_V_1_0));
 
         typeTransformer.register(new JwtToVerifiableCredentialTransformer(monitor));
 

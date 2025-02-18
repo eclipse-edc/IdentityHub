@@ -59,6 +59,8 @@ public class IdentityHubRuntimeConfiguration {
                 put("edc.ih.iam.id", "did:web:consumer");
                 put("edc.sql.schema.autocreate", "true");
                 put("edc.iam.accesstoken.jti.validation", String.valueOf(true));
+                put("edc.iam.sts.publickey.id", "test-public-key");
+                put("edc.iam.sts.privatekey.alias", "user1-alias"); //this must be "username"-alias
             }
         };
     }

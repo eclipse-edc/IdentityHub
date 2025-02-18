@@ -20,6 +20,9 @@ plugins {
 dependencies {
     runtimeOnly(project(":dist:bom:issuerservice-base-bom"))
     runtimeOnly(project(":extensions:sts:sts-account-service-remote"))
+    // needed for interaction with the remote STS
+    runtimeOnly(libs.edc.sts.client.remote)
+    runtimeOnly(libs.edc.oauth2.client)
 }
 
 edcBuild {

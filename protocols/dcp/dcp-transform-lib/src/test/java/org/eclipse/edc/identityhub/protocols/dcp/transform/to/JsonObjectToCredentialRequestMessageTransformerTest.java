@@ -24,6 +24,8 @@ import org.eclipse.edc.transform.spi.TransformerContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,12 +61,15 @@ public class JsonObjectToCredentialRequestMessageTransformerTest {
                         .add(JsonLdKeywords.VALUE, credentialRequests));
 
         var input = Json.createObjectBuilder()
+                .add(toIri(CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_REQUEST_ID_TERM), UUID.randomUUID().toString())
+
                 .add(toIri(CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM), credentialsJsonArray)
                 .build();
 
         var credentialRequestMessage = transformer.transform(input, context);
 
         assertThat(credentialRequestMessage).isNotNull();
+        assertThat(credentialRequestMessage.getRequestId()).isNotNull();
         assertThat(credentialRequestMessage.getCredentials()).hasSize(1).first().satisfies(credentialRequest -> {
             assertThat(credentialRequest.credentialType()).isEqualTo("MembershipCredential");
             assertThat(credentialRequest.format()).isEqualTo("myFormat");

@@ -29,6 +29,7 @@ public interface IssuanceProcessStoreStatements extends StatefulEntityStatements
         return "edc_issuance_process";
     }
 
+    @Override
     default String getIdColumn() {
         return "id";
     }

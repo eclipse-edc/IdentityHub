@@ -459,7 +459,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
             var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential")
             ));
-            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyMap())).thenReturn(ServiceResult.success("issuer-id"));
+            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyString(), anyMap())).thenReturn(ServiceResult.success("issuer-id"));
             baseRequest()
                     .contentType(JSON)
                     .body(request)
@@ -475,7 +475,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
             var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential")
             ));
-            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyMap())).thenReturn(ServiceResult.conflict("foo"));
+            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyString(), anyMap())).thenReturn(ServiceResult.conflict("foo"));
             baseRequest()
                     .contentType(JSON)
                     .body(request)
@@ -491,7 +491,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
             var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential")
             ));
-            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyMap())).thenReturn(ServiceResult.unexpected("foo"));
+            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyString(), anyMap())).thenReturn(ServiceResult.unexpected("foo"));
             baseRequest()
                     .contentType(JSON)
                     .body(request)
