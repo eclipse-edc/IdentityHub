@@ -181,9 +181,9 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
      * @return A result containing the service entry
      */
     private Result<String> getCredentialRequestEndpoint(DidDocument issuerDidDocument) {
-        var endpoint = issuerDidDocument.getService().stream().filter(s -> s.getType().equalsIgnoreCase(CREDENTIAL_REQUEST_SERVICE_TYPE)).findAny();
+        var endpoint = issuerDidDocument.getService().stream().filter(s -> s.getType().equalsIgnoreCase(ISSUER_SERVICE_ENDPOINT_TYPE)).findAny();
 
-        return endpoint.map(s -> success(s.getServiceEndpoint()))
-                .orElseGet(() -> failure("The Issuer's DID Document does not contain any '%s' endpoint".formatted(CREDENTIAL_REQUEST_SERVICE_TYPE)));
+        return endpoint.map(s -> success((s.getServiceEndpoint() + "/credentials").replace("//", "/")))
+                .orElseGet(() -> failure("The Issuer's DID Document does not contain any '%s' endpoint".formatted(ISSUER_SERVICE_ENDPOINT_TYPE)));
     }
 }

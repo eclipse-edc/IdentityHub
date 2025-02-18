@@ -237,8 +237,8 @@ public class VerifiableCredentialApiEndToEndTest {
                 when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:issuer")))
                         .thenReturn(Result.success(DidDocument.Builder.newInstance()
                                 .service(List.of(new Service(UUID.randomUUID().toString(),
-                                        "CredentialRequest",
-                                        "http://localhost:%s/api/issuance/credentials".formatted(mockedIssuer.getLocalPort())))).build()));
+                                        "IssuerService",
+                                        "http://localhost:%s/api/issuance".formatted(mockedIssuer.getLocalPort())))).build()));
                 context.createSuperUser();
                 var user = "user1";
                 var token = context.createParticipant(user);
