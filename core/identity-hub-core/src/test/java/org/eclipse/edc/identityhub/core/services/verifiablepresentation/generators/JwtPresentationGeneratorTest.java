@@ -68,6 +68,7 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
         creator = new JwtPresentationGenerator(Clock.systemUTC(), tokenGenerationService);
     }
 
+    @Override
     @Test
     @DisplayName("Verify succesful creation of a JWT_VP")
     void createPresentation_success() {
@@ -89,6 +90,7 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
         });
     }
 
+    @Override
     @Test
     @DisplayName("Should create a JWT_VP with VCs of different formats")
     void create_whenVcsNotSameFormat() {
@@ -108,6 +110,7 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
         REQUIRED_CLAIMS.forEach(claim -> assertThat(claims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
     }
 
+    @Override
     @Test
     @DisplayName("Should throw an exception if no private key is found for a key-id")
     void create_whenPrivateKeyNotFound() {
@@ -130,6 +133,7 @@ class JwtPresentationGeneratorTest extends PresentationGeneratorTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Override
     @Test
     @DisplayName("Should return an empty JWT when no credentials are passed")
     void create_whenEmptyCredentialsList() {

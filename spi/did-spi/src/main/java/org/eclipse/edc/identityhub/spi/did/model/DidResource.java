@@ -111,6 +111,7 @@ public class DidResource extends ParticipantResource {
             return this;
         }
 
+        @Override
         public DidResource build() {
             Objects.requireNonNull(entity.did, "Must have an identifier");
             if (entity.stateTimestamp <= 0) {

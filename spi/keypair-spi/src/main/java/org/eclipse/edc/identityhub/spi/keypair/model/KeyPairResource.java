@@ -166,6 +166,7 @@ public class KeyPairResource extends ParticipantResource {
             return this;
         }
 
+        @Override
         public KeyPairResource build() {
             Objects.requireNonNull(entity.id);
             if (entity.useDuration == 0) {

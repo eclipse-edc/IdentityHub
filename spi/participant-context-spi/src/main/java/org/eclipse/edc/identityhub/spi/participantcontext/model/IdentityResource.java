@@ -84,6 +84,7 @@ public abstract class IdentityResource extends ParticipantResource {
             return self();
         }
 
+        @Override
         protected T build() {
             Objects.requireNonNull(entity.issuerId, "Must have an issuer.");
             Objects.requireNonNull(entity.holderId, "Must have a holder.");

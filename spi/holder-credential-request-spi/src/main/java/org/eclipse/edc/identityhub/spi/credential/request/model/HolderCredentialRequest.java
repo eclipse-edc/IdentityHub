@@ -125,6 +125,7 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
             return new Builder(new HolderCredentialRequest());
         }
 
+        @Override
         public Builder id(String id) {
             this.entity.id = id;
             return this;

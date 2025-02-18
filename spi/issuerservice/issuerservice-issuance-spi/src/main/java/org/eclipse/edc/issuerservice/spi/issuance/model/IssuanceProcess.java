@@ -126,6 +126,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
             return this;
         }
 
+        @Override
         public IssuanceProcess build() {
             super.build();
 

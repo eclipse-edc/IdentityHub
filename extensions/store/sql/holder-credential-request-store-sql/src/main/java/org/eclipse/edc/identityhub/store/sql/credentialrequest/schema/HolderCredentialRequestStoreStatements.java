@@ -29,6 +29,7 @@ public interface HolderCredentialRequestStoreStatements extends StatefulEntitySt
         return "edc_holder_credentialrequest";
     }
 
+    @Override
     default String getIdColumn() {
         return "id";
     }

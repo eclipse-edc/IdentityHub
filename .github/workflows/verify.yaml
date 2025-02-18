@@ -45,7 +45,7 @@ jobs:
         run: ./gradlew :launcher:identityhub:shadowJar
 
       - name: 'Build Docker image'
-        run: docker build -t identity-hub ./launcher/identityhub
+        run: docker build -t identityhub ./launcher/identityhub
 
       - name: 'Start Identity Hub'
         run: |
