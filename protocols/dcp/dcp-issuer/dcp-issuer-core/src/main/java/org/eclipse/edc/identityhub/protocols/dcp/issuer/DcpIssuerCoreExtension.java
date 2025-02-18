@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.edc.iam.identitytrust.spi.validation.TokenValidationAction;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
@@ -26,16 +25,13 @@ import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
-import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.token.rules.AudienceValidationRule;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
-import org.jetbrains.annotations.NotNull;
 
 import java.time.Clock;
 
@@ -43,10 +39,6 @@ import java.time.Clock;
 public class DcpIssuerCoreExtension implements ServiceExtension {
 
     public static final String DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT = "dcp-issuer-si";
-
-
-    @Setting(description = "DID of this issuer", key = "edc.ih.iam.id")
-    private String issuerId;
 
     @Inject
     private TokenValidationRulesRegistry rulesRegistry;
@@ -82,7 +74,6 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         rulesRegistry.addRule(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT, new IssuerEqualsSubjectRule());
-        rulesRegistry.addRule(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT, new AudienceValidationRule(issuerId));
         rulesRegistry.addRule(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT, new ExpirationIssuedAtValidationRule(clock, 5, false));
     }
 
@@ -93,14 +84,6 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     @Provider
     public DcpHolderTokenVerifier createTokenVerifier() {
-        return new DcpHolderTokenVerifierImpl(participantStore, tokenValidationAction());
-    }
-
-    @NotNull
-    private TokenValidationAction tokenValidationAction() {
-        return (tokenRepresentation) -> {
-            var rules = rulesRegistry.getRules(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT);
-            return tokenValidationService.validate(tokenRepresentation, didPublicKeyResolver, rules);
-        };
+        return new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, didPublicKeyResolver, participantStore);
     }
 }

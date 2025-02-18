@@ -27,6 +27,7 @@ public class IssuanceProcessMapping extends StatefulEntityMapping {
 
     public static final String FIELD_ID = "id";
     public static final String FIELD_PARTICIPANT_ID = "participantId";
+    public static final String FIELD_ISSUER_CONTEXT_ID = "issuerContextId";
     public static final String FIELD_CLAIMS = "claims";
     public static final String FIELD_CREDENTIAL_DEFINITIONS = "credentialDefinitions";
 
@@ -34,6 +35,7 @@ public class IssuanceProcessMapping extends StatefulEntityMapping {
         super(statements);
         add(FIELD_ID, statements.getIdColumn());
         add(FIELD_PARTICIPANT_ID, statements.getParticipantIdColumn());
+        add(FIELD_ISSUER_CONTEXT_ID, statements.getIssuerContextIdColumn());
         add(FIELD_CLAIMS, new JsonFieldTranslator(FIELD_CLAIMS));
         add(FIELD_CREDENTIAL_DEFINITIONS, new JsonArrayTranslator(statements.getCredentialDefinitionsColumn()));
     }

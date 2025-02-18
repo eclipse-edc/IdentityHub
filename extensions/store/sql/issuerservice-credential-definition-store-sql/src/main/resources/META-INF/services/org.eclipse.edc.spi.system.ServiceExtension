@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.edc.issuerservice.store.sql.attestationdefinition.SqlCredentialDefinitionStoreExtension
+org.eclipse.edc.issuerservice.store.sql.credentialdefinition.SqlCredentialDefinitionStoreExtension

@@ -39,6 +39,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
     private final Map<String, Object> claims = new HashMap<>();
     private final List<String> credentialDefinitions = new ArrayList<>();
     private String participantId;
+    private String issuerContextId;
 
     private IssuanceProcess() {
     }
@@ -48,7 +49,8 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
         var builder = Builder.newInstance()
                 .claims(claims)
                 .credentialDefinitions(credentialDefinitions)
-                .participantId(participantId);
+                .participantId(participantId)
+                .issuerContextId(issuerContextId);
         return copy(builder);
     }
 
@@ -59,6 +61,10 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
 
     public String getParticipantId() {
         return participantId;
+    }
+
+    public String getIssuerContextId() {
+        return issuerContextId;
     }
 
     public Map<String, Object> getClaims() {
@@ -126,6 +132,11 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
             return this;
         }
 
+        public Builder issuerContextId(String issuerContextId) {
+            this.entity.issuerContextId = issuerContextId;
+            return this;
+        }
+
         @Override
         public IssuanceProcess build() {
             super.build();
@@ -134,6 +145,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
                 throw new IllegalStateException("Issuance process state must be set");
             }
             Objects.requireNonNull(entity.participantId, "Participant ID must be set");
+            Objects.requireNonNull(entity.issuerContextId, "Issuer Context ID must be set");
             return entity;
         }
 

@@ -56,5 +56,5 @@ public interface CredentialRequestApi {
 
             }
     )
-    Response requestCredential(JsonObject message, String token);
+    Response requestCredential(String participantContextId, JsonObject message, String token);
 }

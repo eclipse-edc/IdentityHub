@@ -84,7 +84,7 @@ public class DcpIssuerServiceImplTest {
         when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(claims));
         when(credentialRuleDefinitionEvaluator.evaluate(eq(List.of(credentialRuleDefinition)), any())).thenReturn(Result.success());
 
-        var result = dcpIssuerService.initiateCredentialsIssuance(message, participant);
+        var result = dcpIssuerService.initiateCredentialsIssuance("issuerContextId", message, participant);
 
         assertThat(result).isSucceeded();
 
@@ -99,5 +99,6 @@ public class DcpIssuerServiceImplTest {
         assertThat(issuanceProcess.getParticipantId()).isEqualTo("participantId");
         assertThat(issuanceProcess.getState()).isEqualTo(IssuanceProcessStates.APPROVED.code());
         assertThat(issuanceProcess.getClaims()).containsAllEntriesOf(claims);
+        assertThat(issuanceProcess.getIssuerContextId()).isEqualTo("issuerContextId");
     }
 }

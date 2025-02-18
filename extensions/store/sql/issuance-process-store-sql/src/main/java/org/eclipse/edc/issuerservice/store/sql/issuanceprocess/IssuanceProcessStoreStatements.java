@@ -47,6 +47,9 @@ public interface IssuanceProcessStoreStatements extends StatefulEntityStatements
         return "participant_id";
     }
 
+    default String getIssuerContextIdColumn() {
+        return "issuer_context_id";
+    }
 
     String getInsertTemplate();
 

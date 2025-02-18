@@ -12,9 +12,9 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.store.sql.attestationdefinition;
+package org.eclipse.edc.issuerservice.store.sql.credentialdefinition;
 
-import org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres.CredentialDefinitionMapping;
+import org.eclipse.edc.issuerservice.store.sql.credentialdefinition.schema.postgres.CredentialDefinitionMapping;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;

@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.protocols.dcp.spi;
 
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -26,6 +27,6 @@ import org.eclipse.edc.spi.result.ServiceResult;
 @ExtensionPoint
 public interface DcpHolderTokenVerifier {
 
-    ServiceResult<DcpRequestContext> verify(TokenRepresentation tokenRepresentation);
+    ServiceResult<DcpRequestContext> verify(ParticipantContext issuerContext, TokenRepresentation tokenRepresentation);
 
 }

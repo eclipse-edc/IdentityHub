@@ -38,6 +38,7 @@ import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.validator.spi.ValidationResult;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Base64;
 import java.util.Map;
 
 import static io.restassured.http.ContentType.JSON;
@@ -69,6 +71,10 @@ public class DcpIssuanceApiEndToEndTest {
         public static final String DID_WEB_PARTICIPANT_KEY_1 = "did:web:participant#key1";
         public static final ECKey PARTICIPANT_KEY = generateEcKey(DID_WEB_PARTICIPANT_KEY_1);
         protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
+
+        protected static final String ISSUER_ID = "issuer";
+        private static final String ISSUER_ID_ENCODED = Base64.getUrlEncoder().encodeToString(ISSUER_ID.getBytes());
+
         private static final String VALID_CREDENTIAL_REQUEST_MESSAGE = """
                 {
                   "@context": [
@@ -98,6 +104,11 @@ public class DcpIssuanceApiEndToEndTest {
             var validationRegistry = context.getRuntime().getService(AttestationDefinitionValidatorRegistry.class);
             pipelineFactory.registerFactory("Attestation", ATTESTATION_SOURCE_FACTORY);
             validationRegistry.registerValidator("Attestation", def -> ValidationResult.success());
+            context.createParticipant(ISSUER_ID);
+        }
+
+        private static @NotNull String issuanceUrl() {
+            return "/v1alpha/participants/%s/credentials".formatted(ISSUER_ID_ENCODED);
         }
 
         @AfterEach
@@ -150,14 +161,14 @@ public class DcpIssuanceApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
-                    .post("/v1alpha/credentials")
+                    .post(issuanceUrl())
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
                     .extract()
                     .header("Location");
 
-            assertThat(location).contains("/v1alpha/requests/");
+            assertThat(location).contains("/v1alpha/participants/%s/requests".formatted(ISSUER_ID_ENCODED));
 
             var processId = location.substring(location.lastIndexOf('/') + 1);
             var issuanceProcess = issuanceProcessStore.findById(processId);
@@ -167,6 +178,7 @@ public class DcpIssuanceApiEndToEndTest {
                         assertThat(process.getParticipantId()).isEqualTo(PARTICIPANT_DID);
                         assertThat(process.getCredentialDefinitions()).containsExactly("credential-id");
                         assertThat(process.getClaims()).containsAllEntriesOf(claims);
+                        assertThat(process.getIssuerContextId()).isEqualTo(ISSUER_ID);
                     });
 
         }
@@ -179,7 +191,7 @@ public class DcpIssuanceApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(FAULTY_CREDENTIAL_REQUEST_MESSAGE)
-                    .post("/v1alpha/credentials")
+                    .post(issuanceUrl())
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -191,7 +203,7 @@ public class DcpIssuanceApiEndToEndTest {
             context.getDcpIssuanceEndpoint().baseRequest()
                     .contentType(JSON)
                     .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
-                    .post("/v1alpha/credentials")
+                    .post(issuanceUrl())
                     .then()
                     .log().ifValidationFails()
                     .statusCode(401);
@@ -206,7 +218,7 @@ public class DcpIssuanceApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
-                    .post("/v1alpha/credentials")
+                    .post(issuanceUrl())
                     .then()
                     .log().ifValidationFails()
                     .statusCode(401);
@@ -228,7 +240,7 @@ public class DcpIssuanceApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
-                    .post("/v1alpha/credentials")
+                    .post(issuanceUrl())
                     .then()
                     .log().ifValidationFails()
                     .statusCode(401);
@@ -248,7 +260,7 @@ public class DcpIssuanceApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
-                    .post("/v1alpha/credentials")
+                    .post(issuanceUrl())
                     .then()
                     .log().ifValidationFails()
                     .statusCode(401);
@@ -268,7 +280,7 @@ public class DcpIssuanceApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
-                    .post("/v1alpha/credentials")
+                    .post(issuanceUrl())
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -314,7 +326,7 @@ public class DcpIssuanceApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
-                    .post("/v1alpha/credentials")
+                    .post(issuanceUrl())
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);

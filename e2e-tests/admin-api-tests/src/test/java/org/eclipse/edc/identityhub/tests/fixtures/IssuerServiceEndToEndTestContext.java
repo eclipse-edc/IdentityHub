@@ -14,7 +14,15 @@
 
 package org.eclipse.edc.identityhub.tests.fixtures;
 
+import org.eclipse.edc.iam.did.spi.document.Service;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
+import org.eclipse.edc.spi.EdcException;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * IssuerService end to end context used in tests extended with {@link IssuerServiceEndToEndExtension}
@@ -42,4 +50,34 @@ public class IssuerServiceEndToEndTestContext {
     public IssuerServiceRuntimeConfiguration.Endpoint getDcpIssuanceEndpoint() {
         return configuration.getIssuerApiEndpoint();
     }
+
+    public String createParticipant(String participantContextId) {
+        return createParticipant(participantContextId, List.of());
+    }
+
+    public String createParticipant(String participantContextId, List<String> roles, boolean isActive) {
+        var manifest = ParticipantManifest.Builder.newInstance()
+                .participantId(participantContextId)
+                .active(isActive)
+                .roles(roles)
+                .serviceEndpoint(new Service("test-service-id", "test-type", "http://foo.bar.com"))
+                .did("did:web:" + participantContextId)
+                .key(KeyDescriptor.Builder.newInstance()
+                        .privateKeyAlias(participantContextId + "-alias")
+                        .resourceId(participantContextId + "-resource")
+                        .keyId(participantContextId + "-key")
+                        .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"))
+                        .build())
+                .build();
+        var srv = runtime.getService(ParticipantContextService.class);
+        return srv.createParticipantContext(manifest)
+                .orElseThrow(f -> new EdcException(f.getFailureDetail()))
+                .apiKey();
+    }
+
+
+    public String createParticipant(String participantContextId, List<String> roles) {
+        return createParticipant(participantContextId, roles, true);
+    }
+
 }

@@ -159,6 +159,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 toJson(process.getTraceContext()),
                 process.getErrorDetail(),
                 process.getParticipantId(),
+                process.getIssuerContextId(),
                 toJson(process.getClaims()),
                 toJson(process.getCredentialDefinitions())
         );
@@ -198,6 +199,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 .traceContext(fromJson(resultSet.getString(statements.getTraceContextColumn()), getTypeRef()))
                 .errorDetail(resultSet.getString(statements.getErrorDetailColumn()))
                 .participantId(resultSet.getString(statements.getParticipantIdColumn()))
+                .issuerContextId(resultSet.getString(statements.getIssuerContextIdColumn()))
                 .claims(fromJson(resultSet.getString(statements.getClaimsColumn()), getTypeRef()))
                 .credentialDefinitions(fromJson(resultSet.getString(statements.getCredentialDefinitionsColumn()), ATTESTATIONS_LIST_REF))
                 .build();

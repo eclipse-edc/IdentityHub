@@ -12,15 +12,15 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres;
+package org.eclipse.edc.issuerservice.store.sql.credentialdefinition.schema.postgres;
 
-import org.eclipse.edc.issuerservice.store.sql.attestationdefinition.CredentialDefinitionStoreStatements;
+import org.eclipse.edc.issuerservice.store.sql.credentialdefinition.CredentialDefinitionStoreStatements;
 import org.eclipse.edc.sql.translation.JsonArrayTranslator;
 import org.eclipse.edc.sql.translation.JsonFieldTranslator;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
-import static org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres.PostgresDialectStatements.MAPPING_ALIAS;
-import static org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres.PostgresDialectStatements.RULES_ALIAS;
+import static org.eclipse.edc.issuerservice.store.sql.credentialdefinition.schema.postgres.PostgresDialectStatements.MAPPING_ALIAS;
+import static org.eclipse.edc.issuerservice.store.sql.credentialdefinition.schema.postgres.PostgresDialectStatements.RULES_ALIAS;
 
 
 /**

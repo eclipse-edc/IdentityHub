@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.store.sql.attestationdefinition;
+package org.eclipse.edc.issuerservice.store.sql.credentialdefinition;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
