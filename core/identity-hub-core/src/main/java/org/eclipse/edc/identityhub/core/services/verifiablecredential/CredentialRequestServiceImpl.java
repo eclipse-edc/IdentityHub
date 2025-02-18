@@ -32,6 +32,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestSe
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 
 import java.io.IOException;
@@ -55,19 +56,22 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
     private final EdcHttpClient httpClient;
     private final SecureTokenService secureTokenService;
     private final String ownDid;
+    private final TransactionContext transactionContext;
 
     public CredentialRequestServiceImpl(HolderCredentialRequestStore holderCredentialRequestStore,
                                         DidResolverRegistry didResolverRegistry,
                                         TypeTransformerRegistry dcpTypeTransformerRegistry,
                                         EdcHttpClient httpClient,
                                         SecureTokenService secureTokenService,
-                                        String ownDid) {
+                                        String ownDid,
+                                        TransactionContext transactionContext) {
         this.holderCredentialRequestStore = holderCredentialRequestStore;
         this.didResolverRegistry = didResolverRegistry;
         this.dcpTypeTransformerRegistry = dcpTypeTransformerRegistry;
         this.httpClient = httpClient;
         this.secureTokenService = secureTokenService;
         this.ownDid = ownDid;
+        this.transactionContext = transactionContext;
     }
 
     @Override
@@ -84,29 +88,34 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
         var result = didResolverRegistry.resolve(issuerDid)
                 .compose(this::getCredentialRequestEndpoint)
                 .map(credentialRequestEndpoint -> {
-                    holderCredentialRequestStore.save(newRequest);
+                    transactionContext.execute(() -> holderCredentialRequestStore.save(newRequest));
                     return credentialRequestEndpoint;
                 })
                 .compose(endpoint -> {
                     var rq = newRequest.copy().toBuilder()
                             .state(HolderRequestState.REQUESTING.code())
                             .build();
-                    holderCredentialRequestStore.save(rq); // set state
-                    return getAuthToken(issuerDid, ownDid).compose(token -> sendCredentialsRequest(token, endpoint, requestId, typesAndFormats));
+                    return transactionContext.execute(() -> {
+                        holderCredentialRequestStore.save(rq);
+                        return getAuthToken(issuerDid, ownDid).compose(token -> sendCredentialsRequest(token, endpoint, requestId, typesAndFormats));
+                    }); // set state
                 })
                 .onFailure(failure -> {
-                    var rq = newRequest.copy().toBuilder()
-                            .state(HolderRequestState.ERROR.code())
-                            .errorDetail(failure.getFailureDetail())
-                            .build();
-                    holderCredentialRequestStore.save(rq);
+                    transactionContext.execute(() -> {
+                        var rq = newRequest.copy().toBuilder()
+                                .state(HolderRequestState.ERROR.code())
+                                .errorDetail(failure.getFailureDetail())
+                                .build();
+                        holderCredentialRequestStore.save(rq);
+                    });
+
                 })
                 .map(issuanceProcessId -> newRequest.copy().toBuilder()
                         .issuanceProcessId(issuanceProcessId)
                         .state(REQUESTED.code())
                         .build())
                 .compose(rq -> {
-                    holderCredentialRequestStore.save(rq);
+                    transactionContext.execute(() -> holderCredentialRequestStore.save(rq));
                     return success(rq.getIssuanceProcessId());
                 });
 
