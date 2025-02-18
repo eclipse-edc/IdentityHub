@@ -23,6 +23,11 @@ import java.util.Map;
  */
 public interface CredentialRequestService {
     /**
+     * Service type for entries in a DID document that contain the fully-qualified Credential Request API endpoint
+     */
+    String CREDENTIAL_REQUEST_SERVICE_TYPE = "CredentialRequest";
+
+    /**
      * Initiates the holder-side credential request by sending the DCP message to the issuer
      *
      * @param participantContext The Participant Context ID of the requestor

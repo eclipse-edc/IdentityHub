@@ -88,16 +88,23 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
                     return credentialRequestEndpoint;
                 })
                 .compose(endpoint -> {
-                    var rq = newRequest.copy().toBuilder().state(HolderRequestState.REQUESTING.code()).build();
+                    var rq = newRequest.copy().toBuilder()
+                            .state(HolderRequestState.REQUESTING.code())
+                            .build();
                     holderCredentialRequestStore.save(rq); // set state
-                    return sendCredentialsRequest(issuerDid, endpoint, requestId, typesAndFormats);
+                    return getAuthToken(issuerDid, ownDid).compose(token -> sendCredentialsRequest(token, endpoint, requestId, typesAndFormats));
                 })
                 .onFailure(failure -> {
-                    var rq = newRequest.copy().toBuilder().state(HolderRequestState.ERROR.code())
-                            .errorDetail(failure.getFailureDetail()).build();
+                    var rq = newRequest.copy().toBuilder()
+                            .state(HolderRequestState.ERROR.code())
+                            .errorDetail(failure.getFailureDetail())
+                            .build();
                     holderCredentialRequestStore.save(rq);
                 })
-                .map(issuanceProcessId -> newRequest.copy().toBuilder().issuanceProcessId(issuanceProcessId).state(REQUESTED.code()).build())
+                .map(issuanceProcessId -> newRequest.copy().toBuilder()
+                        .issuanceProcessId(issuanceProcessId)
+                        .state(REQUESTED.code())
+                        .build())
                 .compose(rq -> {
                     holderCredentialRequestStore.save(rq);
                     return success(rq.getIssuanceProcessId());
@@ -106,16 +113,21 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
         return ServiceResult.from(result);
     }
 
-    private Result<String> sendCredentialsRequest(String issuerDid, String issuerRequestEndpointUrl, String requestId, Map<String, String> typesAndFormats) {
+    /**
+     * send credential request message over DCP to the issuer endpoint
+     *
+     * @param token                    the token that should be used in the Authorization header of the DCP request
+     * @param issuerRequestEndpointUrl the URL of the Issuer's Credential Request API endpoint
+     * @param requestId                the request ID property that will be attached to the request
+     * @param typesAndFormats          a map of credential-type-to-format entries. The credential-type is the entry's key, the format is the entry's value
+     * @return a Result containing the Issuer-assigned issuance process ID
+     */
+    private Result<String> sendCredentialsRequest(TokenRepresentation token, String issuerRequestEndpointUrl, String requestId, Map<String, String> typesAndFormats) {
         var rqMessage = CredentialRequestMessage.Builder.newInstance();
         rqMessage.requestId(requestId);
 
         typesAndFormats.forEach((type, format) -> rqMessage.credential(new CredentialRequest(type, format, null)));
 
-        var token = getAuthToken(issuerDid, ownDid);
-        if (token.failed()) {
-            return token.mapFailure();
-        }
 
         var jsonObj = dcpTypeTransformerRegistry.transform(rqMessage.build(), JsonObject.class);
 
@@ -123,12 +135,15 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
                 .map(json -> new Request.Builder()
                         .url(issuerRequestEndpointUrl)
                         .post(RequestBody.create(json, MediaType.parse("application/json")))
-                        .header("Authorization", "Bearer " + token.getContent().getToken())
+                        .header("Authorization", "Bearer " + token.getToken())
                         .build())
                 .compose(request -> httpClient.execute(request, this::mapResponse));
 
     }
 
+    /**
+     * maps a {@link Response} to a result containing the response body
+     */
     private Result<String> mapResponse(Response response) {
         if (response.isSuccessful()) {
             if (response.body() != null) {
@@ -142,6 +157,13 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
         return failure("Error sending DCP Credential Request: code: '%s', message: '%s'".formatted(response.code(), response.message()));
     }
 
+    /**
+     * Fetches the authentication token from the SecureTokenService.
+     *
+     * @param audience the String used as {@code aud} claim
+     * @param myOwnDid the String used as {@code iss} and {@code sub} claims
+     * @return a JWT token that can be used to send DCP messages to the issuer
+     */
     private Result<TokenRepresentation> getAuthToken(String audience, String myOwnDid) {
         var siTokenClaims = Map.of(
                 ISSUED_AT, Instant.now().toString(),
@@ -152,10 +174,16 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
         return secureTokenService.createToken(siTokenClaims, null);
     }
 
+    /**
+     * Extracts the {@code CredentialRequest} service endpoint from the DID document
+     *
+     * @param issuerDidDocument The Issuer's DID document
+     * @return A result containing the service entry
+     */
     private Result<String> getCredentialRequestEndpoint(DidDocument issuerDidDocument) {
-        var endpoint = issuerDidDocument.getService().stream().filter(s -> s.getType().equalsIgnoreCase("CredentialRequest")).findAny();
+        var endpoint = issuerDidDocument.getService().stream().filter(s -> s.getType().equalsIgnoreCase(CREDENTIAL_REQUEST_SERVICE_TYPE)).findAny();
 
         return endpoint.map(s -> success(s.getServiceEndpoint()))
-                .orElseGet(() -> failure("The Issuer's DID Document does not contain any CredentialRequest endpoint"));
+                .orElseGet(() -> failure("The Issuer's DID Document does not contain any '%s' endpoint".formatted(CREDENTIAL_REQUEST_SERVICE_TYPE)));
     }
 }

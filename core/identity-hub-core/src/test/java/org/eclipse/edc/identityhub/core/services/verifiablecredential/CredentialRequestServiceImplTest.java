@@ -116,9 +116,9 @@ class CredentialRequestServiceImplTest {
         var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, UUID.randomUUID().toString(), Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()));
         assertThat(result)
                 .isFailed()
-                .detail().containsSequence("does not contain any CredentialRequest endpoint");
+                .detail().containsSequence("does not contain any 'CredentialRequest' endpoint");
 
-        verify(store).save(argThat(rq -> rq.getErrorDetail().contains("does not contain any CredentialRequest endpoint")));
+        verify(store).save(argThat(rq -> rq.getErrorDetail().contains("does not contain any 'CredentialRequest' endpoint")));
         verify(resolver).resolve(eq(ISSUER_DID));
         verifyNoMoreInteractions(store, resolver, transformerRegistry, httpClient);
     }
