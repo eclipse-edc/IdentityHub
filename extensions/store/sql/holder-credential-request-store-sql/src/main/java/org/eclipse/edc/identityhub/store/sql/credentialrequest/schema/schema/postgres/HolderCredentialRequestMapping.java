@@ -26,7 +26,7 @@ public class HolderCredentialRequestMapping extends StatefulEntityMapping {
 
     public static final String FIELD_PARTICIPANT_ID = "participantContextId";
     public static final String FIELD_ISSUER_DID = "issuerDid";
-    public static final String FIELD_CREDENTIAL_TYPES = "credentialTypes";
+    public static final String FIELD_CREDENTIAL_TYPES = "typesAndFormats";
     public static final String FIELD_ISSUANCE_PROCESS = "issuanceProcessId";
 
     public HolderCredentialRequestMapping(HolderCredentialRequestStoreStatements statements) {

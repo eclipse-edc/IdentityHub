@@ -20,11 +20,11 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
-import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.Status;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
@@ -40,8 +40,10 @@ import org.eclipse.edc.statemachine.ProcessorImpl;
 import org.eclipse.edc.statemachine.StateMachineManager;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -50,7 +52,6 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
-import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
@@ -87,17 +88,9 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
                 .state(CREATED.code())
                 .build();
 
-        var result = processInitial(issuerDid, newRequest)
-                .compose(endpoint -> {
-                    return transactionContext.execute(() -> {
-                        transition(newRequest.copy().toBuilder(), REQUESTING);
-                        return getAuthToken(issuerDid, ownDid).compose(token -> sendCredentialsRequest(token, endpoint, requestId, typesAndFormats));
-                    }); // set state
-                })
-                .compose(issuanceProcessId -> {
-                    transitionRequested(newRequest, issuanceProcessId);
-                    return success(issuanceProcessId);
-                })
+        var result = processInitial(newRequest)
+                .compose(endpoint -> sendCredentialRequest(newRequest, endpoint))
+                .compose(issuanceProcessId -> handleCredentialResponse(issuanceProcessId, newRequest))
                 .onFailure(failure -> transactionContext.execute(() -> transitionError(newRequest, failure.getFailureDetail())));
 
         return ServiceResult.from(result);
@@ -108,12 +101,33 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
         return builder
                 .processor(processRequestsInState(CREATED, this::processCreated))
                 .processor(processRequestsInState(REQUESTING, this::processRequesting))
-                .processor(processRequestsInState(REQUESTED, this::processRequested))
-                .processor(processRequestsInState(ISSUED, this::processExpiring));
+                .processor(processRequestsInState(REQUESTED, this::processRequested));
+    }
+
+    private @NotNull Result<String> handleCredentialResponse(String issuanceProcessId, HolderCredentialRequest newRequest) {
+        transitionRequested(newRequest, issuanceProcessId);
+        return success(issuanceProcessId);
+    }
+
+    private Result<String> sendCredentialRequest(HolderCredentialRequest request, String endpoint) {
+        var issuerDid = request.getIssuerDid();
+        var requestId = request.getId();
+        var typesAndFormats = request.getTypesAndFormats();
+
+        return transactionContext.execute(() -> {
+            transition(request.copy().toBuilder(), REQUESTING);
+            return getAuthToken(issuerDid, ownDid)
+                    .compose(token -> createCredentialsRequest(token, endpoint, requestId, typesAndFormats))
+                    .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
+        });
     }
 
     private void transitionRequested(HolderCredentialRequest req, String issuanceProcessId) {
         transition(req.copy().toBuilder().issuanceProcessId(issuanceProcessId), REQUESTED);
+    }
+
+    private void transitionIssued(HolderCredentialRequest request) {
+        transition(request.copy().toBuilder(), HolderRequestState.ISSUED);
     }
 
     private void transitionError(HolderCredentialRequest request, String failureDetail) {
@@ -125,9 +139,8 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
         transactionContext.execute(() -> store.save(rq));
     }
 
-    private Result<String> processInitial(String issuerDid, HolderCredentialRequest newRequest) {
-        return didResolverRegistry.resolve(issuerDid)
-                .compose(this::getCredentialRequestEndpoint)
+    private Result<String> processInitial(HolderCredentialRequest newRequest) {
+        return getCredentialRequestEndpoint(newRequest)
                 .map(credentialRequestEndpoint -> {
                     transactionContext.execute(() -> store.save(newRequest));
                     return credentialRequestEndpoint;
@@ -135,25 +148,66 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
     }
 
     /**
-     * processes all credentials that are in state {@link HolderRequestState#ISSUED} and re-requests them if they are nearing
-     * expiry.
+     * processes all credentials that are in state {@link HolderRequestState#REQUESTED} and transitions to {@link HolderRequestState#ERROR}
+     * if the time limit was exceeded.
      *
      * @return true if the request was processed, false otherwise.
      */
-    private Boolean processExpiring(HolderCredentialRequest holderCredentialRequest) {
-        monitor.debug("Processing expiring request '%s'".formatted(holderCredentialRequest.getRequestId()));
-        return false;
+    private Boolean processRequested(HolderCredentialRequest request) {
+        var created = Instant.ofEpochMilli(request.getStateTimestamp());
+
+        var age = Duration.between(created, Instant.now());
+
+        var limit = Duration.ofHours(1); //todo: make configurable
+        if (age.compareTo(limit) > 0) {
+            var msg = "Time limit exceeded: request '%s' has been in state '%s' for '%s' time. Limit = %s"
+                    .formatted(request.getRequestId(), REQUESTED, age, limit);
+            monitor.warning(msg);
+
+            transitionError(request, msg);
+            return true;
+        } else {
+            //todo: make request to Issuer's Credentials Request Status API
+            var res = getCredentialRequestEndpoint(request)
+                    .compose(endpoint -> sendCredentialsStatusRequest(request, endpoint))
+                    .map(response -> {
+                        if (response.contains(Status.REJECTED.toString())) {
+                            // transition to error, credential request was rejected, but we never received that info
+                            transitionError(request, "The credential request has been rejected by the Issuer");
+                            return true;
+                        } else if (response.contains(Status.ISSUED.toString())) {
+                            //huh? did we miss a state update?
+                            transitionIssued(request);
+                            return true;
+                        } else if (response.contains(Status.RECEIVED.toString())) { // RECEIVED
+                            // no update yet, let it tick over
+                            return false;
+                        } else {
+                            transitionError(request, "Invalid status response received from Issuer: '%s'".formatted(response));
+                            return true;
+                        }
+                    })
+                    .onFailure(failure -> transitionError(request, failure.getFailureDetail()));
+
+            return res.succeeded() ? res.getContent() : false;
+
+        }
     }
 
-    /**
-     * processes all credentials that are in state {@link HolderRequestState#REQUESTED} and possibly requests a state update
-     * by calling the Issuer's Credential Request Status API
-     *
-     * @return true if the request was processed, false otherwise.
-     */
-    private Boolean processRequested(HolderCredentialRequest holderCredentialRequest) {
-        monitor.debug("Processing REQUESTED request '%s'".formatted(holderCredentialRequest.getRequestId()));
-        return false;
+    private Result<String> sendCredentialsStatusRequest(HolderCredentialRequest request, String endpoint) {
+        var issuerDid = request.getIssuerDid();
+        var requestId = request.getId();
+        return getAuthToken(issuerDid, ownDid)
+                .compose(token -> createCredentialsStatusRequest(token, endpoint, requestId))
+                .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
+    }
+
+    private Result<Request> createCredentialsStatusRequest(TokenRepresentation token, String endpoint, String requestId) {
+        return success(new Request.Builder()
+                .url(endpoint + "/request/" + requestId)
+                .header("Authorization", "Bearer" + token.getToken())
+                .get()
+                .build());
     }
 
     /**
@@ -163,8 +217,12 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
      * @return true if the request was processed, false otherwise.
      */
     private Boolean processRequesting(HolderCredentialRequest holderCredentialRequest) {
-        monitor.debug("Processing REQUESTING request '%s'".formatted(holderCredentialRequest.getRequestId()));
-        return false;
+        var result = getCredentialRequestEndpoint(holderCredentialRequest)
+                .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
+                .compose(issuanceProcessId -> handleCredentialResponse(issuanceProcessId, holderCredentialRequest))
+                .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
+
+        return result.succeeded();
     }
 
     /**
@@ -175,7 +233,12 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
      */
     private Boolean processCreated(HolderCredentialRequest holderCredentialRequest) {
         monitor.debug("Processing CREATED request '%s'".formatted(holderCredentialRequest.getRequestId()));
-        return false;
+        var result = processInitial(holderCredentialRequest)
+                .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
+                .compose(issuanceProcessId -> handleCredentialResponse(issuanceProcessId, holderCredentialRequest))
+                .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
+
+        return result.succeeded();
     }
 
     private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, Boolean> function) {
@@ -200,29 +263,27 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
      * @param typesAndFormats          a map of credential-type-to-format entries. The credential-type is the entry's key, the format is the entry's value
      * @return a Result containing the Issuer-assigned issuance process ID
      */
-    private Result<String> sendCredentialsRequest(TokenRepresentation token, String issuerRequestEndpointUrl, String requestId, Map<String, String> typesAndFormats) {
+    private Result<Request> createCredentialsRequest(TokenRepresentation token, String issuerRequestEndpointUrl, String requestId, Map<String, String> typesAndFormats) {
         var rqMessage = CredentialRequestMessage.Builder.newInstance();
         rqMessage.requestId(requestId);
 
         typesAndFormats.forEach((type, format) -> rqMessage.credential(new CredentialRequest(type, format, null)));
 
-
         var jsonObj = dcpTypeTransformerRegistry.transform(rqMessage.build(), JsonObject.class);
 
         return jsonObj.map(JsonObject::toString)
                 .map(json -> new Request.Builder()
-                        .url(issuerRequestEndpointUrl)
+                        .url(issuerRequestEndpointUrl + "/credentials")
                         .post(RequestBody.create(json, MediaType.parse("application/json")))
                         .header("Authorization", "Bearer " + token.getToken())
-                        .build())
-                .compose(request -> httpClient.execute(request, this::mapResponse));
+                        .build());
 
     }
 
     /**
      * maps a {@link Response} to a result containing the response body
      */
-    private Result<String> mapResponse(Response response) {
+    private Result<String> mapResponseAsString(Response response) {
         if (response.isSuccessful()) {
             if (response.body() != null) {
                 try {
@@ -255,14 +316,16 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
     /**
      * Extracts the {@code CredentialRequest} service endpoint from the DID document
      *
-     * @param issuerDidDocument The Issuer's DID document
+     * @param request The Issuer's DID document
      * @return A result containing the service entry
      */
-    private Result<String> getCredentialRequestEndpoint(DidDocument issuerDidDocument) {
-        var endpoint = issuerDidDocument.getService().stream().filter(s -> s.getType().equalsIgnoreCase(ISSUER_SERVICE_ENDPOINT_TYPE)).findAny();
-
-        return endpoint.map(s -> success((s.getServiceEndpoint() + "/credentials").replace("//", "/")))
-                .orElseGet(() -> failure("The Issuer's DID Document does not contain any '%s' endpoint".formatted(ISSUER_SERVICE_ENDPOINT_TYPE)));
+    private Result<String> getCredentialRequestEndpoint(HolderCredentialRequest request) {
+        return didResolverRegistry.resolve(request.getIssuerDid())
+                .compose(didDocument -> {
+                    var service = didDocument.getService().stream().filter(s -> s.getType().equalsIgnoreCase(ISSUER_SERVICE_ENDPOINT_TYPE)).findAny();
+                    return service.map(s -> success((s.getServiceEndpoint())))
+                            .orElseGet(() -> failure("The Issuer's DID Document does not contain any '%s' endpoint".formatted(ISSUER_SERVICE_ENDPOINT_TYPE)));
+                });
     }
 
     public static class Builder

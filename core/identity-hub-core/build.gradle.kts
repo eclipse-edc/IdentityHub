@@ -32,6 +32,8 @@ dependencies {
 
 
     testImplementation(project(":core:common-core"))
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.awaitility)
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(project(":spi:keypair-spi")))

@@ -159,12 +159,12 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         var participantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
         authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
-                .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, participantId));
+                .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
 
         var requestId = ofNullable(credentialRequestDto.requestId());
         var requestParameters = credentialRequestDto.credentials().stream().collect(Collectors.toMap(CredentialDescriptor::credentialType, CredentialDescriptor::format));
 
-        ServiceResult<String> credentialRequestResult = credentialRequestService.initiateRequest(participantId, credentialRequestDto.issuerDid(),
+        var credentialRequestResult = credentialRequestService.initiateRequest(participantId, credentialRequestDto.issuerDid(),
                 requestId.orElseGet(() -> UUID.randomUUID().toString()),
                 requestParameters);
 
@@ -184,10 +184,11 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                                                            @PathParam("issuanceProcessId") String issuanceProcessId,
                                                            @Context SecurityContext securityContext) {
 
-        authorizationService.isAuthorized(securityContext, participantContextId, VerifiableCredentialResource.class)
-                .orElseThrow(exceptionMapper(HolderCredentialRequestDto.class, participantContextId));
+        var participantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
+                .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
 
-        //todo: implement service call to fetch the HolderCredentialRequest from the database
+        //todo: implement CredentialRequestService.fetchCredentialStatus from DCP issuer
         return new HolderCredentialRequestDto("did:web:issuer", "dummy-request-id", "issuance-process-ic", "ISSUED", List.of(UUID.randomUUID().toString()), List.of());
     }
 
