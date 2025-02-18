@@ -270,6 +270,8 @@ maven/mavencentral/org.eclipse.edc/identity-trust-sts-accounts-api/0.12.0-SNAPSH
 maven/mavencentral/org.eclipse.edc/identity-trust-sts-api/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/identity-trust-sts-core/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/identity-trust-sts-embedded/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
+maven/mavencentral/org.eclipse.edc/identity-trust-sts-remote-client/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
+maven/mavencentral/org.eclipse.edc/identity-trust-sts-remote-lib/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/identity-trust-sts-spi/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/identity-trust-transform/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jersey-core/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
@@ -290,6 +292,8 @@ maven/mavencentral/org.eclipse.edc/keys-lib/0.12.0-SNAPSHOT, Apache-2.0, approve
 maven/mavencentral/org.eclipse.edc/keys-spi/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/ldp-verifiable-credentials/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/management-api-test-fixtures/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
+maven/mavencentral/org.eclipse.edc/oauth2-client/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
+maven/mavencentral/org.eclipse.edc/oauth2-spi/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/participant-spi/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/policy-engine-lib/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/policy-engine-spi/0.12.0-SNAPSHOT, Apache-2.0, approved, technology.edc
