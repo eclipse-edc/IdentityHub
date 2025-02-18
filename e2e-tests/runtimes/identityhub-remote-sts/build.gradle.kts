@@ -18,6 +18,7 @@ plugins {
 }
 
 dependencies {
+    runtimeOnly(project(":core:common-core"))
     runtimeOnly(project(":core:identity-hub-did"))
     runtimeOnly(project(":core:identity-hub-core"))
     runtimeOnly(project(":core:identity-hub-participants"))
