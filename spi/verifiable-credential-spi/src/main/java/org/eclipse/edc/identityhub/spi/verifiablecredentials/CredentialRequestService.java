@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.spi.verifiablecredentials;
 
+import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
+import org.eclipse.edc.spi.entity.StateEntityManager;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.Map;
@@ -21,7 +23,8 @@ import java.util.Map;
 /**
  * Makes credential requests to a given issuer
  */
-public interface CredentialRequestService {
+@ExtensionPoint
+public interface CredentialRequestService extends StateEntityManager {
     /**
      * Service type for entries in a DID document that contain the fully-qualified Credential Request API endpoint
      */

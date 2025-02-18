@@ -24,6 +24,7 @@ dependencies {
     implementation(libs.edc.lib.jws2020)
     implementation(libs.edc.lib.common.crypto)
     implementation(libs.edc.lib.token)
+    implementation(libs.edc.lib.statemachine)
     implementation(libs.edc.spi.token)
     implementation(libs.edc.spi.identity.did)
     implementation(libs.edc.vc.ldp)

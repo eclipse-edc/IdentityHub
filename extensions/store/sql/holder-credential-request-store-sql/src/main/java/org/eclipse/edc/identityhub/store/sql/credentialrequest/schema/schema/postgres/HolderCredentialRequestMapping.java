@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.schema.po
 
 import org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.HolderCredentialRequestStoreStatements;
 import org.eclipse.edc.sql.lease.StatefulEntityMapping;
-import org.eclipse.edc.sql.translation.JsonArrayTranslator;
+import org.eclipse.edc.sql.translation.JsonFieldTranslator;
 
 
 /**
@@ -33,7 +33,7 @@ public class HolderCredentialRequestMapping extends StatefulEntityMapping {
         super(statements);
         add(FIELD_PARTICIPANT_ID, statements.getParticipantIdColumn());
         add(FIELD_ISSUER_DID, statements.getIssuerDidColumn());
-        add(FIELD_CREDENTIAL_TYPES, new JsonArrayTranslator(statements.getCredentialTypesColumn()));
+        add(FIELD_CREDENTIAL_TYPES, new JsonFieldTranslator(statements.getCredentialTypesColumn()));
         add(FIELD_ISSUANCE_PROCESS, statements.getIssuanceProcessIdColumn());
     }
 }

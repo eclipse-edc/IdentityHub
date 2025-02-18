@@ -140,6 +140,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Setting(key = "edc.ih.iam.id", description = "DID of the holder")
     private String ownDid;
+    private CredentialRequestServiceImpl credentialRequestService;
 
     @Override
     public String name() {
@@ -198,15 +199,24 @@ public class CoreServicesExtension implements ServiceExtension {
     }
 
     @Provider
-    public CredentialRequestService createDefaultCredentialRequestService() {
-        return new CredentialRequestServiceImpl(credentialRequestStore,
-                didResolverRegistry,
-                typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0),
-                httpClient,
-                secureTokenService,
-                ownDid,
-                transactionContext
-        );
+    public CredentialRequestService createDefaultCredentialRequestService(ServiceExtensionContext context) {
+        if (credentialRequestService == null) {
+            credentialRequestService = CredentialRequestServiceImpl.Builder.newInstance()
+                    .store(credentialRequestStore)
+                    .didResolverRegistry(didResolverRegistry)
+                    .typeTransformerRegistry(typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0))
+                    .httpClient(httpClient)
+                    .secureTokenService(secureTokenService)
+                    .ownDid(ownDid)
+                    .transactionContext(transactionContext)
+                    .monitor(context.getMonitor())
+                    .build();
+        }
+        return credentialRequestService;
     }
 
+    @Override
+    public void start() {
+        credentialRequestService.start();
+    }
 }

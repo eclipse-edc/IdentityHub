@@ -17,8 +17,7 @@ package org.eclipse.edc.identityhub.spi.credential.request.model;
 import org.eclipse.edc.spi.entity.Entity;
 import org.eclipse.edc.spi.entity.StatefulEntity;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -35,7 +34,7 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
 
     private String participantContextId;
     private String issuerDid;
-    private List<String> credentialTypes = new ArrayList<>();
+    private Map<String, String> typesAndFormats = new HashMap<>();
     private String issuanceProcessId;
 
     private HolderCredentialRequest() {
@@ -57,8 +56,8 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         return getId();
     }
 
-    public List<String> getCredentialTypes() {
-        return credentialTypes;
+    public Map<String, String> getTypesAndFormats() {
+        return typesAndFormats;
     }
 
     @Override
@@ -66,7 +65,7 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         return Builder.newInstance()
                 .state(state)
                 .id(id)
-                .credentialTypes(List.copyOf(credentialTypes))
+                .typesAndFormats(Map.copyOf(typesAndFormats))
                 .issuerDid(issuerDid)
                 .participantContext(participantContextId)
                 .issuanceProcessId(issuanceProcessId)
@@ -141,13 +140,13 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
             return this;
         }
 
-        public Builder credentialTypes(List<String> credentialTypes) {
-            this.entity.credentialTypes = credentialTypes;
+        public Builder typesAndFormats(Map<String, String> typesAndFormats) {
+            this.entity.typesAndFormats = typesAndFormats;
             return this;
         }
 
-        public Builder credentialType(String credentialTypes) {
-            this.entity.credentialTypes.add(credentialTypes);
+        public Builder credentialType(String credentialTypes, String format) {
+            this.entity.typesAndFormats.put(credentialTypes, format);
             return this;
         }
 
@@ -170,9 +169,9 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         public HolderCredentialRequest build() {
             super.build();
             Objects.requireNonNull(entity.issuerDid, "'issuerDid' cannot be null");
-            Objects.requireNonNull(entity.credentialTypes, "'credentialTypes' cannot be null");
+            Objects.requireNonNull(entity.typesAndFormats, "'credentialTypes' cannot be null");
             Objects.requireNonNull(entity.participantContextId, "'participantContextId' cannot be null");
-            if (entity.credentialTypes.isEmpty()) {
+            if (entity.typesAndFormats.isEmpty()) {
                 throw new IllegalArgumentException("CredentialTypes cannot be empty");
             }
 

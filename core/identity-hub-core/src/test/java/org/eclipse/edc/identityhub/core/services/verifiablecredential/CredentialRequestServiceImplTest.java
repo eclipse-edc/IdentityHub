@@ -64,7 +64,16 @@ class CredentialRequestServiceImplTest {
     private final TypeTransformerRegistry transformerRegistry = mock();
     private final EdcHttpClient httpClient = mock();
     private final SecureTokenService sts = mock();
-    private final CredentialRequestServiceImpl credentialRequestService = new CredentialRequestServiceImpl(store, resolver, transformerRegistry, httpClient, sts, OWN_DID, new NoopTransactionContext());
+    private final CredentialRequestServiceImpl credentialRequestService = CredentialRequestServiceImpl.Builder.newInstance()
+            .store(store)
+            .didResolverRegistry(resolver)
+            .typeTransformerRegistry(transformerRegistry)
+            .httpClient(httpClient)
+            .secureTokenService(sts)
+            .ownDid(OWN_DID)
+            .transactionContext(new NoopTransactionContext())
+            .monitor(mock())
+            .build();
 
     @BeforeEach
     void setUp() {

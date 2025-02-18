@@ -30,8 +30,14 @@ import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestSta
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.statemachine.AbstractStateEntityManager;
+import org.eclipse.edc.statemachine.Processor;
+import org.eclipse.edc.statemachine.ProcessorImpl;
+import org.eclipse.edc.statemachine.StateMachineManager;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 
@@ -39,39 +45,35 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import java.util.function.Function;
 
+import static java.util.Objects.requireNonNull;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.SUBJECT;
+import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
+import static org.eclipse.edc.spi.persistence.StateEntityStore.isNotPending;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
 
-public class CredentialRequestServiceImpl implements CredentialRequestService {
-    private final HolderCredentialRequestStore holderCredentialRequestStore;
-    private final DidResolverRegistry didResolverRegistry;
-    private final TypeTransformerRegistry dcpTypeTransformerRegistry;
-    private final EdcHttpClient httpClient;
-    private final SecureTokenService secureTokenService;
-    private final String ownDid;
-    private final TransactionContext transactionContext;
+public class CredentialRequestServiceImpl extends AbstractStateEntityManager<HolderCredentialRequest, HolderCredentialRequestStore>
+        implements CredentialRequestService {
+    private DidResolverRegistry didResolverRegistry;
+    private TypeTransformerRegistry dcpTypeTransformerRegistry;
+    private EdcHttpClient httpClient;
+    private SecureTokenService secureTokenService;
+    private String ownDid;
+    private TransactionContext transactionContext;
 
-    public CredentialRequestServiceImpl(HolderCredentialRequestStore holderCredentialRequestStore,
-                                        DidResolverRegistry didResolverRegistry,
-                                        TypeTransformerRegistry dcpTypeTransformerRegistry,
-                                        EdcHttpClient httpClient,
-                                        SecureTokenService secureTokenService,
-                                        String ownDid,
-                                        TransactionContext transactionContext) {
-        this.holderCredentialRequestStore = holderCredentialRequestStore;
-        this.didResolverRegistry = didResolverRegistry;
-        this.dcpTypeTransformerRegistry = dcpTypeTransformerRegistry;
-        this.httpClient = httpClient;
-        this.secureTokenService = secureTokenService;
-        this.ownDid = ownDid;
-        this.transactionContext = transactionContext;
+    private CredentialRequestServiceImpl() {
+
     }
 
     @Override
@@ -80,46 +82,113 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
         var newRequest = HolderCredentialRequest.Builder.newInstance()
                 .id(requestId)
                 .issuerDid(issuerDid)
-                .credentialTypes(typesAndFormats.keySet().stream().toList())
+                .typesAndFormats(typesAndFormats)
                 .participantContext(participantContext)
-                .state(HolderRequestState.CREATED.code())
+                .state(CREATED.code())
                 .build();
 
-        var result = didResolverRegistry.resolve(issuerDid)
-                .compose(this::getCredentialRequestEndpoint)
-                .map(credentialRequestEndpoint -> {
-                    transactionContext.execute(() -> holderCredentialRequestStore.save(newRequest));
-                    return credentialRequestEndpoint;
-                })
+        var result = processInitial(issuerDid, newRequest)
                 .compose(endpoint -> {
-                    var rq = newRequest.copy().toBuilder()
-                            .state(HolderRequestState.REQUESTING.code())
-                            .build();
                     return transactionContext.execute(() -> {
-                        holderCredentialRequestStore.save(rq);
+                        transition(newRequest.copy().toBuilder(), REQUESTING);
                         return getAuthToken(issuerDid, ownDid).compose(token -> sendCredentialsRequest(token, endpoint, requestId, typesAndFormats));
                     }); // set state
                 })
-                .onFailure(failure -> {
-                    transactionContext.execute(() -> {
-                        var rq = newRequest.copy().toBuilder()
-                                .state(HolderRequestState.ERROR.code())
-                                .errorDetail(failure.getFailureDetail())
-                                .build();
-                        holderCredentialRequestStore.save(rq);
-                    });
-
+                .compose(issuanceProcessId -> {
+                    transitionRequested(newRequest, issuanceProcessId);
+                    return success(issuanceProcessId);
                 })
-                .map(issuanceProcessId -> newRequest.copy().toBuilder()
-                        .issuanceProcessId(issuanceProcessId)
-                        .state(REQUESTED.code())
-                        .build())
-                .compose(rq -> {
-                    transactionContext.execute(() -> holderCredentialRequestStore.save(rq));
-                    return success(rq.getIssuanceProcessId());
-                });
+                .onFailure(failure -> transactionContext.execute(() -> transitionError(newRequest, failure.getFailureDetail())));
 
         return ServiceResult.from(result);
+    }
+
+    @Override
+    protected StateMachineManager.Builder configureStateMachineManager(StateMachineManager.Builder builder) {
+        return builder
+                .processor(processRequestsInState(CREATED, this::processCreated))
+                .processor(processRequestsInState(REQUESTING, this::processRequesting))
+                .processor(processRequestsInState(REQUESTED, this::processRequested))
+                .processor(processRequestsInState(ISSUED, this::processExpiring));
+    }
+
+    private void transitionRequested(HolderCredentialRequest req, String issuanceProcessId) {
+        transition(req.copy().toBuilder().issuanceProcessId(issuanceProcessId), REQUESTED);
+    }
+
+    private void transitionError(HolderCredentialRequest request, String failureDetail) {
+        transition(request.copy().toBuilder().errorDetail(failureDetail), ERROR);
+    }
+
+    private void transition(HolderCredentialRequest.Builder request, HolderRequestState newState) {
+        var rq = request.state(newState.code()).build();
+        transactionContext.execute(() -> store.save(rq));
+    }
+
+    private Result<String> processInitial(String issuerDid, HolderCredentialRequest newRequest) {
+        return didResolverRegistry.resolve(issuerDid)
+                .compose(this::getCredentialRequestEndpoint)
+                .map(credentialRequestEndpoint -> {
+                    transactionContext.execute(() -> store.save(newRequest));
+                    return credentialRequestEndpoint;
+                });
+    }
+
+    /**
+     * processes all credentials that are in state {@link HolderRequestState#ISSUED} and re-requests them if they are nearing
+     * expiry.
+     *
+     * @return true if the request was processed, false otherwise.
+     */
+    private Boolean processExpiring(HolderCredentialRequest holderCredentialRequest) {
+        monitor.debug("Processing expiring request '%s'".formatted(holderCredentialRequest.getRequestId()));
+        return false;
+    }
+
+    /**
+     * processes all credentials that are in state {@link HolderRequestState#REQUESTED} and possibly requests a state update
+     * by calling the Issuer's Credential Request Status API
+     *
+     * @return true if the request was processed, false otherwise.
+     */
+    private Boolean processRequested(HolderCredentialRequest holderCredentialRequest) {
+        monitor.debug("Processing REQUESTED request '%s'".formatted(holderCredentialRequest.getRequestId()));
+        return false;
+    }
+
+    /**
+     * processes all credentials that are in state {@link HolderRequestState#REQUESTING}. For example, credential requests
+     * for which the initiate call failed (Issuer unreachable,...) are in this state.
+     *
+     * @return true if the request was processed, false otherwise.
+     */
+    private Boolean processRequesting(HolderCredentialRequest holderCredentialRequest) {
+        monitor.debug("Processing REQUESTING request '%s'".formatted(holderCredentialRequest.getRequestId()));
+        return false;
+    }
+
+    /**
+     * processes all requests that are in {@link HolderRequestState#CREATED} state. Credential requests whose initiate call
+     * was interrupted after resolving the Issuer's DID document
+     *
+     * @return true if the request was processed, false otherwise.
+     */
+    private Boolean processCreated(HolderCredentialRequest holderCredentialRequest) {
+        monitor.debug("Processing CREATED request '%s'".formatted(holderCredentialRequest.getRequestId()));
+        return false;
+    }
+
+    private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, Boolean> function) {
+        var filter = new Criterion[]{hasState(state.code()), isNotPending()};
+        return createProcessor(function, filter);
+    }
+
+    private ProcessorImpl<HolderCredentialRequest> createProcessor(Function<HolderCredentialRequest, Boolean> function, Criterion[] filter) {
+        return ProcessorImpl.Builder.newInstance(() -> store.nextNotLeased(batchSize, filter))
+                .process(telemetry.contextPropagationMiddleware(function))
+                //.guard(pendingGuard, this::setPending) //todo: needed?
+                .onNotProcessed(this::breakLease)
+                .build();
     }
 
     /**
@@ -194,5 +263,74 @@ public class CredentialRequestServiceImpl implements CredentialRequestService {
 
         return endpoint.map(s -> success((s.getServiceEndpoint() + "/credentials").replace("//", "/")))
                 .orElseGet(() -> failure("The Issuer's DID Document does not contain any '%s' endpoint".formatted(ISSUER_SERVICE_ENDPOINT_TYPE)));
+    }
+
+    public static class Builder
+            extends AbstractStateEntityManager.Builder<HolderCredentialRequest, HolderCredentialRequestStore, CredentialRequestServiceImpl, Builder> {
+
+        protected Builder(CredentialRequestServiceImpl service) {
+            super(service);
+        }
+
+        public static Builder newInstance() {
+            return new Builder(new CredentialRequestServiceImpl());
+        }
+
+        public Builder store(HolderCredentialRequestStore store) {
+            manager.store = store;
+            return this;
+        }
+
+        public Builder didResolverRegistry(DidResolverRegistry didResolverRegistry) {
+            manager.didResolverRegistry = didResolverRegistry;
+            return this;
+        }
+
+        public Builder typeTransformerRegistry(TypeTransformerRegistry typeTransformerRegistry) {
+            manager.dcpTypeTransformerRegistry = typeTransformerRegistry;
+            return this;
+        }
+
+        public Builder httpClient(EdcHttpClient httpClient) {
+            manager.httpClient = httpClient;
+            return this;
+        }
+
+        public Builder secureTokenService(SecureTokenService secureTokenService) {
+            manager.secureTokenService = secureTokenService;
+            return this;
+        }
+
+        public Builder ownDid(String ownDid) {
+            manager.ownDid = ownDid;
+            return this;
+        }
+
+        public Builder transactionContext(TransactionContext transactionContext) {
+            manager.transactionContext = transactionContext;
+            return this;
+        }
+
+        public Builder monitor(Monitor monitor) {
+            manager.monitor = monitor;
+            return this;
+        }
+
+        @Override
+        public Builder self() {
+            return this;
+        }
+
+        @Override
+        public CredentialRequestServiceImpl build() {
+            super.build();
+            requireNonNull(manager.didResolverRegistry);
+            requireNonNull(manager.dcpTypeTransformerRegistry);
+            requireNonNull(manager.httpClient);
+            requireNonNull(manager.secureTokenService);
+            requireNonNull(manager.ownDid);
+            requireNonNull(manager.transactionContext);
+            return manager;
+        }
     }
 }
