@@ -220,7 +220,8 @@ public class CoreServicesExtension implements ServiceExtension {
                 typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0),
                 httpClient,
                 secureTokenService,
-                ownDid
+                ownDid,
+                transactionContext
         );
     }
 

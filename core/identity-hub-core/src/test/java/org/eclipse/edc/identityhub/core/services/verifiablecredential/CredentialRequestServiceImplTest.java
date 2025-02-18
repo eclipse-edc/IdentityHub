@@ -27,6 +27,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMess
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +64,7 @@ class CredentialRequestServiceImplTest {
     private final TypeTransformerRegistry transformerRegistry = mock();
     private final EdcHttpClient httpClient = mock();
     private final SecureTokenService sts = mock();
-    private final CredentialRequestServiceImpl credentialRequestService = new CredentialRequestServiceImpl(store, resolver, transformerRegistry, httpClient, sts, OWN_DID);
+    private final CredentialRequestServiceImpl credentialRequestService = new CredentialRequestServiceImpl(store, resolver, transformerRegistry, httpClient, sts, OWN_DID, new NoopTransactionContext());
 
     @BeforeEach
     void setUp() {
