@@ -29,6 +29,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
@@ -83,7 +84,7 @@ public abstract class HolderCredentialRequestStoreTestBase {
 
     private HolderCredentialRequest.Builder createHolderRequestBuilder() {
         return HolderCredentialRequest.Builder.newInstance()
-                .credentialType("TestCredential")
+                .credentialType("TestCredential", "VC1_0_JWT")
                 .state(CREATED.code())
                 .id("test-id")
                 .participantContext("test-participant")
@@ -473,12 +474,12 @@ public abstract class HolderCredentialRequestStoreTestBase {
                     .forEach(getStore()::save);
 
             var request = createHolderRequestBuilder().id("testprocess1")
-                    .credentialTypes(List.of("FooBarCredential", "BarBazCredential"))
+                    .typesAndFormats(Map.of("FooBarCredential", "VC1_0_JWT", "BarBazCredential", "VC1_0_JWT"))
                     .build();
             getStore().save(request);
 
             var query = QuerySpec.Builder.newInstance()
-                    .filter(List.of(new Criterion("credentialTypes", "contains", "FooBarCredential")))
+                    .filter(List.of(new Criterion("typesAndFormats.FooBarCredential", "=", "VC1_0_JWT")))
                     .build();
 
             var result = getStore().query(query);

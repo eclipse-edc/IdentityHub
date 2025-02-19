@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS edc_holder_credentialrequest
     lease_id                    VARCHAR CONSTRAINT credreq_lease_lease_id_fk REFERENCES edc_lease ON DELETE SET NULL,
     participant_context_id      VARCHAR           NOT NULL,
     issuer_did                  VARCHAR           NOT NULL,
-    credential_types            JSON              NOT NULL,
+    types_and_formats            JSON              NOT NULL,
     issuance_process_id         VARCHAR
 );
 

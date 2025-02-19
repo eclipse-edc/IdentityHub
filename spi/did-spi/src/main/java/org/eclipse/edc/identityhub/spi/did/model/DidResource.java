@@ -32,8 +32,6 @@ public class DidResource extends ParticipantResource {
     private long stateTimestamp;
     private long createTimestamp;
     private DidDocument document;
-    // todo: what is this?
-    // private List<VerificationRelationship> verificationRelationships;
 
     private DidResource() {
     }

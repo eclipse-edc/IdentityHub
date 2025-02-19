@@ -89,7 +89,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Test
     public void createPresentation_success() {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
-        var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
+        var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.VC1_0_LD, createDummyCredential());
 
         var result = creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
@@ -100,11 +100,11 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Test
     public void create_whenVcsNotSameFormat() {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
-        var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
+        var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.VC1_0_LD, createDummyCredential());
 
         var vcSigningKey = createKey(Curve.P_256, TestConstants.CENTRAL_ISSUER_KEY_ID);
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, Map.of("vc", TestConstants.VC_CONTENT_DEGREE_EXAMPLE));
-        var vcc2 = new VerifiableCredentialContainer(jwtVc, CredentialFormat.JWT, createDummyCredential());
+        var vcc2 = new VerifiableCredentialContainer(jwtVc, CredentialFormat.VC1_0_JWT, createDummyCredential());
 
         assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc, vcc2), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -115,7 +115,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Test
     public void create_whenPrivateKeyNotFound() {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
-        var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
+        var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.VC1_0_LD, createDummyCredential());
 
         assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exists", PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -125,7 +125,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Test
     public void create_whenRequiredAdditionalDataMissing_throwsIllegalArgumentException() {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
-        var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.JSON_LD, createDummyCredential());
+        var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.VC1_0_LD, createDummyCredential());
         assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID)).isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Must provide additional data: 'types' and 'controller'");
 

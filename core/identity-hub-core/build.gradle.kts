@@ -24,6 +24,7 @@ dependencies {
     implementation(libs.edc.lib.jws2020)
     implementation(libs.edc.lib.common.crypto)
     implementation(libs.edc.lib.token)
+    implementation(libs.edc.lib.statemachine)
     implementation(libs.edc.spi.token)
     implementation(libs.edc.spi.identity.did)
     implementation(libs.edc.vc.ldp)
@@ -31,6 +32,8 @@ dependencies {
 
 
     testImplementation(project(":core:common-core"))
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.awaitility)
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(project(":spi:keypair-spi")))

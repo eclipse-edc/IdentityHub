@@ -23,7 +23,7 @@ import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.core.services.query.CredentialQueryResolverImpl;
-import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialRequestServiceImpl;
+import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialRequestManagerImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialStatusCheckServiceImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialWriterImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablepresentation.PresentationCreatorRegistryImpl;
@@ -39,7 +39,7 @@ import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.model.IdentityHubConstants;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
@@ -140,6 +140,7 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Setting(key = "edc.ih.iam.id", description = "DID of the holder")
     private String ownDid;
+    private CredentialRequestManagerImpl credentialRequestService;
 
     @Override
     public String name() {
@@ -150,6 +151,11 @@ public class CoreServicesExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
 
         suiteRegistry.register(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE, new Jws2020SignatureSuite(JacksonJsonLd.createObjectMapper()));
+    }
+
+    @Override
+    public void start() {
+        credentialRequestService.start();
     }
 
     @Provider
@@ -180,7 +186,6 @@ public class CoreServicesExtension implements ServiceExtension {
         return presentationCreatorRegistry;
     }
 
-
     @Provider
     public VerifiablePresentationService presentationGenerator(ServiceExtensionContext context) {
         return new VerifiablePresentationServiceImpl(presentationCreatorRegistry(context), context.getMonitor());
@@ -198,15 +203,19 @@ public class CoreServicesExtension implements ServiceExtension {
     }
 
     @Provider
-    public CredentialRequestService createDefaultCredentialRequestService() {
-        return new CredentialRequestServiceImpl(credentialRequestStore,
-                didResolverRegistry,
-                typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0),
-                httpClient,
-                secureTokenService,
-                ownDid,
-                transactionContext
-        );
+    public CredentialRequestManager createDefaultCredentialRequestService(ServiceExtensionContext context) {
+        if (credentialRequestService == null) {
+            credentialRequestService = CredentialRequestManagerImpl.Builder.newInstance()
+                    .store(credentialRequestStore)
+                    .didResolverRegistry(didResolverRegistry)
+                    .typeTransformerRegistry(typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0))
+                    .httpClient(httpClient)
+                    .secureTokenService(secureTokenService)
+                    .ownDid(ownDid)
+                    .transactionContext(transactionContext)
+                    .monitor(context.getMonitor())
+                    .build();
+        }
+        return credentialRequestService;
     }
-
 }

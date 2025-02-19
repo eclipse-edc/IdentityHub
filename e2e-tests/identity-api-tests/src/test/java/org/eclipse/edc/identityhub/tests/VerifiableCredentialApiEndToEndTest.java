@@ -46,6 +46,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -53,6 +54,7 @@ import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.eq;
@@ -227,6 +229,7 @@ public class VerifiableCredentialApiEndToEndTest {
             var port = getFreePort();
             try (var mockedIssuer = ClientAndServer.startClientAndServer(port)) {
                 var issuanceProcessId = "dummy-issuance-id";
+                // prepare DCP credential requests
                 mockedIssuer.when(request()
                                 .withMethod("POST")
                                 .withPath("/api/issuance/credentials"))
@@ -234,11 +237,29 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .withBody(issuanceProcessId)
                                 .withStatusCode(201));
 
+                // prepare DCP credential status requests. The state machine is so fast, that it may tick over
+                mockedIssuer.when(request()
+                                .withMethod("GET")
+                                .withPath("/api/issuance/request/" + issuanceProcessId))
+                        .respond(response()
+                                .withBody("""
+                                        {
+                                          "@context": [
+                                            "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
+                                          ],
+                                          "type": "CredentialStatus",
+                                          "requestId": "requestId",
+                                          "status": "RECEIVED"
+                                        }
+                                        """)
+                                .withStatusCode(200));
+
+
                 when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:issuer")))
                         .thenReturn(Result.success(DidDocument.Builder.newInstance()
                                 .service(List.of(new Service(UUID.randomUUID().toString(),
                                         "IssuerService",
-                                        "http://localhost:%s/api/issuance".formatted(mockedIssuer.getLocalPort())))).build()));
+                                        "http://localhost:%s/api/issuance".formatted(port)))).build()));
                 context.createSuperUser();
                 var user = "user1";
                 var token = context.createParticipant(user);
@@ -258,18 +279,21 @@ public class VerifiableCredentialApiEndToEndTest {
                         .then()
                         .log().ifValidationFails()
                         .statusCode(201)
-                        .body(Matchers.equalTo(issuanceProcessId));
+                        .body(Matchers.equalTo("test-request-id"));
 
-                var requests = store.query(QuerySpec.max());
-                assertThat(requests).hasSize(1)
-                        .allSatisfy(t -> {
-                            assertThat(t.getState()).isEqualTo(HolderRequestState.REQUESTED.code());
-                            assertThat(t.getIssuanceProcessId()).isEqualTo(issuanceProcessId);
-                            assertThat(t.getRequestId()).isEqualTo("test-request-id");
+                // wait until the state machine has progress to the REQUESTED state
+                await().pollInterval(Duration.ofSeconds(1))
+                        .atMost(Duration.ofSeconds(10))
+                        .untilAsserted(() -> {
+                            var requests = store.query(QuerySpec.max());
+                            assertThat(requests).hasSize(1)
+                                    .allSatisfy(t -> {
+                                        assertThat(t.getState()).isEqualTo(HolderRequestState.REQUESTED.code());
+                                        assertThat(t.getIssuanceProcessId()).isEqualTo(issuanceProcessId);
+                                        assertThat(t.getRequestId()).isEqualTo("test-request-id");
+                                    });
                         });
-
             }
-
         }
 
         private String toBase64(String s) {

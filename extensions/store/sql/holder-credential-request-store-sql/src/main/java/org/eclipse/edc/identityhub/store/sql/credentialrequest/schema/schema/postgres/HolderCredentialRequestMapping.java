@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.schema.po
 
 import org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.HolderCredentialRequestStoreStatements;
 import org.eclipse.edc.sql.lease.StatefulEntityMapping;
-import org.eclipse.edc.sql.translation.JsonArrayTranslator;
+import org.eclipse.edc.sql.translation.JsonFieldTranslator;
 
 
 /**
@@ -26,14 +26,16 @@ public class HolderCredentialRequestMapping extends StatefulEntityMapping {
 
     public static final String FIELD_PARTICIPANT_ID = "participantContextId";
     public static final String FIELD_ISSUER_DID = "issuerDid";
-    public static final String FIELD_CREDENTIAL_TYPES = "credentialTypes";
+    public static final String FIELD_CREDENTIAL_TYPES = "typesAndFormats";
     public static final String FIELD_ISSUANCE_PROCESS = "issuanceProcessId";
+    public static final String FIELD_PENDING_ISSUANCE = "pending";
 
     public HolderCredentialRequestMapping(HolderCredentialRequestStoreStatements statements) {
         super(statements);
         add(FIELD_PARTICIPANT_ID, statements.getParticipantIdColumn());
         add(FIELD_ISSUER_DID, statements.getIssuerDidColumn());
-        add(FIELD_CREDENTIAL_TYPES, new JsonArrayTranslator(statements.getCredentialTypesColumn()));
+        add(FIELD_CREDENTIAL_TYPES, new JsonFieldTranslator(statements.getCredentialTypesColumn()));
         add(FIELD_ISSUANCE_PROCESS, statements.getIssuanceProcessIdColumn());
+        add(FIELD_PENDING_ISSUANCE, statements.getPendingColumn());
     }
 }
