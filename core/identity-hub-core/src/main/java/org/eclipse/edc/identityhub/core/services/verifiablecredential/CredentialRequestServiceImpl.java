@@ -31,6 +31,7 @@ import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredential
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -88,19 +89,19 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
                 .state(CREATED.code())
                 .build();
 
-        var result = processInitial(newRequest)
-                .compose(endpoint -> sendCredentialRequest(newRequest, endpoint))
-                .compose(issuanceProcessId -> handleCredentialResponse(issuanceProcessId, newRequest))
-                .onFailure(failure -> transactionContext.execute(() -> transitionError(newRequest, failure.getFailureDetail())));
-
-        return ServiceResult.from(result);
+        try {
+            transactionContext.execute(() -> store.save(newRequest));
+        } catch (EdcPersistenceException e) {
+            return ServiceResult.badRequest(e.getMessage());
+        }
+        return ServiceResult.success(requestId);
     }
 
     @Override
     protected StateMachineManager.Builder configureStateMachineManager(StateMachineManager.Builder builder) {
         return builder
-                .processor(processRequestsInState(CREATED, this::processCreated))
-                .processor(processRequestsInState(REQUESTING, this::processRequesting))
+                .processor(processRequestsInState(CREATED, this::processInitial))
+                .processor(processRequestsInState(REQUESTING, this::processInitial))
                 .processor(processRequestsInState(REQUESTED, this::processRequested));
     }
 
@@ -139,14 +140,6 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
         transactionContext.execute(() -> store.save(rq));
     }
 
-    private Result<String> processInitial(HolderCredentialRequest newRequest) {
-        return getCredentialRequestEndpoint(newRequest)
-                .map(credentialRequestEndpoint -> {
-                    transactionContext.execute(() -> store.save(newRequest));
-                    return credentialRequestEndpoint;
-                });
-    }
-
     /**
      * processes all credentials that are in state {@link HolderRequestState#REQUESTED} and transitions to {@link HolderRequestState#ERROR}
      * if the time limit was exceeded.
@@ -169,23 +162,7 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
         } else {
             var res = getCredentialRequestEndpoint(request)
                     .compose(endpoint -> sendCredentialsStatusRequest(request, endpoint))
-                    .map(response -> {
-                        if (response.contains(Status.REJECTED.toString())) {
-                            // transition to error, credential request was rejected, but we never received that info
-                            transitionError(request, "The credential request has been rejected by the Issuer");
-                            return true;
-                        } else if (response.contains(Status.ISSUED.toString())) {
-                            //huh? did we miss a state update?
-                            transitionIssued(request);
-                            return true;
-                        } else if (response.contains(Status.RECEIVED.toString())) { // RECEIVED
-                            // no update yet, let it tick over
-                            return false;
-                        } else {
-                            transitionError(request, "Invalid status response received from Issuer: '%s'".formatted(response));
-                            return true;
-                        }
-                    })
+                    .map(response -> handleIssuerResponse(request, response))
                     .onFailure(failure -> transitionError(request, failure.getFailureDetail()));
 
             return res.succeeded() ? res.getContent() : false;
@@ -193,51 +170,35 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
         }
     }
 
-    private Result<String> sendCredentialsStatusRequest(HolderCredentialRequest request, String endpoint) {
-        var issuerDid = request.getIssuerDid();
-        var requestId = request.getId();
-        return getAuthToken(issuerDid, ownDid)
-                .compose(token -> createCredentialsStatusRequest(token, endpoint, requestId))
-                .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
-    }
-
-    private Result<Request> createCredentialsStatusRequest(TokenRepresentation token, String endpoint, String requestId) {
-        return success(new Request.Builder()
-                .url(endpoint + "/request/" + requestId)
-                .header("Authorization", "Bearer" + token.getToken())
-                .get()
-                .build());
-    }
-
     /**
-     * processes all credentials that are in state {@link HolderRequestState#REQUESTING}. For example, credential requests
-     * for which the initiate call failed (Issuer unreachable,...) are in this state.
+     * Handles the response from the Issuer in reply to a DCP CredentialStatusRequest message:
+     * <ul>
+     *     <li>If the Issuer returns {@code REJECTED} or an unknown status value, the holder request is transitioned to {@link HolderRequestState#ERROR}.</li>
+     *     <li>If the Issuer returns {@code ISSUED}, then the holder request is transitioned to {@link HolderRequestState#ISSUED}.</li>
+     *     <li>If the Issuer returns {@code REJECTED}, or an unknown status field, the holder request is transitioned to {@link HolderRequestState#ERROR}</li>
+     *     <li>If the Issuer returns {@code RECEIVED}, then no action is performed, and the method returns {@code false}</li>
+     * </ul>
      *
-     * @return true if the request was processed, false otherwise.
+     * @param request  the original holder request.
+     * @param response A JSON string containing the raw response body.
+     * @return true if the holder request was processed, false otherwise.
      */
-    private Boolean processRequesting(HolderCredentialRequest holderCredentialRequest) {
-        var result = getCredentialRequestEndpoint(holderCredentialRequest)
-                .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
-                .compose(issuanceProcessId -> handleCredentialResponse(issuanceProcessId, holderCredentialRequest))
-                .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
-
-        return result.succeeded();
-    }
-
-    /**
-     * processes all requests that are in {@link HolderRequestState#CREATED} state. Credential requests whose initiate call
-     * was interrupted after resolving the Issuer's DID document
-     *
-     * @return true if the request was processed, false otherwise.
-     */
-    private Boolean processCreated(HolderCredentialRequest holderCredentialRequest) {
-        monitor.debug("Processing CREATED request '%s'".formatted(holderCredentialRequest.getRequestId()));
-        var result = processInitial(holderCredentialRequest)
-                .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
-                .compose(issuanceProcessId -> handleCredentialResponse(issuanceProcessId, holderCredentialRequest))
-                .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
-
-        return result.succeeded();
+    private @NotNull Boolean handleIssuerResponse(HolderCredentialRequest request, String response) {
+        if (response.contains(Status.REJECTED.toString())) {
+            // transition to error, credential request was rejected, but we never received that info
+            transitionError(request, "The credential request has been rejected by the Issuer");
+            return true;
+        } else if (response.contains(Status.ISSUED.toString())) {
+            //huh? did we miss a state update?
+            transitionIssued(request);
+            return true;
+        } else if (response.contains(Status.RECEIVED.toString())) { // RECEIVED
+            // no update yet, let it tick over
+            return false;
+        } else {
+            transitionError(request, "Invalid status response received from Issuer: '%s'".formatted(response));
+            return true;
+        }
     }
 
     private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, Boolean> function) {
@@ -251,6 +212,52 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
                 //.guard(pendingGuard, this::setPending) //todo: needed?
                 .onNotProcessed(this::breakLease)
                 .build();
+    }
+
+    /**
+     * processes all requests that are in {@link HolderRequestState#CREATED} or {@link HolderRequestState#REQUESTING} state. Credential requests that were
+     * interrupted before receiving the Issuer's response are in this state.
+     *
+     * @return true if the request was processed, false otherwise.
+     */
+    private Boolean processInitial(HolderCredentialRequest holderCredentialRequest) {
+        monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getRequestId()));
+        var result = getCredentialRequestEndpoint(holderCredentialRequest)
+                .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
+                .compose(issuanceProcessId -> handleCredentialResponse(issuanceProcessId, holderCredentialRequest))
+                .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
+
+        return result.succeeded();
+    }
+
+    /**
+     * Sends a DCP CredentialStatusRequest to the Issuer
+     *
+     * @param request  the {@link Request} that represents the HTTP call.
+     * @param endpoint the base URL of the Issuer
+     * @return the entire JSON response received from the Issuer
+     */
+    private Result<String> sendCredentialsStatusRequest(HolderCredentialRequest request, String endpoint) {
+        var issuerDid = request.getIssuerDid();
+        var issuanceProcessId = request.getIssuanceProcessId();
+        return getAuthToken(issuerDid, ownDid)
+                .compose(token -> createCredentialsStatusRequest(token, endpoint, issuanceProcessId))
+                .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
+    }
+
+    /**
+     * Creates a {@link Request} out of the given parameters, that targets the CredentialRequestStatus API
+     *
+     * @param token           a Self-Issued ID token that was obtained from STS
+     * @param endpoint        the base URL of the Issuer. Note that {@code /request/{requestId}} is appended automatically.
+     * @param issuerProcessId the {@code issuerProcessId}. The process ID that was generated by the Issuer. NOT the holder-generated request ID!
+     */
+    private Result<Request> createCredentialsStatusRequest(TokenRepresentation token, String endpoint, String issuerProcessId) {
+        return success(new Request.Builder()
+                .url(endpoint + "/request/" + issuerProcessId)
+                .header("Authorization", "Bearer" + token.getToken())
+                .get()
+                .build());
     }
 
     /**

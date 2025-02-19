@@ -25,8 +25,10 @@ import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
@@ -34,6 +36,8 @@ import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatchers;
 
 import java.time.Duration;
@@ -45,7 +49,6 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
@@ -61,10 +64,10 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -109,145 +112,159 @@ class CredentialRequestServiceImplTest {
     class Initiate {
         @Test
         void initiateRequest() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(success("test-issuance-process-id"));
-
-            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, UUID.randomUUID().toString(), Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()));
+            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, "test-holder-request-id", Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()));
             assertThat(result)
                     .isSucceeded()
-                    .isEqualTo("test-issuance-process-id");
+                    .isEqualTo("test-holder-request-id");
 
-            verify(store, times(3)).save(any());
-
-
-            verify(resolver).resolve(eq(ISSUER_DID));
-            verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
-            verify(transformerRegistry).transform(any(CredentialRequestMessage.class), eq(JsonObject.class));
+            verify(store).save(any());
             verifyNoMoreInteractions(store, resolver, transformerRegistry, httpClient);
         }
 
         @Test
-        void initiateRequest_whenDidNotResolvable() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(Result.failure("foo-failure"));
-
-            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, UUID.randomUUID().toString(), Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()));
+        void initiateRequest_whenStorageFailure() {
+            doThrow(new EdcPersistenceException("foo")).when(store).save(any());
+            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, "test-holder-request-id", Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()));
             assertThat(result)
                     .isFailed()
-                    .detail().containsSequence("foo-failure");
+                    .detail().isEqualTo("foo");
 
-            verify(store).save(argThat(rq -> rq.getErrorDetail().equals("foo-failure")));
-            verify(resolver).resolve(eq(ISSUER_DID));
+            verify(store).save(any());
             verifyNoMoreInteractions(store, resolver, transformerRegistry, httpClient);
         }
 
-        @Test
-        void initiateRequest_whenDidDoesNotContainEndpoint() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(DidDocument.Builder.newInstance()
-                    .id(UUID.randomUUID().toString())
-                    // missing: endpoint
-                    .build()));
-
-            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, UUID.randomUUID().toString(), Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()));
-            assertThat(result)
-                    .isFailed()
-                    .detail().containsSequence("does not contain any 'IssuerService' endpoint");
-
-            verify(store).save(argThat(rq -> rq.getErrorDetail().contains("does not contain any 'IssuerService' endpoint")));
-            verify(resolver).resolve(eq(ISSUER_DID));
-            verifyNoMoreInteractions(store, resolver, transformerRegistry, httpClient);
-        }
-
-        @Test
-        void initiateRequest_whenStsFails() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(sts.createToken(anyMap(), ArgumentMatchers.isNull())).thenReturn(failure("sts-failure"));
-
-            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, UUID.randomUUID().toString(), Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()));
-            assertThat(result)
-                    .isFailed()
-                    .detail().isEqualTo("sts-failure");
-
-            verify(store, times(1)).save(argThat(rq -> rq.getState() == CREATED.code()));
-            verify(store, times(1)).save(argThat(rq -> rq.getState() == REQUESTING.code()));
-            verify(store, times(1)).save(argThat(rq -> "sts-failure".equals(rq.getErrorDetail()) && rq.getState() == ERROR.code()));
-
-            verify(resolver).resolve(eq(ISSUER_DID));
-            verify(sts).createToken(anyMap(), ArgumentMatchers.isNull());
-            verifyNoMoreInteractions(store, resolver, transformerRegistry, httpClient);
-        }
-
-        @Test
-        void initiateRequest_whenIssuerReturnsError() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(failure("issuer failure bad request"));
-
-            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, UUID.randomUUID().toString(), Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()));
-            assertThat(result)
-                    .isFailed()
-                    .detail().isEqualTo("issuer failure bad request");
-
-            verify(store, times(2)).save(argThat(rq -> rq.getErrorDetail() == null && rq.getState() != ERROR.code()));
-            verify(store, times(1)).save(argThat(rq -> "issuer failure bad request".equals(rq.getErrorDetail()) && rq.getState() == ERROR.code()));
-
-            verify(resolver).resolve(eq(ISSUER_DID));
-            verify(transformerRegistry).transform(any(CredentialRequestMessage.class), eq(JsonObject.class));
-            verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
-            verifyNoMoreInteractions(store, resolver, transformerRegistry, httpClient);
-        }
     }
 
     @Nested
     class StateMachine {
         private static final Duration MAX_DURATION = Duration.ofSeconds(5);
 
-        @Test
-        void processCreated_shouldStartOver() {
+        @ParameterizedTest(name = "state = {0}")
+        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        void processInitial_shouldSendRequest(String stateString) {
+            var state = HolderRequestState.valueOf(stateString);
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
                     .thenReturn(success("test-issuance-process-id"));
 
             var rq = createRequest()
-                    .state(CREATED.code())
+                    .state(state.code())
                     .build();
-            when(store.nextNotLeased(anyInt(), stateIs(CREATED.code())))
+            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
                     .thenReturn(List.of(rq))
                     .thenReturn(List.of());
 
             credentialRequestService.start();
 
             await().atMost(MAX_DURATION).untilAsserted(() -> {
-                var inOrder = inOrder(resolver, store, httpClient);
+                var inOrder = inOrder(resolver, store, httpClient, sts);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
-                inOrder.verify(store).save(argThat(r -> r.getState() == CREATED.code()));
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
+                inOrder.verify(sts).createToken(anyMap(), ArgumentMatchers.isNull());
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuanceProcessId() != null));
             });
         }
 
-        @Test
-        void processRequesting_shouldSendDcpRequest() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(success("test-issuance-process-id"));
+        @ParameterizedTest(name = "state = {0}")
+        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        void processInitial_whenDidNotResolvable_shouldTransitionToError(String stateString) {
+            var state = HolderRequestState.valueOf(stateString);
 
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(Result.failure("foobar"));
             var rq = createRequest()
-                    .state(REQUESTING.code())
+                    .state(state.code())
                     .build();
-            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
                     .thenReturn(List.of(rq))
                     .thenReturn(List.of());
 
             credentialRequestService.start();
 
             await().atMost(MAX_DURATION).untilAsserted(() -> {
-                var inOrder = inOrder(resolver, store, httpClient);
+                var inOrder = inOrder(resolver, store);
+                inOrder.verify(resolver).resolve(eq(ISSUER_DID));
+                inOrder.verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("foobar")));
+                verifyNoMoreInteractions(resolver, sts, httpClient);
+            });
+        }
+
+        @ParameterizedTest(name = "state = {0}")
+        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        void processInitial_whenDidDoesNotContainEndpoint_shouldTransitionToError(String stateString) {
+            var state = HolderRequestState.valueOf(stateString);
+
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(DidDocument.Builder.newInstance()
+                    .id(UUID.randomUUID().toString())
+                    // missing: endpoint
+                    .build()));
+
+            var rq = createRequest()
+                    .state(state.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                var inOrder = inOrder(resolver, store);
+                inOrder.verify(resolver).resolve(eq(ISSUER_DID));
+                inOrder.verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("DID Document does not contain any 'IssuerService' endpoint")));
+                verifyNoMoreInteractions(resolver, sts, httpClient);
+            });
+        }
+
+        @ParameterizedTest(name = "state = {0}")
+        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        void processInitial_whenStsFails_shouldTransitionToError(String stateString) {
+            var state = HolderRequestState.valueOf(stateString);
+
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(sts.createToken(anyMap(), ArgumentMatchers.isNull())).thenReturn(Result.failure("sts-failure"));
+
+            var rq = createRequest()
+                    .state(state.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                var inOrder = inOrder(resolver, store, httpClient, sts);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
+                inOrder.verify(sts).createToken(anyMap(), ArgumentMatchers.isNull());
+                inOrder.verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("sts-failure")));
+            });
+        }
+
+        @ParameterizedTest(name = "state = {0}")
+        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        void processInitial_whenIssuerReturnsError_shouldTransitionToError(String stateString) {
+            var state = HolderRequestState.valueOf(stateString);
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(), (Function<Response, Result<String>>) any())).thenReturn(failure("issuer failure bad request"));
+
+            var rq = createRequest()
+                    .state(state.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(state.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                var inOrder = inOrder(resolver, store, httpClient, sts);
+                inOrder.verify(resolver).resolve(eq(ISSUER_DID));
+                inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
+                inOrder.verify(sts).createToken(anyMap(), ArgumentMatchers.isNull());
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
-                inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuanceProcessId() != null));
+                inOrder.verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("issuer failure bad request")));
             });
         }
 
@@ -328,7 +345,6 @@ class CredentialRequestServiceImplTest {
 
             await().atMost(MAX_DURATION).untilAsserted(() -> verify(store).save(argThat(r -> r.getState() == ISSUED.code())));
         }
-
 
         @Test
         void processRequested_whenStatusIsInvalid_shouldUpdateStateFromIssuer() {
