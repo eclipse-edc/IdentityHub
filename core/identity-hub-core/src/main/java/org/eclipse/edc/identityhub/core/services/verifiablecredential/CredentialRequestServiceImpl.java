@@ -167,7 +167,6 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
             transitionError(request, msg);
             return true;
         } else {
-            //todo: make request to Issuer's Credentials Request Status API
             var res = getCredentialRequestEndpoint(request)
                     .compose(endpoint -> sendCredentialsStatusRequest(request, endpoint))
                     .map(response -> {
@@ -339,11 +338,6 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
             return new Builder(new CredentialRequestServiceImpl());
         }
 
-        public Builder store(HolderCredentialRequestStore store) {
-            manager.store = store;
-            return this;
-        }
-
         public Builder didResolverRegistry(DidResolverRegistry didResolverRegistry) {
             manager.didResolverRegistry = didResolverRegistry;
             return this;
@@ -374,13 +368,20 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
             return this;
         }
 
+        @Override
+        public Builder self() {
+            return this;
+        }
+
+        @Override
         public Builder monitor(Monitor monitor) {
             manager.monitor = monitor;
             return this;
         }
 
         @Override
-        public Builder self() {
+        public Builder store(HolderCredentialRequestStore store) {
+            manager.store = store;
             return this;
         }
 
