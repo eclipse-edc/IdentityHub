@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.store.sql.issuanceprocess;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
@@ -35,6 +36,7 @@ import java.sql.SQLException;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,6 +50,9 @@ import static java.util.stream.Collectors.toList;
 public class SqlIssuanceProcessStore extends AbstractSqlStore implements IssuanceProcessStore {
 
     private static final TypeReference<List<String>> ATTESTATIONS_LIST_REF = new TypeReference<>() {
+    };
+
+    private static final TypeReference<Map<String, CredentialFormat>> CREDENTIAL_FORMATS_REF = new TypeReference<>() {
     };
     private final String leaseHolderName;
     private final SqlLeaseContextBuilder leaseContext;
@@ -123,17 +128,19 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
 
     @Override
     public void save(IssuanceProcess issuanceProcess) {
-        try (var conn = getConnection()) {
-            var existing = findByIdInternal(conn, issuanceProcess.getId());
-            if (existing != null) {
-                leaseContext.by(leaseHolderName).withConnection(conn).breakLease(issuanceProcess.getId());
-                update(conn, issuanceProcess);
-            } else {
-                insert(conn, issuanceProcess);
+        transactionContext.execute(() -> {
+            try (var conn = getConnection()) {
+                var existing = findByIdInternal(conn, issuanceProcess.getId());
+                if (existing != null) {
+                    leaseContext.by(leaseHolderName).withConnection(conn).breakLease(issuanceProcess.getId());
+                    update(conn, issuanceProcess);
+                } else {
+                    insert(conn, issuanceProcess);
+                }
+            } catch (SQLException e) {
+                throw new EdcPersistenceException(e);
             }
-        } catch (SQLException e) {
-            throw new EdcPersistenceException(e);
-        }
+        });
     }
 
     @Override
@@ -161,7 +168,8 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 process.getParticipantId(),
                 process.getIssuerContextId(),
                 toJson(process.getClaims()),
-                toJson(process.getCredentialDefinitions())
+                toJson(process.getCredentialDefinitions()),
+                toJson(process.getCredentialFormats())
         );
     }
 
@@ -176,6 +184,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 process.getErrorDetail(),
                 toJson(process.getClaims()),
                 toJson(process.getCredentialDefinitions()),
+                toJson(process.getCredentialFormats()),
                 process.getId());
 
     }
@@ -202,6 +211,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 .issuerContextId(resultSet.getString(statements.getIssuerContextIdColumn()))
                 .claims(fromJson(resultSet.getString(statements.getClaimsColumn()), getTypeRef()))
                 .credentialDefinitions(fromJson(resultSet.getString(statements.getCredentialDefinitionsColumn()), ATTESTATIONS_LIST_REF))
+                .credentialFormats(fromJson(resultSet.getString(statements.getCredentialFormatsColumn()), CREDENTIAL_FORMATS_REF))
                 .build();
     }
 }

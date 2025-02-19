@@ -20,10 +20,14 @@ import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessManagerImpl
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessServiceImpl;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(DependencyInjectionExtension.class)
 public class IssuanceCoreExtensionTest {
@@ -31,6 +35,8 @@ public class IssuanceCoreExtensionTest {
 
     @Test
     void verifyProviders(ServiceExtensionContext context, ObjectFactory factory) {
+        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of("edc.issuer.id", "did::web:issuer")));
+
         var extension = factory.constructInstance(IssuanceCoreExtension.class);
         assertThat(extension.createIssuanceProcessManager()).isInstanceOf(IssuanceProcessManagerImpl.class);
         assertThat(extension.createIssuanceProcessService()).isInstanceOf(IssuanceProcessServiceImpl.class);

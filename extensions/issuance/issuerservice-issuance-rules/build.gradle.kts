@@ -23,6 +23,7 @@ dependencies {
     api(libs.edc.spi.core)
 
     implementation(libs.edc.spi.validator)
+    implementation(project(":core:lib:issuerservice-common-lib"))
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.lib.json)

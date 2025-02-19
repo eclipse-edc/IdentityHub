@@ -54,6 +54,7 @@ include(":core:issuerservice:issuerservice-issuance")
 include(":core:lib:keypair-lib")
 include(":core:lib:accesstoken-lib")
 include(":core:lib:common-lib")
+include(":core:lib:issuerservice-common-lib")
 
 // extension modules
 include(":extensions:store:sql:identity-hub-did-store-sql")

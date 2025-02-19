@@ -14,8 +14,12 @@
 
 package org.eclipse.edc.issuerservice.issuance;
 
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessManagerImpl;
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessServiceImpl;
+import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
+import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.retry.IssuanceProcessRetryStrategy;
@@ -60,11 +64,21 @@ public class IssuanceCoreExtension implements ServiceExtension {
 
     @Setting(description = "The base delay for the issuance retry mechanism in millisecond", key = "edc.issuer.issuance.send.retry.base-delay.ms", defaultValue = DEFAULT_SEND_RETRY_BASE_DELAY + "")
     private long sendRetryBaseDelay;
+    
 
     private IssuanceProcessManager issuanceProcessManager;
 
     @Inject
     private IssuanceProcessStore issuanceProcessStore;
+
+    @Inject
+    private CredentialGeneratorRegistry credentialGenerator;
+
+    @Inject
+    private CredentialDefinitionStore credentialDefinitionStore;
+
+    @Inject
+    private CredentialStore credentialStore;
 
     @Inject
     private Monitor monitor;
@@ -77,6 +91,9 @@ public class IssuanceCoreExtension implements ServiceExtension {
 
     @Inject(required = false)
     private IssuanceProcessRetryStrategy retryStrategy;
+
+    @Inject
+    private CredentialStorageClient credentialStorageClient;
 
     @Inject
     private Clock clock;
@@ -97,6 +114,10 @@ public class IssuanceCoreExtension implements ServiceExtension {
                     .telemetry(telemetry)
                     .clock(clock)
                     .executorInstrumentation(executorInstrumentation)
+                    .credentialGeneratorRegistry(credentialGenerator)
+                    .credentialDefinitionStore(credentialDefinitionStore)
+                    .credentialStore(credentialStore)
+                    .credentialStorageClient(credentialStorageClient)
                     .entityRetryProcessConfiguration(getEntityRetryProcessConfiguration())
                     .build();
         }

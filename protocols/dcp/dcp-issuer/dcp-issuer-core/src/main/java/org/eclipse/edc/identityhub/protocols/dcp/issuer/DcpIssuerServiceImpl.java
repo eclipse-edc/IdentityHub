@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
@@ -31,6 +32,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -60,10 +62,16 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         if (message.getCredentials().isEmpty()) {
             return ServiceResult.badRequest("No credentials requested");
         }
+        var credentialFormats = parseCredentialFormats(message);
+
+        if (credentialFormats.failed()) {
+            return credentialFormats.mapFailure();
+
+        }
         return transactionContext.execute(() -> getCredentialsDefinitions(message)
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
                 .compose(this::evaluateRules)
-                .compose(evaluation -> createIssuanceProcess(issuerContextId, context, evaluation))
+                .compose(evaluation -> createIssuanceProcess(issuerContextId, credentialFormats.getContent(), context, evaluation))
                 .map(issuanceProcess -> new CredentialRequestMessage.Response(issuanceProcess.getId())));
 
     }
@@ -120,22 +128,36 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         return ServiceResult.success(evaluationResponse);
     }
 
-    private ServiceResult<IssuanceProcess> createIssuanceProcess(String issuerContextId, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
+    private ServiceResult<IssuanceProcess> createIssuanceProcess(String issuerContextId, Map<String, CredentialFormat> credentialFormats, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
 
         var credentialDefinitionIds = evaluationResponse.credentialDefinitions().stream()
                 .map(CredentialDefinition::getId)
                 .collect(Collectors.toSet());
-
         var issuanceProcess = IssuanceProcess.Builder.newInstance()
                 .participantId(context.participant().participantId())
                 .state(IssuanceProcessStates.APPROVED.code())
                 .credentialDefinitions(credentialDefinitionIds)
                 .claims(evaluationResponse.claims())
                 .issuerContextId(issuerContextId)
+                .credentialFormats(credentialFormats)
                 .build();
 
         issuanceProcessStore.save(issuanceProcess);
         return ServiceResult.success(issuanceProcess);
+
+    }
+
+    private ServiceResult<Map<String, CredentialFormat>> parseCredentialFormats(CredentialRequestMessage message) {
+        var credentialFormats = new HashMap<String, CredentialFormat>();
+        for (var credential : message.getCredentials()) {
+            try {
+                var format = CredentialFormat.valueOf(credential.format().toUpperCase());
+                credentialFormats.put(credential.credentialType(), format);
+            } catch (IllegalArgumentException e) {
+                return ServiceResult.badRequest("Invalid credential format: " + credential.format());
+            }
+        }
+        return ServiceResult.success(credentialFormats);
     }
 
     private record AttestationEvaluationResponse(Collection<CredentialDefinition> credentialDefinitions,

@@ -61,7 +61,7 @@ public class DcpIssuerServiceImplTest {
     void initiateCredentialsIssuance() {
 
         var message = CredentialRequestMessage.Builder.newInstance()
-                .credential(new CredentialRequest("MembershipCredential", "format", null))
+                .credential(new CredentialRequest("MembershipCredential", "vc1_0_jwt", null))
                 .build();
 
         var attestations = Set.of("attestation1", "attestation2");

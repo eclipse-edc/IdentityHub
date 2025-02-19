@@ -51,11 +51,11 @@ public class IssuerServiceEndToEndTestContext {
         return configuration.getIssuerApiEndpoint();
     }
 
-    public String createParticipant(String participantContextId) {
-        return createParticipant(participantContextId, List.of());
+    public String createParticipantContext(String participantContextId) {
+        return createParticipantContext(participantContextId, List.of());
     }
 
-    public String createParticipant(String participantContextId, List<String> roles, boolean isActive) {
+    public String createParticipantContext(String participantContextId, List<String> roles, boolean isActive) {
         var manifest = ParticipantManifest.Builder.newInstance()
                 .participantId(participantContextId)
                 .active(isActive)
@@ -76,8 +76,8 @@ public class IssuerServiceEndToEndTestContext {
     }
 
 
-    public String createParticipant(String participantContextId, List<String> roles) {
-        return createParticipant(participantContextId, roles, true);
+    public String createParticipantContext(String participantContextId, List<String> roles) {
+        return createParticipantContext(participantContextId, roles, true);
     }
 
 }

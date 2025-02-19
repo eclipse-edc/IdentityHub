@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.issuance.rules;
+package org.eclipse.edc.issuerservice.issuance.common;
 
 import org.eclipse.edc.spi.result.Result;
 

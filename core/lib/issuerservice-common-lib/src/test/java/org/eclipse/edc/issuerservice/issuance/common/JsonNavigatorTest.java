@@ -12,14 +12,14 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.issuance.rules;
+package org.eclipse.edc.issuerservice.issuance.common;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.edc.issuerservice.issuance.rules.JsonNavigator.navigateProperty;
+import static org.eclipse.edc.issuerservice.issuance.common.JsonNavigator.navigateProperty;
 
 class JsonNavigatorTest {
 
