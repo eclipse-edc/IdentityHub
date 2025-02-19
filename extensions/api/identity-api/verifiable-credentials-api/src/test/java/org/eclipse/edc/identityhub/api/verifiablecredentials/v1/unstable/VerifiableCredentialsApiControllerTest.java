@@ -26,7 +26,7 @@ import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.C
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -76,7 +76,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     private final AuthorizationService authorizationService = mock();
     private final VerifiableCredentialManifestValidator validator = mock();
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
-    private final CredentialRequestService credentialRequestService = mock();
+    private final CredentialRequestManager credentialRequestService = mock();
 
     @BeforeEach
     void setUp() {

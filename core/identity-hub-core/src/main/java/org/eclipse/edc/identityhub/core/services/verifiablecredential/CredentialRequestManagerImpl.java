@@ -28,7 +28,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStat
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
@@ -65,8 +65,8 @@ import static org.eclipse.edc.spi.persistence.StateEntityStore.isNotPending;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
 
-public class CredentialRequestServiceImpl extends AbstractStateEntityManager<HolderCredentialRequest, HolderCredentialRequestStore>
-        implements CredentialRequestService {
+public class CredentialRequestManagerImpl extends AbstractStateEntityManager<HolderCredentialRequest, HolderCredentialRequestStore>
+        implements CredentialRequestManager {
     private DidResolverRegistry didResolverRegistry;
     private TypeTransformerRegistry dcpTypeTransformerRegistry;
     private EdcHttpClient httpClient;
@@ -74,7 +74,7 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
     private String ownDid;
     private TransactionContext transactionContext;
 
-    private CredentialRequestServiceImpl() {
+    private CredentialRequestManagerImpl() {
 
     }
 
@@ -335,14 +335,14 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
     }
 
     public static class Builder
-            extends AbstractStateEntityManager.Builder<HolderCredentialRequest, HolderCredentialRequestStore, CredentialRequestServiceImpl, Builder> {
+            extends AbstractStateEntityManager.Builder<HolderCredentialRequest, HolderCredentialRequestStore, CredentialRequestManagerImpl, Builder> {
 
-        protected Builder(CredentialRequestServiceImpl service) {
+        protected Builder(CredentialRequestManagerImpl service) {
             super(service);
         }
 
         public static Builder newInstance() {
-            return new Builder(new CredentialRequestServiceImpl());
+            return new Builder(new CredentialRequestManagerImpl());
         }
 
         public Builder didResolverRegistry(DidResolverRegistry didResolverRegistry) {
@@ -393,7 +393,7 @@ public class CredentialRequestServiceImpl extends AbstractStateEntityManager<Hol
         }
 
         @Override
-        public CredentialRequestServiceImpl build() {
+        public CredentialRequestManagerImpl build() {
             super.build();
             requireNonNull(manager.didResolverRegistry);
             requireNonNull(manager.dcpTypeTransformerRegistry);

@@ -73,7 +73,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unchecked")
-class CredentialRequestServiceImplTest {
+class CredentialRequestManagerImplTest {
 
     public static final String ISSUER_DID = "did:web:issuer";
     public static final String OWN_DID = "did:web:holder";
@@ -82,7 +82,7 @@ class CredentialRequestServiceImplTest {
     private final TypeTransformerRegistry transformerRegistry = mock();
     private final EdcHttpClient httpClient = mock();
     private final SecureTokenService sts = mock();
-    private final CredentialRequestServiceImpl credentialRequestService = CredentialRequestServiceImpl.Builder.newInstance()
+    private final CredentialRequestManagerImpl credentialRequestService = CredentialRequestManagerImpl.Builder.newInstance()
             .store(store)
             .didResolverRegistry(resolver)
             .typeTransformerRegistry(transformerRegistry)

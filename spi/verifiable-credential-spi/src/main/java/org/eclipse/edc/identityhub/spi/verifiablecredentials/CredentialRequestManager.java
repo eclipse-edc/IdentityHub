@@ -21,10 +21,10 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import java.util.Map;
 
 /**
- * Makes credential requests to a given issuer
+ * Makes credential requests to a given issuer and manages the state on the holder side
  */
 @ExtensionPoint
-public interface CredentialRequestService extends StateEntityManager {
+public interface CredentialRequestManager extends StateEntityManager {
     /**
      * Service type for entries in a DID document that contain the fully-qualified Credential Request API endpoint
      */

@@ -34,7 +34,7 @@ import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.C
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.HolderCredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -70,13 +70,13 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     private final AuthorizationService authorizationService;
     private final VerifiableCredentialManifestValidator validator;
     private final TypeTransformerRegistry typeTransformerRegistry;
-    private final CredentialRequestService credentialRequestService;
+    private final CredentialRequestManager credentialRequestService;
 
     public VerifiableCredentialsApiController(CredentialStore credentialStore,
                                               AuthorizationService authorizationService,
                                               VerifiableCredentialManifestValidator validator,
                                               TypeTransformerRegistry typeTransformerRegistry,
-                                              CredentialRequestService credentialRequestService) {
+                                              CredentialRequestManager credentialRequestService) {
         this.credentialStore = credentialStore;
         this.authorizationService = authorizationService;
         this.validator = validator;
