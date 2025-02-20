@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.defaults.store;
 
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -31,7 +32,7 @@ public class InMemoryIssuanceProcessStore extends InMemoryStatefulEntityStore<Is
     }
 
     public InMemoryIssuanceProcessStore(String leaserId, Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
-        super(IssuanceProcess.class, leaserId, clock, criterionOperatorRegistry);
+        super(IssuanceProcess.class, leaserId, clock, criterionOperatorRegistry, state -> IssuanceProcessStates.valueOf(state).code());
     }
 
     @Override

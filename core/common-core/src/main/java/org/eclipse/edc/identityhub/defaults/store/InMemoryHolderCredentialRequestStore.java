@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.defaults.store;
 
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -30,7 +31,7 @@ public class InMemoryHolderCredentialRequestStore extends InMemoryStatefulEntity
     }
 
     public InMemoryHolderCredentialRequestStore(String leaserId, Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
-        super(HolderCredentialRequest.class, leaserId, clock, criterionOperatorRegistry);
+        super(HolderCredentialRequest.class, leaserId, clock, criterionOperatorRegistry, state -> HolderRequestState.valueOf(state).code());
     }
 
     @Override
