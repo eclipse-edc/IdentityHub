@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.store.sql.issuanceprocess.schema.postgres;
 
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.store.sql.issuanceprocess.IssuanceProcessStoreStatements;
 import org.eclipse.edc.sql.lease.StatefulEntityMapping;
 import org.eclipse.edc.sql.translation.JsonArrayTranslator;
@@ -34,7 +35,7 @@ public class IssuanceProcessMapping extends StatefulEntityMapping {
     private static final String FIELD_PENDING = "pending";
 
     public IssuanceProcessMapping(IssuanceProcessStoreStatements statements) {
-        super(statements);
+        super(statements, state -> IssuanceProcessStates.valueOf(state).code());
         add(FIELD_ID, statements.getIdColumn());
         add(FIELD_PARTICIPANT_ID, statements.getParticipantIdColumn());
         add(FIELD_ISSUER_CONTEXT_ID, statements.getIssuerContextIdColumn());

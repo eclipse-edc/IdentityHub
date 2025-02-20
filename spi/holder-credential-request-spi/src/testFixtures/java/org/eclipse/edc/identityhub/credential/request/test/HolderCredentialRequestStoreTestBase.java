@@ -405,6 +405,19 @@ public abstract class HolderCredentialRequestStoreTestBase {
         }
 
         @Test
+        void queryByStateAsString() {
+            var request = createHolderRequest("testprocess1");
+            getStore().save(request);
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(List.of(new Criterion("state", "=", HolderRequestState.from(request.getState()).name())))
+                    .build();
+
+            var result = getStore().query(query);
+            assertThat(result).hasSize(1).usingRecursiveFieldByFieldElementComparator().containsExactly(request);
+        }
+
+        @Test
         void queryByIssuerDid() {
 
             range(0, 10)

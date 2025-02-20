@@ -404,6 +404,19 @@ public abstract class IssuanceProcessStoreTestBase {
         }
 
         @Test
+        void queryByStateAsString() {
+            var issuanceProcess = createIssuanceProcess("testprocess1");
+            getStore().save(issuanceProcess);
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(List.of(new Criterion("state", "=", IssuanceProcessStates.from(issuanceProcess.getState()).name())))
+                    .build();
+
+            var result = getStore().query(query).toList();
+            assertThat(result).hasSize(1).usingRecursiveFieldByFieldElementComparator().containsExactly(issuanceProcess);
+        }
+
+        @Test
         void queryByParticipantId() {
 
             range(0, 10)
