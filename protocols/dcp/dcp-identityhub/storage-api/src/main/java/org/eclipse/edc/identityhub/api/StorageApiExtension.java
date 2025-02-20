@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.api;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import jakarta.json.Json;
 import org.eclipse.edc.iam.identitytrust.transform.to.JwtToVerifiableCredentialTransformer;
 import org.eclipse.edc.identityhub.api.storage.StorageApiController;
 import org.eclipse.edc.identityhub.api.validation.CredentialMessageValidator;
@@ -46,6 +47,7 @@ import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
@@ -111,11 +113,13 @@ public class StorageApiExtension implements ServiceExtension {
     }
 
     void registerTransformers(String scope, JsonLdNamespace namespace) {
+
+        var factory = Json.createBuilderFactory(Map.of());
         var scopedTransformerRegistry = typeTransformer.forContext(scope);
         scopedTransformerRegistry.register(new JsonObjectToCredentialMessageTransformer(typeManager, JSON_LD, namespace));
         scopedTransformerRegistry.register(new JsonValueToGenericTypeTransformer(typeManager, JSON_LD));
-        scopedTransformerRegistry.register(new JsonObjectFromCredentialMessageTransformer(typeManager, JSON_LD, namespace));
-        scopedTransformerRegistry.register(new JsonObjectFromCredentialRequestMessageTransformer(typeManager, JSON_LD, DSPACE_DCP_NAMESPACE_V_1_0));
+        scopedTransformerRegistry.register(new JsonObjectFromCredentialMessageTransformer(factory, typeManager, JSON_LD, namespace));
+        scopedTransformerRegistry.register(new JsonObjectFromCredentialRequestMessageTransformer(factory, typeManager, JSON_LD, DSPACE_DCP_NAMESPACE_V_1_0));
 
         typeTransformer.register(new JwtToVerifiableCredentialTransformer(monitor));
 
