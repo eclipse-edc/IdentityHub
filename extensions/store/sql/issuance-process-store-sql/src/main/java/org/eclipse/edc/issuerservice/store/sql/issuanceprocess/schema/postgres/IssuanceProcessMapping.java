@@ -32,6 +32,7 @@ public class IssuanceProcessMapping extends StatefulEntityMapping {
     public static final String FIELD_CLAIMS = "claims";
     public static final String FIELD_CREDENTIAL_DEFINITIONS = "credentialDefinitions";
     public static final String FIELD_CREDENTIAL_FORMATS = "credentialFormats";
+    private static final String FIELD_HOLDER_PID = "holderPid";
     private static final String FIELD_PENDING = "pending";
 
     public IssuanceProcessMapping(IssuanceProcessStoreStatements statements) {
@@ -41,6 +42,7 @@ public class IssuanceProcessMapping extends StatefulEntityMapping {
         add(FIELD_ISSUER_CONTEXT_ID, statements.getIssuerContextIdColumn());
         add(FIELD_CLAIMS, new JsonFieldTranslator(FIELD_CLAIMS));
         add(FIELD_PENDING, statements.getPendingColumn());
+        add(FIELD_HOLDER_PID, statements.getHolderPidColumn());
         add(FIELD_CREDENTIAL_DEFINITIONS, new JsonArrayTranslator(statements.getCredentialDefinitionsColumn()));
         add(FIELD_CREDENTIAL_FORMATS, new JsonFieldTranslator(statements.getCredentialFormatsColumn()));
     }

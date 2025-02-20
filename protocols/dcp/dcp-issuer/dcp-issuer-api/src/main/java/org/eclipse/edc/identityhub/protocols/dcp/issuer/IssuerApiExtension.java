@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest.CredentialRequestApiController;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest.validation.CredentialRequestMessageValidator;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequeststatus.CredentialRequestStatusApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata.IssuerMetadataApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
@@ -25,6 +24,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCr
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialRequestStatusTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromIssuerMetadataTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialRequestMessageTransformer;
+import org.eclipse.edc.identityhub.protocols.dcp.validation.CredentialRequestMessageValidator;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;

@@ -202,7 +202,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, Boolean> function) {
-        var filter = new Criterion[]{hasState(state.code()), isNotPending()};
+        var filter = new Criterion[]{ hasState(state.code()), isNotPending() };
         return createProcessor(function, filter);
     }
 
@@ -271,7 +271,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      */
     private Result<Request> createCredentialsRequest(TokenRepresentation token, String issuerRequestEndpointUrl, String requestId, Map<String, String> typesAndFormats) {
         var rqMessage = CredentialRequestMessage.Builder.newInstance();
-        rqMessage.requestId(requestId);
+        rqMessage.holderPid(requestId);
 
         typesAndFormats.forEach((type, format) -> rqMessage.credential(new CredentialRequest(type, format, null)));
 

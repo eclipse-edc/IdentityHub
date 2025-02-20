@@ -34,7 +34,8 @@ import java.util.List;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.REQUEST_ID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
 
 
 public class JsonObjectToCredentialMessageTransformer extends AbstractNamespaceAwareJsonLdTransformer<JsonObject, CredentialMessage> {
@@ -53,8 +54,12 @@ public class JsonObjectToCredentialMessageTransformer extends AbstractNamespaceA
 
         var requestMessage = CredentialMessage.Builder.newInstance();
         var credentials = jsonObject.get(forNamespace(CREDENTIALS_TERM));
-        var requestId = transformString(jsonObject.get(forNamespace(REQUEST_ID_TERM)), transformerContext);
-        requestMessage.requestId(requestId);
+        var issuerPid = transformString(jsonObject.get(forNamespace(ISSUER_PID_TERM)), transformerContext);
+        requestMessage.issuerPid(issuerPid);
+
+        var holderPid = transformString(jsonObject.get(forNamespace(HOLDER_PID_TERM)), transformerContext);
+        requestMessage.holderPid(holderPid);
+
         if (credentials != null) {
             ofNullable(readCredentialContainers(credentials, transformerContext))
                     .map(requestMessage::credentials);

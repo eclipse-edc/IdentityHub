@@ -20,18 +20,24 @@ import java.util.Objects;
 
 public class CredentialMessage {
     public static final String CREDENTIALS_TERM = "credentials";
-    public static final String REQUEST_ID_TERM = "requestId";
+    public static final String ISSUER_PID_TERM = "issuerPid";
+    public static final String HOLDER_PID_TERM = "holderPid";
     public static final String CREDENTIAL_MESSAGE_TERM = "CredentialMessage";
 
     private Collection<CredentialContainer> credentials = new ArrayList<>();
-    private String requestId;
+    private String issuerPid;
+    private String holderPid;
 
     public Collection<CredentialContainer> getCredentials() {
         return credentials;
     }
 
-    public String getRequestId() {
-        return requestId;
+    public String getIssuerPid() {
+        return issuerPid;
+    }
+
+    public String getHolderPid() {
+        return holderPid;
     }
 
     public static final class Builder {
@@ -55,13 +61,19 @@ public class CredentialMessage {
             return this;
         }
 
-        public Builder requestId(String requestId) {
-            this.credentialMessage.requestId = requestId;
+        public Builder issuerPid(String issuerPid) {
+            this.credentialMessage.issuerPid = issuerPid;
+            return this;
+        }
+
+        public Builder holderPid(String holderPid) {
+            this.credentialMessage.holderPid = holderPid;
             return this;
         }
 
         public CredentialMessage build() {
-            Objects.requireNonNull(credentialMessage.requestId, "requestId");
+            Objects.requireNonNull(credentialMessage.issuerPid, "issuerPid");
+            Objects.requireNonNull(credentialMessage.holderPid, "holderPid");
             return credentialMessage;
         }
     }

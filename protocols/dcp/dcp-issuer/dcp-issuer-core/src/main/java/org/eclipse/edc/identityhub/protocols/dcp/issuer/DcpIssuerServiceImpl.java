@@ -71,7 +71,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         return transactionContext.execute(() -> getCredentialsDefinitions(message)
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
                 .compose(this::evaluateRules)
-                .compose(evaluation -> createIssuanceProcess(issuerContextId, credentialFormats.getContent(), context, evaluation))
+                .compose(evaluation -> createIssuanceProcess(issuerContextId, message.getHolderPid(), credentialFormats.getContent(), context, evaluation))
                 .map(issuanceProcess -> new CredentialRequestMessage.Response(issuanceProcess.getId())));
 
     }
@@ -128,7 +128,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         return ServiceResult.success(evaluationResponse);
     }
 
-    private ServiceResult<IssuanceProcess> createIssuanceProcess(String issuerContextId, Map<String, CredentialFormat> credentialFormats, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
+    private ServiceResult<IssuanceProcess> createIssuanceProcess(String issuerContextId, String holderPid, Map<String, CredentialFormat> credentialFormats, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
 
         var credentialDefinitionIds = evaluationResponse.credentialDefinitions().stream()
                 .map(CredentialDefinition::getId)
@@ -139,6 +139,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 .credentialDefinitions(credentialDefinitionIds)
                 .claims(evaluationResponse.claims())
                 .issuerContextId(issuerContextId)
+                .holderPid(holderPid)
                 .credentialFormats(credentialFormats)
                 .build();
 

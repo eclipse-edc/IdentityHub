@@ -42,6 +42,8 @@ public class JwtCredentialGenerator implements CredentialGenerator {
     public static final String VERIFIABLE_CREDENTIAL_CLAIM = "vc";
     public static final String CREDENTIAL_SUBJECT = "credentialSubject";
     public static final String VERIFIABLE_CREDENTIAL = "VerifiableCredential";
+    public static final String TYPE_PROPERTY = "type";
+
     private final TokenGenerationService tokenGenerationService;
     private final Clock clock;
 
@@ -107,7 +109,7 @@ public class JwtCredentialGenerator implements CredentialGenerator {
     private Map<String, Object> createVcClaim(String type, VerifiableCredential verifiableCredential) {
         return Map.of(
                 JsonLdKeywords.CONTEXT, List.of(VcConstants.W3C_CREDENTIALS_URL),
-                JsonLdKeywords.TYPE, List.of(VERIFIABLE_CREDENTIAL, type),
+                TYPE_PROPERTY, List.of(VERIFIABLE_CREDENTIAL, type),
                 CREDENTIAL_SUBJECT, credentialSubjectClaims(verifiableCredential));
     }
 

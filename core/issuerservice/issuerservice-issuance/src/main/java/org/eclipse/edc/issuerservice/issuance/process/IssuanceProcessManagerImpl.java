@@ -124,12 +124,10 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     }
 
     private StatusResult<Collection<VerifiableCredentialContainer>> deliverCredentials(IssuanceProcess process, Collection<VerifiableCredentialContainer> credentials) {
-        var result = credentialStorageClient.deliverCredentials(process.getIssuerContextId(), process.getParticipantId(), credentials);
+        var result = credentialStorageClient.deliverCredentials(process, credentials);
         if (result.succeeded()) {
             return StatusResult.success(credentials);
-        } else {
-            return StatusResult.failure(ResponseStatus.ERROR_RETRY);
-        }
+        } else return StatusResult.failure(ResponseStatus.ERROR_RETRY);
     }
 
     private void transitionToDelivered(IssuanceProcess process) {

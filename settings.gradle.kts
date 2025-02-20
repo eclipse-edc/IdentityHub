@@ -76,6 +76,7 @@ include(":extensions:sts:sts-account-service-remote")
 include(":protocols:dcp:dcp-spi")
 include(":protocols:dcp:dcp-issuer:dcp-issuer-spi")
 include(":protocols:dcp:dcp-transform-lib")
+include(":protocols:dcp:dcp-validation-lib")
 include(":protocols:dcp:dcp-issuer:dcp-issuer-api")
 include(":protocols:dcp:dcp-issuer:dcp-issuer-core")
 

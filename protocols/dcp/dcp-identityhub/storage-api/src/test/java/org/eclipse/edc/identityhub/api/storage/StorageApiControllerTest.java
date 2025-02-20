@@ -189,7 +189,8 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
     private CredentialMessage credentialMessage() {
         return CredentialMessage.Builder.newInstance()
-                .requestId(UUID.randomUUID().toString())
+                .issuerPid(UUID.randomUUID().toString())
+                .holderPid(UUID.randomUUID().toString())
                 .credential(new CredentialContainer("SomeCredential", "vcdm11_jwt", "SOME_JWT_STRING"))
                 .build();
     }

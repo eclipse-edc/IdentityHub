@@ -21,10 +21,15 @@
       "@context": {
         "credentials": {
           "@id": "dcp:credentials",
-          "@container": "@set"
+          "@container": "@set",
+          "@type": "@json"
         },
-        "requestId": {
-          "@id": "dcp:requestId",
+        "issuerPid": {
+          "@id": "dcp:issuerPid",
+          "@type": "@id"
+        },
+        "holderPid": {
+          "@id": "dcp:holderPid",
           "@type": "@id"
         }
       }
@@ -69,6 +74,10 @@
     "CredentialRequestMessage": {
       "@id": "dcp:CredentialRequestMessage",
       "@context": {
+        "holderPid": {
+          "@id": "dcp:holderPid",
+          "@type": "@id"
+        },
         "credentials": {
           "@id": "dcp:credentials",
           "@type": "@json"
@@ -79,8 +88,12 @@
     "CredentialStatus": {
       "@id": "dcp:CredentialStatus",
       "@context": {
-        "requestId": {
-          "@id": "dcp:requestId",
+        "holderPid": {
+          "@id": "dcp:holderPid",
+          "@type": "@id"
+        },
+        "issuerPid": {
+          "@id": "dcp:issuerPid",
           "@type": "@id"
         },
         "status": {

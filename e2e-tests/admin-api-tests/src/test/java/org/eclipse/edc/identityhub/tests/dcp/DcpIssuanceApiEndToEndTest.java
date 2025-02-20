@@ -92,6 +92,7 @@ public class DcpIssuanceApiEndToEndTest {
                      "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                   ],
                   "@type": "CredentialRequestMessage",
+                  "holderPid": "holderPid",
                   "credentials":[
                     {
                         "credentialType": "MembershipCredential",
@@ -231,6 +232,7 @@ public class DcpIssuanceApiEndToEndTest {
                                 assertThat(process.getClaims()).containsAllEntriesOf(claims);
                                 assertThat(process.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
                                 assertThat(process.getIssuerContextId()).isEqualTo(ISSUER_ID);
+                                assertThat(process.getHolderPid()).isEqualTo("holderPid");
                             });
                 });
             }

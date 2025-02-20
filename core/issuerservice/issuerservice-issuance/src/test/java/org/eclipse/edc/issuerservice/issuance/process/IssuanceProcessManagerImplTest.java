@@ -111,6 +111,7 @@ public class IssuanceProcessManagerImplTest {
         var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
                 .participantId("participantId")
                 .issuerContextId("issuerContextId")
+                .holderPid("holderPid")
                 .credentialFormats(Map.of(credentialDefinition.getCredentialType(), CredentialFormat.VC1_0_JWT))
                 .build();
 
@@ -118,7 +119,7 @@ public class IssuanceProcessManagerImplTest {
         when(credentialDefinitionStore.query(any())).thenReturn(StoreResult.success(List.of(credentialDefinition)));
         when(credentialGenerator.generateCredentials("issuerContextId", "participantId", List.of(generationRequests), process.getClaims())).thenReturn(Result.success(List.of(credential)));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
-        when(credentialStorageClient.deliverCredentials("issuerContextId", "participantId", List.of(credential))).thenReturn(Result.success());
+        when(credentialStorageClient.deliverCredentials(process, List.of(credential))).thenReturn(Result.success());
 
         issuanceProcessManager.start();
 
@@ -146,6 +147,7 @@ public class IssuanceProcessManagerImplTest {
         var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
                 .participantId("participantId")
                 .issuerContextId("issuerContextId")
+                .holderPid("holderPid")
                 .credentialFormats(Map.of(credentialDefinition.getCredentialType(), CredentialFormat.VC1_0_JWT))
                 .stateCount(2)
                 .build();

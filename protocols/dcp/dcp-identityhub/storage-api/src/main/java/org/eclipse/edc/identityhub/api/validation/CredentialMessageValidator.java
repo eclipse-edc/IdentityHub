@@ -25,7 +25,8 @@ import org.eclipse.edc.validator.spi.Validator;
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.REQUEST_ID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
 import static org.eclipse.edc.validator.spi.ValidationResult.failure;
 import static org.eclipse.edc.validator.spi.ValidationResult.success;
 import static org.eclipse.edc.validator.spi.Violation.violation;
@@ -43,9 +44,14 @@ public class CredentialMessageValidator implements Validator<JsonObject> {
         if (input == null) {
             return failure(violation("Credential message was null", "."));
         }
-        var requestId = input.get(namespace.toIri(REQUEST_ID_TERM));
-        if (isNullObject(requestId)) {
-            return failure(violation("Must contain a 'requestId' property.", null));
+        var issuerPid = input.get(namespace.toIri(ISSUER_PID_TERM));
+        if (isNullObject(issuerPid)) {
+            return failure(violation("Must contain a 'issuerPid' property.", null));
+        }
+
+        var holderPid = input.get(namespace.toIri(HOLDER_PID_TERM));
+        if (isNullObject(holderPid)) {
+            return failure(violation("Must contain a 'holderPid' property.", null));
         }
         var credentialsObject = input.get(namespace.toIri(CREDENTIALS_TERM));
         if (isNullObject(credentialsObject)) {
