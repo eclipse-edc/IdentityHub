@@ -83,6 +83,7 @@ public abstract class IssuanceProcessStoreTestBase {
                 .issuerContextId(UUID.randomUUID().toString())
                 .participantId(UUID.randomUUID().toString())
                 .credentialFormats(Map.of("format", CredentialFormat.VC1_0_JWT))
+                .holderPid(UUID.randomUUID().toString())
                 .state(APPROVED.code());
     }
 

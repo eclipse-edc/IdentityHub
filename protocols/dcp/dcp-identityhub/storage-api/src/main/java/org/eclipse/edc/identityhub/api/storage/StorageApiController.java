@@ -89,7 +89,7 @@ public class StorageApiController implements StorageApi {
                 .orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
 
-        // todo: implement response validation by fetching the original CredentialRequest from the DB (using the requestId)
+        // todo: implement response validation by fetching the original CredentialRequest from the DB (using the holderPid )
         // and comparing the credential types therein
         monitor.warning("Validation of requested credential types against received credential types is not yet implemented.");
 

@@ -33,6 +33,7 @@ dependencies {
     implementation(libs.edc.dcp.transform)
     implementation(libs.edc.lib.validator)
     implementation(project(":protocols:dcp:dcp-transform-lib"))
+    implementation(project(":protocols:dcp:dcp-validation-lib"))
     implementation(libs.jakarta.rsApi)
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.jsonld)

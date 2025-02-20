@@ -48,6 +48,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
     private final Map<String, CredentialFormat> credentialFormats = new HashMap<>();
     private String participantId;
     private String issuerContextId;
+    private String holderPid;
 
     private IssuanceProcess() {
     }
@@ -59,7 +60,8 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
                 .credentialDefinitions(credentialDefinitions)
                 .participantId(participantId)
                 .credentialFormats(credentialFormats)
-                .issuerContextId(issuerContextId);
+                .issuerContextId(issuerContextId)
+                .holderPid(holderPid);
         return copy(builder);
     }
 
@@ -74,6 +76,10 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
 
     public String getIssuerContextId() {
         return issuerContextId;
+    }
+
+    public String getHolderPid() {
+        return holderPid;
     }
 
     public Map<String, Object> getClaims() {
@@ -185,6 +191,11 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
             return this;
         }
 
+        public Builder holderPid(String holderPid) {
+            this.entity.holderPid = holderPid;
+            return this;
+        }
+
         @Override
         public IssuanceProcess build() {
             super.build();
@@ -194,6 +205,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
             }
             Objects.requireNonNull(entity.participantId, "Participant ID must be set");
             Objects.requireNonNull(entity.issuerContextId, "Issuer Context ID must be set");
+            Objects.requireNonNull(entity.holderPid, "Holder Pid must be set");
             return entity;
         }
 

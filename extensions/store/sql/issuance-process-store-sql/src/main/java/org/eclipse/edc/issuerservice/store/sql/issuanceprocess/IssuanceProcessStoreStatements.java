@@ -59,6 +59,10 @@ public interface IssuanceProcessStoreStatements extends StatefulEntityStatements
         return "pending";
     }
 
+    default String getHolderPidColumn() {
+        return "holder_pid";
+    }
+
     String getInsertTemplate();
 
     String getUpdateTemplate();

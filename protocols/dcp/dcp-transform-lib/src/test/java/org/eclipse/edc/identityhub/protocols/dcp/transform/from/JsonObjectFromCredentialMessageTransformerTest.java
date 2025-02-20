@@ -50,7 +50,8 @@ public class JsonObjectFromCredentialMessageTransformerTest {
 
         when(context.transform(isA(CredentialMessage.class), eq(JsonObject.class))).thenReturn(JsonObject.EMPTY_JSON_OBJECT);
         var status = CredentialMessage.Builder.newInstance()
-                .requestId("requestId")
+                .issuerPid("requestId")
+                .holderPid("holderId")
                 .credential(new CredentialContainer("MembershipCredential", "myFormat", "SOMEPAYLOAD"))
                 .build();
 
@@ -74,7 +75,8 @@ public class JsonObjectFromCredentialMessageTransformerTest {
 
         when(context.transform(isA(CredentialMessage.class), eq(JsonObject.class))).thenReturn(JsonObject.EMPTY_JSON_OBJECT);
         var status = CredentialMessage.Builder.newInstance()
-                .requestId("requestId")
+                .issuerPid("requestId")
+                .holderPid("holderId")
                 .build();
 
         var jsonLd = transformer.transform(status, context);

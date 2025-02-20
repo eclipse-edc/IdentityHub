@@ -97,6 +97,7 @@ public class JwtCredentialGeneratorTest {
         assertThat(extractJwtHeader(container.rawVc()).getKeyID()).isEqualTo("did:example:issuer#%s".formatted(PUBLIC_KEY_ID));
 
         assertThat(extractedClaims.getClaim(VERIFIABLE_CREDENTIAL_CLAIM)).isInstanceOfSatisfying(Map.class, vcClaim -> {
+            assertThat((List) vcClaim.get("type")).contains("MembershipCredential");
             assertThat((Map) vcClaim.get("credentialSubject")).containsAllEntriesOf(subjectClaims);
         });
     }

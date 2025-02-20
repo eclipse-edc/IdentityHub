@@ -167,6 +167,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 process.getErrorDetail(),
                 process.getParticipantId(),
                 process.getIssuerContextId(),
+                process.getHolderPid(),
                 toJson(process.getClaims()),
                 toJson(process.getCredentialDefinitions()),
                 toJson(process.getCredentialFormats())
@@ -209,6 +210,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 .errorDetail(resultSet.getString(statements.getErrorDetailColumn()))
                 .participantId(resultSet.getString(statements.getParticipantIdColumn()))
                 .issuerContextId(resultSet.getString(statements.getIssuerContextIdColumn()))
+                .holderPid(resultSet.getString(statements.getHolderPidColumn()))
                 .claims(fromJson(resultSet.getString(statements.getClaimsColumn()), getTypeRef()))
                 .credentialDefinitions(fromJson(resultSet.getString(statements.getCredentialDefinitionsColumn()), ATTESTATIONS_LIST_REF))
                 .credentialFormats(fromJson(resultSet.getString(statements.getCredentialFormatsColumn()), CREDENTIAL_FORMATS_REF))

@@ -37,6 +37,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -61,6 +62,7 @@ public class DcpIssuerServiceImplTest {
     void initiateCredentialsIssuance() {
 
         var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(UUID.randomUUID().toString())
                 .credential(new CredentialRequest("MembershipCredential", "vc1_0_jwt", null))
                 .build();
 
@@ -100,5 +102,6 @@ public class DcpIssuerServiceImplTest {
         assertThat(issuanceProcess.getState()).isEqualTo(IssuanceProcessStates.APPROVED.code());
         assertThat(issuanceProcess.getClaims()).containsAllEntriesOf(claims);
         assertThat(issuanceProcess.getIssuerContextId()).isEqualTo("issuerContextId");
+        assertThat(issuanceProcess.getHolderPid()).isEqualTo(message.getHolderPid());
     }
 }

@@ -30,17 +30,17 @@ public class CredentialRequestMessage {
 
     public static final String CREDENTIAL_REQUEST_MESSAGE_TERM = "CredentialRequestMessage";
     public static final String CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM = "credentials";
-    public static final String CREDENTIAL_REQUEST_MESSAGE_REQUEST_ID_TERM = "requestId";
+    public static final String CREDENTIAL_REQUEST_MESSAGE_HOLDER_PID_TERM = "holderPid";
 
     private List<CredentialRequest> credentials = new ArrayList<>();
-    private String requestId;
+    private String holderPid;
 
     public List<CredentialRequest> getCredentials() {
         return credentials;
     }
 
-    public String getRequestId() {
-        return requestId;
+    public String getHolderPid() {
+        return holderPid;
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -68,8 +68,8 @@ public class CredentialRequestMessage {
             return this;
         }
 
-        public Builder requestId(String requestId) {
-            this.instance.requestId = requestId;
+        public Builder holderPid(String holderPid) {
+            this.instance.holderPid = holderPid;
             return this;
         }
 

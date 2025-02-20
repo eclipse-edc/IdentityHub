@@ -61,7 +61,7 @@ public class JsonObjectToCredentialRequestMessageTransformerTest {
                         .add(JsonLdKeywords.VALUE, credentialRequests));
 
         var input = Json.createObjectBuilder()
-                .add(toIri(CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_REQUEST_ID_TERM), UUID.randomUUID().toString())
+                .add(toIri(CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_HOLDER_PID_TERM), UUID.randomUUID().toString())
 
                 .add(toIri(CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM), credentialsJsonArray)
                 .build();
@@ -69,7 +69,7 @@ public class JsonObjectToCredentialRequestMessageTransformerTest {
         var credentialRequestMessage = transformer.transform(input, context);
 
         assertThat(credentialRequestMessage).isNotNull();
-        assertThat(credentialRequestMessage.getRequestId()).isNotNull();
+        assertThat(credentialRequestMessage.getHolderPid()).isNotNull();
         assertThat(credentialRequestMessage.getCredentials()).hasSize(1).first().satisfies(credentialRequest -> {
             assertThat(credentialRequest.credentialType()).isEqualTo("MembershipCredential");
             assertThat(credentialRequest.format()).isEqualTo("myFormat");

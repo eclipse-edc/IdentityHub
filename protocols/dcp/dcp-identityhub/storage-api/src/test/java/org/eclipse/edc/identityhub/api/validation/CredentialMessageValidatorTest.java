@@ -23,6 +23,9 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -34,8 +37,9 @@ class CredentialMessageValidatorTest {
     @Test
     void validate_success() {
         var msg = Json.createObjectBuilder()
-                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("requestId"), UUID.randomUUID().toString())
-                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("credentials"), Json.createArrayBuilder()
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(ISSUER_PID_TERM), UUID.randomUUID().toString())
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(HOLDER_PID_TERM), UUID.randomUUID().toString())
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder()
                         .add(Json.createObjectBuilder()
                                 .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("credentialType"), "SomeCredential")
                                 .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("format"), "vcdm11_jwt")
@@ -47,8 +51,9 @@ class CredentialMessageValidatorTest {
     @Test
     void validate_emptyCredentials_success() {
         var msg = Json.createObjectBuilder()
-                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("requestId"), UUID.randomUUID().toString())
-                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("credentials"), Json.createArrayBuilder())
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(ISSUER_PID_TERM), UUID.randomUUID().toString())
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(HOLDER_PID_TERM), UUID.randomUUID().toString())
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder())
                 .build();
         assertThat(validator.validate(jsonLd.expand(msg).getContent())).isSucceeded();
     }
@@ -57,7 +62,7 @@ class CredentialMessageValidatorTest {
     void validate_requestIdMissing_failure() {
         var msg = Json.createObjectBuilder()
                 // missing: requestId
-                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("credentials"), Json.createArrayBuilder()
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder()
                         .add(Json.createObjectBuilder()
                                 .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("credentialType"), "SomeCredential")
                                 .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("format"), "vcdm11_jwt")

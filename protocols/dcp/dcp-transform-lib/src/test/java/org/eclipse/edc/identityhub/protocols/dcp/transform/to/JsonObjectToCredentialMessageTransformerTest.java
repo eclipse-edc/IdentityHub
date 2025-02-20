@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.protocols.dcp.transform.to;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.Json;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -26,6 +25,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -61,8 +63,9 @@ public class JsonObjectToCredentialMessageTransformerTest {
                         .add(JsonLdKeywords.VALUE, credentialContainers));
 
         var input = Json.createObjectBuilder()
-                .add(toIri(CredentialMessage.REQUEST_ID_TERM), "test-request-id")
-                .add(toIri(CredentialMessage.CREDENTIALS_TERM), credentialsJsonArray)
+                .add(toIri(ISSUER_PID_TERM), "test-request-id")
+                .add(toIri(HOLDER_PID_TERM), "test-holder-id")
+                .add(toIri(CREDENTIALS_TERM), credentialsJsonArray)
                 .build();
 
         var credentialRequestMessage = transformer.transform(input, context);
@@ -81,8 +84,9 @@ public class JsonObjectToCredentialMessageTransformerTest {
         var credentialsJsonArray = Json.createArrayBuilder().build();
 
         var input = Json.createObjectBuilder()
-                .add(toIri(CredentialMessage.REQUEST_ID_TERM), "test-request-id")
-                .add(toIri(CredentialMessage.CREDENTIALS_TERM), credentialsJsonArray)
+                .add(toIri(ISSUER_PID_TERM), "test-request-id")
+                .add(toIri(HOLDER_PID_TERM), "test-holder-id")
+                .add(toIri(CREDENTIALS_TERM), credentialsJsonArray)
                 .build();
 
         var credentialRequestMessage = transformer.transform(input, context);
@@ -106,8 +110,9 @@ public class JsonObjectToCredentialMessageTransformerTest {
                         .add(JsonLdKeywords.VALUE, credentialContainers));
 
         var input = Json.createObjectBuilder()
-                .add(toIri(CredentialMessage.REQUEST_ID_TERM), "test-request-id")
-                .add(toIri(CredentialMessage.CREDENTIALS_TERM), credentialsJsonArray)
+                .add(toIri(ISSUER_PID_TERM), "test-request-id")
+                .add(toIri(HOLDER_PID_TERM), "test-holder-id")
+                .add(toIri(CREDENTIALS_TERM), credentialsJsonArray)
                 .build();
 
         var credentialRequestMessage = transformer.transform(input, context);

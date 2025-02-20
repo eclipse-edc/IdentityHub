@@ -23,10 +23,10 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
@@ -45,6 +45,10 @@ import java.util.Map;
 
 import static jakarta.json.stream.JsonCollectors.toJsonArray;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIAL_MESSAGE_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
@@ -77,12 +81,12 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
     }
 
     @Override
-    public Result<Void> deliverCredentials(String issuerContextId, String participantId, Collection<VerifiableCredentialContainer> credentials) {
+    public Result<Void> deliverCredentials(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> credentials) {
 
         try {
-            var issuerDid = participantContextStore.findById(issuerContextId).map(ParticipantContext::getDid)
+            var issuerDid = participantContextStore.findById(issuanceProcess.getIssuerContextId()).map(ParticipantContext::getDid)
                     .orElseThrow(failure -> new EdcException("Participant context not found"));
-            var participantDid = participantStore.findById(participantId).map(Participant::did)
+            var participantDid = participantStore.findById(issuanceProcess.getParticipantId()).map(Participant::did)
                     .orElseThrow(failure -> new EdcException("Participant not found"));
 
             var credentialServiceBaseUrl = credentialServiceUrlResolver.resolve(participantDid)
@@ -92,7 +96,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
             var selfIssuedTokenJwt = getAuthToken(participantDid, issuerDid)
                     .orElseThrow(failure -> new EdcException("Error creating self-issued token"));
 
-            var credentialMessage = createCredentialMessage(credentials);
+            var credentialMessage = createCredentialMessage(issuanceProcess, credentials);
 
             return sendRequest(credentialMessage, url, selfIssuedTokenJwt);
         } catch (EdcException e) {
@@ -126,12 +130,14 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
         }
     }
 
-    private JsonObject createCredentialMessage(Collection<VerifiableCredentialContainer> credentials) {
+    private JsonObject createCredentialMessage(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> credentials) {
         return Json.createObjectBuilder()
                 .add(JsonLdKeywords.CONTEXT, Json.createArrayBuilder()
                         .add(DSPACE_DCP_V_1_0_CONTEXT))
-                .add(JsonLdKeywords.TYPE, CredentialMessage.CREDENTIAL_MESSAGE_TERM)
-                .add(CredentialMessage.CREDENTIALS_TERM, credentials.stream().map(this::toJson).collect(toJsonArray()))
+                .add(JsonLdKeywords.TYPE, CREDENTIAL_MESSAGE_TERM)
+                .add(ISSUER_PID_TERM, issuanceProcess.getId())
+                .add(HOLDER_PID_TERM, issuanceProcess.getHolderPid())
+                .add(CREDENTIALS_TERM, credentials.stream().map(this::toJson).collect(toJsonArray()))
                 .build();
     }
 

@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.spi.issuance.delivery;
 
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.result.Result;
 
@@ -27,5 +28,5 @@ import java.util.Collection;
 @ExtensionPoint
 public interface CredentialStorageClient {
 
-    Result<Void> deliverCredentials(String issuerContextId, String participantId, Collection<VerifiableCredentialContainer> credentials);
+    Result<Void> deliverCredentials(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> credentials);
 }

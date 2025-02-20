@@ -58,7 +58,8 @@ import java.util.Base64;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.REQUEST_ID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.JWT_VC_EXAMPLE;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.VC_EXAMPLE_2;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_DID;
@@ -238,7 +239,8 @@ public class StorageApiEndToEndTest {
                             .add(JsonLdKeywords.VALUE, credentialContainers.build()));
 
             return Json.createObjectBuilder()
-                    .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(REQUEST_ID_TERM), "test-request-id")
+                    .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(ISSUER_PID_TERM), "test-request-id")
+                    .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(HOLDER_PID_TERM), "test-holder-id")
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), credentialsJsonArray)
                     .build();
         }
