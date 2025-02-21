@@ -41,8 +41,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatchers;
 
 import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,7 +48,6 @@ import java.util.function.Function;
 
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
-import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -67,7 +64,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -266,141 +262,6 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
                 inOrder.verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("issuer failure bad request")));
             });
-        }
-
-        @Test
-        void processRequested_statusIsReceived_shouldNotDoAnything() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(Result.success("""
-                            {
-                              "@context": [
-                                "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
-                              ],
-                              "type": "CredentialStatus",
-                              "holderPid": "test-request",
-                              "status": "RECEIVED"
-                            }
-                            """));
-
-            var rq = createRequest().build();
-            when(store.nextNotLeased(anyInt(), stateIs(REQUESTED.code())))
-                    .thenReturn(List.of(rq))
-                    .thenReturn(List.of());
-
-            credentialRequestService.start();
-
-            // make sure the object's state never gets updated
-            await().pollDelay(Duration.ofSeconds(1)).atMost(MAX_DURATION)
-                    .untilAsserted(() -> verify(store, never())
-                            .save(argThat(r -> r.getState() != REQUESTED.code())));
-        }
-
-        @Test
-        void processRequested_whenStatusIsRejected_shouldUpdateStateFromIssuer() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(Result.success("""
-                            {
-                              "@context": [
-                                "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
-                              ],
-                              "type": "CredentialStatus",
-                              "holderPid": "test-request",
-                              "status": "REJECTED"
-                            }
-                            """));
-
-            var rq = createRequest().build();
-            when(store.nextNotLeased(anyInt(), stateIs(REQUESTED.code())))
-                    .thenReturn(List.of(rq))
-                    .thenReturn(List.of());
-
-            credentialRequestService.start();
-
-            await().atMost(MAX_DURATION).untilAsserted(() -> verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("rejected by the Issuer"))));
-        }
-
-        @Test
-        void processRequested_whenStatusIsIssued_shouldTransitionToIssued() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(Result.success("""
-                            {
-                              "@context": [
-                                "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
-                              ],
-                              "type": "CredentialStatus",
-                              "holderPid": "test-request",
-                              "status": "ISSUED"
-                            }
-                            """));
-
-            var rq = createRequest().build();
-            when(store.nextNotLeased(anyInt(), stateIs(REQUESTED.code())))
-                    .thenReturn(List.of(rq))
-                    .thenReturn(List.of());
-
-            credentialRequestService.start();
-
-            await().atMost(MAX_DURATION).untilAsserted(() -> verify(store).save(argThat(r -> r.getState() == ISSUED.code())));
-        }
-
-        @Test
-        void processRequested_whenStatusIsInvalid_shouldUpdateStateFromIssuer() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(Result.success("""
-                            {
-                              "@context": [
-                                "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
-                              ],
-                              "type": "CredentialStatus",
-                              "holderPid": "test-request",
-                              "status": "FOOBAR"
-                            }
-                            """));
-
-            var rq = createRequest().build();
-            when(store.nextNotLeased(anyInt(), stateIs(REQUESTED.code())))
-                    .thenReturn(List.of(rq))
-                    .thenReturn(List.of());
-
-            credentialRequestService.start();
-
-            await().atMost(MAX_DURATION).untilAsserted(() -> verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("Invalid status response received"))));
-        }
-
-        @Test
-        void processRequested_whenIssuerReturnsError_shouldTransitionToError() {
-            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(Result.failure("foobar"));
-
-            var rq = createRequest().build();
-            when(store.nextNotLeased(anyInt(), stateIs(REQUESTED.code())))
-                    .thenReturn(List.of(rq))
-                    .thenReturn(List.of());
-
-            credentialRequestService.start();
-
-            await().atMost(MAX_DURATION).untilAsserted(() ->
-                    verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("foobar"))));
-        }
-
-        @Test
-        void processRequested_whenExceedsTimeLimit_shouldTransitionToError() {
-
-            var rq = createRequest()
-                    .stateTimestamp(Instant.now().minus(2, ChronoUnit.HOURS).toEpochMilli()) // very old request
-                    .build();
-            when(store.nextNotLeased(anyInt(), stateIs(REQUESTED.code())))
-                    .thenReturn(List.of(rq))
-                    .thenReturn(List.of());
-
-            credentialRequestService.start();
-
-            await().atMost(MAX_DURATION).untilAsserted(() -> verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("Time limit exceeded"))));
         }
 
         private HolderCredentialRequest.Builder createRequest() {
