@@ -87,7 +87,7 @@ public abstract class HolderCredentialRequestStoreTestBase {
                 .credentialType("TestCredential", "VC1_0_JWT")
                 .state(CREATED.code())
                 .id("test-id")
-                .participantContext("test-participant")
+                .participantContextId("test-participant")
                 .issuerDid("did:web:testissuer");
     }
 
@@ -441,12 +441,12 @@ public abstract class HolderCredentialRequestStoreTestBase {
         void queryByParticipantContextId() {
 
             range(0, 10)
-                    .mapToObj(i -> createHolderRequestBuilder().id("id" + i).participantContext("participantContext").build())
+                    .mapToObj(i -> createHolderRequestBuilder().id("id" + i).participantContextId("participantContext").build())
                     .forEach(getStore()::save);
 
             var request = createHolderRequestBuilder()
                     .id("testprocess1")
-                    .participantContext("another-participant-context").build();
+                    .participantContextId("another-participant-context").build();
 
             getStore().save(request);
 
@@ -459,7 +459,7 @@ public abstract class HolderCredentialRequestStoreTestBase {
         }
 
         @Test
-        void queryByIssuanceProcessId() {
+        void queryByissuerPid() {
 
             range(0, 10)
                     .mapToObj(i -> createHolderRequest("id" + i))
@@ -467,12 +467,12 @@ public abstract class HolderCredentialRequestStoreTestBase {
 
             var request = createHolderRequestBuilder()
                     .id("testprocess1")
-                    .issuanceProcessId("test-issuance-process").build();
+                    .issuerPid("test-issuance-process").build();
 
             getStore().save(request);
 
             var query = QuerySpec.Builder.newInstance()
-                    .filter(List.of(new Criterion("issuanceProcessId", "=", request.getIssuanceProcessId())))
+                    .filter(List.of(new Criterion("issuerPid", "=", request.getIssuerPid())))
                     .build();
 
             var result = getStore().query(query);

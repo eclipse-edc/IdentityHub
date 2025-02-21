@@ -35,9 +35,9 @@ public interface CredentialRequestManager extends StateEntityManager {
      *
      * @param participantContext The Participant Context ID of the requestor
      * @param issuerDid          The DID of the issuer
-     * @param requestId          The holder-defined request ID.
+     * @param holderPid          The holder-defined request ID.
      * @param typesAndFormats    A map containing credential-type - credential-format entries
-     * @return A ServiceResult containing the issuer-assigned process ID, or a failure otherwise.
+     * @return A ServiceResult containing the database ID of the {@code HolderCredentialRequest}.
      */
-    ServiceResult<String> initiateRequest(String participantContext, String issuerDid, String requestId, Map<String, String> typesAndFormats);
+    ServiceResult<String> initiateRequest(String participantContext, String issuerDid, String holderPid, Map<String, String> typesAndFormats);
 }

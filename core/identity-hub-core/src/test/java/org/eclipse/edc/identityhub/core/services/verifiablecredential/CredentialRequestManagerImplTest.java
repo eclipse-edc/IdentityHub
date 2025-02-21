@@ -162,7 +162,7 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
                 inOrder.verify(sts).createToken(anyMap(), ArgumentMatchers.isNull());
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
-                inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuanceProcessId() != null));
+                inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuerPid() != null));
             });
         }
 
@@ -278,7 +278,7 @@ class CredentialRequestManagerImplTest {
                                 "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                               ],
                               "type": "CredentialStatus",
-                              "requestId": "test-request",
+                              "holderPid": "test-request",
                               "status": "RECEIVED"
                             }
                             """));
@@ -306,7 +306,7 @@ class CredentialRequestManagerImplTest {
                                 "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                               ],
                               "type": "CredentialStatus",
-                              "requestId": "test-request",
+                              "holderPid": "test-request",
                               "status": "REJECTED"
                             }
                             """));
@@ -331,7 +331,7 @@ class CredentialRequestManagerImplTest {
                                 "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                               ],
                               "type": "CredentialStatus",
-                              "requestId": "test-request",
+                              "holderPid": "test-request",
                               "status": "ISSUED"
                             }
                             """));
@@ -356,7 +356,7 @@ class CredentialRequestManagerImplTest {
                                 "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                               ],
                               "type": "CredentialStatus",
-                              "requestId": "test-request",
+                              "holderPid": "test-request",
                               "status": "FOOBAR"
                             }
                             """));
@@ -409,7 +409,7 @@ class CredentialRequestManagerImplTest {
                     .state(REQUESTED.code())
                     .id("test-request")
                     .issuerDid(ISSUER_DID)
-                    .participantContext("test-participant");
+                    .participantContextId("test-participant");
         }
 
         private Criterion[] stateIs(int state) {

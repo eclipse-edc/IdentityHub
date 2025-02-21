@@ -136,7 +136,7 @@ public interface VerifiableCredentialsApi {
             },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = CredentialRequestDto.class))),
             responses = {
-                    @ApiResponse(responseCode = "201", description = "The request was processed and sent to the issuer. The issuer-created ID is returned in the response.",
+                    @ApiResponse(responseCode = "201", description = "The request was processed and sent to the issuer. The issuer-created ID (\"issuerPid\") is returned in the response.",
                             content = {@Content(schema = @Schema(implementation = String.class))}),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
@@ -152,7 +152,7 @@ public interface VerifiableCredentialsApi {
             operationId = "getCredentialRequest",
             parameters = {
                     @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "issuanceProcessId", description = "The issuer-assigned ID of the issuance process", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "issuerPid", description = "The issuer-assigned ID of the issuance process", required = true, in = ParameterIn.PATH),
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The VerifiableCredential.",
@@ -165,5 +165,5 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    HolderCredentialRequestDto getCredentialRequest(String participantContextId, String issuanceProcessId, SecurityContext securityContext);
+    HolderCredentialRequestDto getCredentialRequest(String participantContextId, String issuerPid, SecurityContext securityContext);
 }

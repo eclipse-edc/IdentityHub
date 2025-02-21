@@ -161,11 +161,11 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
 
-        var requestId = ofNullable(credentialRequestDto.requestId());
+        var holderPid = ofNullable(credentialRequestDto.holderPid());
         var requestParameters = credentialRequestDto.credentials().stream().collect(Collectors.toMap(CredentialDescriptor::credentialType, CredentialDescriptor::format));
 
         var credentialRequestResult = credentialRequestService.initiateRequest(participantId, credentialRequestDto.issuerDid(),
-                requestId.orElseGet(() -> UUID.randomUUID().toString()),
+                holderPid.orElseGet(() -> UUID.randomUUID().toString()),
                 requestParameters);
 
         return credentialRequestResult.map(id -> Response.status(201).entity(id).build())
@@ -178,10 +178,10 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     }
 
     @GET
-    @Path("/request/{issuanceProcessId}")
+    @Path("/request/{issuerPid}")
     @Override
     public HolderCredentialRequestDto getCredentialRequest(@PathParam("participantContextId") String participantContextId,
-                                                           @PathParam("issuanceProcessId") String issuanceProcessId,
+                                                           @PathParam("issuerPid") String issuerPid,
                                                            @Context SecurityContext securityContext) {
 
         var participantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);

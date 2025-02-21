@@ -35,7 +35,7 @@ class InMemoryHolderCredentialRequestStoreTest extends HolderCredentialRequestSt
     }
 
     @Override
-    protected void leaseEntity(String requestId, String owner, Duration duration) {
-        store.acquireLease(requestId, owner, duration);
+    protected void leaseEntity(String holderPid, String owner, Duration duration) {
+        store.acquireLease(holderPid, owner, duration);
     }
 }
