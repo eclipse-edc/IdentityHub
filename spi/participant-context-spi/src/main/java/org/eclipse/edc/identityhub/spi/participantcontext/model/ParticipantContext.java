@@ -22,14 +22,19 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Representation of a participant in Identity Hub.
  */
 @JsonDeserialize(builder = ParticipantContext.Builder.class)
 public class ParticipantContext extends ParticipantResource {
+    private Map<String, Object> properties = new HashMap<>();
     private List<String> roles = new ArrayList<>();
     private String did;
     private long createdAt;
@@ -37,7 +42,12 @@ public class ParticipantContext extends ParticipantResource {
     private int state; // CREATED, ACTIVATED, DEACTIVATED
     private String apiTokenAlias;
 
+
     private ParticipantContext() {
+    }
+
+    public String clientSecretAlias() {
+        return ofNullable(properties.get("clientSecret")).map(Object::toString).orElseGet(() -> participantContextId + "-sts-client-secret");
     }
 
     /**
@@ -107,6 +117,10 @@ public class ParticipantContext extends ParticipantResource {
         this.roles = roles;
     }
 
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
     @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder extends ParticipantResource.Builder<ParticipantContext, Builder> {
 
@@ -164,6 +178,16 @@ public class ParticipantContext extends ParticipantResource {
 
         public Builder apiTokenAlias(String apiToken) {
             this.entity.apiTokenAlias = apiToken;
+            return this;
+        }
+
+        public Builder property(String key, Object value) {
+            entity.properties.put(key, value);
+            return this;
+        }
+
+        public Builder properties(Map<String, Object> properties) {
+            entity.properties = properties;
             return this;
         }
 

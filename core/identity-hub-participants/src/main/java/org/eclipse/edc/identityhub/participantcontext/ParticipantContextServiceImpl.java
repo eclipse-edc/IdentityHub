@@ -178,6 +178,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                 .did(manifest.getDid())
                 .apiTokenAlias("%s-%s".formatted(manifest.getParticipantId(), API_KEY_ALIAS_SUFFIX))
                 .state(ParticipantContextState.CREATED)
+                .properties(manifest.getAdditionalProperties())
                 .build();
     }
 }

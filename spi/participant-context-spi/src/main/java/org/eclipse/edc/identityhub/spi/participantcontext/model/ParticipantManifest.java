@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.Optional.ofNullable;
+
 /**
  * Manifest (=recipe) for creating the {@link ParticipantContext}.
  */
@@ -44,6 +46,10 @@ public class ParticipantManifest {
 
     public Map<String, Object> getAdditionalProperties() {
         return additionalProperties;
+    }
+
+    public String clientSecretAlias() {
+        return ofNullable(additionalProperties.get("clientSecret")).map(Object::toString).orElseGet(() -> participantId + "-sts-client-secret");
     }
 
     /**

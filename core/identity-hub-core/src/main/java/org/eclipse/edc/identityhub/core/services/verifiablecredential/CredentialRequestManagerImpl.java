@@ -21,9 +21,10 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
-import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.Status;
+import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
@@ -68,7 +69,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private DidResolverRegistry didResolverRegistry;
     private TypeTransformerRegistry dcpTypeTransformerRegistry;
     private EdcHttpClient httpClient;
-    private SecureTokenService secureTokenService;
+    private ParticipantSecureTokenService secureTokenService;
     private String ownDid;
     private TransactionContext transactionContext;
 
@@ -114,7 +115,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
 
         return transactionContext.execute(() -> {
             transition(request.copy().toBuilder(), REQUESTING);
-            return getAuthToken(issuerDid, ownDid)
+            return getAuthToken(request.getParticipantContextId(), issuerDid, ownDid)
                     .compose(token -> createCredentialsRequest(token, endpoint, holderPid, typesAndFormats))
                     .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
         });
@@ -207,18 +208,19 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     /**
      * Fetches the authentication token from the SecureTokenService.
      *
-     * @param audience the String used as {@code aud} claim
-     * @param myOwnDid the String used as {@code iss} and {@code sub} claims
+     * @param participantContextId The ID of the participant context on behalf of which the token is generated
+     * @param audience             the String used as {@code aud} claim
+     * @param myOwnDid             the String used as {@code iss} and {@code sub} claims
      * @return a JWT token that can be used to send DCP messages to the issuer
      */
-    private Result<TokenRepresentation> getAuthToken(String audience, String myOwnDid) {
+    private Result<TokenRepresentation> getAuthToken(String participantContextId, String audience, String myOwnDid) {
         var siTokenClaims = Map.of(
                 ISSUED_AT, Instant.now().toString(),
                 AUDIENCE, audience,
                 ISSUER, myOwnDid,
                 SUBJECT, myOwnDid,
                 EXPIRATION_TIME, Instant.now().plus(5, ChronoUnit.MINUTES).toString());
-        return secureTokenService.createToken(siTokenClaims, null);
+        return secureTokenService.createToken(participantContextId, siTokenClaims, null);
     }
 
     /**
@@ -262,7 +264,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             return this;
         }
 
-        public Builder secureTokenService(SecureTokenService secureTokenService) {
+        public Builder secureTokenService(ParticipantSecureTokenService secureTokenService) {
             manager.secureTokenService = secureTokenService;
             return this;
         }

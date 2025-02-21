@@ -40,6 +40,7 @@ edc-spi-web = { module = "org.eclipse.edc:web-spi", version.ref = "edc" }
 edc-spi-token = { module = "org.eclipse.edc:token-spi", version.ref = "edc" }
 edc-spi-dcp = { module = "org.eclipse.edc:identity-trust-spi", version.ref = "edc" }
 edc-spi-vc = { module = "org.eclipse.edc:verifiable-credentials-spi", version.ref = "edc" }
+edc-spi-oauth2 = { module = "org.eclipse.edc:oauth2-spi", version.ref = "edc" }
 edc-core-connector = { module = "org.eclipse.edc:connector-core", version.ref = "edc" }
 edc-core-token = { module = "org.eclipse.edc:token-core", version.ref = "edc" }
 edc-core-jersey = { module = "org.eclipse.edc:jersey-core", version.ref = "edc" }

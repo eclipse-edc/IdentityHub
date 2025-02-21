@@ -21,9 +21,9 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
-import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
@@ -59,6 +59,7 @@ import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -77,7 +78,7 @@ class CredentialRequestManagerImplTest {
     private final DidResolverRegistry resolver = mock();
     private final TypeTransformerRegistry transformerRegistry = mock();
     private final EdcHttpClient httpClient = mock();
-    private final SecureTokenService sts = mock();
+    private final ParticipantSecureTokenService sts = mock();
     private final CredentialRequestManagerImpl credentialRequestService = CredentialRequestManagerImpl.Builder.newInstance()
             .store(store)
             .didResolverRegistry(resolver)
@@ -94,7 +95,7 @@ class CredentialRequestManagerImplTest {
     void setUp() {
         when(transformerRegistry.transform(any(CredentialRequestMessage.class), eq(JsonObject.class)))
                 .thenReturn(success(Json.createObjectBuilder().build()));
-        when(sts.createToken(anyMap(), ArgumentMatchers.isNull())).thenReturn(success(TokenRepresentation.Builder.newInstance().build()));
+        when(sts.createToken(anyString(), anyMap(), ArgumentMatchers.isNull())).thenReturn(success(TokenRepresentation.Builder.newInstance().build()));
     }
 
     private DidDocument didDocument() {
@@ -156,7 +157,7 @@ class CredentialRequestManagerImplTest {
                 var inOrder = inOrder(resolver, store, httpClient, sts);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
-                inOrder.verify(sts).createToken(anyMap(), ArgumentMatchers.isNull());
+                inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuerPid() != null));
             });
@@ -218,7 +219,7 @@ class CredentialRequestManagerImplTest {
             var state = HolderRequestState.valueOf(stateString);
 
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
-            when(sts.createToken(anyMap(), ArgumentMatchers.isNull())).thenReturn(Result.failure("sts-failure"));
+            when(sts.createToken(anyString(), anyMap(), ArgumentMatchers.isNull())).thenReturn(Result.failure("sts-failure"));
 
             var rq = createRequest()
                     .state(state.code())
@@ -233,7 +234,7 @@ class CredentialRequestManagerImplTest {
                 var inOrder = inOrder(resolver, store, httpClient, sts);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
-                inOrder.verify(sts).createToken(anyMap(), ArgumentMatchers.isNull());
+                inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
                 inOrder.verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("sts-failure")));
             });
         }
@@ -258,7 +259,7 @@ class CredentialRequestManagerImplTest {
                 var inOrder = inOrder(resolver, store, httpClient, sts);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
-                inOrder.verify(sts).createToken(anyMap(), ArgumentMatchers.isNull());
+                inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
                 inOrder.verify(store).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("issuer failure bad request")));
             });

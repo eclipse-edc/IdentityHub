@@ -18,7 +18,6 @@ package org.eclipse.edc.identityhub.core;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
-import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
@@ -33,6 +32,7 @@ import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generato
 import org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.LdpPresentationGenerator;
 import org.eclipse.edc.identityhub.core.services.verification.SelfIssuedTokenVerifierImpl;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
+import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
@@ -134,7 +134,7 @@ public class CoreServicesExtension implements ServiceExtension {
     @Inject
     private HolderCredentialRequestStore credentialRequestStore;
     @Inject
-    private SecureTokenService secureTokenService;
+    private ParticipantSecureTokenService secureTokenService;
     @Inject
     private EdcHttpClient httpClient;
 

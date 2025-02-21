@@ -13,3 +13,4 @@
 #
 
 org.eclipse.edc.identityhub.sts.accountservice.RemoteStsAccountServiceExtension
+org.eclipse.edc.identityhub.sts.RemoteStsServiceExtension
