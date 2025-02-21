@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
-import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
@@ -109,7 +109,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .post("/v1alpha/credentialdefinitions")
                     .then()
                     .statusCode(400);
-            
+
         }
 
         @Test

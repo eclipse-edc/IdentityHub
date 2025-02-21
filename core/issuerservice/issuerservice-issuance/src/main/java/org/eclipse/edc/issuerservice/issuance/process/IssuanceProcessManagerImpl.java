@@ -15,6 +15,8 @@
 package org.eclipse.edc.issuerservice.issuance.process;
 
 import io.opentelemetry.instrumentation.annotations.WithSpan;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -115,12 +117,17 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         return StatusResult.success(credentials);
     }
 
-    private VerifiableCredentialResource toResource(IssuanceProcess process, VerifiableCredentialContainer credential) {
+    private VerifiableCredentialResource toResource(IssuanceProcess process, VerifiableCredentialContainer credentialContainer) {
         return VerifiableCredentialResource.Builder.newInstance()
-                .issuerId(process.getIssuerContextId())
-                .holderId(process.getParticipantId())
+                .issuerId(credentialContainer.credential().getIssuer().id())
+                .holderId(extractHolder(credentialContainer.credential()))
+                .participantContextId(process.getIssuerContextId())
                 .state(VcStatus.ISSUED)
-                .credential(new VerifiableCredentialContainer(null, credential.format(), credential.credential())).build();
+                .credential(new VerifiableCredentialContainer(null, credentialContainer.format(), credentialContainer.credential())).build();
+    }
+
+    private String extractHolder(VerifiableCredential credential) {
+        return credential.getCredentialSubject().stream().findFirst().map(CredentialSubject::getId).orElse(null);
     }
 
     private StatusResult<Collection<VerifiableCredentialContainer>> deliverCredentials(IssuanceProcess process, Collection<VerifiableCredentialContainer> credentials) {

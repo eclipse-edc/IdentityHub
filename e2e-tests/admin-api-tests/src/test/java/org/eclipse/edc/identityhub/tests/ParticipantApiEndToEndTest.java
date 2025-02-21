@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
-import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.ParticipantDto;
 import org.eclipse.edc.issuerservice.spi.participant.ParticipantService;
 import org.eclipse.edc.issuerservice.spi.participant.model.Participant;

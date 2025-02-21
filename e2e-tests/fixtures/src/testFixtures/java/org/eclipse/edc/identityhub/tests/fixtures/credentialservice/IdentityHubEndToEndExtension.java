@@ -12,17 +12,21 @@
  *
  */
 
-package org.eclipse.edc.identityhub.tests.fixtures;
+package org.eclipse.edc.identityhub.tests.fixtures.credentialservice;
 
+import org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
 import org.eclipse.edc.junit.extensions.RuntimePerClassExtension;
+import org.eclipse.edc.spi.system.configuration.Config;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndInstance;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 
 import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService.jdbcUrl;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
@@ -67,17 +71,32 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
             super(context());
         }
 
+        protected InMemory(Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
+            super(context(configProvider));
+        }
+
+        public static InMemory withConfig(Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
+            return new InMemory(configProvider);
+        }
+
         public static IdentityHubEndToEndTestContext context() {
+            return context((it) -> ConfigFactory.empty());
+        }
+
+        public static IdentityHubEndToEndTestContext context(Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
             var configuration = IdentityHubRuntimeConfiguration.Builder.newInstance()
                     .name("identity-hub")
                     .id("identity-hub")
                     .build();
+            return context(configuration, () -> configProvider.apply(configuration));
+        }
 
+        public static IdentityHubEndToEndTestContext context(IdentityHubRuntimeConfiguration configuration, Supplier<Config> configSupplier) {
             var runtime = new EmbeddedRuntime(
                     "identity-hub",
-                    configuration.config(),
                     ":dist:bom:identityhub-with-sts-bom"
-            );
+            ).configurationProvider(configuration::config)
+                    .configurationProvider(configSupplier);
 
             return new IdentityHubEndToEndTestContext(runtime, configuration);
         }
@@ -94,41 +113,55 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
         private final PostgresSqlService postgresSqlService;
 
         protected Postgres() {
-            super(context(DB_NAME, DB_PORT));
-            postgresSqlService = new PostgresSqlService(DB_NAME, DB_PORT);
+            this((it) -> ConfigFactory.empty());
+        }
 
+        protected Postgres(Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
+            super(context(DB_NAME, DB_PORT, configProvider));
+            postgresSqlService = new PostgresSqlService(DB_NAME, DB_PORT);
+        }
+
+        public static Postgres withConfig(Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
+            return new Postgres(configProvider);
         }
 
         public static IdentityHubEndToEndTestContext context(String dbName, Integer port) {
+            return context(dbName, port, (it) -> ConfigFactory.empty());
+        }
+
+        private static IdentityHubEndToEndTestContext context(String dbName, Integer port, Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
 
             var configuration = IdentityHubRuntimeConfiguration.Builder.newInstance()
                     .name("identity-hub")
                     .id("identity-hub")
                     .build();
 
-            var cfg = new HashMap<>(configuration.config());
-            cfg.putAll(postgresqlConfiguration(dbName, port));
+            return context(configuration, () -> postgresqlConfiguration(dbName, port)
+                    .merge(configProvider.apply(configuration)));
+        }
+
+        private static IdentityHubEndToEndTestContext context(IdentityHubRuntimeConfiguration configuration, Supplier<Config> configSupplier) {
 
             var runtime = new EmbeddedRuntime(
                     "identityhub-pg",
-                    cfg,
                     ":dist:bom:identityhub-with-sts-bom",
                     ":dist:bom:identityhub-feature-sql-bom"
 
-            );
+            ).configurationProvider(configuration::config)
+                    .configurationProvider(configSupplier);
 
             return new IdentityHubEndToEndTestContext(runtime, configuration);
         }
 
-        private static Map<String, String> postgresqlConfiguration(String dbName, Integer port) {
+        private static Config postgresqlConfiguration(String dbName, Integer port) {
             var jdbcUrl = jdbcUrl(dbName, port);
-            return new HashMap<>() {
+            return ConfigFactory.fromMap(new HashMap<>() {
                 {
                     put("edc.datasource.default.url", jdbcUrl);
                     put("edc.datasource.default.user", PostgresqlEndToEndInstance.USER);
                     put("edc.datasource.default.password", PostgresqlEndToEndInstance.PASSWORD);
                 }
-            };
+            });
         }
 
         @Override

@@ -42,11 +42,11 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubCustomizableEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService;
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubCustomizableEndToEndExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
