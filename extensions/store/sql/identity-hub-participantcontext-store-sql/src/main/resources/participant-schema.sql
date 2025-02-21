@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS participant_context
     state              INTEGER             NOT NULL, -- 0 = CREATED, 1 = ACTIVE, 2 = DEACTIVATED
     api_token_alias    VARCHAR             NOT NULL, -- alias under which this PC's api token is stored in the vault
     did                VARCHAR,                      -- the DID with which this participant is identified
-    roles              JSON                          -- JSON array containing all the roles a user has. may be empty
+    roles              JSON,                         -- JSON array containing all the roles a user has. may be empty
+    properties         JSON DEFAULT '{}'             -- JSON object containing additional information, such as OAuth2 client secret aliases
 );
 CREATE UNIQUE INDEX IF NOT EXISTS participant_context_participant_context_id_uindex ON participant_context USING btree (participant_context_id);
 

@@ -75,7 +75,7 @@ public class DefaultServicesExtension implements ServiceExtension {
     public static final String JWS_2020_JSON = "jws2020.json";
     public static final String CREDENTIALS_V_1_JSON = "credentials.v1.json";
 
-    
+
     public static final String NAME = "IdentityHub Default Services Extension";
     public static final long DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS = 15 * 60 * 1000L;
     static final String ACCESSTOKEN_JTI_VALIDATION_ACTIVATE = "edc.iam.accesstoken.jti.validation";

@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.sts;
 
-import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
-import org.eclipse.edc.iam.identitytrust.sts.embedded.EmbeddedSecureTokenService;
+import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
+import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -23,8 +23,8 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
-import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.JwtGenerationService;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
@@ -43,12 +43,12 @@ public class LocalStsServiceExtension implements ServiceExtension {
     @Inject
     private JwsSignerProvider externalSigner;
 
-    @Setting(description = "Alias of private key used for signing tokens, retrieved from private key resolver. Required when using Embedded STS", key = "edc.iam.sts.privatekey.alias", required = true)
-    private String privateKeyAlias;
-    @Setting(description = "Key Identifier used by the counterparty to resolve the public key for token validation, e.g. did:example:123#public-key-1. Required when using Embedded STS", key = "edc.iam.sts.publickey.id", required = true)
-    private String publicKeyId;
     @Setting(description = "Self-issued ID Token expiration in minutes. By default is 5 minutes", defaultValue = "" + DEFAULT_STS_TOKEN_EXPIRATION_MIN, key = "edc.iam.sts.token.expiration")
     private long stsTokenExpirationMin;
+    @Inject
+    private TransactionContext transactionContext;
+    @Inject
+    private StsAccountService stsAccountService;
 
     @Override
     public String name() {
@@ -56,15 +56,7 @@ public class LocalStsServiceExtension implements ServiceExtension {
     }
 
     @Provider
-    public SecureTokenService createDefaultTokenService(ServiceExtensionContext context) {
-        context.getMonitor().info("Using the Embedded STS client, as no other implementation was provided.");
-
-        if (context.getSetting("edc.oauth.token.url", null) != null) {
-            context.getMonitor().warning("The property '%s' was configured, but no remote SecureTokenService was found on the classpath. ".formatted("edc.oauth.token.url") +
-                    "This could be an indication of a configuration problem.");
-        }
-
-        //todo: this must be replaced with an Embedded STS, that can resolve the key IDs/aliases dynamically based on the participant context
-        return new EmbeddedSecureTokenService(new JwtGenerationService(externalSigner), () -> privateKeyAlias, () -> publicKeyId, clock, TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin), jtiValidationStore);
+    public ParticipantSecureTokenService createDefaultTokenService() {
+        return new EmbeddedSecureTokenService(transactionContext, TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin), jtiValidationStore, new JwtGenerationService(externalSigner), clock, stsAccountService);
     }
 }

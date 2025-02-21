@@ -18,9 +18,9 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
-import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
+import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
@@ -91,7 +91,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     private EdcHttpClient httpClient;
 
     @Inject
-    private SecureTokenService secureTokenService;
+    private ParticipantSecureTokenService secureTokenService;
 
     @Inject
     private Monitor monitor;

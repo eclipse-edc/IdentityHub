@@ -20,8 +20,9 @@ plugins {
 dependencies {
 
     api(project(":spi:participant-context-spi"))
+    api(project(":spi:identity-hub-spi")) // participant STS
+    api(project(":spi:keypair-spi")) // keypair resource store
     implementation(libs.edc.lib.token)
-    implementation(libs.edc.sts)
     implementation(libs.edc.sts.spi)
     implementation(libs.edc.spi.core)
     implementation(libs.edc.spi.transaction)

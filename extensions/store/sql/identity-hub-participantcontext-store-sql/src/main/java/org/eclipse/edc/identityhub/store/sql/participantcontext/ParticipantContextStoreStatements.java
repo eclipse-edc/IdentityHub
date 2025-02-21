@@ -55,6 +55,10 @@ public interface ParticipantContextStoreStatements extends SqlStatements {
         return "roles";
     }
 
+    default String getPropertiesColumn() {
+        return "properties";
+    }
+
     String getInsertTemplate();
 
     String getUpdateTemplate();

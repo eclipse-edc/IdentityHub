@@ -18,6 +18,7 @@ plugins {
 }
 
 dependencies {
+    api(project(":spi:identity-hub-spi"))
     api(project(":spi:verifiable-credential-spi"))
     api(project(":spi:issuerservice:issuerservice-participant-spi"))
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))

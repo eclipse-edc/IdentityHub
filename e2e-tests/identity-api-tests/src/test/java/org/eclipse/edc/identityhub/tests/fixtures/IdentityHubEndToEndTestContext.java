@@ -116,7 +116,7 @@ public class IdentityHubEndToEndTestContext {
                 .participantContextId(participantContextId)
                 .holderId("holderId")
                 .issuerId("issuerId")
-                .credential(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, credential))
+                .credential(new VerifiableCredentialContainer("rawVc", CredentialFormat.VC1_0_JWT, credential))
                 .build();
         runtime.getService(CredentialStore.class).create(resource).orElseThrow(f -> new EdcException(f.getFailureDetail()));
         return resource.getId();

@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.participantcontext.store;
 
-import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
@@ -23,8 +22,10 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static java.util.stream.IntStream.range;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.ACTIVATED;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.CREATED;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.DEACTIVATED;
@@ -39,7 +40,7 @@ public abstract class ParticipantContextStoreTestBase {
         assertThat(result).isSucceeded();
         var query = getStore().query(QuerySpec.max());
         assertThat(query).isSucceeded();
-        Assertions.assertThat(query.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(participantContext);
+        assertThat(query.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(participantContext);
     }
 
     @Test
@@ -62,7 +63,7 @@ public abstract class ParticipantContextStoreTestBase {
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
-                .satisfies(str -> Assertions.assertThat(str).hasSize(1));
+                .satisfies(str -> assertThat(str).hasSize(1));
     }
 
     @Test
@@ -75,7 +76,7 @@ public abstract class ParticipantContextStoreTestBase {
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
-                .satisfies(str -> Assertions.assertThat(str)
+                .satisfies(str -> assertThat(str)
                         .hasSize(1)
                         .usingRecursiveFieldByFieldElementComparator()
                         .containsExactly(participantContext));
@@ -91,7 +92,7 @@ public abstract class ParticipantContextStoreTestBase {
 
         var res = getStore().query(QuerySpec.none());
         assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent())
+        assertThat(res.getContent())
                 .usingRecursiveFieldByFieldElementComparator()
                 .containsExactlyInAnyOrder(resources.toArray(new ParticipantContext[0]));
     }
@@ -110,7 +111,7 @@ public abstract class ParticipantContextStoreTestBase {
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent()).isEmpty();
+        assertThat(res.getContent()).isEmpty();
     }
 
     @Test
@@ -128,7 +129,7 @@ public abstract class ParticipantContextStoreTestBase {
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent()).isNotNull().isEmpty();
+        assertThat(res.getContent()).isNotNull().isEmpty();
     }
 
     @Test
@@ -180,6 +181,7 @@ public abstract class ParticipantContextStoreTestBase {
                 .roles(List.of("role1", "role2"))
                 .state(CREATED)
                 .apiTokenAlias("test-alias")
+                .properties(Map.of("property1", "value1", "property2", 42))
                 .build();
     }
 
@@ -188,6 +190,7 @@ public abstract class ParticipantContextStoreTestBase {
                 .participantContextId("test-participant")
                 .state(CREATED)
                 .roles(List.of("role1", "role2"))
+                .properties(Map.of("property1", "value1", "property2", 42))
                 .apiTokenAlias("test-alias");
     }
 }

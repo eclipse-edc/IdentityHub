@@ -21,8 +21,8 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
-import org.eclipse.edc.iam.identitytrust.spi.SecureTokenService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
@@ -62,14 +62,14 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
     private final ParticipantContextStore participantContextStore;
     private final ParticipantStore participantStore;
     private final CredentialServiceUrlResolver credentialServiceUrlResolver;
-    private final SecureTokenService secureTokenService;
+    private final ParticipantSecureTokenService secureTokenService;
     private final Monitor monitor;
     private final TypeManager typeManager;
     private final String typeContext;
 
     public DcpCredentialStorageClient(EdcHttpClient httpClient, ParticipantContextStore participantContextStore,
                                       ParticipantStore participantStore, CredentialServiceUrlResolver credentialServiceUrlResolver,
-                                      SecureTokenService secureTokenService, Monitor monitor, TypeManager typeManager, String typeContext) {
+                                      ParticipantSecureTokenService secureTokenService, Monitor monitor, TypeManager typeManager, String typeContext) {
         this.httpClient = httpClient;
         this.participantContextStore = participantContextStore;
         this.participantStore = participantStore;
@@ -93,7 +93,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
                     .orElseThrow(failure -> new EdcException("Credential service URL not found"));
             var url = credentialServiceBaseUrl + STORAGE_ENDPOINT;
 
-            var selfIssuedTokenJwt = getAuthToken(participantDid, issuerDid)
+            var selfIssuedTokenJwt = getAuthToken(issuanceProcess.getIssuerContextId(), participantDid, issuerDid)
                     .orElseThrow(failure -> new EdcException("Error creating self-issued token"));
 
             var credentialMessage = createCredentialMessage(issuanceProcess, credentials);
@@ -149,13 +149,13 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
                 .build();
     }
 
-    private Result<TokenRepresentation> getAuthToken(String audience, String myOwnDid) {
+    private Result<TokenRepresentation> getAuthToken(String participantContextId, String audience, String myOwnDid) {
         var siTokenClaims = Map.of(
                 ISSUED_AT, Instant.now().toString(),
                 AUDIENCE, audience,
                 ISSUER, myOwnDid,
                 SUBJECT, myOwnDid,
                 EXPIRATION_TIME, Instant.now().plus(5, ChronoUnit.MINUTES).toString());
-        return secureTokenService.createToken(siTokenClaims, null);
+        return secureTokenService.createToken(participantContextId, siTokenClaims, null);
     }
 }
