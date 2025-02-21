@@ -79,13 +79,13 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     @Override
-    public ServiceResult<String> initiateRequest(String participantContext, String issuerDid, String requestId, Map<String, String> typesAndFormats) {
+    public ServiceResult<String> initiateRequest(String participantContext, String issuerDid, String holderPid, Map<String, String> typesAndFormats) {
 
         var newRequest = HolderCredentialRequest.Builder.newInstance()
-                .id(requestId)
+                .id(holderPid)
                 .issuerDid(issuerDid)
                 .typesAndFormats(typesAndFormats)
-                .participantContext(participantContext)
+                .participantContextId(participantContext)
                 .state(CREATED.code())
                 .build();
 
@@ -94,7 +94,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         } catch (EdcPersistenceException e) {
             return ServiceResult.badRequest(e.getMessage());
         }
-        return ServiceResult.success(requestId);
+        return ServiceResult.success(holderPid);
     }
 
     @Override
@@ -105,26 +105,26 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 .processor(processRequestsInState(REQUESTED, this::processRequested));
     }
 
-    private @NotNull Result<String> handleCredentialResponse(String issuanceProcessId, HolderCredentialRequest newRequest) {
-        transitionRequested(newRequest, issuanceProcessId);
-        return success(issuanceProcessId);
+    private @NotNull Result<String> handleCredentialResponse(String issuerPid, HolderCredentialRequest newRequest) {
+        transitionRequested(newRequest, issuerPid);
+        return success(issuerPid);
     }
 
     private Result<String> sendCredentialRequest(HolderCredentialRequest request, String endpoint) {
         var issuerDid = request.getIssuerDid();
-        var requestId = request.getId();
+        var holderPid = request.getId();
         var typesAndFormats = request.getTypesAndFormats();
 
         return transactionContext.execute(() -> {
             transition(request.copy().toBuilder(), REQUESTING);
             return getAuthToken(issuerDid, ownDid)
-                    .compose(token -> createCredentialsRequest(token, endpoint, requestId, typesAndFormats))
+                    .compose(token -> createCredentialsRequest(token, endpoint, holderPid, typesAndFormats))
                     .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
         });
     }
 
-    private void transitionRequested(HolderCredentialRequest req, String issuanceProcessId) {
-        transition(req.copy().toBuilder().issuanceProcessId(issuanceProcessId), REQUESTED);
+    private void transitionRequested(HolderCredentialRequest req, String issuerPid) {
+        transition(req.copy().toBuilder().issuerPid(issuerPid), REQUESTED);
     }
 
     private void transitionIssued(HolderCredentialRequest request) {
@@ -154,7 +154,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         var limit = Duration.ofHours(1); //todo: make configurable
         if (age.compareTo(limit) > 0) {
             var msg = "Time limit exceeded: request '%s' has been in state '%s' for '%s' time. Limit = %s"
-                    .formatted(request.getRequestId(), REQUESTED, age, limit);
+                    .formatted(request.getHolderPid(), REQUESTED, age, limit);
             monitor.warning(msg);
 
             transitionError(request, msg);
@@ -202,7 +202,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, Boolean> function) {
-        var filter = new Criterion[]{ hasState(state.code()), isNotPending() };
+        var filter = new Criterion[]{hasState(state.code()), isNotPending()};
         return createProcessor(function, filter);
     }
 
@@ -221,10 +221,10 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * @return true if the request was processed, false otherwise.
      */
     private Boolean processInitial(HolderCredentialRequest holderCredentialRequest) {
-        monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getRequestId()));
+        monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getHolderPid()));
         var result = getCredentialRequestEndpoint(holderCredentialRequest)
                 .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
-                .compose(issuanceProcessId -> handleCredentialResponse(issuanceProcessId, holderCredentialRequest))
+                .compose(issuerPid -> handleCredentialResponse(issuerPid, holderCredentialRequest))
                 .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
 
         return result.succeeded();
@@ -239,9 +239,9 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      */
     private Result<String> sendCredentialsStatusRequest(HolderCredentialRequest request, String endpoint) {
         var issuerDid = request.getIssuerDid();
-        var issuanceProcessId = request.getIssuanceProcessId();
+        var issuerPid = request.getIssuerPid();
         return getAuthToken(issuerDid, ownDid)
-                .compose(token -> createCredentialsStatusRequest(token, endpoint, issuanceProcessId))
+                .compose(token -> createCredentialsStatusRequest(token, endpoint, issuerPid))
                 .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
     }
 
@@ -249,7 +249,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * Creates a {@link Request} out of the given parameters, that targets the CredentialRequestStatus API
      *
      * @param token           a Self-Issued ID token that was obtained from STS
-     * @param endpoint        the base URL of the Issuer. Note that {@code /request/{requestId}} is appended automatically.
+     * @param endpoint        the base URL of the Issuer. Note that {@code /request/{holderPid}} is appended automatically.
      * @param issuerProcessId the {@code issuerProcessId}. The process ID that was generated by the Issuer. NOT the holder-generated request ID!
      */
     private Result<Request> createCredentialsStatusRequest(TokenRepresentation token, String endpoint, String issuerProcessId) {
@@ -265,13 +265,13 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      *
      * @param token                    the token that should be used in the Authorization header of the DCP request
      * @param issuerRequestEndpointUrl the URL of the Issuer's Credential Request API endpoint
-     * @param requestId                the request ID property that will be attached to the request
+     * @param holderPid                the request ID property that will be attached to the request
      * @param typesAndFormats          a map of credential-type-to-format entries. The credential-type is the entry's key, the format is the entry's value
      * @return a Result containing the Issuer-assigned issuance process ID
      */
-    private Result<Request> createCredentialsRequest(TokenRepresentation token, String issuerRequestEndpointUrl, String requestId, Map<String, String> typesAndFormats) {
+    private Result<Request> createCredentialsRequest(TokenRepresentation token, String issuerRequestEndpointUrl, String holderPid, Map<String, String> typesAndFormats) {
         var rqMessage = CredentialRequestMessage.Builder.newInstance();
-        rqMessage.holderPid(requestId);
+        rqMessage.holderPid(holderPid);
 
         typesAndFormats.forEach((type, format) -> rqMessage.credential(new CredentialRequest(type, format, null)));
 

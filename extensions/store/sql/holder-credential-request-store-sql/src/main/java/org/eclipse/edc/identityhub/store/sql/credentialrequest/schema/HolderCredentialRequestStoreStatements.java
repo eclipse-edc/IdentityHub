@@ -59,8 +59,8 @@ public interface HolderCredentialRequestStoreStatements extends StatefulEntitySt
 
     String getSelectStatement();
 
-    default String getIssuanceProcessIdColumn() {
-        return "issuance_process_id";
+    default String getissuerPidColumn() {
+        return "issuer_pid";
     }
 
     default String getPendingColumn() {

@@ -228,19 +228,19 @@ public class VerifiableCredentialApiEndToEndTest {
         void createCredentialRequest(IdentityHubEndToEndTestContext context, HolderCredentialRequestStore store) {
             var port = getFreePort();
             try (var mockedIssuer = ClientAndServer.startClientAndServer(port)) {
-                var issuanceProcessId = "dummy-issuance-id";
+                var issuerPid = "dummy-issuance-id";
                 // prepare DCP credential requests
                 mockedIssuer.when(request()
                                 .withMethod("POST")
                                 .withPath("/api/issuance/credentials"))
                         .respond(response()
-                                .withBody(issuanceProcessId)
+                                .withBody(issuerPid)
                                 .withStatusCode(201));
 
                 // prepare DCP credential status requests. The state machine is so fast, that it may tick over
                 mockedIssuer.when(request()
                                 .withMethod("GET")
-                                .withPath("/api/issuance/request/" + issuanceProcessId))
+                                .withPath("/api/issuance/request/" + issuerPid))
                         .respond(response()
                                 .withBody("""
                                         {
@@ -248,7 +248,7 @@ public class VerifiableCredentialApiEndToEndTest {
                                             "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                                           ],
                                           "type": "CredentialStatus",
-                                          "requestId": "requestId",
+                                          "holderPid": "holderPid",
                                           "status": "RECEIVED"
                                         }
                                         """)
@@ -267,7 +267,7 @@ public class VerifiableCredentialApiEndToEndTest {
                         """
                                 {
                                   "issuerDid": "did:web:issuer",
-                                  "requestId": "test-request-id",
+                                  "holderPid": "test-request-id",
                                   "credentials": [{ "format": "VC1_0_JWT", "credentialType": "TestCredential"}]
                                 }
                                 """;
@@ -289,8 +289,8 @@ public class VerifiableCredentialApiEndToEndTest {
                             assertThat(requests).hasSize(1)
                                     .allSatisfy(t -> {
                                         assertThat(t.getState()).isEqualTo(HolderRequestState.REQUESTED.code());
-                                        assertThat(t.getIssuanceProcessId()).isEqualTo(issuanceProcessId);
-                                        assertThat(t.getRequestId()).isEqualTo("test-request-id");
+                                        assertThat(t.getIssuerPid()).isEqualTo(issuerPid);
+                                        assertThat(t.getHolderPid()).isEqualTo("test-request-id");
                                     });
                         });
             }

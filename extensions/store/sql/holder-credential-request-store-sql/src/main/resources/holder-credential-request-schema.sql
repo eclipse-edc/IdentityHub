@@ -30,7 +30,7 @@ COMMENT ON COLUMN edc_lease.lease_duration IS 'duration of lease in milliseconds
 
 CREATE TABLE IF NOT EXISTS edc_holder_credentialrequest
 (
-    id                          VARCHAR           NOT NULL PRIMARY KEY,
+    id                          VARCHAR           NOT NULL PRIMARY KEY, -- this is also the holderPid
     state                       INTEGER           NOT NULL,
     state_count                 INTEGER DEFAULT 0 NOT NULL,
     state_time_stamp            BIGINT,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS edc_holder_credentialrequest
     participant_context_id      VARCHAR           NOT NULL,
     issuer_did                  VARCHAR           NOT NULL,
     types_and_formats            JSON              NOT NULL,
-    issuance_process_id         VARCHAR
+    issuer_pid         VARCHAR
 );
 
 

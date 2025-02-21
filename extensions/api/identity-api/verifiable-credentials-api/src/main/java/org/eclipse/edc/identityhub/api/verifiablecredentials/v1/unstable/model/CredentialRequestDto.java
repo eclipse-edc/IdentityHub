@@ -23,10 +23,10 @@ import java.util.List;
  * Represents a credential request
  *
  * @param issuerDid   The DID of the issuer.
- * @param requestId   A client-assigned request ID. A random ID will be assigned if null
+ * @param holderPid   A client-assigned request ID. A random ID will be assigned if null
  * @param credentials A list of credential descriptors
  */
 public record CredentialRequestDto(@JsonProperty(required = true) String issuerDid,
-                                   @JsonProperty(required = true) @Nullable String requestId,
+                                   @JsonProperty @Nullable String holderPid,
                                    @JsonProperty(required = true) List<CredentialDescriptor> credentials) {
 }

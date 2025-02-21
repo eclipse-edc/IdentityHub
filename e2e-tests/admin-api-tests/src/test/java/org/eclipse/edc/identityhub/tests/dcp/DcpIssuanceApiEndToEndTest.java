@@ -161,12 +161,12 @@ public class DcpIssuanceApiEndToEndTest {
 
             try (var mockedCredentialService = ClientAndServer.startClientAndServer(port)) {
 
-                var issuanceProcessId = "dummy-issuance-id";
+                var issuerPid = "dummy-issuance-id";
                 mockedCredentialService.when(request()
                                 .withMethod("POST")
                                 .withPath("/api/credentials"))
                         .respond(response()
-                                .withBody(issuanceProcessId)
+                                .withBody(issuerPid)
                                 .withStatusCode(201));
 
 

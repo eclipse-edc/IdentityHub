@@ -35,7 +35,7 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
     private String participantContextId;
     private String issuerDid;
     private Map<String, String> typesAndFormats = new HashMap<>();
-    private String issuanceProcessId;
+    private String issuerPid;
 
     private HolderCredentialRequest() {
         this.state = HolderRequestState.CREATED.code();
@@ -50,9 +50,9 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
     }
 
     /**
-     * This is the unique ID of this request. Identical to {@link HolderCredentialRequest#getId()}
+     * This is the unique ID of this request on the holder side.. Identical to {@link HolderCredentialRequest#getId()}
      */
-    public String getRequestId() {
+    public String getHolderPid() {
         return getId();
     }
 
@@ -67,8 +67,8 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
                 .id(id)
                 .typesAndFormats(Map.copyOf(typesAndFormats))
                 .issuerDid(issuerDid)
-                .participantContext(participantContextId)
-                .issuanceProcessId(issuanceProcessId)
+                .participantContextId(participantContextId)
+                .issuerPid(issuerPid)
                 .errorDetail(errorDetail)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
@@ -110,8 +110,8 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
      * The process ID that the issuer returned in the response to the credential request. Note that this is <strong>not</strong>
      * the ID assigned by the holder, when <em>making</em> the request! This ID is needed for status inquiries, etc.
      */
-    public String getIssuanceProcessId() {
-        return issuanceProcessId;
+    public String getIssuerPid() {
+        return issuerPid;
     }
 
     public static final class Builder extends StatefulEntity.Builder<HolderCredentialRequest, Builder> {
@@ -127,6 +127,11 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         @Override
         public Builder id(String id) {
             this.entity.id = id;
+            return this;
+        }
+
+        @Override
+        public Builder self() {
             return this;
         }
 
@@ -150,18 +155,13 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
             return this;
         }
 
-        public Builder participantContext(String participantContextId) {
+        public Builder participantContextId(String participantContextId) {
             this.entity.participantContextId = participantContextId;
             return this;
         }
 
-        public Builder issuanceProcessId(String issuanceProcessId) {
-            this.entity.issuanceProcessId = issuanceProcessId;
-            return this;
-        }
-
-        @Override
-        public Builder self() {
+        public Builder issuerPid(String issuerPid) {
+            this.entity.issuerPid = issuerPid;
             return this;
         }
 

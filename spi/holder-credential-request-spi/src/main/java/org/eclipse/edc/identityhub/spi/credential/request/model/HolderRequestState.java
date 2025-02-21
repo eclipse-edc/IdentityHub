@@ -29,7 +29,7 @@ public enum HolderRequestState {
      */
     REQUESTING(200),
     /**
-     * The Issuer sent a response to the {@link HolderCredentialRequest}, and the {@link HolderCredentialRequest#getIssuanceProcessId()}
+     * The Issuer sent a response to the {@link HolderCredentialRequest}, and the {@link HolderCredentialRequest#getIssuerPid()}
      * contains the Issuer-side ID.
      * Note that failed requests transition to the {@link HolderRequestState#ERROR} state
      */
