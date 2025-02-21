@@ -531,7 +531,7 @@ paths:
       responses:
         "201":
           description: The request was processed and sent to the issuer. The issuer-created
-            ID is returned in the response.
+            ID ("issuerPid") is returned in the response.
           content:
             application/json:
               schema:
@@ -562,7 +562,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantContextId}/credentials/request/{issuanceProcessId}:
+  /v1alpha/participants/{participantContextId}/credentials/request/{issuerPid}:
     get:
       tags:
       - Verifiable Credentials
@@ -577,7 +577,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: issuanceProcessId
+      - name: issuerPid
         in: path
         description: The issuer-assigned ID of the issuance process
         required: true
@@ -592,7 +592,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: issuanceProcessId
+      - name: issuerPid
         in: path
         required: true
         style: simple
@@ -1651,16 +1651,15 @@ components:
       required:
       - credentials
       - issuerDid
-      - requestId
       type: object
       properties:
         credentials:
           type: array
           items:
             $ref: "#/components/schemas/CredentialDescriptor"
-        issuerDid:
+        holderPid:
           type: string
-        requestId:
+        issuerDid:
           type: string
     CredentialSchema:
       type: object
@@ -1741,11 +1740,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CredentialDescriptor"
-        issuanceProcessId:
+        holderPid:
           type: string
         issuerDid:
           type: string
-        requestId:
+        issuerPid:
           type: string
         status:
           type: string
