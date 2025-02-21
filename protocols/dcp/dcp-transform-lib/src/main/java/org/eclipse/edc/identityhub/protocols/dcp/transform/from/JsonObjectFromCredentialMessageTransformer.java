@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.transform.from;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
+import jakarta.json.JsonBuilderFactory;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
@@ -26,17 +27,23 @@ import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIAL_MESSAGE_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 
 public class JsonObjectFromCredentialMessageTransformer extends AbstractNamespaceAwareJsonLdTransformer<CredentialMessage, JsonObject> {
 
     private final TypeManager typeManager;
     private final String typeContext;
+    private final JsonBuilderFactory factory;
 
-    public JsonObjectFromCredentialMessageTransformer(TypeManager typeManager, String typeContext, JsonLdNamespace namespace) {
+    public JsonObjectFromCredentialMessageTransformer(JsonBuilderFactory factory, TypeManager typeManager, String typeContext, JsonLdNamespace namespace) {
         super(CredentialMessage.class, JsonObject.class, namespace);
         this.typeManager = typeManager;
         this.typeContext = typeContext;
+        this.factory = factory;
     }
 
     @Override
@@ -50,8 +57,10 @@ public class JsonObjectFromCredentialMessageTransformer extends AbstractNamespac
                 .build();
 
         return Json.createObjectBuilder()
-                .add(TYPE, forNamespace(CredentialMessage.CREDENTIAL_MESSAGE_TERM))
-                .add(forNamespace(CredentialMessage.CREDENTIALS_TERM), jsonCredentials)
+                .add(TYPE, forNamespace(CREDENTIAL_MESSAGE_TERM))
+                .add(forNamespace(HOLDER_PID_TERM), createId(factory, credentialRequestMessage.getHolderPid()))
+                .add(forNamespace(ISSUER_PID_TERM), createId(factory, credentialRequestMessage.getIssuerPid()))
+                .add(forNamespace(CREDENTIALS_TERM), jsonCredentials)
                 .build();
     }
 

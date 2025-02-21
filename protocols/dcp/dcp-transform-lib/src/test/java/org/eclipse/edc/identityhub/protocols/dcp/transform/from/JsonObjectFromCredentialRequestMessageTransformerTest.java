@@ -15,6 +15,8 @@
 package org.eclipse.edc.identityhub.protocols.dcp.transform.from;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.json.Json;
+import jakarta.json.JsonBuilderFactory;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
@@ -25,11 +27,14 @@ import org.eclipse.edc.transform.spi.TransformerContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_HOLDER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_TERM;
+import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -41,7 +46,8 @@ public class JsonObjectFromCredentialRequestMessageTransformerTest {
     private final TransformerContext context = mock();
     private final ObjectMapper mapper = JacksonJsonLd.createObjectMapper();
     private final TypeManager typeManager = mock();
-    private final JsonObjectFromCredentialRequestMessageTransformer transformer = new JsonObjectFromCredentialRequestMessageTransformer(typeManager, "test", DSPACE_DCP_NAMESPACE_V_1_0);
+    private final JsonBuilderFactory factory = Json.createBuilderFactory(Map.of());
+    private final JsonObjectFromCredentialRequestMessageTransformer transformer = new JsonObjectFromCredentialRequestMessageTransformer(factory, typeManager, "test", DSPACE_DCP_NAMESPACE_V_1_0);
 
     @BeforeEach
     void setUp() {
@@ -61,7 +67,7 @@ public class JsonObjectFromCredentialRequestMessageTransformerTest {
 
         assertThat(jsonLd).isNotNull();
         assertThat(jsonLd.getString(TYPE)).isEqualTo(toIri(CREDENTIAL_REQUEST_MESSAGE_TERM));
-        assertThat(jsonLd.getString(toIri(CREDENTIAL_REQUEST_MESSAGE_HOLDER_PID_TERM))).isEqualTo("test-request-id");
+        assertThat(jsonLd.getJsonObject(toIri(CREDENTIAL_REQUEST_MESSAGE_HOLDER_PID_TERM)).getString(ID)).isEqualTo("test-request-id");
         assertThat(jsonLd.getJsonArray(toIri(CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM))).hasSize(1)
                 .first().satisfies(jsonValue -> {
                     var credentials = jsonValue.asJsonObject().getJsonArray(JsonLdKeywords.VALUE);
