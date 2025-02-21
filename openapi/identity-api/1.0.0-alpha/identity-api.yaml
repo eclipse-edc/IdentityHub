@@ -1826,6 +1826,10 @@ components:
           format: int64
         participantContextId:
           type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: object
         roles:
           type: array
           items:
