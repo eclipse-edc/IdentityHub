@@ -43,10 +43,14 @@ import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -73,6 +77,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("JUnitMalformedDeclaration")
 public class ParticipantContextApiEndToEndTest {
 
     abstract static class Tests {
@@ -613,8 +618,22 @@ public class ParticipantContextApiEndToEndTest {
 
     @Nested
     @PostgresqlIntegrationTest
-    @ExtendWith(IdentityHubEndToEndExtension.Postgres.class)
     class Postgres extends Tests {
+
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        private static final String DB_NAME = "runtime";
+
+        @Order(1)
+        @RegisterExtension
+        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
+            POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
+        };
+
+        @RegisterExtension
+        @Order(2)
+        static final IdentityHubEndToEndExtension RUNTIME = IdentityHubEndToEndExtension.Postgres.withConfig((it) -> POSTGRESQL_EXTENSION.configFor(DB_NAME));
 
     }
 }

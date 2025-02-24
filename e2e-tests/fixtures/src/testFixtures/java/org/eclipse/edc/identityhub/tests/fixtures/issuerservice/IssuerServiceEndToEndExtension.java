@@ -14,22 +14,16 @@
 
 package org.eclipse.edc.identityhub.tests.fixtures.issuerservice;
 
-import org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
 import org.eclipse.edc.junit.extensions.RuntimePerClassExtension;
 import org.eclipse.edc.spi.system.configuration.Config;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
-import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndInstance;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 
-import java.util.HashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import static org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService.jdbcUrl;
-import static org.eclipse.edc.util.io.Ports.getFreePort;
 
 /**
  * Base extension of {@link RuntimePerClassExtension} that injects the {@link IssuerServiceEndToEndTestContext}
@@ -108,31 +102,26 @@ public abstract class IssuerServiceEndToEndExtension extends RuntimePerClassExte
      */
     public static class Postgres extends IssuerServiceEndToEndExtension {
 
-        private static final String DB_NAME = "issuerservice";
-        private static final Integer DB_PORT = getFreePort();
-        private final PostgresSqlService postgresSqlService;
 
         public Postgres() {
             this((it) -> ConfigFactory.empty());
         }
 
         protected Postgres(Function<IssuerServiceRuntimeConfiguration, Config> configProvider) {
-            super(context(DB_NAME, DB_PORT, configProvider));
-            postgresSqlService = new PostgresSqlService(DB_NAME, DB_PORT);
+            super(context(configProvider));
         }
 
         public static Postgres withConfig(Function<IssuerServiceRuntimeConfiguration, Config> configProvider) {
             return new Postgres(configProvider);
         }
-        
-        private static IssuerServiceEndToEndTestContext context(String dbName, Integer port, Function<IssuerServiceRuntimeConfiguration, Config> configProvider) {
+
+        private static IssuerServiceEndToEndTestContext context(Function<IssuerServiceRuntimeConfiguration, Config> configProvider) {
             var configuration = IssuerServiceRuntimeConfiguration.Builder.newInstance()
                     .name("issuerservice")
                     .id("issuerservice")
                     .build();
 
-            return context(configuration, () -> postgresqlConfiguration(dbName, port)
-                    .merge(configProvider.apply(configuration)));
+            return context(configuration, () -> configProvider.apply(configuration));
         }
 
         private static IssuerServiceEndToEndTestContext context(IssuerServiceRuntimeConfiguration configuration, Supplier<Config> configSupplier) {
@@ -148,27 +137,6 @@ public abstract class IssuerServiceEndToEndExtension extends RuntimePerClassExte
             return new IssuerServiceEndToEndTestContext(runtime, configuration);
         }
 
-        private static Config postgresqlConfiguration(String dbName, Integer port) {
-            var jdbcUrl = jdbcUrl(dbName, port);
-            return ConfigFactory.fromMap(new HashMap<>() {
-                {
-                    put("edc.datasource.default.url", jdbcUrl);
-                    put("edc.datasource.default.user", PostgresqlEndToEndInstance.USER);
-                    put("edc.datasource.default.password", PostgresqlEndToEndInstance.PASSWORD);
-                }
-            });
-        }
 
-        @Override
-        public void beforeAll(ExtensionContext extensionContext) {
-            postgresSqlService.start();
-            super.beforeAll(extensionContext);
-        }
-
-        @Override
-        public void afterAll(ExtensionContext extensionContext) {
-            super.afterAll(extensionContext);
-            postgresSqlService.stop();
-        }
     }
 }

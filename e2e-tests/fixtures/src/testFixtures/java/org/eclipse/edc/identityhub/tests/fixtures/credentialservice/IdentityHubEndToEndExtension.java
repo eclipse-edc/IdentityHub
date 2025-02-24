@@ -14,22 +14,16 @@
 
 package org.eclipse.edc.identityhub.tests.fixtures.credentialservice;
 
-import org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
 import org.eclipse.edc.junit.extensions.RuntimePerClassExtension;
 import org.eclipse.edc.spi.system.configuration.Config;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
-import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndInstance;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 
-import java.util.HashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import static org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService.jdbcUrl;
-import static org.eclipse.edc.util.io.Ports.getFreePort;
 
 /**
  * Base extension of {@link RuntimePerClassExtension} that injects the {@link IdentityHubEndToEndTestContext}
@@ -108,36 +102,27 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
      */
     public static class Postgres extends IdentityHubEndToEndExtension {
 
-        private static final String DB_NAME = "runtime";
-        private static final Integer DB_PORT = getFreePort();
-        private final PostgresSqlService postgresSqlService;
 
         protected Postgres() {
             this((it) -> ConfigFactory.empty());
         }
 
         protected Postgres(Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
-            super(context(DB_NAME, DB_PORT, configProvider));
-            postgresSqlService = new PostgresSqlService(DB_NAME, DB_PORT);
+            super(context(configProvider));
         }
 
         public static Postgres withConfig(Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
             return new Postgres(configProvider);
         }
-
-        public static IdentityHubEndToEndTestContext context(String dbName, Integer port) {
-            return context(dbName, port, (it) -> ConfigFactory.empty());
-        }
-
-        private static IdentityHubEndToEndTestContext context(String dbName, Integer port, Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
+        
+        private static IdentityHubEndToEndTestContext context(Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
 
             var configuration = IdentityHubRuntimeConfiguration.Builder.newInstance()
                     .name("identity-hub")
                     .id("identity-hub")
                     .build();
 
-            return context(configuration, () -> postgresqlConfiguration(dbName, port)
-                    .merge(configProvider.apply(configuration)));
+            return context(configuration, () -> configProvider.apply(configuration));
         }
 
         private static IdentityHubEndToEndTestContext context(IdentityHubRuntimeConfiguration configuration, Supplier<Config> configSupplier) {
@@ -151,29 +136,6 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
                     .configurationProvider(configSupplier);
 
             return new IdentityHubEndToEndTestContext(runtime, configuration);
-        }
-
-        private static Config postgresqlConfiguration(String dbName, Integer port) {
-            var jdbcUrl = jdbcUrl(dbName, port);
-            return ConfigFactory.fromMap(new HashMap<>() {
-                {
-                    put("edc.datasource.default.url", jdbcUrl);
-                    put("edc.datasource.default.user", PostgresqlEndToEndInstance.USER);
-                    put("edc.datasource.default.password", PostgresqlEndToEndInstance.PASSWORD);
-                }
-            });
-        }
-
-        @Override
-        public void beforeAll(ExtensionContext extensionContext) {
-            postgresSqlService.start();
-            super.beforeAll(extensionContext);
-        }
-
-        @Override
-        public void afterAll(ExtensionContext extensionContext) {
-            super.afterAll(extensionContext);
-            postgresSqlService.stop();
         }
     }
 }

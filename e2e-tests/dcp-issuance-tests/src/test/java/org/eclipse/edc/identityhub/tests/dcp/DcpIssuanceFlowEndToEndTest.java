@@ -38,12 +38,15 @@ import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
@@ -52,6 +55,8 @@ import java.util.Map;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.edc.identityhub.tests.dcp.fixtures.IssuanceFlowConfig.identityHubConfig;
+import static org.eclipse.edc.identityhub.tests.dcp.fixtures.IssuanceFlowConfig.issuerConfig;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -214,13 +219,30 @@ public class DcpIssuanceFlowEndToEndTest {
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
 
+        @Order(0)
         @RegisterExtension
-        static IssuerServiceEndToEndExtension issuerService = IssuerServiceEndToEndExtension.Postgres
-                .withConfig(IssuanceFlowConfig::issuerConfig);
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        private static final String ISSUER = "issuer";
+        
+        @Order(2)
+        @RegisterExtension
+        static final IssuerServiceEndToEndExtension ISSUER_SERVICE = IssuerServiceEndToEndExtension.Postgres
+                .withConfig(cfg ->
+                        issuerConfig(cfg).merge(POSTGRESQL_EXTENSION.configFor(ISSUER)));
+        private static final String IDENTITY_HUB = "identityhub";
+        @Order(1) // must be the first extension to be evaluated since it starts the DB server
+        @RegisterExtension
+        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
+            POSTGRESQL_EXTENSION.createDatabase(ISSUER);
+            POSTGRESQL_EXTENSION.createDatabase(IDENTITY_HUB);
+        };
 
+        @Order(2)
         @RegisterExtension
-        static IdentityHubEndToEndExtension credentialService = IdentityHubEndToEndExtension.Postgres
-                .withConfig(IssuanceFlowConfig::identityHubConfig);
+        static final IdentityHubEndToEndExtension CREDENTIAL_SERVICE = IdentityHubEndToEndExtension.Postgres
+                .withConfig((cfg) ->
+                        identityHubConfig(cfg).merge(POSTGRESQL_EXTENSION.configFor(IDENTITY_HUB)));
+
 
     }
 }

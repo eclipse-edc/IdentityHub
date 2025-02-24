@@ -36,13 +36,17 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Instant;
 import java.util.Map;
@@ -55,6 +59,7 @@ import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CRED
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET;
 
+@SuppressWarnings("JUnitMalformedDeclaration")
 public class CredentialApiEndToEndTest {
     public static final String SIGNING_KEY_ALIAS = "signing-key";
     public static final int STATUS_LIST_INDEX = 94567;
@@ -244,9 +249,24 @@ public class CredentialApiEndToEndTest {
 
     @Nested
     @PostgresqlIntegrationTest
-    @ExtendWith(IssuerServiceEndToEndExtension.Postgres.class)
     class Postgres extends Tests {
 
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+
+        private static final String ISSUER = "issuer";
+
+        @Order(1)
+        @RegisterExtension
+        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
+            POSTGRESQL_EXTENSION.createDatabase(ISSUER);
+        };
+
+        @Order(2)
+        @RegisterExtension
+        static final IssuerServiceEndToEndExtension ISSUER_SERVICE = IssuerServiceEndToEndExtension.Postgres
+                .withConfig(cfg -> POSTGRESQL_EXTENSION.configFor(ISSUER));
     }
 
 }
