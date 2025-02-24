@@ -55,7 +55,7 @@ In this case the standalone runtime must implement its own PKI based on DID docu
 aspects would need to be implemented:
 
 - key management: to rotate, revoke, add, ... key pairs
-- DID management: public keys need to be added to the DID document so that verifiers can resolve it
+- DID management: public keys need to be added/updated/removed to/from the DID document so that verifiers can resolve them
 - account mapping: participant contexts (in IdentityHub) must be mapped to STS accounts, so that IdentityHub can act _on
   behalf_ of the correct participant. This is particularly relevant when making credential issuance requests.
 
@@ -66,3 +66,5 @@ for that IdP will most likely become necessary, so that it can create DCP-compli
 extension must be developed in IdentityHub that maps participant contexts onto IdP user principals.
 
 Note that in this scenario the IdP is responsible for key management and a DCP-compliant PKI.
+
+Note also that neither of these deployment scenarios is recommended or supported by the EDC project.
