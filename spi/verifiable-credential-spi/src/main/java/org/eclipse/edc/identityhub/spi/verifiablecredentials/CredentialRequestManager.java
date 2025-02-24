@@ -46,9 +46,8 @@ public interface CredentialRequestManager extends StateEntityManager {
     /**
      * Finds a {@link HolderCredentialRequest} for the given participant context, with the given ID
      *
-     * @param participantContextId The Participant Context ID of the requestor
-     * @param holderPid            The (holder-side) ID of the request. Not to be confused with issuerPid.
+     * @param holderPid The (holder-side) ID of the request. Not to be confused with issuerPid.
      * @return the holder request, or null if not found
      */
-    @Nullable HolderCredentialRequest findById(String participantContextId, String holderPid);
+    @Nullable HolderCredentialRequest findById(String holderPid);
 }

@@ -526,7 +526,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     class GetCredentialRequest {
         @Test
         void success() {
-            when(credentialRequestService.findById(any(), any()))
+            when(credentialRequestService.findById(any()))
                     .thenReturn(HolderCredentialRequest.Builder.newInstance()
                             .issuerDid("did:web:issuer")
                             .participantContextId("test-participant")

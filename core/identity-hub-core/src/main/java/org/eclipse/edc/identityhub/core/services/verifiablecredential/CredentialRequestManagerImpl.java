@@ -97,7 +97,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     @Override
-    public @Nullable HolderCredentialRequest findById(String participantContextId, String holderPid) {
+    public @Nullable HolderCredentialRequest findById(String holderPid) {
         return transactionContext.execute(() -> store.findById(holderPid));
     }
 

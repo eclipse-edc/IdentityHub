@@ -189,7 +189,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
 
-        return ofNullable(credentialRequestService.findById(participantContextId, holderPid))
+        return ofNullable(credentialRequestService.findById(holderPid))
                 .map(req -> new HolderCredentialRequestDto(req.getIssuerDid(), req.getHolderPid(), req.getIssuerPid(), req.stateAsString(), List.of(), req.getTypesAndFormats()))
                 .orElseThrow(() -> new ObjectNotFoundException(HolderCredentialRequest.class, holderPid));
     }
