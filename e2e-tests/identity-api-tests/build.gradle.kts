@@ -15,6 +15,7 @@ dependencies {
 
     // needed for the Participant
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
+    testImplementation(testFixtures(project(":e2e-tests:fixtures")))
     testImplementation(testFixtures(libs.edc.testfixtures.managementapi))
     testImplementation(libs.nimbus.jwt)
     testImplementation(project(":protocols:dcp:dcp-spi"))

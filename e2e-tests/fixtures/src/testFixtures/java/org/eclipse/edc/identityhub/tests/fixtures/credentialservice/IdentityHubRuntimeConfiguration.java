@@ -12,35 +12,35 @@
  *
  */
 
-package org.eclipse.edc.identityhub.tests.fixtures;
+package org.eclipse.edc.identityhub.tests.fixtures.credentialservice;
 
-import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.identityhub.tests.fixtures.common.AbstractRuntimeConfiguration;
+import org.eclipse.edc.identityhub.tests.fixtures.common.Endpoint;
+import org.eclipse.edc.spi.system.configuration.Config;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.restassured.RestAssured.given;
 import static org.eclipse.edc.boot.BootServicesExtension.PARTICIPANT_ID;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 
 /**
  * The IdentityHubRuntimeConfiguration class represents an IdentityHub Runtime configuration and provides various information, such as API endpoints
  */
-public class IdentityHubRuntimeConfiguration {
+public class IdentityHubRuntimeConfiguration extends AbstractRuntimeConfiguration {
 
     private Endpoint presentationEndpoint;
     private Endpoint identityEndpoint;
     private Endpoint storageEndpoint;
-    private String id;
-    private String name;
 
     public Endpoint getPresentationEndpoint() {
         return presentationEndpoint;
     }
 
-    public Map<String, String> config() {
-        return new HashMap<>() {
+    public Config config() {
+        return ConfigFactory.fromMap(new HashMap<>() {
             {
                 put(PARTICIPANT_ID, id);
                 put("web.http.port", String.valueOf(getFreePort()));
@@ -55,6 +55,8 @@ public class IdentityHubRuntimeConfiguration {
                 put("web.http.sts.path", "/api/sts");
                 put("web.http.accounts.port", String.valueOf(getFreePort()));
                 put("web.http.accounts.path", "/api/accounts");
+                put("web.http.did.port", String.valueOf(didEndpoint.getUrl().getPort()));
+                put("web.http.did.path", didEndpoint.getUrl().getPath());
                 put("edc.runtime.id", name);
                 put("edc.ih.iam.id", "did:web:consumer");
                 put("edc.sql.schema.autocreate", "true");
@@ -62,7 +64,7 @@ public class IdentityHubRuntimeConfiguration {
                 put("edc.iam.sts.publickey.id", "test-public-key");
                 put("edc.iam.sts.privatekey.alias", "user1-alias"); //this must be "username"-alias
             }
-        };
+        });
     }
 
     public Endpoint getIdentityApiEndpoint() {
@@ -73,28 +75,18 @@ public class IdentityHubRuntimeConfiguration {
         return storageEndpoint;
     }
 
-    public static final class Builder {
-        private final IdentityHubRuntimeConfiguration participant;
+    public static final class Builder extends AbstractRuntimeConfiguration.Builder<IdentityHubRuntimeConfiguration, Builder> {
 
         private Builder() {
-            participant = new IdentityHubRuntimeConfiguration();
+            super(new IdentityHubRuntimeConfiguration());
         }
 
         public static Builder newInstance() {
             return new Builder();
         }
 
-        public Builder id(String id) {
-            this.participant.id = id;
-            return this;
-        }
-
-        public Builder name(String name) {
-            this.participant.name = name;
-            return this;
-        }
-
         public IdentityHubRuntimeConfiguration build() {
+            super.build();
             participant.presentationEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/presentation"), Map.of());
             participant.identityEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/identity"), Map.of());
             participant.storageEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/storage"), Map.of());
@@ -102,21 +94,4 @@ public class IdentityHubRuntimeConfiguration {
         }
     }
 
-    public static class Endpoint {
-        private final URI url;
-        private final Map<String, String> headers;
-
-        public Endpoint(URI url, Map<String, String> headers) {
-            this.url = url;
-            this.headers = headers;
-        }
-
-        public RequestSpecification baseRequest() {
-            return given().baseUri(this.url.toString()).headers(this.headers);
-        }
-
-        public URI getUrl() {
-            return this.url;
-        }
-    }
 }

@@ -12,17 +12,21 @@
  *
  */
 
-package org.eclipse.edc.identityhub.tests.fixtures;
+package org.eclipse.edc.identityhub.tests.fixtures.issuerservice;
 
+import org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
 import org.eclipse.edc.junit.extensions.RuntimePerClassExtension;
+import org.eclipse.edc.spi.system.configuration.Config;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndInstance;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 
 import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService.jdbcUrl;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
@@ -64,20 +68,35 @@ public abstract class IssuerServiceEndToEndExtension extends RuntimePerClassExte
     public static class InMemory extends IssuerServiceEndToEndExtension {
 
         public InMemory() {
-            super(context());
+            this((it) -> ConfigFactory.empty());
+        }
+
+        protected InMemory(Function<IssuerServiceRuntimeConfiguration, Config> configProvider) {
+            super(context(configProvider));
+        }
+
+        public static InMemory withConfig(Function<IssuerServiceRuntimeConfiguration, Config> configProvider) {
+            return new InMemory(configProvider);
         }
 
         public static IssuerServiceEndToEndTestContext context() {
+            return context((it) -> ConfigFactory.empty());
+        }
+
+        public static IssuerServiceEndToEndTestContext context(Function<IssuerServiceRuntimeConfiguration, Config> configProvider) {
             var configuration = IssuerServiceRuntimeConfiguration.Builder.newInstance()
                     .name("issuerservice")
                     .id("issuerservice")
                     .build();
 
+            return context(configuration, () -> configProvider.apply(configuration));
+        }
+
+        public static IssuerServiceEndToEndTestContext context(IssuerServiceRuntimeConfiguration configuration, Supplier<Config> configSupplier) {
             var runtime = new EmbeddedRuntime(
                     "issuerservice",
-                    configuration.config(),
                     ":dist:bom:issuerservice-with-sts-bom"
-            );
+            ).configurationProvider(configuration::config).configurationProvider(configSupplier);
 
             return new IssuerServiceEndToEndTestContext(runtime, configuration);
         }
@@ -94,41 +113,50 @@ public abstract class IssuerServiceEndToEndExtension extends RuntimePerClassExte
         private final PostgresSqlService postgresSqlService;
 
         public Postgres() {
-            super(context(DB_NAME, DB_PORT));
-            postgresSqlService = new PostgresSqlService(DB_NAME, DB_PORT);
-
+            this((it) -> ConfigFactory.empty());
         }
 
-        public static IssuerServiceEndToEndTestContext context(String dbName, Integer port) {
+        protected Postgres(Function<IssuerServiceRuntimeConfiguration, Config> configProvider) {
+            super(context(DB_NAME, DB_PORT, configProvider));
+            postgresSqlService = new PostgresSqlService(DB_NAME, DB_PORT);
+        }
 
+        public static Postgres withConfig(Function<IssuerServiceRuntimeConfiguration, Config> configProvider) {
+            return new Postgres(configProvider);
+        }
+        
+        private static IssuerServiceEndToEndTestContext context(String dbName, Integer port, Function<IssuerServiceRuntimeConfiguration, Config> configProvider) {
             var configuration = IssuerServiceRuntimeConfiguration.Builder.newInstance()
                     .name("issuerservice")
                     .id("issuerservice")
                     .build();
 
-            var cfg = new HashMap<>(configuration.config());
-            cfg.putAll(postgresqlConfiguration(dbName, port));
+            return context(configuration, () -> postgresqlConfiguration(dbName, port)
+                    .merge(configProvider.apply(configuration)));
+        }
+
+        private static IssuerServiceEndToEndTestContext context(IssuerServiceRuntimeConfiguration configuration, Supplier<Config> configSupplier) {
 
             var runtime = new EmbeddedRuntime(
                     "issuerservice-pg",
-                    cfg,
                     ":dist:bom:issuerservice-with-sts-bom",
                     ":dist:bom:issuerservice-feature-sql-bom"
 
-            );
+            ).configurationProvider(configuration::config)
+                    .configurationProvider(configSupplier);
 
             return new IssuerServiceEndToEndTestContext(runtime, configuration);
         }
 
-        private static Map<String, String> postgresqlConfiguration(String dbName, Integer port) {
+        private static Config postgresqlConfiguration(String dbName, Integer port) {
             var jdbcUrl = jdbcUrl(dbName, port);
-            return new HashMap<>() {
+            return ConfigFactory.fromMap(new HashMap<>() {
                 {
                     put("edc.datasource.default.url", jdbcUrl);
                     put("edc.datasource.default.user", PostgresqlEndToEndInstance.USER);
                     put("edc.datasource.default.password", PostgresqlEndToEndInstance.PASSWORD);
                 }
-            };
+            });
         }
 
         @Override

@@ -20,6 +20,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
@@ -37,6 +38,7 @@ import org.eclipse.edc.spi.retry.ExponentialWaitStrategy;
 import org.eclipse.edc.statemachine.retry.EntityRetryProcessConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -44,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.APPROVED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERED;
@@ -59,7 +62,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class IssuanceProcessManagerImplTest {
-
 
     private final IssuanceProcessStore issuanceProcessStore = mock();
     private final Monitor monitor = mock();
@@ -104,6 +106,7 @@ public class IssuanceProcessManagerImplTest {
                 .issuer(new Issuer("did:example:issuer"))
                 .issuanceDate(Instant.now())
                 .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id("did:example:holder")
                         .claims(Map.of("member", "Alice"))
                         .build())
                 .build());
@@ -125,11 +128,18 @@ public class IssuanceProcessManagerImplTest {
 
         await().untilAsserted(() -> {
             // raw vc should be null
-            verify(credentialStore).create(argThat(
-                    cred -> cred.getState() == VcStatus.ISSUED.code() &&
-                            cred.getVerifiableCredential().rawVc() == null &&
-                            cred.getVerifiableCredential().format().equals(credential.format()) &&
-                            cred.getVerifiableCredential().credential().equals(credential.credential())));
+
+            var captor = ArgumentCaptor.forClass(VerifiableCredentialResource.class);
+            verify(credentialStore).create(captor.capture());
+            var cred = captor.getValue();
+
+            assertThat(cred.getState()).isEqualTo(VcStatus.ISSUED.code());
+            assertThat(cred.getHolderId()).isEqualTo("did:example:holder");
+            assertThat(cred.getIssuerId()).isEqualTo("did:example:issuer");
+            assertThat(cred.getVerifiableCredential().rawVc()).isNull();
+            assertThat(cred.getVerifiableCredential().format()).isEqualTo(credential.format());
+            assertThat(cred.getVerifiableCredential().credential()).isEqualTo(credential.credential());
+
             verify(issuanceProcessStore).save(argThat(p -> p.getState() == DELIVERED.code()));
         });
     }

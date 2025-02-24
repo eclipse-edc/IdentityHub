@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.tests;
 
-import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;

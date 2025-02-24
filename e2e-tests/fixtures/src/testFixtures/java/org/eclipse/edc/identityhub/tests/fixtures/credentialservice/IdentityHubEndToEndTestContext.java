@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.tests.fixtures;
+package org.eclipse.edc.identityhub.tests.fixtures.credentialservice;
 
 import com.nimbusds.jose.jwk.Curve;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
@@ -24,6 +24,8 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.participantcontext.ApiTokenGenerator;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -38,31 +40,35 @@ import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantConte
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.tests.fixtures.common.AbstractTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.common.Endpoint;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+
+import static java.lang.String.format;
+import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 
 /**
  * Identity Hub end to end context used in tests extended with {@link IdentityHubEndToEndExtension}
  */
-public class IdentityHubEndToEndTestContext {
+public class IdentityHubEndToEndTestContext extends AbstractTestContext {
 
     public static final String SUPER_USER = "super-user";
 
-    private final EmbeddedRuntime runtime;
     private final IdentityHubRuntimeConfiguration configuration;
 
     public IdentityHubEndToEndTestContext(EmbeddedRuntime runtime, IdentityHubRuntimeConfiguration configuration) {
-        this.runtime = runtime;
+        super(runtime);
         this.configuration = configuration;
     }
 
@@ -70,34 +76,6 @@ public class IdentityHubEndToEndTestContext {
         return runtime;
     }
 
-    public String createParticipant(String participantContextId) {
-        return createParticipant(participantContextId, List.of());
-    }
-
-    public String createParticipant(String participantContextId, List<String> roles, boolean isActive) {
-        var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId(participantContextId)
-                .active(isActive)
-                .roles(roles)
-                .serviceEndpoint(new Service("test-service-id", "test-type", "http://foo.bar.com"))
-                .did("did:web:" + participantContextId)
-                .key(KeyDescriptor.Builder.newInstance()
-                        .privateKeyAlias(participantContextId + "-alias")
-                        .resourceId(participantContextId + "-resource")
-                        .keyId(participantContextId + "-key")
-                        .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"))
-                        .build())
-                .build();
-        var srv = runtime.getService(ParticipantContextService.class);
-        return srv.createParticipantContext(manifest)
-                .orElseThrow(f -> new EdcException(f.getFailureDetail()))
-                .apiKey();
-    }
-
-
-    public String createParticipant(String participantContextId, List<String> roles) {
-        return createParticipant(participantContextId, roles, true);
-    }
 
     public VerifiableCredential createCredential() {
         return VerifiableCredential.Builder.newInstance()
@@ -127,6 +105,11 @@ public class IdentityHubEndToEndTestContext {
         return createParticipant(SUPER_USER, List.of(ServicePrincipal.ROLE_ADMIN));
     }
 
+    public Service createServiceEndpoint(String participantContextId) {
+        var credentialServiceEndpoint = format("%s/%s", configuration.getStorageEndpoint().getUrl(), storageApiBasePath(participantContextId));
+        return new Service("credential-service-id", "CredentialService", credentialServiceEndpoint);
+    }
+
     public String storeParticipant(ParticipantContext pc) {
         var store = runtime.getService(ParticipantContextStore.class);
 
@@ -137,15 +120,15 @@ public class IdentityHubEndToEndTestContext {
         return token;
     }
 
-    public IdentityHubRuntimeConfiguration.Endpoint getIdentityApiEndpoint() {
+    public Endpoint getIdentityApiEndpoint() {
         return configuration.getIdentityApiEndpoint();
     }
 
-    public IdentityHubRuntimeConfiguration.Endpoint getPresentationEndpoint() {
+    public Endpoint getPresentationEndpoint() {
         return configuration.getPresentationEndpoint();
     }
 
-    public IdentityHubRuntimeConfiguration.Endpoint getStorageEndpoint() {
+    public Endpoint getStorageEndpoint() {
         return configuration.getStorageEndpoint();
     }
 
@@ -158,6 +141,11 @@ public class IdentityHubEndToEndTestContext {
     public Collection<KeyPairResource> getKeyPairsForParticipant(String participantContextId) {
         return runtime.getService(KeyPairResourceStore.class).query(ParticipantResource.queryByParticipantContextId(participantContextId).build())
                 .getContent();
+    }
+
+    public Collection<HolderCredentialRequest> getCredentialRequestForParticipant(String participantContextId) {
+        return runtime.getService(HolderCredentialRequestStore.class)
+                .query(ParticipantResource.queryByParticipantContextId(participantContextId).build());
     }
 
     public KeyDescriptor createKeyPair(String participantContextId) {
@@ -209,16 +197,17 @@ public class IdentityHubEndToEndTestContext {
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 
-    public Optional<VerifiableCredentialResource> getCredential(String credentialId) {
-        return runtime.getService(CredentialStore.class)
-                .query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", credentialId)).build())
-                .orElseThrow(f -> new EdcException(f.getFailureDetail()))
-                .stream().findFirst();
-    }
 
     public DidResource getDidResourceForParticipant(String did) {
         return runtime.getService(DidDocumentService.class).findById(did);
     }
 
+    public String didFor(String participantContextId) {
+        return configuration.didFor(participantContextId);
+    }
+
+    private @NotNull String storageApiBasePath(String participantContextId) {
+        return "v1alpha/participants/%s".formatted(base64Encode(participantContextId));
+    }
 
 }

@@ -24,8 +24,8 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
-import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
@@ -116,7 +116,7 @@ public class DcpIssuanceApiEndToEndTest {
             var validationRegistry = context.getRuntime().getService(AttestationDefinitionValidatorRegistry.class);
             pipelineFactory.registerFactory("Attestation", ATTESTATION_SOURCE_FACTORY);
             validationRegistry.registerValidator("Attestation", def -> ValidationResult.success());
-            context.createParticipantContext(ISSUER_ID);
+            context.createParticipant(ISSUER_ID);
         }
 
         private static @NotNull String issuanceUrl() {

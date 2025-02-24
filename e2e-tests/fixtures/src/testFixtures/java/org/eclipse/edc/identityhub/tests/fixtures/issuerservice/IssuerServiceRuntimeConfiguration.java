@@ -12,27 +12,27 @@
  *
  */
 
-package org.eclipse.edc.identityhub.tests.fixtures;
+package org.eclipse.edc.identityhub.tests.fixtures.issuerservice;
 
-import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.identityhub.tests.fixtures.common.AbstractRuntimeConfiguration;
+import org.eclipse.edc.identityhub.tests.fixtures.common.Endpoint;
+import org.eclipse.edc.spi.system.configuration.Config;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.restassured.RestAssured.given;
 import static org.eclipse.edc.boot.BootServicesExtension.PARTICIPANT_ID;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 
 /**
  * The IssuerServiceRuntimeConfiguration class represents an IssuerService Runtime configuration and provides various information, such as API endpoints
  */
-public class IssuerServiceRuntimeConfiguration {
+public class IssuerServiceRuntimeConfiguration extends AbstractRuntimeConfiguration {
 
     private Endpoint adminEndpoint;
     private Endpoint issuerApiEndpoint;
-    private String id;
-    private String name;
 
     public Endpoint getAdminEndpoint() {
         return adminEndpoint;
@@ -42,8 +42,9 @@ public class IssuerServiceRuntimeConfiguration {
         return issuerApiEndpoint;
     }
 
-    public Map<String, String> config() {
-        return new HashMap<>() {
+
+    public Config config() {
+        return ConfigFactory.fromMap(new HashMap<>() {
             {
                 put(PARTICIPANT_ID, id);
                 put("web.http.port", String.valueOf(getFreePort()));
@@ -55,8 +56,8 @@ public class IssuerServiceRuntimeConfiguration {
                 put("web.http.issuance.path", issuerApiEndpoint.getUrl().getPath());
                 put("web.http.version.port", String.valueOf(getFreePort()));
                 put("web.http.version.path", "/.well-known/api");
-                put("web.http.did.port", String.valueOf(getFreePort()));
-                put("web.http.did.path", "/");
+                put("web.http.did.port", String.valueOf(didEndpoint.getUrl().getPort()));
+                put("web.http.did.path", didEndpoint.getUrl().getPath());
                 put("edc.sql.schema.autocreate", "true");
                 put("edc.sts.account.api.url", "http://sts.com/accounts");
                 put("edc.sts.accounts.api.auth.header.value", "password");
@@ -66,53 +67,27 @@ public class IssuerServiceRuntimeConfiguration {
                 put("edc.iam.sts.publickey.id", "test-public-key");
                 put("edc.iam.sts.privatekey.alias", "issuer-alias");
             }
-        };
+        });
     }
 
 
-    public static final class Builder {
-        private final IssuerServiceRuntimeConfiguration participant;
+    public static final class Builder extends AbstractRuntimeConfiguration.Builder<IssuerServiceRuntimeConfiguration, Builder> {
 
         private Builder() {
-            participant = new IssuerServiceRuntimeConfiguration();
+            super(new IssuerServiceRuntimeConfiguration());
         }
 
         public static Builder newInstance() {
             return new Builder();
         }
 
-        public Builder id(String id) {
-            this.participant.id = id;
-            return this;
-        }
-
-        public Builder name(String name) {
-            this.participant.name = name;
-            return this;
-        }
 
         public IssuerServiceRuntimeConfiguration build() {
+            super.build();
             participant.adminEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/admin"), Map.of());
             participant.issuerApiEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/issuance"), Map.of());
             return participant;
         }
     }
 
-    public static class Endpoint {
-        private final URI url;
-        private final Map<String, String> headers;
-
-        public Endpoint(URI url, Map<String, String> headers) {
-            this.url = url;
-            this.headers = headers;
-        }
-
-        public RequestSpecification baseRequest() {
-            return given().baseUri(this.url.toString()).headers(this.headers);
-        }
-
-        public URI getUrl() {
-            return this.url;
-        }
-    }
 }

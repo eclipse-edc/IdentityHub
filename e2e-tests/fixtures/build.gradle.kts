@@ -19,6 +19,12 @@ plugins {
 
 
 dependencies {
+    testFixturesApi(project(":spi:identity-hub-spi"))
+    testFixturesApi(project(":spi:issuerservice:issuerservice-issuance-spi"))
+    testFixturesApi(project(":spi:keypair-spi"))
+    testFixturesApi(project(":spi:holder-credential-request-spi"))
+    testFixturesApi(testFixtures(project(":spi:verifiable-credential-spi")))
+    testFixturesApi(project(":core:identity-hub-participants"))
     testFixturesApi(libs.junit.jupiter.api)
     testFixturesApi(libs.edc.junit)
     testFixturesApi(libs.restAssured)
@@ -28,6 +34,7 @@ dependencies {
     testFixturesApi(libs.testcontainers.junit)
     testFixturesApi(libs.testcontainers.postgres)
     testFixturesApi(testFixtures(libs.edc.sql.test.fixtures))
+
 
 }
 

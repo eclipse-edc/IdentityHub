@@ -125,6 +125,7 @@ include(":e2e-tests:runtimes:sts")
 include(":e2e-tests:bom-tests")
 include(":e2e-tests:fixtures")
 include(":e2e-tests:admin-api-tests")
+include(":e2e-tests:dcp-issuance-tests")
 
 // BOM modules
 include(":dist:bom:identityhub-base-bom")

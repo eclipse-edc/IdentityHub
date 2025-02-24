@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.tests.fixtures;
+package org.eclipse.edc.identityhub.tests.fixtures.credentialservice;
 
 /**
  * Variant of {@link IdentityHubEndToEndExtension} where the context {@link IdentityHubEndToEndTestContext}

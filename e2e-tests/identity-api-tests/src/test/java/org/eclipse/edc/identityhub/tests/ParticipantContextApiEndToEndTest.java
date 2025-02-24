@@ -33,8 +33,8 @@ import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantCont
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
-import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.EdcException;
@@ -60,7 +60,7 @@ import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner.CLIENT_SECRET_PROPERTY;
-import static org.eclipse.edc.identityhub.tests.fixtures.IdentityHubEndToEndTestContext.SUPER_USER;
+import static org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndTestContext.SUPER_USER;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
@@ -510,7 +510,7 @@ public class ParticipantContextApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "Expect 403, role = {0}")
-        @ValueSource(strings = {"some-role", "admin"})
+        @ValueSource(strings = { "some-role", "admin" })
         void updateRoles_whenNotSuperuser(String role, IdentityHubEndToEndTestContext context) {
             var participantContextId = "some-user";
             var userToken = context.createParticipant(participantContextId);
