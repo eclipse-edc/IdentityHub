@@ -1,4 +1,4 @@
-# EDC's SecureTokenService must always be embedded in IdentityHub
+# The SecureTokenService must always be embedded in IdentityHub
 
 ## Decision
 
@@ -10,24 +10,24 @@ standalone mode is not supported.
 By definition, the STS and IdentityHub are coupled together, because the shape of the access token must be known to
 either of them.
 
-In addition, IdentityHub is designed to manage all security-related material such as key pairs, which are
-bound to a participant context, and for that it contains facilities to create, rotate, revoke, query,... key material.
+In addition, IdentityHub is designed to manage all security-related material such as key pairs, which is
+bound to a participant context, and for which it contains specific APIs and services.
 
-Were STS to run in standalone mode, it would also have to provide those facilities, which would increase complexity
-significantly without adding much value.
+Our EDC components shall reflect this coupling by directly embedding the SecureTokenService into the IdentityHub
+runtime.
 
 ## Approach
 
 ### Removal of the STS Accounts API
 
 The fact that STS maintains an account (client ID and client secret) for each participant context becomes an
-implementation detail that need not be accessible through a REST API.
+implementation detail that need not be exposed externally through a REST API.
 
-When creating participant contexts, the IdentityHub always provisions the account internally without the need for a
+When creating participant contexts, the IdentityHub always creates the "account" internally without the need for a
 remote call.
 
-This also removes the need for a `RemoteStsAccountService`, because IdentityHub can simply use a local delegate to
-handle that. This will further simplify the `StsAccountProvisioner -> StsAccountService` indirection.
+This also removes the need for a `RemoteStsAccountService`, because IdentityHub can simply create a
+local "account". This will further simplify the `StsAccountProvisioner -> StsAccountService` indirection.
 
 ### Moving code from the Connector to IdentityHub
 

@@ -7,3 +7,4 @@
 - [2023-01-20 Credentials Verifier Output Format](2023-01-20-credentials-verifier-output-format/)
 - [2024-08-23 Identity Hub Write Credentials API](2024-08-23-identity_hub_identity_write_credentials_api/)
 - [2024-09-02 Identity Hub Resource Operations](2024-09-02-resource-operations)
+- [2025-02-24 EDC's STS modules must be embedded in IdentityHub](./2025-02-24-sts-deployment-embedded)
