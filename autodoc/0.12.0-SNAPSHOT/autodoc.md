@@ -1325,6 +1325,21 @@ Module `sts-account-service-local`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.identityhub.sts.accountservice.LocalStsAccountServiceExtension`
+**Name:** "Local (embedded) STS Account Service Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore` (required)
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+
 #### Class: `org.eclipse.edc.identityhub.sts.LocalStsServiceExtension`
 **Name:** "Local (embedded) STS Account Service Extension"
 
@@ -1347,21 +1362,6 @@ _None_
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService` (required)
 
-#### Class: `org.eclipse.edc.identityhub.sts.accountservice.LocalStsAccountServiceExtension`
-**Name:** "Local (embedded) STS Account Service Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore` (required)
-- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-
 Module `sts-account-service-remote`
 -----------------------------------
 **Artifact:** org.eclipse.edc:sts-account-service-remote:0.12.0-SNAPSHOT
@@ -1372,27 +1372,6 @@ Module `sts-account-service-remote`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.sts.RemoteStsServiceExtension`
-**Name:** "Remote Secure Token Service extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration
-
-| Key                           | Required | Type     | Default | Pattern | Min | Max | Description                                |
-| ----------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------------ |
-| `edc.iam.sts.oauth.token.url` | `*`      | `string` | ``      |         |     |     | STS OAuth2 endpoint for requesting a token |
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.iam.oauth2.spi.client.Oauth2Client` (required)
-- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-- `org.eclipse.edc.spi.security.Vault` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService` (required)
-
 #### Class: `org.eclipse.edc.identityhub.sts.accountservice.RemoteStsAccountServiceExtension`
 **Name:** "Remote STS Account Service Extension"
 
@@ -1413,6 +1392,27 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.http.spi.EdcHttpClient` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
+
+#### Class: `org.eclipse.edc.identityhub.sts.RemoteStsServiceExtension`
+**Name:** "Remote Secure Token Service extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                           | Required | Type     | Default | Pattern | Min | Max | Description                                |
+| ----------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------------ |
+| `edc.iam.sts.oauth.token.url` | `*`      | `string` | ``      |         |     |     | STS OAuth2 endpoint for requesting a token |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.iam.oauth2.spi.client.Oauth2Client` (required)
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.spi.security.Vault` (required)
+- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService` (required)
 
 Module `verifiable-credentials-api`
 -----------------------------------
