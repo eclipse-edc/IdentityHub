@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentialrequest.schema;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
@@ -47,8 +46,6 @@ import static java.util.stream.Collectors.toList;
  */
 public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements HolderCredentialRequestStore {
 
-    private static final TypeReference<List<String>> CREDENTIALTYPES_LIST_REF = new TypeReference<>() {
-    };
     private final String leaseHolderName;
     private final SqlLeaseContextBuilder leaseContext;
 

@@ -14,7 +14,8 @@
 
 package org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * Represents a credential request of the holder.
@@ -24,9 +25,9 @@ import java.util.List;
  * @param issuerPid       the process ID returned from the issuer
  * @param status          REQUESTED, ISSUED, etc.
  * @param credentialIds   after the credentials are issued, their IDs are stored here
- * @param credentialTypes list of credential types/formats that were originally requested
+ * @param typesAndFormats list of credential types/formats that were originally requested
  */
-// todo: this DTO might get removed again later, when we have a HolderCredentialRequest entity, which will likely have the same signature
 public record HolderCredentialRequestDto(String issuerDid, String holderPid, String issuerPid, String status,
-                                         List<String> credentialIds, List<CredentialDescriptor> credentialTypes) {
+                                         Collection<String> credentialIds,
+                                         Map<String, String> typesAndFormats) {
 }

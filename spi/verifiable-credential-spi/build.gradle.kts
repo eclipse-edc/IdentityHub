@@ -20,6 +20,7 @@ plugins {
 
 dependencies {
 
+    api(project(":spi:holder-credential-request-spi"))
     api(project(":spi:participant-context-spi"))
     api(libs.edc.spi.dcp)
 

@@ -41,6 +41,7 @@ import org.eclipse.edc.statemachine.StateMachineManager;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -93,6 +94,11 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             return ServiceResult.badRequest(e.getMessage());
         }
         return ServiceResult.success(holderPid);
+    }
+
+    @Override
+    public @Nullable HolderCredentialRequest findById(String participantContextId, String holderPid) {
+        return transactionContext.execute(() -> store.findById(holderPid));
     }
 
     @Override

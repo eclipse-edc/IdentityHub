@@ -33,6 +33,7 @@ import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.C
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialRequestDto;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.HolderCredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
@@ -178,18 +179,19 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     }
 
     @GET
-    @Path("/request/{issuerPid}")
+    @Path("/request/{holderPid}")
     @Override
     public HolderCredentialRequestDto getCredentialRequest(@PathParam("participantContextId") String participantContextId,
-                                                           @PathParam("issuerPid") String issuerPid,
+                                                           @PathParam("holderPid") String holderPid,
                                                            @Context SecurityContext securityContext) {
 
         var participantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
         authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
 
-        //todo: implement CredentialRequestService.fetchCredentialStatus from DCP issuer
-        return new HolderCredentialRequestDto("did:web:issuer", "dummy-request-id", "issuance-process-ic", "ISSUED", List.of(UUID.randomUUID().toString()), List.of());
+        return ofNullable(credentialRequestService.findById(participantContextId, holderPid))
+                .map(req -> new HolderCredentialRequestDto(req.getIssuerDid(), req.getHolderPid(), req.getIssuerPid(), req.stateAsString(), List.of(), req.getTypesAndFormats()))
+                .orElseThrow(() -> new ObjectNotFoundException(HolderCredentialRequest.class, holderPid));
     }
 
 }

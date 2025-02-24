@@ -14,9 +14,11 @@
 
 package org.eclipse.edc.identityhub.spi.verifiablecredentials;
 
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.entity.StateEntityManager;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -33,11 +35,20 @@ public interface CredentialRequestManager extends StateEntityManager {
     /**
      * Initiates the holder-side credential request by sending the DCP message to the issuer
      *
-     * @param participantContext The Participant Context ID of the requestor
-     * @param issuerDid          The DID of the issuer
-     * @param holderPid          The holder-defined request ID.
-     * @param typesAndFormats    A map containing credential-type - credential-format entries
+     * @param participantContextId The Participant Context ID of the requestor
+     * @param issuerDid            The DID of the issuer
+     * @param holderPid            The holder-defined request ID.
+     * @param typesAndFormats      A map containing credential-type - credential-format entries
      * @return A ServiceResult containing the database ID of the {@code HolderCredentialRequest}.
      */
-    ServiceResult<String> initiateRequest(String participantContext, String issuerDid, String holderPid, Map<String, String> typesAndFormats);
+    ServiceResult<String> initiateRequest(String participantContextId, String issuerDid, String holderPid, Map<String, String> typesAndFormats);
+
+    /**
+     * Finds a {@link HolderCredentialRequest} for the given participant context, with the given ID
+     *
+     * @param participantContextId The Participant Context ID of the requestor
+     * @param holderPid            The (holder-side) ID of the request. Not to be confused with issuerPid.
+     * @return the holder request, or null if not found
+     */
+    @Nullable HolderCredentialRequest findById(String participantContextId, String holderPid);
 }

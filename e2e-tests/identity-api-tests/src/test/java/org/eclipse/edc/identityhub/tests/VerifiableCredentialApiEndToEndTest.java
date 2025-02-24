@@ -22,6 +22,7 @@ import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
@@ -37,7 +38,7 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
-import org.hamcrest.Matchers;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -56,6 +57,7 @@ import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -263,14 +265,15 @@ public class VerifiableCredentialApiEndToEndTest {
                 context.createSuperUser();
                 var user = "user1";
                 var token = context.createParticipant(user);
+                var holderPid = UUID.randomUUID().toString();
                 var request =
                         """
                                 {
                                   "issuerDid": "did:web:issuer",
-                                  "holderPid": "test-request-id",
+                                  "holderPid": "%s",
                                   "credentials": [{ "format": "VC1_0_JWT", "credentialType": "TestCredential"}]
                                 }
-                                """;
+                                """.formatted(holderPid);
                 context.getIdentityApiEndpoint().baseRequest()
                         .contentType(JSON)
                         .header(new Header("x-api-key", token))
@@ -279,21 +282,91 @@ public class VerifiableCredentialApiEndToEndTest {
                         .then()
                         .log().ifValidationFails()
                         .statusCode(201)
-                        .body(Matchers.equalTo("test-request-id"));
+                        .body(equalTo(holderPid));
 
                 // wait until the state machine has progress to the REQUESTED state
                 await().pollInterval(Duration.ofSeconds(1))
                         .atMost(Duration.ofSeconds(10))
                         .untilAsserted(() -> {
-                            var requests = store.query(QuerySpec.max());
-                            assertThat(requests).hasSize(1)
-                                    .allSatisfy(t -> {
-                                        assertThat(t.getState()).isEqualTo(HolderRequestState.REQUESTED.code());
-                                        assertThat(t.getIssuerPid()).isEqualTo(issuerPid);
-                                        assertThat(t.getHolderPid()).isEqualTo("test-request-id");
-                                    });
+                            var result = store.findById(holderPid);
+                            assertThat(result).isNotNull();
+                            assertThat(result.getState()).isEqualTo(HolderRequestState.REQUESTED.code());
+                            assertThat(result.getIssuerPid()).isEqualTo(issuerPid);
+                            assertThat(result.getHolderPid()).isEqualTo(holderPid);
                         });
             }
+        }
+
+        @Test
+        void getRequest_success(IdentityHubEndToEndTestContext context, TransactionContext trx, HolderCredentialRequestStore store) {
+            var userId = "user1";
+            var token = context.createParticipant(userId);
+
+            var holderPid = UUID.randomUUID().toString();
+            var holderRequest = HolderCredentialRequest.Builder.newInstance()
+                    .id(holderPid)
+                    .participantContextId(userId)
+                    .issuerDid("did:web:issuer")
+                    .issuerPid("dummy-issuance-id")
+                    .credentialType("TestCredential", CredentialFormat.VC2_0_JOSE.toString())
+                    .build();
+
+            trx.execute(() -> store.save(holderRequest));
+
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .get("/v1alpha/participants/%s/credentials/request/%s".formatted(toBase64(userId), holderPid))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("holderPid", equalTo(holderPid))
+                    .body("issuerDid", equalTo("did:web:issuer"))
+                    .body("issuerPid", equalTo("dummy-issuance-id"))
+                    .body("status", equalTo("CREATED"));
+        }
+
+        @Test
+        void getRequest_notAuthorized_returns403(IdentityHubEndToEndTestContext context, HolderCredentialRequestStore store, TransactionContext trx) {
+            var user1 = "user1";
+            var user2 = "user2";
+            var token1 = context.createParticipant(user1);
+            var token2 = context.createParticipant(user2);
+
+            var holderPid = UUID.randomUUID().toString();
+            var holderRequest = HolderCredentialRequest.Builder.newInstance()
+                    .id(holderPid)
+                    .participantContextId(user1)
+                    .issuerDid("did:web:issuer")
+                    .issuerPid("dummy-issuance-id")
+                    .credentialType("TestCredential", CredentialFormat.VC2_0_JOSE.toString())
+                    .build();
+
+            trx.execute(() -> store.save(holderRequest));
+
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token2)) // user 2 tries to access credential request status for user 1 -> not allowed!
+                    .get("/v1alpha/participants/%s/credentials/request/%s".formatted(toBase64(user1), holderPid))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+        }
+
+        @Test
+        void getRequest_whenNotFound_shouldReturn404(IdentityHubEndToEndTestContext context, HolderCredentialRequestStore store, TransactionContext trx) {
+            var userId = "user1";
+            var token = context.createParticipant(userId);
+
+            var holderPid = UUID.randomUUID().toString();
+
+            context.getIdentityApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .get("/v1alpha/participants/%s/credentials/request/%s".formatted(toBase64(userId), holderPid))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(404);
         }
 
         private String toBase64(String s) {
