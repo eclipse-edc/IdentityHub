@@ -22,7 +22,6 @@ dependencies {
     // needed for interaction with the embedded STS
     runtimeOnly(libs.edc.sts.core)
     runtimeOnly(project(":extensions:sts:sts-account-service-local"))
-//    runtimeOnly(libs.edc.sts)
     runtimeOnly(libs.edc.sts.api)
 }
 

@@ -89,8 +89,6 @@ edc-sts-spi = { module = "org.eclipse.edc:identity-trust-sts-spi", version.ref =
 edc-sts-core = { module = "org.eclipse.edc:identity-trust-sts-core", version.ref = "edc" }
 edc-sts = { module = "org.eclipse.edc:identity-trust-sts-embedded", version.ref = "edc" }
 edc-sts-api = { module = "org.eclipse.edc:identity-trust-sts-api", version.ref = "edc" }
-edc-sts-api-accounts = { module = "org.eclipse.edc:identity-trust-sts-accounts-api", version.ref = "edc" }
-edc-sts-client-remote = { module = "org.eclipse.edc:identity-trust-sts-remote-client", version.ref = "edc" }
 
 
 # Third party libs

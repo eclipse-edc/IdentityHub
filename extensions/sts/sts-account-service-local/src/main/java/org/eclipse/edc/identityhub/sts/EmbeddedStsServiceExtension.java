@@ -29,11 +29,11 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 
-import static org.eclipse.edc.identityhub.sts.accountservice.LocalStsAccountServiceExtension.NAME;
+import static org.eclipse.edc.identityhub.sts.accountservice.StsAccountServiceExtension.NAME;
 
 
 @Extension(value = NAME)
-public class LocalStsServiceExtension implements ServiceExtension {
+public class EmbeddedStsServiceExtension implements ServiceExtension {
     public static final String NAME = "Local (embedded) STS Account Service Extension";
     private static final int DEFAULT_STS_TOKEN_EXPIRATION_MIN = 5;
     @Inject

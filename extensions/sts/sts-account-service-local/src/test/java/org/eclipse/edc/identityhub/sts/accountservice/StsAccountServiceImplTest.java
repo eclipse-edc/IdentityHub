@@ -31,13 +31,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class LocalStsAccountServiceTest {
+class StsAccountServiceImplTest {
 
     private static final String PARTICIPANT_CONTEXT_ID = "test-participant";
     private static final String PARTICIPANT_DID = "did:web:" + PARTICIPANT_CONTEXT_ID;
     private static final String KEY_ID = "test-key-id";
     private final StsAccountStore stsAccountStore = mock();
-    private final LocalStsAccountService accountServiceMock = new LocalStsAccountService(stsAccountStore, new NoopTransactionContext());
+    private final StsAccountServiceImpl accountServiceMock = new StsAccountServiceImpl(stsAccountStore, new NoopTransactionContext());
 
     @Test
     void create() {

@@ -23,11 +23,11 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import static org.eclipse.edc.identityhub.sts.accountservice.LocalStsAccountServiceExtension.NAME;
+import static org.eclipse.edc.identityhub.sts.accountservice.StsAccountServiceExtension.NAME;
 
 
 @Extension(value = NAME)
-public class LocalStsAccountServiceExtension implements ServiceExtension {
+public class StsAccountServiceExtension implements ServiceExtension {
     public static final String NAME = "Local (embedded) STS Account Service Extension";
     @Inject
     private StsAccountStore accountStore;
@@ -43,7 +43,7 @@ public class LocalStsAccountServiceExtension implements ServiceExtension {
     public StsAccountService createAccountManager(ServiceExtensionContext context) {
         var monitor = context.getMonitor().withPrefix("STS-Account");
         monitor.info("This IdentityHub runtime contains an embedded SecureTokenService (STS) instance. That means ParticipantContexts and STS Accounts will be synchronized automatically.");
-        return new LocalStsAccountService(accountStore, transactionContext);
+        return new StsAccountServiceImpl(accountStore, transactionContext);
     }
 
 }

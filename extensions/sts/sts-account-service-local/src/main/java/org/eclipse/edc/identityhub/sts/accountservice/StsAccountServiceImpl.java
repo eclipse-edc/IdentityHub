@@ -25,12 +25,12 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
  * Manages {@link StsAccount} objects by directly interacting with a (local) storage. This is useful if the STS is directly
  * embedded into IdentityHub.
  */
-class LocalStsAccountService implements StsAccountService {
+class StsAccountServiceImpl implements StsAccountService {
 
     private final StsAccountStore stsAccountStore;
     private final TransactionContext transactionContext;
 
-    LocalStsAccountService(StsAccountStore accountStore, TransactionContext transactionContext) {
+    StsAccountServiceImpl(StsAccountStore accountStore, TransactionContext transactionContext) {
         this.stsAccountStore = accountStore;
         this.transactionContext = transactionContext;
     }

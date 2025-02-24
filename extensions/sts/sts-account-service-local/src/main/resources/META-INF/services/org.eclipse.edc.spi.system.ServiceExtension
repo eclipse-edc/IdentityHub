@@ -12,5 +12,5 @@
 #
 #
 
-org.eclipse.edc.identityhub.sts.accountservice.LocalStsAccountServiceExtension
-org.eclipse.edc.identityhub.sts.LocalStsServiceExtension
+org.eclipse.edc.identityhub.sts.accountservice.StsAccountServiceExtension
+org.eclipse.edc.identityhub.sts.EmbeddedStsServiceExtension
