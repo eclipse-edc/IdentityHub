@@ -56,7 +56,7 @@ public class BomSmokeTests {
 
         @RegisterExtension
         protected RuntimeExtension runtime =
-                new RuntimePerMethodExtension(new EmbeddedRuntime("identityhub-with-sts-bom",
+                new RuntimePerMethodExtension(new EmbeddedRuntime("identityhub-bom",
                         new HashMap<>() {
                             {
                                 put("web.http.port", DEFAULT_PORT);
@@ -82,7 +82,7 @@ public class BomSmokeTests {
 
                             }
                         },
-                        ":dist:bom:identityhub-with-sts-bom"
+                        ":dist:bom:identityhub-bom"
                 ));
     }
 
@@ -91,7 +91,7 @@ public class BomSmokeTests {
     class IssuerServiceWithSts extends SmokeTest {
         @RegisterExtension
         protected RuntimeExtension runtime =
-                new RuntimePerMethodExtension(new EmbeddedRuntime("issuer-service-with-sts-bom",
+                new RuntimePerMethodExtension(new EmbeddedRuntime("issuer-service-bom",
                         new HashMap<>() {
                             {
                                 put("web.http.port", DEFAULT_PORT);
@@ -109,7 +109,7 @@ public class BomSmokeTests {
                                 put("edc.iam.sts.privatekey.alias", "test-private-key");
                             }
                         },
-                        ":dist:bom:issuerservice-with-sts-bom"
+                        ":dist:bom:issuerservice-bom"
                 ));
     }
 }

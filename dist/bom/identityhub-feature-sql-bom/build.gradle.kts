@@ -30,7 +30,8 @@ dependencies {
     api(libs.edc.sql.pool)
     api(libs.edc.sql.bootstrapper)
     api(libs.edc.sql.jtivdalidation)
-
+    api(libs.edc.sql.ih.stsstore.sql)
+    
     // third-party deps
     api(libs.postgres)
 }

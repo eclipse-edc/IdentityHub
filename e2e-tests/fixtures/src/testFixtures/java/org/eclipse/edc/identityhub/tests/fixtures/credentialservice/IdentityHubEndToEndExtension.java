@@ -88,7 +88,7 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
         public static IdentityHubEndToEndTestContext context(IdentityHubRuntimeConfiguration configuration, Supplier<Config> configSupplier) {
             var runtime = new EmbeddedRuntime(
                     "identity-hub",
-                    ":dist:bom:identityhub-with-sts-bom"
+                    ":dist:bom:identityhub-bom"
             ).configurationProvider(configuration::config)
                     .configurationProvider(configSupplier);
 
@@ -129,7 +129,7 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
 
             var runtime = new EmbeddedRuntime(
                     "identityhub-pg",
-                    ":dist:bom:identityhub-with-sts-bom",
+                    ":dist:bom:identityhub-bom",
                     ":dist:bom:identityhub-feature-sql-bom"
 
             ).configurationProvider(configuration::config)
