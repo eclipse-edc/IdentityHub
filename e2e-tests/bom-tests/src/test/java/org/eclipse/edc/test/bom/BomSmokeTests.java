@@ -62,7 +62,6 @@ public class BomSmokeTests {
                             {
                                 put("web.http.port", DEFAULT_PORT);
                                 put("web.http.path", DEFAULT_PATH);
-                                put("edc.ih.iam.id", "did:web:test");
                                 put("edc.ih.iam.publickey.path", "/some/path/to/key.pem");
                                 put("web.http.presentation.port", valueOf(getFreePort()));
                                 put("web.http.presentation.path", "/api/resolution");
@@ -97,7 +96,6 @@ public class BomSmokeTests {
                             {
                                 put("web.http.port", DEFAULT_PORT);
                                 put("web.http.path", DEFAULT_PATH);
-                                put("edc.ih.iam.id", "did:web:test");
                                 put("edc.ih.iam.publickey.path", "/some/path/to/key.pem");
                                 put("web.http.presentation.port", valueOf(getFreePort()));
                                 put("web.http.presentation.path", "/api/resolution");

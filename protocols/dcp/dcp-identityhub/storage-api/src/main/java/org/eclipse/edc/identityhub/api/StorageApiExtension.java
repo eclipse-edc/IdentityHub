@@ -23,6 +23,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialRequestMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialMessageTransformer;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
@@ -87,6 +88,9 @@ public class StorageApiExtension implements ServiceExtension {
     @Inject
     private Monitor monitor;
 
+    @Inject
+    private ParticipantContextService participantContextService;
+
     @Override
     public String name() {
         return NAME;
@@ -101,7 +105,7 @@ public class StorageApiExtension implements ServiceExtension {
         validatorRegistry.register(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_MESSAGE_TERM), new CredentialMessageValidator());
 
 
-        var controller = new StorageApiController(validatorRegistry, typeTransformer, jsonLd, writer, context.getMonitor(), issuerTokenVerifier);
+        var controller = new StorageApiController(validatorRegistry, typeTransformer, jsonLd, writer, context.getMonitor(), issuerTokenVerifier, participantContextService);
         webService.registerResource(contextString, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(contextString, controller);
 

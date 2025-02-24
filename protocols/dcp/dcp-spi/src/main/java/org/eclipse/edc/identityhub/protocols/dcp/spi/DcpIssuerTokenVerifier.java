@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.spi;
 
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
@@ -26,9 +27,9 @@ import org.eclipse.edc.spi.result.Result;
 @ExtensionPoint
 public interface DcpIssuerTokenVerifier {
 
-    Result<ClaimToken> verify(TokenRepresentation tokenRepresentation);
+    Result<ClaimToken> verify(ParticipantContext participantContext, TokenRepresentation tokenRepresentation);
 
-    default Result<ClaimToken> verify(String token) {
-        return verify(TokenRepresentation.Builder.newInstance().token(token).build());
+    default Result<ClaimToken> verify(ParticipantContext participantContext, String token) {
+        return verify(participantContext, TokenRepresentation.Builder.newInstance().token(token).build());
     }
 }

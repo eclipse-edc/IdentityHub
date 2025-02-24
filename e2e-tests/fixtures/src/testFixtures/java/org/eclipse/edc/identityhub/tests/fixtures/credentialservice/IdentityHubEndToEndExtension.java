@@ -61,7 +61,7 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
      */
     public static class InMemory extends IdentityHubEndToEndExtension {
 
-        protected InMemory() {
+        public InMemory() {
             super(context());
         }
 
@@ -114,7 +114,7 @@ public abstract class IdentityHubEndToEndExtension extends RuntimePerClassExtens
         public static Postgres withConfig(Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
             return new Postgres(configProvider);
         }
-        
+
         private static IdentityHubEndToEndTestContext context(Function<IdentityHubRuntimeConfiguration, Config> configProvider) {
 
             var configuration = IdentityHubRuntimeConfiguration.Builder.newInstance()

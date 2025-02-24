@@ -56,7 +56,6 @@ import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
-import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -138,8 +137,6 @@ public class CoreServicesExtension implements ServiceExtension {
     @Inject
     private EdcHttpClient httpClient;
 
-    @Setting(key = "edc.ih.iam.id", description = "DID of the holder")
-    private String ownDid;
     private CredentialRequestManagerImpl credentialRequestService;
 
     @Override
@@ -211,8 +208,8 @@ public class CoreServicesExtension implements ServiceExtension {
                     .typeTransformerRegistry(typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0))
                     .httpClient(httpClient)
                     .secureTokenService(secureTokenService)
-                    .ownDid(ownDid)
                     .transactionContext(transactionContext)
+                    .participantContextService(participantContextService)
                     .monitor(context.getMonitor())
                     .build();
         }

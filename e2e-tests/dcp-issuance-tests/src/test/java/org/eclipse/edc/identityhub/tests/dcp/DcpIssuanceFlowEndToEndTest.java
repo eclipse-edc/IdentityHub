@@ -17,7 +17,6 @@ package org.eclipse.edc.identityhub.tests.dcp;
 import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
-import org.eclipse.edc.identityhub.tests.dcp.fixtures.IssuanceFlowConfig;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
@@ -55,8 +54,6 @@ import java.util.Map;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.edc.identityhub.tests.dcp.fixtures.IssuanceFlowConfig.identityHubConfig;
-import static org.eclipse.edc.identityhub.tests.dcp.fixtures.IssuanceFlowConfig.issuerConfig;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -206,12 +203,10 @@ public class DcpIssuanceFlowEndToEndTest {
     class InMemory extends Tests {
 
         @RegisterExtension
-        static IssuerServiceEndToEndExtension issuerService = IssuerServiceEndToEndExtension.InMemory
-                .withConfig(IssuanceFlowConfig::issuerConfig);
+        static IssuerServiceEndToEndExtension issuerService = new IssuerServiceEndToEndExtension.InMemory();
 
         @RegisterExtension
-        static IdentityHubEndToEndExtension credentialService = IdentityHubEndToEndExtension.InMemory
-                .withConfig(IssuanceFlowConfig::identityHubConfig);
+        static IdentityHubEndToEndExtension credentialService = new IdentityHubEndToEndExtension.InMemory();
 
     }
 
@@ -223,12 +218,11 @@ public class DcpIssuanceFlowEndToEndTest {
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
         private static final String ISSUER = "issuer";
-        
+
         @Order(2)
         @RegisterExtension
         static final IssuerServiceEndToEndExtension ISSUER_SERVICE = IssuerServiceEndToEndExtension.Postgres
-                .withConfig(cfg ->
-                        issuerConfig(cfg).merge(POSTGRESQL_EXTENSION.configFor(ISSUER)));
+                .withConfig(cfg -> POSTGRESQL_EXTENSION.configFor(ISSUER));
         private static final String IDENTITY_HUB = "identityhub";
         @Order(1) // must be the first extension to be evaluated since it starts the DB server
         @RegisterExtension
@@ -240,8 +234,7 @@ public class DcpIssuanceFlowEndToEndTest {
         @Order(2)
         @RegisterExtension
         static final IdentityHubEndToEndExtension CREDENTIAL_SERVICE = IdentityHubEndToEndExtension.Postgres
-                .withConfig((cfg) ->
-                        identityHubConfig(cfg).merge(POSTGRESQL_EXTENSION.configFor(IDENTITY_HUB)));
+                .withConfig((cfg) -> POSTGRESQL_EXTENSION.configFor(IDENTITY_HUB));
 
 
     }
