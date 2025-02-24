@@ -72,7 +72,6 @@ public class RemoteAccountServiceIntegrationTest {
                     put("web.http.did.path", "/");
                     put("web.http.version.port", "" + getFreePort()); // avoid conflicts with other tests if they run in parallel
                     put("edc.runtime.id", "identityhub");
-                    put("edc.ih.iam.id", "did:web:consumer");
                     put("edc.sts.account.api.url", "http://localhost:" + ACCOUNTS_PORT + "/sts");
                     put("edc.sts.accounts.api.auth.header.value", STS_ACCOUNTS_API_KEY);
                     // config for the remote STS

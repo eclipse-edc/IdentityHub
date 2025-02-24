@@ -66,6 +66,7 @@ public class IssuerServiceRuntimeConfiguration extends AbstractRuntimeConfigurat
                 // config for the embedded STS
                 put("edc.iam.sts.publickey.id", "test-public-key");
                 put("edc.iam.sts.privatekey.alias", "issuer-alias");
+                put("edc.iam.did.web.use.https", "false");
             }
         });
     }

@@ -21,6 +21,8 @@ import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialContainer;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.junit.annotations.ApiTest;
@@ -66,6 +68,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     private final Monitor monitor = mock();
     private final CredentialWriter credentialWriter = mock();
     private final DcpIssuerTokenVerifier issuerTokenVerifier = mock();
+    private final ParticipantContextService participantContextService = mock();
 
     @BeforeEach
     void setUp() {
@@ -73,8 +76,8 @@ class StorageApiControllerTest extends RestControllerTestBase {
         when(transformerRegistry.transform(isA(JsonObject.class), eq(CredentialMessage.class)))
                 .thenReturn(Result.success(credentialMessage()));
 
-        when(issuerTokenVerifier.verify(anyString())).thenReturn(Result.success(claimToken()));
-
+        when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.success(claimToken()));
+        when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
         when(credentialWriter.write(anyCollection(), anyString())).thenReturn(ServiceResult.success());
     }
 
@@ -131,9 +134,23 @@ class StorageApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
+    void storeCredential_participantNotFound_shouldReturn401() {
+        when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.notFound("foo"));
+
+        baseRequest()
+                .header("Authorization", "Bearer: " + generateJwt())
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(401);
+    }
+
+    @Test
     void storeCredential_tokenValidationFails_shouldReturn401() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
-        when(issuerTokenVerifier.verify(anyString())).thenReturn(Result.failure("foo"));
+        when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foo"));
         baseRequest()
                 .header("Authorization", "Bearer: " + generateJwt())
                 .body(credentialMessageJson())
@@ -179,12 +196,21 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 new TitaniumJsonLd(monitor),
                 credentialWriter,
                 mock(),
-                issuerTokenVerifier
+                issuerTokenVerifier,
+                participantContextService
         );
     }
 
     private ClaimToken claimToken() {
         return ClaimToken.Builder.newInstance().build();
+    }
+
+    private ParticipantContext participantContext() {
+        return ParticipantContext.Builder.newInstance()
+                .participantContextId("participantId")
+                .did("did:web:test")
+                .apiTokenAlias("alias")
+                .build();
     }
 
     private CredentialMessage credentialMessage() {

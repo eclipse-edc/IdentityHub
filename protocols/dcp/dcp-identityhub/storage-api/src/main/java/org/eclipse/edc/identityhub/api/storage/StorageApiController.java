@@ -24,6 +24,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.spi.JsonLd;
@@ -53,19 +54,22 @@ public class StorageApiController implements StorageApi {
     private final CredentialWriter credentialWriter;
     private final Monitor monitor;
     private final DcpIssuerTokenVerifier issuerTokenVerifier;
+    private final ParticipantContextService participantContextService;
 
     public StorageApiController(JsonObjectValidatorRegistry validatorRegistry,
                                 TypeTransformerRegistry transformerRegistry,
                                 JsonLd jsonLd,
                                 CredentialWriter credentialWriter,
                                 Monitor monitor,
-                                DcpIssuerTokenVerifier issuerTokenVerifier) {
+                                DcpIssuerTokenVerifier issuerTokenVerifier,
+                                ParticipantContextService participantContextService) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
         this.jsonLd = jsonLd;
         this.credentialWriter = credentialWriter;
         this.monitor = monitor;
         this.issuerTokenVerifier = issuerTokenVerifier;
+        this.participantContextService = participantContextService;
     }
 
 
@@ -84,8 +88,12 @@ public class StorageApiController implements StorageApi {
 
         var credentialMessage = protocolRegistry.forContext(DCP_SCOPE_V_1_0).transform(credentialMessageJson, CredentialMessage.class).orElseThrow(InvalidRequestException::new);
 
+
+        var participantContext = participantContextService.getParticipantContext(participantContextId)
+                .orElseThrow((f) -> new AuthenticationFailedException("Invalid participant"));
+
         // validate Issuer's SI token
-        issuerTokenVerifier.verify(authToken)
+        issuerTokenVerifier.verify(participantContext, authToken)
                 .orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
 

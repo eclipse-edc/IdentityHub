@@ -58,11 +58,11 @@ public class IdentityHubRuntimeConfiguration extends AbstractRuntimeConfiguratio
                 put("web.http.did.port", String.valueOf(didEndpoint.getUrl().getPort()));
                 put("web.http.did.path", didEndpoint.getUrl().getPath());
                 put("edc.runtime.id", name);
-                put("edc.ih.iam.id", "did:web:consumer");
                 put("edc.sql.schema.autocreate", "true");
                 put("edc.iam.accesstoken.jti.validation", String.valueOf(true));
                 put("edc.iam.sts.publickey.id", "test-public-key");
                 put("edc.iam.sts.privatekey.alias", "user1-alias"); //this must be "username"-alias
+                put("edc.iam.did.web.use.https", "false");
             }
         });
     }

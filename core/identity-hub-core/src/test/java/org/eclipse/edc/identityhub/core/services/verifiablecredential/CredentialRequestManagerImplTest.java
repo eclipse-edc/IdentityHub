@@ -27,10 +27,13 @@ import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenServ
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,19 +76,19 @@ import static org.mockito.Mockito.when;
 class CredentialRequestManagerImplTest {
 
     public static final String ISSUER_DID = "did:web:issuer";
-    public static final String OWN_DID = "did:web:holder";
     private final HolderCredentialRequestStore store = mock();
     private final DidResolverRegistry resolver = mock();
     private final TypeTransformerRegistry transformerRegistry = mock();
     private final EdcHttpClient httpClient = mock();
     private final ParticipantSecureTokenService sts = mock();
+    private final ParticipantContextService participantContextService = mock();
     private final CredentialRequestManagerImpl credentialRequestService = CredentialRequestManagerImpl.Builder.newInstance()
             .store(store)
             .didResolverRegistry(resolver)
             .typeTransformerRegistry(transformerRegistry)
             .httpClient(httpClient)
             .secureTokenService(sts)
-            .ownDid(OWN_DID)
+            .participantContextService(participantContextService)
             .transactionContext(new NoopTransactionContext())
             .monitor(mock())
             .waitStrategy(() -> 500L)
@@ -96,6 +99,15 @@ class CredentialRequestManagerImplTest {
         when(transformerRegistry.transform(any(CredentialRequestMessage.class), eq(JsonObject.class)))
                 .thenReturn(success(Json.createObjectBuilder().build()));
         when(sts.createToken(anyString(), anyMap(), ArgumentMatchers.isNull())).thenReturn(success(TokenRepresentation.Builder.newInstance().build()));
+        when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
+    }
+
+    private ParticipantContext participantContext() {
+        return ParticipantContext.Builder.newInstance()
+                .participantContextId("participantId")
+                .did("did:web:test")
+                .apiTokenAlias("alias")
+                .build();
     }
 
     private DidDocument didDocument() {
@@ -137,7 +149,7 @@ class CredentialRequestManagerImplTest {
         private static final Duration MAX_DURATION = Duration.ofSeconds(5);
 
         @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_shouldSendRequest(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
@@ -164,7 +176,7 @@ class CredentialRequestManagerImplTest {
         }
 
         @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenDidNotResolvable_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
 
@@ -187,7 +199,7 @@ class CredentialRequestManagerImplTest {
         }
 
         @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenDidDoesNotContainEndpoint_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
 
@@ -214,7 +226,7 @@ class CredentialRequestManagerImplTest {
         }
 
         @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenStsFails_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
 
@@ -240,7 +252,7 @@ class CredentialRequestManagerImplTest {
         }
 
         @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenIssuerReturnsError_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
@@ -274,8 +286,9 @@ class CredentialRequestManagerImplTest {
                     .participantContextId("test-participant");
         }
 
+
         private Criterion[] stateIs(int state) {
-            return aryEq(new Criterion[]{hasState(state), isNotPending()});
+            return aryEq(new Criterion[]{ hasState(state), isNotPending() });
         }
 
     }

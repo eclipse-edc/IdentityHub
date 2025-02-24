@@ -27,6 +27,8 @@ import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenServ
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -69,8 +71,8 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private TypeTransformerRegistry dcpTypeTransformerRegistry;
     private EdcHttpClient httpClient;
     private ParticipantSecureTokenService secureTokenService;
-    private String ownDid;
     private TransactionContext transactionContext;
+    private ParticipantContextService participantContextService;
 
     private CredentialRequestManagerImpl() {
 
@@ -114,7 +116,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
 
         return transactionContext.execute(() -> {
             transition(request.copy().toBuilder(), REQUESTING);
-            return getAuthToken(request.getParticipantContextId(), issuerDid, ownDid)
+            return getAuthToken(request.getParticipantContextId(), issuerDid)
                     .compose(token -> createCredentialsRequest(token, endpoint, holderPid, typesAndFormats))
                     .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
         });
@@ -134,7 +136,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, Boolean> function) {
-        var filter = new Criterion[]{hasState(state.code()), isNotPending()};
+        var filter = new Criterion[]{ hasState(state.code()), isNotPending() };
         return createProcessor(function, filter);
     }
 
@@ -209,17 +211,28 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      *
      * @param participantContextId The ID of the participant context on behalf of which the token is generated
      * @param audience             the String used as {@code aud} claim
-     * @param myOwnDid             the String used as {@code iss} and {@code sub} claims
      * @return a JWT token that can be used to send DCP messages to the issuer
      */
-    private Result<TokenRepresentation> getAuthToken(String participantContextId, String audience, String myOwnDid) {
-        var siTokenClaims = Map.of(
-                ISSUED_AT, Instant.now().toString(),
-                AUDIENCE, audience,
-                ISSUER, myOwnDid,
-                SUBJECT, myOwnDid,
-                EXPIRATION_TIME, Instant.now().plus(5, ChronoUnit.MINUTES).toString());
-        return secureTokenService.createToken(participantContextId, siTokenClaims, null);
+    private Result<TokenRepresentation> getAuthToken(String participantContextId, String audience) {
+        return getParticipantContext(participantContextId)
+                .compose(participantContext -> {
+                    var siTokenClaims = Map.of(
+                            ISSUED_AT, Instant.now().toString(),
+                            AUDIENCE, audience,
+                            ISSUER, participantContext.getDid(),
+                            SUBJECT, participantContext.getDid(),
+                            EXPIRATION_TIME, Instant.now().plus(5, ChronoUnit.MINUTES).toString());
+                    return secureTokenService.createToken(participantContextId, siTokenClaims, null);
+                });
+    }
+
+    private Result<ParticipantContext> getParticipantContext(String participantContextId) {
+        var result = participantContextService.getParticipantContext(participantContextId);
+        if (result.failed()) {
+            return failure("Invalid participant");
+        }
+        return Result.success(result.getContent());
+
     }
 
     /**
@@ -268,8 +281,8 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             return this;
         }
 
-        public Builder ownDid(String ownDid) {
-            manager.ownDid = ownDid;
+        public Builder participantContextService(ParticipantContextService participantContextService) {
+            manager.participantContextService = participantContextService;
             return this;
         }
 
@@ -302,8 +315,8 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             requireNonNull(manager.dcpTypeTransformerRegistry);
             requireNonNull(manager.httpClient);
             requireNonNull(manager.secureTokenService);
-            requireNonNull(manager.ownDid);
             requireNonNull(manager.transactionContext);
+            requireNonNull(manager.participantContextService);
             return manager;
         }
     }

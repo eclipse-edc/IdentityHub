@@ -19,7 +19,6 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
-import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.rules.AudienceValidationRule;
@@ -30,6 +29,7 @@ import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 
 @Extension("DCP Holder Core Extension")
@@ -40,8 +40,6 @@ public class DcpHolderCoreExtension implements ServiceExtension {
     private Clock clock;
     @Inject
     private TokenValidationService tokenValidationService;
-    @Setting(key = "edc.ih.iam.id", description = "DID of the holder")
-    private String ownDid;
     @Inject
     private DidPublicKeyResolver didPublicKeyResolver;
 
@@ -50,7 +48,6 @@ public class DcpHolderCoreExtension implements ServiceExtension {
         rules = List.of(
                 new IssuerEqualsSubjectRule(),
                 new NotBeforeValidationRule(clock, 5, true),
-                new AudienceValidationRule(ownDid),
                 new ExpirationIssuedAtValidationRule(clock, 5, false)
                 //todo: add rule to only allow trusted issuers
         );
@@ -58,6 +55,10 @@ public class DcpHolderCoreExtension implements ServiceExtension {
 
     @Provider
     public DcpIssuerTokenVerifier createTokenVerifier() {
-        return tokenRepresentation -> tokenValidationService.validate(tokenRepresentation.getToken(), didPublicKeyResolver, rules);
+        return (participantContext, tokenRepresentation) -> {
+            var newRules = new ArrayList<>(rules);
+            newRules.add(new AudienceValidationRule(participantContext.getDid()));
+            return tokenValidationService.validate(tokenRepresentation.getToken(), didPublicKeyResolver, newRules);
+        };
     }
 }

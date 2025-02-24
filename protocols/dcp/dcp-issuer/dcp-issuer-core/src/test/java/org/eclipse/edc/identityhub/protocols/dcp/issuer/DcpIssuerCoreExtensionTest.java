@@ -17,7 +17,6 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 import org.eclipse.edc.boot.system.injection.ObjectFactory;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
@@ -25,15 +24,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.protocols.dcp.issuer.DcpIssuerCoreExtension.DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(DependencyInjectionExtension.class)
 public class DcpIssuerCoreExtensionTest {
@@ -48,8 +44,6 @@ public class DcpIssuerCoreExtensionTest {
 
     @Test
     void verifyProviders(ServiceExtensionContext context, ObjectFactory factory) {
-        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of("edc.ih.iam.id", "did:web:issuer")));
-
         var extension = factory.constructInstance(DcpIssuerCoreExtension.class);
         assertThat(extension.createIssuerService()).isInstanceOf(DcpIssuerServiceImpl.class);
         assertThat(extension.createTokenVerifier()).isInstanceOf(DcpHolderTokenVerifierImpl.class);
@@ -57,9 +51,6 @@ public class DcpIssuerCoreExtensionTest {
 
     @Test
     void verifyTokenValidationRules(ServiceExtensionContext context, ObjectFactory factory) {
-
-        when(context.getConfig()).thenReturn(ConfigFactory.fromMap(Map.of("edc.ih.iam.id", "did:web:issuer")));
-
         var extension = factory.constructInstance(DcpIssuerCoreExtension.class);
         extension.initialize(context);
 
