@@ -129,11 +129,11 @@ include(":e2e-tests:dcp-issuance-tests")
 
 // BOM modules
 include(":dist:bom:identityhub-base-bom")
-include(":dist:bom:identityhub-bom")
+//include(":dist:bom:identityhub-bom")
 include(":dist:bom:identityhub-with-sts-bom")
 include(":dist:bom:identityhub-feature-sql-bom")
 include(":dist:bom:identityhub-feature-sql-sts-bom")
 include(":dist:bom:issuerservice-base-bom")
-include(":dist:bom:issuerservice-bom")
+//include(":dist:bom:issuerservice-bom")
 include(":dist:bom:issuerservice-with-sts-bom")
 include(":dist:bom:issuerservice-feature-sql-bom")

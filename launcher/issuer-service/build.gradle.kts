@@ -20,7 +20,7 @@ plugins {
 }
 
 dependencies {
-    runtimeOnly(project(":dist:bom:issuerservice-bom"))
+    runtimeOnly(project(":dist:bom:issuerservice-with-sts-bom"))
 }
 
 application {
