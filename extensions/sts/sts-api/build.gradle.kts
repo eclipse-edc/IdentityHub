@@ -12,19 +12,25 @@
  *
  */
 
-
 plugins {
     `java-library`
+    `maven-publish`
+    id("io.swagger.core.v3.swagger-gradle-plugin")
 }
 
 dependencies {
-    api(project(":dist:bom:issuerservice-base-bom"))
-    // needed for interaction with the embedded STS
-    runtimeOnly(libs.edc.sts.core)
-    runtimeOnly(project(":extensions:sts:sts-account-service-local"))
-    runtimeOnly(project(":extensions:sts:sts-api"))
+    api(libs.edc.spi.web)
+    api(libs.edc.sts.spi)
+    implementation(libs.jakarta.rsApi)
+
+    testImplementation(libs.edc.junit)
+    testImplementation(testFixtures(libs.edc.core.jersey))
+    testImplementation(testFixtures(libs.edc.sts.spi))
+    testImplementation(libs.restAssured)
 }
 
 edcBuild {
-
+    swagger {
+        apiGroup.set("sts-api")
+    }
 }

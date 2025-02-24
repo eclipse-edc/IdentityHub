@@ -21,7 +21,7 @@ dependencies {
     runtimeOnly(project(":extensions:sts:sts-account-service-local"))
     runtimeOnly(libs.edc.core.api)
     runtimeOnly(libs.edc.sts.core)
-    runtimeOnly(libs.edc.sts.api)
+    runtimeOnly(project(":extensions:sts:sts-api"))
 }
 
 edcBuild {

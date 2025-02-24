@@ -21,7 +21,7 @@ dependencies {
     // required modules
     runtimeOnly(libs.bundles.connector)
     runtimeOnly(libs.edc.sts.spi)
-    runtimeOnly(libs.edc.sts.api)
+    runtimeOnly(project(":extensions:sts:sts-api"))
     runtimeOnly(libs.edc.sts.core)
     runtimeOnly(libs.edc.core.token)
     runtimeOnly(libs.edc.core.api)

@@ -87,14 +87,15 @@ edc-sql-test-fixtures = { module = "org.eclipse.edc:sql-test-fixtures", version.
 # EDC STS dependencies
 edc-sts-spi = { module = "org.eclipse.edc:identity-trust-sts-spi", version.ref = "edc" }
 edc-sts-core = { module = "org.eclipse.edc:identity-trust-sts-core", version.ref = "edc" }
+edc-sts-remotelib = { module = "org.eclipse.edc:identity-trust-sts-remote-lib", version.ref = "edc" }
 edc-sts = { module = "org.eclipse.edc:identity-trust-sts-embedded", version.ref = "edc" }
-edc-sts-api = { module = "org.eclipse.edc:identity-trust-sts-api", version.ref = "edc" }
 
 
 # Third party libs
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitility" }
 bouncyCastle-bcprovJdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncyCastle-jdk18on" }
+bouncyCastle-bcpkixJdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncyCastle-jdk18on" }
 
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-annotation = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
