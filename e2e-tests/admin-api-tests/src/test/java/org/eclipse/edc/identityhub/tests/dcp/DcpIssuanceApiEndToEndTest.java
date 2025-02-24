@@ -44,6 +44,7 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
@@ -51,6 +52,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 
@@ -72,6 +74,7 @@ import static org.mockito.Mockito.when;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
+@SuppressWarnings("JUnitMalformedDeclaration")
 public class DcpIssuanceApiEndToEndTest {
 
     protected static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
@@ -430,13 +433,26 @@ public class DcpIssuanceApiEndToEndTest {
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
 
+        @Order(0)
         @RegisterExtension
-        static IssuerServiceEndToEndExtension runtime;
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+
+        private static final String ISSUER = "issuer";
+
+        @Order(1)
+        @RegisterExtension
+        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
+            POSTGRESQL_EXTENSION.createDatabase(ISSUER);
+        };
+
+        @Order(2)
+        @RegisterExtension
+        static final IssuerServiceEndToEndExtension ISSUER_SERVICE = IssuerServiceEndToEndExtension.Postgres
+                .withConfig(cfg -> POSTGRESQL_EXTENSION.configFor(ISSUER));
 
         static {
-            runtime = new IssuerServiceEndToEndExtension.Postgres();
-            runtime.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
-            runtime.registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
+            ISSUER_SERVICE.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
+            ISSUER_SERVICE.registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
         }
     }
 }

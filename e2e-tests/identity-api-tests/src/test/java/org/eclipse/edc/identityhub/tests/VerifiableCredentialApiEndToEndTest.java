@@ -28,7 +28,6 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
-import org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubCustomizableEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndTestContext;
@@ -37,6 +36,7 @@ import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
@@ -325,24 +325,24 @@ public class VerifiableCredentialApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
-        private static final String DB_NAME = "runtime";
-        private static final Integer DB_PORT = getFreePort();
 
+        @Order(0)
         @RegisterExtension
-        @Order(1)
-        static IdentityHubCustomizableEndToEndExtension runtime;
-        static PostgresSqlService server = new PostgresSqlService(DB_NAME, DB_PORT);
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        private static final String DB_NAME = "runtime";
 
-        @Order(0) // must be the first extension to be evaluated since it starts the DB server
+        @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
-            server.start();
+            POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
 
+        @RegisterExtension
+        @Order(2)
+        static final IdentityHubEndToEndExtension RUNTIME = IdentityHubEndToEndExtension.Postgres.withConfig((it) -> POSTGRESQL_EXTENSION.configFor(DB_NAME));
+
         static {
-            var ctx = IdentityHubEndToEndExtension.Postgres.context(DB_NAME, DB_PORT);
-            ctx.getRuntime().registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
-            runtime = new IdentityHubCustomizableEndToEndExtension(ctx);
+            RUNTIME.registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
         }
     }
 }

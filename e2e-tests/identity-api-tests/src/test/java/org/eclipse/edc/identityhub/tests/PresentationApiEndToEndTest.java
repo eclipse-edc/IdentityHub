@@ -42,7 +42,6 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.identityhub.tests.fixtures.PostgresSqlService;
 import org.eclipse.edc.identityhub.tests.fixtures.TestData;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubCustomizableEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndExtension;
@@ -55,6 +54,7 @@ import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,7 +86,6 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Jwt
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateSiToken;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
-import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
@@ -94,8 +93,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("JUnitMalformedDeclaration")
 public class PresentationApiEndToEndTest {
-
 
     abstract static class Tests {
 
@@ -687,25 +686,24 @@ public class PresentationApiEndToEndTest {
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
 
-        private static final String DB_NAME = "runtime";
-        private static final Integer DB_PORT = getFreePort();
-
+        @Order(0)
         @RegisterExtension
-        @Order(1)
-        static IdentityHubCustomizableEndToEndExtension runtime;
-        static PostgresSqlService server = new PostgresSqlService(DB_NAME, DB_PORT);
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        private static final String DB_NAME = "runtime";
 
-        @Order(0) // must be the first extension to be evaluated since it starts the DB server
+        @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
-            server.start();
+            POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
 
+        @RegisterExtension
+        @Order(2)
+        static final IdentityHubEndToEndExtension RUNTIME = IdentityHubEndToEndExtension.Postgres.withConfig((it) -> POSTGRESQL_EXTENSION.configFor(DB_NAME));
+
         static {
-            var ctx = IdentityHubEndToEndExtension.Postgres.context(DB_NAME, DB_PORT);
-            ctx.getRuntime().registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
-            ctx.getRuntime().registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
-            runtime = new IdentityHubCustomizableEndToEndExtension(ctx);
+            RUNTIME.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
+            RUNTIME.registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
         }
 
     }
