@@ -194,11 +194,7 @@ _None_
 **Overview:** No overview provided.
 
 
-### Configuration
-
-| Key             | Required | Type     | Default | Pattern | Min | Max | Description       |
-| --------------- | -------- | -------- | ------- | ------- | --- | --- | ----------------- |
-| `edc.ih.iam.id` | `*`      | `string` | ``      |         |     |     | DID of the holder |
+### Configuration_None_
 
 #### Provided services
 - `org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier`
@@ -377,11 +373,7 @@ _None_
 
 
 
-### Configuration
-
-| Key             | Required | Type     | Default | Pattern | Min | Max | Description       |
-| --------------- | -------- | -------- | ------- | ------- | --- | --- | ----------------- |
-| `edc.ih.iam.id` | `*`      | `string` | ``      |         |     |     | DID of the holder |
+### Configuration_None_
 
 #### Provided services
 - `org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier`
@@ -462,6 +454,20 @@ Module `identity-hub-did`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
+**Name:** "DID Default Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
+
 #### Class: `org.eclipse.edc.identityhub.did.DidServicesExtension`
 **Name:** "DID Service Extension"
 
@@ -480,20 +486,6 @@ _None_
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.keys.spi.KeyParserRegistry` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore` (required)
-
-#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
-**Name:** "DID Default Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `identity-hub-did-store-sql`
 -----------------------------------
@@ -1287,6 +1279,7 @@ _None_
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter` (required)
 - `org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier` (required)
 - `org.eclipse.edc.spi.monitor.Monitor` (required)
+- `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 
 Module `sts-account-provisioner`
 --------------------------------
@@ -1372,27 +1365,6 @@ Module `sts-account-service-remote`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.sts.accountservice.RemoteStsAccountServiceExtension`
-**Name:** "Remote STS Account Service Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration
-
-| Key                                      | Required | Type     | Default     | Pattern | Min | Max | Description                                                                                    |
-| ---------------------------------------- | -------- | -------- | ----------- | ------- | --- | --- | ---------------------------------------------------------------------------------------------- |
-| `edc.sts.account.api.url`                | `*`      | `string` | ``          |         |     |     | The base URL of the remote STS Accounts API                                                    |
-| `edc.sts.accounts.api.auth.header.name`  | `*`      | `string` | `x-api-key` |         |     |     | The name of the Auth header to use. Could be 'Authorization', some custom auth header, etc.    |
-| `edc.sts.accounts.api.auth.header.value` | `*`      | `string` | ``          |         |     |     | The value of the Auth header to use. Currently we only support static values, e.g. tokens etc. |
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.http.spi.EdcHttpClient` (required)
-- `org.eclipse.edc.spi.types.TypeManager` (required)
-
 #### Class: `org.eclipse.edc.identityhub.sts.RemoteStsServiceExtension`
 **Name:** "Remote Secure Token Service extension"
 
@@ -1413,6 +1385,27 @@ _None_
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.spi.security.Vault` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService` (required)
+
+#### Class: `org.eclipse.edc.identityhub.sts.accountservice.RemoteStsAccountServiceExtension`
+**Name:** "Remote STS Account Service Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                      | Required | Type     | Default     | Pattern | Min | Max | Description                                                                                    |
+| ---------------------------------------- | -------- | -------- | ----------- | ------- | --- | --- | ---------------------------------------------------------------------------------------------- |
+| `edc.sts.account.api.url`                | `*`      | `string` | ``          |         |     |     | The base URL of the remote STS Accounts API                                                    |
+| `edc.sts.accounts.api.auth.header.name`  | `*`      | `string` | `x-api-key` |         |     |     | The name of the Auth header to use. Could be 'Authorization', some custom auth header, etc.    |
+| `edc.sts.accounts.api.auth.header.value` | `*`      | `string` | ``          |         |     |     | The value of the Auth header to use. Currently we only support static values, e.g. tokens etc. |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.http.spi.EdcHttpClient` (required)
+- `org.eclipse.edc.spi.types.TypeManager` (required)
 
 Module `verifiable-credentials-api`
 -----------------------------------
