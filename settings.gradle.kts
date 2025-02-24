@@ -70,7 +70,6 @@ include(":extensions:did:local-did-publisher")
 include(":extensions:common:credential-watchdog")
 include(":extensions:sts:sts-account-provisioner")
 include(":extensions:sts:sts-account-service-local")
-include(":extensions:sts:sts-account-service-remote")
 
 // DCP protocol modules
 include(":protocols:dcp:dcp-spi")
@@ -119,8 +118,6 @@ include(":version-catalog")
 // test modules
 include(":e2e-tests")
 include(":e2e-tests:identity-api-tests")
-include(":e2e-tests:sts-tests")
-include(":e2e-tests:runtimes:identityhub-remote-sts")
 include(":e2e-tests:runtimes:sts")
 include(":e2e-tests:bom-tests")
 include(":e2e-tests:fixtures")
