@@ -52,5 +52,4 @@ public class StsAccountServiceExtension implements ServiceExtension {
         monitor.info("This IdentityHub runtime contains an embedded SecureTokenService (STS) instance. That means ParticipantContexts and STS Accounts will be synchronized automatically.");
         return new StsAccountServiceImpl(accountStore, transactionContext, vault, ofNullable(secretGenerator).orElseGet(RandomStringGenerator::new));
     }
-
 }

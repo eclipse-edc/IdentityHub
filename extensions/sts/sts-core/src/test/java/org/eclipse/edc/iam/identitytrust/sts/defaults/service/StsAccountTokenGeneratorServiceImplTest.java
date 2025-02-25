@@ -15,6 +15,7 @@
 package org.eclipse.edc.iam.identitytrust.sts.defaults.service;
 
 
+import org.eclipse.edc.iam.identitytrust.sts.service.StsClientTokenGeneratorServiceImpl;
 import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccountTokenAdditionalParams;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
