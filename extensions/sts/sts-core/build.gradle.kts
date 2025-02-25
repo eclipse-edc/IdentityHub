@@ -6,7 +6,7 @@ plugins {
 dependencies {
     api(libs.edc.spi.transaction)
     api(libs.edc.spi.dcp)
-    api(libs.edc.sts.spi)
+    api(project(":spi:sts-spi"))
     api(libs.edc.spi.jwt.signer)
 
     implementation(libs.edc.spi.keys)
@@ -15,7 +15,7 @@ dependencies {
     implementation(libs.edc.lib.token)
     implementation(libs.edc.lib.store)
 
-    testImplementation(testFixtures(libs.edc.sts.spi))
+    testImplementation(testFixtures(project(":spi:sts-spi")))
     testImplementation(libs.edc.lib.boot)
     testImplementation(libs.edc.lib.common.crypto)
     testImplementation(libs.edc.lib.keys)

@@ -20,12 +20,12 @@ plugins {
 
 dependencies {
     api(libs.edc.spi.web)
-    api(libs.edc.sts.spi)
+    api(project(":spi:sts-spi"))
     implementation(libs.jakarta.rsApi)
 
     testImplementation(libs.edc.junit)
     testImplementation(testFixtures(libs.edc.core.jersey))
-    testImplementation(testFixtures(libs.edc.sts.spi))
+    testImplementation(testFixtures(project(":spi:sts-spi")))
     testImplementation(libs.restAssured)
 }
 

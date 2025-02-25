@@ -18,7 +18,7 @@ plugins {
 
 dependencies {
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.sts.spi)
+    testImplementation(project(":spi:sts-spi"))
     testImplementation(libs.edc.spi.dcp)
     testImplementation(libs.edc.oauth2.client)
 
@@ -27,7 +27,7 @@ dependencies {
     testImplementation(libs.awaitility)
     testImplementation(libs.junit.jupiter.api)
 
-    testImplementation(testFixtures(libs.edc.sts.spi))
+    testImplementation(testFixtures(project(":spi:sts-spi")))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
     testImplementation(libs.edc.transaction.local)
     testImplementation(libs.nimbus.jwt)

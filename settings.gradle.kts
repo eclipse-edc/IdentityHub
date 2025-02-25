@@ -29,6 +29,7 @@ include(":spi:verifiable-credential-spi")
 include(":spi:keypair-spi")
 include(":spi:did-spi")
 include(":spi:holder-credential-request-spi")
+include(":spi:sts-spi")
 
 // IssuerService SPI modules
 include(":spi:issuerservice:issuerservice-participant-spi")

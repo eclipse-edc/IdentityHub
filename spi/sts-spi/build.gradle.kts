@@ -14,17 +14,20 @@
 
 plugins {
     `java-library`
-    `java-test-fixtures`
     `maven-publish`
+    `java-test-fixtures`
 }
-
-val swagger: String by project
 
 dependencies {
-    implementation(libs.edc.spi.identity.did) // ParticipantManifest#serviceEndpoint
-    implementation(project(":spi:sts-spi")) // StsAccount
-    testImplementation(libs.edc.lib.json)
-    testFixturesImplementation(libs.edc.junit)
+    api(libs.edc.spi.core)
+    api(libs.edc.spi.jwt)
+    api(libs.edc.spi.token)
+
     testFixturesImplementation(libs.junit.jupiter.api)
+    testFixturesImplementation(libs.junit.jupiter.params)
     testFixturesImplementation(libs.assertj)
+    testFixturesImplementation(libs.edc.junit)
+
 }
+
+
