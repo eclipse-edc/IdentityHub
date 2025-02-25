@@ -52,7 +52,7 @@ public class BomSmokeTests {
 
     @Nested
     @EndToEndTest
-    class IdentityHubWithSts extends SmokeTest {
+    class IdentityHub extends SmokeTest {
 
         @RegisterExtension
         protected RuntimeExtension runtime =
@@ -88,7 +88,7 @@ public class BomSmokeTests {
 
     @Nested
     @EndToEndTest
-    class IssuerServiceWithSts extends SmokeTest {
+    class IssuerService extends SmokeTest {
         @RegisterExtension
         protected RuntimeExtension runtime =
                 new RuntimePerMethodExtension(new EmbeddedRuntime("issuer-service-bom",
