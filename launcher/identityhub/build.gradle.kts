@@ -19,7 +19,7 @@ plugins {
 }
 
 dependencies {
-    runtimeOnly(project(":dist:bom:identityhub-with-sts-bom"))
+    runtimeOnly(project(":dist:bom:identityhub-bom"))
 }
 
 application {

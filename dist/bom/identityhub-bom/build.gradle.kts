@@ -18,10 +18,10 @@ plugins {
 
 dependencies {
     api(project(":dist:bom:identityhub-base-bom"))
-    runtimeOnly(project(":extensions:sts:sts-account-service-remote"))
-    // needed for interaction with the remote STS
-    runtimeOnly(libs.edc.sts.client.remote)
-    runtimeOnly(libs.edc.oauth2.client)
+    runtimeOnly(project(":extensions:sts:sts-account-service-local"))
+    runtimeOnly(libs.edc.core.api)
+    runtimeOnly(project(":extensions:sts:sts-core"))
+    runtimeOnly(project(":extensions:sts:sts-api"))
 }
 
 edcBuild {

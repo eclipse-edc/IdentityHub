@@ -89,7 +89,7 @@ public abstract class IssuerServiceEndToEndExtension extends RuntimePerClassExte
         public static IssuerServiceEndToEndTestContext context(IssuerServiceRuntimeConfiguration configuration, Supplier<Config> configSupplier) {
             var runtime = new EmbeddedRuntime(
                     "issuerservice",
-                    ":dist:bom:issuerservice-with-sts-bom"
+                    ":dist:bom:issuerservice-bom"
             ).configurationProvider(configuration::config).configurationProvider(configSupplier);
 
             return new IssuerServiceEndToEndTestContext(runtime, configuration);
@@ -128,7 +128,7 @@ public abstract class IssuerServiceEndToEndExtension extends RuntimePerClassExte
 
             var runtime = new EmbeddedRuntime(
                     "issuerservice-pg",
-                    ":dist:bom:issuerservice-with-sts-bom",
+                    ":dist:bom:issuerservice-bom",
                     ":dist:bom:issuerservice-feature-sql-bom"
 
             ).configurationProvider(configuration::config)

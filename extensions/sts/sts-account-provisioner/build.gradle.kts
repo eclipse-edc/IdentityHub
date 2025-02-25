@@ -19,7 +19,7 @@ plugins {
 
 dependencies {
 
-    implementation(libs.edc.sts.spi)
+    implementation(project(":spi:sts-spi"))
     implementation(libs.edc.spi.core)
     implementation(project(":spi:participant-context-spi"))
     implementation(project(":spi:keypair-spi"))

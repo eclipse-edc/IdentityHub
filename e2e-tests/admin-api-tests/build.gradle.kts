@@ -33,7 +33,7 @@ dependencies {
     testImplementation(libs.edc.transaction.local)
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.jakarta.rsApi)
-    testImplementation(libs.edc.sts.spi)
+    testImplementation(project(":spi:sts-spi"))
     testImplementation(testFixtures(project(":e2e-tests:fixtures")))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(libs.mockserver.netty)

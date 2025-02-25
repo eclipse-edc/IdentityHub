@@ -29,6 +29,7 @@ dependencies {
     api(libs.edc.sql.pool)
     api(libs.edc.sql.bootstrapper)
     api(libs.edc.sql.jtivdalidation)
+    api(project(":extensions:store:sql:sts-client-store-sql"))
 
     // third-party deps
     api(libs.postgres)

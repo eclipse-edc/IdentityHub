@@ -23,7 +23,7 @@ dependencies {
     testImplementation(project(":spi:issuerservice:issuerservice-credential-spi"))
     testImplementation(project(":spi:issuerservice:issuerservice-issuance-spi"))
     testImplementation(project(":spi:participant-context-spi"))
-    testImplementation(libs.edc.sts.spi)
+    testImplementation(project(":spi:sts-spi"))
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.restAssured)

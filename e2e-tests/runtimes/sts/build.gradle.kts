@@ -20,10 +20,9 @@ plugins {
 dependencies {
     // required modules
     runtimeOnly(libs.bundles.connector)
-    runtimeOnly(libs.edc.sts.spi)
-    runtimeOnly(libs.edc.sts.api)
-    runtimeOnly(libs.edc.sts.api.accounts)
-    runtimeOnly(libs.edc.sts.core)
+    runtimeOnly(project(":spi:sts-spi"))
+    runtimeOnly(project(":extensions:sts:sts-api"))
+    runtimeOnly(project(":extensions:sts:sts-core"))
     runtimeOnly(libs.edc.core.token)
     runtimeOnly(libs.edc.core.api)
 

@@ -14,16 +14,15 @@
 
 package org.eclipse.edc.identityhub.common.provisioner;
 
+import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
-import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.event.EventRouter;
-import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -41,8 +40,8 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
     private Vault vault;
     @Inject(required = false)
     private StsClientSecretGenerator stsClientSecretGenerator;
-    @Inject(required = false)
-    private StsAccountService accountManager;
+    @Inject
+    private StsAccountService accountService;
 
 
     private StsAccountProvisionerImpl provisioner;
@@ -62,21 +61,12 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
     public StsAccountProvisioner createProvisioner(ServiceExtensionContext context) {
         if (provisioner == null) {
             var monitor = context.getMonitor().withPrefix("STS-Account");
-            provisioner = new StsAccountProvisionerImpl(monitor, vault, stsClientSecretGenerator(), accountManager(monitor));
+            provisioner = new StsAccountProvisionerImpl(monitor, vault, stsClientSecretGenerator(), accountService);
             eventRouter.registerSync(ParticipantContextDeleted.class, provisioner);
             eventRouter.registerSync(KeyPairRevoked.class, provisioner);
             eventRouter.registerSync(KeyPairRotated.class, provisioner);
         }
         return provisioner;
-    }
-
-    private StsAccountService accountManager(Monitor monitor) {
-        if (accountManager == null) {
-            monitor.warning("This IdentityHub runtime does NOT contain an embedded SecureTokenService (STS) instance and no remote STS was configured. " +
-                    "Synchronizing ParticipantContexts and STS Accounts must be handled out-of-band.");
-            return new NoopAccountService();
-        }
-        return accountManager;
     }
 
     private StsClientSecretGenerator stsClientSecretGenerator() {

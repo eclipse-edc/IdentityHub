@@ -53,6 +53,8 @@ public class IdentityHubRuntimeConfiguration extends AbstractRuntimeConfiguratio
                 put("web.http.identity.path", identityEndpoint.getUrl().getPath());
                 put("web.http.sts.port", String.valueOf(getFreePort()));
                 put("web.http.sts.path", "/api/sts");
+                put("web.http.version.port", String.valueOf(getFreePort()));
+                put("web.http.version.path", "/.well-known/version");
                 put("web.http.accounts.port", String.valueOf(getFreePort()));
                 put("web.http.accounts.path", "/api/accounts");
                 put("web.http.did.port", String.valueOf(didEndpoint.getUrl().getPort()));

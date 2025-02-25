@@ -27,7 +27,6 @@ dependencies {
     api(libs.edc.spi.http)
     api(libs.edc.spi.identity.did)
     api(libs.edc.spi.transaction)
-    api(libs.edc.sts)
     implementation(libs.edc.vc.jwt)
     implementation(libs.edc.lib.token)
     implementation(libs.nimbus.jwt)
