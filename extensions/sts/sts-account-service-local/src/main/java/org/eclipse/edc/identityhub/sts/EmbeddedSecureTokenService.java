@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.sts;
 
+import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
-import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationEntry;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
@@ -58,7 +58,8 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
                                       long tokenValiditySeconds,
                                       JtiValidationStore jtiValidationStore,
                                       TokenGenerationService tokenGenerationService,
-                                      Clock clock, StsAccountService stsAccountService) {
+                                      Clock clock,
+                                      StsAccountService stsAccountService) {
         this.transactionContext = transactionContext;
         this.tokenValiditySeconds = tokenValiditySeconds;
         this.jtiValidationStore = jtiValidationStore;
@@ -69,7 +70,6 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
 
     @Override
     public Result<TokenRepresentation> createToken(String participantContextId, Map<String, String> claims, @Nullable String bearerAccessScope) {
-
         return transactionContext.execute(() -> {
             var result = stsAccountService.findById(participantContextId);
             if (result.failed()) {
@@ -91,7 +91,6 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
                         return tokenGenerationService.generate(privateKeyAlias, keyIdDecorator, new SelfIssuedTokenDecorator(selfIssuedClaims, clock, tokenValiditySeconds));
                     });
         });
-
     }
 
     private Result<Void> recordToken(String jti, Long exp) {

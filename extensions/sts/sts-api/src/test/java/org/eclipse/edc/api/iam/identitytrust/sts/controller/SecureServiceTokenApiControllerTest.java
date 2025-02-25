@@ -94,7 +94,6 @@ class SecureServiceTokenApiControllerTest extends RestControllerTestBase {
 
     @Test
     void token_invalidClient_whenNotFound() {
-        var id = "id";
         var clientId = "clientId";
         var clientSecret = "client_secret";
         var audience = "audience";

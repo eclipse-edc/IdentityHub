@@ -20,7 +20,7 @@ dependencies {
     api(project(":dist:bom:identityhub-base-bom"))
     runtimeOnly(project(":extensions:sts:sts-account-service-local"))
     runtimeOnly(libs.edc.core.api)
-    runtimeOnly(libs.edc.sts.core)
+    runtimeOnly(project(":extensions:sts:sts-core"))
     runtimeOnly(project(":extensions:sts:sts-api"))
 }
 

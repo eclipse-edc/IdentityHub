@@ -70,6 +70,7 @@ include(":extensions:did:local-did-publisher")
 include(":extensions:common:credential-watchdog")
 include(":extensions:sts:sts-account-provisioner")
 include(":extensions:sts:sts-account-service-local")
+include(":extensions:sts:sts-core")
 include(":extensions:sts:sts-api")
 
 // DCP protocol modules

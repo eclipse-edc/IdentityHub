@@ -20,7 +20,7 @@ plugins {
 dependencies {
     api(project(":dist:bom:issuerservice-base-bom"))
     // needed for interaction with the embedded STS
-    runtimeOnly(libs.edc.sts.core)
+    runtimeOnly(project(":extensions:sts:sts-core"))
     runtimeOnly(project(":extensions:sts:sts-account-service-local"))
     runtimeOnly(project(":extensions:sts:sts-api"))
 }

@@ -22,7 +22,7 @@ dependencies {
     runtimeOnly(libs.bundles.connector)
     runtimeOnly(libs.edc.sts.spi)
     runtimeOnly(project(":extensions:sts:sts-api"))
-    runtimeOnly(libs.edc.sts.core)
+    runtimeOnly(project(":extensions:sts:sts-core"))
     runtimeOnly(libs.edc.core.token)
     runtimeOnly(libs.edc.core.api)
 
