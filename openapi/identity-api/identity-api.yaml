@@ -562,7 +562,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantContextId}/credentials/request/{issuerPid}:
+  /v1alpha/participants/{participantContextId}/credentials/request/{holderPid}:
     get:
       tags:
       - Verifiable Credentials
@@ -592,7 +592,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: issuerPid
+      - name: holderPid
         in: path
         required: true
         style: simple
@@ -1736,10 +1736,6 @@ components:
           type: array
           items:
             type: string
-        credentialTypes:
-          type: array
-          items:
-            $ref: "#/components/schemas/CredentialDescriptor"
         holderPid:
           type: string
         issuerDid:
@@ -1748,6 +1744,10 @@ components:
           type: string
         status:
           type: string
+        typesAndFormats:
+          type: object
+          additionalProperties:
+            type: string
     Issuer:
       type: object
       properties:
