@@ -22,6 +22,7 @@ plugins {
 dependencies {
     api(project(":spi:identity-hub-spi"))
     api(project(":spi:verifiable-credential-spi"))
+    api(project(":spi:issuerservice:issuerservice-issuance-spi"))
     api(project(":protocols:dcp:dcp-spi"))
     api(libs.edc.spi.jsonld)
     api(libs.edc.spi.jwt)

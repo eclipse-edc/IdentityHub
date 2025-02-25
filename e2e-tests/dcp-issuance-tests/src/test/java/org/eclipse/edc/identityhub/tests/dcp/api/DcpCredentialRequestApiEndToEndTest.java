@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.tests.dcp;
+package org.eclipse.edc.identityhub.tests.dcp.api;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
@@ -75,7 +75,7 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
-public class DcpIssuanceApiEndToEndTest {
+public class DcpCredentialRequestApiEndToEndTest {
 
     protected static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
     protected static final DidResolverRegistry DID_RESOLVER_REGISTRY = mock();

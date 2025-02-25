@@ -26,7 +26,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.ws.rs.core.Response;
+import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.ApiSchema;
 
 @OpenAPIDefinition(
@@ -44,7 +44,9 @@ public interface CredentialRequestStatusApi {
     @Tag(name = "Credential Request Status API")
     @Operation(description = "Requests status information about an issuance request from an issuer",
             operationId = "getCredentialRequestStatus",
-            parameters = { @Parameter(name = "credentialRequestId", description = "ID of the Credential Request that was sent previously", required = true, in = ParameterIn.PATH) },
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "credentialRequestId", description = "ID of the Credential Request that was sent previously", required = true, in = ParameterIn.PATH) },
             responses = {
                     @ApiResponse(responseCode = "200", description = "Gets the status of a credentials request.",
                             content = @Content(schema = @Schema(implementation = ApiSchema.CredentialStatusSchema.class))),
@@ -58,5 +60,5 @@ public interface CredentialRequestStatusApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class))))
             }
     )
-    Response requestCredential(String credentialRequestId);
+    JsonObject credentialStatus(String participantContextId, String credentialRequestId, String token);
 }

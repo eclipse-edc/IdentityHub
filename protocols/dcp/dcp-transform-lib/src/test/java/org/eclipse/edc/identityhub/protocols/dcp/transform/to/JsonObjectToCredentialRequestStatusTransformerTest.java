@@ -21,7 +21,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_REQUEST_ID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_ISSUER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_STATUS_TERM;
 import static org.mockito.Mockito.mock;
 
@@ -34,14 +35,16 @@ public class JsonObjectToCredentialRequestStatusTransformerTest {
     void transform() {
 
         var input = Json.createObjectBuilder()
-                .add(toIri(CREDENTIAL_REQUEST_REQUEST_ID_TERM), "requestId")
+                .add(toIri(CREDENTIAL_REQUEST_HOLDER_PID_TERM), "holderPid")
+                .add(toIri(CREDENTIAL_REQUEST_ISSUER_PID_TERM), "issuerPid")
                 .add(toIri(CREDENTIAL_REQUEST_STATUS_TERM), "ISSUED")
                 .build();
 
         var status = transformer.transform(input, context);
 
         assertThat(status).isNotNull();
-        assertThat(status.getRequestId()).isEqualTo("requestId");
+        assertThat(status.getIssuerPid()).isEqualTo("issuerPid");
+        assertThat(status.getHolderPid()).isEqualTo("holderPid");
         assertThat(status.getStatus()).isEqualTo(CredentialRequestStatus.Status.ISSUED);
     }
 

@@ -29,6 +29,7 @@ dependencies {
     testImplementation(libs.restAssured)
     testImplementation(libs.awaitility)
     testImplementation(testFixtures(project(":e2e-tests:fixtures")))
+    testImplementation(libs.mockserver.netty)
 }
 
 edcBuild {

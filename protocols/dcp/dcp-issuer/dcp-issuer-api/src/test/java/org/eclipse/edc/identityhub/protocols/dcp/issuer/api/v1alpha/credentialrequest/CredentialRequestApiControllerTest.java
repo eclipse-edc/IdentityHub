@@ -160,8 +160,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
 
     @Test
     void requestCredential() {
-
-
+        
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
         var requestMessage = createCredentialRequestMessage();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));

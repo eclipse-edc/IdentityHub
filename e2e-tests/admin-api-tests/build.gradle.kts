@@ -36,7 +36,6 @@ dependencies {
     testImplementation(project(":spi:sts-spi"))
     testImplementation(testFixtures(project(":e2e-tests:fixtures")))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
-    testImplementation(libs.mockserver.netty)
 }
 
 edcBuild {
