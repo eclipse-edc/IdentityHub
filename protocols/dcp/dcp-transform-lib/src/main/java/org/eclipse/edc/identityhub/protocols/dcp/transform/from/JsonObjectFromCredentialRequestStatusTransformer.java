@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.protocols.dcp.transform.from;
 
 import jakarta.json.Json;
+import jakarta.json.JsonBuilderFactory;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
@@ -23,15 +24,19 @@ import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_REQUEST_ID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_ISSUER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_STATUS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_TERM;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 
 public class JsonObjectFromCredentialRequestStatusTransformer extends AbstractNamespaceAwareJsonLdTransformer<CredentialRequestStatus, JsonObject> {
 
-    public JsonObjectFromCredentialRequestStatusTransformer(JsonLdNamespace namespace) {
+    private final JsonBuilderFactory builderFactory;
+
+    public JsonObjectFromCredentialRequestStatusTransformer(JsonLdNamespace namespace, JsonBuilderFactory builderFactory) {
         super(CredentialRequestStatus.class, JsonObject.class, namespace);
+        this.builderFactory = builderFactory;
     }
 
     @Override
@@ -39,8 +44,9 @@ public class JsonObjectFromCredentialRequestStatusTransformer extends AbstractNa
 
         return Json.createObjectBuilder()
                 .add(TYPE, forNamespace(CREDENTIAL_REQUEST_TERM))
-                .add(forNamespace(CREDENTIAL_REQUEST_REQUEST_ID_TERM), credentialRequestStatus.getRequestId())
-                .add(forNamespace(CREDENTIAL_REQUEST_STATUS_TERM), credentialRequestStatus.getStatus().name())
+                .add(forNamespace(CREDENTIAL_REQUEST_ISSUER_PID_TERM), createId(builderFactory, credentialRequestStatus.getIssuerPid()))
+                .add(forNamespace(CREDENTIAL_REQUEST_HOLDER_PID_TERM), createId(builderFactory, credentialRequestStatus.getHolderPid()))
+                .add(forNamespace(CREDENTIAL_REQUEST_STATUS_TERM), createId(builderFactory, credentialRequestStatus.getStatus().name()))
                 .build();
     }
 }

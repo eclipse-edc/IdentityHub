@@ -22,22 +22,38 @@ import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_REQUEST_ID_TERM;
+import java.util.Optional;
+
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_ISSUER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_STATUS_TERM;
 
 public class JsonObjectToCredentialRequestStatusTransformer extends AbstractNamespaceAwareJsonLdTransformer<JsonObject, CredentialRequestStatus> {
 
+    private final String ns;
+
     public JsonObjectToCredentialRequestStatusTransformer(JsonLdNamespace namespace) {
         super(JsonObject.class, CredentialRequestStatus.class, namespace);
+        ns = namespace.namespace();
+
     }
 
     @Override
     public @Nullable CredentialRequestStatus transform(@NotNull JsonObject jsonObject, @NotNull TransformerContext transformerContext) {
-        var requestId = transformString(jsonObject.get(forNamespace(CREDENTIAL_REQUEST_REQUEST_ID_TERM)), transformerContext);
+        var issuerPid = transformString(jsonObject.get(forNamespace(CREDENTIAL_REQUEST_ISSUER_PID_TERM)), transformerContext);
+        var holderPid = transformString(jsonObject.get(forNamespace(CREDENTIAL_REQUEST_HOLDER_PID_TERM)), transformerContext);
         var status = transformString(jsonObject.get(forNamespace(CREDENTIAL_REQUEST_STATUS_TERM)), transformerContext);
         return CredentialRequestStatus.Builder.newInstance()
-                .requestId(requestId)
-                .status(CredentialRequestStatus.Status.valueOf(status))
+                .issuerPid(issuerPid)
+                .holderPid(holderPid)
+                .status(toStatus(status))
                 .build();
     }
+    
+    private CredentialRequestStatus.Status toStatus(String status) {
+        return Optional.ofNullable(status)
+                .map(s -> CredentialRequestStatus.Status.valueOf(s.replace(ns, "")))
+                .orElse(null);
+    }
+
 }

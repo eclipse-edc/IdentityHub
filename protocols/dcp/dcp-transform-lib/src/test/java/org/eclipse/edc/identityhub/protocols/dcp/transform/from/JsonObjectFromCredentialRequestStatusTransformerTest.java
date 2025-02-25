@@ -14,15 +14,20 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.transform.from;
 
+import jakarta.json.Json;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_REQUEST_ID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_ISSUER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_STATUS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus.CREDENTIAL_REQUEST_TERM;
+import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 import static org.mockito.Mockito.mock;
 
@@ -30,13 +35,14 @@ public class JsonObjectFromCredentialRequestStatusTransformerTest {
 
     private final TransformerContext context = mock();
 
-    private final JsonObjectFromCredentialRequestStatusTransformer transformer = new JsonObjectFromCredentialRequestStatusTransformer(DSPACE_DCP_NAMESPACE_V_1_0);
+    private final JsonObjectFromCredentialRequestStatusTransformer transformer = new JsonObjectFromCredentialRequestStatusTransformer(DSPACE_DCP_NAMESPACE_V_1_0, Json.createBuilderFactory(Map.of()));
 
     @Test
     void transform() {
 
         var status = CredentialRequestStatus.Builder.newInstance()
-                .requestId("requestId")
+                .issuerPid("issuerPid")
+                .holderPid("holderPid")
                 .status(CredentialRequestStatus.Status.ISSUED)
                 .build();
 
@@ -44,8 +50,9 @@ public class JsonObjectFromCredentialRequestStatusTransformerTest {
 
         assertThat(jsonLd).isNotNull();
         assertThat(jsonLd.getString(TYPE)).isEqualTo(toIri(CREDENTIAL_REQUEST_TERM));
-        assertThat(jsonLd.getString(toIri(CREDENTIAL_REQUEST_REQUEST_ID_TERM))).isEqualTo(status.getRequestId());
-        assertThat(jsonLd.getString(toIri(CREDENTIAL_REQUEST_STATUS_TERM))).isEqualTo(status.getStatus().name());
+        assertThat(jsonLd.getJsonObject(toIri(CREDENTIAL_REQUEST_HOLDER_PID_TERM)).getString(ID)).isEqualTo(status.getHolderPid());
+        assertThat(jsonLd.getJsonObject(toIri(CREDENTIAL_REQUEST_ISSUER_PID_TERM)).getString(ID)).isEqualTo(status.getIssuerPid());
+        assertThat(jsonLd.getJsonObject(toIri(CREDENTIAL_REQUEST_STATUS_TERM)).getString(ID)).isEqualTo(status.getStatus().name());
     }
 
     private String toIri(String term) {

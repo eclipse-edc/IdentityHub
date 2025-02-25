@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.tests.dcp;
+package org.eclipse.edc.identityhub.tests.dcp.flow;
 
 import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;

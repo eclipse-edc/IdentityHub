@@ -25,10 +25,15 @@ public class CredentialRequestStatus {
 
     public static final String CREDENTIAL_REQUEST_TERM = "CredentialStatus";
     public static final String CREDENTIAL_REQUEST_STATUS_TERM = "status";
-    public static final String CREDENTIAL_REQUEST_REQUEST_ID_TERM = "requestId";
+    public static final String CREDENTIAL_REQUEST_ISSUER_PID_TERM = "issuerPid";
+    public static final String CREDENTIAL_REQUEST_HOLDER_PID_TERM = "holderPid";
+    public static final String CREDENTIAL_REQUEST_STATUS_RECEIVED_TERM = "RECEIVED";
+    public static final String CREDENTIAL_REQUEST_STATUS_ISSUED_TERM = "ISSUED";
+    public static final String CREDENTIAL_REQUEST_STATUS_REJECTED_TERM = "REJECTED";
 
     private Status status;
-    private String requestId;
+    private String issuerPid;
+    private String holderPid;
 
     private CredentialRequestStatus() {
     }
@@ -37,8 +42,12 @@ public class CredentialRequestStatus {
         return status;
     }
 
-    public String getRequestId() {
-        return requestId;
+    public String getIssuerPid() {
+        return issuerPid;
+    }
+
+    public String getHolderPid() {
+        return holderPid;
     }
 
     public enum Status {
@@ -65,13 +74,19 @@ public class CredentialRequestStatus {
             return this;
         }
 
-        public Builder requestId(String requestId) {
-            this.credentialRequestStatus.requestId = requestId;
+        public Builder issuerPid(String issuerPid) {
+            this.credentialRequestStatus.issuerPid = issuerPid;
+            return this;
+        }
+
+        public Builder holderPid(String holderPid) {
+            this.credentialRequestStatus.holderPid = holderPid;
             return this;
         }
 
         public CredentialRequestStatus build() {
-            Objects.requireNonNull(credentialRequestStatus.requestId, "requestId");
+            Objects.requireNonNull(credentialRequestStatus.issuerPid, "issuerPid");
+            Objects.requireNonNull(credentialRequestStatus.holderPid, "holderPid");
             Objects.requireNonNull(credentialRequestStatus.status, "status");
             return credentialRequestStatus;
         }

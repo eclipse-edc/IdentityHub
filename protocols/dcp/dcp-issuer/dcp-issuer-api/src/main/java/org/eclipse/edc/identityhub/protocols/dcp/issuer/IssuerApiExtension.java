@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import jakarta.json.Json;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest.CredentialRequestApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequeststatus.CredentialRequestStatusApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata.IssuerMetadataApiController;
@@ -26,6 +27,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromIs
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialRequestMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.validation.CredentialRequestMessageValidator;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
@@ -48,6 +50,7 @@ import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
@@ -94,6 +97,9 @@ public class IssuerApiExtension implements ServiceExtension {
     @Inject
     private ParticipantContextService participantContextService;
 
+    @Inject
+    private IssuanceProcessService issuanceProcessService;
+
     @Override
     public void initialize(ServiceExtensionContext context) {
 
@@ -104,7 +110,7 @@ public class IssuerApiExtension implements ServiceExtension {
         registerValidators(DSPACE_DCP_NAMESPACE_V_1_0);
 
         webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(participantContextService, dcpIssuerService, dcpHolderTokenVerifier, validatorRegistry, dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0));
-        webService.registerResource(ISSUANCE_API, new CredentialRequestStatusApiController(dcpRegistry));
+        webService.registerResource(ISSUANCE_API, new CredentialRequestStatusApiController(participantContextService, dcpHolderTokenVerifier, issuanceProcessService, dcpRegistry));
         webService.registerResource(ISSUANCE_API, new IssuerMetadataApiController(dcpRegistry));
 
         webService.registerResource(ISSUANCE_API, new ObjectMapperProvider(typeManager, JSON_LD));
@@ -117,8 +123,9 @@ public class IssuerApiExtension implements ServiceExtension {
 
     private void registerTransformers(TypeTransformerRegistry dcpRegistry, JsonLdNamespace namespace) {
 
+        var builderFactory = Json.createBuilderFactory(Map.of());
         // from
-        dcpRegistry.register(new JsonObjectFromCredentialRequestStatusTransformer(namespace));
+        dcpRegistry.register(new JsonObjectFromCredentialRequestStatusTransformer(namespace, builderFactory));
         dcpRegistry.register(new JsonObjectFromIssuerMetadataTransformer(namespace));
         dcpRegistry.register(new JsonObjectFromCredentialObjectTransformer(typeManager, JSON_LD, namespace));
 
