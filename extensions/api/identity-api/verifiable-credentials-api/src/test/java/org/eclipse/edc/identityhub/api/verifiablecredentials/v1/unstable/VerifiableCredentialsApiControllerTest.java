@@ -25,6 +25,7 @@ import org.eclipse.edc.identityhub.api.verifiablecredential.validation.Verifiabl
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialDescriptor;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
@@ -55,6 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.ServiceResult.unauthorized;
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
+import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
@@ -517,6 +519,36 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .statusCode(403)
                     .body(containsString("test-message"));
             verifyNoInteractions(credentialRequestService);
+        }
+    }
+
+    @Nested
+    class GetCredentialRequest {
+        @Test
+        void success() {
+            when(credentialRequestService.findById(any()))
+                    .thenReturn(HolderCredentialRequest.Builder.newInstance()
+                            .issuerDid("did:web:issuer")
+                            .participantContextId("test-participant")
+                            .typesAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
+                            .build());
+
+            baseRequest()
+                    .get("/request/test-issuer-pid")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("issuerDid", equalTo("did:web:issuer"))
+                    .body("typesAndFormats", aMapWithSize(1));
+        }
+
+        @Test
+        void getRequest_whenNotFound_shouldReturn20xNoBody() {
+            baseRequest()
+                    .get("/request/test-issuer-pid")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(404);
         }
     }
 }
