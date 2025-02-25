@@ -66,10 +66,10 @@ public class StsApiEndToEndTest {
         @Test
         void requestToken() {
             var audience = "audience";
-            var clientSecret = "client_secret";
+            var clientSecret = "super-secret-string";
             var expiresIn = 300;
 
-            var client = initClient(clientSecret);
+            var client = initClient(clientSecret, "public-key-id", "did:web:client");
 
             var params = Map.of(
                     "client_id", client.getClientId(),
@@ -100,7 +100,7 @@ public class StsApiEndToEndTest {
             var bearerAccessScope = "org.test.Member:read org.test.GoldMember:read";
             var expiresIn = 300;
 
-            var client = initClient(clientSecret);
+            var client = initClient(clientSecret, "public-key-id", "did:web:client");
 
 
             var params = Map.of(
@@ -140,7 +140,7 @@ public class StsApiEndToEndTest {
             var audience = "audience";
             var token = "test_token";
             var expiresIn = 300;
-            var client = initClient(clientSecret);
+            var client = initClient(clientSecret, "public-key-id", "did:web:client");
 
 
             var params = Map.of(

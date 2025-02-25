@@ -14,29 +14,20 @@
 
 package org.eclipse.edc.iam.identitytrust.sts.defaults;
 
-import org.eclipse.edc.iam.identitytrust.sts.defaults.service.StsAccountServiceImpl;
 import org.eclipse.edc.iam.identitytrust.sts.defaults.service.StsClientTokenGeneratorServiceImpl;
-import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
-import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientSecretGenerator;
+import org.eclipse.edc.iam.identitytrust.sts.defaults.store.InMemoryStsAccountStore;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientTokenGeneratorService;
 import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
-import org.eclipse.edc.identityhub.sts.EmbeddedSecureTokenService;
-import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
-import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
+import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.token.JwtGenerationService;
-import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import java.time.Clock;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.Optional.ofNullable;
 
 @Extension(StsDefaultServicesExtension.NAME)
 public class StsDefaultServicesExtension implements ServiceExtension {
@@ -46,24 +37,9 @@ public class StsDefaultServicesExtension implements ServiceExtension {
     @Setting(description = "Self-issued ID Token expiration in minutes. By default is 5 minutes", defaultValue = "" + StsDefaultServicesExtension.DEFAULT_STS_TOKEN_EXPIRATION_MIN, key = "edc.iam.sts.token.expiration")
     private int tokenExpirationMinutes;
     @Inject
-    private StsAccountStore clientStore;
-
+    private CriterionOperatorRegistry criterionOperatorRegistry;
     @Inject
-    private TransactionContext transactionContext;
-
-    @Inject
-    private Vault vault;
-
-    @Inject
-    private JwsSignerProvider jwsSignerProvider;
-
-    @Inject
-    private Clock clock;
-    @Inject(required = false)
-    private StsClientSecretGenerator stsClientSecretGenerator;
-
-    @Inject
-    private JtiValidationStore jtiValidationStore;
+    private ParticipantSecureTokenService secureTokenService;
 
     @Override
     public String name() {
@@ -74,17 +50,13 @@ public class StsDefaultServicesExtension implements ServiceExtension {
     public StsClientTokenGeneratorService clientTokenService(ServiceExtensionContext context) {
         return new StsClientTokenGeneratorServiceImpl(
                 TimeUnit.MINUTES.toSeconds(tokenExpirationMinutes),
-                new EmbeddedSecureTokenService(transactionContext, TimeUnit.MINUTES.toSeconds(tokenExpirationMinutes), jtiValidationStore, new JwtGenerationService(jwsSignerProvider), clock, clientService()));
+                secureTokenService);
     }
 
-    @Provider
-    public StsAccountService clientService() {
-        return new StsAccountServiceImpl(clientStore, vault, transactionContext, stsClientSecretGenerator());
+    @Provider(isDefault = true)
+    public StsAccountStore clientStore() {
+        return new InMemoryStsAccountStore(criterionOperatorRegistry);
     }
 
 
-    private StsClientSecretGenerator stsClientSecretGenerator() {
-        return ofNullable(stsClientSecretGenerator)
-                .orElseGet(RandomStringGenerator::new);
-    }
 }

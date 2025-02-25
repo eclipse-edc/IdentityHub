@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2023 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2025 Cofinity-X
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,13 +8,14 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Cofinity-X - initial API and implementation
  *
  */
 
 package org.eclipse.edc.iam.identitytrust.sts.spi.service;
 
 import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccount;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -27,42 +28,49 @@ import java.util.Collection;
  */
 @ExtensionPoint
 public interface StsAccountService {
+    ServiceResult<Void> createAccount(ParticipantManifest manifest, String secretAlias);
 
     /**
-     * Create the {@link  StsAccount}
+     * Deletes an {@link StsAccount} by its ID.
      *
-     * @param client The client
-     * @return successful when the client is created, failure otherwise
-     * @deprecated Use {@link StsAccountService#create(StsAccount, String)} instead
+     * @param participantId The (database) ID
+     * @return A successful result, or a failure indicating what went wrong.
      */
-
-    @Deprecated(since = "0.9.0")
-    ServiceResult<StsAccount> create(StsAccount client);
-
-    /**
-     * Create the {@link  StsAccount}
-     *
-     * @param client The client
-     * @return successful when the client is created, failure otherwise
-     */
-
-    ServiceResult<String> create(StsAccount client, @Nullable String clientSecret);
-
-    /**
-     * Returns an {@link StsAccount} by its id
-     *
-     * @param id id of the client
-     * @return the client successful if found, failure otherwise
-     */
-    ServiceResult<StsAccount> findByClientId(String id);
+    ServiceResult<Void> deleteAccount(String participantId);
 
     /**
      * Updates an existing {@link StsAccount}, overwriting all values with the given new object.
      *
-     * @param client the new account
+     * @param updatedAccount the new account
      * @return A successful result, or a failure indicating what went wrong.
      */
-    ServiceResult<Void> update(StsAccount client);
+    ServiceResult<Void> updateAccount(StsAccount updatedAccount);
+
+    /**
+     * Finds a particular {@link StsAccount} by its (database-)ID
+     *
+     * @param id the (database-)ID
+     * @return a {@link ServiceResult} containing the account, a failure otherwise.
+     */
+    ServiceResult<StsAccount> findById(String id);
+
+    /**
+     * Queries the storage for a collection of {@link StsAccount} objects that conform to the given {@link QuerySpec}
+     *
+     * @param querySpec the query
+     * @return A collection of accounts, potentially empty. Never null.
+     */
+    Collection<StsAccount> queryAccounts(QuerySpec querySpec);
+
+    /**
+     * Authenticate an {@link StsAccount} given the input secret
+     *
+     * @param client The client to authenticate
+     * @param secret The client secret in input to check
+     * @return the successful if authenticated, failure otherwise
+     */
+    ServiceResult<StsAccount> authenticate(StsAccount client, String secret);
+
 
     /**
      * Updates the client secret associated with this {@link StsAccount}. The old secret is removed from the {@link org.eclipse.edc.spi.security.Vault},
@@ -88,36 +96,11 @@ public interface StsAccountService {
     }
 
     /**
-     * Deletes an {@link StsAccount} by its ID.
+     * Returns an {@link StsAccount} by its id
      *
-     * @param id The (database) ID
-     * @return A successful result, or a failure indicating what went wrong.
+     * @param id id of the client
+     * @return the client successful if found, failure otherwise
      */
-    ServiceResult<Void> deleteById(String id);
-
-    /**
-     * Queries the storage for a collection of {@link StsAccount} objects that conform to the given {@link QuerySpec}
-     *
-     * @param querySpec the query
-     * @return A collection of accounts, potentially empty. Never null.
-     */
-    Collection<StsAccount> queryAccounts(QuerySpec querySpec);
-
-    /**
-     * Authenticate an {@link StsAccount} given the input secret
-     *
-     * @param client The client to authenticate
-     * @param secret The client secret in input to check
-     * @return the successful if authenticated, failure otherwise
-     */
-    ServiceResult<StsAccount> authenticate(StsAccount client, String secret);
-
-    /**
-     * Finds a particular {@link StsAccount} by its (database-)ID
-     *
-     * @param accountId the (database-)ID
-     * @return a {@link ServiceResult} containing the account, a failure otherwise.
-     */
-    ServiceResult<StsAccount> findById(String accountId);
+    ServiceResult<StsAccount> findByClientId(String id);
 
 }

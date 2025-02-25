@@ -34,11 +34,11 @@ public abstract class StsEndToEndTestBase {
 
     protected abstract RuntimePerClassExtension getRuntime();
 
-    protected StsAccount initClient(String clientId, String clientSecret) {
+    protected StsAccount initClient(String clientId, String clientSecret, String publicKeyRef, String did) {
         var store = getClientStore();
         var vault = getVault();
         var clientSecretAlias = "client_secret_alias";
-        var client = createClient(clientId, clientSecretAlias);
+        var client = createClient(clientId, clientSecretAlias, clientId, publicKeyRef, did);
 
         vault.storeSecret(clientSecretAlias, clientSecret);
         vault.storeSecret(client.getPrivateKeyAlias(), loadResourceFile("ec-privatekey.pem"));
@@ -47,8 +47,8 @@ public abstract class StsEndToEndTestBase {
         return client;
     }
 
-    protected StsAccount initClient(String clientSecret) {
-        return initClient(UUID.randomUUID().toString(), clientSecret);
+    protected StsAccount initClient(String clientSecret, String publicKeyRef, String did) {
+        return initClient(UUID.randomUUID().toString(), clientSecret, publicKeyRef, did);
     }
 
     protected Map<String, Object> parseClaims(String token) {

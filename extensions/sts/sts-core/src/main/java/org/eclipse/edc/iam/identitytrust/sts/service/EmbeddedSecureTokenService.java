@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.sts;
+package org.eclipse.edc.iam.identitytrust.sts.service;
 
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
@@ -77,10 +77,10 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
             }
 
 
-            var keypair = result.getContent();
+            var account = result.getContent();
 
-            var keyId = keypair.getPublicKeyReference();
-            var privateKeyAlias = keypair.getPrivateKeyAlias();
+            var keyId = account.getPublicKeyReference();
+            var privateKeyAlias = account.getPrivateKeyAlias();
             var selfIssuedClaims = new HashMap<>(claims);
 
             return ofNullable(bearerAccessScope)

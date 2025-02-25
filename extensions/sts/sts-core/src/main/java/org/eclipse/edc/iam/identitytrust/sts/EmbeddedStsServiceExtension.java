@@ -12,8 +12,9 @@
  *
  */
 
-package org.eclipse.edc.identityhub.sts;
+package org.eclipse.edc.iam.identitytrust.sts;
 
+import org.eclipse.edc.iam.identitytrust.sts.service.EmbeddedSecureTokenService;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;

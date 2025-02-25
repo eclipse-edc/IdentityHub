@@ -14,15 +14,18 @@
 
 package org.eclipse.edc.identityhub.sts.accountservice;
 
+import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
+import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientSecretGenerator;
 import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.sts.accountservice.StsAccountServiceExtension.NAME;
 
 
@@ -33,6 +36,10 @@ public class StsAccountServiceExtension implements ServiceExtension {
     private StsAccountStore accountStore;
     @Inject
     private TransactionContext transactionContext;
+    @Inject
+    private Vault vault;
+    @Inject(required = false)
+    private StsClientSecretGenerator secretGenerator;
 
     @Override
     public String name() {
@@ -43,7 +50,7 @@ public class StsAccountServiceExtension implements ServiceExtension {
     public StsAccountService createAccountManager(ServiceExtensionContext context) {
         var monitor = context.getMonitor().withPrefix("STS-Account");
         monitor.info("This IdentityHub runtime contains an embedded SecureTokenService (STS) instance. That means ParticipantContexts and STS Accounts will be synchronized automatically.");
-        return new StsAccountServiceImpl(accountStore, transactionContext);
+        return new StsAccountServiceImpl(accountStore, transactionContext, vault, ofNullable(secretGenerator).orElseGet(RandomStringGenerator::new));
     }
 
 }

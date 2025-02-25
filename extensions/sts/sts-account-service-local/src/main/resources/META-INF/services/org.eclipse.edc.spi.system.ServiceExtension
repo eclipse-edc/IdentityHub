@@ -13,4 +13,3 @@
 #
 
 org.eclipse.edc.identityhub.sts.accountservice.StsAccountServiceExtension
-org.eclipse.edc.identityhub.sts.EmbeddedStsServiceExtension

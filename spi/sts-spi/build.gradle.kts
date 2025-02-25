@@ -19,6 +19,7 @@ plugins {
 }
 
 dependencies {
+    api(project(":spi:participant-context-spi"))
     api(libs.edc.spi.core)
     api(libs.edc.spi.jwt)
     api(libs.edc.spi.token)

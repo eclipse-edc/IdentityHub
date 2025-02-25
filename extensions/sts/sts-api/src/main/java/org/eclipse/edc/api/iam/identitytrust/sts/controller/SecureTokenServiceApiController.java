@@ -45,8 +45,8 @@ public class SecureTokenServiceApiController implements SecureTokenServiceApi {
         this.tokenRequestValidator = tokenRequestValidator;
     }
 
-    @Consumes({ MediaType.APPLICATION_FORM_URLENCODED })
-    @Produces({ MediaType.APPLICATION_JSON })
+    @Consumes({MediaType.APPLICATION_FORM_URLENCODED})
+    @Produces({MediaType.APPLICATION_JSON})
     @Path("token")
     @POST
     @Override

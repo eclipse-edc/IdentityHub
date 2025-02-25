@@ -13,4 +13,4 @@
 #
 
 org.eclipse.edc.iam.identitytrust.sts.defaults.StsDefaultServicesExtension
-org.eclipse.edc.iam.identitytrust.sts.defaults.StsDefaultStoresExtension
+org.eclipse.edc.iam.identitytrust.sts.EmbeddedStsServiceExtension

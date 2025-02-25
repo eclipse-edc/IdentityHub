@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.sts;
+package org.eclipse.edc.iam.identitytrust.sts.service;
 
 import org.eclipse.edc.spi.iam.TokenParameters;
 import org.eclipse.edc.token.spi.TokenDecorator;

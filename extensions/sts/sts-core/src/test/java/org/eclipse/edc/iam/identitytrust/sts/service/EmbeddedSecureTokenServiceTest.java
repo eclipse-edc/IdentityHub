@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.sts;
+package org.eclipse.edc.iam.identitytrust.sts.service;
 
 import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccount;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
