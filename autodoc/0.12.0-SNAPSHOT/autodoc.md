@@ -454,6 +454,20 @@ Module `identity-hub-did`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
+**Name:** "DID Default Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
+
 #### Class: `org.eclipse.edc.identityhub.did.DidServicesExtension`
 **Name:** "DID Service Extension"
 
@@ -472,20 +486,6 @@ _None_
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.keys.spi.KeyParserRegistry` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore` (required)
-
-#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
-**Name:** "DID Default Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `identity-hub-did-store-sql`
 -----------------------------------
@@ -1306,7 +1306,7 @@ Module `sts-account-provisioner`
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.spi.security.Vault` (required)
 - `org.eclipse.edc.identityhub.common.provisioner.StsClientSecretGenerator` (optional)
-- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService` (optional)
+- `org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService` (required)
 
 Module `sts-account-service-local`
 ----------------------------------
@@ -1318,7 +1318,7 @@ Module `sts-account-service-local`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.sts.accountservice.LocalStsAccountServiceExtension`
+#### Class: `org.eclipse.edc.identityhub.sts.accountservice.StsAccountServiceExtension`
 **Name:** "Local (embedded) STS Account Service Extension"
 
 **Overview:** No overview provided.
@@ -1327,13 +1327,105 @@ _None_
 ### Configuration_None_
 
 #### Provided services
-- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService`
+- `org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService`
 
 #### Referenced (injected) services
 - `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.spi.security.Vault` (required)
+- `org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientSecretGenerator` (optional)
 
-#### Class: `org.eclipse.edc.identityhub.sts.LocalStsServiceExtension`
+Module `sts-api`
+----------------
+**Artifact:** org.eclipse.edc:sts-api:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.api.iam.identitytrust.sts.StsApiConfigurationExtension`
+**Name:** "Secure Token Service API configuration"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                 | Required | Type     | Default    | Pattern | Min | Max | Description              |
+| ------------------- | -------- | -------- | ---------- | ------- | --- | --- | ------------------------ |
+| `web.http.sts.port` | `*`      | `string` | `9292`     |         |     |     | Port for sts api context |
+| `web.http.sts.path` | `*`      | `string` | `/api/sts` |         |     |     | Path for sts api context |
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
+- `org.eclipse.edc.spi.types.TypeManager` (required)
+- `org.eclipse.edc.spi.system.apiversion.ApiVersionService` (required)
+
+#### Class: `org.eclipse.edc.api.iam.identitytrust.sts.SecureTokenServiceApiExtension`
+**Name:** "Secure Token Service API"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService` (required)
+- `org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientTokenGeneratorService` (required)
+- `org.eclipse.edc.web.spi.WebService` (required)
+
+Module `sts-client-store-sql`
+-----------------------------
+**Artifact:** org.eclipse.edc:sts-client-store-sql:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.iam.identitytrust.sts.store.SqlStsClientStoreExtension`
+**Name:** "SQL sts accounts store"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                  | Required | Type     | Default   | Pattern | Min | Max | Description               |
+| ------------------------------------ | -------- | -------- | --------- | ------- | --- | --- | ------------------------- |
+| `edc.sql.store.stsclient.datasource` | `*`      | `string` | `default` |         |     |     | The datasource to be used |
+
+#### Provided services
+- `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry` (required)
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.iam.identitytrust.sts.store.schema.StsClientStatements` (optional)
+- `org.eclipse.edc.sql.QueryExecutor` (required)
+- `org.eclipse.edc.spi.types.TypeManager` (required)
+- `org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper` (required)
+
+Module `sts-core`
+-----------------
+**Artifact:** org.eclipse.edc:sts-core:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.iam.identitytrust.sts.EmbeddedStsServiceExtension`
 **Name:** "Local (embedded) STS Account Service Extension"
 
 **Overview:** No overview provided.
@@ -1347,65 +1439,28 @@ _None_
 
 #### Provided services
 - `org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService`
+- `org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientTokenGeneratorService`
 
 #### Referenced (injected) services
 - `java.time.Clock` (required)
 - `org.eclipse.edc.jwt.validation.jti.JtiValidationStore` (required)
 - `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService` (required)
+- `org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService` (required)
 
-Module `sts-account-service-remote`
------------------------------------
-**Artifact:** org.eclipse.edc:sts-account-service-remote:0.12.0-SNAPSHOT
-
-**Categories:** _None_
-
-### Extension points
-_None_
-
-### Extensions
-#### Class: `org.eclipse.edc.identityhub.sts.accountservice.RemoteStsAccountServiceExtension`
-**Name:** "Remote STS Account Service Extension"
+#### Class: `org.eclipse.edc.iam.identitytrust.sts.defaults.StsDefaultServicesExtension`
+**Name:** "Secure Token Service Default Services"
 
 **Overview:** No overview provided.
 
 
-### Configuration
-
-| Key                                      | Required | Type     | Default     | Pattern | Min | Max | Description                                                                                    |
-| ---------------------------------------- | -------- | -------- | ----------- | ------- | --- | --- | ---------------------------------------------------------------------------------------------- |
-| `edc.sts.account.api.url`                | `*`      | `string` | ``          |         |     |     | The base URL of the remote STS Accounts API                                                    |
-| `edc.sts.accounts.api.auth.header.name`  | `*`      | `string` | `x-api-key` |         |     |     | The name of the Auth header to use. Could be 'Authorization', some custom auth header, etc.    |
-| `edc.sts.accounts.api.auth.header.value` | `*`      | `string` | ``          |         |     |     | The value of the Auth header to use. Currently we only support static values, e.g. tokens etc. |
+### Configuration_None_
 
 #### Provided services
-- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService`
+- `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore`
 
 #### Referenced (injected) services
-- `org.eclipse.edc.http.spi.EdcHttpClient` (required)
-- `org.eclipse.edc.spi.types.TypeManager` (required)
-
-#### Class: `org.eclipse.edc.identityhub.sts.RemoteStsServiceExtension`
-**Name:** "Remote Secure Token Service extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration
-
-| Key                           | Required | Type     | Default | Pattern | Min | Max | Description                                |
-| ----------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------------ |
-| `edc.iam.sts.oauth.token.url` | `*`      | `string` | ``      |         |     |     | STS OAuth2 endpoint for requesting a token |
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.iam.oauth2.spi.client.Oauth2Client` (required)
-- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-- `org.eclipse.edc.spi.security.Vault` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountService` (required)
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `verifiable-credentials-api`
 -----------------------------------
