@@ -242,7 +242,6 @@ class CredentialRequestManagerImplTest {
             await().atMost(MAX_DURATION).untilAsserted(() -> {
                 var inOrder = inOrder(resolver, store, httpClient, sts);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
-//                inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
                 inOrder.verify(store, times(2)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("sts-failure")));
             });
@@ -266,7 +265,6 @@ class CredentialRequestManagerImplTest {
             await().atMost(MAX_DURATION).untilAsserted(() -> {
                 var inOrder = inOrder(resolver, store, httpClient, sts);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
-//                inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
                 inOrder.verify(store, times(2)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("issuer failure bad request")));
