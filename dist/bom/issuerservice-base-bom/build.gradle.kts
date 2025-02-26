@@ -35,6 +35,9 @@ dependencies {
     runtimeOnly(project(":extensions:issuance:issuerservice-issuance-rules"))
 
     runtimeOnly(project(":extensions:sts:sts-account-provisioner"))
+    runtimeOnly(project(":extensions:api:identityhub-api-authorization"))
+    runtimeOnly(project(":extensions:api:issuer-admin-api:issuer-admin-api-authentication"))
+
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
     runtimeOnly(libs.edc.api.version)

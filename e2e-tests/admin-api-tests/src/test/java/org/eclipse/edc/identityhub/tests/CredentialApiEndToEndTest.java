@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import io.restassured.http.Header;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
@@ -40,6 +41,7 @@ import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -108,6 +110,13 @@ public class CredentialApiEndToEndTest {
     abstract class Tests {
 
 
+        private static String token = "";
+
+        @BeforeAll
+        static void setup(IssuerServiceEndToEndTestContext context) {
+            token = context.createSuperUser();
+        }
+
         @BeforeEach
         void prepare(Vault vault) throws JOSEException {
             // put signing key in vault
@@ -135,6 +144,7 @@ public class CredentialApiEndToEndTest {
             context.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .post("/v1alpha/credentials/test-cred/revoke")
                     .then()
                     .log().ifValidationFails()
@@ -161,6 +171,7 @@ public class CredentialApiEndToEndTest {
             context.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .post("/v1alpha/credentials/test-cred/revoke")
                     .then()
                     .log().ifValidationFails()
@@ -185,6 +196,7 @@ public class CredentialApiEndToEndTest {
             context.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .post("/v1alpha/credentials/test-cred/revoke")
                     .then()
                     .log().ifValidationFails()
@@ -202,6 +214,7 @@ public class CredentialApiEndToEndTest {
             context.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .post("/v1alpha/credentials/test-cred/revoke")
                     .then()
                     .log().ifValidationFails()
@@ -231,6 +244,7 @@ public class CredentialApiEndToEndTest {
             context.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .post("/v1alpha/credentials/test-cred/revoke")
                     .then()
                     .log().ifValidationFails()

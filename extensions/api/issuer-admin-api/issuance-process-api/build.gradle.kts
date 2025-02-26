@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2024 Metaform Systems, Inc.
+ *  Copyright (c) 2025 Cofinity-X
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,24 +8,31 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Metaform Systems, Inc. - initial API and implementation
+ *       Cofinity-X - initial API and implementation
  *
  */
 
 plugins {
     `java-library`
     `maven-publish`
+    id("io.swagger.core.v3.swagger-gradle-plugin")
 }
 
 dependencies {
-    api(libs.edc.spi.core)
-    api(project(":spi:identity-hub-spi"))
-
-    implementation(project(":extensions:api:lib:identityhub-api-authentication-lib"))
+    api(project(":spi:issuerservice:issuerservice-issuance-spi"))
+    implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-configuration"))
     implementation(libs.edc.spi.web)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
 
+
     testImplementation(libs.edc.junit)
-    testRuntimeOnly(libs.jersey.common) // needs the RuntimeDelegate
+    testImplementation(testFixtures(libs.edc.core.jersey))
+    testImplementation(libs.restAssured)
+}
+
+edcBuild {
+    swagger {
+        apiGroup.set("issuer-admin-api")
+    }
 }

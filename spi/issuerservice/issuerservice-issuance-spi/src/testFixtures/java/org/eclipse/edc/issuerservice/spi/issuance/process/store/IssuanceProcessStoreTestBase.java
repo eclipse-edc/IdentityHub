@@ -35,6 +35,7 @@ import java.util.UUID;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessResource.queryByIssuerContextId;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.APPROVED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERED;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
@@ -447,9 +448,7 @@ public abstract class IssuanceProcessStoreTestBase {
 
             getStore().save(issuanceProcess);
 
-            var query = QuerySpec.Builder.newInstance()
-                    .filter(List.of(new Criterion("issuerContextId", "=", issuanceProcess.getIssuerContextId())))
-                    .build();
+            var query = queryByIssuerContextId(issuanceProcess.getIssuerContextId()).build();
 
             var result = getStore().query(query).toList();
             assertThat(result).hasSize(1).usingRecursiveFieldByFieldElementComparator().containsExactly(issuanceProcess);

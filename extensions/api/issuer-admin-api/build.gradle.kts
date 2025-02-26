@@ -21,4 +21,5 @@ dependencies {
     api(project(":extensions:api:issuer-admin-api:attestation-api"))
     api(project(":extensions:api:issuer-admin-api:participant-api"))
     api(project(":extensions:api:issuer-admin-api:credential-definition-api"))
+    api(project(":extensions:api:issuer-admin-api:issuance-process-api"))
 }

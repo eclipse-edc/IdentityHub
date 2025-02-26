@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.tests;
 
+import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
@@ -51,8 +52,11 @@ import static org.hamcrest.Matchers.equalTo;
 public class AttestationApiEndToEndTest {
     abstract static class Tests {
 
+        private static String token = "";
+
         @BeforeAll
         static void setup(IssuerServiceEndToEndTestContext context) {
+            token = context.createSuperUser();
             var registry = context.getRuntime().getService(AttestationDefinitionValidatorRegistry.class);
             registry.registerValidator("test-type", def -> ValidationResult.success());
             registry.registerValidator("test-failure-type", def -> ValidationResult.failure(Violation.violation("test", null)));
@@ -71,6 +75,7 @@ public class AttestationApiEndToEndTest {
         void createAttestationDefinition(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store) {
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .body(new AttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
                     .post("/v1alpha/attestations")
                     .then()
@@ -84,6 +89,7 @@ public class AttestationApiEndToEndTest {
         void createAttestationDefinition_shouldReturn400_whenValidationFails(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store) {
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .body(new AttestationDefinition("test-id", "test-failure-type", Map.of("foo", "bar")))
                     .post("/v1alpha/attestations")
                     .then()
@@ -102,6 +108,7 @@ public class AttestationApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .get("/v1alpha/attestations?participantId=foobar")
                     .then()
                     .log().ifValidationFails()
@@ -119,6 +126,7 @@ public class AttestationApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .post("/v1alpha/attestations/att1/link?participantId=foobar")
                     .then()
                     .log().ifValidationFails()
@@ -136,6 +144,7 @@ public class AttestationApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .post("/v1alpha/attestations/att1/link?participantId=foobar")
                     .then()
                     .log().ifValidationFails()
@@ -158,6 +167,7 @@ public class AttestationApiEndToEndTest {
             //query by attestation type
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
+                    .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance()
                             .sortField("id")
                             .sortOrder(SortOrder.ASC)

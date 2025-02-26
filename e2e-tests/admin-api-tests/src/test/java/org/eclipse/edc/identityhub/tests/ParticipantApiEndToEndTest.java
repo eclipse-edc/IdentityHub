@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
+import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.api.admin.participant.v1.unstable.model.ParticipantDto;
@@ -28,6 +29,7 @@ import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,14 @@ import static org.hamcrest.Matchers.is;
 public class ParticipantApiEndToEndTest {
     abstract static class Tests {
 
+
+        private static String token = "";
+
+        @BeforeAll
+        static void setup(IssuerServiceEndToEndTestContext context) {
+            token = context.createSuperUser();
+        }
+
         @AfterEach
         void teardown(ParticipantService participantService) {
             participantService.queryParticipants(QuerySpec.max()).getContent()
@@ -57,6 +67,7 @@ public class ParticipantApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body("""
                             {
                               "participantId": "test-participant-id",
@@ -76,6 +87,7 @@ public class ParticipantApiEndToEndTest {
             service.createParticipant(new Participant("test-participant-id", "did:web:foo", "foobar"));
 
             context.getAdminEndpoint().baseRequest()
+                    .header(new Header("x-api-key", token))
                     .contentType(ContentType.JSON)
                     .body("""
                             {
@@ -92,6 +104,7 @@ public class ParticipantApiEndToEndTest {
         @Test
         void createParticipant_whenMissingFields(IssuerServiceEndToEndTestContext context) {
             context.getAdminEndpoint().baseRequest()
+                    .header(new Header("x-api-key", token))
                     .contentType(ContentType.JSON)
                     .body("""
                             {
@@ -111,6 +124,7 @@ public class ParticipantApiEndToEndTest {
 
             var res = context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", "test-participant-id")).build())
                     .post("/v1alpha/participants/query")
                     .then()
@@ -126,6 +140,7 @@ public class ParticipantApiEndToEndTest {
 
             var res = context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("participantId", "=", "test-participant-id")).build())
                     .post("/v1alpha/participants/query")
                     .then()
@@ -149,6 +164,7 @@ public class ParticipantApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body(query)
                     .post("/v1alpha/participants/query")
                     .then()
@@ -166,6 +182,7 @@ public class ParticipantApiEndToEndTest {
             service.createParticipant(expectedParticipant);
 
             var res = context.getAdminEndpoint().baseRequest()
+                    .header(new Header("x-api-key", token))
                     .get("/v1alpha/participants/test-participant-id")
                     .then()
                     .statusCode(200)

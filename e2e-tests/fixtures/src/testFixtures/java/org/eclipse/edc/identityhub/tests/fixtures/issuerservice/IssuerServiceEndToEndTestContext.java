@@ -20,14 +20,13 @@ import org.eclipse.edc.identityhub.tests.fixtures.common.Endpoint;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
-import org.eclipse.edc.spi.query.Criterion;
-import org.eclipse.edc.spi.query.QuerySpec;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 import static java.lang.String.format;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessResource.queryByIssuerContextId;
 
 /**
  * IssuerService end to end context used in tests extended with {@link IssuerServiceEndToEndExtension}
@@ -55,18 +54,18 @@ public class IssuerServiceEndToEndTestContext extends AbstractTestContext {
         return configuration.getIssuerApiEndpoint();
     }
 
-    public String didFor(String participantContextId) {
-        return configuration.didFor(participantContextId);
+    public String didFor(String issuerContextId) {
+        return configuration.didFor(issuerContextId);
     }
 
-    public Service createServiceEndpoint(String participantContextId) {
-        var issuerEndpoint = format("%s/%s", configuration.getIssuerApiEndpoint().getUrl(), issuanceBasePath(participantContextId));
+    public Service createServiceEndpoint(String issuerContextId) {
+        var issuerEndpoint = format("%s/%s", configuration.getIssuerApiEndpoint().getUrl(), issuanceBasePath(issuerContextId));
         return new Service("issuer-id", "IssuerService", issuerEndpoint);
     }
 
 
-    public List<IssuanceProcess> getIssuanceProcessesForParticipant(String participantContextId) {
-        var query = QuerySpec.Builder.newInstance().filter(Criterion.criterion("issuerContextId", "=", participantContextId)).build();
+    public List<IssuanceProcess> getIssuanceProcessesForParticipant(String issuerContextId) {
+        var query = queryByIssuerContextId(issuerContextId).build();
         return runtime.getService(IssuanceProcessStore.class).query(query)
                 .toList();
     }
