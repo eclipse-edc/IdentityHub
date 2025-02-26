@@ -316,7 +316,7 @@ public abstract class HolderCredentialRequestStoreTestBase {
             var request = createHolderRequest();
             getStore().save(request);
 
-            request = request.toBuilder().state(CREATED.code()).build();
+            request.transitionCreated();
 
             getStore().save(request);
 
@@ -335,7 +335,7 @@ public abstract class HolderCredentialRequestStoreTestBase {
             // acquire lease
             leaseEntity(request.getId(), RUNTIME_ID);
 
-            request = request.toBuilder().state(CREATED.code()).build();
+            request.transitionCreated();
             getStore().save(request);
 
             // lease should be broken
@@ -351,10 +351,10 @@ public abstract class HolderCredentialRequestStoreTestBase {
             getStore().save(request);
             leaseEntity(id, "someone");
 
-            var updatedRequest = request.toBuilder().state(CREATED.code()).build();
+            request.transitionCreated();
 
             // leased by someone else -> throw exception
-            assertThatThrownBy(() -> getStore().save(updatedRequest)).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> getStore().save(request)).isInstanceOf(IllegalStateException.class);
         }
     }
 

@@ -89,6 +89,7 @@ include(":protocols:dcp:dcp-identityhub:dcp-identityhub-transform-lib")
 include(":protocols:dcp:dcp-identityhub:dcp-identityhub-core")
 
 // Identity APIs
+include(":extensions:api:identity-api")
 include(":extensions:api:identity-api:api-configuration")
 include(":extensions:api:identityhub-api-authentication")
 include(":extensions:api:identityhub-api-authorization")
