@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Base64;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
@@ -76,7 +77,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.removeService(eq(TEST_DID), anyString())).thenReturn(ServiceResult.success());
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .delete("/%s/endpoints?serviceId=test-service-id".formatted(TEST_DID))
+                    .delete("/%s/endpoints?serviceId=test-service-id".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(anyOf(equalTo(200), equalTo(204)));
@@ -89,7 +90,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .delete("/%s/endpoints?serviceId=test-service-id".formatted(TEST_DID))
+                    .delete("/%s/endpoints?serviceId=test-service-id".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -103,7 +104,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.success());
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .delete("/%s/endpoints?serviceId=test-service-id&autoPublish=true".formatted(TEST_DID))
+                    .delete("/%s/endpoints?serviceId=test-service-id&autoPublish=true".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(anyOf(equalTo(200), equalTo(204)));
@@ -119,7 +120,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.badRequest("publisher not reachable"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .delete("/%s/endpoints?serviceId=test-service-id&autoPublish=true".formatted(TEST_DID))
+                    .delete("/%s/endpoints?serviceId=test-service-id&autoPublish=true".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -134,7 +135,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.removeService(eq(TEST_DID), anyString())).thenReturn(ServiceResult.badRequest("service not found"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .delete("/%s/endpoints?serviceId=test-service-id".formatted(TEST_DID))
+                    .delete("/%s/endpoints?serviceId=test-service-id".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -146,7 +147,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.removeService(eq(TEST_DID), anyString())).thenReturn(ServiceResult.notFound("did not found"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .delete("/%s/endpoints?serviceId=test-service-id".formatted(TEST_DID))
+                    .delete("/%s/endpoints?serviceId=test-service-id".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404);
@@ -161,7 +162,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.replaceService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.success());
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .patch("/%s/endpoints".formatted(TEST_DID))
+                    .patch("/%s/endpoints".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(anyOf(equalTo(200), equalTo(204)));
@@ -174,7 +175,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .patch("/%s/endpoints".formatted(TEST_DID))
+                    .patch("/%s/endpoints".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -189,7 +190,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
 
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .patch("/%s/endpoints?autoPublish=true".formatted(TEST_DID))
+                    .patch("/%s/endpoints?autoPublish=true".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(anyOf(equalTo(200), equalTo(204)));
@@ -205,7 +206,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
 
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .patch("/%s/endpoints?autoPublish=true".formatted(TEST_DID))
+                    .patch("/%s/endpoints?autoPublish=true".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -219,7 +220,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.replaceService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.badRequest("service not found"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .patch("/%s/endpoints".formatted(TEST_DID))
+                    .patch("/%s/endpoints".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -231,7 +232,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.replaceService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.notFound("did not found"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .patch("/%s/endpoints".formatted(TEST_DID))
+                    .patch("/%s/endpoints".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404);
@@ -246,7 +247,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.addService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.success());
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .post("/%s/endpoints".formatted(TEST_DID))
+                    .post("/%s/endpoints".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(anyOf(equalTo(200), equalTo(204)));
@@ -259,7 +260,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .post("/%s/endpoints".formatted(TEST_DID))
+                    .post("/%s/endpoints".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -273,7 +274,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.success());
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .post("/%s/endpoints?autoPublish=true".formatted(TEST_DID))
+                    .post("/%s/endpoints?autoPublish=true".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(anyOf(equalTo(200), equalTo(204)));
@@ -288,7 +289,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.publish(eq(TEST_DID))).thenReturn(ServiceResult.badRequest("publisher not working"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .post("/%s/endpoints?autoPublish=true".formatted(TEST_DID))
+                    .post("/%s/endpoints?autoPublish=true".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -302,7 +303,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.addService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.conflict("exists"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .post("/%s/endpoints".formatted(TEST_DID))
+                    .post("/%s/endpoints".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(409);
@@ -314,7 +315,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
             when(didDocumentServiceMock.addService(eq(TEST_DID), any(Service.class))).thenReturn(ServiceResult.notFound("did not found"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
-                    .post("/%s/endpoints".formatted(TEST_DID))
+                    .post("/%s/endpoints".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404);
