@@ -118,7 +118,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1alpha/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
                     .statusCode(200);
 
@@ -135,7 +135,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1alpha/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
                     .statusCode(401)
                     .body(Matchers.containsString("not found"));
@@ -152,7 +152,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken(CONSUMER_DID, PROVIDER_DID))
                     .body(credentialMessage)
-                    .post("/v1alpha/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
                     .statusCode(401)
                     .body(Matchers.containsString("Token verification failed"));
@@ -173,7 +173,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1alpha/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
                     .statusCode(400)
                     .body(Matchers.containsString("Invalid format"));
@@ -194,7 +194,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1alpha/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
                     .statusCode(200);
 

@@ -60,8 +60,8 @@ two ways of running IdentityHub:
 Once the jar file is built, IdentityHub can be launched using this shell command:
 
 ```bash
-java -Dweb.http.presentation.port=10001 \
-     -Dweb.http.presentation.path="/api/presentation" \
+java -Dweb.http.credentials.port=10001 \
+     -Dweb.http.credentials.path="/api/credentials" \
      -Dweb.http.port=8181 \
      -Dweb.http.path="/api" \
      -Dweb.http.identity.port=8182 \

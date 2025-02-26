@@ -28,7 +28,6 @@ dependencies {
     api(libs.edc.spi.core)
     api(libs.edc.spi.identity.did)
 
-    implementation(project(":protocols:dcp:dcp-identityhub:credentials-api-configuration"))
     implementation(project(":protocols:dcp:dcp-transform-lib"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)

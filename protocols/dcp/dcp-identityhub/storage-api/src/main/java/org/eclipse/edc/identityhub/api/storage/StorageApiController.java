@@ -45,7 +45,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1alpha/participants/{participantContextId}/credentials")
+@Path("/v1/participants/{participantContextId}/credentials")
 public class StorageApiController implements StorageApi {
 
     private final JsonObjectValidatorRegistry validatorRegistry;

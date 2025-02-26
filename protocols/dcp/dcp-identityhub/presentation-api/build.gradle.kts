@@ -25,6 +25,7 @@ dependencies {
     api(libs.edc.spi.jsonld)
     api(libs.edc.spi.jwt)
     api(libs.edc.spi.core)
+    implementation(project(":protocols:dcp:dcp-identityhub:credentials-api-configuration"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)
     implementation(libs.edc.spi.dcp)
@@ -41,6 +42,6 @@ dependencies {
 
 edcBuild {
     swagger {
-        apiGroup.set("presentation-api")
+        apiGroup.set("credentials-api")
     }
 }

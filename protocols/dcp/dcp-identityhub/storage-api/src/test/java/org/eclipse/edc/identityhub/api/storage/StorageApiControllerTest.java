@@ -237,7 +237,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + "/v1alpha/participants/" + s + "/credentials")
+                .baseUri("http://localhost:" + port + "/v1/participants/" + s + "/credentials")
                 .when();
     }
 

@@ -305,7 +305,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = { DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT })
+        @ValueSource(strings = {DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT})
         void query_success_noCredentials(String dcpContext, IdentityHubEndToEndTestContext context) throws JOSEException {
 
             var token = generateSiToken();
@@ -333,7 +333,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = { DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT })
+        @ValueSource(strings = {DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT})
         void query_success_containsCredential(String dcpContext, IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
@@ -377,7 +377,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = { DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT })
+        @ValueSource(strings = {DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT})
         void query_success_containsMultiplePresentations(String dcpContext, IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
@@ -466,7 +466,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "VcState code: {0}")
-        @ValueSource(ints = { 600, 700, 800, 900 })
+        @ValueSource(ints = {600, 700, 800, 900})
         void query_shouldFilterOutInvalidCreds(int vcStateCode, IdentityHubEndToEndTestContext context, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             // modify VC content, so that it becomes either not-yet-valid or expired

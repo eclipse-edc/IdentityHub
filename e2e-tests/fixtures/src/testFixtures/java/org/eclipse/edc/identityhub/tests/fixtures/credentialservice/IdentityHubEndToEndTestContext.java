@@ -106,7 +106,7 @@ public class IdentityHubEndToEndTestContext extends AbstractTestContext {
     }
 
     public Service createServiceEndpoint(String participantContextId) {
-        var credentialServiceEndpoint = format("%s/%s", configuration.getStorageEndpoint().getUrl(), storageApiBasePath(participantContextId));
+        var credentialServiceEndpoint = format("%s/%s", configuration.getCredentialsEndpoint().getUrl(), storageApiBasePath(participantContextId));
         return new Service("credential-service-id", "CredentialService", credentialServiceEndpoint);
     }
 
@@ -125,11 +125,11 @@ public class IdentityHubEndToEndTestContext extends AbstractTestContext {
     }
 
     public Endpoint getPresentationEndpoint() {
-        return configuration.getPresentationEndpoint();
+        return configuration.getCredentialsEndpoint();
     }
 
     public Endpoint getStorageEndpoint() {
-        return configuration.getStorageEndpoint();
+        return configuration.getCredentialsEndpoint();
     }
 
     public Collection<DidDocument> getDidForParticipant(String participantContextId) {
@@ -207,7 +207,7 @@ public class IdentityHubEndToEndTestContext extends AbstractTestContext {
     }
 
     private @NotNull String storageApiBasePath(String participantContextId) {
-        return "v1alpha/participants/%s".formatted(base64Encode(participantContextId));
+        return "v1/participants/%s".formatted(base64Encode(participantContextId));
     }
 
 }
