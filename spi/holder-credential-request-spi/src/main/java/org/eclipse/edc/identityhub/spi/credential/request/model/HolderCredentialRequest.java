@@ -21,6 +21,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.from;
 
 /**
@@ -38,7 +43,34 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
     private String issuerPid;
 
     private HolderCredentialRequest() {
-        this.state = HolderRequestState.CREATED.code();
+        this.state = CREATED.code();
+    }
+
+    public void transitionCreated() {
+        state = CREATED.code();
+        updateStateTimestamp();
+    }
+
+    public void transitionRequesting() {
+        state = REQUESTING.code();
+        updateStateTimestamp();
+    }
+
+    public void transitionRequested(String issuerPid) {
+        state = REQUESTED.code();
+        this.issuerPid = issuerPid;
+        updateStateTimestamp();
+    }
+
+    public void transitionIssued() {
+        state = ISSUED.code();
+        updateStateTimestamp();
+    }
+
+    public void transitionError(String detail) {
+        state = ERROR.code();
+        errorDetail = detail;
+        updateStateTimestamp();
     }
 
     public String getParticipantContextId() {
@@ -100,10 +132,6 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         }
         var that = (Entity) o;
         return id.equals(that.getId());
-    }
-
-    public Builder toBuilder() {
-        return new Builder(this);
     }
 
     /**

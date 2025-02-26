@@ -54,7 +54,6 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
-import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
@@ -91,7 +90,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 .build();
 
         try {
-            transactionContext.execute(() -> store.save(newRequest));
+            updateRequest(newRequest);
         } catch (EdcPersistenceException e) {
             return ServiceResult.badRequest(e.getMessage());
         }
@@ -121,7 +120,8 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         var typesAndFormats = request.getTypesAndFormats();
 
         return transactionContext.execute(() -> {
-            transition(request.copy().toBuilder(), REQUESTING);
+            request.transitionRequesting();
+            updateRequest(request);
             return getAuthToken(request.getParticipantContextId(), issuerDid)
                     .compose(token -> createCredentialsRequest(token, endpoint, holderPid, typesAndFormats))
                     .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
@@ -129,20 +129,22 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     private void transitionRequested(HolderCredentialRequest req, String issuerPid) {
-        transition(req.copy().toBuilder().issuerPid(issuerPid), REQUESTED);
+        req.transitionRequested(issuerPid);
+        updateRequest(req);
     }
 
     private void transitionError(HolderCredentialRequest request, String failureDetail) {
-        transition(request.copy().toBuilder().errorDetail(failureDetail), ERROR);
+        request.transitionError(failureDetail);
+        updateRequest(request);
+        monitor.warning("A Holder Credential Request has been transitioned to '%s': %s".formatted(ERROR, failureDetail));
     }
 
-    private void transition(HolderCredentialRequest.Builder request, HolderRequestState newState) {
-        var rq = request.state(newState.code()).build();
-        transactionContext.execute(() -> store.save(rq));
+    private void updateRequest(HolderCredentialRequest request) {
+        transactionContext.execute(() -> update(request));
     }
 
     private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, Boolean> function) {
-        var filter = new Criterion[]{ hasState(state.code()), isNotPending() };
+        var filter = new Criterion[]{hasState(state.code()), isNotPending()};
         return createProcessor(function, filter);
     }
 

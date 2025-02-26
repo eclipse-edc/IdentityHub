@@ -33,11 +33,13 @@ import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.did.model.DidState;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
+import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -96,10 +98,11 @@ public class DidManagementApiController implements DidManagementApi {
     @Path("/{did}/endpoints")
     public void addDidEndpoint(@PathParam("did") String did, Service service, @QueryParam("autoPublish") boolean autoPublish,
                                @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext, did, DidResource.class)
-                .compose(u -> documentService.addService(did, service))
-                .compose(v -> autoPublish ? documentService.publish(did) : ServiceResult.success())
-                .orElseThrow(exceptionMapper(Service.class, did));
+        var decodedDid = onEncoded(did).orElseThrow(InvalidRequestException::new);
+        authorizationService.isAuthorized(securityContext, decodedDid, DidResource.class)
+                .compose(u -> documentService.addService(decodedDid, service))
+                .compose(v -> autoPublish ? documentService.publish(decodedDid) : ServiceResult.success())
+                .orElseThrow(exceptionMapper(Service.class, decodedDid));
     }
 
     @Override
@@ -107,10 +110,12 @@ public class DidManagementApiController implements DidManagementApi {
     @Path("/{did}/endpoints")
     public void replaceDidEndpoint(@PathParam("did") String did, Service service, @QueryParam("autoPublish") boolean autoPublish,
                                    @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext, did, DidResource.class)
-                .compose(u -> documentService.replaceService(did, service))
-                .compose(v -> autoPublish ? documentService.publish(did) : ServiceResult.success())
-                .orElseThrow(exceptionMapper(Service.class, did));
+        var decodedDid = onEncoded(did).orElseThrow(InvalidRequestException::new);
+
+        authorizationService.isAuthorized(securityContext, decodedDid, DidResource.class)
+                .compose(u -> documentService.replaceService(decodedDid, service))
+                .compose(v -> autoPublish ? documentService.publish(decodedDid) : ServiceResult.success())
+                .orElseThrow(exceptionMapper(Service.class, decodedDid));
     }
 
     @Override
@@ -118,10 +123,12 @@ public class DidManagementApiController implements DidManagementApi {
     @Path("/{did}/endpoints")
     public void deleteDidEndpoint(@PathParam("did") String did, @QueryParam("serviceId") String serviceId, @QueryParam("autoPublish") boolean autoPublish,
                                   @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext, did, DidResource.class)
-                .compose(u -> documentService.removeService(did, serviceId))
-                .compose(v -> autoPublish ? documentService.publish(did) : ServiceResult.success())
-                .orElseThrow(exceptionMapper(Service.class, did));
+        var decodedDid = onEncoded(did).orElseThrow(InvalidRequestException::new);
+
+        authorizationService.isAuthorized(securityContext, decodedDid, DidResource.class)
+                .compose(u -> documentService.removeService(decodedDid, serviceId))
+                .compose(v -> autoPublish ? documentService.publish(decodedDid) : ServiceResult.success())
+                .orElseThrow(exceptionMapper(Service.class, decodedDid));
     }
 
 }
