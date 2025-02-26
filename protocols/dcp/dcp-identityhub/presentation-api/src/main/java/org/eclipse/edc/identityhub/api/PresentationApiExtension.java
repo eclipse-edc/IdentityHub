@@ -82,7 +82,8 @@ public class PresentationApiExtension implements ServiceExtension {
         registerValidator(DSPACE_DCP_NAMESPACE_V_1_0);
 
 
-        var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, selfIssuedTokenVerifier, verifiablePresentationService, context.getMonitor().withPrefix("PresentationAPI"), participantContextService, jsonLd);
+        var controller = new PresentationApiController(validatorRegistry, typeTransformer, credentialResolver, selfIssuedTokenVerifier,
+                verifiablePresentationService, context.getMonitor().withPrefix("PresentationAPI"), participantContextService, jsonLd);
         webService.registerResource(contextString, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(contextString, controller);
 

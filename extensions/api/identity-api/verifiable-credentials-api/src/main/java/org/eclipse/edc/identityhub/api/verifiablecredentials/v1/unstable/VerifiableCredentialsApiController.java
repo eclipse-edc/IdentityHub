@@ -130,7 +130,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         var query = QuerySpec.Builder.newInstance();
 
         if (!StringUtils.isNullOrEmpty(type)) {
-            query.filter(new Criterion("verifiableCredential.credential.types", "contains", type));
+            query.filter(new Criterion("verifiableCredential.credential.type", "contains", type));
         }
 
         return credentialStore.query(query.build())
