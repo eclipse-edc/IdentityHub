@@ -31,13 +31,9 @@ import static org.eclipse.edc.util.io.Ports.getFreePort;
  */
 public class IdentityHubRuntimeConfiguration extends AbstractRuntimeConfiguration {
 
-    private Endpoint presentationEndpoint;
     private Endpoint identityEndpoint;
-    private Endpoint storageEndpoint;
+    private Endpoint credentialsEndpoint;
 
-    public Endpoint getPresentationEndpoint() {
-        return presentationEndpoint;
-    }
 
     public Config config() {
         return ConfigFactory.fromMap(new HashMap<>() {
@@ -45,10 +41,8 @@ public class IdentityHubRuntimeConfiguration extends AbstractRuntimeConfiguratio
                 put(PARTICIPANT_ID, id);
                 put("web.http.port", String.valueOf(getFreePort()));
                 put("web.http.path", "/api/v1");
-                put("web.http.presentation.port", String.valueOf(presentationEndpoint.getUrl().getPort()));
-                put("web.http.presentation.path", presentationEndpoint.getUrl().getPath());
-                put("web.http.storage.port", String.valueOf(storageEndpoint.getUrl().getPort()));
-                put("web.http.storage.path", String.valueOf(storageEndpoint.getUrl().getPath()));
+                put("web.http.credentials.port", String.valueOf(credentialsEndpoint.getUrl().getPort()));
+                put("web.http.credentials.path", String.valueOf(credentialsEndpoint.getUrl().getPath()));
                 put("web.http.identity.port", String.valueOf(identityEndpoint.getUrl().getPort()));
                 put("web.http.identity.path", identityEndpoint.getUrl().getPath());
                 put("web.http.sts.port", String.valueOf(getFreePort()));
@@ -73,8 +67,8 @@ public class IdentityHubRuntimeConfiguration extends AbstractRuntimeConfiguratio
         return identityEndpoint;
     }
 
-    public Endpoint getStorageEndpoint() {
-        return storageEndpoint;
+    public Endpoint getCredentialsEndpoint() {
+        return credentialsEndpoint;
     }
 
     public static final class Builder extends AbstractRuntimeConfiguration.Builder<IdentityHubRuntimeConfiguration, Builder> {
@@ -89,9 +83,8 @@ public class IdentityHubRuntimeConfiguration extends AbstractRuntimeConfiguratio
 
         public IdentityHubRuntimeConfiguration build() {
             super.build();
-            participant.presentationEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/presentation"), Map.of());
             participant.identityEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/identity"), Map.of());
-            participant.storageEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/storage"), Map.of());
+            participant.credentialsEndpoint = new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/credentials"), Map.of());
             return participant;
         }
     }

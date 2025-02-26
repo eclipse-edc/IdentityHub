@@ -62,10 +62,8 @@ public class BomSmokeTests {
                                 put("web.http.port", DEFAULT_PORT);
                                 put("web.http.path", DEFAULT_PATH);
                                 put("edc.ih.iam.publickey.path", "/some/path/to/key.pem");
-                                put("web.http.presentation.port", valueOf(getFreePort()));
-                                put("web.http.presentation.path", "/api/resolution");
-                                put("web.http.storage.port", valueOf(getFreePort()));
-                                put("web.http.storage.path", "/api/storage");
+                                put("web.http.credentials.port", valueOf(getFreePort()));
+                                put("web.http.credentials.path", "/api/credentials");
                                 put("web.http.identity.port", valueOf(getFreePort()));
                                 put("web.http.identity.path", "/api/identity");
                                 put("web.http.accounts.port", valueOf(getFreePort()));
