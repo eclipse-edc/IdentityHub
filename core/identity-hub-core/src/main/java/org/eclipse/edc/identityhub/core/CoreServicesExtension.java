@@ -136,6 +136,8 @@ public class CoreServicesExtension implements ServiceExtension {
     private ParticipantSecureTokenService secureTokenService;
     @Inject
     private EdcHttpClient httpClient;
+    @Inject
+    private HolderCredentialRequestStore holderCredentialRequestStore;
 
     private CredentialRequestManagerImpl credentialRequestService;
 
@@ -191,7 +193,7 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public CredentialWriter createCredentialWriter(ServiceExtensionContext context) {
         var objectMapper = typeManager.getMapper(JSON_LD);
-        return new CredentialWriterImpl(credentialStore, typeTransformerRegistry, transactionContext, objectMapper);
+        return new CredentialWriterImpl(credentialStore, typeTransformerRegistry, transactionContext, objectMapper, holderCredentialRequestStore);
     }
 
     @Provider

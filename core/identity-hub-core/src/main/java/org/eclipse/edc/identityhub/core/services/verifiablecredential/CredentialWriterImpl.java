@@ -20,6 +20,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
@@ -38,6 +39,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
@@ -48,19 +50,32 @@ public class CredentialWriterImpl implements CredentialWriter {
     private final TypeTransformerRegistry credentialTransformerRegistry;
     private final TransactionContext transactionContext;
     private final ObjectMapper objectMapper;
+    private final HolderCredentialRequestStore holderCredentialRequestStore;
 
-
-    public CredentialWriterImpl(CredentialStore credentialStore, TypeTransformerRegistry credentialTransformerRegistry, TransactionContext transactionContext, ObjectMapper objectMapper) {
+    public CredentialWriterImpl(CredentialStore credentialStore, TypeTransformerRegistry credentialTransformerRegistry, TransactionContext transactionContext, ObjectMapper objectMapper, HolderCredentialRequestStore holderCredentialRequestStore) {
         this.credentialStore = credentialStore;
         this.credentialTransformerRegistry = credentialTransformerRegistry;
         this.transactionContext = transactionContext;
         this.objectMapper = objectMapper;
+        this.holderCredentialRequestStore = holderCredentialRequestStore;
     }
 
     @Override
-    public ServiceResult<Void> write(Collection<CredentialWriteRequest> requests, String participantContextId) {
+    public ServiceResult<Void> write(String holderPid, String issuerPid, Collection<CredentialWriteRequest> requests, String participantContextId) {
         return transactionContext.execute(() -> {
 
+            // get holder request
+            var holderRequestResult = holderCredentialRequestStore.findByIdAndLease(holderPid);
+            if (holderRequestResult.failed()) {
+                return from(holderRequestResult).mapEmpty();
+            }
+
+            var holderRequest = holderRequestResult.getContent();
+            if (holderRequest.getState() != REQUESTED.code()) {
+                return ServiceResult.badRequest("HolderCredentialRequest is expected to be in state '%s' but was '%s'".formatted(REQUESTED, holderRequest.stateAsString()));
+            }
+
+            // store actual credentials
             for (var rq : requests) { // use for loop to abort early: merging ServiceResults in a stream operation is not really possible
                 var convertResult = convertToResource(rq, participantContextId);
                 if (convertResult.failed()) {
@@ -72,6 +87,11 @@ public class CredentialWriterImpl implements CredentialWriter {
                     return from(createResult);
                 }
             }
+
+            //update holder request
+            holderRequest.transitionIssued();
+            holderCredentialRequestStore.save(holderRequest);
+
             return success();
         });
     }
