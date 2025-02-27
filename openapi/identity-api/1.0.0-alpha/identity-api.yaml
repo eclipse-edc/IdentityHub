@@ -1732,10 +1732,6 @@ components:
     HolderCredentialRequestDto:
       type: object
       properties:
-        credentialIds:
-          type: array
-          items:
-            type: string
         holderPid:
           type: string
         issuerDid:
