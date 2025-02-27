@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.common.provisioner;
 
+import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientSecretGenerator;
 import org.jetbrains.annotations.Nullable;
 
 import java.security.SecureRandom;
