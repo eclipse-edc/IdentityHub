@@ -47,6 +47,7 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -204,6 +205,13 @@ public class IdentityHubEndToEndTestContext extends AbstractTestContext {
 
     public String didFor(String participantContextId) {
         return configuration.didFor(participantContextId);
+    }
+
+    public void storeHolderRequest(HolderCredentialRequest request) {
+        runtime.getService(TransactionContext.class).execute(() -> {
+            runtime.getService(HolderCredentialRequestStore.class)
+                    .save(request);
+        });
     }
 
     private @NotNull String storageApiBasePath(String participantContextId) {
