@@ -44,9 +44,9 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -71,6 +71,7 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Jwt
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.PROVIDER_DID;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.PROVIDER_KEY;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateSiToken;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -87,7 +88,6 @@ public class StorageApiEndToEndTest {
         private static final String TEST_PARTICIPANT_CONTEXT_ID = "consumer";
         private static final String TEST_PARTICIPANT_CONTEXT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(TEST_PARTICIPANT_CONTEXT_ID.getBytes());
 
-
         @BeforeEach
         void setup(IdentityHubEndToEndTestContext context) {
             createParticipant(context);
@@ -95,7 +95,8 @@ public class StorageApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .typesAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
+                    .typesAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString(), // for tests involving the JWT credential
+                            "SuperSecretCredential", CredentialFormat.VC1_0_LD.toString())) // for tests involving the LD credential
                     .state(REQUESTED.code())
                     .participantContextId(PROVIDER_DID)
                     .build());
@@ -122,6 +123,7 @@ public class StorageApiEndToEndTest {
                     .forEach(sts -> accountStore.deleteById(sts.getId()).getContent());
         }
 
+        @DisplayName("Store JWT credential successfully")
         @Test
         void storeCredential(IdentityHubEndToEndTestContext context, CredentialStore credentialStore) throws JOSEException {
 
@@ -133,6 +135,7 @@ public class StorageApiEndToEndTest {
                     .body(credentialMessage)
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
+                    .log().ifValidationFails()
                     .statusCode(200);
 
             assertThat(credentialStore.query(QuerySpec.max()).getContent())
@@ -140,6 +143,7 @@ public class StorageApiEndToEndTest {
                     .allSatisfy(vc -> assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED));
         }
 
+        @DisplayName("Issuer's DID not resolvable, expect HTTP 401")
         @Test
         void storeCredential_didNotResolved(IdentityHubEndToEndTestContext context) {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.failure("not found"));
@@ -150,11 +154,13 @@ public class StorageApiEndToEndTest {
                     .body(credentialMessage)
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
+                    .log().ifValidationFails()
                     .statusCode(401)
-                    .body(Matchers.containsString("not found"));
+                    .body(containsString("not found"));
 
         }
 
+        @DisplayName("Issuer's auth token invalid, expect HTTP 401")
         @Test
         void storeCredential_tokenSignedWithWrongKey(IdentityHubEndToEndTestContext context) throws JOSEException {
             var wrongKey = new ECKeyGenerator(Curve.P_256).generate();
@@ -167,10 +173,12 @@ public class StorageApiEndToEndTest {
                     .body(credentialMessage)
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
+                    .log().ifValidationFails()
                     .statusCode(401)
-                    .body(Matchers.containsString("Token verification failed"));
+                    .body(containsString("Token verification failed"));
         }
 
+        @DisplayName("CredentialMessage contains an illegal format, expect HTTP 400")
         @Test
         void storeCredential_wrongCredentialFormat(IdentityHubEndToEndTestContext context) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -188,10 +196,12 @@ public class StorageApiEndToEndTest {
                     .body(credentialMessage)
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
+                    .log().ifValidationFails()
                     .statusCode(400)
-                    .body(Matchers.containsString("Invalid format"));
+                    .body(containsString("Invalid format"));
         }
 
+        @DisplayName("Store LD credential successfully")
         @Test
         void storeCredential_jsonLdCredential(IdentityHubEndToEndTestContext context, CredentialStore credentialStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -209,6 +219,7 @@ public class StorageApiEndToEndTest {
                     .body(credentialMessage)
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
+                    .log().ifValidationFails()
                     .statusCode(200);
 
             assertThat(credentialStore.query(QuerySpec.max()).getContent())
@@ -216,6 +227,7 @@ public class StorageApiEndToEndTest {
                     .allSatisfy(vc -> assertThat(vc.getVerifiableCredential().format()).isEqualTo(CredentialFormat.VC1_0_LD));
         }
 
+        @DisplayName("No corresponding holder credential request was found, expect HTTP 404")
         @Test
         void storeCredential_whenNoCredentialRequest(IdentityHubEndToEndTestContext context) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -227,9 +239,11 @@ public class StorageApiEndToEndTest {
                     .body(credentialMessage)
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
+                    .log().ifValidationFails()
                     .statusCode(404);
         }
 
+        @DisplayName("Corresponding holder credential request is not in state REQUESTED, expect 400")
         @Test
         void storeCredential_whenCredentialRequestInWrongState(IdentityHubEndToEndTestContext context) throws JOSEException {
 
@@ -237,7 +251,7 @@ public class StorageApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .typesAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
+                    .typesAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString()))
                     .state(CREATED.code())
                     .participantContextId(PROVIDER_DID)
                     .build());
@@ -251,7 +265,36 @@ public class StorageApiEndToEndTest {
                     .body(credentialMessage)
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
                     .then()
-                    .statusCode(400);
+                    .log().ifValidationFails()
+                    .statusCode(400)
+                    .body(containsString("HolderCredentialRequest is expected to be in state 'REQUESTED' but was 'CREATED'"));
+        }
+
+        @DisplayName("Corresponding holder credential request was made for a different credential type, expect 400")
+        @Test
+        void storeCredential_whenTypeNotRequested(IdentityHubEndToEndTestContext context) throws JOSEException {
+
+            context.storeHolderRequest(HolderCredentialRequest.Builder.newInstance()
+                    .id("test-holder-id")
+                    .issuerDid(PROVIDER_DID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .typesAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
+                    .state(REQUESTED.code())
+                    .participantContextId(PROVIDER_DID)
+                    .build());
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+            var credentialMessage = createCredentialMessage(createCredentialContainer());
+
+            context.getStorageEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + generateSiToken())
+                    .body(credentialMessage)
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403)
+                    .body(containsString("No credential request was made for Credentials of type"));
         }
 
         private void createParticipant(IdentityHubEndToEndTestContext context) {
