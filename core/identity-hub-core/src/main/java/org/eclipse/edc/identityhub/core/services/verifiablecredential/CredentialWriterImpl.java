@@ -81,7 +81,18 @@ public class CredentialWriterImpl implements CredentialWriter {
                 if (convertResult.failed()) {
                     return convertResult.mapEmpty();
                 }
-                var createResult = credentialStore.create(convertResult.getContent());
+                var resource = convertResult.getContent();
+
+                // verify that the received credentials correspond to the credential request that was made prior
+                var container = resource.getVerifiableCredential();
+                var receivedTypes = container.credential().getType();
+                var receivedFormat = container.format().toString();
+
+                if (receivedTypes.stream().noneMatch(type -> receivedFormat.equals(holderRequest.getTypesAndFormats().get(type)))) {
+                    return ServiceResult.unauthorized("No credential request was made for Credentials of type '%s', serialized as '%s'".formatted(receivedTypes, receivedFormat));
+                }
+
+                var createResult = credentialStore.create(resource);
 
                 if (createResult.failed()) {
                     return from(createResult);

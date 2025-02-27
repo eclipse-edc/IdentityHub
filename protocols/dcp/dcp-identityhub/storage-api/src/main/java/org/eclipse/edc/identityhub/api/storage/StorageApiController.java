@@ -97,13 +97,9 @@ public class StorageApiController implements StorageApi {
         issuerTokenVerifier.verify(participantContext, authToken)
                 .orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
-
-        // todo: implement response validation by fetching the original CredentialRequest from the DB (using the holderPid )
-        // and comparing the credential types therein
-        monitor.warning("Validation of requested credential types against received credential types is not yet implemented.");
-
         var holderPid = credentialMessage.getHolderPid();
         var issuerPid = credentialMessage.getIssuerPid();
+
         var writeRequests = credentialMessage.getCredentials().stream().map(c -> new CredentialWriteRequest(c.payload(), c.format())).toList();
         return credentialWriter.write(holderPid, issuerPid, writeRequests, participantContextId)
                 .onSuccess(v -> monitor.debug("HolderCredentialRequest %s is now in state %s".formatted(holderPid, HolderRequestState.ISSUED)))

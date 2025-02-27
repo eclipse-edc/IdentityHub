@@ -189,6 +189,21 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .body(containsString("foo"));
     }
 
+    @Test
+    void storeCredential_writerReturnsNotAuthorized_shouldReturn403() {
+        when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.unauthorized("foo"));
+
+        baseRequest()
+                .header("Authorization", "Bearer: " + generateJwt())
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403)
+                .body(containsString("foo"));
+    }
+
     @Override
     protected Object controller() {
         return new StorageApiController(validatorRegistry,
