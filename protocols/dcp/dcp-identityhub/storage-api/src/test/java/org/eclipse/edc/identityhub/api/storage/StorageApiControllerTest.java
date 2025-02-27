@@ -78,7 +78,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
         when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.success(claimToken()));
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
-        when(credentialWriter.write(anyCollection(), anyString())).thenReturn(ServiceResult.success());
+        when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.success());
     }
 
     @Test
@@ -177,7 +177,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     @Test
     void storeCredential_writerFails_shouldReturn400() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
-        when(credentialWriter.write(anyCollection(), anyString())).thenReturn(ServiceResult.badRequest("foo"));
+        when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.badRequest("foo"));
 
         baseRequest()
                 .header("Authorization", "Bearer: " + generateJwt())

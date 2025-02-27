@@ -26,6 +26,7 @@ import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
@@ -54,12 +55,15 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.JWT_VC_EXAMPLE;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.VC_EXAMPLE_2;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_DID;
@@ -87,6 +91,14 @@ public class StorageApiEndToEndTest {
         @BeforeEach
         void setup(IdentityHubEndToEndTestContext context) {
             createParticipant(context);
+            context.storeHolderRequest(HolderCredentialRequest.Builder.newInstance()
+                    .id("test-holder-id")
+                    .issuerDid(PROVIDER_DID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .typesAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
+                    .state(REQUESTED.code())
+                    .participantContextId(PROVIDER_DID)
+                    .build());
         }
 
         @AfterEach
@@ -112,6 +124,7 @@ public class StorageApiEndToEndTest {
 
         @Test
         void storeCredential(IdentityHubEndToEndTestContext context, CredentialStore credentialStore) throws JOSEException {
+
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
             var credentialMessage = createCredentialMessage(createCredentialContainer());
             context.getStorageEndpoint().baseRequest()
@@ -128,7 +141,7 @@ public class StorageApiEndToEndTest {
         }
 
         @Test
-        void storeCredential_didNotResolved(IdentityHubEndToEndTestContext context, CredentialStore credentialStore) {
+        void storeCredential_didNotResolved(IdentityHubEndToEndTestContext context) {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.failure("not found"));
             var credentialMessage = createCredentialMessage(createCredentialContainer());
             context.getStorageEndpoint().baseRequest()
@@ -143,7 +156,7 @@ public class StorageApiEndToEndTest {
         }
 
         @Test
-        void storeCredential_tokenSignedWithWrongKey(IdentityHubEndToEndTestContext context, CredentialStore credentialStore) throws JOSEException {
+        void storeCredential_tokenSignedWithWrongKey(IdentityHubEndToEndTestContext context) throws JOSEException {
             var wrongKey = new ECKeyGenerator(Curve.P_256).generate();
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(wrongKey.toPublicKey()));
 
@@ -159,7 +172,7 @@ public class StorageApiEndToEndTest {
         }
 
         @Test
-        void storeCredential_wrongCredentialFormat(IdentityHubEndToEndTestContext context, CredentialStore credentialStore) throws JOSEException {
+        void storeCredential_wrongCredentialFormat(IdentityHubEndToEndTestContext context) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             var credentialContainer = Json.createObjectBuilder()
@@ -203,6 +216,44 @@ public class StorageApiEndToEndTest {
                     .allSatisfy(vc -> assertThat(vc.getVerifiableCredential().format()).isEqualTo(CredentialFormat.VC1_0_LD));
         }
 
+        @Test
+        void storeCredential_whenNoCredentialRequest(IdentityHubEndToEndTestContext context) throws JOSEException {
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+            var credentialMessage = createCredentialMessage("another_holder_pid", createCredentialContainer());
+
+            context.getStorageEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + generateSiToken())
+                    .body(credentialMessage)
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .then()
+                    .statusCode(404);
+        }
+
+        @Test
+        void storeCredential_whenCredentialRequestInWrongState(IdentityHubEndToEndTestContext context) throws JOSEException {
+
+            context.storeHolderRequest(HolderCredentialRequest.Builder.newInstance()
+                    .id("test-holder-id")
+                    .issuerDid(PROVIDER_DID)
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .typesAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
+                    .state(CREATED.code())
+                    .participantContextId(PROVIDER_DID)
+                    .build());
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+            var credentialMessage = createCredentialMessage(createCredentialContainer());
+
+            context.getStorageEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + generateSiToken())
+                    .body(credentialMessage)
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .then()
+                    .statusCode(400);
+        }
+
         private void createParticipant(IdentityHubEndToEndTestContext context) {
             createParticipant(context, TEST_PARTICIPANT_CONTEXT_ID, CONSUMER_KEY);
         }
@@ -228,11 +279,13 @@ public class StorageApiEndToEndTest {
         }
 
         private JsonObject createCredentialMessage(JsonObject... credentials) {
+            return createCredentialMessage("test-holder-id", credentials);
+        }
+
+        private JsonObject createCredentialMessage(String holderPid, JsonObject... credentials) {
             var credentialContainers = Json.createArrayBuilder();
 
             Arrays.stream(credentials).forEach(credentialContainers::add);
-
-
             var credentialsJsonArray = Json.createArrayBuilder()
                     .add(Json.createObjectBuilder()
                             .add(JsonLdKeywords.TYPE, JsonLdKeywords.JSON)
@@ -240,7 +293,7 @@ public class StorageApiEndToEndTest {
 
             return Json.createObjectBuilder()
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(ISSUER_PID_TERM), "test-request-id")
-                    .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(HOLDER_PID_TERM), "test-holder-id")
+                    .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(HOLDER_PID_TERM), holderPid)
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), credentialsJsonArray)
                     .build();
         }

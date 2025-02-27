@@ -25,5 +25,5 @@ import java.util.Collection;
  */
 @FunctionalInterface
 public interface CredentialWriter {
-    ServiceResult<Void> write(Collection<CredentialWriteRequest> credentials, String participantContextId);
+    ServiceResult<Void> write(String holderPid, String issuerPid, Collection<CredentialWriteRequest> credentials, String participantContextId);
 }

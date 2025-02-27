@@ -131,7 +131,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .atMost(TIMEOUT)
                     .untilAsserted(() -> assertThat(credentialService.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
                             .allSatisfy(t -> {
-                                assertThat(t.getState()).isEqualTo(HolderRequestState.REQUESTED.code());
+                                assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
                                 assertThat(t.getHolderPid()).isEqualTo("test-request-id");
                             }));
 

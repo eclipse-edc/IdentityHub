@@ -52,7 +52,6 @@ import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -190,7 +189,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
 
         return ofNullable(credentialRequestService.findById(holderPid))
-                .map(req -> new HolderCredentialRequestDto(req.getIssuerDid(), req.getHolderPid(), req.getIssuerPid(), req.stateAsString(), List.of(), req.getTypesAndFormats()))
+                .map(req -> new HolderCredentialRequestDto(req.getIssuerDid(), req.getHolderPid(), req.getIssuerPid(), req.stateAsString(), req.getTypesAndFormats()))
                 .orElseThrow(() -> new ObjectNotFoundException(HolderCredentialRequest.class, holderPid));
     }
 

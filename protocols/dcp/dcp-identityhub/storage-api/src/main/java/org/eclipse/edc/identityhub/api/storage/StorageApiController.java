@@ -24,6 +24,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
@@ -101,7 +102,11 @@ public class StorageApiController implements StorageApi {
         // and comparing the credential types therein
         monitor.warning("Validation of requested credential types against received credential types is not yet implemented.");
 
-        return credentialWriter.write(credentialMessage.getCredentials().stream().map(c -> new CredentialWriteRequest(c.payload(), c.format())).toList(), participantContextId)
+        var holderPid = credentialMessage.getHolderPid();
+        var issuerPid = credentialMessage.getIssuerPid();
+        var writeRequests = credentialMessage.getCredentials().stream().map(c -> new CredentialWriteRequest(c.payload(), c.format())).toList();
+        return credentialWriter.write(holderPid, issuerPid, writeRequests, participantContextId)
+                .onSuccess(v -> monitor.debug("HolderCredentialRequest %s is now in state %s".formatted(holderPid, HolderRequestState.ISSUED)))
                 .map(v -> Response.ok().build())
                 .orElseThrow(exceptionMapper(CredentialMessage.class, null));
     }
