@@ -89,7 +89,7 @@ public class CredentialWriterImpl implements CredentialWriter {
             }
 
             //update holder request
-            holderRequest.transitionIssued();
+            holderRequest.transitionIssued(issuerPid);
             holderCredentialRequestStore.save(holderRequest);
 
             return success();

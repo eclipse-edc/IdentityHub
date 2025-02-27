@@ -41,9 +41,11 @@ import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderReq
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -75,6 +77,7 @@ class CredentialWriterImplTest {
 
         var result = credentialWriter.write("holderPid", "issuerPid", Set.of(new CredentialWriteRequest("raw-cred", CredentialFormat.VC1_0_JWT.toString())), PARTICIPANT_ID);
         assertThat(result).isSucceeded();
+        verify(holderCredentialRequestStore).save(argThat(request -> request.getIssuerPid() != null));
     }
 
     @Test

@@ -62,8 +62,9 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         updateStateTimestamp();
     }
 
-    public void transitionIssued() {
+    public void transitionIssued(String issuerPid) {
         state = ISSUED.code();
+        this.issuerPid = issuerPid;
         updateStateTimestamp();
     }
 
