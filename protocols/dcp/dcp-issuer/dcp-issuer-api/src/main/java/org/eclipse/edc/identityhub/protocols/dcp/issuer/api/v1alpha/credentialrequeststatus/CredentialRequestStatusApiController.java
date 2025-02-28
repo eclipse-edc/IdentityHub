@@ -30,7 +30,6 @@ import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.query.Criterion;
-import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
@@ -39,6 +38,7 @@ import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
+import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessResource.queryByIssuerContextId;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
 
 @Consumes(APPLICATION_JSON)
@@ -85,9 +85,8 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
 
     }
 
-    private Result<IssuanceProcess> fetchByParticipant(String participantContextId, Participant participant, String credentialRequestId) {
-        var query = QuerySpec.Builder.newInstance()
-                .filter(Criterion.criterion("issuerContextId", "=", participantContextId))
+    private Result<IssuanceProcess> fetchByParticipant(String issuerContextId, Participant participant, String credentialRequestId) {
+        var query = queryByIssuerContextId(issuerContextId)
                 .filter(Criterion.criterion("participantId", "=", participant.participantId()))
                 .filter(Criterion.criterion("id", "=", credentialRequestId))
                 .build();

@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
+import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
@@ -30,6 +31,7 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -47,6 +49,12 @@ import static org.hamcrest.Matchers.containsString;
 public class CredentialDefinitionApiEndToEndTest {
     abstract static class Tests {
 
+        private static String token = "";
+
+        @BeforeAll
+        static void setup(IssuerServiceEndToEndTestContext context) {
+            token = context.createSuperUser();
+        }
 
         @AfterEach
         void teardown(CredentialDefinitionService service) {
@@ -79,6 +87,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body(definition)
                     .post("/v1alpha/credentialdefinitions")
                     .then()
@@ -109,6 +118,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body(definition)
                     .post("/v1alpha/credentialdefinitions")
                     .then()
@@ -130,6 +140,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body("""
                             {
                               "id": "test-definition-id",
@@ -158,6 +169,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body("""
                             {
                               "id": "test-definition-id",
@@ -177,6 +189,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body("""
                             {
                               "id": "test-definition-id"
@@ -192,6 +205,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body("""
                             {
                               "id": "test-definition-id",
@@ -222,6 +236,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var res = context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("credentialType", "=", "MembershipCredential")).build())
                     .post("/v1alpha/credentialdefinitions/query")
                     .then()
@@ -237,6 +252,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var res = context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", "test-credential-definition-id")).build())
                     .post("/v1alpha/credentialdefinitions/query")
                     .then()
@@ -260,6 +276,7 @@ public class CredentialDefinitionApiEndToEndTest {
             service.createCredentialDefinition(definition);
 
             var res = context.getAdminEndpoint().baseRequest()
+                    .header(new Header("x-api-key", token))
                     .get("/v1alpha/credentialdefinitions/test-credential-definition-id")
                     .then()
                     .statusCode(200)
@@ -274,6 +291,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
 
             context.getAdminEndpoint().baseRequest()
+                    .header(new Header("x-api-key", token))
                     .get("/v1alpha/credentialdefinitions/test-credential-definition-id")
                     .then()
                     .statusCode(404);
@@ -302,6 +320,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body(definition)
                     .put("/v1alpha/credentialdefinitions")
                     .then()
@@ -324,6 +343,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
                     .body(definition)
                     .put("/v1alpha/credentialdefinitions")
                     .then()
@@ -344,6 +364,7 @@ public class CredentialDefinitionApiEndToEndTest {
             service.createCredentialDefinition(definition);
 
             context.getAdminEndpoint().baseRequest()
+                    .header(new Header("x-api-key", token))
                     .delete("/v1alpha/credentialdefinitions/test-credential-definition-id")
                     .then()
                     .statusCode(204);
@@ -357,6 +378,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
 
             context.getAdminEndpoint().baseRequest()
+                    .header(new Header("x-api-key", token))
                     .delete("/v1alpha/credentialdefinitions/test-credential-definition-id")
                     .then()
                     .statusCode(404);
