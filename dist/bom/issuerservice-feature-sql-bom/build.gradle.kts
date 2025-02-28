@@ -24,6 +24,10 @@ dependencies {
     api(project(":extensions:store:sql:issuerservice-credential-definition-store-sql"))
     api(project(":extensions:store:sql:issuance-process-store-sql"))
 
+    api(project(":extensions:store:sql:identity-hub-did-store-sql"))
+    api(project(":extensions:store:sql:identity-hub-keypair-store-sql"))
+    api(project(":extensions:store:sql:identity-hub-participantcontext-store-sql"))
+
     api(libs.edc.sql.core)
     api(libs.edc.transaction.local)
     api(libs.edc.sql.pool)

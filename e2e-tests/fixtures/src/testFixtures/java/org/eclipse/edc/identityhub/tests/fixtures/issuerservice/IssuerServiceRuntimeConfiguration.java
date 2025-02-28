@@ -60,8 +60,6 @@ public class IssuerServiceRuntimeConfiguration extends AbstractRuntimeConfigurat
                 put("web.http.did.port", String.valueOf(didEndpoint.getUrl().getPort()));
                 put("web.http.did.path", didEndpoint.getUrl().getPath());
                 put("edc.sql.schema.autocreate", "true");
-                put("edc.sts.account.api.url", "http://sts.com/accounts");
-                put("edc.sts.accounts.api.auth.header.value", "password");
                 put("edc.iam.accesstoken.jti.validation", String.valueOf(false));
                 put("edc.issuer.statuslist.signing.key.alias", "signing-key");
                 // config for the embedded STS
