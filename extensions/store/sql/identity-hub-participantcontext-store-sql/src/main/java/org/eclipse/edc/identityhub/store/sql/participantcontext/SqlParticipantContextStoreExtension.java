@@ -52,7 +52,7 @@ public class SqlParticipantContextStoreExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        sqlSchemaBootstrapper.addStatementFromResource(dataSourceName, "participant-schema.sql");
+        sqlSchemaBootstrapper.addStatementFromResource(dataSourceName, "participant-context-schema.sql");
     }
 
     @Provider

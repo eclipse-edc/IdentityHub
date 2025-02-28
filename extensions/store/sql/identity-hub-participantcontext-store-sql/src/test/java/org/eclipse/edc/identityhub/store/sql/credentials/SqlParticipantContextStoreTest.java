@@ -41,7 +41,7 @@ class SqlParticipantContextStoreTest extends ParticipantContextStoreTestBase {
         store = new SqlParticipantContextStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
                 extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements);
 
-        var schema = TestUtils.getResourceFileContentAsString("participant-schema.sql");
+        var schema = TestUtils.getResourceFileContentAsString("participant-context-schema.sql");
         extension.runQuery(schema);
     }
 
