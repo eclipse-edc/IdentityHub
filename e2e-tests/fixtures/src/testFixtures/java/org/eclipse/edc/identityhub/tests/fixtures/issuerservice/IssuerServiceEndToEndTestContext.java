@@ -71,6 +71,6 @@ public class IssuerServiceEndToEndTestContext extends AbstractTestContext {
     }
 
     private @NotNull String issuanceBasePath(String participantContextId) {
-        return "v1alpha/participants/%s".formatted(base64Encode(participantContextId));
+        return "v1alpha/issuers/%s".formatted(base64Encode(participantContextId));
     }
 }

@@ -43,7 +43,7 @@ import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessSt
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1alpha/participants/{participantContextId}/requests")
+@Path("/v1alpha/issuers/{issuerContextId}/requests")
 public class CredentialRequestStatusApiController implements CredentialRequestStatusApi {
 
     private final TypeTransformerRegistry dcpRegistry;
@@ -61,14 +61,14 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
     @GET
     @Path("/{credentialRequestId}")
     @Override
-    public JsonObject credentialStatus(@PathParam("participantContextId") String participantContextId, @PathParam("credentialRequestId") String credentialRequestId, @HeaderParam(AUTHORIZATION) String token) {
+    public JsonObject credentialStatus(@PathParam("issuerContextId") String issuerContextId, @PathParam("credentialRequestId") String credentialRequestId, @HeaderParam(AUTHORIZATION) String token) {
         if (token == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
 
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var decodedIssuerContextId = onEncoded(issuerContextId).orElseThrow(InvalidRequestException::new);
 
-        var participantContext = participantContextService.getParticipantContext(decodedParticipantContextId)
+        var participantContext = participantContextService.getParticipantContext(decodedIssuerContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
 
         var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(token).build();
@@ -76,7 +76,7 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
         var requestContext = tokenValidator.verify(participantContext, tokenRepresentation)
                 .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
-        var status = fetchByParticipant(decodedParticipantContextId, requestContext.participant(), credentialRequestId)
+        var status = fetchByParticipant(decodedIssuerContextId, requestContext.participant(), credentialRequestId)
                 .map(this::toCredentialStatus)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid credential request %s: %s".formatted(credentialRequestId, f.getFailureDetail())));
 
