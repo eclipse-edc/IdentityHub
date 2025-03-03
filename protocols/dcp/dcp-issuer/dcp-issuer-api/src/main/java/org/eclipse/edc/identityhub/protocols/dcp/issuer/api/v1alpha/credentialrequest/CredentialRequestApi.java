@@ -45,7 +45,7 @@ public interface CredentialRequestApi {
     @Tag(name = "Credential Request API")
     @Operation(description = "Requests the issuance of one or several verifiable credentials from an issuer",
             operationId = "requestCredentials",
-            parameters = { @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH) },
+            parameters = { @Parameter(name = "issuerContextId", description = "Base64-Url encode Issuer Context ID", required = true, in = ParameterIn.PATH) },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ApiSchema.CredentialRequestMessageSchema.class))),
             responses = {
                     @ApiResponse(responseCode = "201", description = "The request was successfully received and is being processed.", headers = { @Header(name = "Location",
@@ -59,5 +59,5 @@ public interface CredentialRequestApi {
 
             }
     )
-    Response requestCredential(String participantContextId, JsonObject message, String token);
+    Response requestCredential(String issuerContextId, JsonObject message, String token);
 }

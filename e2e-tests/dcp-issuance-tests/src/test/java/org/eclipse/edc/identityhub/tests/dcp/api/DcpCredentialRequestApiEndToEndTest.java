@@ -123,7 +123,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         private static @NotNull String issuanceUrl() {
-            return "/v1alpha/participants/%s/credentials".formatted(ISSUER_ID_ENCODED);
+            return "/v1alpha/issuers/%s/credentials".formatted(ISSUER_ID_ENCODED);
         }
 
         @NotNull
