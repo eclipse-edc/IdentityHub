@@ -16,8 +16,6 @@ package org.eclipse.edc.iam.identitytrust.sts.service;
 
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
-import org.eclipse.edc.jwt.validation.jti.JtiValidationEntry;
-import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
@@ -49,20 +47,17 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
     private static final List<String> ACCESS_TOKEN_INHERITED_CLAIMS = List.of(ISSUER);
     private final TransactionContext transactionContext;
     private final long tokenValiditySeconds;
-    private final JtiValidationStore jtiValidationStore;
     private final TokenGenerationService tokenGenerationService;
     private final Clock clock;
     private final StsAccountService stsAccountService;
 
     public EmbeddedSecureTokenService(TransactionContext transactionContext,
                                       long tokenValiditySeconds,
-                                      JtiValidationStore jtiValidationStore,
                                       TokenGenerationService tokenGenerationService,
                                       Clock clock,
                                       StsAccountService stsAccountService) {
         this.transactionContext = transactionContext;
         this.tokenValiditySeconds = tokenValiditySeconds;
-        this.jtiValidationStore = jtiValidationStore;
         this.tokenGenerationService = tokenGenerationService;
         this.clock = clock;
         this.stsAccountService = stsAccountService;
@@ -93,13 +88,6 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
         });
     }
 
-    private Result<Void> recordToken(String jti, Long exp) {
-        var storeResult = jtiValidationStore.storeEntry(new JtiValidationEntry(jti, exp));
-        return storeResult.succeeded()
-                ? Result.success()
-                : failure("error storing JTI for later validation: %s".formatted(storeResult.getFailureDetail()));
-    }
-
     private Result<Void> createAndAcceptAccessToken(Map<String, String> claims, String scope, BiConsumer<String, String> consumer, String keyId, String privateKeyAlias) {
         return createAccessToken(claims, scope, keyId, privateKeyAlias)
                 .compose(tokenRepresentation -> success(tokenRepresentation.getToken()))
@@ -120,7 +108,7 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
                 .compose(v -> {
                     var keyIdDecorator = new KeyIdDecorator(keyId);
                     return tokenGenerationService.generate(privateKeyAlias, keyIdDecorator, new AccessTokenDecorator(jti, now, exp, accessTokenClaims));
-                }).compose(tr -> recordToken(jti, exp.toEpochMilli()).map(v -> tr));
+                });
 
     }
 

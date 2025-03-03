@@ -16,11 +16,9 @@ package org.eclipse.edc.iam.identitytrust.sts.service;
 
 import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccount;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
-import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
 import org.eclipse.edc.token.spi.TokenDecorator;
 import org.eclipse.edc.token.spi.TokenGenerationService;
@@ -48,13 +46,11 @@ class EmbeddedSecureTokenServiceTest {
     public static final String TEST_PRIVATEKEY_ID = "test-privatekey-id";
     public static final String TEST_PARTICIPANT = "test-participant";
     private final TokenGenerationService tokenGenerationService = mock();
-    private final JtiValidationStore jtiValidationStore = mock();
     private final StsAccountService stsAccountService = mock();
-    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, jtiValidationStore, tokenGenerationService, Clock.systemUTC(), stsAccountService);
+    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(), stsAccountService);
 
     @BeforeEach
     void setup() {
-        when(jtiValidationStore.storeEntry(any())).thenReturn(StoreResult.success());
         when(stsAccountService.findById(anyString())).thenReturn(
                 ServiceResult.success(StsAccount.Builder.newInstance()
                         .id("key-pair-id")
