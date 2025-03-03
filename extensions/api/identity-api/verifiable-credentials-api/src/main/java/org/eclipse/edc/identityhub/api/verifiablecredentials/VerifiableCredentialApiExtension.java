@@ -19,7 +19,7 @@ import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.GetAllC
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.VerifiableCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.transformer.VerifiableCredentialManifestToVerifiableCredentialResourceTransformer;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -67,7 +67,7 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
         webService.registerResource(IdentityHubApiContext.IDENTITY, getAllController);
     }
 
-    private ParticipantResource queryById(String credentialId) {
+    private AbstractParticipantResource queryById(String credentialId) {
         return credentialStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", credentialId)).build())
                 .map(list -> list.iterator().next())
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));

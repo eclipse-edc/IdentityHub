@@ -40,16 +40,16 @@ public interface CredentialGeneratorRegistry {
     /**
      * Generates credentials based on the given {@link CredentialGenerationRequest}s and claims.
      *
-     * @param issuerContextId              The issuer context ID
+     * @param participantContextId         The participant context ID
      * @param participantId                The participant ID
      * @param credentialGenerationRequests The credential generation requests
      * @param claims                       The claims to use for credential generation
      * @return The list of {@link VerifiableCredentialContainer}s if successful, or the failure information if unsuccessful
      */
-    default Result<List<VerifiableCredentialContainer>> generateCredentials(String issuerContextId, String participantId, List<CredentialGenerationRequest> credentialGenerationRequests, Map<String, Object> claims) {
+    default Result<List<VerifiableCredentialContainer>> generateCredentials(String participantContextId, String participantId, List<CredentialGenerationRequest> credentialGenerationRequests, Map<String, Object> claims) {
         var credentials = new ArrayList<VerifiableCredentialContainer>();
         for (var request : credentialGenerationRequests) {
-            var result = generateCredential(issuerContextId, participantId, request, claims);
+            var result = generateCredential(participantContextId, participantId, request, claims);
             if (result.succeeded()) {
                 credentials.add(result.getContent());
             } else {
@@ -62,11 +62,11 @@ public interface CredentialGeneratorRegistry {
     /**
      * Generates a credential based on the given {@link CredentialGenerationRequest} and claims.
      *
-     * @param issuerContextId             The issuer context ID
+     * @param participantContextId        The participant context ID
      * @param participantId               The participant ID
      * @param credentialGenerationRequest The credential generation request
      * @param claims                      The claims to use for credential generation
      * @return The {@link VerifiableCredentialContainer} if successful, or the failure information if unsuccessful
      */
-    Result<VerifiableCredentialContainer> generateCredential(String issuerContextId, String participantId, CredentialGenerationRequest credentialGenerationRequest, Map<String, Object> claims);
+    Result<VerifiableCredentialContainer> generateCredential(String participantContextId, String participantId, CredentialGenerationRequest credentialGenerationRequest, Map<String, Object> claims);
 }

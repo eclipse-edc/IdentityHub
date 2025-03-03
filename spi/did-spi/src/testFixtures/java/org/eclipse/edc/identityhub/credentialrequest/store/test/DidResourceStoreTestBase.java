@@ -21,7 +21,6 @@ import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.did.model.DidState;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.spi.message.Range;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -33,6 +32,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static java.util.stream.IntStream.range;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 /**
@@ -159,7 +159,7 @@ public abstract class DidResourceStoreTestBase {
         dids.add(expected);
         dids.forEach(getStore()::save);
 
-        var q = ParticipantResource.queryByParticipantContextId(expected.getParticipantContextId()).build();
+        var q = queryByParticipantContextId(expected.getParticipantContextId()).build();
         Assertions.assertThat(getStore().query(q))
                 .hasSize(1)
                 .usingRecursiveFieldByFieldElementComparator()

@@ -45,8 +45,8 @@ public interface CredentialRequestStatusApi {
     @Operation(description = "Requests status information about an issuance request from an issuer",
             operationId = "getCredentialRequestStatus",
             parameters = {
-                    @Parameter(name = "issuerContextId", description = "Base64-Url encode Issuer Context ID", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "credentialRequestId", description = "ID of the Credential Request that was sent previously", required = true, in = ParameterIn.PATH) },
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "credentialRequestId", description = "ID of the Credential Request that was sent previously", required = true, in = ParameterIn.PATH)},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Gets the status of a credentials request.",
                             content = @Content(schema = @Schema(implementation = ApiSchema.CredentialStatusSchema.class))),
@@ -60,5 +60,5 @@ public interface CredentialRequestStatusApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class))))
             }
     )
-    JsonObject credentialStatus(String issuerContextId, String credentialRequestId, String token);
+    JsonObject credentialStatus(String participantContextId, String credentialRequestId, String token);
 }

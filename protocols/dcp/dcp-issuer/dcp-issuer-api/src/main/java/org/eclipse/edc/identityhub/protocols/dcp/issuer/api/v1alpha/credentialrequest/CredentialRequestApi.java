@@ -45,11 +45,11 @@ public interface CredentialRequestApi {
     @Tag(name = "Credential Request API")
     @Operation(description = "Requests the issuance of one or several verifiable credentials from an issuer",
             operationId = "requestCredentials",
-            parameters = { @Parameter(name = "issuerContextId", description = "Base64-Url encode Issuer Context ID", required = true, in = ParameterIn.PATH) },
+            parameters = {@Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ApiSchema.CredentialRequestMessageSchema.class))),
             responses = {
-                    @ApiResponse(responseCode = "201", description = "The request was successfully received and is being processed.", headers = { @Header(name = "Location",
-                            description = "contains the relative URL where the status of the request can be queried (Credential Request Status API)") }),
+                    @ApiResponse(responseCode = "201", description = "The request was successfully received and is being processed.", headers = {@Header(name = "Location",
+                            description = "contains the relative URL where the status of the request can be queried (Credential Request Status API)")}),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, e.g. required parameter or properties were missing",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)))),
                     @ApiResponse(responseCode = "401", description = "No Authorization header was provided.",
@@ -59,5 +59,5 @@ public interface CredentialRequestApi {
 
             }
     )
-    Response requestCredential(String issuerContextId, JsonObject message, String token);
+    Response requestCredential(String participantContextId, JsonObject message, String token);
 }

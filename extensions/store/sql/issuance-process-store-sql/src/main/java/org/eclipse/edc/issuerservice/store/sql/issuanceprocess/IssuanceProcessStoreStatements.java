@@ -47,12 +47,12 @@ public interface IssuanceProcessStoreStatements extends StatefulEntityStatements
         return "credential_formats";
     }
 
-    default String getParticipantIdColumn() {
-        return "participant_id";
+    default String getMemberIdColumn() {
+        return "member_id";
     }
 
-    default String getIssuerContextIdColumn() {
-        return "issuer_context_id";
+    default String getParticipantContextIdColumn() {
+        return "participant_context_id";
     }
 
     default String getPendingColumn() {

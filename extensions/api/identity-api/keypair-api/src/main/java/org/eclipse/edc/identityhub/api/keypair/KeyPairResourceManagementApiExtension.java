@@ -20,7 +20,7 @@ import org.eclipse.edc.identityhub.api.keypair.validation.KeyDescriptorValidator
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -62,7 +62,7 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
         webService.registerResource(IdentityHubApiContext.IDENTITY, getAllApi);
     }
 
-    private ParticipantResource findById(String keyPairId) {
+    private AbstractParticipantResource findById(String keyPairId) {
         var q = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("id", "=", keyPairId))
                 .build();

@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.spi.keypair.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
@@ -28,7 +28,7 @@ import java.util.Objects;
  * A {@link KeyPairResource} contains key material for a particular {@link ParticipantContext}. The public key is stored in the database in serialized form (JWK or PEM) and the private
  * key is referenced via an alias, it is actually stored in a {@link Vault}.
  */
-public class KeyPairResource extends ParticipantResource {
+public class KeyPairResource extends AbstractParticipantResource {
     private String id;
     private long timestamp;
     private String keyId;
@@ -141,7 +141,7 @@ public class KeyPairResource extends ParticipantResource {
         state = KeyPairState.ACTIVATED.code();
     }
 
-    public static final class Builder extends ParticipantResource.Builder<KeyPairResource, KeyPairResource.Builder> {
+    public static final class Builder extends AbstractParticipantResource.Builder<KeyPairResource, KeyPairResource.Builder> {
 
         private Builder() {
             super(new KeyPairResource());

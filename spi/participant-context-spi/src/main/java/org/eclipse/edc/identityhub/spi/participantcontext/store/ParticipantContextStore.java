@@ -15,11 +15,12 @@
 package org.eclipse.edc.identityhub.spi.participantcontext.store;
 
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 
 import java.util.Collection;
+
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 
 /**
  * Stores {@link ParticipantContext} objects and provides basic CRUD operations.
@@ -66,7 +67,7 @@ public interface ParticipantContextStore {
     }
 
     default StoreResult<ParticipantContext> findById(String participantContextId) {
-        var res = query(ParticipantResource.queryByParticipantContextId(participantContextId).build());
+        var res = query(queryByParticipantContextId(participantContextId).build());
         if (res.succeeded()) {
             return res.getContent().stream().findFirst()
                     .map(StoreResult::success)

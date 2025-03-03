@@ -19,7 +19,6 @@ import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
@@ -30,6 +29,8 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 
 public abstract class AbstractTestContext {
     public static final String SUPER_USER = "super-user";
@@ -90,7 +91,7 @@ public abstract class AbstractTestContext {
 
     public List<VerifiableCredentialResource> getCredentialsForParticipant(String participantContextId) {
         return runtime.getService(CredentialStore.class)
-                .query(ParticipantResource.queryByParticipantContextId(participantContextId).build())
+                .query(queryByParticipantContextId(participantContextId).build())
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()))
                 .stream()
                 .toList();

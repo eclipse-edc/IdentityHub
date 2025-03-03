@@ -44,7 +44,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1alpha/issuers/{issuerContextId}/credentials")
+@Path("/v1alpha/participants/{participantContextId}/credentials")
 public class CredentialRequestApiController implements CredentialRequestApi {
 
     private final ParticipantContextService participantContextService;
@@ -71,26 +71,26 @@ public class CredentialRequestApiController implements CredentialRequestApi {
     @POST
     @Path("/")
     @Override
-    public Response requestCredential(@PathParam("issuerContextId") String issuerContextId, JsonObject message, @HeaderParam(AUTHORIZATION) String token) {
+    public Response requestCredential(@PathParam("participantContextId") String participantContextId, JsonObject message, @HeaderParam(AUTHORIZATION) String token) {
         if (token == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
         token = token.replace("Bearer", "").trim();
-        var decodedIssuerContextId = onEncoded(issuerContextId).orElseThrow(InvalidRequestException::new);
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
         validatorRegistry.validate(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM), message).orElseThrow(ValidationFailureException::new);
 
         var credentialMessage = dcpTransformerRegistry.transform(message, CredentialRequestMessage.class).orElseThrow(InvalidRequestException::new);
         var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(token).build();
 
-        var participantContext = participantContextService.getParticipantContext(decodedIssuerContextId)
+        var participantContext = participantContextService.getParticipantContext(decodedParticipantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
 
         var participant = tokenValidator.verify(participantContext, tokenRepresentation)
                 .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
         return dcpIssuerService.initiateCredentialsIssuance(participantContext.getParticipantContextId(), credentialMessage, participant)
-                .map(response -> Response.created(URI.create("/v1alpha/participants/%s/requests/%s".formatted(issuerContextId, response.requestId()))).build())
+                .map(response -> Response.created(URI.create("/v1alpha/participants/%s/requests/%s".formatted(participantContextId, response.requestId()))).build())
                 .orElseThrow(exceptionMapper(CredentialRequestMessage.class, null));
 
     }

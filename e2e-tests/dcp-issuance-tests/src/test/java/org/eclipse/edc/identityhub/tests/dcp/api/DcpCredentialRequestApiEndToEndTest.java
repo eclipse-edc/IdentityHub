@@ -123,7 +123,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         private static @NotNull String issuanceUrl() {
-            return "/v1alpha/issuers/%s/credentials".formatted(ISSUER_ID_ENCODED);
+            return "/v1alpha/participants/%s/credentials".formatted(ISSUER_ID_ENCODED);
         }
 
         @NotNull
@@ -230,11 +230,11 @@ public class DcpCredentialRequestApiEndToEndTest {
 
                     assertThat(issuanceProcess).isNotNull()
                             .satisfies(process -> {
-                                assertThat(process.getParticipantId()).isEqualTo(PARTICIPANT_DID);
+                                assertThat(process.getMemberId()).isEqualTo(PARTICIPANT_DID);
                                 assertThat(process.getCredentialDefinitions()).containsExactly("credential-id");
                                 assertThat(process.getClaims()).containsAllEntriesOf(claims);
                                 assertThat(process.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
-                                assertThat(process.getIssuerContextId()).isEqualTo(ISSUER_ID);
+                                assertThat(process.getParticipantContextId()).isEqualTo(ISSUER_ID);
                                 assertThat(process.getHolderPid()).isEqualTo("holderPid");
                             });
                 });

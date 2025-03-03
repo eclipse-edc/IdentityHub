@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.participantcontext.store;
 
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -29,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.ACTIVATED;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.CREATED;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.DEACTIVATED;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public abstract class ParticipantContextStoreTestBase {
@@ -59,7 +59,7 @@ public abstract class ParticipantContextStoreTestBase {
                 .mapToObj(i -> createParticipantContextBuilder().participantContextId("id" + i).build())
                 .forEach(getStore()::create);
 
-        var query = ParticipantResource.queryByParticipantContextId("id2")
+        var query = queryByParticipantContextId("id2")
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -107,7 +107,7 @@ public abstract class ParticipantContextStoreTestBase {
 
         resources.forEach(getStore()::create);
 
-        var query = ParticipantResource.queryByParticipantContextId("id7")
+        var query = queryByParticipantContextId("id7")
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();

@@ -86,7 +86,7 @@ public class DcpIssuerServiceImplTest {
         when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(claims));
         when(credentialRuleDefinitionEvaluator.evaluate(eq(List.of(credentialRuleDefinition)), any())).thenReturn(Result.success());
 
-        var result = dcpIssuerService.initiateCredentialsIssuance("issuerContextId", message, participant);
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
         assertThat(result).isSucceeded();
 
@@ -98,10 +98,10 @@ public class DcpIssuerServiceImplTest {
         assertThat(issuanceProcess).isNotNull();
         assertThat(issuanceProcess.getId()).isEqualTo(result.getContent().requestId());
         assertThat(issuanceProcess.getCredentialDefinitions()).containsExactly("credentialDefinitionId");
-        assertThat(issuanceProcess.getParticipantId()).isEqualTo("participantId");
+        assertThat(issuanceProcess.getMemberId()).isEqualTo("participantId");
         assertThat(issuanceProcess.getState()).isEqualTo(IssuanceProcessStates.APPROVED.code());
         assertThat(issuanceProcess.getClaims()).containsAllEntriesOf(claims);
-        assertThat(issuanceProcess.getIssuerContextId()).isEqualTo("issuerContextId");
+        assertThat(issuanceProcess.getParticipantContextId()).isEqualTo("participantContextId");
         assertThat(issuanceProcess.getHolderPid()).isEqualTo(message.getHolderPid());
     }
 }

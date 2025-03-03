@@ -66,17 +66,17 @@ public class IssuanceProcessApiEndToEndTest {
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .get("/v1alpha/issuers/%s/issuanceprocesses/%s".formatted(toBase64(issuer), process.getId()))
+                    .get("/v1alpha/participants/%s/issuanceprocesses/%s".formatted(toBase64(issuer), process.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
                     .body("id", equalTo(process.getId()))
-                    .body("issuerContextId", equalTo(process.getIssuerContextId()))
+                    .body("participantContextId", equalTo(process.getParticipantContextId()))
                     .body("holderPid", equalTo(process.getHolderPid()))
                     .body("claims", equalTo(process.getClaims()))
                     .body("credentialDefinitions", equalTo(process.getCredentialDefinitions()))
                     .body("state", equalTo(process.stateAsString()))
-                    .body("participantId", equalTo(process.getParticipantId()));
+                    .body("memberId", equalTo(process.getMemberId()));
         }
 
         @Test
@@ -93,7 +93,7 @@ public class IssuanceProcessApiEndToEndTest {
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .get("/v1alpha/issuers/%s/issuanceprocesses/%s".formatted(toBase64(issuer), process.getId()))
+                    .get("/v1alpha/participants/%s/issuanceprocesses/%s".formatted(toBase64(issuer), process.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -113,20 +113,20 @@ public class IssuanceProcessApiEndToEndTest {
                     .body(QuerySpec.Builder.newInstance()
                             .sortField("id")
                             .sortOrder(SortOrder.ASC)
-                            .filter(new Criterion("participantId", "=", process.getParticipantId()))
+                            .filter(new Criterion("memberId", "=", process.getMemberId()))
                             .build())
-                    .post("/v1alpha/issuers/%s/issuanceprocesses/query".formatted(toBase64(issuer)))
+                    .post("/v1alpha/participants/%s/issuanceprocesses/query".formatted(toBase64(issuer)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
                     .body("size()", equalTo(1))
                     .body("[0].id", equalTo(process.getId()))
-                    .body("[0].issuerContextId", equalTo(process.getIssuerContextId()))
+                    .body("[0].participantContextId", equalTo(process.getParticipantContextId()))
                     .body("[0].holderPid", equalTo(process.getHolderPid()))
                     .body("[0].claims", equalTo(process.getClaims()))
                     .body("[0].credentialDefinitions", equalTo(process.getCredentialDefinitions()))
                     .body("[0].state", equalTo(process.stateAsString()))
-                    .body("[0].participantId", equalTo(process.getParticipantId()));
+                    .body("[0].memberId", equalTo(process.getMemberId()));
 
         }
 
@@ -147,9 +147,9 @@ public class IssuanceProcessApiEndToEndTest {
                     .body(QuerySpec.Builder.newInstance()
                             .sortField("id")
                             .sortOrder(SortOrder.ASC)
-                            .filter(new Criterion("participantId", "=", process.getParticipantId()))
+                            .filter(new Criterion("participantId", "=", process.getMemberId()))
                             .build())
-                    .post("/v1alpha/issuers/%s/issuanceprocesses/query".formatted(toBase64(issuer)))
+                    .post("/v1alpha/participants/%s/issuanceprocesses/query".formatted(toBase64(issuer)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -161,12 +161,12 @@ public class IssuanceProcessApiEndToEndTest {
             return Base64.getUrlEncoder().encodeToString(s.getBytes());
         }
 
-        private IssuanceProcess createIssuanceProcess(String issuerContextId) {
+        private IssuanceProcess createIssuanceProcess(String participantContextId) {
             return IssuanceProcess.Builder.newInstance()
                     .id(UUID.randomUUID().toString())
                     .state(IssuanceProcessStates.DELIVERED.code())
-                    .participantId("test-participant")
-                    .issuerContextId(issuerContextId)
+                    .memberId("test-participant")
+                    .participantContextId(participantContextId)
                     .holderPid("test-holder")
                     .claims(Map.of("test-claim", "test-value"))
                     .credentialDefinitions(List.of("test-cred-def"))

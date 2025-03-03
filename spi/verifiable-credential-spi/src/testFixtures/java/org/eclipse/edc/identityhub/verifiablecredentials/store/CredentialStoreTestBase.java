@@ -20,7 +20,6 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -37,6 +36,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.INITIAL;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTING;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
@@ -139,7 +139,7 @@ public abstract class CredentialStoreTestBase {
                         .build())
                 .forEach(getStore()::create);
 
-        var query = ParticipantResource.queryByParticipantContextId("participant2")
+        var query = queryByParticipantContextId("participant2")
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -158,7 +158,7 @@ public abstract class CredentialStoreTestBase {
 
         Arrays.asList(cred1, cred2, cred3).forEach(getStore()::create);
 
-        var query = ParticipantResource.queryByParticipantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+        var query = queryByParticipantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .filter(new Criterion("verifiableCredential.credential.type", "contains", "UniversityDegreeCredential"))
                 .build();
 

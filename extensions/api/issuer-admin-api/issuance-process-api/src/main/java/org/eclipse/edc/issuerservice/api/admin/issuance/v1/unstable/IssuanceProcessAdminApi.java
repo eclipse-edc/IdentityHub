@@ -40,7 +40,7 @@ public interface IssuanceProcessAdminApi {
     @Operation(description = "Gets an issuance process by its ID.",
             operationId = "getIssuanceProcessById",
             parameters = {
-                    @Parameter(name = "issuerContextId", description = "Base64-Url encode Issuer Context ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
                     @Parameter(name = "issuanceProcessId", description = "ID of the issuance process that should be returned", required = true, in = ParameterIn.PATH)
             },
             responses = {
@@ -54,13 +54,13 @@ public interface IssuanceProcessAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    IssuanceProcessDto getIssuanceProcessById(String issuerContextId, String issuanceProcessId, SecurityContext securityContext);
+    IssuanceProcessDto getIssuanceProcessById(String participantContextId, String issuanceProcessId, SecurityContext securityContext);
 
     @Operation(description = "Gets all issuance processes for a certain query.",
             operationId = "queryIssuanceProcesses",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             parameters = {
-                    @Parameter(name = "issuerContextId", description = "Base64-Url encode Issuer Context ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of issuance processes.",
@@ -71,7 +71,7 @@ public interface IssuanceProcessAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             }
     )
-    Collection<IssuanceProcessDto> queryIssuanceProcesses(String issuerContextId, QuerySpec querySpec, SecurityContext securityContext);
+    Collection<IssuanceProcessDto> queryIssuanceProcesses(String participantContextId, QuerySpec querySpec, SecurityContext securityContext);
 
 
 }

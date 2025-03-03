@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.spi.issuance.model;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.spi.entity.StatefulEntity;
 
 import java.util.ArrayList;
@@ -42,12 +43,12 @@ import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessSt
  * If successful, an issuance process is created with claims gathered from attestations. The issuance process is then approved
  * asynchronously and generated credentials sent to the holder.
  */
-public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
+public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements ParticipantResource {
     private final Map<String, Object> claims = new HashMap<>();
     private final List<String> credentialDefinitions = new ArrayList<>();
     private final Map<String, CredentialFormat> credentialFormats = new HashMap<>();
-    private String participantId;
-    private String issuerContextId;
+    private String memberId;
+    private String participantContextId;
     private String holderPid;
 
     private IssuanceProcess() {
@@ -58,9 +59,9 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
         var builder = Builder.newInstance()
                 .claims(claims)
                 .credentialDefinitions(credentialDefinitions)
-                .participantId(participantId)
+                .memberId(memberId)
                 .credentialFormats(credentialFormats)
-                .issuerContextId(issuerContextId)
+                .participantContextId(participantContextId)
                 .holderPid(holderPid);
         return copy(builder);
     }
@@ -70,12 +71,8 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
         return from(state).name();
     }
 
-    public String getParticipantId() {
-        return participantId;
-    }
-
-    public String getIssuerContextId() {
-        return issuerContextId;
+    public String getMemberId() {
+        return memberId;
     }
 
     public String getHolderPid() {
@@ -146,6 +143,11 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
         transitionTo(targetState);
     }
 
+    @Override
+    public String getParticipantContextId() {
+        return participantContextId;
+    }
+
     public static final class Builder extends StatefulEntity.Builder<IssuanceProcess, Builder> {
 
         private Builder(IssuanceProcess process) {
@@ -181,13 +183,13 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
             return this;
         }
 
-        public Builder participantId(String participantId) {
-            this.entity.participantId = participantId;
+        public Builder memberId(String memberId) {
+            this.entity.memberId = memberId;
             return this;
         }
 
-        public Builder issuerContextId(String issuerContextId) {
-            this.entity.issuerContextId = issuerContextId;
+        public Builder participantContextId(String participantContextId) {
+            this.entity.participantContextId = participantContextId;
             return this;
         }
 
@@ -203,8 +205,8 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> {
             if (entity.state == 0) {
                 throw new IllegalStateException("Issuance process state must be set");
             }
-            Objects.requireNonNull(entity.participantId, "Participant ID must be set");
-            Objects.requireNonNull(entity.issuerContextId, "Issuer Context ID must be set");
+            Objects.requireNonNull(entity.memberId, "Member ID must be set");
+            Objects.requireNonNull(entity.participantContextId, "Participant Context ID must be set");
             Objects.requireNonNull(entity.holderPid, "Holder Pid must be set");
             return entity;
         }

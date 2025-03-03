@@ -30,5 +30,5 @@ public interface DcpIssuerService {
      * @param context the DCP request context
      * @return the result of the issuance initiation
      */
-    ServiceResult<CredentialRequestMessage.Response> initiateCredentialsIssuance(String issuerContextId, CredentialRequestMessage message, DcpRequestContext context);
+    ServiceResult<CredentialRequestMessage.Response> initiateCredentialsIssuance(String participantContextId, CredentialRequestMessage message, DcpRequestContext context);
 }

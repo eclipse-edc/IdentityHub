@@ -38,12 +38,12 @@ import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
-import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessResource.queryByIssuerContextId;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1alpha/issuers/{issuerContextId}/requests")
+@Path("/v1alpha/participants/{participantContextId}/requests")
 public class CredentialRequestStatusApiController implements CredentialRequestStatusApi {
 
     private final TypeTransformerRegistry dcpRegistry;
@@ -61,14 +61,14 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
     @GET
     @Path("/{credentialRequestId}")
     @Override
-    public JsonObject credentialStatus(@PathParam("issuerContextId") String issuerContextId, @PathParam("credentialRequestId") String credentialRequestId, @HeaderParam(AUTHORIZATION) String token) {
+    public JsonObject credentialStatus(@PathParam("participantContextId") String participantContextId, @PathParam("credentialRequestId") String credentialRequestId, @HeaderParam(AUTHORIZATION) String token) {
         if (token == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
 
-        var decodedIssuerContextId = onEncoded(issuerContextId).orElseThrow(InvalidRequestException::new);
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        var participantContext = participantContextService.getParticipantContext(decodedIssuerContextId)
+        var participantContext = participantContextService.getParticipantContext(decodedParticipantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
 
         var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(token).build();
@@ -76,7 +76,7 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
         var requestContext = tokenValidator.verify(participantContext, tokenRepresentation)
                 .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
-        var status = fetchByParticipant(decodedIssuerContextId, requestContext.participant(), credentialRequestId)
+        var status = fetchByParticipant(decodedParticipantContextId, requestContext.participant(), credentialRequestId)
                 .map(this::toCredentialStatus)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid credential request %s: %s".formatted(credentialRequestId, f.getFailureDetail())));
 
@@ -85,9 +85,9 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
 
     }
 
-    private Result<IssuanceProcess> fetchByParticipant(String issuerContextId, Participant participant, String credentialRequestId) {
-        var query = queryByIssuerContextId(issuerContextId)
-                .filter(Criterion.criterion("participantId", "=", participant.participantId()))
+    private Result<IssuanceProcess> fetchByParticipant(String participantContextId, Participant participant, String credentialRequestId) {
+        var query = queryByParticipantContextId(participantContextId)
+                .filter(Criterion.criterion("memberId", "=", participant.participantId()))
                 .filter(Criterion.criterion("id", "=", credentialRequestId))
                 .build();
         var result = issuanceProcessService.search(query);

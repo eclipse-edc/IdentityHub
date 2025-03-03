@@ -22,7 +22,6 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
 import org.eclipse.edc.spi.EdcException;
@@ -35,6 +34,7 @@ import java.util.Map;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 
 public class PresentationCreatorRegistryImpl implements PresentationCreatorRegistry {
 
@@ -59,7 +59,7 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
     public <T> T createPresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, CredentialFormat format, Map<String, Object> additionalData) {
         var creator = ofNullable(creators.get(format)).orElseThrow(() -> new EdcException("No %s was found for CredentialFormat %s".formatted(PresentationGenerator.class.getSimpleName(), format)));
 
-        var query = ParticipantResource.queryByParticipantContextId(participantContextId)
+        var query = queryByParticipantContextId(participantContextId)
                 .filter(new Criterion("state", "=", KeyPairState.ACTIVATED.code()))
                 .build();
 

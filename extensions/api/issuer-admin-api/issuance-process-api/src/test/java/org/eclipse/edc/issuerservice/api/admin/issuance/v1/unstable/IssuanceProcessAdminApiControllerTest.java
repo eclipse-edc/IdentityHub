@@ -118,10 +118,10 @@ class IssuanceProcessAdminApiControllerTest extends RestControllerTestBase {
         return new IssuanceProcessAdminApiController(issuanceProcessService, authService);
     }
 
-    private RequestSpecification baseRequest(String issuerContextId) {
+    private RequestSpecification baseRequest(String participantContextId) {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/issuers/%s/issuanceprocesses".formatted(issuerContextId))
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/issuanceprocesses".formatted(participantContextId))
                 .when();
     }
 
@@ -133,8 +133,8 @@ class IssuanceProcessAdminApiControllerTest extends RestControllerTestBase {
         return IssuanceProcess.Builder.newInstance()
                 .id("test-id")
                 .state(IssuanceProcessStates.APPROVED.code())
-                .participantId("test-participant")
-                .issuerContextId("test-issuer")
+                .memberId("test-participant")
+                .participantContextId("test-issuer")
                 .holderPid("test-holder")
                 .claims(Map.of("test-claim", "test-value"))
                 .credentialDefinitions(List.of("test-cred-def"))

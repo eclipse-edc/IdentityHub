@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.tests.fixtures.issuerservice;
 
 import org.eclipse.edc.iam.did.spi.document.Service;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.tests.fixtures.common.AbstractTestContext;
 import org.eclipse.edc.identityhub.tests.fixtures.common.Endpoint;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
@@ -26,7 +27,6 @@ import java.util.List;
 
 import static java.lang.String.format;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
-import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessResource.queryByIssuerContextId;
 
 /**
  * IssuerService end to end context used in tests extended with {@link IssuerServiceEndToEndExtension}
@@ -54,23 +54,23 @@ public class IssuerServiceEndToEndTestContext extends AbstractTestContext {
         return configuration.getIssuerApiEndpoint();
     }
 
-    public String didFor(String issuerContextId) {
-        return configuration.didFor(issuerContextId);
+    public String didFor(String participantContextId) {
+        return configuration.didFor(participantContextId);
     }
 
-    public Service createServiceEndpoint(String issuerContextId) {
-        var issuerEndpoint = format("%s/%s", configuration.getIssuerApiEndpoint().getUrl(), issuanceBasePath(issuerContextId));
+    public Service createServiceEndpoint(String participantContextId) {
+        var issuerEndpoint = format("%s/%s", configuration.getIssuerApiEndpoint().getUrl(), issuanceBasePath(participantContextId));
         return new Service("issuer-id", "IssuerService", issuerEndpoint);
     }
 
 
-    public List<IssuanceProcess> getIssuanceProcessesForParticipant(String issuerContextId) {
-        var query = queryByIssuerContextId(issuerContextId).build();
+    public List<IssuanceProcess> getIssuanceProcessesForParticipant(String participantContextId) {
+        var query = ParticipantResource.queryByParticipantContextId(participantContextId).build();
         return runtime.getService(IssuanceProcessStore.class).query(query)
                 .toList();
     }
 
     private @NotNull String issuanceBasePath(String participantContextId) {
-        return "v1alpha/issuers/%s".formatted(base64Encode(participantContextId));
+        return "v1alpha/participants/%s".formatted(base64Encode(participantContextId));
     }
 }

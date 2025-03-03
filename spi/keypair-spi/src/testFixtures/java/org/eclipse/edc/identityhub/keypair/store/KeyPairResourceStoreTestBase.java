@@ -18,7 +18,6 @@ import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public abstract class KeyPairResourceStoreTestBase {
@@ -102,7 +102,7 @@ public abstract class KeyPairResourceStoreTestBase {
 
         resources.forEach(getStore()::create);
 
-        var query = ParticipantResource.queryByParticipantContextId("id7")
+        var query = queryByParticipantContextId("id7")
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();

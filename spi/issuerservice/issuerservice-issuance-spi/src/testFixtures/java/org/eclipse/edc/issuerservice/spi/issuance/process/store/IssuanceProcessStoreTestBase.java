@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.spi.issuance.process.store;
 
 import org.awaitility.Awaitility;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.spi.query.Criterion;
@@ -35,7 +36,6 @@ import java.util.UUID;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessResource.queryByIssuerContextId;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.APPROVED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERED;
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
@@ -81,8 +81,8 @@ public abstract class IssuanceProcessStoreTestBase {
     private IssuanceProcess.Builder createIssuanceProcessBuilder() {
         return IssuanceProcess.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
-                .issuerContextId(UUID.randomUUID().toString())
-                .participantId(UUID.randomUUID().toString())
+                .participantContextId(UUID.randomUUID().toString())
+                .memberId(UUID.randomUUID().toString())
                 .credentialFormats(Map.of("format", CredentialFormat.VC1_0_JWT))
                 .holderPid(UUID.randomUUID().toString())
                 .state(APPROVED.code());
@@ -419,18 +419,18 @@ public abstract class IssuanceProcessStoreTestBase {
         }
 
         @Test
-        void queryByParticipantId() {
+        void queryByMemberId() {
 
             range(0, 10)
                     .mapToObj(i -> createIssuanceProcess("id" + i))
                     .forEach(getStore()::save);
 
-            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").participantId("participant1").build();
+            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").memberId("participant1").build();
 
             getStore().save(issuanceProcess);
 
             var query = QuerySpec.Builder.newInstance()
-                    .filter(List.of(new Criterion("participantId", "=", issuanceProcess.getParticipantId())))
+                    .filter(List.of(new Criterion("memberId", "=", issuanceProcess.getMemberId())))
                     .build();
 
             var result = getStore().query(query).toList();
@@ -438,17 +438,17 @@ public abstract class IssuanceProcessStoreTestBase {
         }
 
         @Test
-        void queryByIssuanceContextId() {
+        void queryByParticipantContextId() {
 
             range(0, 10)
                     .mapToObj(i -> createIssuanceProcess("id" + i))
                     .forEach(getStore()::save);
 
-            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").participantId("participant1").build();
+            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").memberId("participant1").build();
 
             getStore().save(issuanceProcess);
 
-            var query = queryByIssuerContextId(issuanceProcess.getIssuerContextId()).build();
+            var query = ParticipantResource.queryByParticipantContextId(issuanceProcess.getParticipantContextId()).build();
 
             var result = getStore().query(query).toList();
             assertThat(result).hasSize(1).usingRecursiveFieldByFieldElementComparator().containsExactly(issuanceProcess);

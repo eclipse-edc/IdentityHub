@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.publickey;
 
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -23,6 +22,8 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 
 import java.security.PublicKey;
+
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 
 /**
  * This {@link org.eclipse.edc.keys.spi.LocalPublicKeyService} resolves this IdentityHub's own public keys by querying the {@link KeyPairResourceStore}.
@@ -58,7 +59,7 @@ public class KeyPairResourcePublicKeyResolver {
      * @return A result with the public key, resolved from storage, or a failed result.
      */
     public Result<PublicKey> resolveKey(String publicKeyId, String participantContextId) {
-        var query = ParticipantResource.queryByParticipantContextId(participantContextId).filter(new Criterion("keyId", "=", publicKeyId)).build();
+        var query = queryByParticipantContextId(participantContextId).filter(new Criterion("keyId", "=", publicKeyId)).build();
         var result = keyPairResourceStore.query(query);
         // store failed, e.g. data model does not match query, etc.
         if (result.failed()) {

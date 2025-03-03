@@ -17,7 +17,6 @@ package org.eclipse.edc.identityhub.participantcontext;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
-import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleting;
@@ -30,6 +29,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.stream.Stream;
 
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 /**
@@ -88,7 +88,7 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
             // unpublish and delete did document, remove keypairs
             didDocumentService.unpublish(participantContext.getDid())
                     .compose(u -> didDocumentService.deleteById(participantContext.getDid()))
-                    .compose(u -> keyPairService.query(KeyPairResource.queryByParticipantContextId(participantContext.getParticipantContextId()).build()))
+                    .compose(u -> keyPairService.query(queryByParticipantContextId(participantContext.getParticipantContextId()).build()))
                     .compose(keyPairs -> keyPairs.stream()
                             .map(r -> keyPairService.revokeKey(r.getId(), null))
                             .reduce(this::merge)
