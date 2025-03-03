@@ -18,6 +18,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,14 +45,27 @@ public interface IssuanceClaimsMapper {
      * @return the output claims
      */
     default Result<Map<String, Object>> apply(List<MappingDefinition> mappingDefinitions, Map<String, Object> inputClaims) {
-        var outputClaims = inputClaims;
+        var mergedClaims = new HashMap<String, Object>();
+
         for (var mappingDefinition : mappingDefinitions) {
-            var result = apply(mappingDefinition, outputClaims);
+            var result = apply(mappingDefinition, inputClaims);
             if (result.failed()) {
                 return Result.failure("Failed to apply mapping definition");
             }
-            outputClaims = result.getContent();
+            var outputClaims = result.getContent();
+
+            //merge outputClaims into the collated map
+            outputClaims.forEach((claimKey, claimValue) -> {
+
+                if (claimValue instanceof Map valueMap) {
+                    var newValue = (Map) mergedClaims.computeIfAbsent(claimKey, s -> new HashMap<>());
+                    newValue.putAll(valueMap);
+                } else {
+                    mergedClaims.put(claimKey, claimValue);
+                }
+
+            });
         }
-        return Result.success(outputClaims);
+        return Result.success(mergedClaims);
     }
 }
