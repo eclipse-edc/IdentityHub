@@ -32,7 +32,7 @@ import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
 
-@OpenAPIDefinition(info = @Info(description = "This API is used to manipulate attestations for participants in an Issuer Service", title = "Issuer Service Attestation Admin API", version = "1"))
+@OpenAPIDefinition(info = @Info(description = "This API is used to manipulate attestations for holders in an Issuer Service", title = "Issuer Service Attestation Admin API", version = "1"))
 @Tag(name = "Issuer Service Attestation Admin API")
 public interface IssuerAttestationAdminApi {
 
@@ -45,18 +45,18 @@ public interface IssuerAttestationAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "The participant was not found.",
+                    @ApiResponse(responseCode = "404", description = "The holder was not found.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "409", description = "Can't add the participant, because a object with the same ID already exists",
+                    @ApiResponse(responseCode = "409", description = "Can't add the holder, because a object with the same ID already exists",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
     Response createAttestationDefinition(AttestationDefinition attestationRequest);
 
-    @Operation(description = "Links an attestation definition to a participant. This enables a certain attestation definition for a participant.",
+    @Operation(description = "Links an attestation definition to a holder. This enables a certain attestation definition for a holder.",
             operationId = "linkAttestation",
             parameters = {
-                    @Parameter(name = "participantId", description = "ID of the participant", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "holderId", description = "ID of the holder", required = true, in = ParameterIn.PATH),
                     @Parameter(name = "attestationId", description = "ID of the attestation", required = true, in = ParameterIn.PATH)
             },
             responses = {
@@ -65,18 +65,18 @@ public interface IssuerAttestationAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "The participant was not found.",
+                    @ApiResponse(responseCode = "404", description = "The holder was not found.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "409", description = "Can't add the participant, because a object with the same ID already exists",
+                    @ApiResponse(responseCode = "409", description = "Can't add the holder, because a object with the same ID already exists",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response linkAttestation(String attestationDefinitionId, String participantId);
+    Response linkAttestation(String attestationDefinitionId, String holderId);
 
-    @Operation(description = "Un-Links an attestation definition to a participant. This disables a certain attestation definition for a participant.",
+    @Operation(description = "Un-Links an attestation definition to a holder. This disables a certain attestation definition for a holder.",
             operationId = "unlinkAttestation",
             parameters = {
-                    @Parameter(name = "participantId", description = "ID of the participant", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "holderId", description = "ID of the holder", required = true, in = ParameterIn.PATH),
                     @Parameter(name = "attestationId", description = "ID of the attestation", required = true, in = ParameterIn.PATH)
             },
             responses = {
@@ -85,13 +85,13 @@ public interface IssuerAttestationAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "The participant was not found.",
+                    @ApiResponse(responseCode = "404", description = "The holder was not found.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "409", description = "Can't add the participant, because a object with the same ID already exists",
+                    @ApiResponse(responseCode = "409", description = "Can't add the holder, because a object with the same ID already exists",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response unlinkAttestation(String attestationDefinitionId, String participantId);
+    Response unlinkAttestation(String attestationDefinitionId, String holderId);
 
     @Operation(description = "Deletes an attestation definition.",
             operationId = "deleteAttestation",
@@ -126,7 +126,7 @@ public interface IssuerAttestationAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Collection<AttestationDefinition> getAttestationDefinitionsForParticipant(String participantId);
+    Collection<AttestationDefinition> getAttestationDefinitionsForHolder(String holderId);
 
     @Operation(description = "Query attestation definitions",
             operationId = "queryAttestations",

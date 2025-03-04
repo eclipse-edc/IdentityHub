@@ -46,14 +46,14 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
                 .thenReturn(ServiceResult.success(true));
 
         baseRequest()
-                .post("/test-attestation/link?participantId=test-participant")
+                .post("/test-attestation/link?holderId=test-participant")
                 .then()
                 .log().ifError()
                 .statusCode(201);
     }
 
     @Test
-    void linkAttestation_noParticipantId_expect400() {
+    void linkAttestation_noHolderId_expect400() {
         when(attestationDefinitionService.linkAttestation(anyString(), anyString()))
                 .thenReturn(ServiceResult.success(true));
 
@@ -69,7 +69,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
         when(attestationDefinitionService.linkAttestation(anyString(), anyString()))
                 .thenReturn(ServiceResult.notFound("foo"));
         baseRequest()
-                .post("/test-attestation/link?participantId=test-participant")
+                .post("/test-attestation/link?holderId=test-participant")
                 .then()
                 .statusCode(400);
     }
@@ -80,7 +80,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
         when(attestationDefinitionService.linkAttestation(anyString(), anyString()))
                 .thenReturn(ServiceResult.success(false));
         baseRequest()
-                .post("/test-attestation/link?participantId=test-participant")
+                .post("/test-attestation/link?holderId=test-participant")
                 .then()
                 .statusCode(204);
     }
@@ -91,13 +91,13 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
                 .thenReturn(ServiceResult.success(true));
 
         baseRequest()
-                .post("/test-attestation/unlink?participantId=test-participant")
+                .post("/test-attestation/unlink?holderId=test-participant")
                 .then()
                 .statusCode(200);
     }
 
     @Test
-    void unlinkAttestation_noParticipantId_expect400() {
+    void unlinkAttestation_noHolderId_expect400() {
         when(attestationDefinitionService.unlinkAttestation(anyString(), anyString()))
                 .thenReturn(ServiceResult.success(true));
 
@@ -109,7 +109,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
-    void unlinkAttestation_participantNotFound_expect400() {
+    void unlinkAttestation_holderNotFound_expect400() {
         when(attestationDefinitionService.unlinkAttestation(anyString(), anyString()))
                 .thenReturn(ServiceResult.notFound("foo"));
         baseRequest()
@@ -124,7 +124,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
         when(attestationDefinitionService.unlinkAttestation(anyString(), anyString()))
                 .thenReturn(ServiceResult.success(false));
         baseRequest()
-                .post("/test-attestation/unlink?participantId=test-participant")
+                .post("/test-attestation/unlink?holderId=test-participant")
                 .then()
                 .statusCode(204);
     }
@@ -180,15 +180,15 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
-    void getAttestationDefinitionsForParticipant() {
-        when(attestationDefinitionService.getAttestationsForParticipant(anyString()))
+    void getAttestationDefinitionsForHolder() {
+        when(attestationDefinitionService.getAttestationsForHolder(anyString()))
                 .thenReturn(ServiceResult.success(List.of(
                         new AttestationDefinition("test-id", "test-type", Map.of()),
                         new AttestationDefinition("test-id2", "test-type", Map.of())))
                 );
 
         var attestations = baseRequest()
-                .get("?participantId=test-participant")
+                .get("?holderId=test-participant")
                 .then()
                 .statusCode(200)
                 .extract().body().as(AttestationDefinition[].class);
@@ -197,7 +197,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
-    void getAttestationDefinitionsForParticipant_whenParticipantIdMissing_expect400() {
+    void getAttestationDefinitionsForParticipant_whenHolderIdMissing_expect400() {
 
         baseRequest()
                 .get()
@@ -209,12 +209,12 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
 
 
     @Test
-    void getAttestationDefinitionsForParticipant_noResult_expect200() {
-        when(attestationDefinitionService.getAttestationsForParticipant(anyString()))
+    void getAttestationDefinitionsForHolder_noResult_expect200() {
+        when(attestationDefinitionService.getAttestationsForHolder(anyString()))
                 .thenReturn(ServiceResult.success(List.of()));
 
         var attestations = baseRequest()
-                .get("?participantId=test-participant")
+                .get("?holderId=test-participant")
                 .then()
                 .statusCode(200)
                 .extract().body().as(AttestationDefinition[].class);
@@ -223,9 +223,9 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
-    void getAttestationDefinitionsForParticipant_participantNotFound_expect400() {
+    void getAttestationDefinitionsForParticipant_holderNotFound_expect400() {
         baseRequest()
-                .get("?participant=test-participant")
+                .get("?holder=test-participant")
                 .then()
                 .statusCode(400);
     }

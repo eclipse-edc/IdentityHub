@@ -41,7 +41,7 @@ public class BaseSqlDialectStatements implements IssuanceProcessStoreStatements 
                 .column(getUpdatedAtColumn())
                 .jsonColumn(getTraceContextColumn())
                 .column(getErrorDetailColumn())
-                .column(getMemberIdColumn())
+                .column(getHolderIdColumn())
                 .column(getParticipantContextIdColumn())
                 .column(getHolderPidColumn())
                 .jsonColumn(getClaimsColumn())

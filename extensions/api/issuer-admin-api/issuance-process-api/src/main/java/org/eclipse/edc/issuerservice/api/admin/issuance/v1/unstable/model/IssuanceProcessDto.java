@@ -24,7 +24,7 @@ import java.util.Map;
  * DTO for an {@link IssuanceProcess}.
  */
 public record IssuanceProcessDto(String id,
-                                 String memberId,
+                                 String holderId,
                                  String participantContextId,
                                  String holderPid,
                                  Map<String, Object> claims,
@@ -37,7 +37,7 @@ public record IssuanceProcessDto(String id,
 
     public static IssuanceProcessDto fromIssuanceProcess(IssuanceProcess issuanceProcess) {
         return new IssuanceProcessDto(issuanceProcess.getId(),
-                issuanceProcess.getMemberId(),
+                issuanceProcess.getHolderId(),
                 issuanceProcess.getParticipantContextId(),
                 issuanceProcess.getHolderPid(),
                 issuanceProcess.getClaims(),

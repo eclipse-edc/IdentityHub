@@ -24,9 +24,9 @@ import jakarta.ws.rs.Produces;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.query.Criterion;
@@ -76,7 +76,7 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
         var requestContext = tokenValidator.verify(participantContext, tokenRepresentation)
                 .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
-        var status = fetchByParticipant(decodedParticipantContextId, requestContext.participant(), credentialRequestId)
+        var status = fetchByParticipant(decodedParticipantContextId, requestContext.holder(), credentialRequestId)
                 .map(this::toCredentialStatus)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid credential request %s: %s".formatted(credentialRequestId, f.getFailureDetail())));
 
@@ -85,9 +85,9 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
 
     }
 
-    private Result<IssuanceProcess> fetchByParticipant(String participantContextId, Participant participant, String credentialRequestId) {
+    private Result<IssuanceProcess> fetchByParticipant(String participantContextId, Holder holder, String credentialRequestId) {
         var query = queryByParticipantContextId(participantContextId)
-                .filter(Criterion.criterion("memberId", "=", participant.participantId()))
+                .filter(Criterion.criterion("holderId", "=", holder.holderId()))
                 .filter(Criterion.criterion("id", "=", credentialRequestId))
                 .build();
         var result = issuanceProcessService.search(query);

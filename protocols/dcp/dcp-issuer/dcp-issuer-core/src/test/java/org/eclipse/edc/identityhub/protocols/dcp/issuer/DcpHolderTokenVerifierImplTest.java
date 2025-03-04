@@ -17,8 +17,8 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
-import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
+import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
@@ -53,10 +53,10 @@ public class DcpHolderTokenVerifierImplTest {
     private final TokenValidationService tokenValidationService = mock();
     private final PublicKeyResolver publicKeyResolver = mock();
 
-    private final ParticipantStore participantStore = mock();
-    private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, publicKeyResolver, participantStore);
+    private final HolderStore holderStore = mock();
+    private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, publicKeyResolver, holderStore);
 
-    private final ParticipantContext participantContext = ParticipantContext.Builder.newInstance().participantContextId("participantId")
+    private final ParticipantContext participantContext = ParticipantContext.Builder.newInstance().participantContextId("holderId")
             .did(PARTICIPANT_DID)
             .apiTokenAlias("apiAlias")
             .build();
@@ -66,13 +66,13 @@ public class DcpHolderTokenVerifierImplTest {
 
         var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
 
-        when(participantStore.query(any())).thenReturn(StoreResult.success(List.of(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
         when(tokenValidationService.validate(anyString(), any(), anyList())).thenReturn(Result.success(ClaimToken.Builder.newInstance().build()));
 
         var result = dcpIssuerTokenVerifier.verify(participantContext, token);
 
         assertThat(result).isSucceeded();
-        Mockito.verify(participantStore).query(argThat(qs -> qs.getFilterExpression().stream().anyMatch(c -> c.getOperandRight().equals(PARTICIPANT_DID))));
+        Mockito.verify(holderStore).query(argThat(qs -> qs.getFilterExpression().stream().anyMatch(c -> c.getOperandRight().equals(PARTICIPANT_DID))));
 
     }
 
@@ -81,7 +81,7 @@ public class DcpHolderTokenVerifierImplTest {
 
         var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
 
-        when(participantStore.query(any())).thenReturn(StoreResult.success(List.of()));
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of()));
 
         var result = dcpIssuerTokenVerifier.verify(participantContext, token);
 
@@ -94,7 +94,7 @@ public class DcpHolderTokenVerifierImplTest {
 
         var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
 
-        when(participantStore.query(any())).thenReturn(StoreResult.success(List.of(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
         when(tokenValidationService.validate(anyString(), any(), anyList())).thenReturn(Result.failure("failed"));
 
         var result = dcpIssuerTokenVerifier.verify(participantContext, token);

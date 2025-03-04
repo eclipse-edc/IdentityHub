@@ -133,7 +133,7 @@ class IssuanceProcessAdminApiControllerTest extends RestControllerTestBase {
         return IssuanceProcess.Builder.newInstance()
                 .id("test-id")
                 .state(IssuanceProcessStates.APPROVED.code())
-                .memberId("test-participant")
+                .holderId("test-participant")
                 .participantContextId("test-issuer")
                 .holderPid("test-holder")
                 .claims(Map.of("test-claim", "test-value"))

@@ -14,15 +14,15 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.spi.model;
 
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.iam.ClaimToken;
 
 import java.util.Map;
 
 /**
- * Context for a DCP request. Contains the {@link Participant} and a set of claims
+ * Context for a DCP request. Contains the {@link Holder} and a set of claims
  * that might come from a DCP presentation request.
  */
-public record DcpRequestContext(Participant participant, Map<String, ClaimToken> claims) {
+public record DcpRequestContext(Holder holder, Map<String, ClaimToken> claims) {
 
 }

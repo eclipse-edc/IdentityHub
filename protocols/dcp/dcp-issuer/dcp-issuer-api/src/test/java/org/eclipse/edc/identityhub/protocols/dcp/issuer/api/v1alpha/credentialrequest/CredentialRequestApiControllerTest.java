@@ -23,7 +23,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMess
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.result.Result;
@@ -142,7 +142,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
         var requestMessage = createCredentialRequestMessage();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
-        var participant = new Participant("id", "did", "name");
+        var participant = new Holder("id", "did", "name");
 
         var ctx = new DcpRequestContext(participant, Map.of());
         var token = generateJwt();
@@ -164,7 +164,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
         var requestMessage = createCredentialRequestMessage();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
-        var participant = new Participant("id", "did", "name");
+        var participant = new Holder("id", "did", "name");
         var ctx = new DcpRequestContext(participant, Map.of());
 
         var token = generateJwt();

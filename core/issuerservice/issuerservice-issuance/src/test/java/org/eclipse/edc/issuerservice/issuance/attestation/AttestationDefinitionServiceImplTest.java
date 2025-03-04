@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.issuerservice.issuance.attestation;
 
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
+import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
-import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -44,12 +44,12 @@ import static org.mockito.Mockito.when;
 class AttestationDefinitionServiceImplTest {
 
     private final AttestationDefinitionStore attestationDefinitionStore = mock();
-    private final ParticipantStore participantStore = mock();
+    private final HolderStore holderStore = mock();
     private final AttestationDefinitionValidatorRegistry definitionValidatorRegistry = mock();
 
     private final AttestationDefinitionService attestationDefinitionService = new AttestationDefinitionServiceImpl(new NoopTransactionContext(),
             attestationDefinitionStore,
-            participantStore,
+            holderStore,
             definitionValidatorRegistry);
 
     @Test
@@ -85,28 +85,28 @@ class AttestationDefinitionServiceImplTest {
 
     @Test
     void linkAttestation_whenNotLinked() {
-        when(participantStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Participant("foo", "did:web:bar", "foo bar")));
+        when(holderStore.findById(anyString()))
+                .thenReturn(StoreResult.success(new Holder("foo", "did:web:bar", "foo bar")));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(new AttestationDefinition("id", "type", Map.of("foo", "bar")));
 
-        when(participantStore.update(any())).thenReturn(StoreResult.success());
+        when(holderStore.update(any())).thenReturn(StoreResult.success());
 
         assertThat(attestationDefinitionService.linkAttestation("foo", "id"))
                 .isSucceeded()
                 .isEqualTo(true); // no, it's not pretty
 
-        verify(participantStore).findById(anyString());
-        verify(participantStore).update(any());
+        verify(holderStore).findById(anyString());
+        verify(holderStore).update(any());
         verify(attestationDefinitionStore).resolveDefinition(anyString());
-        verifyNoMoreInteractions(participantStore, attestationDefinitionStore);
+        verifyNoMoreInteractions(holderStore, attestationDefinitionStore);
     }
 
     @Test
     void linkAttestation_whenAlreadyLinked() {
-        when(participantStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Participant("foo", "did:web:bar", "foo bar", List.of("att1"))));
+        when(holderStore.findById(anyString()))
+                .thenReturn(StoreResult.success(new Holder("foo", "did:web:bar", "foo bar", List.of("att1"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(new AttestationDefinition("att1", "type", Map.of("foo", "bar")));
@@ -116,16 +116,16 @@ class AttestationDefinitionServiceImplTest {
                 .isSucceeded()
                 .isEqualTo(false); // no, it's not pretty
 
-        verify(participantStore).findById(anyString());
+        verify(holderStore).findById(anyString());
         verify(attestationDefinitionStore).resolveDefinition(anyString());
-        verifyNoMoreInteractions(participantStore, attestationDefinitionStore);
+        verifyNoMoreInteractions(holderStore, attestationDefinitionStore);
     }
 
     @Test
     void linkAttestation_participantNotFound_expectFailure() {
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(new AttestationDefinition("att1", "type", Map.of("foo", "bar")));
-        when(participantStore.findById(anyString()))
+        when(holderStore.findById(anyString()))
                 .thenReturn(StoreResult.notFound("foo"));
 
 
@@ -134,8 +134,8 @@ class AttestationDefinitionServiceImplTest {
                 .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND));
 
         verify(attestationDefinitionStore).resolveDefinition(anyString());
-        verify(participantStore).findById(anyString());
-        verifyNoMoreInteractions(participantStore, attestationDefinitionStore);
+        verify(holderStore).findById(anyString());
+        verifyNoMoreInteractions(holderStore, attestationDefinitionStore);
     }
 
     @Test
@@ -148,41 +148,41 @@ class AttestationDefinitionServiceImplTest {
                 .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND));
 
         verify(attestationDefinitionStore).resolveDefinition(anyString());
-        verifyNoMoreInteractions(participantStore, attestationDefinitionStore);
+        verifyNoMoreInteractions(holderStore, attestationDefinitionStore);
     }
 
     @Test
     void unlinkAttestation_whenLinked() {
-        when(participantStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Participant("foo", "did:web:bar", "foo bar", List.of("att1"))));
+        when(holderStore.findById(anyString()))
+                .thenReturn(StoreResult.success(new Holder("foo", "did:web:bar", "foo bar", List.of("att1"))));
 
-        when(participantStore.update(any())).thenReturn(StoreResult.success());
+        when(holderStore.update(any())).thenReturn(StoreResult.success());
 
         assertThat(attestationDefinitionService.unlinkAttestation("att1", "foo"))
                 .isSucceeded()
                 .isEqualTo(true);
 
-        verify(participantStore).findById(anyString());
-        verify(participantStore).update(any());
-        verifyNoMoreInteractions(attestationDefinitionStore, participantStore);
+        verify(holderStore).findById(anyString());
+        verify(holderStore).update(any());
+        verifyNoMoreInteractions(attestationDefinitionStore, holderStore);
     }
 
     @Test
     void unlinkAttestation_whenNotLinked() {
-        when(participantStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Participant("foo", "did:web:bar", "foo bar", List.of("att42"))));
+        when(holderStore.findById(anyString()))
+                .thenReturn(StoreResult.success(new Holder("foo", "did:web:bar", "foo bar", List.of("att42"))));
 
         assertThat(attestationDefinitionService.unlinkAttestation("att1", "foo"))
                 .isSucceeded()
                 .isEqualTo(false);
 
-        verify(participantStore).findById(anyString());
-        verifyNoMoreInteractions(attestationDefinitionStore, participantStore);
+        verify(holderStore).findById(anyString());
+        verifyNoMoreInteractions(attestationDefinitionStore, holderStore);
     }
 
     @Test
     void unlinkAttestation_whenParticipantNotFound_expectFailure() {
-        when(participantStore.findById(anyString()))
+        when(holderStore.findById(anyString()))
                 .thenReturn(StoreResult.notFound("foo"));
 
 
@@ -190,27 +190,27 @@ class AttestationDefinitionServiceImplTest {
                 .isFailed()
                 .satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.NOT_FOUND));
 
-        verify(participantStore).findById(anyString());
-        verifyNoMoreInteractions(participantStore, attestationDefinitionStore);
+        verify(holderStore).findById(anyString());
+        verifyNoMoreInteractions(holderStore, attestationDefinitionStore);
     }
 
     @Test
-    void getAttestationsForParticipant() {
-        when(participantStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Participant("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
+    void getAttestationsForHolder() {
+        when(holderStore.findById(anyString()))
+                .thenReturn(StoreResult.success(new Holder("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(new AttestationDefinition("1", "type", Map.of()), new AttestationDefinition("2", "type", Map.of()));
 
-        assertThat(attestationDefinitionService.getAttestationsForParticipant("participant-id"))
+        assertThat(attestationDefinitionService.getAttestationsForHolder("participant-id"))
                 .isSucceeded()
                 .satisfies(defs -> assertThat(defs).hasSize(2));
     }
 
     @Test
-    void getAttestationsForParticipant_someNotFound() {
-        when(participantStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Participant("participant-id", "did:web:foo", "foo bar", List.of("1", "2", "3"))));
+    void getAttestationsForHolder_someNotFound() {
+        when(holderStore.findById(anyString()))
+                .thenReturn(StoreResult.success(new Holder("participant-id", "did:web:foo", "foo bar", List.of("1", "2", "3"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(
@@ -218,30 +218,30 @@ class AttestationDefinitionServiceImplTest {
                         new AttestationDefinition("2", "type", Map.of()),
                         null);
 
-        assertThat(attestationDefinitionService.getAttestationsForParticipant("participant-id"))
+        assertThat(attestationDefinitionService.getAttestationsForHolder("participant-id"))
                 .isSucceeded()
                 .satisfies(defs -> assertThat(defs).hasSize(2));
     }
 
     @Test
-    void getAttestationsForParticipant_noResult() {
-        when(participantStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Participant("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
+    void getAttestationsForHolder_noResult() {
+        when(holderStore.findById(anyString()))
+                .thenReturn(StoreResult.success(new Holder("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(null);
 
-        assertThat(attestationDefinitionService.getAttestationsForParticipant("participant-id"))
+        assertThat(attestationDefinitionService.getAttestationsForHolder("participant-id"))
                 .isSucceeded()
                 .satisfies(defs -> assertThat(defs).isEmpty());
     }
 
     @Test
-    void getAttestationsForParticipant_notFound_expectError() {
-        when(participantStore.findById(anyString()))
+    void getAttestationsForHolder_notFound_expectError() {
+        when(holderStore.findById(anyString()))
                 .thenReturn(StoreResult.notFound("foo"));
 
-        assertThat(attestationDefinitionService.getAttestationsForParticipant("participant-id"))
+        assertThat(attestationDefinitionService.getAttestationsForHolder("participant-id"))
                 .isFailed()
                 .detail().isEqualTo("foo");
 

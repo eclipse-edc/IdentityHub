@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS edc_issuance_process
     error_detail                VARCHAR,
     pending                     BOOLEAN  DEFAULT FALSE,
     lease_id                    VARCHAR CONSTRAINT issuance_process_lease_lease_id_fk REFERENCES edc_lease ON DELETE SET NULL,
-    member_id                   VARCHAR           NOT NULL,
+    holder_id                   VARCHAR           NOT NULL,
     participant_context_id      VARCHAR           NOT NULL,
     holder_pid                  VARCHAR           NOT NULL,
     claims                      JSON              NOT NULL,

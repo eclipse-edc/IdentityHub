@@ -18,8 +18,8 @@ import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
-import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
+import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
@@ -43,9 +43,9 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
     private final TokenValidationRulesRegistry rulesRegistry;
     private final TokenValidationService tokenValidationService;
     private final PublicKeyResolver publicKeyResolver;
-    private final ParticipantStore store;
+    private final HolderStore store;
 
-    public DcpHolderTokenVerifierImpl(TokenValidationRulesRegistry rulesRegistry, TokenValidationService tokenValidationService, PublicKeyResolver publicKeyResolver, ParticipantStore store) {
+    public DcpHolderTokenVerifierImpl(TokenValidationRulesRegistry rulesRegistry, TokenValidationService tokenValidationService, PublicKeyResolver publicKeyResolver, HolderStore store) {
         this.rulesRegistry = rulesRegistry;
         this.tokenValidationService = tokenValidationService;
         this.publicKeyResolver = publicKeyResolver;
@@ -71,19 +71,19 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
         }
     }
 
-    private ServiceResult<Participant> getParticipant(String issuer) {
+    private ServiceResult<Holder> getParticipant(String issuer) {
         var query = QuerySpec.Builder.newInstance().filter(Criterion.criterion("did", "=", issuer)).build();
         return ServiceResult.from(store.query(query)).compose(this::findFirst);
     }
 
-    private ServiceResult<Participant> findFirst(Collection<Participant> participants) {
-        return participants.stream().findFirst()
+    private ServiceResult<Holder> findFirst(Collection<Holder> holders) {
+        return holders.stream().findFirst()
                 .map(ServiceResult::success)
                 .orElseGet(() -> ServiceResult.unauthorized("Participant not found"));
     }
 
-    private ServiceResult<DcpRequestContext> validateToken(ParticipantContext issuerContext, TokenRepresentation token, Participant participant) {
-        
+    private ServiceResult<DcpRequestContext> validateToken(ParticipantContext issuerContext, TokenRepresentation token, Holder holder) {
+
         var rules = rulesRegistry.getRules(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT);
         var newRules = new ArrayList<>(rules);
         newRules.add(new AudienceValidationRule(issuerContext.getDid()));
@@ -91,7 +91,7 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
         if (res.failed()) {
             return ServiceResult.unauthorized("Token validation failed");
         }
-        return ServiceResult.success(new DcpRequestContext(participant, Map.of()));
+        return ServiceResult.success(new DcpRequestContext(holder, Map.of()));
     }
 
 }

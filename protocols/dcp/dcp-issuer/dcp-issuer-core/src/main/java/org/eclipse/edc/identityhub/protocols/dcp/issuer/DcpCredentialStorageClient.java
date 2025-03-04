@@ -25,10 +25,10 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
+import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
-import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
@@ -60,7 +60,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
     public static final String STORAGE_ENDPOINT = "/credentials";
     private final EdcHttpClient httpClient;
     private final ParticipantContextStore participantContextStore;
-    private final ParticipantStore participantStore;
+    private final HolderStore holderStore;
     private final CredentialServiceUrlResolver credentialServiceUrlResolver;
     private final ParticipantSecureTokenService secureTokenService;
     private final Monitor monitor;
@@ -68,11 +68,11 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
     private final String typeContext;
 
     public DcpCredentialStorageClient(EdcHttpClient httpClient, ParticipantContextStore participantContextStore,
-                                      ParticipantStore participantStore, CredentialServiceUrlResolver credentialServiceUrlResolver,
+                                      HolderStore holderStore, CredentialServiceUrlResolver credentialServiceUrlResolver,
                                       ParticipantSecureTokenService secureTokenService, Monitor monitor, TypeManager typeManager, String typeContext) {
         this.httpClient = httpClient;
         this.participantContextStore = participantContextStore;
-        this.participantStore = participantStore;
+        this.holderStore = holderStore;
         this.credentialServiceUrlResolver = credentialServiceUrlResolver;
         this.secureTokenService = secureTokenService;
         this.monitor = monitor;
@@ -86,7 +86,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
         try {
             var issuerDid = participantContextStore.findById(issuanceProcess.getParticipantContextId()).map(ParticipantContext::getDid)
                     .orElseThrow(failure -> new EdcException("Participant context not found"));
-            var participantDid = participantStore.findById(issuanceProcess.getMemberId()).map(Participant::did)
+            var participantDid = holderStore.findById(issuanceProcess.getHolderId()).map(Holder::did)
                     .orElseThrow(failure -> new EdcException("Participant not found"));
 
             var credentialServiceBaseUrl = credentialServiceUrlResolver.resolve(participantDid)

@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.issuerservice.issuance.attestation;
 
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
+import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
-import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -35,16 +35,16 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
 
     private final TransactionContext transactionContext;
     private final AttestationDefinitionStore attestationDefinitionStore;
-    private final ParticipantStore participantStore;
+    private final HolderStore holderStore;
     private final AttestationDefinitionValidatorRegistry definitionValidatorRegistry;
 
     public AttestationDefinitionServiceImpl(TransactionContext transactionContext,
                                             AttestationDefinitionStore attestationDefinitionStore,
-                                            ParticipantStore participantStore,
+                                            HolderStore holderStore,
                                             AttestationDefinitionValidatorRegistry definitionValidatorRegistry) {
         this.transactionContext = transactionContext;
         this.attestationDefinitionStore = attestationDefinitionStore;
-        this.participantStore = participantStore;
+        this.holderStore = holderStore;
         this.definitionValidatorRegistry = definitionValidatorRegistry;
     }
 
@@ -60,14 +60,14 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     }
 
     @Override
-    public ServiceResult<Boolean> linkAttestation(String attestationId, String participantId) {
+    public ServiceResult<Boolean> linkAttestation(String attestationId, String holderId) {
 
         return transactionContext.execute(() -> {
             if (attestationDefinitionStore.resolveDefinition(attestationId) == null) {
                 return ServiceResult.notFound("No attestation with id %s was found".formatted(attestationId));
             }
 
-            var participantResult = participantStore.findById(participantId);
+            var participantResult = holderStore.findById(holderId);
             if (participantResult.failed()) {
                 return fromFailure(participantResult);
             }
@@ -78,32 +78,32 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
             }
 
             participant.addAttestation(attestationId);
-            return from(participantStore.update(participant)).map(v -> true);
+            return from(holderStore.update(participant)).map(v -> true);
 
         });
     }
 
     @Override
-    public ServiceResult<Boolean> unlinkAttestation(String attestationId, String participantId) {
+    public ServiceResult<Boolean> unlinkAttestation(String attestationId, String holderId) {
         return transactionContext.execute(() -> {
-            var participantResult = participantStore.findById(participantId);
+            var participantResult = holderStore.findById(holderId);
             if (participantResult.failed()) {
                 return fromFailure(participantResult);
             }
 
             var participant = participantResult.getContent();
             if (participant.removeAttestation(attestationId)) {
-                return from(participantStore.update(participant)).map(v -> true);
+                return from(holderStore.update(participant)).map(v -> true);
             }
             return ServiceResult.success(false);
         });
     }
 
     @Override
-    public ServiceResult<Collection<AttestationDefinition>> getAttestationsForParticipant(String participantId) {
+    public ServiceResult<Collection<AttestationDefinition>> getAttestationsForHolder(String holderId) {
 
-        return transactionContext.execute(() -> ServiceResult.from(participantStore.findById(participantId)
-                .map(Participant::attestations)
+        return transactionContext.execute(() -> ServiceResult.from(holderStore.findById(holderId)
+                .map(Holder::attestations)
                 .map(this::findForIds)));
     }
 

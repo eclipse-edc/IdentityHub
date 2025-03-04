@@ -82,7 +82,7 @@ public abstract class IssuanceProcessStoreTestBase {
         return IssuanceProcess.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .participantContextId(UUID.randomUUID().toString())
-                .memberId(UUID.randomUUID().toString())
+                .holderId(UUID.randomUUID().toString())
                 .credentialFormats(Map.of("format", CredentialFormat.VC1_0_JWT))
                 .holderPid(UUID.randomUUID().toString())
                 .state(APPROVED.code());
@@ -419,18 +419,18 @@ public abstract class IssuanceProcessStoreTestBase {
         }
 
         @Test
-        void queryByMemberId() {
+        void queryByHolderId() {
 
             range(0, 10)
                     .mapToObj(i -> createIssuanceProcess("id" + i))
                     .forEach(getStore()::save);
 
-            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").memberId("participant1").build();
+            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").holderId("participant1").build();
 
             getStore().save(issuanceProcess);
 
             var query = QuerySpec.Builder.newInstance()
-                    .filter(List.of(new Criterion("memberId", "=", issuanceProcess.getMemberId())))
+                    .filter(List.of(new Criterion("holderId", "=", issuanceProcess.getHolderId())))
                     .build();
 
             var result = getStore().query(query).toList();
@@ -444,7 +444,7 @@ public abstract class IssuanceProcessStoreTestBase {
                     .mapToObj(i -> createIssuanceProcess("id" + i))
                     .forEach(getStore()::save);
 
-            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").memberId("participant1").build();
+            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").holderId("participant1").build();
 
             getStore().save(issuanceProcess);
 

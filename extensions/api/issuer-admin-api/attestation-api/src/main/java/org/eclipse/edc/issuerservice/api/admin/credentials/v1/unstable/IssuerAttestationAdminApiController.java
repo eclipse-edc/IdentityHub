@@ -50,13 +50,13 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     @Path("/{attestationDefinitionId}/link")
     @Override
     public Response linkAttestation(@PathParam("attestationDefinitionId") String attestationDefinitionId,
-                                    @QueryParam("participantId") String participantId) {
+                                    @QueryParam("holderId") String holderId) {
 
-        if (participantId == null) {
-            throw new InvalidRequestException("participantId is null");
+        if (holderId == null) {
+            throw new InvalidRequestException("holderId is null");
         }
 
-        var wasCreated = attestationDefinitionService.linkAttestation(attestationDefinitionId, participantId)
+        var wasCreated = attestationDefinitionService.linkAttestation(attestationDefinitionId, holderId)
                 .orElseThrow(InvalidRequestException::new);
 
         return wasCreated
@@ -70,14 +70,14 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     @Path("/{attestationDefinitionId}/unlink")
     @Override
     public Response unlinkAttestation(@PathParam("attestationDefinitionId") String attestationDefinitionId,
-                                      @QueryParam("participantId") String participantId) {
+                                      @QueryParam("holderId") String holderId) {
 
-        if (participantId == null) {
-            throw new InvalidRequestException("participantId is null");
+        if (holderId == null) {
+            throw new InvalidRequestException("holderId is null");
         }
 
 
-        var wasCreated = attestationDefinitionService.unlinkAttestation(participantId, attestationDefinitionId)
+        var wasCreated = attestationDefinitionService.unlinkAttestation(holderId, attestationDefinitionId)
                 .orElseThrow(InvalidRequestException::new);
 
         return wasCreated
@@ -105,11 +105,11 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
 
     @GET
     @Override
-    public Collection<AttestationDefinition> getAttestationDefinitionsForParticipant(@QueryParam("participantId") String participantId) {
-        if (participantId == null) {
-            throw new InvalidRequestException("participantId is null");
+    public Collection<AttestationDefinition> getAttestationDefinitionsForHolder(@QueryParam("holderId") String holderId) {
+        if (holderId == null) {
+            throw new InvalidRequestException("holderId is null");
         }
-        return attestationDefinitionService.getAttestationsForParticipant(participantId)
+        return attestationDefinitionService.getAttestationsForHolder(holderId)
                 .orElseThrow(InvalidRequestException::new);
     }
 

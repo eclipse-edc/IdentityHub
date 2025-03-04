@@ -21,6 +21,8 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.issuerservice.spi.holder.HolderService;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
@@ -28,8 +30,6 @@ import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.Credentia
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
-import org.eclipse.edc.issuerservice.spi.participant.ParticipantService;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -89,21 +89,21 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
 
         @AfterEach
-        void teardown(ParticipantService participantService, CredentialDefinitionService credentialDefinitionService) {
-            participantService.queryParticipants(QuerySpec.max()).getContent()
-                    .forEach(p -> participantService.deleteParticipant(p.participantId()).getContent());
+        void teardown(HolderService holderService, CredentialDefinitionService credentialDefinitionService) {
+            holderService.queryHolders(QuerySpec.max()).getContent()
+                    .forEach(p -> holderService.deleteHolder(p.holderId()).getContent());
 
             credentialDefinitionService.queryCredentialDefinitions(QuerySpec.max()).getContent()
                     .forEach(c -> credentialDefinitionService.deleteCredentialDefinition(c.getId()).getContent());
         }
 
         @Test
-        void credentialStatus(IssuerServiceEndToEndTestContext context, ParticipantService participantService,
+        void credentialStatus(IssuerServiceEndToEndTestContext context, HolderService holderService,
                               IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             var process = createIssuanceProcess();
 
-            participantService.createParticipant(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
             issuanceProcessStore.save(process);
 
             var token = generateSiToken();
@@ -129,7 +129,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
-        void credentialStatus_wrongParticipant_shouldReturn401(IssuerServiceEndToEndTestContext context, ParticipantService participantService,
+        void credentialStatus_wrongParticipant_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService,
                                                                IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             var process = createIssuanceProcess();
@@ -138,8 +138,8 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
             var wrongParticipantKeyId = "%s#key1".formatted(wrongParticipantDid);
             var wrongParticipantKey = generateEcKey(wrongParticipantKeyId);
 
-            participantService.createParticipant(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
-            participantService.createParticipant(new Participant(wrongParticipant, wrongParticipantDid, "WrongParticipant"));
+            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(new Holder(wrongParticipant, wrongParticipantDid, "WrongParticipant"));
 
             issuanceProcessStore.save(process);
 
@@ -183,14 +183,14 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
-        void credentialStatus_tokenVerificationFails_shouldReturn401(IssuerServiceEndToEndTestContext context, ParticipantService participantService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
+        void credentialStatus_tokenVerificationFails_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             var process = createIssuanceProcess();
 
-            participantService.createParticipant(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
             issuanceProcessStore.save(process);
 
-            participantService.createParticipant(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
             var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID(DID_WEB_PARTICIPANT_KEY_1).generate();
 
@@ -209,13 +209,13 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
-        void credentialStatus_wrongTokenAudience_shouldReturn401(IssuerServiceEndToEndTestContext context, ParticipantService participantService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
+        void credentialStatus_wrongTokenAudience_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             var process = createIssuanceProcess();
 
             generateEcKey(DID_WEB_PARTICIPANT_KEY_1);
 
-            participantService.createParticipant(new Participant(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
             issuanceProcessStore.save(process);
 
 
@@ -250,7 +250,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
             return IssuanceProcess.Builder.newInstance()
                     .id(UUID.randomUUID().toString())
                     .state(IssuanceProcessStates.DELIVERED.code())
-                    .memberId(PARTICIPANT_DID)
+                    .holderId(PARTICIPANT_DID)
                     .participantContextId(ISSUER_ID)
                     .holderPid(UUID.randomUUID().toString())
                     .build();

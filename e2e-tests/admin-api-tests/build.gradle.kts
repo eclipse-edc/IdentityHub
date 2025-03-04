@@ -19,8 +19,8 @@ plugins {
 
 dependencies {
     testImplementation(project(":core:identity-hub-participants"))
-    testImplementation(project(":extensions:api:issuer-admin-api:participant-api")) // for the DTOs
-    testImplementation(project(":spi:issuerservice:issuerservice-participant-spi"))
+    testImplementation(project(":extensions:api:issuer-admin-api:holder-api")) // for the DTOs
+    testImplementation(project(":spi:issuerservice:issuerservice-holder-spi"))
     testImplementation(project(":spi:issuerservice:issuerservice-credential-spi"))
     testImplementation(project(":spi:issuerservice:issuerservice-issuance-spi"))
     testImplementation(libs.edc.junit)

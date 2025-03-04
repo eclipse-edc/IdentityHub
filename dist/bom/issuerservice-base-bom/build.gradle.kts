@@ -23,7 +23,7 @@ dependencies {
     runtimeOnly(project(":core:identity-hub-participants"))
     runtimeOnly(project(":core:identity-hub-keypairs"))
     runtimeOnly(project(":core:issuerservice:issuerservice-core"))
-    runtimeOnly(project(":core:issuerservice:issuerservice-participants"))
+    runtimeOnly(project(":core:issuerservice:issuerservice-holders"))
     runtimeOnly(project(":core:issuerservice:issuerservice-credentials"))
     runtimeOnly(project(":core:issuerservice:issuerservice-issuance"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))

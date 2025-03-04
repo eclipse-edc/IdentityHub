@@ -27,7 +27,7 @@ import org.eclipse.edc.sql.translation.JsonFieldTranslator;
 public class IssuanceProcessMapping extends StatefulEntityMapping {
 
     public static final String FIELD_ID = "id";
-    public static final String FIELD_MEMBER_ID = "memberId";
+    public static final String FIELD_HOLDER_ID = "holderId";
     public static final String FIELD_PARTICIPANT_CONTEXT_ID = "participantContextId";
     public static final String FIELD_CLAIMS = "claims";
     public static final String FIELD_CREDENTIAL_DEFINITIONS = "credentialDefinitions";
@@ -38,7 +38,7 @@ public class IssuanceProcessMapping extends StatefulEntityMapping {
     public IssuanceProcessMapping(IssuanceProcessStoreStatements statements) {
         super(statements, state -> IssuanceProcessStates.valueOf(state).code());
         add(FIELD_ID, statements.getIdColumn());
-        add(FIELD_MEMBER_ID, statements.getMemberIdColumn());
+        add(FIELD_HOLDER_ID, statements.getHolderIdColumn());
         add(FIELD_PARTICIPANT_CONTEXT_ID, statements.getParticipantContextIdColumn());
         add(FIELD_CLAIMS, new JsonFieldTranslator(FIELD_CLAIMS));
         add(FIELD_PENDING, statements.getPendingColumn());
