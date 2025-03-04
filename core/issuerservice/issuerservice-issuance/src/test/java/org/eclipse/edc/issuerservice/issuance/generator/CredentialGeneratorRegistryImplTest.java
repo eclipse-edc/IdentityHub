@@ -185,6 +185,7 @@ public class CredentialGeneratorRegistryImplTest {
         return CredentialDefinition.Builder.newInstance()
                 .credentialType("MembershipCredential")
                 .mapping(new MappingDefinition("input", "outut", true))
+                .participantContextId("participantContextId")
                 .jsonSchema("{}")
                 .build();
     }

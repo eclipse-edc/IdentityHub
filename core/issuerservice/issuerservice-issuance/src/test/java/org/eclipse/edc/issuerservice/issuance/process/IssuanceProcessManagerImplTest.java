@@ -97,6 +97,7 @@ public class IssuanceProcessManagerImplTest {
         var credentialDefinition = CredentialDefinition.Builder.newInstance().credentialType("MembershipCredential")
                 .jsonSchemaUrl("http://example.org/schema")
                 .jsonSchema("{}")
+                .participantContextId("participantContextId")
                 .build();
 
         var generationRequests = new CredentialGenerationRequest(credentialDefinition, CredentialFormat.VC1_0_JWT);
@@ -150,6 +151,7 @@ public class IssuanceProcessManagerImplTest {
         var credentialDefinition = CredentialDefinition.Builder.newInstance().credentialType("MembershipCredential")
                 .jsonSchemaUrl("http://example.org/schema")
                 .jsonSchema("{}")
+                .participantContextId("participantContextId")
                 .build();
 
         var generationRequests = new CredentialGenerationRequest(credentialDefinition, CredentialFormat.VC1_0_JWT);

@@ -12,29 +12,29 @@
  *
  */
 
-package org.eclipse.edc.issuerservice.spi.issuance.model;
+package org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * Defines credential type that can be issued, its schema, and requirements for issuance.
+ * DTO for {@link CredentialDefinition}.
  */
 
-@JsonDeserialize(builder = CredentialDefinition.Builder.class)
-public class CredentialDefinition extends AbstractParticipantResource {
+@JsonDeserialize(builder = CredentialDefinitionDto.Builder.class)
+public class CredentialDefinitionDto {
 
     private final List<String> attestations = new ArrayList<>();
     private final List<CredentialRuleDefinition> rules = new ArrayList<>();
@@ -46,7 +46,7 @@ public class CredentialDefinition extends AbstractParticipantResource {
     private DataModelVersion dataModel = DataModelVersion.V_1_1;
     private String id;
 
-    private CredentialDefinition() {
+    private CredentialDefinitionDto() {
     }
 
     public String getId() {
@@ -85,12 +85,28 @@ public class CredentialDefinition extends AbstractParticipantResource {
         return mappings;
     }
 
+    public CredentialDefinition toCredentialDefinition(String participantContextId) {
+        return CredentialDefinition.Builder.newInstance()
+                .id(id)
+                .credentialType(credentialType)
+                .jsonSchema(jsonSchema)
+                .jsonSchemaUrl(jsonSchemaUrl)
+                .validity(validity)
+                .dataModel(dataModel)
+                .attestations(attestations)
+                .rules(rules)
+                .mappings(mappings)
+                .participantContextId(participantContextId)
+                .build();
+    }
+
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static final class Builder extends AbstractParticipantResource.Builder<CredentialDefinition, Builder> {
+    public static final class Builder {
+        private final CredentialDefinitionDto entity;
 
         private Builder() {
-            super(new CredentialDefinition());
+            entity = new CredentialDefinitionDto();
         }
 
         @JsonCreator
@@ -161,23 +177,12 @@ public class CredentialDefinition extends AbstractParticipantResource {
             return this;
         }
 
-        @Override
-        public Builder self() {
-            return this;
-        }
-
-        @Override
-        public CredentialDefinition build() {
-            if (entity.id == null) {
-                entity.id = UUID.randomUUID().toString();
-            }
+        public CredentialDefinitionDto build() {
             requireNonNull(entity.credentialType, "credentialType");
-
             if (entity.jsonSchema == null && entity.jsonSchemaUrl == null) {
                 throw new IllegalStateException("Either jsonSchema or jsonSchemaUrl must be non-null");
             }
-            Objects.requireNonNull(entity.participantContextId, "Must have an participantContextId");
-            return super.build();
+            return entity;
         }
 
     }

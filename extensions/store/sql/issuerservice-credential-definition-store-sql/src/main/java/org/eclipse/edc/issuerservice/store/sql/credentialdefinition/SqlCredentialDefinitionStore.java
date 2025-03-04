@@ -101,6 +101,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                 var timestamp = clock.millis();
                 queryExecutor.execute(connection, stmt,
                         credentialDefinition.getId(),
+                        credentialDefinition.getParticipantContextId(),
                         credentialDefinition.getCredentialType(),
                         toJson(credentialDefinition.getAttestations()),
                         toJson(credentialDefinition.getRules()),
@@ -204,6 +205,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
 
         return CredentialDefinition.Builder.newInstance()
                 .id(resultSet.getString(statements.getIdColumn()))
+                .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .credentialType(resultSet.getString(statements.getCredentialTypeColumn()))
                 .attestations(fromJson(resultSet.getString(statements.getAttestationsColumn()), ATTESTATIONS_LIST_REF))
                 .rules(fromJson(resultSet.getString(statements.getRulesColumn()), RULES_LIST_REF))

@@ -75,6 +75,7 @@ public class DcpIssuerServiceImplTest {
                 .jsonSchema("jsonSchema")
                 .jsonSchemaUrl("jsonSchemaUrl")
                 .attestations(attestations)
+                .participantContextId("participantContextId")
                 .rule(credentialRuleDefinition)
                 .build();
 

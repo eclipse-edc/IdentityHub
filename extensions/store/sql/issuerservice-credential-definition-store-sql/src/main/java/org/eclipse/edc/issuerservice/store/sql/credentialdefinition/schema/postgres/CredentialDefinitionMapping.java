@@ -29,6 +29,7 @@ import static org.eclipse.edc.issuerservice.store.sql.credentialdefinition.schem
 public class CredentialDefinitionMapping extends TranslationMapping {
 
     public static final String FIELD_ID = "id";
+    public static final String FIELD_PARTICIPANT_CONTEXT_ID = "participantContextId";
     public static final String FIELD_CREDENTIAL_TYPE = "credentialType";
     public static final String FIELD_CREATE_TIMESTAMP = "createdAt";
     public static final String FIELD_LASTMODIFIED_TIMESTAMP = "lastModified";
@@ -43,6 +44,7 @@ public class CredentialDefinitionMapping extends TranslationMapping {
 
     public CredentialDefinitionMapping(CredentialDefinitionStoreStatements statements) {
         add(FIELD_ID, statements.getIdColumn());
+        add(FIELD_PARTICIPANT_CONTEXT_ID, statements.getParticipantContextIdColumn());
         add(FIELD_CREDENTIAL_TYPE, statements.getCredentialTypeColumn());
         add(FIELD_CREATE_TIMESTAMP, statements.getCreateTimestampColumn());
         add(FIELD_LASTMODIFIED_TIMESTAMP, statements.getLastModifiedTimestampColumn());

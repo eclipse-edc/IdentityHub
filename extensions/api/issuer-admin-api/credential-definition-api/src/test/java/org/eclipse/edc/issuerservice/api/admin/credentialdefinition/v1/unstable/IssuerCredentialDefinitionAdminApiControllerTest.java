@@ -16,14 +16,17 @@ package org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable
 
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.api.Versions;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Base64;
 import java.util.Set;
 
 import static io.restassured.RestAssured.given;
@@ -32,14 +35,24 @@ import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
 class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTestBase {
 
-    private final CredentialDefinitionService credentialDefinitionService = mock();
+    private static final String PARTICIPANT_ID = "test-participant";
+    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
 
+    private final CredentialDefinitionService credentialDefinitionService = mock();
+    private final AuthorizationService authorizationService = mock();
+
+    @BeforeEach
+    void setUp() {
+        when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+    }
+    
     @Test
     void createCredentialDefinition() {
         when(credentialDefinitionService.createCredentialDefinition(any())).thenReturn(ServiceResult.success());
@@ -154,13 +167,13 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
 
     @Override
     protected Object controller() {
-        return new IssuerCredentialDefinitionAdminApiController(credentialDefinitionService);
+        return new IssuerCredentialDefinitionAdminApiController(authorizationService, credentialDefinitionService);
     }
 
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/credentialdefinitions")
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/credentialdefinitions".formatted(PARTICIPANT_ID_ENCODED))
                 .when();
     }
 
@@ -171,6 +184,7 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
                 .credentialType("Membership")
                 .jsonSchema("json-schema")
                 .jsonSchemaUrl("json-schema-url")
+                .participantContextId(PARTICIPANT_ID)
                 .build();
     }
 }

@@ -16,6 +16,7 @@
 CREATE TABLE IF NOT EXISTS credential_definitions
 (
     id                           VARCHAR  NOT NULL,
+    participant_context_id       VARCHAR  NOT NULL,
     credential_type              VARCHAR  NOT NULL UNIQUE,
     attestations                 JSON     NOT NULL DEFAULT '[]',
     rules                        JSON     NOT NULL DEFAULT '[]',

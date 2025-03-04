@@ -251,6 +251,7 @@ public class CredentialDefinitionServiceImplTest {
         return CredentialDefinition.Builder.newInstance().id(id).jsonSchema("")
                 .jsonSchemaUrl("http://example.com/schema").validity(1000)
                 .attestation("test-attestation")
+                .participantContextId(UUID.randomUUID().toString())
                 .rule(new CredentialRuleDefinition("test-rule", Map.of()))
                 .credentialType(type).build();
     }

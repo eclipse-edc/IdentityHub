@@ -14,9 +14,11 @@
 
 package org.eclipse.edc.issuerservice.api.admin.credentialdefinition;
 
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable.IssuerCredentialDefinitionAdminApiController;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -33,6 +35,8 @@ public class IssuerCredentialDefinitionAdminApiExtension implements ServiceExten
     private WebService webService;
     @Inject
     private CredentialDefinitionService credentialDefinitionService;
+    @Inject
+    private AuthorizationService authorizationService;
 
     @Override
     public String name() {
@@ -41,7 +45,12 @@ public class IssuerCredentialDefinitionAdminApiExtension implements ServiceExten
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var controller = new IssuerCredentialDefinitionAdminApiController(credentialDefinitionService);
+        authorizationService.addLookupFunction(CredentialDefinition.class, this::findById);
+        var controller = new IssuerCredentialDefinitionAdminApiController(authorizationService, credentialDefinitionService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
+    }
+
+    public CredentialDefinition findById(String id) {
+        return credentialDefinitionService.findCredentialDefinitionById(id).getContent();
     }
 }
