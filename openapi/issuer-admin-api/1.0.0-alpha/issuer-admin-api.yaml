@@ -21,7 +21,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: participantId
+      - name: holderId
         in: query
         required: false
         style: form
@@ -90,7 +90,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
-          description: The participant was not found.
+          description: The holder was not found.
           content:
             application/json:
               schema:
@@ -98,8 +98,8 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "409":
-          description: "Can't add the participant, because a object with the same\
-            \ ID already exists"
+          description: "Can't add the holder, because a object with the same ID already\
+            \ exists"
           content:
             application/json:
               schema:
@@ -202,13 +202,13 @@ paths:
     post:
       tags:
       - Issuer Service Attestation Admin API
-      description: Links an attestation definition to a participant. This enables
-        a certain attestation definition for a participant.
+      description: Links an attestation definition to a holder. This enables a certain
+        attestation definition for a holder.
       operationId: linkAttestation
       parameters:
-      - name: participantId
+      - name: holderId
         in: path
-        description: ID of the participant
+        description: ID of the holder
         required: true
         style: simple
         explode: false
@@ -229,7 +229,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: participantId
+      - name: holderId
         in: query
         required: false
         style: form
@@ -257,7 +257,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
-          description: The participant was not found.
+          description: The holder was not found.
           content:
             application/json:
               schema:
@@ -265,8 +265,8 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "409":
-          description: "Can't add the participant, because a object with the same\
-            \ ID already exists"
+          description: "Can't add the holder, because a object with the same ID already\
+            \ exists"
           content:
             application/json:
               schema:
@@ -277,13 +277,13 @@ paths:
     post:
       tags:
       - Issuer Service Attestation Admin API
-      description: Un-Links an attestation definition to a participant. This disables
-        a certain attestation definition for a participant.
+      description: Un-Links an attestation definition to a holder. This disables a
+        certain attestation definition for a holder.
       operationId: unlinkAttestation
       parameters:
-      - name: participantId
+      - name: holderId
         in: path
-        description: ID of the participant
+        description: ID of the holder
         required: true
         style: simple
         explode: false
@@ -304,7 +304,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: participantId
+      - name: holderId
         in: query
         required: false
         style: form
@@ -332,7 +332,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
-          description: The participant was not found.
+          description: The holder was not found.
           content:
             application/json:
               schema:
@@ -340,8 +340,8 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "409":
-          description: "Can't add the participant, because a object with the same\
-            \ ID already exists"
+          description: "Can't add the holder, because a object with the same ID already\
+            \ exists"
           content:
             application/json:
               schema:
@@ -873,20 +873,20 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants:
+  /v1alpha/holders:
     put:
       tags:
-      - Issuer Service Participant Admin API
-      description: Updates participant data.
-      operationId: updateParticipant
+      - Issuer Service Holder Admin API
+      description: Updates holder data.
+      operationId: updateHolder
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ParticipantDto"
+              $ref: "#/components/schemas/HolderDto"
       responses:
         "200":
-          description: The participant was updated successfully.
+          description: The holder was updated successfully.
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -905,7 +905,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
-          description: Can't update the participant because it was not found.
+          description: Can't update the holder because it was not found.
           content:
             application/json:
               schema:
@@ -914,17 +914,17 @@ paths:
                   $ref: "#/components/schemas/ApiErrorDetail"
     post:
       tags:
-      - Issuer Service Participant Admin API
-      description: Adds a new participant.
-      operationId: addParticipant
+      - Issuer Service Holder Admin API
+      description: Adds a new holder.
+      operationId: addHolder
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ParticipantDto"
+              $ref: "#/components/schemas/HolderDto"
       responses:
         "201":
-          description: The participant was added successfully.
+          description: The holder was added successfully.
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -943,20 +943,20 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "409":
-          description: "Can't add the participant, because a object with the same\
-            \ ID already exists"
+          description: "Can't add the holder, because a object with the same ID already\
+            \ exists"
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/query:
+  /v1alpha/holders/query:
     post:
       tags:
-      - Issuer Service Participant Admin API
-      description: Gets all participants for a certain query.
-      operationId: queryParticipants
+      - Issuer Service Holder Admin API
+      description: Gets all holders for a certain query.
+      operationId: queryHolders
       requestBody:
         content:
           application/json:
@@ -964,13 +964,13 @@ paths:
               $ref: "#/components/schemas/QuerySpec"
       responses:
         "200":
-          description: A list of participant metadata.
+          description: A list of holders metadata.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ParticipantDto"
+                  $ref: "#/components/schemas/HolderDto"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -989,7 +989,62 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
-          description: The participant was not found.
+          description: The holder was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/holders/{holderId}:
+    get:
+      tags:
+      - Issuer Service Holder Admin API
+      description: Gets metadata for a certain holder.
+      operationId: getHolderById
+      parameters:
+      - name: holderId
+        in: path
+        description: ID of the holder who should be returned
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: holderId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: A list of verifiable credential metadata. Note that these are
+            not actual VerifiableCredentials.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Holder"
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The holder was not found.
           content:
             application/json:
               schema:
@@ -1118,61 +1173,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantId}:
-    get:
-      tags:
-      - Issuer Service Participant Admin API
-      description: Gets metadata for a certain participant.
-      operationId: getParticipantById
-      parameters:
-      - name: participantId
-        in: path
-        description: ID of the participant who should be returned
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: A list of verifiable credential metadata. Note that these are
-            not actual VerifiableCredentials.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Participant"
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
 components:
   schemas:
     ApiErrorDetail:
@@ -1279,6 +1279,31 @@ components:
           type: object
         operator:
           type: string
+    Holder:
+      type: object
+      properties:
+        attestations:
+          type: array
+          items:
+            type: string
+        did:
+          type: string
+        holderId:
+          type: string
+        holderName:
+          type: string
+    HolderDto:
+      required:
+      - did
+      - holderId
+      type: object
+      properties:
+        did:
+          type: string
+        holderId:
+          type: string
+        name:
+          type: string
     IssuanceProcessDto:
       type: object
       properties:
@@ -1305,11 +1330,11 @@ components:
             - VC2_0_JOSE
             - VC2_0_SD_JWT
             - VC2_0_COSE
+        holderId:
+          type: string
         holderPid:
           type: string
         id:
-          type: string
-        memberId:
           type: string
         participantContextId:
           type: string
@@ -1336,31 +1361,6 @@ components:
           type: string
         required:
           type: boolean
-    Participant:
-      type: object
-      properties:
-        attestations:
-          type: array
-          items:
-            type: string
-        did:
-          type: string
-        participantId:
-          type: string
-        participantName:
-          type: string
-    ParticipantDto:
-      required:
-      - did
-      - participantId
-      type: object
-      properties:
-        did:
-          type: string
-        name:
-          type: string
-        participantId:
-          type: string
     QuerySpec:
       type: object
       properties:
