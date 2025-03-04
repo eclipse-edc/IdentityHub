@@ -33,7 +33,7 @@ import static java.util.Optional.ofNullable;
  * Representation of a participant in Identity Hub.
  */
 @JsonDeserialize(builder = ParticipantContext.Builder.class)
-public class ParticipantContext extends ParticipantResource {
+public class ParticipantContext extends AbstractParticipantResource {
     private Map<String, Object> properties = new HashMap<>();
     private List<String> roles = new ArrayList<>();
     private String did;
@@ -122,7 +122,7 @@ public class ParticipantContext extends ParticipantResource {
     }
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static final class Builder extends ParticipantResource.Builder<ParticipantContext, Builder> {
+    public static final class Builder extends AbstractParticipantResource.Builder<ParticipantContext, Builder> {
 
         private Builder() {
             super(new ParticipantContext());

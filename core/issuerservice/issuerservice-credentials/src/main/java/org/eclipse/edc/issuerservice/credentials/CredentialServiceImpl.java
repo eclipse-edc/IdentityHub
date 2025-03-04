@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
@@ -37,6 +36,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
@@ -139,7 +139,7 @@ public class CredentialServiceImpl implements CredentialService {
 
     @Override
     public ServiceResult<Collection<VerifiableCredentialResource>> getCredentialForParticipant(String participantId) {
-        var query = IdentityResource.queryByParticipantContextId(participantId).build();
+        var query = queryByParticipantContextId(participantId).build();
         return queryCredentials(query);
     }
 

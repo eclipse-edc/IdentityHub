@@ -25,7 +25,7 @@ import java.util.UUID;
  * Identity resources have an ID, a timestamp, an issuer ID, a holder ID, and a clock.
  * They can be extended with custom properties and behaviors.
  */
-public abstract class IdentityResource extends ParticipantResource {
+public abstract class IdentityResource extends AbstractParticipantResource {
     protected String id;
     protected long timestamp;
     protected String issuerId;
@@ -53,7 +53,7 @@ public abstract class IdentityResource extends ParticipantResource {
         return holderId;
     }
 
-    public abstract static class Builder<T extends IdentityResource, B extends Builder<T, B>> extends ParticipantResource.Builder<T, B> {
+    public abstract static class Builder<T extends IdentityResource, B extends Builder<T, B>> extends AbstractParticipantResource.Builder<T, B> {
 
         protected Builder(T entity) {
             super(entity);

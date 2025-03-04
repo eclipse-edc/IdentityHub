@@ -84,7 +84,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         private static @NotNull String issuanceStatusUrl(String id) {
-            return "/v1alpha/issuers/%s/requests/%s".formatted(ISSUER_ID_ENCODED, id);
+            return "/v1alpha/participants/%s/requests/%s".formatted(ISSUER_ID_ENCODED, id);
         }
 
 
@@ -250,8 +250,8 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
             return IssuanceProcess.Builder.newInstance()
                     .id(UUID.randomUUID().toString())
                     .state(IssuanceProcessStates.DELIVERED.code())
-                    .participantId(PARTICIPANT_DID)
-                    .issuerContextId(ISSUER_ID)
+                    .memberId(PARTICIPANT_DID)
+                    .participantContextId(ISSUER_ID)
                     .holderPid(UUID.randomUUID().toString())
                     .build();
         }

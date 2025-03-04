@@ -90,7 +90,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
                 .map(credentialDefinition -> new CredentialGenerationRequest(credentialDefinition, process.getCredentialFormats().get(credentialDefinition.getCredentialType())))
                 .toList();
 
-        var result = credentialGenerator.generateCredentials(process.getIssuerContextId(), process.getParticipantId(), requests, process.getClaims());
+        var result = credentialGenerator.generateCredentials(process.getParticipantContextId(), process.getMemberId(), requests, process.getClaims());
         if (result.succeeded()) {
             return StatusResult.success(result.getContent());
         } else {
@@ -121,7 +121,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         return VerifiableCredentialResource.Builder.newInstance()
                 .issuerId(credentialContainer.credential().getIssuer().id())
                 .holderId(extractHolder(credentialContainer.credential()))
-                .participantContextId(process.getIssuerContextId())
+                .participantContextId(process.getParticipantContextId())
                 .state(VcStatus.ISSUED)
                 .credential(new VerifiableCredentialContainer(null, credentialContainer.format(), credentialContainer.credential())).build();
     }
@@ -163,7 +163,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     }
 
     private Processor processIssuanceInState(IssuanceProcessStates state, Function<IssuanceProcess, Boolean> function) {
-        var filter = new Criterion[]{ hasState(state.code()), isNotPending() };
+        var filter = new Criterion[]{hasState(state.code()), isNotPending()};
         return createProcessor(function, filter);
     }
 

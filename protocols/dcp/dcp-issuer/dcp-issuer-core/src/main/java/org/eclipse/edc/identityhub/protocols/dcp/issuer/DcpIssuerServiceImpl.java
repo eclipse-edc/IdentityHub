@@ -58,7 +58,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
     }
 
     @Override
-    public ServiceResult<CredentialRequestMessage.Response> initiateCredentialsIssuance(String issuerContextId, CredentialRequestMessage message, DcpRequestContext context) {
+    public ServiceResult<CredentialRequestMessage.Response> initiateCredentialsIssuance(String participantContextId, CredentialRequestMessage message, DcpRequestContext context) {
         if (message.getCredentials().isEmpty()) {
             return ServiceResult.badRequest("No credentials requested");
         }
@@ -71,7 +71,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         return transactionContext.execute(() -> getCredentialsDefinitions(message)
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
                 .compose(this::evaluateRules)
-                .compose(evaluation -> createIssuanceProcess(issuerContextId, message.getHolderPid(), credentialFormats.getContent(), context, evaluation))
+                .compose(evaluation -> createIssuanceProcess(participantContextId, message.getHolderPid(), credentialFormats.getContent(), context, evaluation))
                 .map(issuanceProcess -> new CredentialRequestMessage.Response(issuanceProcess.getId())));
 
     }
@@ -128,17 +128,17 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         return ServiceResult.success(evaluationResponse);
     }
 
-    private ServiceResult<IssuanceProcess> createIssuanceProcess(String issuerContextId, String holderPid, Map<String, CredentialFormat> credentialFormats, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
+    private ServiceResult<IssuanceProcess> createIssuanceProcess(String participantContextId, String holderPid, Map<String, CredentialFormat> credentialFormats, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
 
         var credentialDefinitionIds = evaluationResponse.credentialDefinitions().stream()
                 .map(CredentialDefinition::getId)
                 .collect(Collectors.toSet());
         var issuanceProcess = IssuanceProcess.Builder.newInstance()
-                .participantId(context.participant().participantId())
+                .memberId(context.participant().participantId())
                 .state(IssuanceProcessStates.APPROVED.code())
                 .credentialDefinitions(credentialDefinitionIds)
                 .claims(evaluationResponse.claims())
-                .issuerContextId(issuerContextId)
+                .participantContextId(participantContextId)
                 .holderPid(holderPid)
                 .credentialFormats(credentialFormats)
                 .build();

@@ -27,7 +27,6 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
@@ -46,6 +45,7 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 /**
@@ -330,7 +330,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     }
 
     private Collection<DidResource> findByParticipantContextId(String participantContextId) {
-        return didResourceStore.query(ParticipantResource.queryByParticipantContextId(participantContextId).build());
+        return didResourceStore.query(queryByParticipantContextId(participantContextId).build());
     }
 
 }

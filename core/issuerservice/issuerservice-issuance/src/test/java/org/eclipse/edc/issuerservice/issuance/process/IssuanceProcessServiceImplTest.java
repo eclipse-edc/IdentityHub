@@ -74,8 +74,8 @@ public class IssuanceProcessServiceImplTest {
         return IssuanceProcess.Builder.newInstance()
                 .id("id")
                 .state(IssuanceProcessStates.APPROVED.code())
-                .participantId("participantId")
-                .issuerContextId("issuerContextId")
+                .memberId("participantId")
+                .participantContextId("participantContextId")
                 .holderPid("holderPid")
                 .build();
     }

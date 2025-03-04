@@ -24,7 +24,6 @@ import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantCont
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.event.Event;
@@ -52,6 +51,7 @@ import java.util.stream.Collectors;
 
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.ACTIVATED;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.CREATED;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 
 public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     private final KeyPairResourceStore keyPairResourceStore;
@@ -89,7 +89,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             // check if the new key is not active, and no other active key exists
             if (!keyDescriptor.isActive()) {
 
-                var hasActiveKeys = keyPairResourceStore.query(ParticipantResource.queryByParticipantContextId(participantContextId).build())
+                var hasActiveKeys = keyPairResourceStore.query(queryByParticipantContextId(participantContextId).build())
                         .orElse(failure -> Collections.emptySet())
                         .stream().filter(kpr -> kpr.getState() == KeyPairState.ACTIVATED.code())
                         .findAny()
@@ -210,7 +210,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
      * @return {@link ServiceResult#success()} if the participant context exists, and is in one of the allowed states, a failure otherwise.
      */
     private ServiceResult<Void> checkParticipantState(String participantContextId, ParticipantContextState... allowedStates) {
-        var result = ServiceResult.from(participantContextService.query(ParticipantContext.queryByParticipantContextId(participantContextId).build()))
+        var result = ServiceResult.from(participantContextService.query(queryByParticipantContextId(participantContextId).build()))
                 .compose(list -> list.stream().findFirst()
                         .map(pc -> {
                             var state = pc.getStateAsEnum();
@@ -242,7 +242,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
 
     private void deleted(ParticipantContextDeleted event) {
         //hard-delete all keypairs that are associated with the deleted participant
-        var query = ParticipantResource.queryByParticipantContextId(event.getParticipantContextId()).build();
+        var query = queryByParticipantContextId(event.getParticipantContextId()).build();
         transactionContext.execute(() -> {
             keyPairResourceStore.query(query)
                     .compose(list -> {

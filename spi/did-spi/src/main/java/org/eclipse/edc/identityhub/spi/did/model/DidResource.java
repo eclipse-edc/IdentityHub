@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.spi.did.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
 
 import java.time.Clock;
 import java.util.Objects;
@@ -24,7 +24,7 @@ import java.util.Objects;
 /**
  * This class wraps a {@link org.eclipse.edc.iam.did.spi.document.DidDocument} and represents its lifecycle in the identity hub.
  */
-public class DidResource extends ParticipantResource {
+public class DidResource extends AbstractParticipantResource {
     @JsonIgnore
     private Clock clock = Clock.systemUTC();
     private String did;
@@ -64,7 +64,7 @@ public class DidResource extends ParticipantResource {
         this.state = newState.code();
     }
 
-    public static final class Builder extends ParticipantResource.Builder<DidResource, DidResource.Builder> {
+    public static final class Builder extends AbstractParticipantResource.Builder<DidResource, DidResource.Builder> {
 
         private Builder() {
             super(new DidResource());

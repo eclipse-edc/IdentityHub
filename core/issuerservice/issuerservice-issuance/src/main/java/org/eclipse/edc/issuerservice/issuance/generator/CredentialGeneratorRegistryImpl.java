@@ -21,7 +21,6 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerationRequest;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerator;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
@@ -36,6 +35,8 @@ import org.eclipse.edc.spi.result.Result;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 
 public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegistry {
 
@@ -61,34 +62,34 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
     }
 
     @Override
-    public Result<VerifiableCredentialContainer> generateCredential(String issuerContextId, String participantId, CredentialGenerationRequest credentialGenerationRequest, Map<String, Object> claims) {
+    public Result<VerifiableCredentialContainer> generateCredential(String participantContextId, String participantId, CredentialGenerationRequest credentialGenerationRequest, Map<String, Object> claims) {
 
         return issuanceClaimsMapper.apply(credentialGenerationRequest.definition().getMappings(), claims)
-                .compose(mappedClaims -> generateCredentialInternal(issuerContextId, participantId, credentialGenerationRequest, mappedClaims));
+                .compose(mappedClaims -> generateCredentialInternal(participantContextId, participantId, credentialGenerationRequest, mappedClaims));
     }
 
 
-    private Result<KeyPairResource> fetchActiveKeyPair(String issuerContextId) {
-        var query = ParticipantResource.queryByParticipantContextId(issuerContextId)
+    private Result<KeyPairResource> fetchActiveKeyPair(String participantContextId) {
+        var query = queryByParticipantContextId(participantContextId)
                 .filter(new Criterion("state", "=", KeyPairState.ACTIVATED.code()))
                 .build();
 
 
         var keyPairResult = keyPairService.query(query)
-                .orElseThrow(f -> new EdcException("Error obtaining private key for participant '%s': %s".formatted(issuerContextId, f.getFailureDetail())));
+                .orElseThrow(f -> new EdcException("Error obtaining private key for participant '%s': %s".formatted(participantContextId, f.getFailureDetail())));
 
         // check if there is a default key pair
         var keyPair = keyPairResult.stream().filter(KeyPairResource::isDefaultPair).findAny()
                 .orElseGet(() -> keyPairResult.stream().findFirst().orElse(null));
 
         if (keyPair == null) {
-            return Result.failure("No active key pair found for participant '%s'".formatted(issuerContextId));
+            return Result.failure("No active key pair found for participant '%s'".formatted(participantContextId));
         }
 
         return Result.success(keyPair);
 
     }
-    
+
     private Result<VerifiableCredentialContainer> generateCredentialInternal(String participantContextId, String participantId, CredentialGenerationRequest credentialGenerationRequest, Map<String, Object> mappedClaims) {
         return Optional.ofNullable(generators.get(credentialGenerationRequest.format()))
                 .map(generator -> generateCredentialInternal(participantContextId, participantId, generator, credentialGenerationRequest.definition(), mappedClaims))

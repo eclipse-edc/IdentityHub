@@ -84,16 +84,16 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
     public Result<Void> deliverCredentials(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> credentials) {
 
         try {
-            var issuerDid = participantContextStore.findById(issuanceProcess.getIssuerContextId()).map(ParticipantContext::getDid)
+            var issuerDid = participantContextStore.findById(issuanceProcess.getParticipantContextId()).map(ParticipantContext::getDid)
                     .orElseThrow(failure -> new EdcException("Participant context not found"));
-            var participantDid = participantStore.findById(issuanceProcess.getParticipantId()).map(Participant::did)
+            var participantDid = participantStore.findById(issuanceProcess.getMemberId()).map(Participant::did)
                     .orElseThrow(failure -> new EdcException("Participant not found"));
 
             var credentialServiceBaseUrl = credentialServiceUrlResolver.resolve(participantDid)
                     .orElseThrow(failure -> new EdcException("Credential service URL not found"));
             var url = credentialServiceBaseUrl + STORAGE_ENDPOINT;
 
-            var selfIssuedTokenJwt = getAuthToken(issuanceProcess.getIssuerContextId(), participantDid, issuerDid)
+            var selfIssuedTokenJwt = getAuthToken(issuanceProcess.getParticipantContextId(), participantDid, issuerDid)
                     .orElseThrow(failure -> new EdcException("Error creating self-issued token"));
 
             var credentialMessage = createCredentialMessage(issuanceProcess, credentials);

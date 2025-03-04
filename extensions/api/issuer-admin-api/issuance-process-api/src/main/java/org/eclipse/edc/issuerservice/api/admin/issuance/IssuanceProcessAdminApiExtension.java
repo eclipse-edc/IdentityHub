@@ -18,7 +18,6 @@ import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable.IssuanceProcessAdminApiController;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
-import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessResource;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -47,29 +46,9 @@ public class IssuanceProcessAdminApiExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
 
-        authorizationService.addLookupFunction(IssuanceProcessResource.class, this::findById);
+        authorizationService.addLookupFunction(IssuanceProcess.class, issuanceProcessService::findById);
 
         var controller = new IssuanceProcessAdminApiController(issuanceProcessService, authorizationService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
-    }
-
-    /**
-     * Find issuance process by id. Glue point with the Identity Hub {@link AuthorizationService}.
-     * Since we store the participantContextId as the issuerContextId in the {@link IssuanceProcess},
-     * here we do the mapping through the {@link IssuanceProcessResource}.
-     *
-     * @param id the id
-     * @return the issuance process resource
-     */
-    private IssuanceProcessResource findById(String id) {
-        var issuanceProcess = issuanceProcessService.findById(id);
-        if (issuanceProcess == null) {
-            return null;
-        } else {
-            return IssuanceProcessResource.Builder.newInstance()
-                    .issuanceProcess(issuanceProcess)
-                    .participantContextId(issuanceProcess.getIssuerContextId())
-                    .build();
-        }
     }
 }

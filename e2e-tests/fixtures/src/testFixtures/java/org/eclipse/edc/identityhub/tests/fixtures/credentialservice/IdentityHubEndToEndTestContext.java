@@ -35,7 +35,6 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -57,6 +56,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static java.lang.String.format;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 
 /**
@@ -140,13 +140,13 @@ public class IdentityHubEndToEndTestContext extends AbstractTestContext {
     }
 
     public Collection<KeyPairResource> getKeyPairsForParticipant(String participantContextId) {
-        return runtime.getService(KeyPairResourceStore.class).query(ParticipantResource.queryByParticipantContextId(participantContextId).build())
+        return runtime.getService(KeyPairResourceStore.class).query(queryByParticipantContextId(participantContextId).build())
                 .getContent();
     }
 
     public Collection<HolderCredentialRequest> getCredentialRequestForParticipant(String participantContextId) {
         return runtime.getService(HolderCredentialRequestStore.class)
-                .query(ParticipantResource.queryByParticipantContextId(participantContextId).build());
+                .query(queryByParticipantContextId(participantContextId).build());
     }
 
     public KeyDescriptor createKeyPair(String participantContextId) {
