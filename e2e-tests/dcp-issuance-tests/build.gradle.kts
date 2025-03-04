@@ -19,7 +19,7 @@ plugins {
 
 dependencies {
 
-    testImplementation(project(":spi:issuerservice:issuerservice-participant-spi"))
+    testImplementation(project(":spi:issuerservice:issuerservice-holder-spi"))
     testImplementation(project(":spi:issuerservice:issuerservice-credential-spi"))
     testImplementation(project(":spi:issuerservice:issuerservice-issuance-spi"))
     testImplementation(project(":spi:participant-context-spi"))

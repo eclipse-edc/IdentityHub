@@ -17,12 +17,12 @@ plugins {
 }
 
 dependencies {
-    api(project(":spi:issuerservice:issuerservice-participant-spi"))
+    api(project(":spi:issuerservice:issuerservice-holder-spi"))
     implementation(libs.edc.lib.sql)
     implementation(libs.edc.sql.bootstrapper)
     implementation(libs.edc.spi.transaction.datasource)
 
-    testImplementation(testFixtures(project(":spi:issuerservice:issuerservice-participant-spi")))
+    testImplementation(testFixtures(project(":spi:issuerservice:issuerservice-holder-spi")))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
     testImplementation(libs.edc.junit)
 }
