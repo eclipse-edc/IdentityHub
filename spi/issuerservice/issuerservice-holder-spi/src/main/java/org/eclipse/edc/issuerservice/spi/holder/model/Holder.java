@@ -91,7 +91,7 @@ public class Holder extends AbstractParticipantResource {
         }
 
         public Builder attestations(List<String> attestations) {
-            entity.attestations = attestations;
+            entity.attestations = new ArrayList<>(attestations); //ensure mutability
             return this;
         }
 

@@ -221,6 +221,7 @@ public class AttestationApiEndToEndTest {
 
         private Holder createHolder(String id, String did, String name, List<String> attestations) {
             return Holder.Builder.newInstance()
+                    .participantContextId(USER)
                     .holderId(id)
                     .did(did)
                     .holderName(name)
