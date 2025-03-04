@@ -873,128 +873,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/issuers/{issuerContextId}/issuanceprocesses/query:
-    post:
-      tags:
-      - Issuer Service Issuance Process Admin API
-      description: Gets all issuance processes for a certain query.
-      operationId: queryIssuanceProcesses
-      parameters:
-      - name: issuerContextId
-        in: path
-        description: Base64-Url encode Issuer Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: issuerContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/QuerySpec"
-      responses:
-        "200":
-          description: A list of issuance processes.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/IssuanceProcessDto"
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/issuers/{issuerContextId}/issuanceprocesses/{issuanceProcessId}:
-    get:
-      tags:
-      - Issuer Service Issuance Process Admin API
-      description: Gets an issuance process by its ID.
-      operationId: getIssuanceProcessById
-      parameters:
-      - name: issuerContextId
-        in: path
-        description: Base64-Url encode Issuer Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: issuanceProcessId
-        in: path
-        description: ID of the issuance process that should be returned
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: issuerContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: issuanceProcessId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: The issuance process was found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/IssuanceProcessDto"
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The issuance process was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants:
     put:
       tags:
@@ -1112,6 +990,128 @@ paths:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: The participant was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/participants/{participantContextId}/issuanceprocesses/query:
+    post:
+      tags:
+      - Issuer Service Issuance Process Admin API
+      description: Gets all issuance processes for a certain query.
+      operationId: queryIssuanceProcesses
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuerySpec"
+      responses:
+        "200":
+          description: A list of issuance processes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IssuanceProcessDto"
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/participants/{participantContextId}/issuanceprocesses/{issuanceProcessId}:
+    get:
+      tags:
+      - Issuer Service Issuance Process Admin API
+      description: Gets an issuance process by its ID.
+      operationId: getIssuanceProcessById
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: issuanceProcessId
+        in: path
+        description: ID of the issuance process that should be returned
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: issuanceProcessId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The issuance process was found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssuanceProcessDto"
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The issuance process was not found.
           content:
             application/json:
               schema:
@@ -1309,9 +1309,9 @@ components:
           type: string
         id:
           type: string
-        issuerContextId:
+        memberId:
           type: string
-        participantId:
+        participantContextId:
           type: string
         state:
           type: string

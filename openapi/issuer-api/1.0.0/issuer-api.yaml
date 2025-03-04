@@ -19,7 +19,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IssuerMetadata"
-  /v1alpha/issuers/{issuerContextId}/credentials:
+  /v1alpha/participants/{participantContextId}/credentials:
     post:
       tags:
       - Credential Request API
@@ -27,15 +27,15 @@ paths:
         from an issuer
       operationId: requestCredentials
       parameters:
-      - name: issuerContextId
+      - name: participantContextId
         in: path
-        description: Base64-Url encode Issuer Context ID
+        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
         schema:
           type: string
-      - name: issuerContextId
+      - name: participantContextId
         in: path
         required: true
         style: simple
@@ -89,16 +89,16 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/issuers/{issuerContextId}/requests/{credentialRequestId}:
+  /v1alpha/participants/{participantContextId}/requests/{credentialRequestId}:
     get:
       tags:
       - Credential Request Status API
       description: Requests status information about an issuance request from an issuer
       operationId: getCredentialRequestStatus
       parameters:
-      - name: issuerContextId
+      - name: participantContextId
         in: path
-        description: Base64-Url encode Issuer Context ID
+        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -112,7 +112,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: issuerContextId
+      - name: participantContextId
         in: path
         required: true
         style: simple
