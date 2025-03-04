@@ -115,7 +115,8 @@ include(":extensions:api:identity-api:validators:participant-context-validators"
 include(":extensions:api:identity-api:validators:verifiable-credential-validators")
 
 // issuance modules
-include(":extensions:issuance:issuerservice-issuance-attestations")
+include(":extensions:issuance:issuerservice-presentation-attestations")
+include(":extensions:issuance:issuerservice-database-attestations")
 include(":extensions:issuance:issuerservice-issuance-rules")
 
 // other modules

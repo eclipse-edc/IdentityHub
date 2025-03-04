@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.edc.issuerservice.issuance.attestations.IssuanceAttestationsExtension
+org.eclipse.edc.issuerservice.issuance.attestations.PresentationAttestationExtension

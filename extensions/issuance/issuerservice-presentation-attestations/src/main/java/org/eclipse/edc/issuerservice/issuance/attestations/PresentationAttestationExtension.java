@@ -23,12 +23,12 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 
-import static org.eclipse.edc.issuerservice.issuance.attestations.IssuanceAttestationsExtension.NAME;
+import static org.eclipse.edc.issuerservice.issuance.attestations.PresentationAttestationExtension.NAME;
 
 @Extension(NAME)
-public class IssuanceAttestationsExtension implements ServiceExtension {
+public class PresentationAttestationExtension implements ServiceExtension {
 
-    public static final String NAME = "Issuance Attestations Extension";
+    public static final String NAME = "VerifiablePresentation Attestations Extension";
 
     @Inject
     private AttestationSourceFactoryRegistry registry;
