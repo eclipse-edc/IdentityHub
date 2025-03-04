@@ -31,7 +31,8 @@ dependencies {
     runtimeOnly(project(":protocols:dcp:dcp-issuer:dcp-issuer-core"))
     runtimeOnly(project(":protocols:dcp:dcp-issuer:dcp-issuer-api"))
 
-    runtimeOnly(project(":extensions:issuance:issuerservice-issuance-attestations"))
+    runtimeOnly(project(":extensions:issuance:issuerservice-presentation-attestations"))
+    runtimeOnly(project(":extensions:issuance:issuerservice-database-attestations"))
     runtimeOnly(project(":extensions:issuance:issuerservice-issuance-rules"))
 
     runtimeOnly(project(":extensions:sts:sts-account-provisioner"))
