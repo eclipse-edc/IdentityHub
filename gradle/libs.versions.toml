@@ -16,7 +16,7 @@ postgres = "42.7.5"
 restAssured = "5.5.1"
 swagger = "2.2.28"
 rsApi = "4.0.0"
-testcontainers = "1.20.3"
+testcontainers = "1.20.5"
 tink = "1.15.0"
 opentelemetry = "1.32.0"
 
