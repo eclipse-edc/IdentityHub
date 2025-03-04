@@ -47,7 +47,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
     private final Map<String, Object> claims = new HashMap<>();
     private final List<String> credentialDefinitions = new ArrayList<>();
     private final Map<String, CredentialFormat> credentialFormats = new HashMap<>();
-    private String memberId;
+    private String holderId;
     private String participantContextId;
     private String holderPid;
 
@@ -59,7 +59,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
         var builder = Builder.newInstance()
                 .claims(claims)
                 .credentialDefinitions(credentialDefinitions)
-                .memberId(memberId)
+                .memberId(holderId)
                 .credentialFormats(credentialFormats)
                 .participantContextId(participantContextId)
                 .holderPid(holderPid);
@@ -71,8 +71,8 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
         return from(state).name();
     }
 
-    public String getMemberId() {
-        return memberId;
+    public String getHolderId() {
+        return holderId;
     }
 
     public String getHolderPid() {
@@ -184,7 +184,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
         }
 
         public Builder memberId(String memberId) {
-            this.entity.memberId = memberId;
+            this.entity.holderId = memberId;
             return this;
         }
 
@@ -205,7 +205,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
             if (entity.state == 0) {
                 throw new IllegalStateException("Issuance process state must be set");
             }
-            Objects.requireNonNull(entity.memberId, "Member ID must be set");
+            Objects.requireNonNull(entity.holderId, "Member ID must be set");
             Objects.requireNonNull(entity.participantContextId, "Participant Context ID must be set");
             Objects.requireNonNull(entity.holderPid, "Holder Pid must be set");
             return entity;

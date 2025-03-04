@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.edc.issuerservice.store.sql.participant.SqlParticipantStoreExtension
+org.eclipse.edc.issuerservice.store.sql.holder.SqlHolderStoreExtension

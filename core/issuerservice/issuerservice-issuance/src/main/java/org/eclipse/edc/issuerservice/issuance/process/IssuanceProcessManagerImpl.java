@@ -90,7 +90,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
                 .map(credentialDefinition -> new CredentialGenerationRequest(credentialDefinition, process.getCredentialFormats().get(credentialDefinition.getCredentialType())))
                 .toList();
 
-        var result = credentialGenerator.generateCredentials(process.getParticipantContextId(), process.getMemberId(), requests, process.getClaims());
+        var result = credentialGenerator.generateCredentials(process.getParticipantContextId(), process.getHolderId(), requests, process.getClaims());
         if (result.succeeded()) {
             return StatusResult.success(result.getContent());
         } else {

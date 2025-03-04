@@ -21,6 +21,8 @@ import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubE
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndTestContext;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.issuerservice.spi.holder.HolderService;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
@@ -32,8 +34,6 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
-import org.eclipse.edc.issuerservice.spi.participant.ParticipantService;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.result.Result;
@@ -169,11 +169,11 @@ public class DcpIssuanceFlowEndToEndTest {
          * Setup the issuer with an attestation definition and a credential definition
          */
         private @NotNull AttestationDefinition setupIssuer(IssuerServiceEndToEndTestContext issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition) {
-            var participantService = issuer.getRuntime().getService(ParticipantService.class);
+            var participantService = issuer.getRuntime().getService(HolderService.class);
             var credentialDefinitionService = issuer.getRuntime().getService(CredentialDefinitionService.class);
             var attestationDefinitionService = issuer.getRuntime().getService(AttestationDefinitionService.class);
 
-            participantService.createParticipant(new Participant(PARTICIPANT_ID, participantDid, "Participant"));
+            participantService.createHolder(new Holder(PARTICIPANT_ID, participantDid, "Participant"));
 
 
             var attestationDefinition = new AttestationDefinition("attestation-id", "Attestation", Map.of());

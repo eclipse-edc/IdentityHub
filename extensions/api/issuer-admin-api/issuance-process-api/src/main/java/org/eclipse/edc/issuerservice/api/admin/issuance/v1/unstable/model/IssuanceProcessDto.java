@@ -37,7 +37,7 @@ public record IssuanceProcessDto(String id,
 
     public static IssuanceProcessDto fromIssuanceProcess(IssuanceProcess issuanceProcess) {
         return new IssuanceProcessDto(issuanceProcess.getId(),
-                issuanceProcess.getMemberId(),
+                issuanceProcess.getHolderId(),
                 issuanceProcess.getParticipantContextId(),
                 issuanceProcess.getHolderPid(),
                 issuanceProcess.getClaims(),

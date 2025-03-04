@@ -21,13 +21,13 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.issuerservice.spi.holder.HolderService;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerationRequest;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerator;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.mapping.IssuanceClaimsMapper;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
-import org.eclipse.edc.issuerservice.spi.participant.ParticipantService;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
@@ -44,15 +44,15 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
     private final Map<CredentialFormat, CredentialGenerator> generators = new HashMap<>();
     private final IssuanceClaimsMapper issuanceClaimsMapper;
     private final ParticipantContextService participantContextService;
-    private final ParticipantService participantService;
+    private final HolderService holderService;
 
     private final KeyPairService keyPairService;
 
 
-    public CredentialGeneratorRegistryImpl(IssuanceClaimsMapper issuanceClaimsMapper, ParticipantContextService participantContextService, ParticipantService participantService, KeyPairService keyPairService) {
+    public CredentialGeneratorRegistryImpl(IssuanceClaimsMapper issuanceClaimsMapper, ParticipantContextService participantContextService, HolderService holderService, KeyPairService keyPairService) {
         this.issuanceClaimsMapper = issuanceClaimsMapper;
         this.participantContextService = participantContextService;
-        this.participantService = participantService;
+        this.holderService = holderService;
         this.keyPairService = keyPairService;
     }
 
@@ -104,8 +104,8 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
                     .map(ParticipantContext::getDid)
                     .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
-            var participantDid = participantService.findById(participantId)
-                    .map(Participant::did)
+            var participantDid = holderService.findById(participantId)
+                    .map(Holder::did)
                     .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
             return fetchActiveKeyPair(participantContextId)

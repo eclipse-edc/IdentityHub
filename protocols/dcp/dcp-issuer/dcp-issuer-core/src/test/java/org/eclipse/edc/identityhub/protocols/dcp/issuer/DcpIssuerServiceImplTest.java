@@ -18,6 +18,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
@@ -26,7 +27,6 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
@@ -78,7 +78,7 @@ public class DcpIssuerServiceImplTest {
                 .rule(credentialRuleDefinition)
                 .build();
 
-        var participant = new DcpRequestContext(new Participant("participantId", "participantDid", "name"), Map.of());
+        var participant = new DcpRequestContext(new Holder("holderId", "participantDid", "name"), Map.of());
 
         Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
 
@@ -98,7 +98,7 @@ public class DcpIssuerServiceImplTest {
         assertThat(issuanceProcess).isNotNull();
         assertThat(issuanceProcess.getId()).isEqualTo(result.getContent().requestId());
         assertThat(issuanceProcess.getCredentialDefinitions()).containsExactly("credentialDefinitionId");
-        assertThat(issuanceProcess.getMemberId()).isEqualTo("participantId");
+        assertThat(issuanceProcess.getHolderId()).isEqualTo("holderId");
         assertThat(issuanceProcess.getState()).isEqualTo(IssuanceProcessStates.APPROVED.code());
         assertThat(issuanceProcess.getClaims()).containsAllEntriesOf(claims);
         assertThat(issuanceProcess.getParticipantContextId()).isEqualTo("participantContextId");

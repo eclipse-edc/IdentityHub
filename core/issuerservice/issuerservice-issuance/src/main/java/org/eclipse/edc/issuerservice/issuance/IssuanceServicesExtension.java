@@ -27,6 +27,8 @@ import org.eclipse.edc.issuerservice.issuance.mapping.IssuanceClaimsMapperImpl;
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleDefinitionEvaluatorImpl;
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleDefinitionValidatorRegistryImpl;
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleFactoryRegistryImpl;
+import org.eclipse.edc.issuerservice.spi.holder.HolderService;
+import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
@@ -39,8 +41,6 @@ import org.eclipse.edc.issuerservice.spi.issuance.mapping.IssuanceClaimsMapper;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry;
-import org.eclipse.edc.issuerservice.spi.participant.ParticipantService;
-import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -65,7 +65,7 @@ public class IssuanceServicesExtension implements ServiceExtension {
     @Inject
     private AttestationDefinitionStore attestationDefinitionStore;
     @Inject
-    private ParticipantStore participantStore;
+    private HolderStore holderStore;
 
     @Inject
     private KeyPairService keyPairService;
@@ -74,7 +74,7 @@ public class IssuanceServicesExtension implements ServiceExtension {
     private JwsSignerProvider jwsSignerProvider;
 
     @Inject
-    private ParticipantService participantService;
+    private HolderService holderService;
 
     @Inject
     private Clock clock;
@@ -99,7 +99,7 @@ public class IssuanceServicesExtension implements ServiceExtension {
 
     @Provider
     public AttestationDefinitionService createAttestationService() {
-        return new AttestationDefinitionServiceImpl(transactionContext, attestationDefinitionStore, participantStore, createAttestationDefinitionValidatorRegistry());
+        return new AttestationDefinitionServiceImpl(transactionContext, attestationDefinitionStore, holderStore, createAttestationDefinitionValidatorRegistry());
     }
 
     @Provider
@@ -145,7 +145,7 @@ public class IssuanceServicesExtension implements ServiceExtension {
 
     @Provider
     public CredentialGeneratorRegistry createCredentialGeneratorRegistry() {
-        var generator = new CredentialGeneratorRegistryImpl(issuanceClaimsMapper(), participantContextService, participantService, keyPairService);
+        var generator = new CredentialGeneratorRegistryImpl(issuanceClaimsMapper(), participantContextService, holderService, keyPairService);
 
         var jwtGenerationService = new JwtGenerationService(jwsSignerProvider);
         generator.addGenerator(CredentialFormat.VC1_0_JWT, new JwtCredentialGenerator(jwtGenerationService, clock));

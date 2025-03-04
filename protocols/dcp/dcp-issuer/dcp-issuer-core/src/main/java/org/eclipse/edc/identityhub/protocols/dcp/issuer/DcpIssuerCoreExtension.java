@@ -22,12 +22,12 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
+import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
-import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -64,7 +64,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     private ParticipantContextStore participantContextStore;
 
     @Inject
-    private ParticipantStore participantStore;
+    private HolderStore holderStore;
 
     @Inject
     private DidPublicKeyResolver didPublicKeyResolver;
@@ -115,12 +115,12 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     @Provider
     public DcpHolderTokenVerifier createTokenVerifier() {
-        return new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, didPublicKeyResolver, participantStore);
+        return new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, didPublicKeyResolver, holderStore);
     }
 
     @Provider
     public CredentialStorageClient createCredentialStorageClient() {
-        return new DcpCredentialStorageClient(httpClient, participantContextStore, participantStore, credentialServiceUrlResolver(), secureTokenService, monitor, typeManager, JSON_LD);
+        return new DcpCredentialStorageClient(httpClient, participantContextStore, holderStore, credentialServiceUrlResolver(), secureTokenService, monitor, typeManager, JSON_LD);
     }
 
     // TODO: refactor to use upstream DidCredentialServiceUrlResolver

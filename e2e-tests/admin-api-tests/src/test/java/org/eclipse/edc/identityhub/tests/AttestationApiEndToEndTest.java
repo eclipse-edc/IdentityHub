@@ -17,11 +17,11 @@ package org.eclipse.edc.identityhub.tests;
 import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
+import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
-import org.eclipse.edc.issuerservice.spi.participant.store.ParticipantStore;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.query.Criterion;
@@ -63,12 +63,12 @@ public class AttestationApiEndToEndTest {
         }
 
         @AfterEach
-        void teardown(AttestationDefinitionStore store, ParticipantStore participantStore) {
+        void teardown(AttestationDefinitionStore store, HolderStore holderStore) {
             store.query(QuerySpec.max()).getContent()
                     .forEach(att -> store.deleteById(att.id()));
 
-            participantStore.query(QuerySpec.max()).getContent()
-                    .forEach(participant -> participantStore.deleteById(participant.participantId()));
+            holderStore.query(QuerySpec.max()).getContent()
+                    .forEach(participant -> holderStore.deleteById(participant.holderId()));
         }
 
         @Test
@@ -99,17 +99,17 @@ public class AttestationApiEndToEndTest {
         }
 
         @Test
-        void getForParticipant(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, ParticipantStore participantStore) {
+        void getForParticipant(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, HolderStore holderStore) {
             var att1 = new AttestationDefinition("att1", "test-type", Map.of("bar", "baz"));
             var att2 = new AttestationDefinition("att2", "test-type-1", Map.of("bar", "baz"));
-            var p = new Participant("foobar", "did:web:foobar", "Foo Bar", List.of("att1", "att2"));
-            var r = store.create(att1).compose(v -> store.create(att2)).compose(participant -> participantStore.create(p));
+            var p = new Holder("foobar", "did:web:foobar", "Foo Bar", List.of("att1", "att2"));
+            var r = store.create(att1).compose(v -> store.create(att2)).compose(participant -> holderStore.create(p));
             assertThat(r).isSucceeded();
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .get("/v1alpha/attestations?participantId=foobar")
+                    .get("/v1alpha/attestations?holderId=foobar")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -119,47 +119,47 @@ public class AttestationApiEndToEndTest {
         }
 
         @Test
-        void linkAttestation_expect201(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, ParticipantStore participantStore) {
+        void linkAttestation_expect201(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, HolderStore holderStore) {
             var r = store.create(new AttestationDefinition("att1", "test-type", Map.of("bar", "baz")))
-                    .compose(participant -> participantStore.create(new Participant("foobar", "did:web:foobar", "Foo Bar")));
+                    .compose(participant -> holderStore.create(new Holder("foobar", "did:web:foobar", "Foo Bar")));
             assertThat(r).isSucceeded();
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/attestations/att1/link?participantId=foobar")
+                    .post("/v1alpha/attestations/att1/link?holderId=foobar")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
 
-            assertThat(participantStore.findById("foobar")).isSucceeded()
+            assertThat(holderStore.findById("foobar")).isSucceeded()
                     .satisfies(participant -> assertThat(participant.attestations()).containsExactly("att1"));
         }
 
         @Test
-        void linkAttestation_alreadyLinked_expect204(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, ParticipantStore participantStore) {
+        void linkAttestation_alreadyLinked_expect204(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, HolderStore holderStore) {
             var r = store.create(new AttestationDefinition("att1", "test-type", Map.of("bar", "baz")))
-                    .compose(participant -> participantStore.create(new Participant("foobar", "did:web:foobar", "Foo Bar", singletonList("att1"))));
+                    .compose(participant -> holderStore.create(new Holder("foobar", "did:web:foobar", "Foo Bar", singletonList("att1"))));
             assertThat(r).isSucceeded();
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/attestations/att1/link?participantId=foobar")
+                    .post("/v1alpha/attestations/att1/link?holderId=foobar")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
 
-            assertThat(participantStore.findById("foobar")).isSucceeded()
+            assertThat(holderStore.findById("foobar")).isSucceeded()
                     .satisfies(participant -> assertThat(participant.attestations()).containsExactly("att1"));
         }
 
         @Test
-        void queryAttestations(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, ParticipantStore participantStore) {
-            var p1 = new Participant("p1", "did:web:foobar", "Foo Bar", singletonList("att1"));
-            var p2 = new Participant("p2", "did:web:barbaz", "Bar Baz", List.of("att1", "att2"));
+        void queryAttestations(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, HolderStore holderStore) {
+            var p1 = new Holder("p1", "did:web:foobar", "Foo Bar", singletonList("att1"));
+            var p2 = new Holder("p2", "did:web:barbaz", "Bar Baz", List.of("att1", "att2"));
 
-            var r = participantStore.create(p1).compose(participant -> participantStore.create(p2));
+            var r = holderStore.create(p1).compose(participant -> holderStore.create(p2));
             assertThat(r).isSucceeded();
             store.create(new AttestationDefinition("att1", "test-type", Map.of("key1", "val1")));
             store.create(new AttestationDefinition("att2", "test-type-1", Map.of("key2", "val2")));

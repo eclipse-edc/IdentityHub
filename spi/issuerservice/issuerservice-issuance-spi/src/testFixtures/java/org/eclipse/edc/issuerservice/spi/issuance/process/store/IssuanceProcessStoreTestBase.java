@@ -419,7 +419,7 @@ public abstract class IssuanceProcessStoreTestBase {
         }
 
         @Test
-        void queryByMemberId() {
+        void queryByHolderId() {
 
             range(0, 10)
                     .mapToObj(i -> createIssuanceProcess("id" + i))
@@ -430,7 +430,7 @@ public abstract class IssuanceProcessStoreTestBase {
             getStore().save(issuanceProcess);
 
             var query = QuerySpec.Builder.newInstance()
-                    .filter(List.of(new Criterion("memberId", "=", issuanceProcess.getMemberId())))
+                    .filter(List.of(new Criterion("holderId", "=", issuanceProcess.getHolderId())))
                     .build();
 
             var result = getStore().query(query).toList();

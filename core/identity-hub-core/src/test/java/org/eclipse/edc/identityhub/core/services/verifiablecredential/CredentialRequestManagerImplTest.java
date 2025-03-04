@@ -105,7 +105,7 @@ class CredentialRequestManagerImplTest {
 
     private ParticipantContext participantContext() {
         return ParticipantContext.Builder.newInstance()
-                .participantContextId("participantId")
+                .participantContextId("holderId")
                 .did("did:web:test")
                 .apiTokenAlias("alias")
                 .build();

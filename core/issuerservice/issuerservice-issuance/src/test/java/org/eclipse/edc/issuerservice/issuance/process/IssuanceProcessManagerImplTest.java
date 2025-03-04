@@ -112,7 +112,7 @@ public class IssuanceProcessManagerImplTest {
                 .build());
 
         var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
-                .memberId("participantId")
+                .memberId("holderId")
                 .participantContextId("participantContextId")
                 .holderPid("holderPid")
                 .credentialFormats(Map.of(credentialDefinition.getCredentialType(), CredentialFormat.VC1_0_JWT))
@@ -120,7 +120,7 @@ public class IssuanceProcessManagerImplTest {
 
         when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(APPROVED.code()))).thenReturn(List.of(process)).thenReturn(emptyList());
         when(credentialDefinitionStore.query(any())).thenReturn(StoreResult.success(List.of(credentialDefinition)));
-        when(credentialGenerator.generateCredentials("participantContextId", "participantId", List.of(generationRequests), process.getClaims())).thenReturn(Result.success(List.of(credential)));
+        when(credentialGenerator.generateCredentials("participantContextId", "holderId", List.of(generationRequests), process.getClaims())).thenReturn(Result.success(List.of(credential)));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
         when(credentialStorageClient.deliverCredentials(process, List.of(credential))).thenReturn(Result.success());
 
@@ -155,7 +155,7 @@ public class IssuanceProcessManagerImplTest {
         var generationRequests = new CredentialGenerationRequest(credentialDefinition, CredentialFormat.VC1_0_JWT);
 
         var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
-                .memberId("participantId")
+                .memberId("holderId")
                 .participantContextId("participantContextId")
                 .holderPid("holderPid")
                 .credentialFormats(Map.of(credentialDefinition.getCredentialType(), CredentialFormat.VC1_0_JWT))
@@ -164,7 +164,7 @@ public class IssuanceProcessManagerImplTest {
 
         when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(APPROVED.code()))).thenReturn(List.of(process)).thenReturn(emptyList());
         when(credentialDefinitionStore.query(any())).thenReturn(StoreResult.success(List.of(credentialDefinition)));
-        when(credentialGenerator.generateCredentials("participantContextId", "participantId", List.of(generationRequests), process.getClaims())).thenReturn(Result.failure("generation failure"));
+        when(credentialGenerator.generateCredentials("participantContextId", "holderId", List.of(generationRequests), process.getClaims())).thenReturn(Result.failure("generation failure"));
 
         issuanceProcessManager.start();
 

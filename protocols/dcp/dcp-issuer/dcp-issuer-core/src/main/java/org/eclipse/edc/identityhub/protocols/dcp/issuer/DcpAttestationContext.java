@@ -31,6 +31,6 @@ public record DcpAttestationContext(DcpRequestContext context) implements Attest
 
     @Override
     public String participantId() {
-        return context.participant().participantId();
+        return context.holder().holderId();
     }
 }

@@ -23,10 +23,10 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStat
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
-import org.eclipse.edc.issuerservice.spi.participant.model.Participant;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.Result;
@@ -65,7 +65,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = mock();
     private final ParticipantContextService participantContextService = mock();
     private final String participantContextId = "participantContextId";
-    private final String participantId = "participantId";
+    private final String participantId = "holderId";
     private final String participantContextIdEncoded = Base64.getEncoder().encodeToString(participantContextId.getBytes());
 
     @Test
@@ -81,7 +81,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     @Test
     void credentialStatus_transformationError_shouldReturn400() {
 
-        var participant = new Participant("id", "did", "name");
+        var participant = new Holder("id", "did", "name");
         var ctx = new DcpRequestContext(participant, Map.of());
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
         when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess())));
@@ -121,7 +121,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     @Test
     void credentialStatus() {
 
-        var participant = new Participant("id", "did", "name");
+        var participant = new Holder("id", "did", "name");
         var ctx = new DcpRequestContext(participant, Map.of());
 
         var token = generateJwt();
