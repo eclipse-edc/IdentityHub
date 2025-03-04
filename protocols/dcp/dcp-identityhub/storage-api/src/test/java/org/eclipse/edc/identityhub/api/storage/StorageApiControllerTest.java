@@ -222,7 +222,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
     private ParticipantContext participantContext() {
         return ParticipantContext.Builder.newInstance()
-                .participantContextId("holderId")
+                .participantContextId("participantId")
                 .did("did:web:test")
                 .apiTokenAlias("alias")
                 .build();

@@ -65,12 +65,11 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = mock();
     private final ParticipantContextService participantContextService = mock();
     private final String participantContextId = "participantContextId";
-    private final String participantId = "holderId";
     private final String participantContextIdEncoded = Base64.getEncoder().encodeToString(participantContextId.getBytes());
 
     @Test
     void credentialStatus_tokenNotPresent_shouldReturn401() {
-        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, participantId, null))
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), null))
                 .isInstanceOf(AuthenticationFailedException.class)
                 .hasMessage("Authorization header missing");
 
@@ -88,7 +87,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
         when(typeTransformerRegistry.transform(isA(CredentialRequestStatus.class), eq(JsonObject.class))).thenReturn(Result.failure("cannot transform"));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
-        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, participantId, generateJwt()))
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), generateJwt()))
                 .isInstanceOf(EdcException.class)
                 .hasMessageContaining("cannot transform");
 
@@ -99,7 +98,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.unauthorized("unauthorized"));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
 
-        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, participantId, generateJwt()))
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessageContaining("unauthorized");
 
@@ -110,7 +109,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     void credentialStatus_participantNotFound_shouldReturn401() {
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.notFound("not found"));
 
-        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, participantId, generateJwt()))
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessageContaining("Invalid issuer");
 
@@ -131,7 +130,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
         when(typeTransformerRegistry.transform(isA(CredentialRequestStatus.class), eq(JsonObject.class))).thenReturn(Result.success(Json.createObjectBuilder().build()));
 
-        var response = controller().credentialStatus(participantContextIdEncoded, participantId, token);
+        var response = controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), token);
 
         assertThat(response).isNotNull();
 
@@ -154,7 +153,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
     private IssuanceProcess createIssuanceProcess() {
         return IssuanceProcess.Builder.newInstance()
-                .holderId(participantId)
+                .holderId("holderId")
                 .participantContextId(participantContextId)
                 .holderPid(UUID.randomUUID().toString())
                 .id(UUID.randomUUID().toString())
