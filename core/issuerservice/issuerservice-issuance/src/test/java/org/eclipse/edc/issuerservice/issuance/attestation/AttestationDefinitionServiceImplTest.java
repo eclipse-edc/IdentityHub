@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -57,7 +58,7 @@ class AttestationDefinitionServiceImplTest {
         when(attestationDefinitionStore.create(any())).thenReturn(StoreResult.success());
         when(definitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.success());
 
-        assertThat(attestationDefinitionService.createAttestation(new AttestationDefinition("id", "type", Map.of())))
+        assertThat(attestationDefinitionService.createAttestation(createAttestationDefinition("id", "type", Map.of())))
                 .isSucceeded();
         verify(attestationDefinitionStore).create(any());
         verifyNoMoreInteractions(attestationDefinitionStore);
@@ -68,7 +69,7 @@ class AttestationDefinitionServiceImplTest {
         when(attestationDefinitionStore.create(any())).thenReturn(StoreResult.success());
         when(definitionValidatorRegistry.validateDefinition(any())).thenReturn(ValidationResult.failure(Violation.violation("failure", "bar")));
 
-        assertThat(attestationDefinitionService.createAttestation(new AttestationDefinition("id", "type", Map.of())))
+        assertThat(attestationDefinitionService.createAttestation(createAttestationDefinition("id", "type", Map.of())))
                 .isFailed()
                 .detail().contains("failure");
     }
@@ -89,7 +90,7 @@ class AttestationDefinitionServiceImplTest {
                 .thenReturn(StoreResult.success(new Holder("foo", "did:web:bar", "foo bar")));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
-                .thenReturn(new AttestationDefinition("id", "type", Map.of("foo", "bar")));
+                .thenReturn(createAttestationDefinition("id", "type", Map.of("foo", "bar")));
 
         when(holderStore.update(any())).thenReturn(StoreResult.success());
 
@@ -109,7 +110,7 @@ class AttestationDefinitionServiceImplTest {
                 .thenReturn(StoreResult.success(new Holder("foo", "did:web:bar", "foo bar", List.of("att1"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
-                .thenReturn(new AttestationDefinition("att1", "type", Map.of("foo", "bar")));
+                .thenReturn(createAttestationDefinition("att1", "type", Map.of("foo", "bar")));
 
 
         assertThat(attestationDefinitionService.linkAttestation("att1", "foo"))
@@ -124,7 +125,7 @@ class AttestationDefinitionServiceImplTest {
     @Test
     void linkAttestation_participantNotFound_expectFailure() {
         when(attestationDefinitionStore.resolveDefinition(anyString()))
-                .thenReturn(new AttestationDefinition("att1", "type", Map.of("foo", "bar")));
+                .thenReturn(createAttestationDefinition("att1", "type", Map.of("foo", "bar")));
         when(holderStore.findById(anyString()))
                 .thenReturn(StoreResult.notFound("foo"));
 
@@ -195,12 +196,30 @@ class AttestationDefinitionServiceImplTest {
     }
 
     @Test
+    void getAttestationById() {
+
+        when(attestationDefinitionStore.resolveDefinition(anyString())).thenReturn(createAttestationDefinition("1", "type", Map.of()));
+
+        assertThat(attestationDefinitionService.getAttestationById("participant-id"))
+                .isSucceeded();
+    }
+
+    @Test
+    void getAttestationById_whenNotFound() {
+
+        when(attestationDefinitionStore.resolveDefinition(anyString())).thenReturn(null);
+
+        assertThat(attestationDefinitionService.getAttestationById("participant-id"))
+                .isFailed();
+    }
+
+    @Test
     void getAttestationsForHolder() {
         when(holderStore.findById(anyString()))
                 .thenReturn(StoreResult.success(new Holder("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
-                .thenReturn(new AttestationDefinition("1", "type", Map.of()), new AttestationDefinition("2", "type", Map.of()));
+                .thenReturn(createAttestationDefinition("1", "type", Map.of()), createAttestationDefinition("2", "type", Map.of()));
 
         assertThat(attestationDefinitionService.getAttestationsForHolder("participant-id"))
                 .isSucceeded()
@@ -214,8 +233,8 @@ class AttestationDefinitionServiceImplTest {
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(
-                        new AttestationDefinition("1", "type", Map.of()),
-                        new AttestationDefinition("2", "type", Map.of()),
+                        createAttestationDefinition("1", "type", Map.of()),
+                        createAttestationDefinition("2", "type", Map.of()),
                         null);
 
         assertThat(attestationDefinitionService.getAttestationsForHolder("participant-id"))
@@ -251,12 +270,20 @@ class AttestationDefinitionServiceImplTest {
     @Test
     void queryAttestations() {
         when(attestationDefinitionStore.query(any()))
-                .thenReturn(StoreResult.success(List.of(new AttestationDefinition("id", "type", Map.of()))));
+                .thenReturn(StoreResult.success(List.of(createAttestationDefinition("id", "type", Map.of()))));
 
         assertThat(attestationDefinitionService.queryAttestations(QuerySpec.max()))
                 .isSucceeded();
 
         verify(attestationDefinitionStore).query(any());
         verifyNoMoreInteractions(attestationDefinitionStore);
+    }
+
+    private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {
+        return AttestationDefinition.Builder.newInstance()
+                .id(id)
+                .attestationType(type)
+                .participantContextId(UUID.randomUUID().toString())
+                .configuration(configuration).build();
     }
 }

@@ -35,8 +35,8 @@ public class AttestationDefinitionValidatorRegistryImpl implements AttestationDe
 
     @Override
     public ValidationResult validateDefinition(AttestationDefinition definition) {
-        return Optional.ofNullable(validators.get(definition.attestationType()))
+        return Optional.ofNullable(validators.get(definition.getAttestationType()))
                 .map(validator -> validator.validate(definition))
-                .orElseGet(() -> ValidationResult.failure(Violation.violation("Unknown attestation type: " + definition.attestationType(), null)));
+                .orElseGet(() -> ValidationResult.failure(Violation.violation("Unknown attestation type: " + definition.getAttestationType(), null)));
     }
 }

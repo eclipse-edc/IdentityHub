@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +43,7 @@ class AttestationPipelineImplTest {
 
     @Test
     void evaluate_whenSingle_success() {
-        var attestationDefinition = new AttestationDefinition("a123", "testType", Map.of());
+        var attestationDefinition = createAttestationDefinition("a123", "testType", Map.of());
 
         var store = mock(AttestationDefinitionStore.class);
         var attestationContext = mock(AttestationContext.class);
@@ -72,8 +73,8 @@ class AttestationPipelineImplTest {
 
     @Test
     void evaluate_whenMultipleInvalid_shouldFailOnFirst() {
-        var attestationDefinition1 = new AttestationDefinition("a123", "testType1", Map.of());
-        var attestationDefinition2 = new AttestationDefinition("a456", "testType1", Map.of());
+        var attestationDefinition1 = createAttestationDefinition("a123", "testType1", Map.of());
+        var attestationDefinition2 = createAttestationDefinition("a456", "testType1", Map.of());
 
         var store = mock(AttestationDefinitionStore.class);
         var attestationContext = mock(AttestationContext.class);
@@ -96,6 +97,14 @@ class AttestationPipelineImplTest {
         verify(store).resolveDefinition("a123");
         verify(sourceFactory, times(1)).createSource(isA(AttestationDefinition.class));
         verify(failedSource, times(1)).execute(isA(AttestationContext.class));
+    }
+
+    private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {
+        return AttestationDefinition.Builder.newInstance()
+                .id(id)
+                .attestationType(type)
+                .participantContextId(UUID.randomUUID().toString())
+                .configuration(configuration).build();
     }
 
 }

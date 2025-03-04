@@ -16,10 +16,11 @@
 CREATE TABLE IF NOT EXISTS attestation_definitions
 (
     id                           VARCHAR    NOT NULL        ,
-    attestation_type             VARCHAR    NOT NULL UNIQUE ,
-    configuration                JSON       DEFAULT '{}',
-    created_date                   BIGINT     NOT NULL,
-    last_modified_date           BIGINT     NOT NULL,
+    participant_context_id       VARCHAR    NOT NULL        ,
+    attestation_type             VARCHAR    NOT NULL        ,
+    configuration                JSON       DEFAULT '{}'    ,
+    created_date                 BIGINT     NOT NULL        ,
+    last_modified_date           BIGINT     NOT NULL        ,
     PRIMARY KEY (id)
 );
 

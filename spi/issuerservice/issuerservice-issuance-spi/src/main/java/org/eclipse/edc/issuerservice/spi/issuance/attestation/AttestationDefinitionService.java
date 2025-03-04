@@ -66,6 +66,14 @@ public interface AttestationDefinitionService {
     ServiceResult<Collection<AttestationDefinition>> getAttestationsForHolder(String holderId);
 
     /**
+     * Gets an {@link AttestationDefinition} by id.
+     *
+     * @param attestationId the ID of the attestation
+     * @return A {@link AttestationDefinition} if found, or an error if it was not found.
+     */
+    ServiceResult<AttestationDefinition> getAttestationById(String attestationId);
+
+    /**
      * Queries all {@link AttestationDefinition} objects according to a given query.
      *
      * @param querySpec the query

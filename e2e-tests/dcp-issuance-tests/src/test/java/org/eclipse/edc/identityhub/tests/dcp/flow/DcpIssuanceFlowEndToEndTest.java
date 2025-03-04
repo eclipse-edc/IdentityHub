@@ -56,7 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -104,7 +104,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     "value", true), mappingDefinition);
 
             var attestationSource = mock(AttestationSource.class);
-            when(ATTESTATION_SOURCE_FACTORY.createSource(eq(attestationDefinition))).thenReturn(attestationSource);
+            when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
             when(attestationSource.execute(any()))
                     .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice"))));
 
@@ -176,7 +176,11 @@ public class DcpIssuanceFlowEndToEndTest {
             participantService.createHolder(new Holder(PARTICIPANT_ID, participantDid, "Participant"));
 
 
-            var attestationDefinition = new AttestationDefinition("attestation-id", "Attestation", Map.of());
+            var attestationDefinition = AttestationDefinition.Builder.newInstance().id("attestation-id")
+                    .attestationType("Attestation")
+                    .participantContextId("participantContextId")
+                    .configuration(Map.of())
+                    .build();
             attestationDefinitionService.createAttestation(attestationDefinition);
 
 
@@ -185,7 +189,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .credentialType("MembershipCredential")
                     .jsonSchemaUrl("https://example.com/schema")
                     .jsonSchema("{}")
-                    .attestation(attestationDefinition.id())
+                    .attestation(attestationDefinition.getId())
                     .validity(3600)
                     .mapping(mappingDefinition)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))

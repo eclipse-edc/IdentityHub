@@ -26,6 +26,8 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.AttestationDefinitionRequest;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
@@ -38,7 +40,10 @@ public interface IssuerAttestationAdminApi {
 
     @Operation(description = "Creates an attestation definition in the runtime.",
             operationId = "createAttestation",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = AttestationDefinition.class), mediaType = "application/json")),
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = AttestationDefinitionRequest.class), mediaType = "application/json")),
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             responses = {
                     @ApiResponse(responseCode = "201", description = "The attestation definition was added successfully."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
@@ -51,7 +56,7 @@ public interface IssuerAttestationAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response createAttestationDefinition(AttestationDefinition attestationRequest);
+    Response createAttestationDefinition(String participantContextId, AttestationDefinitionRequest attestationRequest, SecurityContext securityContext);
 
     @Operation(description = "Links an attestation definition to a holder. This enables a certain attestation definition for a holder.",
             operationId = "linkAttestation",
@@ -97,6 +102,7 @@ public interface IssuerAttestationAdminApi {
             operationId = "deleteAttestation",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
                     @Parameter(name = "attestationDefinitionId", description = "ID of the attestation to be removed", required = true, in = ParameterIn.PATH)
             },
             responses = {
@@ -109,7 +115,7 @@ public interface IssuerAttestationAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response deleteAttestationDefinition(String attestationDefinitionId);
+    void deleteAttestationDefinition(String participantContextId, String attestationDefinitionId, SecurityContext securityContext);
 
     @Operation(description = "Get all attestations for a given participant.",
             operationId = "getAttestations",
@@ -130,6 +136,9 @@ public interface IssuerAttestationAdminApi {
 
     @Operation(description = "Query attestation definitions",
             operationId = "queryAttestations",
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of attestation metadata.",
@@ -140,5 +149,5 @@ public interface IssuerAttestationAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Collection<AttestationDefinition> queryAttestationDefinitions(QuerySpec query);
+    Collection<AttestationDefinition> queryAttestationDefinitions(String participantContextId, QuerySpec query, SecurityContext securityContext);
 }

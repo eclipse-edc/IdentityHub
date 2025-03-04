@@ -67,7 +67,7 @@ public class CredentialDefinitionApiEndToEndTest {
         void createCredentialDefinition(IssuerServiceEndToEndTestContext context, CredentialDefinitionService service, AttestationDefinitionStore store) {
 
 
-            store.create(new AttestationDefinition("test-attestation", "type", Map.of()));
+            store.create(AttestationDefinition.Builder.newInstance().id("test-attestation").attestationType("type").participantContextId("participantContextId").build());
 
             Map<String, Object> credentialRuleConfiguration = Map.of(
                     "claim", "onboarding.signedDocuments",
@@ -103,7 +103,7 @@ public class CredentialDefinitionApiEndToEndTest {
         void createCredentialDefinition_whenRuleValidationFails(IssuerServiceEndToEndTestContext context, CredentialDefinitionService service, AttestationDefinitionStore store) {
 
 
-            store.create(new AttestationDefinition("test-attestation", "type", Map.of()));
+            store.create(AttestationDefinition.Builder.newInstance().id("test-attestation").attestationType("type").participantContextId("participantContextId").build());
 
             var definition = CredentialDefinition.Builder.newInstance()
                     .id("test-definition-id")

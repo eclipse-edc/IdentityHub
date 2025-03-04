@@ -32,6 +32,10 @@ public interface AttestationDefinitionStoreStatements extends SqlStatements {
         return "id";
     }
 
+    default String getParticipantIdColumn() {
+        return "participant_context_id";
+    }
+
     default String getAttestationTypeColumn() {
         return "attestation_type";
     }

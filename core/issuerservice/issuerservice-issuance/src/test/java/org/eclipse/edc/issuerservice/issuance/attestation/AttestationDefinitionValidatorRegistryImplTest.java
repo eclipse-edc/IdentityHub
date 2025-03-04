@@ -20,6 +20,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.UUID;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
@@ -30,14 +31,22 @@ class AttestationDefinitionValidatorRegistryImplTest {
     @Test
     void validateDefinition() {
         registry.registerValidator("test", def -> ValidationResult.success());
-        var result = registry.validateDefinition(new AttestationDefinition("id", "test", Map.of("key", "value")));
+        var result = registry.validateDefinition(createAttestationDefinition("id", "test", Map.of("key", "value")));
         assertThat(result).isSucceeded();
     }
 
 
     @Test
     void validateDefinition_shouldFails_whenTypeNotFound() {
-        var result = registry.validateDefinition(new AttestationDefinition("id", "test", Map.of("key", "value")));
+        var result = registry.validateDefinition(createAttestationDefinition("id", "test", Map.of("key", "value")));
         assertThat(result).isFailed().detail().contains("Unknown attestation type: test");
+    }
+
+    private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {
+        return AttestationDefinition.Builder.newInstance()
+                .id(id)
+                .attestationType(type)
+                .participantContextId(UUID.randomUUID().toString())
+                .configuration(configuration).build();
     }
 }
