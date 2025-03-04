@@ -154,7 +154,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
     private IssuanceProcess createIssuanceProcess() {
         return IssuanceProcess.Builder.newInstance()
-                .memberId(participantId)
+                .holderId(participantId)
                 .participantContextId(participantContextId)
                 .holderPid(UUID.randomUUID().toString())
                 .id(UUID.randomUUID().toString())

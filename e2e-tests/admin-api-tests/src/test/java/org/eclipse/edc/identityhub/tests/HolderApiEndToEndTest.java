@@ -63,7 +63,7 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void createParticipant(IssuerServiceEndToEndTestContext context) {
+        void createHolder(IssuerServiceEndToEndTestContext context) {
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
@@ -75,10 +75,10 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post("/v1alpha/participants")
+                    .post("/v1alpha/holders")
                     .then()
                     .statusCode(201)
-                    .header("Location", Matchers.endsWith("/participants/test-participant-id"));
+                    .header("Location", Matchers.endsWith("/holders/test-participant-id"));
         }
 
         @Test
@@ -96,7 +96,7 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post("/v1alpha/participants")
+                    .post("/v1alpha/holders")
                     .then()
                     .statusCode(409);
         }
@@ -111,7 +111,7 @@ public class HolderApiEndToEndTest {
                             "holderId": "test-participant-id"
                             }
                             """)
-                    .post("/v1alpha/participants")
+                    .post("/v1alpha/holders")
                     .then()
                     .statusCode(400);
         }
@@ -126,7 +126,7 @@ public class HolderApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderId", "=", "test-participant-id")).build())
-                    .post("/v1alpha/participants/query")
+                    .post("/v1alpha/holders/query")
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -142,7 +142,7 @@ public class HolderApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderId", "=", "test-participant-id")).build())
-                    .post("/v1alpha/participants/query")
+                    .post("/v1alpha/holders/query")
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -166,7 +166,7 @@ public class HolderApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
                     .body(query)
-                    .post("/v1alpha/participants/query")
+                    .post("/v1alpha/holders/query")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -183,7 +183,7 @@ public class HolderApiEndToEndTest {
 
             var res = context.getAdminEndpoint().baseRequest()
                     .header(new Header("x-api-key", token))
-                    .get("/v1alpha/participants/test-participant-id")
+                    .get("/v1alpha/holders/test-participant-id")
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())

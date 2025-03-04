@@ -195,20 +195,20 @@ class AttestationDefinitionServiceImplTest {
     }
 
     @Test
-    void getAttestationsForParticipant() {
+    void getAttestationsForHolder() {
         when(holderStore.findById(anyString()))
                 .thenReturn(StoreResult.success(new Holder("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(new AttestationDefinition("1", "type", Map.of()), new AttestationDefinition("2", "type", Map.of()));
 
-        assertThat(attestationDefinitionService.getAttestationsForParticipant("participant-id"))
+        assertThat(attestationDefinitionService.getAttestationsForHolder("participant-id"))
                 .isSucceeded()
                 .satisfies(defs -> assertThat(defs).hasSize(2));
     }
 
     @Test
-    void getAttestationsForParticipant_someNotFound() {
+    void getAttestationsForHolder_someNotFound() {
         when(holderStore.findById(anyString()))
                 .thenReturn(StoreResult.success(new Holder("participant-id", "did:web:foo", "foo bar", List.of("1", "2", "3"))));
 
@@ -218,30 +218,30 @@ class AttestationDefinitionServiceImplTest {
                         new AttestationDefinition("2", "type", Map.of()),
                         null);
 
-        assertThat(attestationDefinitionService.getAttestationsForParticipant("participant-id"))
+        assertThat(attestationDefinitionService.getAttestationsForHolder("participant-id"))
                 .isSucceeded()
                 .satisfies(defs -> assertThat(defs).hasSize(2));
     }
 
     @Test
-    void getAttestationsForParticipant_noResult() {
+    void getAttestationsForHolder_noResult() {
         when(holderStore.findById(anyString()))
                 .thenReturn(StoreResult.success(new Holder("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(null);
 
-        assertThat(attestationDefinitionService.getAttestationsForParticipant("participant-id"))
+        assertThat(attestationDefinitionService.getAttestationsForHolder("participant-id"))
                 .isSucceeded()
                 .satisfies(defs -> assertThat(defs).isEmpty());
     }
 
     @Test
-    void getAttestationsForParticipant_notFound_expectError() {
+    void getAttestationsForHolder_notFound_expectError() {
         when(holderStore.findById(anyString()))
                 .thenReturn(StoreResult.notFound("foo"));
 
-        assertThat(attestationDefinitionService.getAttestationsForParticipant("participant-id"))
+        assertThat(attestationDefinitionService.getAttestationsForHolder("participant-id"))
                 .isFailed()
                 .detail().isEqualTo("foo");
 

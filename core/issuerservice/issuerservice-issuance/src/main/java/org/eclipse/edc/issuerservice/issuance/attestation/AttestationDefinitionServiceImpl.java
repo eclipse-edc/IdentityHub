@@ -60,14 +60,14 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     }
 
     @Override
-    public ServiceResult<Boolean> linkAttestation(String attestationId, String participantId) {
+    public ServiceResult<Boolean> linkAttestation(String attestationId, String holderId) {
 
         return transactionContext.execute(() -> {
             if (attestationDefinitionStore.resolveDefinition(attestationId) == null) {
                 return ServiceResult.notFound("No attestation with id %s was found".formatted(attestationId));
             }
 
-            var participantResult = holderStore.findById(participantId);
+            var participantResult = holderStore.findById(holderId);
             if (participantResult.failed()) {
                 return fromFailure(participantResult);
             }
@@ -84,9 +84,9 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     }
 
     @Override
-    public ServiceResult<Boolean> unlinkAttestation(String attestationId, String participantId) {
+    public ServiceResult<Boolean> unlinkAttestation(String attestationId, String holderId) {
         return transactionContext.execute(() -> {
-            var participantResult = holderStore.findById(participantId);
+            var participantResult = holderStore.findById(holderId);
             if (participantResult.failed()) {
                 return fromFailure(participantResult);
             }
@@ -100,9 +100,9 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     }
 
     @Override
-    public ServiceResult<Collection<AttestationDefinition>> getAttestationsForParticipant(String participantId) {
+    public ServiceResult<Collection<AttestationDefinition>> getAttestationsForHolder(String holderId) {
 
-        return transactionContext.execute(() -> ServiceResult.from(holderStore.findById(participantId)
+        return transactionContext.execute(() -> ServiceResult.from(holderStore.findById(holderId)
                 .map(Holder::attestations)
                 .map(this::findForIds)));
     }

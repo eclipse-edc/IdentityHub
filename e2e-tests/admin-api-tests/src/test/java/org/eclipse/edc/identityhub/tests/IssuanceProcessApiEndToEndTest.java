@@ -76,7 +76,7 @@ public class IssuanceProcessApiEndToEndTest {
                     .body("claims", equalTo(process.getClaims()))
                     .body("credentialDefinitions", equalTo(process.getCredentialDefinitions()))
                     .body("state", equalTo(process.stateAsString()))
-                    .body("memberId", equalTo(process.getHolderId()));
+                    .body("holderId", equalTo(process.getHolderId()));
         }
 
         @Test
@@ -113,7 +113,7 @@ public class IssuanceProcessApiEndToEndTest {
                     .body(QuerySpec.Builder.newInstance()
                             .sortField("id")
                             .sortOrder(SortOrder.ASC)
-                            .filter(new Criterion("memberId", "=", process.getHolderId()))
+                            .filter(new Criterion("holderId", "=", process.getHolderId()))
                             .build())
                     .post("/v1alpha/participants/%s/issuanceprocesses/query".formatted(toBase64(issuer)))
                     .then()
@@ -126,7 +126,7 @@ public class IssuanceProcessApiEndToEndTest {
                     .body("[0].claims", equalTo(process.getClaims()))
                     .body("[0].credentialDefinitions", equalTo(process.getCredentialDefinitions()))
                     .body("[0].state", equalTo(process.stateAsString()))
-                    .body("[0].memberId", equalTo(process.getHolderId()));
+                    .body("[0].holderId", equalTo(process.getHolderId()));
 
         }
 
@@ -165,7 +165,7 @@ public class IssuanceProcessApiEndToEndTest {
             return IssuanceProcess.Builder.newInstance()
                     .id(UUID.randomUUID().toString())
                     .state(IssuanceProcessStates.DELIVERED.code())
-                    .memberId("test-participant")
+                    .holderId("test-participant")
                     .participantContextId(participantContextId)
                     .holderPid("test-holder")
                     .claims(Map.of("test-claim", "test-value"))

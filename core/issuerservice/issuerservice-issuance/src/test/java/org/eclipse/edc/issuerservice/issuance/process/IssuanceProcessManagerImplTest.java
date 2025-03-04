@@ -112,7 +112,7 @@ public class IssuanceProcessManagerImplTest {
                 .build());
 
         var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
-                .memberId("holderId")
+                .holderId("holderId")
                 .participantContextId("participantContextId")
                 .holderPid("holderPid")
                 .credentialFormats(Map.of(credentialDefinition.getCredentialType(), CredentialFormat.VC1_0_JWT))
@@ -155,7 +155,7 @@ public class IssuanceProcessManagerImplTest {
         var generationRequests = new CredentialGenerationRequest(credentialDefinition, CredentialFormat.VC1_0_JWT);
 
         var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
-                .memberId("holderId")
+                .holderId("holderId")
                 .participantContextId("participantContextId")
                 .holderPid("holderPid")
                 .credentialFormats(Map.of(credentialDefinition.getCredentialType(), CredentialFormat.VC1_0_JWT))

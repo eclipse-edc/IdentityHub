@@ -250,7 +250,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
             return IssuanceProcess.Builder.newInstance()
                     .id(UUID.randomUUID().toString())
                     .state(IssuanceProcessStates.DELIVERED.code())
-                    .memberId(PARTICIPANT_DID)
+                    .holderId(PARTICIPANT_DID)
                     .participantContextId(ISSUER_ID)
                     .holderPid(UUID.randomUUID().toString())
                     .build();

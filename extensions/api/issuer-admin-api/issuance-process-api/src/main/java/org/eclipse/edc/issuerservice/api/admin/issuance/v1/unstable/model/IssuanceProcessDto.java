@@ -24,7 +24,7 @@ import java.util.Map;
  * DTO for an {@link IssuanceProcess}.
  */
 public record IssuanceProcessDto(String id,
-                                 String memberId,
+                                 String holderId,
                                  String participantContextId,
                                  String holderPid,
                                  Map<String, Object> claims,

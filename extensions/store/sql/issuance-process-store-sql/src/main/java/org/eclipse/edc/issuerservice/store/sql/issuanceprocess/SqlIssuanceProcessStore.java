@@ -208,7 +208,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 .stateCount(resultSet.getInt(statements.getStateCountColumn()))
                 .traceContext(fromJson(resultSet.getString(statements.getTraceContextColumn()), getTypeRef()))
                 .errorDetail(resultSet.getString(statements.getErrorDetailColumn()))
-                .memberId(resultSet.getString(statements.getHolderIdColumn()))
+                .holderId(resultSet.getString(statements.getHolderIdColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .holderPid(resultSet.getString(statements.getHolderPidColumn()))
                 .claims(fromJson(resultSet.getString(statements.getClaimsColumn()), getTypeRef()))

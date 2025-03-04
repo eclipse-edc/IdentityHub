@@ -59,7 +59,7 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
         var builder = Builder.newInstance()
                 .claims(claims)
                 .credentialDefinitions(credentialDefinitions)
-                .memberId(holderId)
+                .holderId(holderId)
                 .credentialFormats(credentialFormats)
                 .participantContextId(participantContextId)
                 .holderPid(holderPid);
@@ -183,8 +183,8 @@ public class IssuanceProcess extends StatefulEntity<IssuanceProcess> implements 
             return this;
         }
 
-        public Builder memberId(String memberId) {
-            this.entity.holderId = memberId;
+        public Builder holderId(String holderId) {
+            this.entity.holderId = holderId;
             return this;
         }
 

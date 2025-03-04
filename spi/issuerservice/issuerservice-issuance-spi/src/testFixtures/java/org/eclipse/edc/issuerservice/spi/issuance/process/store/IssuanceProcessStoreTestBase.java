@@ -82,7 +82,7 @@ public abstract class IssuanceProcessStoreTestBase {
         return IssuanceProcess.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .participantContextId(UUID.randomUUID().toString())
-                .memberId(UUID.randomUUID().toString())
+                .holderId(UUID.randomUUID().toString())
                 .credentialFormats(Map.of("format", CredentialFormat.VC1_0_JWT))
                 .holderPid(UUID.randomUUID().toString())
                 .state(APPROVED.code());
@@ -425,7 +425,7 @@ public abstract class IssuanceProcessStoreTestBase {
                     .mapToObj(i -> createIssuanceProcess("id" + i))
                     .forEach(getStore()::save);
 
-            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").memberId("participant1").build();
+            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").holderId("participant1").build();
 
             getStore().save(issuanceProcess);
 
@@ -444,7 +444,7 @@ public abstract class IssuanceProcessStoreTestBase {
                     .mapToObj(i -> createIssuanceProcess("id" + i))
                     .forEach(getStore()::save);
 
-            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").memberId("participant1").build();
+            var issuanceProcess = createIssuanceProcessBuilder().id("testprocess1").holderId("participant1").build();
 
             getStore().save(issuanceProcess);
 
