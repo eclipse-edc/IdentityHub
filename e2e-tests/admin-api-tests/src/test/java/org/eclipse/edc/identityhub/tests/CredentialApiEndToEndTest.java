@@ -27,6 +27,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -41,7 +42,6 @@ import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -65,6 +65,7 @@ import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CRED
 public class CredentialApiEndToEndTest {
     public static final String SIGNING_KEY_ALIAS = "signing-key";
     public static final int STATUS_LIST_INDEX = 94567;
+    public static final String USER = "user";
     private static final String STATUS_LIST_CREDENTIAL_ID = "https://example.com/credentials/status/3";
     private final ObjectMapper objectMapper = new JacksonTypeManager().getMapper()
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
@@ -89,6 +90,7 @@ public class CredentialApiEndToEndTest {
                 .holderId("holder-id")
                 .id(credentialId)
                 .credential(new VerifiableCredentialContainer("JWT_STRING", CredentialFormat.VC1_0_JWT, cred))
+                .participantContextId(USER)
                 .build();
     }
 
@@ -110,27 +112,25 @@ public class CredentialApiEndToEndTest {
     abstract class Tests {
 
 
-        private static String token = "";
-
-        @BeforeAll
-        static void setup(IssuerServiceEndToEndTestContext context) {
-            token = context.createSuperUser();
-        }
-
         @BeforeEach
         void prepare(Vault vault) throws JOSEException {
             // put signing key in vault
             vault.storeSecret(SIGNING_KEY_ALIAS, new ECKeyGenerator(Curve.P_256).generate().toJSONString());
+
         }
 
         @AfterEach
-        void teardown(CredentialStore credentialStore) {
+        void teardown(CredentialStore credentialStore, ParticipantContextService pcService) {
             credentialStore.query(QuerySpec.max()).getContent()
                     .forEach(vcr -> credentialStore.deleteById(vcr.getId()));
+
+            pcService.query(QuerySpec.max()).getContent()
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
         }
 
         @Test
         void revoke_whenNotYetRevoked(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
+            var token = context.createParticipant(USER);
 
             // create revocation credential
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -145,7 +145,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/credentials/test-cred/revoke")
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -158,6 +158,7 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenAlreadyRevoked(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
+            var token = context.createParticipant(USER);
 
             // create a statuslist credential which has the "revocation" bit set
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
@@ -172,7 +173,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/credentials/test-cred/revoke")
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -185,6 +186,8 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenCredentialNotFound(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
+            var token = context.createParticipant(USER);
+
             // create a statuslist credential which has the "revocation" bit set
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
 
@@ -197,7 +200,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/credentials/test-cred/revoke")
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
@@ -206,6 +209,7 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenStatusListCredentialNotFound(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
+            var token = context.createParticipant(USER);
 
             //missing: create status list credential
 
@@ -215,7 +219,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/credentials/test-cred/revoke")
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
@@ -224,6 +228,8 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenWrongStatusListType(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
+            var token = context.createParticipant(USER);
+
             // create a statuslist credential which has the "revocation" bit set
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
 
@@ -245,7 +251,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/credentials/test-cred/revoke")
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)

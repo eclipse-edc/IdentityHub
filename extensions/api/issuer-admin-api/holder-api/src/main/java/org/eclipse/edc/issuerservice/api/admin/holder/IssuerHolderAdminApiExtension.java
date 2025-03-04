@@ -51,6 +51,6 @@ public class IssuerHolderAdminApiExtension implements ServiceExtension {
     }
 
     public Holder findById(String holderId) {
-        return holderService.findById(holderId).orElse(null);
+        return holderService.findById(holderId).getContent();
     }
 }

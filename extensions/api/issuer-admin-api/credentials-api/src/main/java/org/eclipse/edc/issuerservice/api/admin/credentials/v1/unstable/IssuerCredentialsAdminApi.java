@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialStatusResponse;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -38,24 +39,11 @@ import java.util.Collection;
 public interface IssuerCredentialsAdminApi {
 
 
-    @Operation(description = "Gets all credentials for a certain participant.",
-            operationId = "getCredentials",
-            parameters = {@Parameter(name = "participantId", description = "ID of the participant whos credentials should be returned", required = true, in = ParameterIn.PATH)},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "A list of verifiable credential metadata. Note that these are not actual VerifiableCredentials.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = VerifiableCredentialDto.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "The participant was not found.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
-            }
-    )
-    Collection<VerifiableCredentialDto> getAllCredentials(String participantId);
-
     @Operation(description = "Query credentials, possibly across multiple participants.",
             operationId = "queryCredentials",
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of verifiable credential metadata. Note that these are not actual VerifiableCredentials.",
@@ -66,12 +54,13 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Collection<VerifiableCredentialDto> queryCredentials(QuerySpec query);
+    Collection<VerifiableCredentialDto> queryCredentials(String participantContextId, QuerySpec query, SecurityContext context);
 
 
     @Operation(description = "Revokes a credential with the given ID for the given participant. Revoked credentials will be added to the Revocation List",
             operationId = "revokeCredential",
             parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
                     @Parameter(name = "credentialId", description = "ID of the credential to revoke", required = true, in = ParameterIn.PATH)
             },
             responses = {
@@ -84,12 +73,13 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response revokeCredential(String credentialId);
+    Response revokeCredential(String participantContextId, String credentialId, SecurityContext context);
 
 
     @Operation(description = "Suspends a credential with the given ID for the given participant. Suspended credentials will be added to the Revocation List. Suspension is reversible.",
             operationId = "suspendCredential",
             parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
                     @Parameter(name = "credentialId", description = "ID of the credential to revoke", required = true, in = ParameterIn.PATH)
             },
             responses = {
@@ -102,11 +92,12 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response suspendCredential(String credentialId);
+    Response suspendCredential(String participantContextId, String credentialId, SecurityContext context);
 
     @Operation(description = "Resumes a credential with the given ID for the given participant. Resumed credentials will be removed from the Revocation List.",
             operationId = "resumeCredential",
             parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
                     @Parameter(name = "credentialId", description = "ID of the credential to resume", required = true, in = ParameterIn.PATH)
             },
             responses = {
@@ -119,11 +110,12 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response resumeCredential(String credentialId);
+    Response resumeCredential(String participantContextId, String credentialId, SecurityContext context);
 
     @Operation(description = "Checks the revocation status of a credential with the given ID for the given participant.",
             operationId = "checkCredentialStatus",
             parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
                     @Parameter(name = "credentialId", description = "ID of the credential to check", required = true, in = ParameterIn.PATH)
             },
             responses = {
@@ -136,5 +128,5 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    CredentialStatusResponse checkRevocationStatus(String credentialId);
+    CredentialStatusResponse checkRevocationStatus(String participantContextId, String credentialId, SecurityContext context);
 }

@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
@@ -138,9 +137,8 @@ public class CredentialServiceImpl implements CredentialService {
     }
 
     @Override
-    public ServiceResult<Collection<VerifiableCredentialResource>> getCredentialForParticipant(String participantId) {
-        var query = queryByParticipantContextId(participantId).build();
-        return queryCredentials(query);
+    public ServiceResult<VerifiableCredentialResource> getCredentialById(String credentialId) {
+        return getCredential(credentialId);
     }
 
     @Override
