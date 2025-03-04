@@ -26,6 +26,7 @@ public class BaseSqlDialectStatements implements HolderStoreStatements {
     public String getInsertTemplate() {
         return executeStatement()
                 .column(getIdColumn())
+                .column(getParticipantContextIdColumn())
                 .column(getDidColumn())
                 .column(getHolderNameColumn())
                 .column(getCreateTimestampColumn())

@@ -87,7 +87,7 @@ class AttestationDefinitionServiceImplTest {
     @Test
     void linkAttestation_whenNotLinked() {
         when(holderStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Holder("foo", "did:web:bar", "foo bar")));
+                .thenReturn(StoreResult.success(createHolder("foo", "did:web:bar", "foo bar")));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(createAttestationDefinition("id", "type", Map.of("foo", "bar")));
@@ -107,7 +107,7 @@ class AttestationDefinitionServiceImplTest {
     @Test
     void linkAttestation_whenAlreadyLinked() {
         when(holderStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Holder("foo", "did:web:bar", "foo bar", List.of("att1"))));
+                .thenReturn(StoreResult.success(createHolder("foo", "did:web:bar", "foo bar", List.of("att1"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(createAttestationDefinition("att1", "type", Map.of("foo", "bar")));
@@ -155,7 +155,7 @@ class AttestationDefinitionServiceImplTest {
     @Test
     void unlinkAttestation_whenLinked() {
         when(holderStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Holder("foo", "did:web:bar", "foo bar", List.of("att1"))));
+                .thenReturn(StoreResult.success(createHolder("foo", "did:web:bar", "foo bar", List.of("att1"))));
 
         when(holderStore.update(any())).thenReturn(StoreResult.success());
 
@@ -171,7 +171,7 @@ class AttestationDefinitionServiceImplTest {
     @Test
     void unlinkAttestation_whenNotLinked() {
         when(holderStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Holder("foo", "did:web:bar", "foo bar", List.of("att42"))));
+                .thenReturn(StoreResult.success(createHolder("foo", "did:web:bar", "foo bar", List.of("att42"))));
 
         assertThat(attestationDefinitionService.unlinkAttestation("att1", "foo"))
                 .isSucceeded()
@@ -216,7 +216,7 @@ class AttestationDefinitionServiceImplTest {
     @Test
     void getAttestationsForHolder() {
         when(holderStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Holder("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
+                .thenReturn(StoreResult.success(createHolder("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(createAttestationDefinition("1", "type", Map.of()), createAttestationDefinition("2", "type", Map.of()));
@@ -229,7 +229,7 @@ class AttestationDefinitionServiceImplTest {
     @Test
     void getAttestationsForHolder_someNotFound() {
         when(holderStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Holder("participant-id", "did:web:foo", "foo bar", List.of("1", "2", "3"))));
+                .thenReturn(StoreResult.success(createHolder("participant-id", "did:web:foo", "foo bar", List.of("1", "2", "3"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(
@@ -245,7 +245,7 @@ class AttestationDefinitionServiceImplTest {
     @Test
     void getAttestationsForHolder_noResult() {
         when(holderStore.findById(anyString()))
-                .thenReturn(StoreResult.success(new Holder("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
+                .thenReturn(StoreResult.success(createHolder("participant-id", "did:web:foo", "foo bar", List.of("1", "2"))));
 
         when(attestationDefinitionStore.resolveDefinition(anyString()))
                 .thenReturn(null);
@@ -277,6 +277,20 @@ class AttestationDefinitionServiceImplTest {
 
         verify(attestationDefinitionStore).query(any());
         verifyNoMoreInteractions(attestationDefinitionStore);
+    }
+
+    private Holder createHolder(String id, String did, String name) {
+        return createHolder(id, did, name, List.of());
+    }
+
+    private Holder createHolder(String id, String did, String name, List<String> attestations) {
+        return Holder.Builder.newInstance()
+                .participantContextId(UUID.randomUUID().toString())
+                .holderId(id)
+                .did(did)
+                .holderName(name)
+                .attestations(attestations)
+                .build();
     }
 
     private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {

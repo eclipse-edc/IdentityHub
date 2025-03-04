@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable;
 
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.api.Versions;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -23,8 +24,11 @@ import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Base64;
+import java.util.List;
 import java.util.Set;
 
 import static io.restassured.RestAssured.given;
@@ -33,14 +37,22 @@ import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ComponentTest
 class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
+    private static final String PARTICIPANT_ID = "test-participant";
+    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
     private final HolderService holderService = mock();
+    private final AuthorizationService authorizationService = mock();
 
+    @BeforeEach
+    void setUp() {
+        when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+    }
 
     @Test
     void addHolder() {
@@ -97,7 +109,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void getHolderById() {
-        var test = new Holder("test-id", "did:web:test", "test name");
+        var test = createHolder("test-id", "did:web:test", "test name");
         when(holderService.findById(any())).thenReturn(ServiceResult.success(test));
 
         var response = baseRequest()
@@ -105,9 +117,9 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
-                .extract().body().as(HolderDto.class);
+                .extract().body().as(Holder.class);
 
-        assertThat(response.toHolder()).usingRecursiveComparison().isEqualTo(test);
+        assertThat(response).usingRecursiveComparison().isEqualTo(test);
     }
 
     @Test
@@ -123,7 +135,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void queryHolders() {
-        var test = new Holder("test-id", "did:web:test", "test name");
+        var test = createHolder("test-id", "did:web:test", "test name");
         when(holderService.queryHolders(any())).thenReturn(ServiceResult.success(Set.of(test)));
 
         var dto = baseRequest()
@@ -132,10 +144,10 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
-                .extract().body().as(HolderDto[].class);
+                .extract().body().as(Holder[].class);
 
         assertThat(dto).hasSize(1)
-                .allSatisfy(d -> assertThat(d.toHolder()).usingRecursiveComparison().isEqualTo(test));
+                .allSatisfy(d -> assertThat(d).usingRecursiveComparison().isEqualTo(test));
     }
 
 
@@ -154,15 +166,29 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
         assertThat(dto).isEmpty();
     }
 
+    private Holder createHolder(String id, String did, String name) {
+        return createHolder(id, did, name, List.of());
+    }
+
+    private Holder createHolder(String id, String did, String name, List<String> attestations) {
+        return Holder.Builder.newInstance()
+                .participantContextId(PARTICIPANT_ID)
+                .holderId(id)
+                .did(did)
+                .holderName(name)
+                .attestations(attestations)
+                .build();
+    }
+
     @Override
     protected Object controller() {
-        return new IssuerHolderAdminApiController(holderService);
+        return new IssuerHolderAdminApiController(authorizationService, holderService);
     }
 
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/holders")
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/holders".formatted(PARTICIPANT_ID_ENCODED))
                 .when();
     }
 }

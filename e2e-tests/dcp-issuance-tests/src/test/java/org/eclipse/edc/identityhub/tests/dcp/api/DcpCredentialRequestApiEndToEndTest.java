@@ -59,6 +59,7 @@ import org.mockserver.integration.ClientAndServer;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -149,7 +150,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         @AfterEach
         void teardown(HolderService holderService, CredentialDefinitionService credentialDefinitionService) {
             holderService.queryHolders(QuerySpec.max()).getContent()
-                    .forEach(p -> holderService.deleteHolder(p.holderId()).getContent());
+                    .forEach(p -> holderService.deleteHolder(p.getHolderId()).getContent());
 
             credentialDefinitionService.queryCredentialDefinitions(QuerySpec.max()).getContent()
                     .forEach(c -> credentialDefinitionService.deleteCredentialDefinition(c.getId()).getContent());
@@ -176,7 +177,7 @@ public class DcpCredentialRequestApiEndToEndTest {
 
                 var endpoint = "http://localhost:%s/api".formatted(mockedCredentialService.getLocalPort());
 
-                holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+                holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
                 var attestationDefinition = AttestationDefinition.Builder.newInstance()
                         .id("attestation-id")
@@ -293,7 +294,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         @Test
         void requestCredential_tokenVerificationFails_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService) throws JOSEException {
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
             var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID(DID_WEB_PARTICIPANT_KEY_1).generate();
 
@@ -315,7 +316,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         @Test
         void requestCredential_wrongTokenAudience_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService) throws JOSEException {
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
             var token = generateSiToken("wrong-audience");
 
@@ -335,7 +336,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         @Test
         void requestCredential_definitionNotFound_shouldReturn400(IssuerServiceEndToEndTestContext context, HolderService holderService) throws JOSEException {
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
             var token = generateSiToken();
 
@@ -358,7 +359,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                                                                         AttestationDefinitionService attestationDefinitionService,
                                                                         CredentialDefinitionService credentialDefinitionService) throws JOSEException {
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
             var attestationDefinition = AttestationDefinition.Builder.newInstance()
                     .id("attestation-id")
                     .attestationType("Attestation")
@@ -420,6 +421,19 @@ public class DcpCredentialRequestApiEndToEndTest {
             return generateJwt(audience, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), PARTICIPANT_KEY);
         }
 
+        private Holder createHolder(String id, String did, String name) {
+            return createHolder(id, did, name, List.of());
+        }
+
+        private Holder createHolder(String id, String did, String name, List<String> attestations) {
+            return Holder.Builder.newInstance()
+                    .participantContextId(UUID.randomUUID().toString())
+                    .holderId(id)
+                    .did(did)
+                    .holderName(name)
+                    .attestations(attestations)
+                    .build();
+        }
     }
 
 

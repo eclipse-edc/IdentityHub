@@ -70,7 +70,7 @@ public class AttestationApiEndToEndTest {
                     .forEach(att -> store.deleteById(att.getId()));
 
             holderStore.query(QuerySpec.max()).getContent()
-                    .forEach(participant -> holderStore.deleteById(participant.holderId()));
+                    .forEach(participant -> holderStore.deleteById(participant.getHolderId()));
 
             pcService.query(QuerySpec.max()).getContent()
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
@@ -112,7 +112,7 @@ public class AttestationApiEndToEndTest {
 
             var att1 = createAttestationDefinition("att1", "test-type", Map.of("bar", "baz"));
             var att2 = createAttestationDefinition("att2", "test-type-1", Map.of("bar", "baz"));
-            var p = new Holder("foobar", "did:web:foobar", "Foo Bar", List.of("att1", "att2"));
+            var p = createHolder("foobar", "did:web:foobar", "Foo Bar", List.of("att1", "att2"));
             var r = store.create(att1).compose(v -> store.create(att2)).compose(participant -> holderStore.create(p));
             assertThat(r).isSucceeded();
 
@@ -134,7 +134,7 @@ public class AttestationApiEndToEndTest {
 
             var attestation = createAttestationDefinition("att1", "test-type", Map.of("bar", "baz"));
             var r = store.create(attestation)
-                    .compose(participant -> holderStore.create(new Holder("foobar", "did:web:foobar", "Foo Bar")));
+                    .compose(participant -> holderStore.create(createHolder("foobar", "did:web:foobar", "Foo Bar")));
             assertThat(r).isSucceeded();
 
             context.getAdminEndpoint().baseRequest()
@@ -146,7 +146,7 @@ public class AttestationApiEndToEndTest {
                     .statusCode(201);
 
             assertThat(holderStore.findById("foobar")).isSucceeded()
-                    .satisfies(participant -> assertThat(participant.attestations()).containsExactly("att1"));
+                    .satisfies(participant -> assertThat(participant.getAttestations()).containsExactly("att1"));
         }
 
         @Test
@@ -155,7 +155,7 @@ public class AttestationApiEndToEndTest {
 
             var attestation = createAttestationDefinition("att1", "test-type", Map.of("bar", "baz"));
             var r = store.create(attestation)
-                    .compose(participant -> holderStore.create(new Holder("foobar", "did:web:foobar", "Foo Bar", singletonList("att1"))));
+                    .compose(participant -> holderStore.create(createHolder("foobar", "did:web:foobar", "Foo Bar", singletonList("att1"))));
             assertThat(r).isSucceeded();
 
             context.getAdminEndpoint().baseRequest()
@@ -167,15 +167,15 @@ public class AttestationApiEndToEndTest {
                     .statusCode(204);
 
             assertThat(holderStore.findById("foobar")).isSucceeded()
-                    .satisfies(participant -> assertThat(participant.attestations()).containsExactly("att1"));
+                    .satisfies(participant -> assertThat(participant.getAttestations()).containsExactly("att1"));
         }
 
         @Test
         void queryAttestations(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, HolderStore holderStore) {
             var token = context.createParticipant(USER);
 
-            var p1 = new Holder("p1", "did:web:foobar", "Foo Bar", singletonList("att1"));
-            var p2 = new Holder("p2", "did:web:barbaz", "Bar Baz", List.of("att1", "att2"));
+            var p1 = createHolder("p1", "did:web:foobar", "Foo Bar", singletonList("att1"));
+            var p2 = createHolder("p2", "did:web:barbaz", "Bar Baz", List.of("att1", "att2"));
 
             var r = holderStore.create(p1).compose(participant -> holderStore.create(p2));
             assertThat(r).isSucceeded();
@@ -213,6 +213,19 @@ public class AttestationApiEndToEndTest {
 
         private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {
             return createAttestationDefinition(id, type, configuration, USER);
+        }
+
+        private Holder createHolder(String id, String did, String name) {
+            return createHolder(id, did, name, List.of());
+        }
+
+        private Holder createHolder(String id, String did, String name, List<String> attestations) {
+            return Holder.Builder.newInstance()
+                    .holderId(id)
+                    .did(did)
+                    .holderName(name)
+                    .attestations(attestations)
+                    .build();
         }
 
         private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration, String participantContext) {

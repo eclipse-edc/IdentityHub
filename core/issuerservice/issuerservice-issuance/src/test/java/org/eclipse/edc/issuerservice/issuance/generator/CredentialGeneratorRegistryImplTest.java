@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,7 +62,7 @@ public class CredentialGeneratorRegistryImplTest {
                 .did("issuerDid")
                 .build();
 
-        var participant = new Holder("holderId", "participantDid", "name");
+        var participant = createHolder("holderId", "participantDid", "name");
 
         var key = KeyPairResource.Builder.newInstance().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
 
@@ -141,7 +142,7 @@ public class CredentialGeneratorRegistryImplTest {
                 .did("issuerDid")
                 .build();
 
-        var participant = new Holder("holderId", "participantDid", "name");
+        var participant = createHolder("holderId", "participantDid", "name");
 
 
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
@@ -166,7 +167,7 @@ public class CredentialGeneratorRegistryImplTest {
                 .did("issuerDid")
                 .build();
 
-        var participant = new Holder("holderId", "participantDid", "name");
+        var participant = createHolder("holderId", "participantDid", "name");
 
         var key = KeyPairResource.Builder.newInstance().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
 
@@ -179,6 +180,20 @@ public class CredentialGeneratorRegistryImplTest {
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
 
         assertThat(result).isFailed().detail().contains("failed");
+    }
+
+    private Holder createHolder(String id, String did, String name) {
+        return createHolder(id, did, name, List.of());
+    }
+
+    private Holder createHolder(String id, String did, String name, List<String> attestations) {
+        return Holder.Builder.newInstance()
+                .participantContextId(UUID.randomUUID().toString())
+                .holderId(id)
+                .did(did)
+                .holderName(name)
+                .attestations(attestations)
+                .build();
     }
 
     private CredentialDefinition createCredentialDefinition() {

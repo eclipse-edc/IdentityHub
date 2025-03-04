@@ -87,7 +87,7 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
 
     private Result<IssuanceProcess> fetchByParticipant(String participantContextId, Holder holder, String credentialRequestId) {
         var query = queryByParticipantContextId(participantContextId)
-                .filter(Criterion.criterion("holderId", "=", holder.holderId()))
+                .filter(Criterion.criterion("holderId", "=", holder.getHolderId()))
                 .filter(Criterion.criterion("id", "=", credentialRequestId))
                 .build();
         var result = issuanceProcessService.search(query);

@@ -105,7 +105,7 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
                     .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
             var participantDid = holderService.findById(participantId)
-                    .map(Holder::did)
+                    .map(Holder::getDid)
                     .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
             return fetchActiveKeyPair(participantContextId)

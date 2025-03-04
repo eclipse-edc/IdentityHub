@@ -14,42 +14,97 @@
 
 package org.eclipse.edc.issuerservice.spi.holder.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a single user account in the issuer service. Members of a dataspace that would like this issuer service to issue them
  * credentials, will need such an account with an issuer service.
- *
- * @param holderId     The ID of the holder.
- * @param did          The Decentralized Identifier of the holder.
- * @param holderName   A human-readable name of the holder.
- * @param attestations A list of Strings, each of which contains the ID of an {@code AttestationDefinition}, that is enabled for this holder
  */
-public record Holder(String holderId, String did, String holderName, List<String> attestations) {
+public class Holder extends AbstractParticipantResource {
 
-    public Holder(String holderId, String did, String holderName) {
-        this(holderId, did, holderName, List.of());
+    private String holderId;
+    private String did;
+    private String holderName;
+    private List<String> attestations = new ArrayList<>();
+
+
+    private Holder() {
     }
 
-    public Holder(String holderId, String did, String holderName, List<String> attestations) {
-        this.holderId = holderId;
-        this.did = did;
-        this.holderName = holderName;
-        this.attestations = new ArrayList<>(attestations); //ensure mutability
+    public String getDid() {
+        return did;
+    }
+
+    public String getHolderId() {
+        return holderId;
+    }
+
+    public String getHolderName() {
+        return holderName;
+    }
+
+    public List<String> getAttestations() {
+        return Collections.unmodifiableList(attestations); // force mutation through method
     }
 
     public void addAttestation(String attestationId) {
         attestations.add(attestationId);
     }
 
-    @Override
-    public List<String> attestations() {
-        return Collections.unmodifiableList(attestations); // force mutation through method
-    }
-
     public boolean removeAttestation(String attestationId) {
         return attestations.remove(attestationId);
+    }
+
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static final class Builder extends AbstractParticipantResource.Builder<Holder, Builder> {
+
+        private Builder() {
+            super(new Holder());
+        }
+
+        @JsonCreator
+        public static Builder newInstance() {
+            return new Builder();
+        }
+
+        public Builder holderId(String holderId) {
+            entity.holderId = holderId;
+            return this;
+        }
+
+        public Builder did(String did) {
+            entity.did = did;
+            return this;
+        }
+
+        public Builder holderName(String holderName) {
+            entity.holderName = holderName;
+            return this;
+        }
+
+        public Builder attestations(List<String> attestations) {
+            entity.attestations = attestations;
+            return this;
+        }
+
+        @Override
+        public Builder self() {
+            return this;
+        }
+
+        public Holder build() {
+            Objects.requireNonNull(entity.holderId, "Holder ID must not be null");
+            Objects.requireNonNull(entity.did, "DID must not be null");
+            Objects.requireNonNull(entity.participantContextId, "Participant context ID must not be null");
+            return super.build();
+        }
     }
 }

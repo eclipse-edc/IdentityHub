@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -40,6 +41,9 @@ public interface IssuerHolderAdminApi {
 
     @Operation(description = "Adds a new holder.",
             operationId = "addHolder",
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = HolderDto.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "201", description = "The holder was added successfully."),
@@ -51,10 +55,13 @@ public interface IssuerHolderAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response addHolder(HolderDto holder);
+    Response addHolder(String participantId, HolderDto holder, SecurityContext context);
 
     @Operation(description = "Updates holder data.",
             operationId = "updateHolder",
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = HolderDto.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The holder was updated successfully."),
@@ -66,11 +73,14 @@ public interface IssuerHolderAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response updateHolder(HolderDto holder);
+    Response updateHolder(String participantId, HolderDto holder, SecurityContext context);
 
     @Operation(description = "Gets metadata for a certain holder.",
             operationId = "getHolderById",
-            parameters = {@Parameter(name = "holderId", description = "ID of the holder who should be returned", required = true, in = ParameterIn.PATH)},
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "holderId", description = "ID of the holder who should be returned", required = true, in = ParameterIn.PATH)
+            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of verifiable credential metadata. Note that these are not actual VerifiableCredentials.",
                             content = @Content(schema = @Schema(implementation = Holder.class), mediaType = "application/json")),
@@ -82,14 +92,17 @@ public interface IssuerHolderAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    HolderDto getHolderById(String holderId);
+    Holder getHolderById(String participantContextId, String holderId, SecurityContext context);
 
     @Operation(description = "Gets all holders for a certain query.",
             operationId = "queryHolders",
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
+            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of holders metadata.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = HolderDto.class)), mediaType = "application/json")),
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = Holder.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -98,5 +111,5 @@ public interface IssuerHolderAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Collection<HolderDto> queryHolders(QuerySpec querySpec);
+    Collection<Holder> queryHolders(String participantContextId, QuerySpec querySpec, SecurityContext context);
 }

@@ -79,7 +79,8 @@ public class DcpIssuerServiceImplTest {
                 .rule(credentialRuleDefinition)
                 .build();
 
-        var participant = new DcpRequestContext(new Holder("holderId", "participantDid", "name"), Map.of());
+        var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
+        var participant = new DcpRequestContext(holder, Map.of());
 
         Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
 
@@ -105,4 +106,5 @@ public class DcpIssuerServiceImplTest {
         assertThat(issuanceProcess.getParticipantContextId()).isEqualTo("participantContextId");
         assertThat(issuanceProcess.getHolderPid()).isEqualTo(message.getHolderPid());
     }
+    
 }

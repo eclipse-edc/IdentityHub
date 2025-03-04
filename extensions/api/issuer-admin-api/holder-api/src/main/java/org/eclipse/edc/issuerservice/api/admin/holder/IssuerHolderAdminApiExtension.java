@@ -14,9 +14,11 @@
 
 package org.eclipse.edc.issuerservice.api.admin.holder;
 
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.IssuerHolderAdminApiController;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -33,6 +35,8 @@ public class IssuerHolderAdminApiExtension implements ServiceExtension {
     private WebService webService;
     @Inject
     private HolderService holderService;
+    @Inject
+    private AuthorizationService authorizationService;
 
     @Override
     public String name() {
@@ -41,7 +45,12 @@ public class IssuerHolderAdminApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var controller = new IssuerHolderAdminApiController(holderService);
+        authorizationService.addLookupFunction(Holder.class, this::findById);
+        var controller = new IssuerHolderAdminApiController(authorizationService, holderService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
+    }
+
+    public Holder findById(String holderId) {
+        return holderService.findById(holderId).orElse(null);
     }
 }

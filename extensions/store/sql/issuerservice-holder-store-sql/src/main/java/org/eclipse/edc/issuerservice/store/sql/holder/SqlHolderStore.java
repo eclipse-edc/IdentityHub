@@ -73,7 +73,7 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
 
     @Override
     public StoreResult<Void> create(Holder holder) {
-        var id = holder.holderId();
+        var id = holder.getHolderId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 if (findByIdInternal(connection, id) != null) {
@@ -82,12 +82,13 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
 
                 var stmt = statements.getInsertTemplate();
                 queryExecutor.execute(connection, stmt,
-                        holder.holderId(),
-                        holder.did(),
-                        holder.holderName(),
+                        holder.getHolderId(),
+                        holder.getParticipantContextId(),
+                        holder.getDid(),
+                        holder.getHolderName(),
                         0, //participant.createdAt(),
                         0, //participant.lastModifiedAt());
-                        toJson(holder.attestations())
+                        toJson(holder.getAttestations())
                 );
                 return success();
 
@@ -111,7 +112,7 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
 
     @Override
     public StoreResult<Void> update(Holder holder) {
-        var id = holder.holderId();
+        var id = holder.getHolderId();
 
         Objects.requireNonNull(holder);
         Objects.requireNonNull(id);
@@ -120,13 +121,13 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                 if (findByIdInternal(connection, id) != null) {
                     queryExecutor.execute(connection,
                             statements.getUpdateTemplate(),
-                            holder.holderId(),
-                            holder.did(),
-                            holder.holderName(),
+                            holder.getHolderId(),
+                            holder.getDid(),
+                            holder.getHolderName(),
                             0, //participant.createdAt(),
                             0, //participant.lastModifiedAt());
-                            toJson(holder.attestations()),
-                            holder.holderId()
+                            toJson(holder.getAttestations()),
+                            holder.getHolderId()
                     );
                     return StoreResult.success();
                 }
@@ -166,9 +167,16 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
         var id = resultSet.getString(statements.getIdColumn());
         var did = resultSet.getString(statements.getDidColumn());
         var name = resultSet.getString(statements.getHolderNameColumn());
+        var participantContextId = resultSet.getString(statements.getParticipantContextIdColumn());
         var created = resultSet.getLong(statements.getCreateTimestampColumn());
         var lastmodified = resultSet.getLong(statements.getLastModifiedTimestampColumn());
         var attestations = fromJson(resultSet.getString(statements.getAttestationsColumn()), LIST_REF);
-        return new Holder(id, did, name, attestations);
+        return Holder.Builder.newInstance()
+                .holderId(id)
+                .did(did)
+                .holderName(name)
+                .attestations(attestations)
+                .participantContextId(participantContextId)
+                .build();
     }
 }

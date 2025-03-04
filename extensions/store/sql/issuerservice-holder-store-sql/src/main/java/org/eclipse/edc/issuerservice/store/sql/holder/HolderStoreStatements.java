@@ -31,6 +31,10 @@ public interface HolderStoreStatements extends SqlStatements {
         return "holder_id";
     }
 
+    default String getParticipantContextIdColumn() {
+        return "participant_context_id";
+    }
+
     default String getCreateTimestampColumn() {
         return "created_date";
     }

@@ -74,7 +74,7 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
             }
 
             var participant = participantResult.getContent();
-            if (participant.attestations().contains(attestationId)) { // no need to update, already linked
+            if (participant.getAttestations().contains(attestationId)) { // no need to update, already linked
                 return ServiceResult.success(false);
             }
 
@@ -104,7 +104,7 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     public ServiceResult<Collection<AttestationDefinition>> getAttestationsForHolder(String holderId) {
 
         return transactionContext.execute(() -> ServiceResult.from(holderStore.findById(holderId)
-                .map(Holder::attestations)
+                .map(Holder::getAttestations)
                 .map(this::findForIds)));
     }
 

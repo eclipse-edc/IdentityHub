@@ -23,11 +23,11 @@ public record HolderDto(@JsonProperty(value = "holderId", required = true) Strin
                         @JsonProperty("name") String name) {
 
     public static HolderDto from(Holder holder) {
-        return new HolderDto(holder.holderId(), holder.did(), holder.holderName());
+        return new HolderDto(holder.getHolderId(), holder.getDid(), holder.getHolderName());
     }
 
-    public Holder toHolder() {
-        return new Holder(id, did, name);
+    public Holder toHolder(String participantContextId) {
+        return Holder.Builder.newInstance().holderId(id).did(did).holderName(name).participantContextId(participantContextId).build();
     }
 }
 

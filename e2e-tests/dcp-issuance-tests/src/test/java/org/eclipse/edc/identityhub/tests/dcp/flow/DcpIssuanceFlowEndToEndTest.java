@@ -173,7 +173,7 @@ public class DcpIssuanceFlowEndToEndTest {
             var credentialDefinitionService = issuer.getRuntime().getService(CredentialDefinitionService.class);
             var attestationDefinitionService = issuer.getRuntime().getService(AttestationDefinitionService.class);
 
-            participantService.createHolder(new Holder(PARTICIPANT_ID, participantDid, "Participant"));
+            participantService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId("participantContextId").build());
 
 
             var attestationDefinition = AttestationDefinition.Builder.newInstance().id("attestation-id")

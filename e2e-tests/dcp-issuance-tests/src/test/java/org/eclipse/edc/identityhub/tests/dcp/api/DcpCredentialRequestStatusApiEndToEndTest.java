@@ -46,6 +46,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -91,7 +92,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         @AfterEach
         void teardown(HolderService holderService, CredentialDefinitionService credentialDefinitionService) {
             holderService.queryHolders(QuerySpec.max()).getContent()
-                    .forEach(p -> holderService.deleteHolder(p.holderId()).getContent());
+                    .forEach(p -> holderService.deleteHolder(p.getHolderId()).getContent());
 
             credentialDefinitionService.queryCredentialDefinitions(QuerySpec.max()).getContent()
                     .forEach(c -> credentialDefinitionService.deleteCredentialDefinition(c.getId()).getContent());
@@ -103,7 +104,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
             var process = createIssuanceProcess();
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
             issuanceProcessStore.save(process);
 
             var token = generateSiToken();
@@ -138,8 +139,8 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
             var wrongParticipantKeyId = "%s#key1".formatted(wrongParticipantDid);
             var wrongParticipantKey = generateEcKey(wrongParticipantKeyId);
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
-            holderService.createHolder(new Holder(wrongParticipant, wrongParticipantDid, "WrongParticipant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(wrongParticipant, wrongParticipantDid, "WrongParticipant"));
 
             issuanceProcessStore.save(process);
 
@@ -187,10 +188,10 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
             var process = createIssuanceProcess();
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
             issuanceProcessStore.save(process);
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
             var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID(DID_WEB_PARTICIPANT_KEY_1).generate();
 
@@ -215,7 +216,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
             generateEcKey(DID_WEB_PARTICIPANT_KEY_1);
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
             issuanceProcessStore.save(process);
 
 
@@ -255,6 +256,21 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
                     .holderPid(UUID.randomUUID().toString())
                     .build();
         }
+
+        private Holder createHolder(String id, String did, String name) {
+            return createHolder(id, did, name, List.of());
+        }
+
+        private Holder createHolder(String id, String did, String name, List<String> attestations) {
+            return Holder.Builder.newInstance()
+                    .participantContextId(UUID.randomUUID().toString())
+                    .holderId(id)
+                    .did(did)
+                    .holderName(name)
+                    .attestations(attestations)
+                    .build();
+        }
+
 
     }
 
