@@ -20,7 +20,6 @@ import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientTokenGeneratorService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
-import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -43,8 +42,6 @@ public class EmbeddedStsServiceExtension implements ServiceExtension {
     @Inject
     private Clock clock;
     @Inject
-    private JtiValidationStore jtiValidationStore;
-    @Inject
     private JwsSignerProvider externalSigner;
     @Setting(description = "Self-issued ID Token expiration in minutes. By default is 5 minutes", defaultValue = "" + DEFAULT_STS_TOKEN_EXPIRATION_MIN, key = "edc.iam.sts.token.expiration")
     private long stsTokenExpirationMin;
@@ -62,7 +59,7 @@ public class EmbeddedStsServiceExtension implements ServiceExtension {
     @Provider
     public ParticipantSecureTokenService secureTokenService() {
         if (embeddedSts == null) {
-            embeddedSts = new EmbeddedSecureTokenService(transactionContext, TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin), jtiValidationStore, new JwtGenerationService(externalSigner), clock, stsAccountService);
+            embeddedSts = new EmbeddedSecureTokenService(transactionContext, TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin), new JwtGenerationService(externalSigner), clock, stsAccountService);
         }
         return embeddedSts;
     }
