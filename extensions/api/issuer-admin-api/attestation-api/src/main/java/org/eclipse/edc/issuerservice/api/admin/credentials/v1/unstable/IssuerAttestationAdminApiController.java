@@ -16,12 +16,10 @@ package org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
@@ -57,45 +55,6 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     }
 
     @POST
-    @Path("/{attestationDefinitionId}/link")
-    @Override
-    public Response linkAttestation(@PathParam("attestationDefinitionId") String attestationDefinitionId,
-                                    @QueryParam("holderId") String holderId) {
-
-        if (holderId == null) {
-            throw new InvalidRequestException("holderId is null");
-        }
-
-        var wasCreated = attestationDefinitionService.linkAttestation(attestationDefinitionId, holderId)
-                .orElseThrow(InvalidRequestException::new);
-
-        return wasCreated
-                ? Response.created(URI.create("/attestations/" + attestationDefinitionId)).build()
-                : Response.noContent().build();
-
-
-    }
-
-    @POST
-    @Path("/{attestationDefinitionId}/unlink")
-    @Override
-    public Response unlinkAttestation(@PathParam("attestationDefinitionId") String attestationDefinitionId,
-                                      @QueryParam("holderId") String holderId) {
-
-        if (holderId == null) {
-            throw new InvalidRequestException("holderId is null");
-        }
-
-
-        var wasCreated = attestationDefinitionService.unlinkAttestation(holderId, attestationDefinitionId)
-                .orElseThrow(InvalidRequestException::new);
-
-        return wasCreated
-                ? Response.ok().build()
-                : Response.noContent().build();
-    }
-
-    @POST
     @Override
     public Response createAttestationDefinition(@PathParam("participantContextId") String participantContextId, AttestationDefinitionRequest attestationRequest, @Context SecurityContext securityContext) {
 
@@ -114,16 +73,6 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
         authorizationService.isAuthorized(context, attestationDefinitionId, AttestationDefinition.class)
                 .compose(u -> attestationDefinitionService.deleteAttestation(attestationDefinitionId))
                 .orElseThrow(exceptionMapper(AttestationDefinition.class, attestationDefinitionId));
-    }
-
-    @GET
-    @Override
-    public Collection<AttestationDefinition> getAttestationDefinitionsForHolder(@QueryParam("holderId") String holderId) {
-        if (holderId == null) {
-            throw new InvalidRequestException("holderId is null");
-        }
-        return attestationDefinitionService.getAttestationsForHolder(holderId)
-                .orElseThrow(InvalidRequestException::new);
     }
 
     @POST

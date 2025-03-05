@@ -37,35 +37,6 @@ public interface AttestationDefinitionService {
     ServiceResult<Void> deleteAttestation(String attestationId);
 
     /**
-     * "Links" (=enables) an {@link AttestationDefinition} for a given {@code Holder}. When a holder makes an issuance request,
-     * they can only request claims (attestation data) from AttestationDefinitions that are enabled for them.
-     *
-     * @param attestationId The ID of the {@link AttestationDefinition}
-     * @param holderId      The ID of the {@code Holder}
-     * @return success with {@link Boolean#TRUE} if the link was created successfully, or {@link Boolean#FALSE} if the link already existed, a failure otherwise.
-     */
-    ServiceResult<Boolean> linkAttestation(String attestationId, String holderId);
-
-    /**
-     * "Unlinks" (=disables) an {@link AttestationDefinition} for a given {@code Holder}. When a holder makes an issuance request,
-     * they can only request claims (attestation data) from AttestationDefinitions that are enabled for them. Removing the link
-     * disables a certain {@link AttestationDefinition}
-     *
-     * @param attestationId The ID of the {@link AttestationDefinition}
-     * @param holderId      The ID of the {@code Holder}
-     * @return success with {@link Boolean#TRUE} if the link was deleted successfully, {@link Boolean#FALSE} if no link existed, a failure otherwise.
-     */
-    ServiceResult<Boolean> unlinkAttestation(String attestationId, String holderId);
-
-    /**
-     * Gets all attestations for a given holder.
-     *
-     * @param holderId the ID of the holder
-     * @return A (potentially empty) list of {@link AttestationDefinition} objects, or an error if the holder was not found.
-     */
-    ServiceResult<Collection<AttestationDefinition>> getAttestationsForHolder(String holderId);
-
-    /**
      * Gets an {@link AttestationDefinition} by id.
      *
      * @param attestationId the ID of the attestation

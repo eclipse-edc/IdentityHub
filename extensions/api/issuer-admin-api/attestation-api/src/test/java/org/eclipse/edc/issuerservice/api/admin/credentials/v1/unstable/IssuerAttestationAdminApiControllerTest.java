@@ -36,7 +36,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
@@ -49,95 +48,6 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
     @BeforeEach
     void setUp() {
         when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
-    }
-
-    @Test
-    void linkAttestation() {
-        when(attestationDefinitionService.linkAttestation(anyString(), anyString()))
-                .thenReturn(ServiceResult.success(true));
-
-        baseRequest()
-                .post("/test-attestation/link?holderId=test-participant")
-                .then()
-                .log().ifError()
-                .statusCode(201);
-    }
-
-    @Test
-    void linkAttestation_noHolderId_expect400() {
-        when(attestationDefinitionService.linkAttestation(anyString(), anyString()))
-                .thenReturn(ServiceResult.success(true));
-
-        baseRequest()
-                .post("/test-attestation/link")
-                .then()
-                .log().ifError()
-                .statusCode(400);
-    }
-
-    @Test
-    void linkAttestation_whenNotFound_expect400() {
-        when(attestationDefinitionService.linkAttestation(anyString(), anyString()))
-                .thenReturn(ServiceResult.notFound("foo"));
-        baseRequest()
-                .post("/test-attestation/link?holderId=test-participant")
-                .then()
-                .statusCode(400);
-    }
-
-
-    @Test
-    void linkAttestation_alreadyLinked_expect204() {
-        when(attestationDefinitionService.linkAttestation(anyString(), anyString()))
-                .thenReturn(ServiceResult.success(false));
-        baseRequest()
-                .post("/test-attestation/link?holderId=test-participant")
-                .then()
-                .statusCode(204);
-    }
-
-    @Test
-    void unlinkAttestation_expect200() {
-        when(attestationDefinitionService.unlinkAttestation(anyString(), anyString()))
-                .thenReturn(ServiceResult.success(true));
-
-        baseRequest()
-                .post("/test-attestation/unlink?holderId=test-participant")
-                .then()
-                .statusCode(200);
-    }
-
-    @Test
-    void unlinkAttestation_noHolderId_expect400() {
-        when(attestationDefinitionService.unlinkAttestation(anyString(), anyString()))
-                .thenReturn(ServiceResult.success(true));
-
-        baseRequest()
-                .post("/test-attestation/unlink")
-                .then()
-                .log().ifError()
-                .statusCode(400);
-    }
-
-    @Test
-    void unlinkAttestation_holderNotFound_expect400() {
-        when(attestationDefinitionService.unlinkAttestation(anyString(), anyString()))
-                .thenReturn(ServiceResult.notFound("foo"));
-        baseRequest()
-                .post("/test-attestation/unlink?participantId=test-participant")
-                .then()
-                .statusCode(400);
-    }
-
-
-    @Test
-    void unlinkAttestation_notLinked_expect204() {
-        when(attestationDefinitionService.unlinkAttestation(anyString(), anyString()))
-                .thenReturn(ServiceResult.success(false));
-        baseRequest()
-                .post("/test-attestation/unlink?holderId=test-participant")
-                .then()
-                .statusCode(204);
     }
 
     @Test
@@ -189,58 +99,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
                 .then()
                 .statusCode(404);
     }
-
-    @Test
-    void getAttestationDefinitionsForHolder() {
-        when(attestationDefinitionService.getAttestationsForHolder(anyString()))
-                .thenReturn(ServiceResult.success(List.of(
-                        createAttestationDefinition("test-id", "test-type", Map.of()),
-                        createAttestationDefinition("test-id2", "test-type", Map.of())))
-                );
-
-        var attestations = baseRequest()
-                .get("?holderId=test-participant")
-                .then()
-                .statusCode(200)
-                .extract().body().as(AttestationDefinition[].class);
-
-        assertThat(attestations).hasSize(2);
-    }
-
-    @Test
-    void getAttestationDefinitionsForParticipant_whenHolderIdMissing_expect400() {
-
-        baseRequest()
-                .get()
-                .then()
-                .statusCode(400);
-
-        verifyNoInteractions(attestationDefinitionService);
-    }
-
-
-    @Test
-    void getAttestationDefinitionsForHolder_noResult_expect200() {
-        when(attestationDefinitionService.getAttestationsForHolder(anyString()))
-                .thenReturn(ServiceResult.success(List.of()));
-
-        var attestations = baseRequest()
-                .get("?holderId=test-participant")
-                .then()
-                .statusCode(200)
-                .extract().body().as(AttestationDefinition[].class);
-
-        assertThat(attestations).isEmpty();
-    }
-
-    @Test
-    void getAttestationDefinitionsForParticipant_holderNotFound_expect400() {
-        baseRequest()
-                .get("?holder=test-participant")
-                .then()
-                .statusCode(400);
-    }
-
+    
     @Test
     void queryAttestationDefinitions() {
         var definitions = List.of(
@@ -309,5 +168,5 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
                 .participantContextId(PARTICIPANT_ID)
                 .build();
     }
-    
+
 }

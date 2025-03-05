@@ -20,8 +20,7 @@ CREATE TABLE IF NOT EXISTS holders
     did                          VARCHAR NOT NULL,             -- the DID with which this holder is identified
     holder_name                  VARCHAR,                      -- the display name of the holder
     created_date       BIGINT    NOT NULL,                     -- POSIX timestamp of the creation of the PC
-    last_modified_date BIGINT,                                 -- POSIX timestamp of the last modified date
-    attestations       JSON      DEFAULT '[]'                  -- enabled attestations for this holder
+    last_modified_date BIGINT                                  -- POSIX timestamp of the last modified date
 );
 CREATE UNIQUE INDEX IF NOT EXISTS holders_holder_id_uindex ON holders USING btree (holder_id);
 

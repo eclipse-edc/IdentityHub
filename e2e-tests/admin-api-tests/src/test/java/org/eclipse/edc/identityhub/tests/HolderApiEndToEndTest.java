@@ -26,7 +26,6 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -38,12 +37,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Base64;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 public class HolderApiEndToEndTest {
@@ -228,32 +224,6 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void queryParticipant_byAttestationId(IssuerServiceEndToEndTestContext context, HolderService service) {
-            var token = context.createParticipant(USER);
-
-            service.createHolder(createHolder("test-participant-id1", "did:web:barbaz", "barbaz", List.of("att1", "att2")));
-            service.createHolder(createHolder("test-participant-id2", "did:web:quizzquazz", "quizzquazz", List.of("att2", "att3")));
-
-            var query = QuerySpec.Builder.newInstance()
-                    .filter(new Criterion("attestations", "contains", "att2"))
-                    .sortField("holderId")
-                    .sortOrder(SortOrder.ASC)
-                    .build();
-
-            context.getAdminEndpoint().baseRequest()
-                    .contentType(ContentType.JSON)
-                    .header(new Header("x-api-key", token))
-                    .body(query)
-                    .post("/v1alpha/participants/%s/holders/query".formatted(toBase64(USER)))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(200)
-                    .body("size()", is(2))
-                    .body("[0].holderId", equalTo("test-participant-id1"))
-                    .body("[1].holderId", equalTo("test-participant-id2"));
-        }
-
-        @Test
         void getById(IssuerServiceEndToEndTestContext context, HolderService service) {
             var token = context.createParticipant(USER);
 
@@ -287,25 +257,17 @@ public class HolderApiEndToEndTest {
 
         }
 
+
         private Holder createHolder(String id, String did, String name) {
-            return createHolder(id, did, name, List.of());
+            return createHolder(id, did, name, USER);
         }
 
         private Holder createHolder(String id, String did, String name, String participantContextId) {
-            return createHolder(id, did, name, List.of(), participantContextId);
-        }
-
-        private Holder createHolder(String id, String did, String name, List<String> attestations) {
-            return createHolder(id, did, name, attestations, USER);
-        }
-
-        private Holder createHolder(String id, String did, String name, List<String> attestations, String participantContextId) {
             return Holder.Builder.newInstance()
-                    .participantContextId(USER)
+                    .participantContextId(participantContextId)
                     .holderId(id)
                     .did(did)
                     .holderName(name)
-                    .attestations(attestations)
                     .build();
         }
 

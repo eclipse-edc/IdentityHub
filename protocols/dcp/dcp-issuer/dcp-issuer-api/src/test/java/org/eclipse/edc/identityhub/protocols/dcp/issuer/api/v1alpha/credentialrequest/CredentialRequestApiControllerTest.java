@@ -40,7 +40,6 @@ import org.junit.jupiter.api.Test;
 import java.sql.Date;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -209,16 +208,11 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
     }
 
     private Holder createHolder(String id, String did, String name) {
-        return createHolder(id, did, name, List.of());
-    }
-
-    private Holder createHolder(String id, String did, String name, List<String> attestations) {
         return Holder.Builder.newInstance()
                 .participantContextId(UUID.randomUUID().toString())
                 .holderId(id)
                 .did(did)
                 .holderName(name)
-                .attestations(attestations)
                 .build();
     }
 

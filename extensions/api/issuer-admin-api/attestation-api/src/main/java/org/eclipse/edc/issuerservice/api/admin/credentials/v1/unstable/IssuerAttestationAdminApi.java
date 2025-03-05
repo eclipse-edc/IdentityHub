@@ -58,46 +58,6 @@ public interface IssuerAttestationAdminApi {
     )
     Response createAttestationDefinition(String participantContextId, AttestationDefinitionRequest attestationRequest, SecurityContext securityContext);
 
-    @Operation(description = "Links an attestation definition to a holder. This enables a certain attestation definition for a holder.",
-            operationId = "linkAttestation",
-            parameters = {
-                    @Parameter(name = "holderId", description = "ID of the holder", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "attestationId", description = "ID of the attestation", required = true, in = ParameterIn.PATH)
-            },
-            responses = {
-                    @ApiResponse(responseCode = "204", description = "The attestation was linked successfully."),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "The holder was not found.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "409", description = "Can't add the holder, because a object with the same ID already exists",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
-            }
-    )
-    Response linkAttestation(String attestationDefinitionId, String holderId);
-
-    @Operation(description = "Un-Links an attestation definition to a holder. This disables a certain attestation definition for a holder.",
-            operationId = "unlinkAttestation",
-            parameters = {
-                    @Parameter(name = "holderId", description = "ID of the holder", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "attestationId", description = "ID of the attestation", required = true, in = ParameterIn.PATH)
-            },
-            responses = {
-                    @ApiResponse(responseCode = "204", description = "The attestation was unlinked successfully."),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "404", description = "The holder was not found.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "409", description = "Can't add the holder, because a object with the same ID already exists",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
-            }
-    )
-    Response unlinkAttestation(String attestationDefinitionId, String holderId);
-
     @Operation(description = "Deletes an attestation definition.",
             operationId = "deleteAttestation",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
@@ -116,24 +76,7 @@ public interface IssuerAttestationAdminApi {
             }
     )
     void deleteAttestationDefinition(String attestationDefinitionId, SecurityContext securityContext);
-
-    @Operation(description = "Get all attestations for a given participant.",
-            operationId = "getAttestations",
-            parameters = {
-                    @Parameter(name = "participantId", description = "ID of the participant", required = true, in = ParameterIn.PATH)
-            },
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "A list of attestation metadata.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = AttestationDefinition.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
-            }
-    )
-    Collection<AttestationDefinition> getAttestationDefinitionsForHolder(String holderId);
-
+    
     @Operation(description = "Query attestation definitions",
             operationId = "queryAttestations",
             parameters = {

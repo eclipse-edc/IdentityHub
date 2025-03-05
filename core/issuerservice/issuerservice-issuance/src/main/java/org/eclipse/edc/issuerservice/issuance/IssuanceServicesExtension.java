@@ -28,7 +28,6 @@ import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleDefinitionEvalu
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleDefinitionValidatorRegistryImpl;
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleFactoryRegistryImpl;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
-import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
@@ -64,8 +63,6 @@ public class IssuanceServicesExtension implements ServiceExtension {
     private CredentialDefinitionStore store;
     @Inject
     private AttestationDefinitionStore attestationDefinitionStore;
-    @Inject
-    private HolderStore holderStore;
 
     @Inject
     private KeyPairService keyPairService;
@@ -99,7 +96,7 @@ public class IssuanceServicesExtension implements ServiceExtension {
 
     @Provider
     public AttestationDefinitionService createAttestationService() {
-        return new AttestationDefinitionServiceImpl(transactionContext, attestationDefinitionStore, holderStore, createAttestationDefinitionValidatorRegistry());
+        return new AttestationDefinitionServiceImpl(transactionContext, attestationDefinitionStore, createAttestationDefinitionValidatorRegistry());
     }
 
     @Provider
