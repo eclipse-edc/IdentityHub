@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.issuance.generator;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
@@ -34,9 +35,11 @@ import org.eclipse.edc.spi.result.Result;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+import java.util.function.Supplier;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.spi.result.Result.success;
 
 public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegistry {
 
@@ -56,6 +59,10 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
         this.keyPairService = keyPairService;
     }
 
+    private static Supplier<Result<VerifiableCredentialContainer>> noCredentialFoundError(CredentialFormat format) {
+        return () -> Result.failure("No generator found for format %s".formatted(format.toString()));
+    }
+
     @Override
     public void addGenerator(CredentialFormat credentialFormat, CredentialGenerator credentialGenerator) {
         generators.put(credentialFormat, credentialGenerator);
@@ -68,6 +75,13 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
                 .compose(mappedClaims -> generateCredentialInternal(participantContextId, participantId, credentialGenerationRequest, mappedClaims));
     }
 
+    public Result<VerifiableCredentialContainer> signCredential(String participantContextId, VerifiableCredential credential, CredentialFormat format) {
+        return ofNullable(generators.get(format))
+                .map(generator -> fetchActiveKeyPair(participantContextId)
+                        .compose(keyPairResource -> generator.signCredential(credential, keyPairResource.getPrivateKeyAlias(), keyPairResource.getKeyId()))
+                        .compose(token -> success(new VerifiableCredentialContainer(token, format, credential))))
+                .orElseGet(noCredentialFoundError(format));
+    }
 
     private Result<KeyPairResource> fetchActiveKeyPair(String participantContextId) {
         var query = queryByParticipantContextId(participantContextId)
@@ -75,23 +89,26 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
                 .build();
 
 
-        var keyPairResult = keyPairService.query(query)
-                .orElseThrow(f -> new EdcException("Error obtaining private key for participant '%s': %s".formatted(participantContextId, f.getFailureDetail())));
+        var keyPairResult = keyPairService.query(query);
+        if (keyPairResult.failed()) {
+            return Result.failure("Error obtaining private key for participant '%s': %s".formatted(participantContextId, keyPairResult.getFailureDetail()));
+        }
 
+        var keyPairs = keyPairResult.getContent();
         // check if there is a default key pair
-        var keyPair = keyPairResult.stream().filter(KeyPairResource::isDefaultPair).findAny()
-                .orElseGet(() -> keyPairResult.stream().findFirst().orElse(null));
+        var keyPair = keyPairs.stream().filter(KeyPairResource::isDefaultPair).findAny()
+                .orElseGet(() -> keyPairs.stream().findFirst().orElse(null));
 
         if (keyPair == null) {
             return Result.failure("No active key pair found for participant '%s'".formatted(participantContextId));
         }
 
-        return Result.success(keyPair);
+        return success(keyPair);
 
     }
 
     private Result<VerifiableCredentialContainer> generateCredentialInternal(String participantContextId, String participantId, CredentialGenerationRequest credentialGenerationRequest, Map<String, Object> mappedClaims) {
-        return Optional.ofNullable(generators.get(credentialGenerationRequest.format()))
+        return ofNullable(generators.get(credentialGenerationRequest.format()))
                 .map(generator -> generateCredentialInternal(participantContextId, participantId, generator, credentialGenerationRequest.definition(), mappedClaims))
                 .orElseGet(() -> Result.failure("No generator found for format %s".formatted(credentialGenerationRequest.format())));
 

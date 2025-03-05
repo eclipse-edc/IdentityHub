@@ -15,6 +15,9 @@
 package org.eclipse.edc.issuerservice.issuance.generator;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
@@ -31,15 +34,19 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class CredentialGeneratorRegistryImplTest {
@@ -181,7 +188,70 @@ public class CredentialGeneratorRegistryImplTest {
 
         assertThat(result).isFailed().detail().contains("failed");
     }
-    
+
+    @Test
+    void signCredential() {
+        var now = Instant.now();
+        var credential = VerifiableCredential.Builder.newInstance()
+                .type("TestCredential")
+                .id(UUID.randomUUID().toString())
+                .issuer(new Issuer("did:web:issuer"))
+                .issuanceDate(now)
+                .expirationDate(now.plusSeconds(3600))
+                .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id(UUID.randomUUID().toString())
+                        .claim("foo", "bar")
+                        .build())
+                .build();
+        var generator = mock(CredentialGenerator.class);
+        when(generator.signCredential(any(), any(), any())).thenReturn(Result.success("some-token"));
+        credentialGeneratorRegistry.addGenerator(CredentialFormat.VC2_0_JOSE, generator);
+
+        var key = KeyPairResource.Builder.newInstance().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
+        when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(key)));
+
+        var result = credentialGeneratorRegistry.signCredential("test-participant", credential, CredentialFormat.VC2_0_JOSE);
+
+        assertThat(result).isSucceeded()
+                .satisfies(vc -> {
+                    assertThat(vc.format()).isEqualTo(CredentialFormat.VC2_0_JOSE);
+                    assertThat(vc.credential()).usingRecursiveComparison().isEqualTo(credential);
+                    assertThat(vc.rawVc()).isEqualTo("some-token");
+                });
+
+        verify(generator).signCredential(any(), any(), any());
+        verify(keyPairService).query(any());
+        verifyNoMoreInteractions(participantContextService, keyPairService, generator, holderService, claimsMapper);
+    }
+
+    @Test
+    void signCredential_whenKeyNotFound() {
+        var now = Instant.now();
+        var credential = VerifiableCredential.Builder.newInstance()
+                .type("TestCredential")
+                .id(UUID.randomUUID().toString())
+                .issuer(new Issuer("did:web:issuer"))
+                .issuanceDate(now)
+                .expirationDate(now.plusSeconds(3600))
+                .credentialSubject(CredentialSubject.Builder.newInstance()
+                        .id(UUID.randomUUID().toString())
+                        .claim("foo", "bar")
+                        .build())
+                .build();
+        var generator = mock(CredentialGenerator.class);
+        when(generator.signCredential(any(), any(), any())).thenReturn(Result.success("some-token"));
+        credentialGeneratorRegistry.addGenerator(CredentialFormat.VC2_0_JOSE, generator);
+
+        when(keyPairService.query(any())).thenReturn(ServiceResult.notFound("foobar"));
+
+        var result = credentialGeneratorRegistry.signCredential("test-participant", credential, CredentialFormat.VC2_0_JOSE);
+
+        assertThat(result).isFailed()
+                .detail().contains("foobar");
+        verify(keyPairService).query(any());
+        verifyNoMoreInteractions(participantContextService, keyPairService, generator, holderService, claimsMapper);
+    }
+
     private Holder createHolder(String id, String did, String name) {
         return Holder.Builder.newInstance()
                 .participantContextId(UUID.randomUUID().toString())

@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.spi.issuance.generator;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.result.Result;
@@ -28,7 +29,6 @@ import java.util.Map;
  */
 @ExtensionPoint
 public interface CredentialGeneratorRegistry {
-
     /**
      * Adds a generator for the given {@link CredentialFormat}.
      *
@@ -69,4 +69,15 @@ public interface CredentialGeneratorRegistry {
      * @return The {@link VerifiableCredentialContainer} if successful, or the failure information if unsuccessful
      */
     Result<VerifiableCredentialContainer> generateCredential(String participantContextId, String participantId, CredentialGenerationRequest credentialGenerationRequest, Map<String, Object> claims);
+
+    /**
+     * Signs an input credential, i.e. creates its serialized representation (JWT, LD,...) including a proof.
+     *
+     * @param participantContextId The participant context ID (= issuer tenant). Relevant for selecting keypairs and issuer DIDs.
+     * @param verifiableCredential The verifiable credential that is to be signed
+     * @param format               The CredentialFormat, how the signed credential is to be represented
+     * @return A {@link VerifiableCredentialContainer} that contains the credential as object plus the raw representation (=signed form)
+     */
+    Result<VerifiableCredentialContainer> signCredential(String participantContextId, VerifiableCredential verifiableCredential, CredentialFormat format);
+
 }
