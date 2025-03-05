@@ -53,6 +53,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService` (required)
+- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
 
 Module `common-core`
 --------------------
@@ -120,6 +121,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService` (required)
+- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
 
 Module `credential-watchdog`
 ----------------------------
@@ -177,6 +179,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.issuerservice.spi.credentials.CredentialService` (required)
+- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
 
 Module `credentials-api-configuration`
 --------------------------------------
@@ -379,6 +382,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.issuerservice.spi.holder.HolderService` (required)
+- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
 
 Module `holder-credential-request-store-sql`
 --------------------------------------------
