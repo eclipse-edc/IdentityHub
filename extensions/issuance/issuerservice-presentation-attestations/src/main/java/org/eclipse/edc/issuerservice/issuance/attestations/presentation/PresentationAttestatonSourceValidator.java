@@ -34,13 +34,13 @@ public class PresentationAttestatonSourceValidator implements Validator<Attestat
 
     @Override
     public ValidationResult validate(AttestationDefinition definition) {
-        if (!ATTESTATION_TYPE.equals(definition.attestationType())) {
+        if (!ATTESTATION_TYPE.equals(definition.getAttestationType())) {
             return failure(violation("Expecting attestation type: " + ATTESTATION_TYPE, ATTESTATION_TYPE));
         }
-        if (!definition.configuration().containsKey(CREDENTIAL_TYPE)) {
+        if (!definition.getConfiguration().containsKey(CREDENTIAL_TYPE)) {
             return failure(violation(format("No %s specified", CREDENTIAL_TYPE), CREDENTIAL_TYPE));
         }
-        if (!definition.configuration().containsKey(OUTPUT_CLAIM)) {
+        if (!definition.getConfiguration().containsKey(OUTPUT_CLAIM)) {
             return failure(violation(format("No %s specified", OUTPUT_CLAIM), OUTPUT_CLAIM));
         }
         return success();

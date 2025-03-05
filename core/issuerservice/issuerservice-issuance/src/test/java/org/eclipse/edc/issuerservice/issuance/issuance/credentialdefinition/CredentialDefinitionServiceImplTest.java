@@ -53,7 +53,7 @@ public class CredentialDefinitionServiceImplTest {
 
         var definition = credentialDefinition();
 
-        var attestations = definition.getAttestations().stream().map(id -> new AttestationDefinition(id, "type", Map.of()))
+        var attestations = definition.getAttestations().stream().map(id -> createAttestationDefinition(id, "type", Map.of()))
                 .toList();
 
         when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
@@ -69,7 +69,7 @@ public class CredentialDefinitionServiceImplTest {
     void createCredentialDefinition_whenStoreFails() {
 
         var definition = credentialDefinition();
-        var attestations = definition.getAttestations().stream().map(id -> new AttestationDefinition(id, "type", Map.of()))
+        var attestations = definition.getAttestations().stream().map(id -> createAttestationDefinition(id, "type", Map.of()))
                 .toList();
 
         when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
@@ -83,7 +83,7 @@ public class CredentialDefinitionServiceImplTest {
     void createCredentialDefinition_whenAttestationsValidationFails() {
 
         var definition = credentialDefinition();
-        var attestations = definition.getAttestations().stream().map(id -> new AttestationDefinition(id, "type", Map.of()))
+        var attestations = definition.getAttestations().stream().map(id -> createAttestationDefinition(id, "type", Map.of()))
                 .toList();
 
         when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
@@ -116,7 +116,7 @@ public class CredentialDefinitionServiceImplTest {
 
         var definition = credentialDefinition();
 
-        var attestations = definition.getAttestations().stream().map(id -> new AttestationDefinition(id, "type", Map.of()))
+        var attestations = definition.getAttestations().stream().map(id -> createAttestationDefinition(id, "type", Map.of()))
                 .toList();
 
         when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
@@ -146,7 +146,7 @@ public class CredentialDefinitionServiceImplTest {
 
         var definition = credentialDefinition();
 
-        var attestations = definition.getAttestations().stream().map(id -> new AttestationDefinition(id, "type", Map.of()))
+        var attestations = definition.getAttestations().stream().map(id -> createAttestationDefinition(id, "type", Map.of()))
                 .toList();
 
         when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
@@ -163,7 +163,7 @@ public class CredentialDefinitionServiceImplTest {
     void updateCredentialDefinition_whenStoreFails() {
 
         var definition = credentialDefinition();
-        var attestations = definition.getAttestations().stream().map(id -> new AttestationDefinition(id, "type", Map.of()))
+        var attestations = definition.getAttestations().stream().map(id -> createAttestationDefinition(id, "type", Map.of()))
                 .toList();
 
         when(attestationDefinitionStore.query(any())).thenReturn(StoreResult.success(attestations));
@@ -239,10 +239,19 @@ public class CredentialDefinitionServiceImplTest {
         return credentialDefinition(UUID.randomUUID().toString(), "Membership");
     }
 
+    private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {
+        return AttestationDefinition.Builder.newInstance()
+                .id(id)
+                .attestationType(type)
+                .participantContextId(UUID.randomUUID().toString())
+                .configuration(configuration).build();
+    }
+
     private CredentialDefinition credentialDefinition(String id, String type) {
         return CredentialDefinition.Builder.newInstance().id(id).jsonSchema("")
                 .jsonSchemaUrl("http://example.com/schema").validity(1000)
                 .attestation("test-attestation")
+                .participantContextId(UUID.randomUUID().toString())
                 .rule(new CredentialRuleDefinition("test-rule", Map.of()))
                 .credentialType(type).build();
     }

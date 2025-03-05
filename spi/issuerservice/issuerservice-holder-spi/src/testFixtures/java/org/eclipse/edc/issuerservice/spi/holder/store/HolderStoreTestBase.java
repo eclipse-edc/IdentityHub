@@ -20,6 +20,7 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,7 +51,7 @@ public abstract class HolderStoreTestBase {
     @Test
     void query_byId() {
         range(0, 5)
-                .mapToObj(i -> new Holder("p" + i, "did:web:" + i, "participant" + i))
+                .mapToObj(i -> createHolder("p" + i, "did:web:" + i, "participant" + i))
                 .forEach(getStore()::create);
 
         var q = QuerySpec.Builder.newInstance()
@@ -79,9 +80,26 @@ public abstract class HolderStoreTestBase {
     }
 
     @Test
+    void query_byParticipantContextId() {
+
+        var holder = createHolder();
+        getStore().create(holder);
+
+        var q = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("participantContextId", "=", holder.getParticipantContextId()))
+                .build();
+
+        assertThat(getStore().query(q)).isSucceeded()
+                .satisfies(str -> assertThat(str)
+                        .hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(holder));
+    }
+
+    @Test
     void query_noQuerySpec() {
         var resources = range(0, 5)
-                .mapToObj(i -> new Holder("p" + i, "did:web:" + i, "participant" + i))
+                .mapToObj(i -> createHolder("p" + i, "did:web:" + i, "participant" + i))
                 .toList();
 
         resources.forEach(getStore()::create);
@@ -96,7 +114,7 @@ public abstract class HolderStoreTestBase {
     @Test
     void query_whenNotFound() {
         var resources = range(0, 5)
-                .mapToObj(i -> new Holder("p" + i, "did:web:" + i, "participant" + i))
+                .mapToObj(i -> createHolder("p" + i, "did:web:" + i, "participant" + i))
                 .toList();
 
         resources.forEach(getStore()::create);
@@ -112,7 +130,7 @@ public abstract class HolderStoreTestBase {
     @Test
     void query_byInvalidField_shouldReturnEmptyList() {
         var resources = range(0, 5)
-                .mapToObj(i -> new Holder("p" + i, "did:web:" + i, "participant" + i))
+                .mapToObj(i -> createHolder("p" + i, "did:web:" + i, "participant" + i))
                 .toList();
 
 
@@ -132,7 +150,7 @@ public abstract class HolderStoreTestBase {
         var result = getStore().create(holder);
         assertThat(result).isSucceeded();
 
-        var updated = new Holder("p-id", "did:web:participant-changed", "participant-changed");
+        var updated = createHolder("p-id", "did:web:participant-changed", "participant-changed");
         var updateRes = getStore().update(updated);
         assertThat(updateRes).isSucceeded();
     }
@@ -142,7 +160,7 @@ public abstract class HolderStoreTestBase {
         var holder = createHolder();
         getStore().create(holder);
 
-        var updated = new Holder("p16", "did:web:participant", "participant14");
+        var updated = createHolder("p16", "did:web:participant", "participant14");
         assertThat(getStore().update(updated)).isFailed().detail().contains("with ID 'p16' does not exist.");
     }
 
@@ -159,7 +177,7 @@ public abstract class HolderStoreTestBase {
         var holder = createHolder();
         getStore().create(holder);
 
-        var deleteRes = getStore().deleteById(holder.holderId());
+        var deleteRes = getStore().deleteById(holder.getHolderId());
         assertThat(deleteRes).isSucceeded();
     }
 
@@ -172,7 +190,20 @@ public abstract class HolderStoreTestBase {
     protected abstract HolderStore getStore();
 
     private Holder createHolder() {
-        return new Holder("p-id", "did:web:participant", "participant display name", List.of("att1", "att2"));
+        return createHolder("p-id", "did:web:participant", "participant display name", List.of("att1", "att2"));
     }
 
+    private Holder createHolder(String id, String did, String name) {
+        return createHolder(id, did, name, List.of());
+    }
+
+    private Holder createHolder(String id, String did, String name, List<String> attestations) {
+        return Holder.Builder.newInstance()
+                .participantContextId(UUID.randomUUID().toString())
+                .holderId(id)
+                .did(did)
+                .holderName(name)
+                .attestations(attestations)
+                .build();
+    }
 }

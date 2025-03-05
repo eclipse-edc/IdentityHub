@@ -20,11 +20,12 @@ import org.eclipse.edc.sql.translation.TranslationMapping;
 
 
 /**
- * Provides a mapping from the canonical format to SQL column names for a {@code VerifiableCredentialResource}
+ * Provides a mapping from the canonical format to SQL column names for a {@code Holder}
  */
 public class HolderMapping extends TranslationMapping {
 
     public static final String FIELD_ID = "holderId";
+    public static final String FIELD_PARTICIPANT_CONTEXT_ID = "participantContextId";
     public static final String FIELD_CREATE_TIMESTAMP = "createdAt";
     public static final String FIELD_LASTMODIFIED_TIMESTAMP = "lastModified";
     public static final String FIELD_DID = "did";
@@ -33,6 +34,7 @@ public class HolderMapping extends TranslationMapping {
 
     public HolderMapping(HolderStoreStatements statements) {
         add(FIELD_ID, statements.getIdColumn());
+        add(FIELD_PARTICIPANT_CONTEXT_ID, statements.getParticipantContextIdColumn());
         add(FIELD_CREATE_TIMESTAMP, statements.getCreateTimestampColumn());
         add(FIELD_LASTMODIFIED_TIMESTAMP, statements.getLastModifiedTimestampColumn());
         add(FIELD_NAME, statements.getHolderNameColumn());

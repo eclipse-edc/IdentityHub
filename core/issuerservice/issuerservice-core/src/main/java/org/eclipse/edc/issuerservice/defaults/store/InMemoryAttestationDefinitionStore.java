@@ -36,7 +36,7 @@ public class InMemoryAttestationDefinitionStore extends InMemoryEntityStore<Atte
 
     @Override
     protected String getId(AttestationDefinition newObject) {
-        return newObject.id();
+        return newObject.getId();
     }
 
     @Override

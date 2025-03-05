@@ -80,7 +80,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     @Test
     void credentialStatus_transformationError_shouldReturn400() {
 
-        var participant = new Holder("id", "did", "name");
+        var participant = createHolder("id", "did", "name");
         var ctx = new DcpRequestContext(participant, Map.of());
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
         when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess())));
@@ -120,7 +120,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     @Test
     void credentialStatus() {
 
-        var participant = new Holder("id", "did", "name");
+        var participant = createHolder("id", "did", "name");
         var ctx = new DcpRequestContext(participant, Map.of());
 
         var token = generateJwt();
@@ -158,6 +158,20 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
                 .holderPid(UUID.randomUUID().toString())
                 .id(UUID.randomUUID().toString())
                 .state(IssuanceProcessStates.DELIVERED.code())
+                .build();
+    }
+
+    private Holder createHolder(String id, String did, String name) {
+        return createHolder(id, did, name, List.of());
+    }
+
+    private Holder createHolder(String id, String did, String name, List<String> attestations) {
+        return Holder.Builder.newInstance()
+                .participantContextId(UUID.randomUUID().toString())
+                .holderId(id)
+                .did(did)
+                .holderName(name)
+                .attestations(attestations)
                 .build();
     }
 

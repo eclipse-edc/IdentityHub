@@ -34,10 +34,10 @@ public class DatabaseAttestationSourceValidator implements Validator<Attestation
 
     @Override
     public ValidationResult validate(AttestationDefinition definition) {
-        if (!ATTESTATION_TYPE.equals(definition.attestationType())) {
+        if (!ATTESTATION_TYPE.equals(definition.getAttestationType())) {
             return failure(violation("Expecting attestation type: " + ATTESTATION_TYPE, ATTESTATION_TYPE));
         }
-        var config = definition.configuration();
+        var config = definition.getConfiguration();
         if (!config.containsKey(DATASOURCE_NAME)) {
             return failure(violation(format("No %s specified", DATASOURCE_NAME), DATASOURCE_NAME));
         }

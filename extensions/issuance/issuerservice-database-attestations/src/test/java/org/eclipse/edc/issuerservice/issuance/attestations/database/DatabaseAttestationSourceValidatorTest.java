@@ -32,7 +32,12 @@ class DatabaseAttestationSourceValidatorTest {
         Map<String, Object> configuration = Map.of("jdbcUrl", "jdbc:postgresql://localhost:5432/postgres",
                 "tableName", "membership_attestations",
                 "dataSourceName", "barbaz");
-        var definition = new AttestationDefinition("att1", "database", configuration);
+
+        var definition = AttestationDefinition.Builder.newInstance().id("att1")
+                .attestationType("database")
+                .participantContextId("participantContextId")
+                .configuration(configuration)
+                .build();
 
         assertThat(validator.validate(definition)).isSucceeded();
     }
@@ -42,7 +47,12 @@ class DatabaseAttestationSourceValidatorTest {
     void validate_missingDataSourceName_shouldFail() {
         Map<String, Object> configuration = Map.of("jdbcUrl", "jdbc:postgresql://localhost:5432/postgres",
                 "tableName", "membership_attestations");
-        var definition = new AttestationDefinition("att1", "database", configuration);
+
+        var definition = AttestationDefinition.Builder.newInstance().id("att1")
+                .attestationType("database")
+                .participantContextId("participantContextId")
+                .configuration(configuration)
+                .build();
 
         assertThat(validator.validate(definition)).isFailed().detail().contains("dataSourceName");
     }
@@ -51,7 +61,11 @@ class DatabaseAttestationSourceValidatorTest {
     void validate_missingTableName_shouldFail() {
         Map<String, Object> configuration = Map.of("jdbcUrl", "jdbc:postgresql://localhost:5432/postgres",
                 "dataSourceName", "foobar");
-        var definition = new AttestationDefinition("att1", "database", configuration);
+        var definition = AttestationDefinition.Builder.newInstance().id("att1")
+                .attestationType("database")
+                .participantContextId("participantContextId")
+                .configuration(configuration)
+                .build();
 
         assertThat(validator.validate(definition)).isFailed().detail().contains("tableName");
     }

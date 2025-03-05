@@ -30,6 +30,7 @@ dependencies {
     // API modules
     runtimeOnly(project(":protocols:dcp:dcp-issuer:dcp-issuer-core"))
     runtimeOnly(project(":protocols:dcp:dcp-issuer:dcp-issuer-api"))
+    runtimeOnly(project(":extensions:api:identity-api:participant-context-api"))
 
     runtimeOnly(project(":extensions:issuance:issuerservice-presentation-attestations"))
     runtimeOnly(project(":extensions:issuance:issuerservice-issuance-rules"))

@@ -65,8 +65,8 @@ public class AttestationPipelineImpl implements AttestationPipeline, Attestation
     }
 
     private Result<Map<String, Object>> execute(AttestationDefinition definition, AttestationContext context) {
-        var factory = requireNonNull(factories.get(definition.attestationType()), "Unknown attestation type: " + definition.attestationType());
-        return requireNonNull(factory.createSource(definition), "Invalid definition for type: " + definition.attestationType()).execute(context);
+        var factory = requireNonNull(factories.get(definition.getAttestationType()), "Unknown attestation type: " + definition.getAttestationType());
+        return requireNonNull(factory.createSource(definition), "Invalid definition for type: " + definition.getAttestationType()).execute(context);
     }
 }
 

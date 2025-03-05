@@ -134,7 +134,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 .map(CredentialDefinition::getId)
                 .collect(Collectors.toSet());
         var issuanceProcess = IssuanceProcess.Builder.newInstance()
-                .holderId(context.holder().holderId())
+                .holderId(context.holder().getHolderId())
                 .state(IssuanceProcessStates.APPROVED.code())
                 .credentialDefinitions(credentialDefinitionIds)
                 .claims(evaluationResponse.claims())

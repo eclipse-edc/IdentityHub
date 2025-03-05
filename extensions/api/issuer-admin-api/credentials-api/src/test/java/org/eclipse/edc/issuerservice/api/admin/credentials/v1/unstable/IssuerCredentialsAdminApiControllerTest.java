@@ -21,6 +21,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.api.Versions;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
@@ -29,9 +30,11 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -50,35 +53,16 @@ import static org.mockito.Mockito.when;
 
 class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
+    private static final String PARTICIPANT_ID = "test-participant";
+    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
     private final CredentialService statuslistService = mock();
+    private final AuthorizationService authorizationService = mock();
 
-    @Test
-    void getAllCredentials() {
-
-        when(statuslistService.getCredentialForParticipant(eq("test-participant")))
-                .thenReturn(ServiceResult.success(List.of(createCredential(), createCredential())));
-        var credentials = baseRequest()
-                .get("/test-participant")
-                .then()
-                .statusCode(200)
-                .extract().body().as(VerifiableCredentialDto[].class);
-
-        assertThat(credentials).hasSize(2);
+    @BeforeEach
+    void setUp() {
+        when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
     }
-
-    @Test
-    void getAllCredentials_whenNoResult() {
-        when(statuslistService.getCredentialForParticipant(eq("test-participant")))
-                .thenReturn(ServiceResult.success(List.of()));
-        var credentials = baseRequest()
-                .get("/test-participant")
-                .then()
-                .statusCode(200)
-                .extract().body().as(VerifiableCredentialDto[].class);
-
-        assertThat(credentials).isEmpty();
-    }
-
+    
     @Test
     void queryCredentials() {
         when(statuslistService.queryCredentials(any(QuerySpec.class)))
@@ -191,7 +175,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new IssuerCredentialsAdminApiController(statuslistService);
+        return new IssuerCredentialsAdminApiController(authorizationService, statuslistService);
     }
 
     private @NotNull VerifiableCredentialResource createCredential() {
@@ -213,7 +197,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/credentials")
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/credentials".formatted(PARTICIPANT_ID_ENCODED))
                 .when();
     }
 }

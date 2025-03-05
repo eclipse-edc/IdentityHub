@@ -28,6 +28,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import java.util.Collection;
 import java.util.Objects;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
 
@@ -73,7 +74,7 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
             }
 
             var participant = participantResult.getContent();
-            if (participant.attestations().contains(attestationId)) { // no need to update, already linked
+            if (participant.getAttestations().contains(attestationId)) { // no need to update, already linked
                 return ServiceResult.success(false);
             }
 
@@ -103,8 +104,15 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     public ServiceResult<Collection<AttestationDefinition>> getAttestationsForHolder(String holderId) {
 
         return transactionContext.execute(() -> ServiceResult.from(holderStore.findById(holderId)
-                .map(Holder::attestations)
+                .map(Holder::getAttestations)
                 .map(this::findForIds)));
+    }
+
+    @Override
+    public ServiceResult<AttestationDefinition> getAttestationById(String attestationId) {
+        return transactionContext.execute(() -> ofNullable(attestationDefinitionStore.resolveDefinition(attestationId))
+                .map(ServiceResult::success)
+                .orElseGet(() -> ServiceResult.notFound("No attestation with id %s was found".formatted(attestationId))));
     }
 
     @Override

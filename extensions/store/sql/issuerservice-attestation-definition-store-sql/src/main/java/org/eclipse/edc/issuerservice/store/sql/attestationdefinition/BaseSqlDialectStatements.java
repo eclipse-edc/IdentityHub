@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.store.sql.attestationdefinition;
 
-import org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres.CredentialDefinitionMapping;
+import org.eclipse.edc.issuerservice.store.sql.attestationdefinition.schema.postgres.AttestationDefinitionMapping;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
@@ -26,6 +26,7 @@ public class BaseSqlDialectStatements implements AttestationDefinitionStoreState
     public String getInsertTemplate() {
         return executeStatement()
                 .column(getIdColumn())
+                .column(getParticipantIdColumn())
                 .column(getAttestationTypeColumn())
                 .jsonColumn(getConfigurationColumn())
                 .column(getCreateTimestampColumn())
@@ -62,7 +63,7 @@ public class BaseSqlDialectStatements implements AttestationDefinitionStoreState
     @Override
     public SqlQueryStatement createQuery(QuerySpec querySpec) {
         var select = getSelectStatement();
-        return new SqlQueryStatement(select, querySpec, new CredentialDefinitionMapping(this), new PostgresqlOperatorTranslator());
+        return new SqlQueryStatement(select, querySpec, new AttestationDefinitionMapping(this), new PostgresqlOperatorTranslator());
     }
 
     @Override

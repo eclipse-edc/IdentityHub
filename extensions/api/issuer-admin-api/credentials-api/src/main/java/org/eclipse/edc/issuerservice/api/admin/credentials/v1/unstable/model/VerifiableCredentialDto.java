@@ -24,7 +24,8 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
  * @param format               The {@link CredentialFormat} of the credential
  * @param verifiableCredential Structured metadata about the VC, not the actual VC. This will not contain the proof!
  */
-public record VerifiableCredentialDto(@JsonProperty("format") CredentialFormat format,
+public record VerifiableCredentialDto(@JsonProperty("participantContextId") String participantContextId,
+                                      @JsonProperty("format") CredentialFormat format,
                                       @JsonProperty("credential") VerifiableCredential verifiableCredential) {
 
 }

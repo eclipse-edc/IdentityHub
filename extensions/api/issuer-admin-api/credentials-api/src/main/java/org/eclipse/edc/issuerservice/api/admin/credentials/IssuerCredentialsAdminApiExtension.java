@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.issuerservice.api.admin.credentials;
 
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.IssuerCredentialsAdminApiController;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
@@ -33,6 +35,8 @@ public class IssuerCredentialsAdminApiExtension implements ServiceExtension {
     private WebService webService;
     @Inject
     private CredentialService credentialService;
+    @Inject
+    private AuthorizationService authorizationService;
 
     @Override
     public String name() {
@@ -41,7 +45,14 @@ public class IssuerCredentialsAdminApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var controller = new IssuerCredentialsAdminApiController(credentialService);
+
+        authorizationService.addLookupFunction(VerifiableCredentialResource.class, this::findById);
+        var controller = new IssuerCredentialsAdminApiController(authorizationService, credentialService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
+    }
+
+
+    public VerifiableCredentialResource findById(String id) {
+        return credentialService.getCredentialById(id).getContent();
     }
 }

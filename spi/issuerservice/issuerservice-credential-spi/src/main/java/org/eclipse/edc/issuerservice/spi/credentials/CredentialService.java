@@ -73,7 +73,13 @@ public interface CredentialService {
      */
     ServiceResult<String> getCredentialStatus(String credentialId);
 
-    ServiceResult<Collection<VerifiableCredentialResource>> getCredentialForParticipant(String participantId);
-
     ServiceResult<Collection<VerifiableCredentialResource>> queryCredentials(QuerySpec query);
+
+    /**
+     * Obtains a single credential by its ID.
+     *
+     * @param credentialId The ID of the credential.
+     * @return The credential resource, or a failure if the credential does not exist.
+     */
+    ServiceResult<VerifiableCredentialResource> getCredentialById(String credentialId);
 }

@@ -59,6 +59,7 @@ import org.mockserver.integration.ClientAndServer;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -69,6 +70,7 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Ver
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockserver.model.HttpRequest.request;
@@ -148,7 +150,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         @AfterEach
         void teardown(HolderService holderService, CredentialDefinitionService credentialDefinitionService) {
             holderService.queryHolders(QuerySpec.max()).getContent()
-                    .forEach(p -> holderService.deleteHolder(p.holderId()).getContent());
+                    .forEach(p -> holderService.deleteHolder(p.getHolderId()).getContent());
 
             credentialDefinitionService.queryCredentialDefinitions(QuerySpec.max()).getContent()
                     .forEach(c -> credentialDefinitionService.deleteCredentialDefinition(c.getId()).getContent());
@@ -175,9 +177,14 @@ public class DcpCredentialRequestApiEndToEndTest {
 
                 var endpoint = "http://localhost:%s/api".formatted(mockedCredentialService.getLocalPort());
 
-                holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+                holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
-                var attestationDefinition = new AttestationDefinition("attestation-id", "Attestation", Map.of());
+                var attestationDefinition = AttestationDefinition.Builder.newInstance()
+                        .id("attestation-id")
+                        .attestationType("Attestation")
+                        .configuration(Map.of())
+                        .participantContextId("participantContextId")
+                        .build();
                 attestationDefinitionService.createAttestation(attestationDefinition);
 
                 Map<String, Object> credentialRuleConfiguration = Map.of(
@@ -194,6 +201,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                         .validity(3600)
                         .mapping(new MappingDefinition("participant.name", "credentialSubject.name", true))
                         .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
+                        .participantContextId("participantContextId")
                         .build();
 
 
@@ -207,7 +215,7 @@ public class DcpCredentialRequestApiEndToEndTest {
 
                 when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
                 when(DID_RESOLVER_REGISTRY.resolve(PARTICIPANT_DID)).thenReturn(Result.success(generateDidDocument(endpoint)));
-                when(ATTESTATION_SOURCE_FACTORY.createSource(eq(attestationDefinition))).thenReturn(attestationSource);
+                when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
                 when(attestationSource.execute(any())).thenReturn(Result.success(claims));
 
                 var location = context.getDcpIssuanceEndpoint().baseRequest()
@@ -287,7 +295,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         @Test
         void requestCredential_tokenVerificationFails_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService) throws JOSEException {
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
             var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID(DID_WEB_PARTICIPANT_KEY_1).generate();
 
@@ -309,7 +317,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         @Test
         void requestCredential_wrongTokenAudience_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService) throws JOSEException {
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
             var token = generateSiToken("wrong-audience");
 
@@ -329,7 +337,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         @Test
         void requestCredential_definitionNotFound_shouldReturn400(IssuerServiceEndToEndTestContext context, HolderService holderService) throws JOSEException {
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
             var token = generateSiToken();
 
@@ -352,8 +360,13 @@ public class DcpCredentialRequestApiEndToEndTest {
                                                                         AttestationDefinitionService attestationDefinitionService,
                                                                         CredentialDefinitionService credentialDefinitionService) throws JOSEException {
 
-            holderService.createHolder(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
-            var attestationDefinition = new AttestationDefinition("attestation-id", "Attestation", Map.of());
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            var attestationDefinition = AttestationDefinition.Builder.newInstance()
+                    .id("attestation-id")
+                    .attestationType("Attestation")
+                    .participantContextId("participantContextId")
+                    .configuration(Map.of())
+                    .build();
             attestationDefinitionService.createAttestation(attestationDefinition);
 
             Map<String, Object> credentialRuleConfiguration = Map.of(
@@ -369,6 +382,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                     .jsonSchema("{}")
                     .attestation("attestation-id")
                     .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
+                    .participantContextId("participantContextId")
                     .build();
 
             credentialDefinitionService.createCredentialDefinition(credentialDefinition);
@@ -378,7 +392,7 @@ public class DcpCredentialRequestApiEndToEndTest {
 
             var attestationSource = mock(AttestationSource.class);
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
-            when(ATTESTATION_SOURCE_FACTORY.createSource(eq(attestationDefinition))).thenReturn(attestationSource);
+            when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
             when(attestationSource.execute(any())).thenReturn(Result.success(claims));
 
             context.getDcpIssuanceEndpoint().baseRequest()
@@ -409,6 +423,19 @@ public class DcpCredentialRequestApiEndToEndTest {
             return generateJwt(audience, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), PARTICIPANT_KEY);
         }
 
+        private Holder createHolder(String id, String did, String name) {
+            return createHolder(id, did, name, List.of());
+        }
+
+        private Holder createHolder(String id, String did, String name, List<String> attestations) {
+            return Holder.Builder.newInstance()
+                    .participantContextId(UUID.randomUUID().toString())
+                    .holderId(id)
+                    .did(did)
+                    .holderName(name)
+                    .attestations(attestations)
+                    .build();
+        }
     }
 
 

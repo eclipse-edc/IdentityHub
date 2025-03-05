@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
@@ -29,7 +30,6 @@ import org.eclipse.edc.spi.query.SortOrder;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -37,9 +37,11 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Base64;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
@@ -47,23 +49,21 @@ import static org.hamcrest.Matchers.is;
 public class HolderApiEndToEndTest {
     abstract static class Tests {
 
-
-        private static String token = "";
-
-        @BeforeAll
-        static void setup(IssuerServiceEndToEndTestContext context) {
-            token = context.createSuperUser();
-        }
+        public static final String USER = "user";
 
         @AfterEach
-        void teardown(HolderService holderService) {
+        void teardown(HolderService holderService, ParticipantContextService pcService) {
             holderService.queryHolders(QuerySpec.max()).getContent()
-                    .forEach(p -> holderService.deleteHolder(p.holderId()).getContent());
+                    .forEach(p -> holderService.deleteHolder(p.getHolderId()).getContent());
+
+            pcService.query(QuerySpec.max()).getContent()
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
 
         }
 
         @Test
         void createHolder(IssuerServiceEndToEndTestContext context) {
+            var token = context.createParticipant(USER);
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
@@ -75,7 +75,7 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post("/v1alpha/holders")
+                    .post("/v1alpha/participants/%s/holders".formatted(toBase64(USER)))
                     .then()
                     .statusCode(201)
                     .header("Location", Matchers.endsWith("/holders/test-participant-id"));
@@ -83,8 +83,9 @@ public class HolderApiEndToEndTest {
 
         @Test
         void createParticipant_whenExists(IssuerServiceEndToEndTestContext context, HolderService service) {
+            var token = context.createParticipant(USER);
 
-            service.createHolder(new Holder("test-participant-id", "did:web:foo", "foobar"));
+            service.createHolder(createHolder("test-participant-id", "did:web:foo", "foobar"));
 
             context.getAdminEndpoint().baseRequest()
                     .header(new Header("x-api-key", token))
@@ -96,13 +97,35 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post("/v1alpha/holders")
+                    .post("/v1alpha/participants/%s/holders".formatted(toBase64(USER)))
                     .then()
                     .statusCode(409);
         }
 
         @Test
+        void createHolder_notAuthorized(IssuerServiceEndToEndTestContext context) {
+            context.createParticipant(USER);
+            var token = context.createParticipant("anotherParticipant");
+
+            context.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
+                    .body("""
+                            {
+                              "holderId": "test-participant-id",
+                              "did": "did:web:test-participant",
+                              "name": null
+                            }
+                            """)
+                    .post("/v1alpha/participants/%s/holders".formatted(toBase64(USER)))
+                    .then()
+                    .statusCode(403);
+        }
+
+        @Test
         void createParticipant_whenMissingFields(IssuerServiceEndToEndTestContext context) {
+            var token = context.createParticipant(USER);
+
             context.getAdminEndpoint().baseRequest()
                     .header(new Header("x-api-key", token))
                     .contentType(ContentType.JSON)
@@ -111,38 +134,91 @@ public class HolderApiEndToEndTest {
                             "holderId": "test-participant-id"
                             }
                             """)
-                    .post("/v1alpha/holders")
+                    .post("/v1alpha/participants/%s/holders".formatted(toBase64(USER)))
                     .then()
                     .statusCode(400);
         }
 
         @Test
-        void queryParticipant(IssuerServiceEndToEndTestContext context, HolderService service) {
+        void updateHolder(IssuerServiceEndToEndTestContext context, HolderService service) {
+            var token = context.createParticipant(USER);
+            var initialHolder = createHolder("test-participant-id", "did:web:foo", null);
+            service.createHolder(initialHolder);
 
-            var expectedParticipant = new Holder("test-participant-id", "did:web:foo", "foobar");
-            service.createHolder(expectedParticipant);
+            context.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", token))
+                    .body("""
+                            {
+                              "holderId": "test-participant-id",
+                              "did": "did:web:foo",
+                              "name": "Foo"
+                            }
+                            """)
+                    .put("/v1alpha/participants/%s/holders".formatted(toBase64(USER)))
+                    .then()
+                    .statusCode(200);
+
+            assertThat(service.findById("test-participant-id")).isSucceeded()
+                    .satisfies(holder -> {
+                        assertThat(holder.getHolderName()).isEqualTo("Foo");
+                    });
+        }
+
+        @Test
+        void updateHolder_notAuthorized(IssuerServiceEndToEndTestContext context, HolderService service) {
+            context.createParticipant(USER);
+            var anotherToken = context.createParticipant("anotherUser");
+            var initialHolder = createHolder("test-participant-id", "did:web:foo", null);
+            service.createHolder(initialHolder);
+
+            context.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", anotherToken))
+                    .body("""
+                            {
+                              "holderId": "test-participant-id",
+                              "did": "did:web:foo",
+                              "name": "Foo"
+                            }
+                            """)
+                    .put("/v1alpha/participants/%s/holders".formatted(toBase64(USER)))
+                    .then()
+                    .statusCode(403);
+
+        }
+
+        @Test
+        void queryParticipant(IssuerServiceEndToEndTestContext context, HolderService service) {
+            var token = context.createParticipant(USER);
+
+            var holder1 = createHolder("test-participant-id", "did:web:foo", "foobar");
+            var holder2 = createHolder("test-participant-id", "did:web:foo", "foobar", "anotherParticipantContext");
+            service.createHolder(holder1);
+            service.createHolder(holder2);
 
             var res = context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
-                    .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderId", "=", "test-participant-id")).build())
-                    .post("/v1alpha/holders/query")
+                    .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderName", "=", "foobar")).build())
+                    .post("/v1alpha/participants/%s/holders/query".formatted(toBase64(USER)))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
-                    .extract().body().as(HolderDto[].class);
+                    .extract().body().as(Holder[].class);
 
-            assertThat(res).hasSize(1).allSatisfy(p -> assertThat(expectedParticipant).isEqualTo(p.toHolder()));
+            assertThat(res).hasSize(1).allSatisfy(p -> assertThat(holder1).usingRecursiveComparison().isEqualTo(p));
         }
 
         @Test
         void queryParticipant_noResult(IssuerServiceEndToEndTestContext context) {
+            var token = context.createParticipant(USER);
 
             var res = context.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderId", "=", "test-participant-id")).build())
-                    .post("/v1alpha/holders/query")
+                    .post("/v1alpha/participants/%s/holders/query".formatted(toBase64(USER)))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -153,8 +229,10 @@ public class HolderApiEndToEndTest {
 
         @Test
         void queryParticipant_byAttestationId(IssuerServiceEndToEndTestContext context, HolderService service) {
-            service.createHolder(new Holder("test-participant-id1", "did:web:barbaz", "barbaz", List.of("att1", "att2")));
-            service.createHolder(new Holder("test-participant-id2", "did:web:quizzquazz", "quizzquazz", List.of("att2", "att3")));
+            var token = context.createParticipant(USER);
+
+            service.createHolder(createHolder("test-participant-id1", "did:web:barbaz", "barbaz", List.of("att1", "att2")));
+            service.createHolder(createHolder("test-participant-id2", "did:web:quizzquazz", "quizzquazz", List.of("att2", "att3")));
 
             var query = QuerySpec.Builder.newInstance()
                     .filter(new Criterion("attestations", "contains", "att2"))
@@ -166,7 +244,7 @@ public class HolderApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
                     .body(query)
-                    .post("/v1alpha/holders/query")
+                    .post("/v1alpha/participants/%s/holders/query".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -177,21 +255,63 @@ public class HolderApiEndToEndTest {
 
         @Test
         void getById(IssuerServiceEndToEndTestContext context, HolderService service) {
+            var token = context.createParticipant(USER);
 
-            var expectedParticipant = new Holder("test-participant-id", "did:web:foo", "foobar");
+            var expectedParticipant = createHolder("test-participant-id", "did:web:foo", "foobar");
             service.createHolder(expectedParticipant);
 
             var res = context.getAdminEndpoint().baseRequest()
                     .header(new Header("x-api-key", token))
-                    .get("/v1alpha/holders/test-participant-id")
+                    .get("/v1alpha/participants/%s/holders/test-participant-id".formatted(toBase64(USER)))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
-                    .extract().body().as(HolderDto.class);
+                    .extract().body().as(Holder.class);
 
-            assertThat(res.toHolder()).isEqualTo(expectedParticipant);
+            assertThat(res).usingRecursiveComparison().isEqualTo(expectedParticipant);
         }
 
+        @Test
+        void getById_notAuthorized(IssuerServiceEndToEndTestContext context, HolderService service) {
+            context.createParticipant(USER);
+            var token = context.createParticipant("anotherUser");
+
+            var expectedParticipant = createHolder("test-participant-id", "did:web:foo", "foobar");
+            service.createHolder(expectedParticipant);
+
+            context.getAdminEndpoint().baseRequest()
+                    .header(new Header("x-api-key", token))
+                    .get("/v1alpha/participants/%s/holders/test-participant-id".formatted(toBase64(USER)))
+                    .then()
+                    .statusCode(403);
+
+        }
+
+        private Holder createHolder(String id, String did, String name) {
+            return createHolder(id, did, name, List.of());
+        }
+
+        private Holder createHolder(String id, String did, String name, String participantContextId) {
+            return createHolder(id, did, name, List.of(), participantContextId);
+        }
+
+        private Holder createHolder(String id, String did, String name, List<String> attestations) {
+            return createHolder(id, did, name, attestations, USER);
+        }
+
+        private Holder createHolder(String id, String did, String name, List<String> attestations, String participantContextId) {
+            return Holder.Builder.newInstance()
+                    .participantContextId(USER)
+                    .holderId(id)
+                    .did(did)
+                    .holderName(name)
+                    .attestations(attestations)
+                    .build();
+        }
+
+        private String toBase64(String s) {
+            return Base64.getUrlEncoder().encodeToString(s.getBytes());
+        }
     }
 
     @Nested

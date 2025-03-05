@@ -14,24 +14,74 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.model;
 
-import java.util.Map;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
 
-import static java.util.Objects.requireNonNull;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Defines an attestation that is used to evaluate an issuance request.
- *
- * @param id              the id this definition can be referenced by
- * @param attestationType the type of attestation. For example, the attestation may be a claim in a verifiable
- *                        presentation or an entry in a database table
- * @param configuration   attestation configuration. For example, configuration may include the verified credential type
- *                        required for the attestation and mappings from its claims to output data used to issue a
- *                        credential.
  */
-public record AttestationDefinition(String id, String attestationType, Map<String, Object> configuration) {
-    public AttestationDefinition {
-        requireNonNull(id, "id is required");
-        requireNonNull(attestationType, "attestationType is required");
-        requireNonNull(configuration, "configuration is required");
+public class AttestationDefinition extends AbstractParticipantResource {
+
+    private String id;
+    private String attestationType;
+    private Map<String, Object> configuration = new HashMap<>();
+
+    private AttestationDefinition() {
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getAttestationType() {
+        return attestationType;
+    }
+
+    public Map<String, Object> getConfiguration() {
+        return configuration;
+    }
+
+    public static final class Builder extends AbstractParticipantResource.Builder<AttestationDefinition, Builder> {
+
+        private Builder() {
+            super(new AttestationDefinition());
+        }
+
+        public static Builder newInstance() {
+            return new Builder();
+        }
+
+        public Builder id(String id) {
+            this.entity.id = id;
+            return this;
+        }
+
+        public Builder attestationType(String attestationType) {
+            this.entity.attestationType = attestationType;
+            return this;
+        }
+
+        public Builder configuration(Map<String, Object> configuration) {
+            this.entity.configuration = configuration;
+            return this;
+        }
+
+        @Override
+        public Builder self() {
+            return this;
+        }
+
+        @Override
+        public AttestationDefinition build() {
+            Objects.requireNonNull(entity.id, "Must have an ID");
+            Objects.requireNonNull(entity.attestationType, "Must have an attestation type");
+            Objects.requireNonNull(entity.configuration, "Must have an configuration");
+            Objects.requireNonNull(entity.participantContextId, "Must have an participantContextId");
+            return super.build();
+        }
+
     }
 }

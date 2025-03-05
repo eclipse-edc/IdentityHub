@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.Header;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -50,34 +52,38 @@ import static org.hamcrest.Matchers.equalTo;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 public class AttestationApiEndToEndTest {
+
     abstract static class Tests {
 
-        private static String token = "";
+        public static final String USER = "user";
 
         @BeforeAll
         static void setup(IssuerServiceEndToEndTestContext context) {
-            token = context.createSuperUser();
             var registry = context.getRuntime().getService(AttestationDefinitionValidatorRegistry.class);
             registry.registerValidator("test-type", def -> ValidationResult.success());
             registry.registerValidator("test-failure-type", def -> ValidationResult.failure(Violation.violation("test", null)));
         }
 
         @AfterEach
-        void teardown(AttestationDefinitionStore store, HolderStore holderStore) {
+        void teardown(AttestationDefinitionStore store, HolderStore holderStore, ParticipantContextService pcService) {
             store.query(QuerySpec.max()).getContent()
-                    .forEach(att -> store.deleteById(att.id()));
+                    .forEach(att -> store.deleteById(att.getId()));
 
             holderStore.query(QuerySpec.max()).getContent()
-                    .forEach(participant -> holderStore.deleteById(participant.holderId()));
+                    .forEach(participant -> holderStore.deleteById(participant.getHolderId()));
+
+            pcService.query(QuerySpec.max()).getContent()
+                    .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
         }
 
         @Test
         void createAttestationDefinition(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store) {
+            var token = context.createParticipant(USER);
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .body(new AttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
-                    .post("/v1alpha/attestations")
+                    .body(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
+                    .post("/v1alpha/participants/%s/attestations".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -86,12 +92,29 @@ public class AttestationApiEndToEndTest {
         }
 
         @Test
-        void createAttestationDefinition_shouldReturn400_whenValidationFails(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store) {
+        void createAttestationDefinition_notAuthorized(IssuerServiceEndToEndTestContext context) {
+            context.createParticipant(USER);
+            var token = context.createParticipant("anotherUser");
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .body(new AttestationDefinition("test-id", "test-failure-type", Map.of("foo", "bar")))
-                    .post("/v1alpha/attestations")
+                    .body(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
+                    .post("/v1alpha/participants/%s/attestations".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+
+        }
+
+        @Test
+        void createAttestationDefinition_shouldReturn400_whenValidationFails(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store) {
+            var token = context.createParticipant(USER);
+
+            context.getAdminEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(createAttestationDefinition("test-id", "test-failure-type", Map.of("foo", "bar")))
+                    .post("/v1alpha/participants/%s/attestations".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -100,16 +123,18 @@ public class AttestationApiEndToEndTest {
 
         @Test
         void getForParticipant(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, HolderStore holderStore) {
-            var att1 = new AttestationDefinition("att1", "test-type", Map.of("bar", "baz"));
-            var att2 = new AttestationDefinition("att2", "test-type-1", Map.of("bar", "baz"));
-            var p = new Holder("foobar", "did:web:foobar", "Foo Bar", List.of("att1", "att2"));
+            var token = context.createParticipant(USER);
+
+            var att1 = createAttestationDefinition("att1", "test-type", Map.of("bar", "baz"));
+            var att2 = createAttestationDefinition("att2", "test-type-1", Map.of("bar", "baz"));
+            var p = createHolder("foobar", "did:web:foobar", "Foo Bar", List.of("att1", "att2"));
             var r = store.create(att1).compose(v -> store.create(att2)).compose(participant -> holderStore.create(p));
             assertThat(r).isSucceeded();
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .get("/v1alpha/attestations?holderId=foobar")
+                    .get("/v1alpha/participants/%s/attestations?holderId=foobar".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -120,49 +145,63 @@ public class AttestationApiEndToEndTest {
 
         @Test
         void linkAttestation_expect201(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, HolderStore holderStore) {
-            var r = store.create(new AttestationDefinition("att1", "test-type", Map.of("bar", "baz")))
-                    .compose(participant -> holderStore.create(new Holder("foobar", "did:web:foobar", "Foo Bar")));
+            var token = context.createParticipant(USER);
+
+            var attestation = createAttestationDefinition("att1", "test-type", Map.of("bar", "baz"));
+            var r = store.create(attestation)
+                    .compose(participant -> holderStore.create(createHolder("foobar", "did:web:foobar", "Foo Bar")));
             assertThat(r).isSucceeded();
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/attestations/att1/link?holderId=foobar")
+                    .post("/v1alpha/participants/%s/attestations/att1/link?holderId=foobar".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
 
             assertThat(holderStore.findById("foobar")).isSucceeded()
-                    .satisfies(participant -> assertThat(participant.attestations()).containsExactly("att1"));
+                    .satisfies(participant -> assertThat(participant.getAttestations()).containsExactly("att1"));
         }
 
         @Test
         void linkAttestation_alreadyLinked_expect204(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, HolderStore holderStore) {
-            var r = store.create(new AttestationDefinition("att1", "test-type", Map.of("bar", "baz")))
-                    .compose(participant -> holderStore.create(new Holder("foobar", "did:web:foobar", "Foo Bar", singletonList("att1"))));
+            var token = context.createParticipant(USER);
+
+            var attestation = createAttestationDefinition("att1", "test-type", Map.of("bar", "baz"));
+            var r = store.create(attestation)
+                    .compose(participant -> holderStore.create(createHolder("foobar", "did:web:foobar", "Foo Bar", singletonList("att1"))));
             assertThat(r).isSucceeded();
 
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/attestations/att1/link?holderId=foobar")
+                    .post("/v1alpha/participants/%s/attestations/att1/link?holderId=foobar".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
 
             assertThat(holderStore.findById("foobar")).isSucceeded()
-                    .satisfies(participant -> assertThat(participant.attestations()).containsExactly("att1"));
+                    .satisfies(participant -> assertThat(participant.getAttestations()).containsExactly("att1"));
         }
 
         @Test
         void queryAttestations(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store, HolderStore holderStore) {
-            var p1 = new Holder("p1", "did:web:foobar", "Foo Bar", singletonList("att1"));
-            var p2 = new Holder("p2", "did:web:barbaz", "Bar Baz", List.of("att1", "att2"));
+            var token = context.createParticipant(USER);
+
+            var p1 = createHolder("p1", "did:web:foobar", "Foo Bar", singletonList("att1"));
+            var p2 = createHolder("p2", "did:web:barbaz", "Bar Baz", List.of("att1", "att2"));
 
             var r = holderStore.create(p1).compose(participant -> holderStore.create(p2));
             assertThat(r).isSucceeded();
-            store.create(new AttestationDefinition("att1", "test-type", Map.of("key1", "val1")));
-            store.create(new AttestationDefinition("att2", "test-type-1", Map.of("key2", "val2")));
+
+            var attestation1 = createAttestationDefinition("att1", "test-type", Map.of("key1", "val1"));
+            var attestation2 = createAttestationDefinition("att2", "test-type=1", Map.of("key2", "val2"));
+            var attestation3 = createAttestationDefinition("att3", "test-type", Map.of("key2", "val2"), "anotherUser");
+
+            store.create(attestation1);
+            store.create(attestation2);
+            store.create(attestation3);
 
             //query by attestation type
             context.getAdminEndpoint().baseRequest()
@@ -173,14 +212,72 @@ public class AttestationApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("attestationType", "=", "test-type"))
                             .build())
-                    .post("/v1alpha/attestations/query")
+                    .post("/v1alpha/participants/%s/attestations/query".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
                     .body("size()", equalTo(1))
-                    .body("[0].id", equalTo("att1"));
+                    .body("[0].id", equalTo("att1"))
+                    .body("[0].participantContextId", equalTo("user"));
 
         }
+
+        @Test
+        void queryAttestations_notAuthorized(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store) {
+            context.createParticipant(USER);
+            var token = context.createParticipant("anotherUser");
+            
+            var attestation1 = createAttestationDefinition("att1", "test-type", Map.of("key1", "val1"));
+
+            store.create(attestation1);
+
+            //query by attestation type
+            context.getAdminEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(QuerySpec.Builder.newInstance()
+                            .sortField("id")
+                            .sortOrder(SortOrder.ASC)
+                            .filter(new Criterion("attestationType", "=", "test-type"))
+                            .build())
+                    .post("/v1alpha/participants/%s/attestations/query".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("size()", equalTo(0));
+
+        }
+
+        private String toBase64(String s) {
+            return Base64.getUrlEncoder().encodeToString(s.getBytes());
+        }
+
+        private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {
+            return createAttestationDefinition(id, type, configuration, USER);
+        }
+
+        private Holder createHolder(String id, String did, String name) {
+            return createHolder(id, did, name, List.of());
+        }
+
+        private Holder createHolder(String id, String did, String name, List<String> attestations) {
+            return Holder.Builder.newInstance()
+                    .participantContextId(USER)
+                    .holderId(id)
+                    .did(did)
+                    .holderName(name)
+                    .attestations(attestations)
+                    .build();
+        }
+
+        private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration, String participantContext) {
+            return AttestationDefinition.Builder.newInstance()
+                    .id(id)
+                    .attestationType(type)
+                    .participantContextId(participantContext)
+                    .configuration(configuration).build();
+        }
+
     }
 
     @Nested

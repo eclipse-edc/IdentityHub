@@ -36,6 +36,10 @@ public interface CredentialDefinitionStoreStatements extends SqlStatements {
         return "credential_type";
     }
 
+    default String getParticipantContextIdColumn() {
+        return "participant_context_id";
+    }
+
     default String getAttestationsColumn() {
         return "attestations";
     }

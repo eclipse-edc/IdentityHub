@@ -31,6 +31,7 @@ import org.mockito.Mockito;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
@@ -66,7 +67,7 @@ public class DcpHolderTokenVerifierImplTest {
 
         var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
 
-        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
         when(tokenValidationService.validate(anyString(), any(), anyList())).thenReturn(Result.success(ClaimToken.Builder.newInstance().build()));
 
         var result = dcpIssuerTokenVerifier.verify(participantContext, token);
@@ -94,7 +95,7 @@ public class DcpHolderTokenVerifierImplTest {
 
         var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
 
-        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(new Holder(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
         when(tokenValidationService.validate(anyString(), any(), anyList())).thenReturn(Result.failure("failed"));
 
         var result = dcpIssuerTokenVerifier.verify(participantContext, token);
@@ -113,6 +114,21 @@ public class DcpHolderTokenVerifierImplTest {
         assertThat(result).isFailed();
 
     }
+
+    private Holder createHolder(String id, String did, String name) {
+        return createHolder(id, did, name, List.of());
+    }
+
+    private Holder createHolder(String id, String did, String name, List<String> attestations) {
+        return Holder.Builder.newInstance()
+                .participantContextId(UUID.randomUUID().toString())
+                .holderId(id)
+                .did(did)
+                .holderName(name)
+                .attestations(attestations)
+                .build();
+    }
+
 
     private String generateToken() {
         return generateJwt(ISSUER_DID, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), PARTICIPANT_KEY);

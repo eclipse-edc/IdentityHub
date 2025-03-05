@@ -33,6 +33,7 @@ public class BaseSqlDialectStatements implements CredentialDefinitionStoreStatem
     public String getInsertTemplate() {
         return executeStatement()
                 .column(getIdColumn())
+                .column(getParticipantContextIdColumn())
                 .column(getCredentialTypeColumn())
                 .jsonColumn(getAttestationsColumn())
                 .jsonColumn(getRulesColumn())

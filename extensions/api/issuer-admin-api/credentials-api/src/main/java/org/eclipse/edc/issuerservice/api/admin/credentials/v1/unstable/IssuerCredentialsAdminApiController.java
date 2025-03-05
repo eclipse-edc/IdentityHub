@@ -20,53 +20,57 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.api.Versions;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialStatusResponse;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/credentials")
+@Path(Versions.UNSTABLE + "/participants/{participantContextId}/credentials")
 public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdminApi {
+
+    private final AuthorizationService authorizationService;
     private final CredentialService credentialService;
 
-    public IssuerCredentialsAdminApiController(CredentialService credentialService) {
+    public IssuerCredentialsAdminApiController(AuthorizationService authorizationService, CredentialService credentialService) {
+        this.authorizationService = authorizationService;
         this.credentialService = credentialService;
-    }
-
-    @GET
-    @Path("/{participantId}")
-    @Override
-    public Collection<VerifiableCredentialDto> getAllCredentials(@PathParam("participantId") String participantId) {
-        return credentialService.getCredentialForParticipant(participantId)
-                .map(coll -> coll.stream().map(resource ->
-                        new VerifiableCredentialDto(resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
-                .orElseThrow(exceptionMapper(VerifiableCredential.class, participantId));
     }
 
     @POST
     @Path("/query")
     @Override
-    public Collection<VerifiableCredentialDto> queryCredentials(QuerySpec query) {
-        return credentialService.queryCredentials(query).map(coll -> coll.stream().map(resource ->
-                        new VerifiableCredentialDto(resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
+    public Collection<VerifiableCredentialDto> queryCredentials(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext context) {
+        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var spec = query.toBuilder().filter(filterByParticipantContextId(decodedParticipantId)).build();
+        return credentialService.queryCredentials(spec).map(coll -> coll.stream()
+                        .filter(resource -> authorizationService.isAuthorized(context, resource.getId(), VerifiableCredentialResource.class).succeeded())
+                        .map(resource -> new VerifiableCredentialDto(resource.getParticipantContextId(), resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, null));
     }
 
     @POST
     @Path("/{credentialId}/revoke")
     @Override
-    public Response revokeCredential(@PathParam("credentialId") String credentialId) {
-        return credentialService.revokeCredential(credentialId)
+    public Response revokeCredential(@PathParam("credentialId") String credentialId, @Context SecurityContext context) {
+        return authorizationService.isAuthorized(context, credentialId, VerifiableCredentialResource.class)
+                .compose(u -> credentialService.revokeCredential(credentialId))
                 .map(v -> Response.noContent().build())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }
@@ -88,8 +92,9 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @GET
     @Path("/{credentialId}/status")
     @Override
-    public CredentialStatusResponse checkRevocationStatus(@PathParam("credentialId") String credentialId) {
-        return credentialService.getCredentialStatus(credentialId)
+    public CredentialStatusResponse checkRevocationStatus(@PathParam("credentialId") String credentialId, @Context SecurityContext context) {
+        return authorizationService.isAuthorized(context, credentialId, VerifiableCredentialResource.class)
+                .compose(u -> credentialService.getCredentialStatus(credentialId))
                 .map(status -> new CredentialStatusResponse(credentialId, status, null))
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }

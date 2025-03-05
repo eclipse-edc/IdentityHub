@@ -43,7 +43,7 @@ public class DatabaseAttestationSourceFactory implements AttestationSourceFactor
 
     @Override
     public AttestationSource createSource(AttestationDefinition definition) {
-        var configuration = definition.configuration();
+        var configuration = definition.getConfiguration();
         var required = (Boolean) configuration.getOrDefault(REQUIRED, false);
         var dataSourceName = (String) configuration.get(DATASOURCE_NAME);
         var tableName = (String) configuration.get(TABLE_NAME);

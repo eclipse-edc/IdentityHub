@@ -36,6 +36,7 @@ import java.text.ParseException;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,7 +65,7 @@ public class JwtCredentialGeneratorTest {
 
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     void generateCredential() {
 
@@ -142,6 +143,7 @@ public class JwtCredentialGeneratorTest {
                 .credentialType("MembershipCredential")
                 .mapping(new MappingDefinition("input", "outut", true))
                 .jsonSchema("{}")
+                .participantContextId(UUID.randomUUID().toString())
                 .build();
     }
 

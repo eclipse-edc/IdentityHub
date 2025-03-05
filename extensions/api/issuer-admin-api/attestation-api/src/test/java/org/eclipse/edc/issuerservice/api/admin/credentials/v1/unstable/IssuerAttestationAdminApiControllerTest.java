@@ -16,14 +16,17 @@ package org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable;
 
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.api.Versions;
+import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -31,14 +34,22 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
 
+    private static final String PARTICIPANT_ID = "test-participant";
+    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
     private final AttestationDefinitionService attestationDefinitionService = mock();
+    private final AuthorizationService authorizationService = mock();
+
+    @BeforeEach
+    void setUp() {
+        when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+    }
 
     @Test
     void linkAttestation() {
@@ -131,8 +142,8 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void createAttestationDefinition_expect201() {
-        var def = new AttestationDefinition("test-id", "test-type", Map.of());
-        when(attestationDefinitionService.createAttestation(eq(def)))
+        var def = createAttestationDefinition("test-id", "test-type", Map.of());
+        when(attestationDefinitionService.createAttestation(refEq(def)))
                 .thenReturn(ServiceResult.success());
 
         baseRequest()
@@ -145,8 +156,8 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void createAttestationDefinition_whenExists_expectConflict() {
-        var def = new AttestationDefinition("test-id", "test-type", Map.of());
-        when(attestationDefinitionService.createAttestation(eq(def)))
+        var def = createAttestationDefinition("test-id", "test-type", Map.of());
+        when(attestationDefinitionService.createAttestation(refEq(def)))
                 .thenReturn(ServiceResult.conflict("foo"));
 
         baseRequest()
@@ -176,15 +187,15 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
         baseRequest()
                 .delete("/notexist-attestation-definition")
                 .then()
-                .statusCode(400);
+                .statusCode(404);
     }
 
     @Test
     void getAttestationDefinitionsForHolder() {
         when(attestationDefinitionService.getAttestationsForHolder(anyString()))
                 .thenReturn(ServiceResult.success(List.of(
-                        new AttestationDefinition("test-id", "test-type", Map.of()),
-                        new AttestationDefinition("test-id2", "test-type", Map.of())))
+                        createAttestationDefinition("test-id", "test-type", Map.of()),
+                        createAttestationDefinition("test-id2", "test-type", Map.of())))
                 );
 
         var attestations = baseRequest()
@@ -233,8 +244,8 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
     @Test
     void queryAttestationDefinitions() {
         var definitions = List.of(
-                new AttestationDefinition("test-id1", "test-type", Map.of()),
-                new AttestationDefinition("test-id2", "test-type", Map.of())
+                createAttestationDefinition("test-id1", "test-type", Map.of()),
+                createAttestationDefinition("test-id2", "test-type", Map.of())
         );
         when(attestationDefinitionService.queryAttestations(any()))
                 .thenReturn(ServiceResult.success(definitions));
@@ -280,13 +291,23 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new IssuerAttestationAdminApiController(attestationDefinitionService);
+        return new IssuerAttestationAdminApiController(authorizationService, attestationDefinitionService);
     }
 
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/attestations")
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/attestations".formatted(PARTICIPANT_ID_ENCODED))
                 .when();
     }
+
+    private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {
+        return AttestationDefinition.Builder.newInstance()
+                .id(id)
+                .attestationType(type)
+                .configuration(configuration)
+                .participantContextId(PARTICIPANT_ID)
+                .build();
+    }
+    
 }

@@ -42,7 +42,7 @@ public class PresentationAttestationSourceFactory implements AttestationSourceFa
 
     @Override
     public AttestationSource createSource(AttestationDefinition definition) {
-        var configuration = definition.configuration();
+        var configuration = definition.getConfiguration();
         var credentialType = (String) configuration.get(CREDENTIAL_TYPE);
         var outputClaim = (String) configuration.get(OUTPUT_CLAIM);
         var required = (Boolean) configuration.getOrDefault(REQUIRED, true);

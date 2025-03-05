@@ -18,7 +18,6 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -31,12 +30,6 @@ import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public abstract class CredentialDefinitionStoreTestBase {
 
-    protected static CredentialDefinition.@NotNull Builder createCredentialDefinitionBuilder(String id, String type) {
-        return CredentialDefinition.Builder.newInstance()
-                .id(id)
-                .credentialType(type)
-                .jsonSchemaUrl("http://example.com/schema");
-    }
 
     @Test
     void create() {
@@ -143,6 +136,14 @@ public abstract class CredentialDefinitionStoreTestBase {
                 .build();
     }
 
+    protected CredentialDefinition.Builder createCredentialDefinitionBuilder(String id, String type) {
+        return CredentialDefinition.Builder.newInstance()
+                .id(id)
+                .participantContextId(UUID.randomUUID().toString())
+                .credentialType(type)
+                .jsonSchemaUrl("http://example.com/schema");
+    }
+
     @Nested
     class Query {
         @Test
@@ -231,6 +232,31 @@ public abstract class CredentialDefinitionStoreTestBase {
                     .hasSize(2)
                     .usingRecursiveFieldByFieldElementComparator()
                     .containsExactlyInAnyOrder(def1, def2);
+        }
+
+        @Test
+        void byParticipantContext() {
+            var def1 = createCredentialDefinitionBuilder("id1", "Membership")
+                    .attestations(Set.of("att1", "att2"))
+                    .build();
+            var def2 = createCredentialDefinitionBuilder("id2", "Iso9001Cert")
+                    .attestations(Set.of("att2", "att3"))
+                    .build();
+
+            var r = getStore().create(def1).compose(v -> getStore().create(def2));
+            assertThat(r).isSucceeded();
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("participantContextId", "=", def1.getParticipantContextId()))
+                    .build();
+
+            var result = getStore().query(query);
+            assertThat(result).isSucceeded();
+
+            assertThat(result.getContent())
+                    .hasSize(1)
+                    .usingRecursiveFieldByFieldElementComparator()
+                    .containsExactlyInAnyOrder(def1);
         }
 
 

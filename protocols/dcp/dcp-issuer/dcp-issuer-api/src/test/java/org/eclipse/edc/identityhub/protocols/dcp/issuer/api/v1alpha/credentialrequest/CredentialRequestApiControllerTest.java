@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import java.sql.Date;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -142,7 +143,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
         var requestMessage = createCredentialRequestMessage();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
-        var participant = new Holder("id", "did", "name");
+        var participant = createHolder("id", "did", "name");
 
         var ctx = new DcpRequestContext(participant, Map.of());
         var token = generateJwt();
@@ -164,7 +165,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
         var requestMessage = createCredentialRequestMessage();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
-        var participant = new Holder("id", "did", "name");
+        var participant = createHolder("id", "did", "name");
         var ctx = new DcpRequestContext(participant, Map.of());
 
         var token = generateJwt();
@@ -204,6 +205,20 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
                 .participantContextId(participantContextId)
                 .did("did")
                 .apiTokenAlias("apiTokenAlias")
+                .build();
+    }
+
+    private Holder createHolder(String id, String did, String name) {
+        return createHolder(id, did, name, List.of());
+    }
+
+    private Holder createHolder(String id, String did, String name, List<String> attestations) {
+        return Holder.Builder.newInstance()
+                .participantContextId(UUID.randomUUID().toString())
+                .holderId(id)
+                .did(did)
+                .holderName(name)
+                .attestations(attestations)
                 .build();
     }
 

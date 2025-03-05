@@ -114,7 +114,7 @@ public class CredentialDefinitionServiceImpl implements CredentialDefinitionServ
     private ServiceResult<Void> checkAttestations(CredentialDefinition credentialDefinition, Collection<AttestationDefinition> attestationDefinitions) {
         if (attestationDefinitions.size() != credentialDefinition.getAttestations().size()) {
 
-            var attestationsIds = attestationDefinitions.stream().map(AttestationDefinition::id).collect(Collectors.toSet());
+            var attestationsIds = attestationDefinitions.stream().map(AttestationDefinition::getId).collect(Collectors.toSet());
 
             var missingAttestations = credentialDefinition.getAttestations().stream()
                     .filter(attestationId -> !attestationsIds.contains(attestationId))

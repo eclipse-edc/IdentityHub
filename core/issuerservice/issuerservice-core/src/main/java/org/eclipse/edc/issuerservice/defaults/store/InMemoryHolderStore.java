@@ -43,7 +43,7 @@ public class InMemoryHolderStore extends InMemoryEntityStore<Holder> implements 
 
     @Override
     protected String getId(Holder newObject) {
-        return newObject.holderId();
+        return newObject.getHolderId();
     }
 
     @Override

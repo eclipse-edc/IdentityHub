@@ -76,7 +76,7 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
 
     @Override
     public StoreResult<Void> create(AttestationDefinition attestationDefinition) {
-        var id = attestationDefinition.id();
+        var id = attestationDefinition.getId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 if (findByIdInternal(connection, id) != null) {
@@ -87,8 +87,9 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
                 var timestamp = clock.millis();
                 queryExecutor.execute(connection, stmt,
                         id,
-                        attestationDefinition.attestationType(),
-                        toJson(attestationDefinition.configuration()),
+                        attestationDefinition.getParticipantContextId(),
+                        attestationDefinition.getAttestationType(),
+                        toJson(attestationDefinition.getConfiguration()),
                         timestamp,
                         timestamp
                 );
@@ -102,7 +103,7 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
 
     @Override
     public StoreResult<Void> update(AttestationDefinition attestationDefinition) {
-        var id = attestationDefinition.id();
+        var id = attestationDefinition.getId();
 
         Objects.requireNonNull(attestationDefinition);
         Objects.requireNonNull(id);
@@ -112,8 +113,8 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
 
                     queryExecutor.execute(connection,
                             statements.getUpdateTemplate(),
-                            attestationDefinition.attestationType(),
-                            toJson(attestationDefinition.configuration()),
+                            attestationDefinition.getAttestationType(),
+                            toJson(attestationDefinition.getConfiguration()),
                             clock.millis(),
                             id
                     );
@@ -165,8 +166,14 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
     private AttestationDefinition mapResultSet(ResultSet resultSet) throws Exception {
 
         var id = resultSet.getString(statements.getIdColumn());
+        var participantContextId = resultSet.getString(statements.getParticipantIdColumn());
         var type = resultSet.getString(statements.getAttestationTypeColumn());
         var config = resultSet.getString(statements.getConfigurationColumn());
-        return new AttestationDefinition(id, type, fromJson(config, CONFIG_REF));
+        return AttestationDefinition.Builder.newInstance()
+                .id(id)
+                .participantContextId(participantContextId)
+                .attestationType(type)
+                .configuration(fromJson(config, CONFIG_REF))
+                .build();
     }
 }
