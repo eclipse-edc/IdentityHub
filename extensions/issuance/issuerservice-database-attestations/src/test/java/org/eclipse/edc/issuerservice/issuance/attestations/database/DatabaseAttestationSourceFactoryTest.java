@@ -32,7 +32,11 @@ class DatabaseAttestationSourceFactoryTest {
     void createSource_whenSucceeds() {
         Map<String, Object> configuration = Map.of("dataSourceName", "test-datasource",
                 "tableName", "foobar-table");
-        var definition = new AttestationDefinition("123", "database", configuration);
+        var definition = AttestationDefinition.Builder.newInstance().id("123")
+                .attestationType("database")
+                .participantContextId("participantContextId")
+                .configuration(configuration)
+                .build();
         var source = factory.createSource(definition);
         assertThat(source).isInstanceOf(DatabaseAttestationSource.class);
         assertThat((DatabaseAttestationSource) source).extracting(DatabaseAttestationSource::isRequired).isEqualTo(false);
@@ -45,7 +49,11 @@ class DatabaseAttestationSourceFactoryTest {
         Map<String, Object> configuration = Map.of("dataSourceName", "test-datasource",
                 "required", true,
                 "tableName", "foobar-table");
-        var definition = new AttestationDefinition("123", "database", configuration);
+        var definition = AttestationDefinition.Builder.newInstance().id("123")
+                .attestationType("database")
+                .participantContextId("participantContextId")
+                .configuration(configuration)
+                .build();
         var source = factory.createSource(definition);
         assertThat(source).isInstanceOf(DatabaseAttestationSource.class);
         assertThat((DatabaseAttestationSource) source).extracting(DatabaseAttestationSource::isRequired).isEqualTo(true);
