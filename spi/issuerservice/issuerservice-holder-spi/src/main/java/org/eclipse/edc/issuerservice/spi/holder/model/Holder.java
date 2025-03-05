@@ -100,6 +100,7 @@ public class Holder extends AbstractParticipantResource {
             return this;
         }
 
+        @Override
         public Holder build() {
             Objects.requireNonNull(entity.holderId, "Holder ID must not be null");
             Objects.requireNonNull(entity.did, "DID must not be null");

@@ -92,7 +92,7 @@ public interface IssuerHolderAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Holder getHolderById(String participantContextId, String holderId, SecurityContext context);
+    Holder getHolderById(String holderId, SecurityContext context);
 
     @Operation(description = "Gets all holders for a certain query.",
             operationId = "queryHolders",

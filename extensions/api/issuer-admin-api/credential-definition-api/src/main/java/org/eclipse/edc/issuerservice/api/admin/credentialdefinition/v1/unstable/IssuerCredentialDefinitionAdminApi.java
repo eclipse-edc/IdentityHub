@@ -92,7 +92,7 @@ public interface IssuerCredentialDefinitionAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    CredentialDefinition getCredentialDefinitionById(String participantContextId, String credentialDefinitionId, SecurityContext securityContext);
+    CredentialDefinition getCredentialDefinitionById(String credentialDefinitionId, SecurityContext securityContext);
 
     @Operation(description = "Gets all credential definitions for a certain query.",
             operationId = "queryCredentialDefinitions",
@@ -128,6 +128,6 @@ public interface IssuerCredentialDefinitionAdminApi {
                     @ApiResponse(responseCode = "404", description = "The credential definition was not found.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             })
-    void deleteCredentialDefinitionById(String participantContextId, String credentialDefinitionId, SecurityContext context);
+    void deleteCredentialDefinitionById(String credentialDefinitionId, SecurityContext context);
 
 }

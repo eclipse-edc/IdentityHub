@@ -68,7 +68,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @POST
     @Path("/{credentialId}/revoke")
     @Override
-    public Response revokeCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
+    public Response revokeCredential(@PathParam("credentialId") String credentialId, @Context SecurityContext context) {
         return authorizationService.isAuthorized(context, credentialId, VerifiableCredentialResource.class)
                 .compose(u -> credentialService.revokeCredential(credentialId))
                 .map(v -> Response.noContent().build())
@@ -78,21 +78,21 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @POST
     @Path("/{credentialId}/suspend")
     @Override
-    public Response suspendCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
+    public Response suspendCredential(@PathParam("credentialId") String credentialId) {
         return Response.status(501).build();
     }
 
     @POST
     @Path("/{credentialId}/resume")
     @Override
-    public Response resumeCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
+    public Response resumeCredential(@PathParam("credentialId") String credentialId) {
         return Response.status(501).build();
     }
 
     @GET
     @Path("/{credentialId}/status")
     @Override
-    public CredentialStatusResponse checkRevocationStatus(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
+    public CredentialStatusResponse checkRevocationStatus(@PathParam("credentialId") String credentialId, @Context SecurityContext context) {
         return authorizationService.isAuthorized(context, credentialId, VerifiableCredentialResource.class)
                 .compose(u -> credentialService.getCredentialStatus(credentialId))
                 .map(status -> new CredentialStatusResponse(credentialId, status, null))

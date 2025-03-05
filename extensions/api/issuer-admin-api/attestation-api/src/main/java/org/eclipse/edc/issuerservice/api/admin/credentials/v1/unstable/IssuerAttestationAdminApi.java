@@ -115,7 +115,7 @@ public interface IssuerAttestationAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void deleteAttestationDefinition(String participantContextId, String attestationDefinitionId, SecurityContext securityContext);
+    void deleteAttestationDefinition(String attestationDefinitionId, SecurityContext securityContext);
 
     @Operation(description = "Get all attestations for a given participant.",
             operationId = "getAttestations",

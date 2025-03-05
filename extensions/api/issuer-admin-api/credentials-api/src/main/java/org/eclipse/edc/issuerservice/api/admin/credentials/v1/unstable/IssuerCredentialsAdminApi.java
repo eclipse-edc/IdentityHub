@@ -73,7 +73,7 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response revokeCredential(String participantContextId, String credentialId, SecurityContext context);
+    Response revokeCredential(String credentialId, SecurityContext context);
 
 
     @Operation(description = "Suspends a credential with the given ID for the given participant. Suspended credentials will be added to the Revocation List. Suspension is reversible.",
@@ -92,7 +92,7 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response suspendCredential(String participantContextId, String credentialId, SecurityContext context);
+    Response suspendCredential(String credentialId);
 
     @Operation(description = "Resumes a credential with the given ID for the given participant. Resumed credentials will be removed from the Revocation List.",
             operationId = "resumeCredential",
@@ -110,7 +110,7 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response resumeCredential(String participantContextId, String credentialId, SecurityContext context);
+    Response resumeCredential(String credentialId);
 
     @Operation(description = "Checks the revocation status of a credential with the given ID for the given participant.",
             operationId = "checkCredentialStatus",
@@ -128,5 +128,5 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    CredentialStatusResponse checkRevocationStatus(String participantContextId, String credentialId, SecurityContext context);
+    CredentialStatusResponse checkRevocationStatus(String credentialId, SecurityContext context);
 }
