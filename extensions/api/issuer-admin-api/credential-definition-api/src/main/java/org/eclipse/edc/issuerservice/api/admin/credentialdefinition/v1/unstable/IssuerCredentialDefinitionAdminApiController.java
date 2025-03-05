@@ -39,6 +39,7 @@ import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
@@ -88,7 +89,9 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Path("/query")
     @Override
     public Collection<CredentialDefinition> queryCredentialDefinitions(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext context) {
-        var definitions = credentialDefinitionService.queryCredentialDefinitions(querySpec)
+        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var spec = querySpec.toBuilder().filter(filterByParticipantContextId(decodedParticipantId)).build();
+        var definitions = credentialDefinitionService.queryCredentialDefinitions(spec)
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, null));
 
         return definitions.stream()

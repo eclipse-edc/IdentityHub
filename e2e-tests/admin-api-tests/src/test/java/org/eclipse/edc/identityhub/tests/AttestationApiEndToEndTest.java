@@ -92,6 +92,21 @@ public class AttestationApiEndToEndTest {
         }
 
         @Test
+        void createAttestationDefinition_notAuthorized(IssuerServiceEndToEndTestContext context) {
+            context.createParticipant(USER);
+            var token = context.createParticipant("anotherUser");
+            context.getAdminEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
+                    .post("/v1alpha/participants/%s/attestations".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+
+        }
+
+        @Test
         void createAttestationDefinition_shouldReturn400_whenValidationFails(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store) {
             var token = context.createParticipant(USER);
 
@@ -119,7 +134,7 @@ public class AttestationApiEndToEndTest {
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .get("/v1alpha/participants/%s/attestations?holderId=foobar".formatted(USER))
+                    .get("/v1alpha/participants/%s/attestations?holderId=foobar".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -140,7 +155,7 @@ public class AttestationApiEndToEndTest {
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/participants/%s/attestations/att1/link?holderId=foobar".formatted(USER))
+                    .post("/v1alpha/participants/%s/attestations/att1/link?holderId=foobar".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -161,7 +176,7 @@ public class AttestationApiEndToEndTest {
             context.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/participants/%s/attestations/att1/link?holderId=foobar".formatted(USER))
+                    .post("/v1alpha/participants/%s/attestations/att1/link?holderId=foobar".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -197,13 +212,39 @@ public class AttestationApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("attestationType", "=", "test-type"))
                             .build())
-                    .post("/v1alpha/participants/%s/attestations/query".formatted(USER))
+                    .post("/v1alpha/participants/%s/attestations/query".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
                     .body("size()", equalTo(1))
                     .body("[0].id", equalTo("att1"))
                     .body("[0].participantContextId", equalTo("user"));
+
+        }
+
+        @Test
+        void queryAttestations_notAuthorized(IssuerServiceEndToEndTestContext context, AttestationDefinitionStore store) {
+            context.createParticipant(USER);
+            var token = context.createParticipant("anotherUser");
+            
+            var attestation1 = createAttestationDefinition("att1", "test-type", Map.of("key1", "val1"));
+
+            store.create(attestation1);
+
+            //query by attestation type
+            context.getAdminEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(QuerySpec.Builder.newInstance()
+                            .sortField("id")
+                            .sortOrder(SortOrder.ASC)
+                            .filter(new Criterion("attestationType", "=", "test-type"))
+                            .build())
+                    .post("/v1alpha/participants/%s/attestations/query".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("size()", equalTo(0));
 
         }
 

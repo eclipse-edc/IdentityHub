@@ -40,6 +40,7 @@ import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
@@ -97,7 +98,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     @POST
     @Override
     public Response createAttestationDefinition(@PathParam("participantContextId") String participantContextId, AttestationDefinitionRequest attestationRequest, @Context SecurityContext securityContext) {
-        
+
         var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
         return authorizationService.isAuthorized(securityContext, decodedParticipantId, ParticipantContext.class)
@@ -129,7 +130,10 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     @Path("/query")
     @Override
     public Collection<AttestationDefinition> queryAttestationDefinitions(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext context) {
-        var attestations = attestationDefinitionService.queryAttestations(query)
+        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var spec = query.toBuilder().filter(filterByParticipantContextId(decodedParticipantId)).build();
+
+        var attestations = attestationDefinitionService.queryAttestations(spec)
                 .orElseThrow(exceptionMapper(AttestationDefinition.class, null));
 
         return attestations.stream()

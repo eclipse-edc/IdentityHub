@@ -31,10 +31,13 @@ import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.Cre
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
@@ -54,7 +57,9 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Path("/query")
     @Override
     public Collection<VerifiableCredentialDto> queryCredentials(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext context) {
-        return credentialService.queryCredentials(query).map(coll -> coll.stream()
+        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var spec = query.toBuilder().filter(filterByParticipantContextId(decodedParticipantId)).build();
+        return credentialService.queryCredentials(spec).map(coll -> coll.stream()
                         .filter(resource -> authorizationService.isAuthorized(context, resource.getId(), VerifiableCredentialResource.class).succeeded())
                         .map(resource -> new VerifiableCredentialDto(resource.getParticipantContextId(), resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, null));

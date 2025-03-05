@@ -38,6 +38,7 @@ import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
@@ -57,7 +58,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @Override
     public Response addHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
         var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.isAuthorized(context, participantContextId, ParticipantContext.class)
+        return authorizationService.isAuthorized(context, decodedParticipantId, ParticipantContext.class)
                 .compose(u -> holderService.createHolder(holder.toHolder(decodedParticipantId)))
                 .map(v -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/holders/%s".formatted(participantContextId, holder.id()))).build())
                 .orElseThrow(exceptionMapper(Holder.class, holder.id()));
@@ -86,7 +87,9 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @Path("/query")
     @Override
     public Collection<Holder> queryHolders(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext context) {
-        return holderService.queryHolders(querySpec)
+        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var spec = querySpec.toBuilder().filter(filterByParticipantContextId(decodedParticipantId)).build();
+        return holderService.queryHolders(spec)
                 .map(collection -> collection.stream()
                         .filter(holder -> authorizationService.isAuthorized(context, holder.getHolderId(), Holder.class).succeeded()).toList())
                 .orElseThrow(exceptionMapper(Holder.class, null));

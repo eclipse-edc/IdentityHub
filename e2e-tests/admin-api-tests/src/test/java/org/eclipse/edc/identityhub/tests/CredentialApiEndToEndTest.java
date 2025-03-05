@@ -36,6 +36,7 @@ import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEnd
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
@@ -51,6 +52,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 
@@ -60,6 +62,7 @@ import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CRED
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET;
+import static org.hamcrest.Matchers.equalTo;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 public class CredentialApiEndToEndTest {
@@ -72,6 +75,10 @@ public class CredentialApiEndToEndTest {
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
     private @NotNull VerifiableCredentialResource createCredential(String credentialId) {
+        return createCredential(credentialId, USER);
+    }
+
+    private @NotNull VerifiableCredentialResource createCredential(String credentialId, String participantContextId) {
         var cred = VerifiableCredential.Builder.newInstance()
                 .issuanceDate(Instant.now())
                 .id(credentialId)
@@ -90,7 +97,7 @@ public class CredentialApiEndToEndTest {
                 .holderId("holder-id")
                 .id(credentialId)
                 .credential(new VerifiableCredentialContainer("JWT_STRING", CredentialFormat.VC1_0_JWT, cred))
-                .participantContextId(USER)
+                .participantContextId(participantContextId)
                 .build();
     }
 
@@ -145,7 +152,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -173,7 +180,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -200,11 +207,34 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
                     .body(Matchers.containsString("was not found"));
+        }
+
+
+        @Test
+        void revoke_whenNotAuthorized(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
+            context.createParticipant(USER);
+            var token = context.createParticipant("anotherUser");
+
+            // create revocation credential
+            var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+
+            credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
+
+            credentialStore.create(createCredential("test-cred"));
+
+            context.getAdminEndpoint()
+                    .baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
         }
 
         @Test
@@ -219,7 +249,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
@@ -251,12 +281,102 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
                     .body(Matchers.containsString("No StatusList implementation for type 'InvalidStatusListType' found."));
 
+        }
+
+        @Test
+        void queryCredentials(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
+            var token = context.createParticipant(USER);
+
+            credentialStore.create(createCredential("test-cred"));
+            credentialStore.create(createCredential("test-cred-1", "another-user"));
+
+            context.getAdminEndpoint()
+                    .baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(QuerySpec.Builder.newInstance()
+                            .filter(new Criterion("issuerId", "=", "issuer-id"))
+                            .build())
+                    .post("/v1alpha/participants/%s/credentials/query".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("size()", equalTo(1));
+
+        }
+
+        @Test
+        void queryCredentials_notAuthorized(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
+            context.createParticipant(USER);
+            var token = context.createParticipant("anotherUser");
+
+            credentialStore.create(createCredential("test-cred"));
+
+            context.getAdminEndpoint()
+                    .baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(QuerySpec.Builder.newInstance()
+                            .filter(new Criterion("issuerId", "=", "issuer-id"))
+                            .build())
+                    .post("/v1alpha/participants/%s/credentials/query".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("size()", equalTo(0));
+
+        }
+
+        @Test
+        void checkStatus(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
+            var token = context.createParticipant(USER);
+
+            // create revocation credential
+            var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+
+            credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
+
+            credentialStore.create(createCredential("test-cred"));
+
+            context.getAdminEndpoint()
+                    .baseRequest()
+                    .header(new Header("x-api-key", token))
+                    .get("/v1alpha/participants/%s/credentials/test-cred/status".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body(Matchers.notNullValue());
+        }
+
+        @Test
+        void checkStatus_notAuthorized(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
+            context.createParticipant(USER);
+            var token = context.createParticipant("anotherUser");
+
+            // create revocation credential
+            var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+
+            credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
+
+            credentialStore.create(createCredential("test-cred"));
+
+            context.getAdminEndpoint()
+                    .baseRequest()
+                    .header(new Header("x-api-key", token))
+                    .get("/v1alpha/participants/%s/credentials/test-cred/status".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+        }
+
+        private String toBase64(String s) {
+            return Base64.getUrlEncoder().encodeToString(s.getBytes());
         }
     }
 

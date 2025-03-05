@@ -488,6 +488,29 @@ public class CredentialDefinitionApiEndToEndTest {
 
         }
 
+        @Test
+        void deleteCredentialDefinition_whenNotAuthorized(IssuerServiceEndToEndTestContext context, CredentialDefinitionService service) {
+            context.createParticipant(USER);
+            var token = context.createParticipant("anotherUser");
+
+            var definition = CredentialDefinition.Builder.newInstance()
+                    .id("test-credential-definition-id")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("http://example.com/schema")
+                    .credentialType("MembershipCredential")
+                    .participantContextId(USER)
+                    .build();
+
+            service.createCredentialDefinition(definition);
+
+            context.getAdminEndpoint().baseRequest()
+                    .header(new Header("x-api-key", token))
+                    .delete("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(toBase64(USER)))
+                    .then()
+                    .statusCode(403);
+
+        }
+
         private String toBase64(String s) {
             return Base64.getUrlEncoder().encodeToString(s.getBytes());
         }
