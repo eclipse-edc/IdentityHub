@@ -6,7 +6,7 @@ info:
 servers:
 - url: /
 paths:
-  /v1alpha/attestations:
+  /v1alpha/participants/{participantContextId}/attestations:
     get:
       tags:
       - Issuer Service Attestation Admin API
@@ -64,11 +64,27 @@ paths:
       - Issuer Service Attestation Admin API
       description: Creates an attestation definition in the runtime.
       operationId: createAttestation
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AttestationDefinition"
+              $ref: "#/components/schemas/AttestationDefinitionRequest"
       responses:
         "201":
           description: The attestation definition was added successfully.
@@ -106,12 +122,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/attestations/query:
+  /v1alpha/participants/{participantContextId}/attestations/query:
     post:
       tags:
       - Issuer Service Attestation Admin API
       description: Query attestation definitions
       operationId: queryAttestations
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -143,13 +175,21 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/attestations/{attestationDefinitionId}:
+  /v1alpha/participants/{participantContextId}/attestations/{attestationDefinitionId}:
     delete:
       tags:
       - Issuer Service Attestation Admin API
       description: Deletes an attestation definition.
       operationId: deleteAttestation
       parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       - name: attestationDefinitionId
         in: path
         description: ID of the attestation to be removed
@@ -198,7 +238,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/attestations/{attestationDefinitionId}/link:
+  /v1alpha/participants/{participantContextId}/attestations/{attestationDefinitionId}/link:
     post:
       tags:
       - Issuer Service Attestation Admin API
@@ -273,7 +313,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/attestations/{attestationDefinitionId}/unlink:
+  /v1alpha/participants/{participantContextId}/attestations/{attestationDefinitionId}/unlink:
     post:
       tags:
       - Issuer Service Attestation Admin API
@@ -348,17 +388,33 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/credentialdefinitions:
+  /v1alpha/participants/{participantContextId}/credentialdefinitions:
     put:
       tags:
       - Issuer Service Credential Definition Admin API
       description: Updates credential definition.
       operationId: updateCredentialDefinition
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CredentialDefinition"
+              $ref: "#/components/schemas/CredentialDefinitionDto"
       responses:
         "200":
           description: The credential definition was updated successfully.
@@ -392,11 +448,27 @@ paths:
       - Issuer Service Credential Definition Admin API
       description: Adds a new credential definition.
       operationId: createCredentialDefinition
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CredentialDefinition"
+              $ref: "#/components/schemas/CredentialDefinitionDto"
       responses:
         "201":
           description: The credential definition was created successfully.
@@ -426,12 +498,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/credentialdefinitions/query:
+  /v1alpha/participants/{participantContextId}/credentialdefinitions/query:
     post:
       tags:
       - Issuer Service Credential Definition Admin API
       description: Gets all credential definitions for a certain query.
       operationId: queryCredentialDefinitions
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -463,13 +551,21 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/credentialdefinitions/{credentialDefinitionId}:
+  /v1alpha/participants/{participantContextId}/credentialdefinitions/{credentialDefinitionId}:
     get:
       tags:
       - Issuer Service Credential Definition Admin API
       description: Gets a credential definition by its ID.
-      operationId: getParticipantById
+      operationId: getCredentialDefinitionById
       parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       - name: credentialDefinitionId
         in: path
         description: ID of the credential definition that should be returned
@@ -523,6 +619,14 @@ paths:
       description: Deletes a credential definition by its ID.
       operationId: deleteCredentialDefinitionById
       parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       - name: credentialDefinitionId
         in: path
         description: ID of the credential definition that should be returned
@@ -570,12 +674,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/credentials/query:
+  /v1alpha/participants/{participantContextId}/credentials/query:
     post:
       tags:
       - Issuer Service Credentials Admin API
       description: "Query credentials, possibly across multiple participants."
       operationId: queryCredentials
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -608,7 +728,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/credentials/{credentialId}/resume:
+  /v1alpha/participants/{participantContextId}/credentials/{credentialId}/resume:
     post:
       tags:
       - Issuer Service Credentials Admin API
@@ -616,6 +736,14 @@ paths:
         Resumed credentials will be removed from the Revocation List.
       operationId: resumeCredential
       parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       - name: credentialId
         in: path
         description: ID of the credential to resume
@@ -660,7 +788,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/credentials/{credentialId}/revoke:
+  /v1alpha/participants/{participantContextId}/credentials/{credentialId}/revoke:
     post:
       tags:
       - Issuer Service Credentials Admin API
@@ -668,6 +796,14 @@ paths:
         Revoked credentials will be added to the Revocation List
       operationId: revokeCredential
       parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       - name: credentialId
         in: path
         description: ID of the credential to revoke
@@ -712,7 +848,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/credentials/{credentialId}/status:
+  /v1alpha/participants/{participantContextId}/credentials/{credentialId}/status:
     get:
       tags:
       - Issuer Service Credentials Admin API
@@ -720,6 +856,14 @@ paths:
         for the given participant.
       operationId: checkCredentialStatus
       parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       - name: credentialId
         in: path
         description: ID of the credential to check
@@ -763,7 +907,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/credentials/{credentialId}/suspend:
+  /v1alpha/participants/{participantContextId}/credentials/{credentialId}/suspend:
     post:
       tags:
       - Issuer Service Credentials Admin API
@@ -772,6 +916,14 @@ paths:
         reversible.
       operationId: suspendCredential
       parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       - name: credentialId
         in: path
         description: ID of the credential to revoke
@@ -816,69 +968,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/credentials/{participantId}:
-    get:
-      tags:
-      - Issuer Service Credentials Admin API
-      description: Gets all credentials for a certain participant.
-      operationId: getCredentials
-      parameters:
-      - name: participantId
-        in: path
-        description: ID of the participant whos credentials should be returned
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: A list of verifiable credential metadata. Note that these are
-            not actual VerifiableCredentials.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/VerifiableCredentialDto"
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/holders:
+  /v1alpha/participants/{participantContextId}/holders:
     put:
       tags:
       - Issuer Service Holder Admin API
       description: Updates holder data.
       operationId: updateHolder
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -917,6 +1028,22 @@ paths:
       - Issuer Service Holder Admin API
       description: Adds a new holder.
       operationId: addHolder
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -951,12 +1078,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/holders/query:
+  /v1alpha/participants/{participantContextId}/holders/query:
     post:
       tags:
       - Issuer Service Holder Admin API
       description: Gets all holders for a certain query.
       operationId: queryHolders
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -970,7 +1113,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/HolderDto"
+                  $ref: "#/components/schemas/Holder"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -996,13 +1139,21 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/holders/{holderId}:
+  /v1alpha/participants/{participantContextId}/holders/{holderId}:
     get:
       tags:
       - Issuer Service Holder Admin API
       description: Gets metadata for a certain holder.
       operationId: getHolderById
       parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       - name: holderId
         in: path
         description: ID of the holder who should be returned
@@ -1197,7 +1348,53 @@ components:
             type: object
         id:
           type: string
+        participantContextId:
+          type: string
+    AttestationDefinitionRequest:
+      type: object
+      properties:
+        attestationType:
+          type: string
+        configuration:
+          type: object
+          additionalProperties:
+            type: object
+        id:
+          type: string
     CredentialDefinition:
+      type: object
+      properties:
+        attestations:
+          type: array
+          items:
+            type: string
+        credentialType:
+          type: string
+        dataModel:
+          type: string
+          enum:
+          - V_1_1
+          - V_2_0
+        id:
+          type: string
+        jsonSchema:
+          type: string
+        jsonSchemaUrl:
+          type: string
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/MappingDefinition"
+        participantContextId:
+          type: string
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialRuleDefinition"
+        validity:
+          type: integer
+          format: int64
+    CredentialDefinitionDto:
       type: object
       properties:
         attestations:
@@ -1291,6 +1488,8 @@ components:
         holderId:
           type: string
         holderName:
+          type: string
+        participantContextId:
           type: string
     HolderDto:
       required:
@@ -1434,3 +1633,5 @@ components:
           - VC2_0_JOSE
           - VC2_0_SD_JWT
           - VC2_0_COSE
+        participantContextId:
+          type: string
