@@ -56,6 +56,8 @@ public class IssuerServiceRuntimeConfiguration extends AbstractRuntimeConfigurat
                 put("web.http.issuance.port", String.valueOf(issuerApiEndpoint.getUrl().getPort()));
                 put("web.http.issuance.path", issuerApiEndpoint.getUrl().getPath());
                 put("web.http.version.port", String.valueOf(getFreePort()));
+                put("web.http.identity.port", String.valueOf(getFreePort()));
+                put("web.http.identity.path", "/api/identity");
                 put("web.http.version.path", "/.well-known/api");
                 put("web.http.did.port", String.valueOf(didEndpoint.getUrl().getPort()));
                 put("web.http.did.path", didEndpoint.getUrl().getPath());

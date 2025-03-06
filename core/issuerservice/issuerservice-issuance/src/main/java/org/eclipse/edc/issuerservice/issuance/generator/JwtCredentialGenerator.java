@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.issuance.generator;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
@@ -25,6 +26,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerator;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
+import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
 import org.eclipse.edc.token.spi.TokenDecorator;
@@ -32,7 +34,9 @@ import org.eclipse.edc.token.spi.TokenGenerationService;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -41,9 +45,9 @@ public class JwtCredentialGenerator implements CredentialGenerator {
 
     public static final String VERIFIABLE_CREDENTIAL_CLAIM = "vc";
     public static final String CREDENTIAL_SUBJECT = "credentialSubject";
+    public static final String CREDENTIAL_STATUS = "credentialStatus";
     public static final String VERIFIABLE_CREDENTIAL = "VerifiableCredential";
     public static final String TYPE_PROPERTY = "type";
-
     private final TokenGenerationService tokenGenerationService;
     private final Clock clock;
 
@@ -53,27 +57,46 @@ public class JwtCredentialGenerator implements CredentialGenerator {
     }
 
     @Override
-    public Result<VerifiableCredentialContainer> generateCredential(CredentialDefinition definition, String privateKeyAlias, String publicKeyId, String issuerId, String participantId, Map<String, Object> claims) {
+    public Result<VerifiableCredentialContainer> generateCredential(CredentialDefinition definition, String privateKeyAlias, String publicKeyId, String issuerId, String holderDid, Map<String, Object> claims) {
 
         var subjectResult = getCredentialSubject(claims);
-
         if (subjectResult.failed()) {
             return subjectResult.mapFailure();
         }
 
-        var credential = generateVerifiableCredential(definition.getCredentialType(), definition.getValidity(), issuerId, participantId, subjectResult.getContent());
+        var statusResult = createCredentialStatus(claims);
 
+        var credentialBuilder = generateVerifiableCredential(definition.getCredentialType(), definition.getValidity(), issuerId, holderDid, subjectResult.getContent());
+
+        statusResult.onSuccess(credentialBuilder::credentialStatus);
+
+        var credential = credentialBuilder.build();
+        return signCredentialInternal(credential, privateKeyAlias, publicKeyId, issuerId, holderDid, VERIFIABLE_CREDENTIAL, definition.getCredentialType())
+                .map(token -> new VerifiableCredentialContainer(token, CredentialFormat.VC1_0_JWT, credential));
+    }
+
+    @Override
+    public Result<String> signCredential(VerifiableCredential credential, String privateKeyAlias, String publicKeyId) {
+        var issuerId = credential.getIssuer().id();
+        var type = credential.getType().toArray(new String[0]);
+        var holderDid = credential.getCredentialSubject().iterator().next().getId();
+
+        return signCredentialInternal(credential, privateKeyAlias, publicKeyId, issuerId, holderDid, type);
+    }
+
+
+    private Result<String> signCredentialInternal(VerifiableCredential credential, String privateKeyAlias, String publicKeyId, String issuerId, String holderDid, String... types) {
         var composedKeyId = publicKeyId;
         if (!publicKeyId.startsWith(issuerId)) {
             composedKeyId = issuerId + "#" + publicKeyId;
         }
 
-        return tokenGenerationService.generate(privateKeyAlias, vcDecorator(definition.getCredentialType(), participantId, credential), new KeyIdDecorator(composedKeyId))
-                .map(token -> new VerifiableCredentialContainer(token.getToken(), CredentialFormat.VC1_0_JWT, credential));
+        return tokenGenerationService.generate(privateKeyAlias, vcDecorator(holderDid, credential, types), new KeyIdDecorator(composedKeyId))
+                .map(TokenRepresentation::getToken);
     }
 
-    @SuppressWarnings("unchecked")
-    private VerifiableCredential generateVerifiableCredential(String type, long validity, String issuer, String participantId, Map<String, Object> credentialSubject) {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private VerifiableCredential.Builder generateVerifiableCredential(String type, long validity, String issuer, String holderId, Map<String, Object> credentialSubject) {
         return VerifiableCredential.Builder.newInstance()
                 .issuer(new Issuer(issuer))
                 .dataModelVersion(DataModelVersion.V_1_1)
@@ -81,10 +104,9 @@ public class JwtCredentialGenerator implements CredentialGenerator {
                 .expirationDate(Instant.now(clock).plusSeconds(validity))
                 .types(List.of(VERIFIABLE_CREDENTIAL, type))
                 .credentialSubject(CredentialSubject.Builder.newInstance()
-                        .id(participantId)
+                        .id(holderId)
                         .claims(credentialSubject)
-                        .build())
-                .build();
+                        .build());
     }
 
     @SuppressWarnings("unchecked")
@@ -95,22 +117,52 @@ public class JwtCredentialGenerator implements CredentialGenerator {
         return Result.success((Map<String, Object>) claims.get(CREDENTIAL_SUBJECT));
     }
 
-    private TokenDecorator vcDecorator(String type, String participantId, VerifiableCredential credential) {
+    @SuppressWarnings("unchecked")
+    private Result<CredentialStatus> createCredentialStatus(Map<String, Object> claims) {
+        if (!claims.containsKey(CREDENTIAL_STATUS)) {
+            return Result.failure("no credentialStatus in claims");
+        }
+        var statusClaims = (Map<String, Object>) claims.get(CREDENTIAL_STATUS);
+
+        return Result.success(new CredentialStatus((String) statusClaims.get("id"),
+                (String) statusClaims.get("type"),
+                statusClaims));
+    }
+
+    private TokenDecorator vcDecorator(String participantId, VerifiableCredential credential, String... type) {
         var now = Date.from(clock.instant());
         return tp -> tp.claims(JwtRegisteredClaimNames.ISSUER, credential.getIssuer().id())
                 .claims(JwtRegisteredClaimNames.ISSUED_AT, now)
                 .claims(JwtRegisteredClaimNames.NOT_BEFORE, Date.from(credential.getIssuanceDate()))
                 .claims(JwtRegisteredClaimNames.JWT_ID, UUID.randomUUID().toString())
                 .claims(JwtRegisteredClaimNames.SUBJECT, participantId)
-                .claims(VERIFIABLE_CREDENTIAL_CLAIM, createVcClaim(type, credential))
-                .claims(JwtRegisteredClaimNames.EXPIRATION_TIME, Date.from(credential.getExpirationDate()));
+                .claims(VERIFIABLE_CREDENTIAL_CLAIM, createVcClaim(credential, type))
+                .claims(JwtRegisteredClaimNames.EXPIRATION_TIME, Date.from(credential.getExpirationDate())); //todo: this will fail for credentials that don't have an expiration date
     }
 
-    private Map<String, Object> createVcClaim(String type, VerifiableCredential verifiableCredential) {
-        return Map.of(
-                JsonLdKeywords.CONTEXT, List.of(VcConstants.W3C_CREDENTIALS_URL),
-                TYPE_PROPERTY, List.of(VERIFIABLE_CREDENTIAL, type),
-                CREDENTIAL_SUBJECT, credentialSubjectClaims(verifiableCredential));
+    private Map<String, Object> createVcClaim(VerifiableCredential verifiableCredential, String... type) {
+        var claims = new HashMap<>(
+                Map.of(JsonLdKeywords.CONTEXT, List.of(VcConstants.W3C_CREDENTIALS_URL),
+                        TYPE_PROPERTY, Arrays.asList(type),
+                        CREDENTIAL_SUBJECT, credentialSubjectClaims(verifiableCredential)
+                ));
+
+        var status = credentialStatusClaims(verifiableCredential);
+        if (!status.isEmpty()) {
+            claims.put(CREDENTIAL_STATUS, credentialStatusClaims(verifiableCredential));
+        }
+        return claims;
+    }
+
+    private Map<String, Object> credentialStatusClaims(VerifiableCredential verifiableCredential) {
+        if (verifiableCredential.getCredentialStatus().isEmpty()) {
+            return Map.of();
+        }
+        var status = verifiableCredential.getCredentialStatus().get(0);
+        var statusMap = new HashMap<String, Object>(Map.of("id", status.id(),
+                "type", status.type()));
+        statusMap.putAll(status.additionalProperties());
+        return statusMap;
     }
 
     private Map<String, Object> credentialSubjectClaims(VerifiableCredential verifiableCredential) {
