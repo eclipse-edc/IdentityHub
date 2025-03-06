@@ -49,22 +49,22 @@ import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.Bit
 
 public class BitstringStatusListManager implements StatusListManager {
     /**
-     * marks the "active" credential, i.e. the ones where new holder credentials get added
-     */
-    private static final String IS_ACTIVE = "isActive";
-    /**
      * the current status list index. needed to detect overflow or "fullness"s
      */
-    private static final String CURRENT_INDEX = "currentIndex";
+    public static final String CURRENT_INDEX = "currentIndex";
     /**
      * the public URL where the status list credential can be obtained
      */
-    private static final String PUBLIC_URL = "publicUrl";
+    public static final String PUBLIC_URL = "publicUrl";
+    /**
+     * marks the "active" credential, i.e. the ones where new holder credentials get added
+     */
+    public static final String IS_ACTIVE = "isActive";
     /**
      * the size of the bitstring in the status list credential. Defaults to 16kB.
      */
-    private static final String BITSTRING_SIZE = "bitstringSize";
-    private static final int DEFAULT_BITSTRING_SIZE = 16 * 1024;
+    public static final String BITSTRING_SIZE = "bitstringSize";
+    public static final int DEFAULT_BITSTRING_SIZE = 16 * 1024;
     private final CredentialStore store;
     private final TransactionContext transactionContext;
     private final CredentialGeneratorRegistry credentialGenerator;
@@ -80,12 +80,12 @@ public class BitstringStatusListManager implements StatusListManager {
     @Override
     public ServiceResult<StatusListCredentialEntry> getActiveCredential(String participantContextId) {
         return transactionContext.execute(() -> {
-            var queryRes = store.query(whereTypeIsBitstringCredential(participantContextId));
-            if (queryRes.failed()) {
-                return ServiceResult.fromFailure(queryRes);
+            var credentialQueryResult = store.query(whereTypeIsBitstringCredential(participantContextId));
+            if (credentialQueryResult.failed()) {
+                return ServiceResult.fromFailure(credentialQueryResult);
             }
 
-            var bitStringCredentials = queryRes.getContent();
+            var bitStringCredentials = credentialQueryResult.getContent();
 
             // obtain the current index, current credential by ID and its published URL
             var slCred = bitStringCredentials.stream()
@@ -125,7 +125,6 @@ public class BitstringStatusListManager implements StatusListManager {
         }
         return ServiceResult.from(res);
     }
-
 
     private Result<VerifiableCredentialResource> createNewStatusListCredential(String participantContextId) {
 
