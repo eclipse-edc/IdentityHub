@@ -26,6 +26,7 @@ import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.Bit
 public record BitstringStatusListCredentialEntry(int statusListIndex, VerifiableCredentialResource statusListCredential,
                                                  String credentialUrl) implements StatusListCredentialEntry {
 
+    @Override
     public CredentialStatus createCredentialStatus() {
         return new CredentialStatus(UUID.randomUUID().toString(), BITSTRING_STATUS_LIST_ENTRY,
                 Map.of(
