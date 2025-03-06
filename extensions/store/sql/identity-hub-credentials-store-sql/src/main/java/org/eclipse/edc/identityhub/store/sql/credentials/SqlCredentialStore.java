@@ -69,6 +69,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                         credentialResource.getIssuerId(),
                         credentialResource.getHolderId(),
                         credentialResource.getState(),
+                        toJson(credentialResource.getMetadata()),
                         toJson(credentialResource.getIssuancePolicy()),
                         toJson(credentialResource.getReissuancePolicy()),
                         credentialResource.getVerifiableCredential().format().ordinal(),
@@ -110,6 +111,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                             credentialResource.getIssuerId(),
                             credentialResource.getHolderId(),
                             credentialResource.getState(),
+                            toJson(credentialResource.getMetadata()),
                             toJson(credentialResource.getIssuancePolicy()),
                             toJson(credentialResource.getReissuancePolicy()),
                             credentialResource.getVerifiableCredential().format().ordinal(),
@@ -178,6 +180,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                 .issuerId(resultSet.getString(statements.getIssuerIdColumn()))
                 .holderId(resultSet.getString(statements.getHolderIdColumn()))
                 .state(VcStatus.from(resultSet.getInt(statements.getVcStateColumn())))
+                .metadata(fromJson(resultSet.getString(statements.getMetadataColumn()), getTypeRef()))
                 .issuancePolicy(fromJson(resultSet.getString(statements.getIssuancePolicyColumn()), Policy.class))
                 .reissuancePolicy(fromJson(resultSet.getString(statements.getReissuancePolicyColumn()), Policy.class))
                 .credential(vcc)

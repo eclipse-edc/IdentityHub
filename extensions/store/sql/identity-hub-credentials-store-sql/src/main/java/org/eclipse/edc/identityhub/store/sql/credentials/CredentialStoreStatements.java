@@ -71,6 +71,10 @@ public interface CredentialStoreStatements extends SqlStatements {
         return "participant_context_id";
     }
 
+    default String getMetadataColumn() {
+        return "metadata";
+    }
+
     String getInsertTemplate();
 
     String getUpdateTemplate();

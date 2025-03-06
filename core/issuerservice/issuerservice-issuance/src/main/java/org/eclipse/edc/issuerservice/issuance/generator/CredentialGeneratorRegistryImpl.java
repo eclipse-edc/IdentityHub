@@ -122,9 +122,10 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
                     .map(ParticipantContext::getDid)
                     .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
-            var participantDid = holderService.findById(participantId)
+            var participantDid = ofNullable(participantId)
+                    .map(holderId -> holderService.findById(holderId).orElseThrow(f -> new EdcException(f.getFailureDetail())))
                     .map(Holder::getDid)
-                    .orElseThrow(f -> new EdcException(f.getFailureDetail()));
+                    .orElse(issuerDid);
 
             return fetchActiveKeyPair(participantContextId)
                     .compose(keyPair -> generator.generateCredential(definition, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), issuerDid, participantDid, mappedClaims));

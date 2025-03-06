@@ -18,7 +18,7 @@ import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.IssuerCredentialsAdminApiController;
-import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -34,7 +34,7 @@ public class IssuerCredentialsAdminApiExtension implements ServiceExtension {
     @Inject
     private WebService webService;
     @Inject
-    private CredentialService credentialService;
+    private CredentialStatusService credentialService;
     @Inject
     private AuthorizationService authorizationService;
 

@@ -74,7 +74,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unchecked")
-class CredentialServiceImplTest {
+class CredentialStatusServiceImplTest {
 
     public static final TypeReference<Map<String, Object>> MAP_REF = new TypeReference<>() {
     };
@@ -84,7 +84,7 @@ class CredentialServiceImplTest {
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     private final CredentialStore credentialStore = mock();
-    private CredentialServiceImpl revocationService;
+    private CredentialStatusServiceImpl revocationService;
     private TokenGenerationService tokenGenerationService;
     private Monitor monitor;
     private ECKey signingKey;
@@ -97,8 +97,8 @@ class CredentialServiceImplTest {
         monitor = mock();
         var reg = new StatusListInfoFactoryRegistryImpl();
         reg.register("BitstringStatusListEntry", new BitstringStatusListFactory(credentialStore));
-        revocationService = new CredentialServiceImpl(credentialStore, new NoopTransactionContext(), objectMapper,
-                monitor, tokenGenerationService, () -> "some-private-key", reg);
+        revocationService = new CredentialStatusServiceImpl(credentialStore, new NoopTransactionContext(), objectMapper,
+                monitor, tokenGenerationService, () -> "some-private-key", reg, mock());
     }
 
     private SignedJWT sign(Map<String, Object> claims) {

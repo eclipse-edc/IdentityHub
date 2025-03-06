@@ -17,6 +17,7 @@ package org.eclipse.edc.issuerservice.issuance;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessManagerImpl;
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessServiceImpl;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
@@ -64,7 +65,7 @@ public class IssuanceCoreExtension implements ServiceExtension {
 
     @Setting(description = "The base delay for the issuance retry mechanism in millisecond", key = "edc.issuer.issuance.send.retry.base-delay.ms", defaultValue = DEFAULT_SEND_RETRY_BASE_DELAY + "")
     private long sendRetryBaseDelay;
-    
+
 
     private IssuanceProcessManager issuanceProcessManager;
 
@@ -100,6 +101,8 @@ public class IssuanceCoreExtension implements ServiceExtension {
 
     @Inject
     private TransactionContext transactionContext;
+    @Inject
+    private CredentialStatusService credentialStatusService;
 
     @Provider
     public IssuanceProcessManager createIssuanceProcessManager() {
@@ -118,6 +121,7 @@ public class IssuanceCoreExtension implements ServiceExtension {
                     .credentialDefinitionStore(credentialDefinitionStore)
                     .credentialStore(credentialStore)
                     .credentialStorageClient(credentialStorageClient)
+                    .credentialStatusService(credentialStatusService)
                     .entityRetryProcessConfiguration(getEntityRetryProcessConfiguration())
                     .build();
         }

@@ -206,7 +206,6 @@ public abstract class CredentialStoreTestBase {
                         .containsExactly(expectedCred));
     }
 
-
     @Test
     void query_byVcFormat() {
         var creds = createCredentials();
@@ -340,6 +339,26 @@ public abstract class CredentialStoreTestBase {
 
         var query = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("verifiableCredential.credential.issuanceDate", "=", issuanceDate.toString()))
+                .build();
+
+        assertThat(getStore().query(query)).isSucceeded()
+                .satisfies(str -> Assertions.assertThat(str).hasSize(1)
+                        .usingRecursiveFieldByFieldElementComparator()
+                        .containsExactly(expectedCred));
+    }
+
+    @Test
+    void query_byMetadata() {
+
+        var expectedCred = createCredentialBuilder()
+                .metadata("currentIndex", 1)
+                .metadata("publicUri", "http://foo.bar.com/")
+                .build();
+
+        getStore().create(expectedCred);
+
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("metadata.publicUri", "ilike", "http://foo%"))
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
@@ -516,6 +535,7 @@ public abstract class CredentialStoreTestBase {
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .state(VcStatus.ISSUED)
+                .metadata("foo", "bar")
                 .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .credential(new VerifiableCredentialContainer(EXAMPLE_VC, CredentialFormat.VC1_0_LD, createVerifiableCredential().build()))
                 .id(UUID.randomUUID().toString());

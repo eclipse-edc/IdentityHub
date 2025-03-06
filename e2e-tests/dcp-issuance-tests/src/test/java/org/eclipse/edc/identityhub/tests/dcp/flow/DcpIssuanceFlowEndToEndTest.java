@@ -145,22 +145,28 @@ public class DcpIssuanceFlowEndToEndTest {
                                 assertThat(t.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
                             }));
 
-            // checks that the credential was issued on the older side
+            // checks that the credential was issued on the holder side
             assertThat(credentialService.getCredentialsForParticipant(PARTICIPANT_ID))
                     .hasSize(1)
                     .allSatisfy(vc -> {
                         assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
                         assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
                         assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                        assertThat(vc.getVerifiableCredential().credential().getCredentialStatus()).isNotEmpty()
+                                .anySatisfy(t -> {
+                                    assertThat(t.getProperty("", "statusPurpose").toString()).isEqualTo("revocation");
+                                });
                     });
 
             // checks that the credential was issued on the issuer side
             assertThat(issuer.getCredentialsForParticipant(ISSUER_ID))
-                    .hasSize(1)
-                    .allSatisfy(vc -> {
+                    .hasSize(2)
+                    .anySatisfy(vc -> {
                         assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
                         assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
                         assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                        assertThat(vc.getVerifiableCredential().credential().getCredentialStatus()).hasSize(1)
+                                .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
                     });
 
         }

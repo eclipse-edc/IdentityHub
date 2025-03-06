@@ -24,7 +24,7 @@ public class StatusListInfoFactoryRegistryImpl implements StatusListInfoFactoryR
     private final Map<String, StatusListInfoFactory> registry = new HashMap<>();
 
     @Override
-    public StatusListInfoFactory getStatusListCredential(String type) {
+    public StatusListInfoFactory getInfoFactory(String type) {
         return registry.get(type);
     }
 

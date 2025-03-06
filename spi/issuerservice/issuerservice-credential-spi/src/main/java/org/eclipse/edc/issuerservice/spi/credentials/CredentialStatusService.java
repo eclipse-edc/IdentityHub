@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.spi.credentials;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -27,7 +28,18 @@ import java.util.Collection;
  * implementation, as it delegates down to {@link StatusListInfo} objects that handle the concrete status list implementation.
  * This service handles various operations on a high level.
  */
-public interface CredentialService {
+public interface CredentialStatusService {
+
+    /**
+     * Adds a newly created credential to the status list credential. This should be done when the issuer service issues a new credential.
+     * This method will modify the credential by adding a {@code credentialStatus} object to it. This means that callers
+     * <em>must</em> re-load the credential from storage after this method, before delivering it to the holder!
+     *
+     * @param participantContextId The ID of the participant context (=tenant) within the IssuerService
+     * @param credential           The credential, which should be added to the status list credential. Will be modified.
+     * @return The modified verifiable credential, including the credentialStatus entry.
+     */
+    ServiceResult<VerifiableCredential> addCredential(String participantContextId, VerifiableCredential credential);
 
     /**
      * Revokes a credential by adding its ID to the revocation list credential. Implementations may choose to also track
@@ -48,7 +60,7 @@ public interface CredentialService {
      * @param credentialId The ID of the credential.
      * @param reason       An optional string indicating the reason for suspension, e.g. "temporary account suspension", etc.
      * @return a service result indicating success or failure
-     * @throws UnsupportedOperationException if this revocation service does not support suspension
+     * @throws UnsupportedOperationException if this credential status service does not support suspension
      */
     ServiceResult<Void> suspendCredential(String credentialId, @Nullable String reason);
 
@@ -58,7 +70,7 @@ public interface CredentialService {
      * @param credentialId The ID of the credential.
      * @param reason       An optional string indicating the reason for resuming, e.g. "account reactivation", etc.
      * @return a service result indicating success or failure
-     * @throws UnsupportedOperationException if this revocation service does not support suspension/resuming
+     * @throws UnsupportedOperationException if this credential status service does not support suspension/resuming
      */
     ServiceResult<Void> resumeCredential(String credentialId, @Nullable String reason);
 
