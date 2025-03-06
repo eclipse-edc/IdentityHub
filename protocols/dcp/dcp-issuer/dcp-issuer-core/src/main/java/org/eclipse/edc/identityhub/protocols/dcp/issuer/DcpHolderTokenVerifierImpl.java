@@ -29,6 +29,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.rules.AudienceValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
+import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -57,7 +58,10 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
     public ServiceResult<DcpRequestContext> verify(ParticipantContext issuerContext, TokenRepresentation tokenRepresentation) {
         return getTokenIssuer(tokenRepresentation.getToken())
                 .compose(this::getParticipant)
-                .compose(participant -> validateToken(issuerContext, tokenRepresentation, participant));
+                .compose(participant ->
+                        getKid(tokenRepresentation.getToken())
+                                .compose(kid -> validateToken(issuerContext, tokenRepresentation, participant, kid))
+                );
     }
 
     private ServiceResult<String> getTokenIssuer(String token) {
@@ -66,6 +70,16 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
                     .map(Object::toString)
                     .map(ServiceResult::success)
                     .orElseGet(() -> ServiceResult.unauthorized("Issuer claim not present"));
+        } catch (ParseException e) {
+            return ServiceResult.badRequest("Failed to decode token");
+        }
+    }
+
+    private ServiceResult<String> getKid(String token) {
+        try {
+            return Optional.ofNullable(SignedJWT.parse(token).getHeader().getKeyID())
+                    .map(ServiceResult::success)
+                    .orElseGet(() -> ServiceResult.unauthorized("Kid not present"));
         } catch (ParseException e) {
             return ServiceResult.badRequest("Failed to decode token");
         }
@@ -82,11 +96,12 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
                 .orElseGet(() -> ServiceResult.unauthorized("Participant not found"));
     }
 
-    private ServiceResult<DcpRequestContext> validateToken(ParticipantContext issuerContext, TokenRepresentation token, Holder holder) {
+    private ServiceResult<DcpRequestContext> validateToken(ParticipantContext issuerContext, TokenRepresentation token, Holder holder, String kid) {
 
         var rules = rulesRegistry.getRules(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT);
         var newRules = new ArrayList<>(rules);
         newRules.add(new AudienceValidationRule(issuerContext.getDid()));
+        newRules.add(new IssuerKeyIdValidationRule(kid));
         var res = tokenValidationService.validate(token.getToken(), publicKeyResolver, newRules);
         if (res.failed()) {
             return ServiceResult.unauthorized("Token validation failed");

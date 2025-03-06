@@ -315,6 +315,30 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         @Test
+        void requestCredential_spoofedKeyId_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService) throws JOSEException {
+
+            var spoofedKeyId = "did:web:spoofed#key1";
+
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+
+            var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID(spoofedKeyId).generate();
+
+            var token = generateSiToken(spoofedKey);
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(spoofedKeyId))).thenReturn(Result.success(spoofedKey.toPublicKey()));
+
+            context.getDcpIssuanceEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
+                    .post(issuanceUrl())
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(401);
+
+        }
+
+        @Test
         void requestCredential_wrongTokenAudience_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService) throws JOSEException {
 
             holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
@@ -419,10 +443,18 @@ public class DcpCredentialRequestApiEndToEndTest {
             return generateSiToken(ISSUER_DID);
         }
 
+        private String generateSiToken(ECKey key) {
+            return generateSiToken(ISSUER_DID, key);
+        }
+
+        private String generateSiToken(String audience, ECKey key) {
+            return generateJwt(audience, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), key);
+        }
+
         private String generateSiToken(String audience) {
             return generateJwt(audience, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), PARTICIPANT_KEY);
         }
-        
+
         private Holder createHolder(String id, String did, String name) {
             return Holder.Builder.newInstance()
                     .participantContextId(UUID.randomUUID().toString())
