@@ -80,7 +80,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
 
         when(jtiValidationStore.storeEntry(any())).thenReturn(StoreResult.success());
 
-        tokenGeneratorService = new StsClientTokenGeneratorServiceImpl(60 * 5, new EmbeddedSecureTokenService(new NoopTransactionContext(), 60 * 5, jtiValidationStore,
+        tokenGeneratorService = new StsClientTokenGeneratorServiceImpl(60 * 5, new EmbeddedSecureTokenService(new NoopTransactionContext(), 60 * 5,
                 new JwtGenerationService(new DefaultJwsSignerProvider(privateKeyResolver)), Clock.systemUTC(), clientService));
     }
 
