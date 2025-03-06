@@ -28,7 +28,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Base64;
-import java.util.List;
 import java.util.Set;
 
 import static io.restassured.RestAssured.given;
@@ -167,16 +166,11 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
     }
 
     private Holder createHolder(String id, String did, String name) {
-        return createHolder(id, did, name, List.of());
-    }
-
-    private Holder createHolder(String id, String did, String name, List<String> attestations) {
         return Holder.Builder.newInstance()
                 .participantContextId(PARTICIPANT_ID)
                 .holderId(id)
                 .did(did)
                 .holderName(name)
-                .attestations(attestations)
                 .build();
     }
 

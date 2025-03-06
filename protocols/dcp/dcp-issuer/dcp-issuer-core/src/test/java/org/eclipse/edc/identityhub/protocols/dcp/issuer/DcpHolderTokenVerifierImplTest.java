@@ -116,16 +116,11 @@ public class DcpHolderTokenVerifierImplTest {
     }
 
     private Holder createHolder(String id, String did, String name) {
-        return createHolder(id, did, name, List.of());
-    }
-
-    private Holder createHolder(String id, String did, String name, List<String> attestations) {
         return Holder.Builder.newInstance()
                 .participantContextId(UUID.randomUUID().toString())
                 .holderId(id)
                 .did(did)
                 .holderName(name)
-                .attestations(attestations)
                 .build();
     }
 

@@ -19,7 +19,6 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
@@ -190,20 +189,15 @@ public abstract class HolderStoreTestBase {
     protected abstract HolderStore getStore();
 
     private Holder createHolder() {
-        return createHolder("p-id", "did:web:participant", "participant display name", List.of("att1", "att2"));
+        return createHolder("p-id", "did:web:participant", "participant display name");
     }
 
     private Holder createHolder(String id, String did, String name) {
-        return createHolder(id, did, name, List.of());
-    }
-
-    private Holder createHolder(String id, String did, String name, List<String> attestations) {
         return Holder.Builder.newInstance()
                 .participantContextId(UUID.randomUUID().toString())
                 .holderId(id)
                 .did(did)
                 .holderName(name)
-                .attestations(attestations)
                 .build();
     }
 }

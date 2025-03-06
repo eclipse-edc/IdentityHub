@@ -50,11 +50,7 @@ public interface HolderStoreStatements extends SqlStatements {
     default String getDidColumn() {
         return "did";
     }
-
-    default String getAttestationsColumn() {
-        return "attestations";
-    }
-
+    
 
     String getInsertTemplate();
 

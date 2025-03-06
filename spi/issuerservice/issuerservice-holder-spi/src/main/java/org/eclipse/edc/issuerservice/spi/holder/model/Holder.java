@@ -18,9 +18,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -32,8 +29,6 @@ public class Holder extends AbstractParticipantResource {
     private String holderId;
     private String did;
     private String holderName;
-    private List<String> attestations = new ArrayList<>();
-
 
     private Holder() {
     }
@@ -48,18 +43,6 @@ public class Holder extends AbstractParticipantResource {
 
     public String getHolderName() {
         return holderName;
-    }
-
-    public List<String> getAttestations() {
-        return Collections.unmodifiableList(attestations); // force mutation through method
-    }
-
-    public void addAttestation(String attestationId) {
-        attestations.add(attestationId);
-    }
-
-    public boolean removeAttestation(String attestationId) {
-        return attestations.remove(attestationId);
     }
 
 
@@ -87,11 +70,6 @@ public class Holder extends AbstractParticipantResource {
 
         public Builder holderName(String holderName) {
             entity.holderName = holderName;
-            return this;
-        }
-
-        public Builder attestations(List<String> attestations) {
-            entity.attestations = new ArrayList<>(attestations); //ensure mutability
             return this;
         }
 

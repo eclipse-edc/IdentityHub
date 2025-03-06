@@ -14,8 +14,6 @@
 
 package org.eclipse.edc.issuerservice.issuance.attestation;
 
-import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
-import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
@@ -30,22 +28,18 @@ import java.util.Objects;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
-import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
 
 public class AttestationDefinitionServiceImpl implements AttestationDefinitionService {
 
     private final TransactionContext transactionContext;
     private final AttestationDefinitionStore attestationDefinitionStore;
-    private final HolderStore holderStore;
     private final AttestationDefinitionValidatorRegistry definitionValidatorRegistry;
 
     public AttestationDefinitionServiceImpl(TransactionContext transactionContext,
                                             AttestationDefinitionStore attestationDefinitionStore,
-                                            HolderStore holderStore,
                                             AttestationDefinitionValidatorRegistry definitionValidatorRegistry) {
         this.transactionContext = transactionContext;
         this.attestationDefinitionStore = attestationDefinitionStore;
-        this.holderStore = holderStore;
         this.definitionValidatorRegistry = definitionValidatorRegistry;
     }
 
@@ -58,54 +52,6 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     @Override
     public ServiceResult<Void> deleteAttestation(String attestationId) {
         return transactionContext.execute(() -> from(attestationDefinitionStore.deleteById(attestationId)));
-    }
-
-    @Override
-    public ServiceResult<Boolean> linkAttestation(String attestationId, String holderId) {
-
-        return transactionContext.execute(() -> {
-            if (attestationDefinitionStore.resolveDefinition(attestationId) == null) {
-                return ServiceResult.notFound("No attestation with id %s was found".formatted(attestationId));
-            }
-
-            var participantResult = holderStore.findById(holderId);
-            if (participantResult.failed()) {
-                return fromFailure(participantResult);
-            }
-
-            var participant = participantResult.getContent();
-            if (participant.getAttestations().contains(attestationId)) { // no need to update, already linked
-                return ServiceResult.success(false);
-            }
-
-            participant.addAttestation(attestationId);
-            return from(holderStore.update(participant)).map(v -> true);
-
-        });
-    }
-
-    @Override
-    public ServiceResult<Boolean> unlinkAttestation(String attestationId, String holderId) {
-        return transactionContext.execute(() -> {
-            var participantResult = holderStore.findById(holderId);
-            if (participantResult.failed()) {
-                return fromFailure(participantResult);
-            }
-
-            var participant = participantResult.getContent();
-            if (participant.removeAttestation(attestationId)) {
-                return from(holderStore.update(participant)).map(v -> true);
-            }
-            return ServiceResult.success(false);
-        });
-    }
-
-    @Override
-    public ServiceResult<Collection<AttestationDefinition>> getAttestationsForHolder(String holderId) {
-
-        return transactionContext.execute(() -> ServiceResult.from(holderStore.findById(holderId)
-                .map(Holder::getAttestations)
-                .map(this::findForIds)));
     }
 
     @Override
