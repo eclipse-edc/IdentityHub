@@ -141,11 +141,17 @@ public class JwtCredentialGenerator implements CredentialGenerator {
     }
 
     private Map<String, Object> createVcClaim(VerifiableCredential verifiableCredential, String... type) {
-        return Map.of(
-                JsonLdKeywords.CONTEXT, List.of(VcConstants.W3C_CREDENTIALS_URL),
-                TYPE_PROPERTY, Arrays.asList(type),
-                CREDENTIAL_SUBJECT, credentialSubjectClaims(verifiableCredential),
-                CREDENTIAL_STATUS, credentialStatusClaims(verifiableCredential));
+        var claims = new HashMap<>(
+                Map.of(JsonLdKeywords.CONTEXT, List.of(VcConstants.W3C_CREDENTIALS_URL),
+                        TYPE_PROPERTY, Arrays.asList(type),
+                        CREDENTIAL_SUBJECT, credentialSubjectClaims(verifiableCredential)
+                ));
+
+        var status = credentialStatusClaims(verifiableCredential);
+        if (!status.isEmpty()) {
+            claims.put(CREDENTIAL_STATUS, credentialStatusClaims(verifiableCredential));
+        }
+        return claims;
     }
 
     private Map<String, Object> credentialStatusClaims(VerifiableCredential verifiableCredential) {

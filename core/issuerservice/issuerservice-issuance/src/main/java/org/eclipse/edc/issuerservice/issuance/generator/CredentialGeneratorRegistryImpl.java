@@ -75,6 +75,7 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
                 .compose(mappedClaims -> generateCredentialInternal(participantContextId, participantId, credentialGenerationRequest, mappedClaims));
     }
 
+    @Override
     public Result<VerifiableCredentialContainer> signCredential(String participantContextId, VerifiableCredential credential, CredentialFormat format) {
         return ofNullable(generators.get(format))
                 .map(generator -> fetchActiveKeyPair(participantContextId)
