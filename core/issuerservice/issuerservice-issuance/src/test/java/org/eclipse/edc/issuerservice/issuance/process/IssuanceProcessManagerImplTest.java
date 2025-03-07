@@ -22,6 +22,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerationRequest;
@@ -33,6 +34,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessS
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.retry.ExponentialWaitStrategy;
 import org.eclipse.edc.statemachine.retry.EntityRetryProcessConfiguration;
@@ -70,13 +72,12 @@ public class IssuanceProcessManagerImplTest {
     private final CredentialDefinitionStore credentialDefinitionStore = mock();
     private final CredentialStore credentialStore = mock();
     private final CredentialStorageClient credentialStorageClient = mock();
+    private final CredentialStatusService credentialStatusService = mock();
     private IssuanceProcessManager issuanceProcessManager;
 
     @BeforeEach
     void setup() {
         var entityRetryProcessConfiguration = new EntityRetryProcessConfiguration(1, () -> new ExponentialWaitStrategy(0L));
-
-
         issuanceProcessManager = IssuanceProcessManagerImpl.Builder.newInstance()
                 .entityRetryProcessConfiguration(entityRetryProcessConfiguration)
                 .store(issuanceProcessStore)
@@ -85,6 +86,7 @@ public class IssuanceProcessManagerImplTest {
                 .credentialDefinitionStore(credentialDefinitionStore)
                 .credentialStore(credentialStore)
                 .credentialStorageClient(credentialStorageClient)
+                .credentialStatusService(credentialStatusService)
                 .monitor(monitor)
                 .clock(clock)
                 .build();
@@ -124,6 +126,8 @@ public class IssuanceProcessManagerImplTest {
         when(credentialGenerator.generateCredentials("participantContextId", "holderId", List.of(generationRequests), process.getClaims())).thenReturn(Result.success(List.of(credential)));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
         when(credentialStorageClient.deliverCredentials(process, List.of(credential))).thenReturn(Result.success());
+        when(credentialStatusService.addCredential(any(), any())).thenReturn(ServiceResult.success(credential.credential()));
+        when(credentialGenerator.signCredential(any(), any(), any())).thenReturn(Result.success(credential));
 
         issuanceProcessManager.start();
 

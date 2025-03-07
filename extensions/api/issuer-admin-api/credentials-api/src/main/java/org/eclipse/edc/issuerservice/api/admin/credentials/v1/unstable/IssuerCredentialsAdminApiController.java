@@ -29,7 +29,7 @@ import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialStatusResponse;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
-import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
@@ -46,9 +46,9 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdminApi {
 
     private final AuthorizationService authorizationService;
-    private final CredentialService credentialService;
+    private final CredentialStatusService credentialService;
 
-    public IssuerCredentialsAdminApiController(AuthorizationService authorizationService, CredentialService credentialService) {
+    public IssuerCredentialsAdminApiController(AuthorizationService authorizationService, CredentialStatusService credentialService) {
         this.authorizationService = authorizationService;
         this.credentialService = credentialService;
     }

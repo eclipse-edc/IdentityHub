@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.store.sql.credentials.schema.postgres;
 
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.store.sql.credentials.CredentialStoreStatements;
+import org.eclipse.edc.sql.translation.JsonFieldTranslator;
 import org.eclipse.edc.sql.translation.TranslationMapping;
 
 
@@ -33,6 +34,7 @@ public class VerifiableCredentialResourceMapping extends TranslationMapping {
     public static final String FIELD_REISSUANCE_POLICY = "reissuancePolicy";
     public static final String FIELD_VERIFIABLE_CREDENTIAL = "verifiableCredential";
     public static final String FIELD_PARTICIPANT_CONTEXT_ID = "participantContextId";
+    public static final String FIELD_METADATA = "metadata";
 
     public VerifiableCredentialResourceMapping(CredentialStoreStatements statements) {
         add(FIELD_ID, statements.getIdColumn());
@@ -44,5 +46,6 @@ public class VerifiableCredentialResourceMapping extends TranslationMapping {
         add(FIELD_REISSUANCE_POLICY, statements.getReissuancePolicyColumn());
         add(FIELD_VERIFIABLE_CREDENTIAL, new VerifiableCredentialContainerMapping(statements));
         add(FIELD_PARTICIPANT_CONTEXT_ID, statements.getParticipantContextIdColumn());
+        add(FIELD_METADATA, new JsonFieldTranslator(statements.getMetadataColumn()));
     }
 }

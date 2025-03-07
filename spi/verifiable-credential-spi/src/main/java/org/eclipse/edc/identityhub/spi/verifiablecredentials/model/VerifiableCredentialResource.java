@@ -20,6 +20,8 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityResource
 import org.eclipse.edc.policy.model.Policy;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.EXPIRED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
@@ -31,6 +33,7 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
  * specifically the issuance and re-issuance policies as well as a representation of the VC
  */
 public class VerifiableCredentialResource extends IdentityResource {
+    private Map<String, Object> metadata = new HashMap<>();
     private int state;
     private Instant timeOfLastStatusUpdate;
     private Policy issuancePolicy;
@@ -39,6 +42,13 @@ public class VerifiableCredentialResource extends IdentityResource {
 
     private VerifiableCredentialResource() {
 
+    }
+
+    /**
+     * Holds metadata about a credential, for example could hold data if the credential is a status list credential
+     */
+    public Map<String, Object> getMetadata() {
+        return metadata;
     }
 
     public int getState() {
@@ -127,6 +137,16 @@ public class VerifiableCredentialResource extends IdentityResource {
 
         public Builder reissuancePolicy(Policy reissuancePolicy) {
             entity.reissuancePolicy = reissuancePolicy;
+            return self();
+        }
+
+        public Builder metadata(Map<String, Object> metadata) {
+            entity.metadata = metadata;
+            return self();
+        }
+
+        public Builder metadata(String key, Object value) {
+            entity.metadata.put(key, value);
             return self();
         }
 

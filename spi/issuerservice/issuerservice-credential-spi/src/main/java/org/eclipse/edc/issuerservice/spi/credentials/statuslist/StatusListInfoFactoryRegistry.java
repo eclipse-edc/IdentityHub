@@ -25,7 +25,7 @@ public interface StatusListInfoFactoryRegistry {
      * @param type the {@code credentialStatus.type} value of the holder credential
      * @return returns the specific factory for that type
      */
-    StatusListInfoFactory getStatusListCredential(String type);
+    StatusListInfoFactory getInfoFactory(String type);
 
     /**
      * Adds a {@link StatusListInfoFactory} for a specific status list type.

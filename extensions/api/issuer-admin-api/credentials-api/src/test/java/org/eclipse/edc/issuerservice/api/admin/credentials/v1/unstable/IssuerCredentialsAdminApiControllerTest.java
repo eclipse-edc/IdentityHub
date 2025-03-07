@@ -25,7 +25,7 @@ import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
-import org.eclipse.edc.issuerservice.spi.credentials.CredentialService;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
@@ -55,14 +55,14 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     private static final String PARTICIPANT_ID = "test-participant";
     private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
-    private final CredentialService statuslistService = mock();
+    private final CredentialStatusService statuslistService = mock();
     private final AuthorizationService authorizationService = mock();
 
     @BeforeEach
     void setUp() {
         when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
     }
-    
+
     @Test
     void queryCredentials() {
         when(statuslistService.queryCredentials(any(QuerySpec.class)))

@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))
+    api(project(":spi:issuerservice:issuerservice-credential-spi")) // for the CredentialStatusService
     api(project(":spi:issuerservice:issuerservice-holder-spi"))
     api(project(":spi:verifiable-credential-spi"))
     api(project(":spi:keypair-spi"))

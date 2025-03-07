@@ -21,6 +21,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerationRequest;
@@ -40,6 +41,7 @@ import org.eclipse.edc.statemachine.Processor;
 import org.eclipse.edc.statemachine.ProcessorImpl;
 import org.eclipse.edc.statemachine.StateMachineManager;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Function;
@@ -54,6 +56,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     private CredentialDefinitionStore credentialDefinitionStore;
     private CredentialStore credentialStore;
     private CredentialStorageClient credentialStorageClient;
+    private CredentialStatusService credentialStatusService;
 
     private IssuanceProcessManagerImpl() {
     }
@@ -71,12 +74,33 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     private boolean processApproved(IssuanceProcess process) {
         return entityRetryProcessFactory.retryProcessor(process)
                 .doProcess(result("Generate Credentials", (p, result) -> generateCredential(p)))
+                .doProcess(result("Add Credentials to StatusList", this::addCredentialsToStatusList))
                 .doProcess(result("Deliver Credentials", this::deliverCredentials))
                 .doProcess(result("Store Credentials", this::storeCredential))
                 .onSuccess((t, response) -> transitionToDelivered(t))
                 .onFailure((t, throwable) -> transitionToApproved(t))
                 .onFinalFailure(this::transitionToError)
                 .execute();
+    }
+
+    private StatusResult<Collection<VerifiableCredentialContainer>> addCredentialsToStatusList(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> newCredentials) {
+
+        var updatedCredentials = new ArrayList<VerifiableCredentialContainer>();
+        for (var cred : newCredentials) {
+            var result = credentialStatusService.addCredential(issuanceProcess.getParticipantContextId(), cred.credential());
+            if (result.failed()) {
+                return StatusResult.failure(ResponseStatus.FATAL_ERROR, "Failed to add credential to status list: %s".formatted(result.getFailureDetail()));
+            }
+            var updatedHolderCredential = result.getContent();
+            var signedCredential = credentialGenerator.signCredential(issuanceProcess.getParticipantContextId(), updatedHolderCredential, cred.format());
+
+            if (signedCredential.failed()) {
+                return StatusResult.failure(ResponseStatus.FATAL_ERROR, "Error regenerating the user credential: %s".formatted(signedCredential.getFailureDetail()));
+            }
+
+            updatedCredentials.add(signedCredential.getContent());
+        }
+        return StatusResult.success(updatedCredentials);
     }
 
 
@@ -206,6 +230,11 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
             return this;
         }
 
+        public Builder credentialStatusService(CredentialStatusService credentialStatusService) {
+            manager.credentialStatusService = credentialStatusService;
+            return this;
+        }
+
         @Override
         public Builder self() {
             return this;
@@ -218,6 +247,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
             Objects.requireNonNull(this.manager.credentialDefinitionStore, "Credential definition store");
             Objects.requireNonNull(this.manager.credentialStore, "Credential store");
             Objects.requireNonNull(this.manager.credentialStorageClient, "Credential service client");
+            Objects.requireNonNull(this.manager.credentialStatusService, "Credential status service");
             return manager;
         }
     }
