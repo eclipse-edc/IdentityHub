@@ -14,20 +14,25 @@
 
 package org.eclipse.edc.identityhub.core.services.verification;
 
+import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.token.rules.AudienceValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
+import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT;
@@ -63,7 +68,21 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
     @Override
     public Result<List<String>> verify(String token, String participantContextId) {
         Objects.requireNonNull(participantContextId, "Participant Context ID is mandatory.");
-        var res = tokenValidationService.validate(token, publicKeyResolver, tokenValidationRulesRegistry.getRules(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT));
+
+        var participantDidResult = participantContextService.getParticipantContext(participantContextId);
+
+        if (participantDidResult.failed()) {
+            return Result.failure(participantDidResult.getFailureDetail());
+        }
+        var pcDid = participantDidResult.getContent().getDid();
+
+        var res = getKid(token).compose(kid -> {
+            var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT));
+            rules.add(new IssuerKeyIdValidationRule(kid));
+            rules.add(new AudienceValidationRule(pcDid));
+            return tokenValidationService.validate(token, publicKeyResolver, rules);
+        });
+
         if (res.failed()) {
             return res.mapFailure();
         }
@@ -77,12 +96,7 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
             if (aud == null || aud.isEmpty()) {
                 return Result.failure("Mandatory claim 'aud' on 'token' was null.");
             }
-            var participantDidResult = participantContextService.getParticipantContext(participantContextId);
 
-            if (participantDidResult.failed()) {
-                return Result.failure(participantDidResult.getFailureDetail());
-            }
-            var pcDid = participantDidResult.getContent().getDid();
             return aud.contains(pcDid) ?
                     Result.success() :
                     Result.failure("The DID associated with the Participant Context ID of this request ('%s') must match 'aud' claim in 'access_token' (%s).".formatted(pcDid, aud));
@@ -110,5 +124,15 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
         // verify that the access_token contains a scope claim
         var scope = result.getContent().getStringClaim(ACCESS_TOKEN_SCOPE_CLAIM);
         return Result.success(Arrays.asList(scope.split(SCOPE_SEPARATOR)));
+    }
+
+    private Result<String> getKid(String token) {
+        try {
+            return Optional.ofNullable(SignedJWT.parse(token).getHeader().getKeyID())
+                    .map(Result::success)
+                    .orElseGet(() -> Result.failure("Kid not present"));
+        } catch (ParseException e) {
+            return Result.failure("Failed to decode token");
+        }
     }
 }

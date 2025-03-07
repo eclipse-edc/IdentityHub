@@ -17,14 +17,17 @@ package org.eclipse.edc.identityhub.core.services.verification;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -51,6 +54,11 @@ class SelfIssuedTokenVerifierImplTest {
     private final KeyPairResourcePublicKeyResolver localPublicKeyResolver = mock();
     private final ParticipantContextService participantContextService = mock();
     private final SelfIssuedTokenVerifierImpl verifier = new SelfIssuedTokenVerifierImpl(tokenValidationSerivce, localPublicKeyResolver, tokenValidationRulesRegistry, pkResolver, participantContextService);
+
+    @BeforeEach
+    void beforeEach() {
+        when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(createParticipantContext()));
+    }
 
     @Test
     void verify_validSiToken_validAccessToken() {
@@ -106,4 +114,15 @@ class SelfIssuedTokenVerifierImplTest {
     }
 
 
+    private ParticipantContext createParticipantContext(String did) {
+        return ParticipantContext.Builder.newInstance()
+                .apiTokenAlias("token-alias")
+                .participantContextId(did)
+                .did(did)
+                .build();
+    }
+
+    private ParticipantContext createParticipantContext() {
+        return createParticipantContext(PARTICIPANT_CONTEXT_ID);
+    }
 }

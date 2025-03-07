@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
 @ComponentTest
 class SelfIssuedTokenVerifierImplComponentTest {
 
-    public static final String STS_PUBLIC_KEY_ID = "sts-key-123";
+    public static final String STS_PUBLIC_KEY_ID = "did:web:test_participant#sts-key-123";
     public static final String PARTICIPANT_CONTEXT_ID = "test_participant";
     public static final String PARTICIPANT_DID = "did:web:test_participant";
     private final ParticipantContextService participantContextService = mock();
@@ -108,9 +108,56 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
     @Test
     void selfIssuedToken_noAccessTokenClaim() {
-        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()/* missing: claims("access_token", "....") */.build());
+        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .issuer(PARTICIPANT_DID)
+                .audience(PARTICIPANT_DID)
+                /* missing: claims("access_token", "....") */
+                .build());
         assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
                 .detail().isEqualTo("Required claim 'token' not present on token.");
+    }
+
+    @Test
+    void selfIssuedToken_audClaimDoesNotBelongToParticipant() {
+        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", "accessToken")
+                .issuer(PARTICIPANT_DID)
+                .audience("did:web:someone_else")
+                .build());
+
+        when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID)))
+                .thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
+                        .did(PARTICIPANT_DID)
+                        .participantContextId(PARTICIPANT_CONTEXT_ID)
+                        .apiTokenAlias("foobar")
+                        .build()));
+
+        assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail()
+                .isEqualTo("Token audience claim (aud -> [did:web:someone_else]) did not contain expected audience: %s".formatted(PARTICIPANT_DID));
+    }
+
+    @Test
+    void selfIssuedToken_issuerMismatch() {
+
+        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .issuer("did:web:someone_else")
+                .audience(PARTICIPANT_DID)
+                .claim("token", "accessToken")
+                .build());
+        assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().startsWith("kid header");
+    }
+
+    @Test
+    void selfIssuedToken_noAudience() {
+        var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("scope", "foobar")
+                .build());
+        var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
+                .issuer(PARTICIPANT_DID)
+                .build());
+        assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
+                .detail().isEqualTo("Required audience (aud) claim is missing in token");
     }
 
     @Test
@@ -119,6 +166,8 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .claim("scope", "foobar")
                 .build());
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
+                .issuer(PARTICIPANT_DID)
+                .audience(PARTICIPANT_DID)
                 .build());
         assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
                 .detail().isEqualTo("Mandatory claim 'aud' on 'token' was null.");
@@ -133,6 +182,8 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .build());
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("token", accessToken)
+                .issuer(PARTICIPANT_DID)
+                .audience(PARTICIPANT_DID)
                 .build());
         assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isSucceeded();
     }
@@ -144,12 +195,16 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .audience(PARTICIPANT_DID)
                 .build());
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
+                .issuer(PARTICIPANT_DID)
+                .audience("did:web:someone_else")
                 .build());
-        when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID))).thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
-                .did("did:web:someone_else")
-                .participantContextId(PARTICIPANT_CONTEXT_ID)
-                .apiTokenAlias("foobar")
-                .build()));
+
+        when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID)))
+                .thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
+                        .did("did:web:someone_else")
+                        .participantContextId(PARTICIPANT_CONTEXT_ID)
+                        .apiTokenAlias("foobar")
+                        .build()));
 
         assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
                 .detail()
@@ -163,6 +218,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .audience(PARTICIPANT_DID)
                 .build());
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
+                .issuer(PARTICIPANT_DID)
                 .build());
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID))).thenReturn(ServiceResult.notFound("foobar not found barbaz"));
 
@@ -175,7 +231,11 @@ class SelfIssuedTokenVerifierImplComponentTest {
     void accessToken_notVerified() {
         var spoofedKey = generator.generateKeyPair().getPrivate();
         var accessToken = createSignedJwt(spoofedKey, new JWTClaimsSet.Builder().claim("scope", "foobar").claim("foo", "bar").build());
-        var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken).build());
+        var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .claim("token", accessToken)
+                .issuer(PARTICIPANT_DID)
+                .audience(PARTICIPANT_DID)
+                .build());
 
         assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
                 .detail().isEqualTo("Token verification failed");
@@ -186,9 +246,12 @@ class SelfIssuedTokenVerifierImplComponentTest {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 /* missing: .claim("scope", "foobar") */
                 .claim("foo", "bar")
+                .issuer(PARTICIPANT_DID)
                 .audience(PARTICIPANT_DID)
                 .build());
         var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
+                .issuer("did:web:test_participant")
+                .audience("did:web:test_participant")
                 .build());
 
         assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
@@ -198,11 +261,14 @@ class SelfIssuedTokenVerifierImplComponentTest {
     @Test
     void accessToken_noAudClaim() {
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .issuer("did:web:test_participant")
                 .claim("scope", "foobar")
                 .claim("foo", "bar")
                 /*missing: .audience("did:web:test_participant") */
                 .build());
         var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken)
+                .issuer("did:web:test_participant")
+                .audience("did:web:test_participant")
                 .build());
 
         assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
@@ -220,6 +286,8 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .build());
         var selfIssuedIdToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("token", accessToken)
+                .issuer(PARTICIPANT_DID)
+                .audience(PARTICIPANT_DID)
                 .build());
         assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
                 .detail().matches("The JWT id '.*' was not found");
@@ -232,7 +300,10 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .audience(PARTICIPANT_DID)
                 .subject("test-subject")
                 .build());
-        var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder().claim("token", accessToken).subject("mismatching-subject").build());
+        var siToken = createSignedJwt(providerKeyPair.getPrivate(), new JWTClaimsSet.Builder()
+                .issuer(PARTICIPANT_DID)
+                .audience(PARTICIPANT_DID)
+                .claim("token", accessToken).subject("mismatching-subject").build());
 
         assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
                 .detail()

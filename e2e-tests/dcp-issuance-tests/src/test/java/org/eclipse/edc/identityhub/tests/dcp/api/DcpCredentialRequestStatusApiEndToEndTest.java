@@ -209,6 +209,29 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
+        void credentialStatus_spoofedKeyId_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
+            var process = createIssuanceProcess();
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            issuanceProcessStore.save(process);
+            var spoofedKeyId = "did:web:spoofed#key1";
+            var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID(spoofedKeyId).generate();
+
+            var token = generateSiToken(spoofedKey);
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(spoofedKeyId))).thenReturn(Result.success(spoofedKey.toPublicKey()));
+
+            context.getDcpIssuanceEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .get(issuanceStatusUrl(process.getId()))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(401);
+
+
+        }
+
+        @Test
         void credentialStatus_wrongTokenAudience_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             var process = createIssuanceProcess();
@@ -240,6 +263,14 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
         private String generateSiToken(String audience) {
             return generateSiToken(audience, PARTICIPANT_DID, PARTICIPANT_KEY);
+        }
+
+        private String generateSiToken(ECKey key) {
+            return generateSiToken(ISSUER_DID, key);
+        }
+
+        private String generateSiToken(String audience, ECKey key) {
+            return generateJwt(audience, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), key);
         }
 
         private String generateSiToken(String audience, String participantDid, ECKey participantKey) {

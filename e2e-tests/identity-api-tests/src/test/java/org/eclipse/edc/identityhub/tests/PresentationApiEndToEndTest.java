@@ -238,10 +238,34 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
+        void query_spoofedKeyId_shouldReturn401(IdentityHubEndToEndTestContext context) throws JOSEException {
+            var spoofedKey = generateEcKey("did:web:spoofed#key1");
+
+            var accessToken = generateJwt(CONSUMER_DID, CONSUMER_DID, PROVIDER_DID, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
+            var token = generateJwt(CONSUMER_DID, PROVIDER_DID, PROVIDER_DID, Map.of("client_id", PROVIDER_DID, "token", accessToken), spoofedKey);
+            registerToken(token, context);
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:spoofed#key1"))).thenReturn(Result.success(spoofedKey.toPublicKey()));
+
+            context.getPresentationEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .body(VALID_QUERY_WITH_SCOPE)
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .then()
+                    .statusCode(401)
+                    .log().ifValidationFails()
+                    .body("[0].type", equalTo("AuthenticationFailed"))
+                    .body("[0].message", startsWith("ID token verification failed: kid header"));
+
+        }
+
+        @Test
         void query_proofOfPossessionFails_shouldReturn401(IdentityHubEndToEndTestContext context) throws JOSEException {
 
             var accessToken = generateJwt(CONSUMER_DID, CONSUMER_DID, PROVIDER_DID, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
-            var token = generateJwt(PROVIDER_DID, PROVIDER_DID, "mismatching", Map.of("client_id", PROVIDER_DID, "token", accessToken), PROVIDER_KEY);
+            var token = generateJwt(CONSUMER_DID, PROVIDER_DID, "mismatching", Map.of("client_id", PROVIDER_DID, "token", accessToken), PROVIDER_KEY);
             registerToken(token, context);
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
