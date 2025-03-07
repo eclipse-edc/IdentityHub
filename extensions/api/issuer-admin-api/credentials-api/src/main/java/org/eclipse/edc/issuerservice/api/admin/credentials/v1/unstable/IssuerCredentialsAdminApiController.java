@@ -27,10 +27,14 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
+import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialOfferDto;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialStatusResponse;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
+import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.util.Collection;
@@ -47,10 +51,12 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
 
     private final AuthorizationService authorizationService;
     private final CredentialStatusService credentialService;
+    private final IssuerCredentialOfferService credentialOfferService;
 
-    public IssuerCredentialsAdminApiController(AuthorizationService authorizationService, CredentialStatusService credentialService) {
+    public IssuerCredentialsAdminApiController(AuthorizationService authorizationService, CredentialStatusService credentialService, IssuerCredentialOfferService issuerCredentialOfferService) {
         this.authorizationService = authorizationService;
         this.credentialService = credentialService;
+        this.credentialOfferService = issuerCredentialOfferService;
     }
 
     @POST
@@ -97,5 +103,24 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
                 .compose(u -> credentialService.getCredentialStatus(credentialId))
                 .map(status -> new CredentialStatusResponse(credentialId, status, null))
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
+    }
+
+    @POST
+    @Path("/offer")
+    @Override
+    public Response sendCredentialOffer(@PathParam("participantContextId") String participantContextId, CredentialOfferDto credentialOffer, @Context SecurityContext context) {
+
+        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var holderId = credentialOffer.holderId();
+        var result = authorizationService.isAuthorized(context, holderId, Holder.class);
+        if (result.failed() && result.reason() == ServiceFailure.Reason.NOT_FOUND) { // do not map to 404
+            throw new InvalidRequestException("Holder not found");
+        }
+        result.orElseThrow(exceptionMapper(Holder.class, holderId));
+
+        credentialOfferService.sendCredentialOffer(decodedParticipantId, holderId, credentialOffer.credentials())
+                .orElseThrow(InvalidRequestException::new);
+
+        return Response.ok().build();
     }
 }

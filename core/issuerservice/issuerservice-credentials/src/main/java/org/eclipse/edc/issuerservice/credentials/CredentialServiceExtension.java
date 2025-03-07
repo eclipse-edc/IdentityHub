@@ -14,14 +14,20 @@
 
 package org.eclipse.edc.issuerservice.credentials;
 
+import org.eclipse.edc.http.spi.EdcHttpClient;
+import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
+import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.issuerservice.credentials.offers.IssuerCredentialOfferServiceImpl;
 import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListFactory;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
+import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
+import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -53,6 +59,16 @@ public class CredentialServiceExtension implements ServiceExtension {
     private TypeManager typeManager;
     @Inject
     private JwsSignerProvider jwsSignerProvider;
+    @Inject
+    private HolderStore holderStore;
+    @Inject
+    private CredentialServiceUrlResolver credentialServiceUrlResolver;
+    @Inject
+    private ParticipantSecureTokenService sts;
+    @Inject
+    private ParticipantContextService participantContextService;
+    @Inject
+    private EdcHttpClient httpClient;
 
     @Inject(required = false)
     private StatusListManager externalTracker;
@@ -76,6 +92,11 @@ public class CredentialServiceExtension implements ServiceExtension {
         var tokenGenerationService = new JwtGenerationService(jwsSignerProvider);
         return new CredentialStatusServiceImpl(store, transactionContext, typeManager.getMapper(JSON_LD), context.getMonitor(), tokenGenerationService,
                 () -> privateKeyAlias, fact, manager);
+    }
+
+    @Provider
+    public IssuerCredentialOfferService credentialOfferService(ServiceExtensionContext context) {
+        return new IssuerCredentialOfferServiceImpl(transactionContext, holderStore, credentialServiceUrlResolver, sts, participantContextService, context.getMonitor(), httpClient);
     }
 
     @Provider

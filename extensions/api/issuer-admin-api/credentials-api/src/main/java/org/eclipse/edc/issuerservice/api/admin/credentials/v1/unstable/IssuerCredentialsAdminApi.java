@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialOfferDto;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialStatusResponse;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -129,4 +130,22 @@ public interface IssuerCredentialsAdminApi {
             }
     )
     CredentialStatusResponse checkRevocationStatus(String credentialId, SecurityContext context);
+
+    @Operation(description = "Triggers a DCP CredentialOffer message being sent to the holder.",
+            operationId = "sendCredentialOffer",
+            parameters = {
+                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
+            },
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = CredentialOfferDto.class), mediaType = "application/json")),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The CredentialOfferMessage was sent to the holder successfully."),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed. For example when the holder DID is not resolvable, or the credential type, format, etc. is not known/invalid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "403", description = "The participant context (=issuer) is not permitted to interact with the specified holder.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    Response sendCredentialOffer(String participantContextId, CredentialOfferDto credentialOffer, SecurityContext context);
 }

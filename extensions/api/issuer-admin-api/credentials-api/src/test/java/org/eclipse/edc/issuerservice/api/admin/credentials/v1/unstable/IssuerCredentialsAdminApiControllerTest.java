@@ -24,8 +24,11 @@ import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
+import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialOfferDto;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
+import org.eclipse.edc.issuerservice.spi.credentials.CredentialDescriptor;
+import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
@@ -45,22 +48,28 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     private static final String PARTICIPANT_ID = "test-participant";
     private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
+    private final CredentialStatusService credentialService = mock();
     private final CredentialStatusService statuslistService = mock();
     private final AuthorizationService authorizationService = mock();
+    private final IssuerCredentialOfferService credentialOfferService = mock();
 
     @BeforeEach
     void setUp() {
         when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(credentialOfferService.sendCredentialOffer(anyString(), anyString(), anyCollection())).thenReturn(ServiceResult.success());
     }
 
     @Test
@@ -173,9 +182,68 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     }
 
+    @Test
+    void sendCredentialOffer() {
+        baseRequest()
+                .body(new CredentialOfferDto("holder", List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential"))))
+                .post("/offer")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200);
+
+        verify(credentialOfferService).sendCredentialOffer(anyString(), eq("holder"), anyCollection());
+    }
+
+    @Test
+    void sendCredentialOffer_whenHolderNotFound() {
+        when(authorizationService.isAuthorized(any(), anyString(), any()))
+                .thenReturn(ServiceResult.notFound("holder"));
+        baseRequest()
+                .body(new CredentialOfferDto("holder", List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential"))))
+                .post("/offer")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400)
+                .body(containsString("Holder not found"));
+
+        verify(authorizationService).isAuthorized(any(), anyString(), any());
+        verifyNoMoreInteractions(authorizationService, credentialOfferService);
+    }
+
+    @Test
+    void sendCredentialOffer_whenNotAuthorized() {
+        when(authorizationService.isAuthorized(any(), anyString(), any()))
+                .thenReturn(ServiceResult.unauthorized("barbaz"));
+        baseRequest()
+                .body(new CredentialOfferDto("holder", List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential"))))
+                .post("/offer")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403)
+                .body(containsString("barbaz"));
+
+        verify(authorizationService).isAuthorized(any(), anyString(), any());
+        verifyNoMoreInteractions(authorizationService, credentialOfferService);
+    }
+
+    @Test
+    void sendCredentialOffer_whenServiceFails() {
+        when(credentialOfferService.sendCredentialOffer(anyString(), anyString(), anyCollection()))
+                .thenReturn(ServiceResult.notFound("foo"));
+        baseRequest()
+                .body(new CredentialOfferDto("holder", List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential"))))
+                .post("/offer")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(400)
+                .body(containsString("foo"));
+
+        verify(credentialOfferService).sendCredentialOffer(anyString(), eq("holder"), anyCollection());
+    }
+
     @Override
     protected Object controller() {
-        return new IssuerCredentialsAdminApiController(authorizationService, statuslistService);
+        return new IssuerCredentialsAdminApiController(authorizationService, credentialService, credentialOfferService);
     }
 
     private @NotNull VerifiableCredentialResource createCredential() {
