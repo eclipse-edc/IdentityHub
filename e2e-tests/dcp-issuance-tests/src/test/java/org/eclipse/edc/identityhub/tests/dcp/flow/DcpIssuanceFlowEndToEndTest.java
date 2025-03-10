@@ -51,6 +51,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.time.Duration;
 import java.util.Map;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -177,6 +178,23 @@ public class DcpIssuanceFlowEndToEndTest {
                                 .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
                     });
 
+            // verify that the status credential on the issuer side is accessible
+            assertThat(issuer.getCredentialsForParticipant(ISSUER_ID))
+                    .anySatisfy(vc -> {
+                        assertThat(vc.getMetadata()).isNotNull().isNotEmpty();
+                        assertThat(vc.getMetadata()).containsKey("publicUrl");
+
+                        var url = vc.getMetadata().get("publicUrl");
+                        given()
+                                .baseUri(url.toString())
+                                .header("Accept", "application/vc+jwt")
+                                .get()
+                                .then()
+                                .log().ifValidationFails()
+                                .statusCode(200)
+                                .header("Content-Type", "application/vc+jwt")
+                                .body(Matchers.notNullValue());
+                    });
         }
 
         /**

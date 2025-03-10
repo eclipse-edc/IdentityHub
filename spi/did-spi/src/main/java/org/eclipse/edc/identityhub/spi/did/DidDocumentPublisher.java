@@ -19,8 +19,9 @@ import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.result.Result;
 
 /**
- * The DidDocumentPublisher is responsible for taking a {@link DidDocument} and making it available at a VDR (verifiable data registry).
- * For example, an implementation may choose to publish the DID to a CDN.
+ * The DidDocumentPublisher is responsible for taking a {@link DidDocument} and making it available at a public location.
+ * This could be as simple as putting the DID document on a CDN, or more complex implementations could choose to publish
+ * the document on a VDR (verifiable data registry),
  */
 @ExtensionPoint
 public interface DidDocumentPublisher {

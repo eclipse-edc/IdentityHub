@@ -90,6 +90,7 @@ public class IssuerExtension extends AbstractIdentityHubExtension {
                 put("web.http.version.path", "/.well-known/api");
                 put("web.http.did.port", String.valueOf(didEndpoint.get().getUrl().getPort()));
                 put("web.http.did.path", didEndpoint.get().getUrl().getPath());
+                put("web.http.statuslist.port", String.valueOf(getFreePort()));
                 put("edc.sql.schema.autocreate", "true");
                 put("edc.iam.accesstoken.jti.validation", String.valueOf(false));
                 put("edc.issuer.statuslist.signing.key.alias", "signing-key");

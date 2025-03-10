@@ -25,6 +25,7 @@ import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringS
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -79,6 +80,8 @@ public class CredentialServiceExtension implements ServiceExtension {
     private StatusListInfoFactoryRegistry factory;
     @Inject
     private ParticipantContextService particpantContextService;
+    @Inject
+    private StatusListCredentialPublisher credentialPublisher;
 
     @Provider
     public CredentialStatusService getStatusListService(ServiceExtensionContext context) {
@@ -87,7 +90,7 @@ public class CredentialServiceExtension implements ServiceExtension {
         // Bitstring StatusList is provided by default. others can be added via extensions
         fact.register(BITSTRING_STATUS_LIST_ENTRY, new BitstringStatusListFactory(store));
 
-        var manager = ofNullable(externalTracker).orElseGet(() -> new BitstringStatusListManager(store, transactionContext, registry, particpantContextService));
+        var manager = ofNullable(externalTracker).orElseGet(() -> new BitstringStatusListManager(store, transactionContext, registry, particpantContextService, credentialPublisher));
 
         var tokenGenerationService = new JwtGenerationService(jwsSignerProvider);
         return new CredentialStatusServiceImpl(store, transactionContext, typeManager.getMapper(JSON_LD), context.getMonitor(), tokenGenerationService,
