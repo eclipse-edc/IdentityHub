@@ -61,8 +61,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     private static final String PARTICIPANT_ID = "test-participant";
     private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
-    private final CredentialStatusService credentialService = mock();
-    private final CredentialStatusService statuslistService = mock();
+    private final CredentialStatusService credentialStatusService = mock();
     private final AuthorizationService authorizationService = mock();
     private final IssuerCredentialOfferService credentialOfferService = mock();
 
@@ -74,13 +73,14 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void queryCredentials() {
-        when(statuslistService.queryCredentials(any(QuerySpec.class)))
+        when(credentialStatusService.queryCredentials(any(QuerySpec.class)))
                 .thenReturn(ServiceResult.success(List.of(createCredential(), createCredential())));
 
         var credentials = baseRequest()
                 .body("{}")
                 .post("/query")
                 .then()
+                .log().ifError()
                 .statusCode(200)
                 .extract().body().as(VerifiableCredentialDto[].class);
 
@@ -90,7 +90,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void queryCredentials_whenNoResult() {
-        when(statuslistService.queryCredentials(any(QuerySpec.class)))
+        when(credentialStatusService.queryCredentials(any(QuerySpec.class)))
                 .thenReturn(ServiceResult.success(Collections.emptyList()));
 
         var credentials = baseRequest()
@@ -105,7 +105,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void revokeCredential_whenAlreadyRevoked() {
-        when(statuslistService.revokeCredential(anyString()))
+        when(credentialStatusService.revokeCredential(anyString()))
                 .thenReturn(ServiceResult.success());
 
         baseRequest()
@@ -118,7 +118,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void revokeCredential_whenNotFound() {
-        when(statuslistService.revokeCredential(anyString()))
+        when(credentialStatusService.revokeCredential(anyString()))
                 .thenReturn(ServiceResult.notFound("foo"));
 
         baseRequest()
@@ -134,7 +134,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .post("/test-credential-id/suspend")
                 .then()
                 .statusCode(501);
-        verifyNoInteractions(statuslistService);
+        verifyNoInteractions(credentialStatusService);
     }
 
     @Test
@@ -143,12 +143,12 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .post("/test-credential-id/resume")
                 .then()
                 .statusCode(501);
-        verifyNoInteractions(statuslistService);
+        verifyNoInteractions(credentialStatusService);
     }
 
     @Test
     void checkRevocationStatus_whenNotRevoked() {
-        when(statuslistService.getCredentialStatus(eq("test-credential-id")))
+        when(credentialStatusService.getCredentialStatus(eq("test-credential-id")))
                 .thenReturn(ServiceResult.success());
         baseRequest()
                 .get("/test-credential-id/status")
@@ -159,7 +159,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void checkRevocationStatus_whenRevoked() {
-        when(statuslistService.getCredentialStatus(eq("test-credential-id")))
+        when(credentialStatusService.getCredentialStatus(eq("test-credential-id")))
                 .thenReturn(ServiceResult.success("revocation"));
 
         baseRequest()
@@ -171,7 +171,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void checkRevocationStatus_whenNotFound() {
-        when(statuslistService.getCredentialStatus(eq("test-credential-id")))
+        when(credentialStatusService.getCredentialStatus(eq("test-credential-id")))
                 .thenReturn(ServiceResult.notFound("foo"));
 
         baseRequest()
@@ -243,7 +243,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new IssuerCredentialsAdminApiController(authorizationService, credentialService, credentialOfferService);
+        return new IssuerCredentialsAdminApiController(authorizationService, credentialStatusService, credentialOfferService);
     }
 
     private @NotNull VerifiableCredentialResource createCredential() {

@@ -50,12 +50,12 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdminApi {
 
     private final AuthorizationService authorizationService;
-    private final CredentialStatusService credentialService;
+    private final CredentialStatusService credentialStatusService;
     private final IssuerCredentialOfferService credentialOfferService;
 
-    public IssuerCredentialsAdminApiController(AuthorizationService authorizationService, CredentialStatusService credentialService, IssuerCredentialOfferService issuerCredentialOfferService) {
+    public IssuerCredentialsAdminApiController(AuthorizationService authorizationService, CredentialStatusService credentialStatusService, IssuerCredentialOfferService issuerCredentialOfferService) {
         this.authorizationService = authorizationService;
-        this.credentialService = credentialService;
+        this.credentialStatusService = credentialStatusService;
         this.credentialOfferService = issuerCredentialOfferService;
     }
 
@@ -65,7 +65,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     public Collection<VerifiableCredentialDto> queryCredentials(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext context) {
         var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
         var spec = query.toBuilder().filter(filterByParticipantContextId(decodedParticipantId)).build();
-        return credentialService.queryCredentials(spec).map(coll -> coll.stream()
+        return credentialStatusService.queryCredentials(spec).map(coll -> coll.stream()
                         .filter(resource -> authorizationService.isAuthorized(context, resource.getId(), VerifiableCredentialResource.class).succeeded())
                         .map(resource -> new VerifiableCredentialDto(resource.getParticipantContextId(), resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, null));
@@ -76,7 +76,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Override
     public Response revokeCredential(@PathParam("credentialId") String credentialId, @Context SecurityContext context) {
         return authorizationService.isAuthorized(context, credentialId, VerifiableCredentialResource.class)
-                .compose(u -> credentialService.revokeCredential(credentialId))
+                .compose(u -> credentialStatusService.revokeCredential(credentialId))
                 .map(v -> Response.noContent().build())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }
@@ -100,7 +100,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Override
     public CredentialStatusResponse checkRevocationStatus(@PathParam("credentialId") String credentialId, @Context SecurityContext context) {
         return authorizationService.isAuthorized(context, credentialId, VerifiableCredentialResource.class)
-                .compose(u -> credentialService.getCredentialStatus(credentialId))
+                .compose(u -> credentialStatusService.getCredentialStatus(credentialId))
                 .map(status -> new CredentialStatusResponse(credentialId, status, null))
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }
