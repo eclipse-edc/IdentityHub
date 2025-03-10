@@ -2042,6 +2042,10 @@ components:
           $ref: "#/components/schemas/Policy"
         issuerId:
           type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: object
         participantContextId:
           type: string
         reissuancePolicy:

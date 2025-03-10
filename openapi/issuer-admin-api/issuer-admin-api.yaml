@@ -472,6 +472,64 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/participants/{participantContextId}/credentials/offer:
+    post:
+      tags:
+      - Issuer Service Credentials Admin API
+      description: Triggers a DCP CredentialOffer message being sent to the holder.
+      operationId: sendCredentialOffer
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialOfferDto"
+      responses:
+        "200":
+          description: The CredentialOfferMessage was sent to the holder successfully.
+        "400":
+          description: "Request body was malformed, or the request could not be processed.\
+            \ For example when the holder DID is not resolvable, or the credential\
+            \ type, format, etc. is not known/invalid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "403":
+          description: The participant context (=issuer) is not permitted to interact
+            with the specified holder.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantContextId}/credentials/query:
     post:
       tags:
@@ -1223,6 +1281,27 @@ components:
         validity:
           type: integer
           format: int64
+    CredentialDescriptor:
+      type: object
+      properties:
+        credentialType:
+          type: string
+        format:
+          type: string
+        reason:
+          type: string
+    CredentialOfferDto:
+      required:
+      - credentials
+      - holderId
+      type: object
+      properties:
+        credentials:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialDescriptor"
+        holderId:
+          type: string
     CredentialRuleDefinition:
       type: object
       properties:
