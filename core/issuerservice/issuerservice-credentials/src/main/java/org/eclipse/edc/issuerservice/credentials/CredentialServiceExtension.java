@@ -96,7 +96,7 @@ public class CredentialServiceExtension implements ServiceExtension {
 
     @Provider
     public IssuerCredentialOfferService credentialOfferService(ServiceExtensionContext context) {
-        return new IssuerCredentialOfferServiceImpl(transactionContext, holderStore, credentialServiceUrlResolver, sts, participantContextService, context.getMonitor(), httpClient);
+        return new IssuerCredentialOfferServiceImpl(transactionContext, holderStore, credentialServiceUrlResolver, sts, participantContextService, httpClient, context.getMonitor());
     }
 
     @Provider

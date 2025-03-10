@@ -66,8 +66,8 @@ class IssuerCredentialOfferServiceImplTest {
             credentialServiceUrlResolver,
             sts,
             participantContextService,
-            mock(),
-            httpClient);
+            httpClient, mock()
+    );
 
     @BeforeEach
     void setUp() {

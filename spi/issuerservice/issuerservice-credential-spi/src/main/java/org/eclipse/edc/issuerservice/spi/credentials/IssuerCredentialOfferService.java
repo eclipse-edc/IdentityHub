@@ -19,7 +19,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import java.util.Collection;
 
 /**
- * Service to send credential offers to holders
+ * Service to be used on the issuer side to send credential offers to holders
  */
 public interface IssuerCredentialOfferService {
     String OFFER_ENDPOINT = "/offers";

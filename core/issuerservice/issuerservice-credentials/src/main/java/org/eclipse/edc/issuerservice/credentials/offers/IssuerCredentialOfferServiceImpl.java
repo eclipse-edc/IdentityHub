@@ -56,7 +56,12 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
     private final Monitor monitor;
     private final EdcHttpClient httpClient;
 
-    public IssuerCredentialOfferServiceImpl(TransactionContext transactionContext, HolderStore holderStore, CredentialServiceUrlResolver credentialServiceUrlResolver, ParticipantSecureTokenService secureTokenService, ParticipantContextService participantContextService, Monitor monitor, EdcHttpClient httpClient) {
+    public IssuerCredentialOfferServiceImpl(TransactionContext transactionContext,
+                                            HolderStore holderStore,
+                                            CredentialServiceUrlResolver credentialServiceUrlResolver,
+                                            ParticipantSecureTokenService secureTokenService,
+                                            ParticipantContextService participantContextService,
+                                            EdcHttpClient httpClient, Monitor monitor) {
         this.transactionContext = transactionContext;
         this.holderStore = holderStore;
         this.credentialServiceUrlResolver = credentialServiceUrlResolver;

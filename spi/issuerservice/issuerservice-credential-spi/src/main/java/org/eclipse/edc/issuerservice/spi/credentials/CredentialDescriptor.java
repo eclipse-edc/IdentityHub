@@ -17,6 +17,13 @@ package org.eclipse.edc.issuerservice.spi.credentials;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * DTO to inform holders about a possible credential issuance ("CredentialOffer").
+ *
+ * @param format         In which {@link CredentialFormat} the credential is available
+ * @param credentialType The credential type of the credential
+ * @param reason         An optional reason for the credential offer, e.g. "reissuance" etc.
+ */
 public record CredentialDescriptor(String format, String credentialType, @Nullable String reason) {
     public CredentialDescriptor(CredentialFormat format, String credentialType) {
         this(format.name(), credentialType, null);
