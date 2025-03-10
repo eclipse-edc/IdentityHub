@@ -21,6 +21,9 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import io.restassured.http.Header;
+import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.iam.did.spi.document.Service;
+import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
@@ -31,13 +34,17 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceCustomizableEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
+import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
@@ -48,11 +55,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockserver.integration.ClientAndServer;
 
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -62,13 +70,21 @@ import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CRED
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET;
+import static org.eclipse.edc.util.io.Ports.getFreePort;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 public class CredentialApiEndToEndTest {
     public static final String SIGNING_KEY_ALIAS = "signing-key";
     public static final int STATUS_LIST_INDEX = 94567;
     public static final String USER = "user";
+    protected static final DidResolverRegistry DID_RESOLVER_REGISTRY = mock();
     private static final String STATUS_LIST_CREDENTIAL_ID = "https://example.com/credentials/status/3";
     private final ObjectMapper objectMapper = new JacksonTypeManager().getMapper()
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
@@ -119,6 +135,18 @@ public class CredentialApiEndToEndTest {
     abstract class Tests {
 
 
+        private static @NotNull String getOfferRequestBody() {
+            return """
+                    
+                        {
+                      "holderId": "test-holder-id",
+                      "credentials": [
+                        {"format": "VC1_1_JWT", "credentialType": "TestCredential", "reason": "test-reason"}
+                      ]
+                    }
+                    """;
+        }
+
         @BeforeEach
         void prepare(Vault vault) throws JOSEException {
             // put signing key in vault
@@ -127,12 +155,15 @@ public class CredentialApiEndToEndTest {
         }
 
         @AfterEach
-        void teardown(CredentialStore credentialStore, ParticipantContextService pcService) {
+        void teardown(CredentialStore credentialStore, ParticipantContextService pcService, HolderStore holderStore) {
             credentialStore.query(QuerySpec.max()).getContent()
                     .forEach(vcr -> credentialStore.deleteById(vcr.getId()));
 
             pcService.query(QuerySpec.max()).getContent()
                     .forEach(pc -> pcService.deleteParticipantContext(pc.getParticipantContextId()).getContent());
+
+            holderStore.query(QuerySpec.max()).getContent()
+                    .forEach(holder -> holderStore.deleteById(holder.getHolderId()).getContent());
         }
 
         @Test
@@ -211,9 +242,8 @@ public class CredentialApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
-                    .body(Matchers.containsString("was not found"));
+                    .body(containsString("was not found"));
         }
-
 
         @Test
         void revoke_whenNotAuthorized(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
@@ -253,7 +283,7 @@ public class CredentialApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
-                    .body(Matchers.containsString("was not found"));
+                    .body(containsString("was not found"));
         }
 
         @Test
@@ -285,7 +315,7 @@ public class CredentialApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
-                    .body(Matchers.containsString("No StatusList implementation for type 'InvalidStatusListType' found."));
+                    .body(containsString("No StatusList implementation for type 'InvalidStatusListType' found."));
 
         }
 
@@ -375,16 +405,165 @@ public class CredentialApiEndToEndTest {
                     .statusCode(403);
         }
 
-        private String toBase64(String s) {
-            return Base64.getUrlEncoder().encodeToString(s.getBytes());
+        @Test
+        void sendCredentialOffer(IssuerServiceEndToEndTestContext context, HolderStore holderStore) {
+            var token = context.createParticipant(USER);
+
+            var port = getFreePort();
+            try (var mockedHolderDidServer = ClientAndServer.startClientAndServer(port)) {
+
+                mockedHolderDidServer.when(request()
+                                .withPath("/api/holder/offers")
+                                .withMethod("POST"))
+                        .respond(response()
+                                .withBody("foobar")
+                                .withStatusCode(200));
+
+
+                holderStore.create(Holder.Builder.newInstance()
+                        .holderId("test-holder-id")
+                        .participantContextId(USER)
+                        .did("did:web:holder")
+                        .build());
+
+                when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:holder")))
+                        .thenReturn(Result.success(DidDocument.Builder.newInstance()
+                                .service(List.of(new Service(UUID.randomUUID().toString(),
+                                        "CredentialService",
+                                        "http://localhost:%s/api/holder".formatted(port)))).build()));
+
+                context.getAdminEndpoint()
+                        .baseRequest()
+                        .contentType(JSON)
+                        .header(new Header("x-api-key", token))
+                        .body(getOfferRequestBody())
+                        .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                        .then()
+                        .log().ifValidationFails()
+                        .statusCode(200);
+            }
+        }
+
+        @Test
+        void sendCredentialOffer_offerMessageFailure(IssuerServiceEndToEndTestContext context, HolderStore holderStore) {
+            var token = context.createParticipant(USER);
+
+            var port = getFreePort();
+            try (var mockedHolderDidServer = ClientAndServer.startClientAndServer(port)) {
+
+                mockedHolderDidServer.when(request()
+                                .withPath("/api/holder/offers")
+                                .withMethod("POST"))
+                        .respond(response()
+                                .withBody("foobar")
+                                .withStatusCode(404));
+
+
+                holderStore.create(Holder.Builder.newInstance()
+                        .holderId("test-holder-id")
+                        .participantContextId(USER)
+                        .did("did:web:holder")
+                        .build());
+
+                when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:holder")))
+                        .thenReturn(Result.success(DidDocument.Builder.newInstance()
+                                .service(List.of(new Service(UUID.randomUUID().toString(),
+                                        "CredentialService",
+                                        "http://localhost:%s/api/holder".formatted(port)))).build()));
+
+                context.getAdminEndpoint()
+                        .baseRequest()
+                        .contentType(JSON)
+                        .header(new Header("x-api-key", token))
+                        .body(getOfferRequestBody())
+                        .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                        .then()
+                        .log().ifValidationFails()
+                        .statusCode(400);
+            }
+        }
+
+        @Test
+        void sendCredentialOffer_holderDidResolutionFailure(IssuerServiceEndToEndTestContext context, HolderStore holderStore) {
+            var token = context.createParticipant(USER);
+
+            var port = getFreePort();
+            when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:holder")))
+                    .thenReturn(Result.failure("did not found"));
+
+            holderStore.create(Holder.Builder.newInstance()
+                    .holderId("test-holder-id")
+                    .participantContextId(USER)
+                    .did("did:web:holder")
+                    .build());
+
+            context.getAdminEndpoint()
+                    .baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(getOfferRequestBody())
+                    .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+        }
+
+        @Test
+        void sendCredentialOffer_holderNotFound(IssuerServiceEndToEndTestContext context) {
+            var token = context.createParticipant(USER);
+
+            // missing: holder
+
+            context.getAdminEndpoint()
+                    .baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(getOfferRequestBody())
+                    .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400)
+                    .body(containsString("Holder not found"));
+        }
+
+        @Test
+        void sendCredentialOffer_participantNotAuthorized(IssuerServiceEndToEndTestContext context, HolderStore holderStore) {
+            var token = context.createParticipant(USER);
+            var token2 = context.createParticipant("another-issuer");
+
+            holderStore.create(Holder.Builder.newInstance()
+                    .holderId("test-holder-id")
+                    .participantContextId("another-issuer")
+                    .did("did:web:holder")
+                    .build());
+
+            context.getAdminEndpoint()
+                    .baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token))
+                    .body(getOfferRequestBody())
+                    .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+        }
+
+        private String toBase64(String input) {
+            return Base64.getUrlEncoder().encodeToString(input.getBytes());
         }
     }
 
     @Nested
     @EndToEndTest
-    @ExtendWith(IssuerServiceEndToEndExtension.InMemory.class)
     class InMemory extends Tests {
+        @RegisterExtension
+        static IssuerServiceCustomizableEndToEndExtension runtime;
 
+        static {
+            var ctx = IssuerServiceEndToEndExtension.InMemory.context();
+            ctx.getRuntime().registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
+            runtime = new IssuerServiceCustomizableEndToEndExtension(ctx);
+        }
     }
 
     @Nested
@@ -394,7 +573,6 @@ public class CredentialApiEndToEndTest {
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-
         private static final String ISSUER = "issuer";
 
         @Order(1)
@@ -403,10 +581,13 @@ public class CredentialApiEndToEndTest {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
 
-        @Order(2)
         @RegisterExtension
-        static final IssuerServiceEndToEndExtension ISSUER_SERVICE = IssuerServiceEndToEndExtension.Postgres
-                .withConfig(cfg -> POSTGRESQL_EXTENSION.configFor(ISSUER));
+        @Order(2)
+        static final IssuerServiceEndToEndExtension RUNTIME = IssuerServiceEndToEndExtension.Postgres.withConfig((it) -> POSTGRESQL_EXTENSION.configFor(ISSUER));
+
+        static {
+            RUNTIME.registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
+        }
     }
 
 }

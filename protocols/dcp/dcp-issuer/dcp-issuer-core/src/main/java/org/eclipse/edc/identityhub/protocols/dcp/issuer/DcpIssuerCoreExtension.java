@@ -124,7 +124,8 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     }
 
     // TODO: refactor to use upstream DidCredentialServiceUrlResolver
-    private CredentialServiceUrlResolver credentialServiceUrlResolver() {
+    @Provider
+    public CredentialServiceUrlResolver credentialServiceUrlResolver() {
         return (issuer) -> {
             var didDocument = didResolverRegistry.resolve(issuer);
             if (didDocument.failed()) {
