@@ -36,4 +36,11 @@ public interface TestData {
             lbWEifSx7ImlkIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9leGFtcGxlcy9hbHVtbmkuanNvbiIsInR5cGUiOiJKc29uU2NoZW1hI
             n1dfQ.ZO5PfcjJ7aq-FFgFnvKF4irU-4Cv6_zLTGt7t7rVhb_K-veUd3XKTNbfiS_RtedrNYgay8PksZfTnkk2gnNFSw
             """;
+
+
+    String IH_RUNTIME_NAME = "identity-hub";
+    String IH_RUNTIME_ID = "identity-hub";
+
+    String[] IH_RUNTIME_SQL_MODULES = new String[]{":dist:bom:identityhub-bom", ":dist:bom:identityhub-feature-sql-bom"};
+    String[] IH_RUNTIME_MEM_MODULES = new String[]{":dist:bom:identityhub-bom"};
 }

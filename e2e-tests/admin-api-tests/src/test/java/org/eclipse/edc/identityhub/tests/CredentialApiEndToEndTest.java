@@ -34,14 +34,14 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceCustomizableEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerRuntime;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
+import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
@@ -70,6 +70,10 @@ import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CRED
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET;
+import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_ID;
+import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_MEM_MODULES;
+import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_SQL_MODULES;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -167,8 +171,8 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void revoke_whenNotYetRevoked(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
-            var token = context.createParticipant(USER);
+        void revoke_whenNotYetRevoked(IssuerRuntime runtime, CredentialStore credentialStore) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             // create revocation credential
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -179,7 +183,7 @@ public class CredentialApiEndToEndTest {
 
             credentialStore.create(createCredential("test-cred"));
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -195,8 +199,8 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void revoke_whenAlreadyRevoked(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
-            var token = context.createParticipant(USER);
+        void revoke_whenAlreadyRevoked(IssuerRuntime runtime, CredentialStore credentialStore) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             // create a statuslist credential which has the "revocation" bit set
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
@@ -207,7 +211,7 @@ public class CredentialApiEndToEndTest {
 
             credentialStore.create(createCredential("test-cred"));
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -223,8 +227,8 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void revoke_whenCredentialNotFound(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
-            var token = context.createParticipant(USER);
+        void revoke_whenCredentialNotFound(IssuerRuntime runtime, CredentialStore credentialStore) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             // create a statuslist credential which has the "revocation" bit set
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
@@ -234,7 +238,7 @@ public class CredentialApiEndToEndTest {
 
             // missing: creation of the holder credential
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -246,9 +250,9 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void revoke_whenNotAuthorized(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
-            context.createParticipant(USER);
-            var token = context.createParticipant("anotherUser");
+        void revoke_whenNotAuthorized(IssuerRuntime runtime, CredentialStore credentialStore) {
+            runtime.createParticipant(USER);
+            var token = runtime.createParticipant("anotherUser").apiKey();
 
             // create revocation credential
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -257,7 +261,7 @@ public class CredentialApiEndToEndTest {
 
             credentialStore.create(createCredential("test-cred"));
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -268,14 +272,14 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void revoke_whenStatusListCredentialNotFound(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
-            var token = context.createParticipant(USER);
+        void revoke_whenStatusListCredentialNotFound(IssuerRuntime runtime, CredentialStore credentialStore) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             //missing: create status list credential
 
             credentialStore.create(createCredential("test-cred"));
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -287,8 +291,8 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void revoke_whenWrongStatusListType(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
-            var token = context.createParticipant(USER);
+        void revoke_whenWrongStatusListType(IssuerRuntime runtime, CredentialStore credentialStore) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             // create a statuslist credential which has the "revocation" bit set
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -307,7 +311,7 @@ public class CredentialApiEndToEndTest {
             )));
             credentialStore.create(credential);
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -320,13 +324,13 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void queryCredentials(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
-            var token = context.createParticipant(USER);
+        void queryCredentials(IssuerRuntime runtime, CredentialStore credentialStore) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             credentialStore.create(createCredential("test-cred"));
             credentialStore.create(createCredential("test-cred-1", "another-user"));
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -342,13 +346,13 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void queryCredentials_notAuthorized(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
-            context.createParticipant(USER);
-            var token = context.createParticipant("anotherUser");
+        void queryCredentials_notAuthorized(IssuerRuntime runtime, CredentialStore credentialStore) {
+            runtime.createParticipant(USER);
+            var token = runtime.createParticipant("anotherUser").apiKey();
 
             credentialStore.create(createCredential("test-cred"));
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -364,8 +368,8 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void checkStatus(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
-            var token = context.createParticipant(USER);
+        void checkStatus(IssuerRuntime runtime, CredentialStore credentialStore) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             // create revocation credential
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -374,7 +378,7 @@ public class CredentialApiEndToEndTest {
 
             credentialStore.create(createCredential("test-cred"));
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .header(new Header("x-api-key", token))
                     .get("/v1alpha/participants/%s/credentials/test-cred/status".formatted(toBase64(USER)))
@@ -385,9 +389,9 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void checkStatus_notAuthorized(IssuerServiceEndToEndTestContext context, CredentialStore credentialStore) {
-            context.createParticipant(USER);
-            var token = context.createParticipant("anotherUser");
+        void checkStatus_notAuthorized(IssuerRuntime runtime, CredentialStore credentialStore) {
+            runtime.createParticipant(USER);
+            var token = runtime.createParticipant("anotherUser").apiKey();
 
             // create revocation credential
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -396,7 +400,7 @@ public class CredentialApiEndToEndTest {
 
             credentialStore.create(createCredential("test-cred"));
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .header(new Header("x-api-key", token))
                     .get("/v1alpha/participants/%s/credentials/test-cred/status".formatted(toBase64(USER)))
@@ -406,8 +410,8 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void sendCredentialOffer(IssuerServiceEndToEndTestContext context, HolderStore holderStore) {
-            var token = context.createParticipant(USER);
+        void sendCredentialOffer(IssuerRuntime runtime, HolderStore holderStore) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             var port = getFreePort();
             try (var mockedHolderDidServer = ClientAndServer.startClientAndServer(port)) {
@@ -432,7 +436,7 @@ public class CredentialApiEndToEndTest {
                                         "CredentialService",
                                         "http://localhost:%s/api/holder".formatted(port)))).build()));
 
-                context.getAdminEndpoint()
+                runtime.getAdminEndpoint()
                         .baseRequest()
                         .contentType(JSON)
                         .header(new Header("x-api-key", token))
@@ -445,8 +449,8 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void sendCredentialOffer_offerMessageFailure(IssuerServiceEndToEndTestContext context, HolderStore holderStore) {
-            var token = context.createParticipant(USER);
+        void sendCredentialOffer_offerMessageFailure(IssuerRuntime runtime, HolderStore holderStore) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             var port = getFreePort();
             try (var mockedHolderDidServer = ClientAndServer.startClientAndServer(port)) {
@@ -471,7 +475,7 @@ public class CredentialApiEndToEndTest {
                                         "CredentialService",
                                         "http://localhost:%s/api/holder".formatted(port)))).build()));
 
-                context.getAdminEndpoint()
+                runtime.getAdminEndpoint()
                         .baseRequest()
                         .contentType(JSON)
                         .header(new Header("x-api-key", token))
@@ -484,8 +488,8 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void sendCredentialOffer_holderDidResolutionFailure(IssuerServiceEndToEndTestContext context, HolderStore holderStore) {
-            var token = context.createParticipant(USER);
+        void sendCredentialOffer_holderDidResolutionFailure(IssuerRuntime runtime, HolderStore holderStore) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             var port = getFreePort();
             when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:holder")))
@@ -497,7 +501,7 @@ public class CredentialApiEndToEndTest {
                     .did("did:web:holder")
                     .build());
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -509,12 +513,12 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void sendCredentialOffer_holderNotFound(IssuerServiceEndToEndTestContext context) {
-            var token = context.createParticipant(USER);
+        void sendCredentialOffer_holderNotFound(IssuerRuntime runtime) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             // missing: holder
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -527,9 +531,9 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void sendCredentialOffer_participantNotAuthorized(IssuerServiceEndToEndTestContext context, HolderStore holderStore) {
-            var token = context.createParticipant(USER);
-            var token2 = context.createParticipant("another-issuer");
+        void sendCredentialOffer_participantNotAuthorized(IssuerRuntime runtime, HolderStore holderStore) {
+            var token = runtime.createParticipant(USER).apiKey();
+            var token2 = runtime.createParticipant("another-issuer");
 
             holderStore.create(Holder.Builder.newInstance()
                     .holderId("test-holder-id")
@@ -537,7 +541,7 @@ public class CredentialApiEndToEndTest {
                     .did("did:web:holder")
                     .build());
 
-            context.getAdminEndpoint()
+            runtime.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
@@ -556,14 +560,15 @@ public class CredentialApiEndToEndTest {
     @Nested
     @EndToEndTest
     class InMemory extends Tests {
-        @RegisterExtension
-        static IssuerServiceCustomizableEndToEndExtension runtime;
 
-        static {
-            var ctx = IssuerServiceEndToEndExtension.InMemory.context();
-            ctx.getRuntime().registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
-            runtime = new IssuerServiceCustomizableEndToEndExtension(ctx);
-        }
+        @RegisterExtension
+        static final RuntimeExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
+                .id(ISSUER_RUNTIME_ID)
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(ISSUER_RUNTIME_MEM_MODULES)
+                .build()
+                .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
+
     }
 
     @Nested
@@ -581,13 +586,15 @@ public class CredentialApiEndToEndTest {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
 
-        @RegisterExtension
         @Order(2)
-        static final IssuerServiceEndToEndExtension RUNTIME = IssuerServiceEndToEndExtension.Postgres.withConfig((it) -> POSTGRESQL_EXTENSION.configFor(ISSUER));
-
-        static {
-            RUNTIME.registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
-        }
+        @RegisterExtension
+        static final RuntimeExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
+                .id(ISSUER_RUNTIME_ID)
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(ISSUER_RUNTIME_SQL_MODULES)
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
+                .build()
+                .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
     }
 
 }

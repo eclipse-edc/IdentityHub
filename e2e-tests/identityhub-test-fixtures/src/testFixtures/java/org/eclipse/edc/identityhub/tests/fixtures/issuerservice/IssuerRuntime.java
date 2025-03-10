@@ -16,11 +16,12 @@ package org.eclipse.edc.identityhub.tests.fixtures.issuerservice;
 
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
-import org.eclipse.edc.identityhub.tests.fixtures.common.AbstractTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentityHubRuntime;
 import org.eclipse.edc.identityhub.tests.fixtures.common.Endpoint;
+import org.eclipse.edc.issuerservice.spi.holder.HolderService;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
-import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -28,45 +29,38 @@ import java.util.List;
 import static java.lang.String.format;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 
-/**
- * IssuerService end to end context used in tests extended with {@link IssuerServiceEndToEndExtension}
- */
-public class IssuerServiceEndToEndTestContext extends AbstractTestContext {
+public class IssuerRuntime extends AbstractIdentityHubRuntime<IssuerExtension> {
 
-
-    private final IssuerServiceRuntimeConfiguration configuration;
-
-    public IssuerServiceEndToEndTestContext(EmbeddedRuntime runtime, IssuerServiceRuntimeConfiguration configuration) {
-        super(runtime);
-        this.configuration = configuration;
-    }
-
-
-    public EmbeddedRuntime getRuntime() {
-        return runtime;
-    }
-
-    public Endpoint getAdminEndpoint() {
-        return configuration.getAdminEndpoint();
-    }
-
-    public Endpoint getDcpIssuanceEndpoint() {
-        return configuration.getIssuerApiEndpoint();
-    }
-
-    public String didFor(String participantContextId) {
-        return configuration.didFor(participantContextId);
+    public IssuerRuntime(IssuerExtension extension) {
+        super(extension);
     }
 
     public Service createServiceEndpoint(String participantContextId) {
-        var issuerEndpoint = format("%s/%s", configuration.getIssuerApiEndpoint().getUrl(), issuanceBasePath(participantContextId));
+        var issuerEndpoint = format("%s/%s", extension.issuerApiEndpoint.get().getUrl(), issuanceBasePath(participantContextId));
         return new Service("issuer-id", "IssuerService", issuerEndpoint);
     }
 
 
+    public Endpoint getAdminEndpoint() {
+        return extension.getAdminEndpoint();
+    }
+
+    public void createHolder(String participantContextId, String holderId, String holderDid, String holderName) {
+        var holder = Holder.Builder.newInstance()
+                .holderId(holderId)
+                .did(holderDid)
+                .holderName(holderName)
+                .participantContextId(participantContextId)
+                .build();
+
+        getService(HolderService.class).createHolder(holder)
+                .orElseThrow((f) -> new RuntimeException(f.getFailureDetail()));
+
+    }
+
     public List<IssuanceProcess> getIssuanceProcessesForParticipant(String participantContextId) {
         var query = ParticipantResource.queryByParticipantContextId(participantContextId).build();
-        return runtime.getService(IssuanceProcessStore.class).query(query)
+        return getService(IssuanceProcessStore.class).query(query)
                 .toList();
     }
 

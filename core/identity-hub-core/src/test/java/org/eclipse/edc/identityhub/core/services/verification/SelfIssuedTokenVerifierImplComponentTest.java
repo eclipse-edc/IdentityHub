@@ -30,6 +30,7 @@ import org.eclipse.edc.jwt.validation.jti.JtiValidationEntry;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.token.TokenValidationRulesRegistryImpl;
 import org.eclipse.edc.token.TokenValidationServiceImpl;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
@@ -49,6 +50,7 @@ import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConsta
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -84,8 +86,10 @@ class SelfIssuedTokenVerifierImplComponentTest {
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
         ruleRegistry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
 
+        var entry = new JtiValidationEntry("test-jti", null);
         jtiValidationStore = mock(JtiValidationStore.class);
-        when(jtiValidationStore.findById(anyString())).thenReturn(new JtiValidationEntry("test-jti", null));
+        when(jtiValidationStore.findById(anyString())).thenReturn(entry);
+        when(jtiValidationStore.storeEntry(entry)).thenReturn(StoreResult.success());
         ruleRegistry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new JtiValidationRule(jtiValidationStore, mock()));
 
         var resolverMock = mock(KeyPairResourcePublicKeyResolver.class);
@@ -175,6 +179,9 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
     @Test
     void validation_successful_withJti() {
+        when(jtiValidationStore.findById(anyString())).thenReturn(null); //JTI not known
+        when(jtiValidationStore.storeEntry(any())).thenReturn(StoreResult.success());
+
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("scope", "foobar")
                 .audience(PARTICIPANT_DID)
@@ -277,7 +284,8 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
     @Test
     void accessToken_jtiValidationFails() {
-        when(jtiValidationStore.findById(anyString())).thenReturn(null); //JTI not known
+        when(jtiValidationStore.findById(anyString())).thenReturn(new JtiValidationEntry("tokenId"));
+        when(jtiValidationStore.storeEntry(any())).thenReturn(StoreResult.alreadyExists("The JWT id 'tokenId' was already used."));
 
         var accessToken = createSignedJwt(stsKeyPair.getPrivate(), new JWTClaimsSet.Builder()
                 .claim("scope", "foobar")
@@ -290,7 +298,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .audience(PARTICIPANT_DID)
                 .build());
         assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
-                .detail().matches("The JWT id '.*' was not found");
+                .detail().matches("The JWT id '.*' was already used.");
     }
 
     @Test

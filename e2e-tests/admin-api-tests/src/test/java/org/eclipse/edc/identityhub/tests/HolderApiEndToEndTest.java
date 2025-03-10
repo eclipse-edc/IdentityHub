@@ -17,8 +17,8 @@ package org.eclipse.edc.identityhub.tests;
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerRuntime;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -33,12 +33,15 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_ID;
+import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_MEM_MODULES;
+import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_SQL_MODULES;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
@@ -58,10 +61,10 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void createHolder(IssuerServiceEndToEndTestContext context) {
-            var token = context.createParticipant(USER);
+        void createHolder(IssuerRuntime runtime) {
+            var token = runtime.createParticipant(USER).apiKey();
 
-            context.getAdminEndpoint().baseRequest()
+            runtime.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
                     .body("""
@@ -78,12 +81,12 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void createParticipant_whenExists(IssuerServiceEndToEndTestContext context, HolderService service) {
-            var token = context.createParticipant(USER);
+        void createParticipant_whenExists(IssuerRuntime runtime, HolderService service) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             service.createHolder(createHolder("test-participant-id", "did:web:foo", "foobar"));
 
-            context.getAdminEndpoint().baseRequest()
+            runtime.getAdminEndpoint().baseRequest()
                     .header(new Header("x-api-key", token))
                     .contentType(ContentType.JSON)
                     .body("""
@@ -99,11 +102,11 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void createHolder_notAuthorized(IssuerServiceEndToEndTestContext context) {
-            context.createParticipant(USER);
-            var token = context.createParticipant("anotherParticipant");
+        void createHolder_notAuthorized(IssuerRuntime runtime) {
+            runtime.createParticipant(USER);
+            var token = runtime.createParticipant("anotherParticipant").apiKey();
 
-            context.getAdminEndpoint().baseRequest()
+            runtime.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
                     .body("""
@@ -119,10 +122,10 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void createParticipant_whenMissingFields(IssuerServiceEndToEndTestContext context) {
-            var token = context.createParticipant(USER);
+        void createParticipant_whenMissingFields(IssuerRuntime runtime) {
+            var token = runtime.createParticipant(USER).apiKey();
 
-            context.getAdminEndpoint().baseRequest()
+            runtime.getAdminEndpoint().baseRequest()
                     .header(new Header("x-api-key", token))
                     .contentType(ContentType.JSON)
                     .body("""
@@ -136,12 +139,12 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void updateHolder(IssuerServiceEndToEndTestContext context, HolderService service) {
-            var token = context.createParticipant(USER);
+        void updateHolder(IssuerRuntime runtime, HolderService service) {
+            var token = runtime.createParticipant(USER).apiKey();
             var initialHolder = createHolder("test-participant-id", "did:web:foo", null);
             service.createHolder(initialHolder);
 
-            context.getAdminEndpoint().baseRequest()
+            runtime.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
                     .body("""
@@ -162,13 +165,13 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void updateHolder_notAuthorized(IssuerServiceEndToEndTestContext context, HolderService service) {
-            context.createParticipant(USER);
-            var anotherToken = context.createParticipant("anotherUser");
+        void updateHolder_notAuthorized(IssuerRuntime runtime, HolderService service) {
+            runtime.createParticipant(USER);
+            var anotherToken = runtime.createParticipant("anotherUser").apiKey();
             var initialHolder = createHolder("test-participant-id", "did:web:foo", null);
             service.createHolder(initialHolder);
 
-            context.getAdminEndpoint().baseRequest()
+            runtime.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", anotherToken))
                     .body("""
@@ -185,15 +188,15 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void queryParticipant(IssuerServiceEndToEndTestContext context, HolderService service) {
-            var token = context.createParticipant(USER);
+        void queryParticipant(IssuerRuntime runtime, HolderService service) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             var holder1 = createHolder("test-participant-id", "did:web:foo", "foobar");
             var holder2 = createHolder("test-participant-id", "did:web:foo", "foobar", "anotherParticipantContext");
             service.createHolder(holder1);
             service.createHolder(holder2);
 
-            var res = context.getAdminEndpoint().baseRequest()
+            var res = runtime.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderName", "=", "foobar")).build())
@@ -207,10 +210,10 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void queryParticipant_noResult(IssuerServiceEndToEndTestContext context) {
-            var token = context.createParticipant(USER);
+        void queryParticipant_noResult(IssuerRuntime runtime) {
+            var token = runtime.createParticipant(USER).apiKey();
 
-            var res = context.getAdminEndpoint().baseRequest()
+            var res = runtime.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderId", "=", "test-participant-id")).build())
@@ -224,13 +227,13 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void getById(IssuerServiceEndToEndTestContext context, HolderService service) {
-            var token = context.createParticipant(USER);
+        void getById(IssuerRuntime runtime, HolderService service) {
+            var token = runtime.createParticipant(USER).apiKey();
 
             var expectedParticipant = createHolder("test-participant-id", "did:web:foo", "foobar");
             service.createHolder(expectedParticipant);
 
-            var res = context.getAdminEndpoint().baseRequest()
+            var res = runtime.getAdminEndpoint().baseRequest()
                     .header(new Header("x-api-key", token))
                     .get("/v1alpha/participants/%s/holders/test-participant-id".formatted(toBase64(USER)))
                     .then()
@@ -242,14 +245,14 @@ public class HolderApiEndToEndTest {
         }
 
         @Test
-        void getById_notAuthorized(IssuerServiceEndToEndTestContext context, HolderService service) {
-            context.createParticipant(USER);
-            var token = context.createParticipant("anotherUser");
+        void getById_notAuthorized(IssuerRuntime runtime, HolderService service) {
+            runtime.createParticipant(USER);
+            var token = runtime.createParticipant("anotherUser").apiKey();
 
             var expectedParticipant = createHolder("test-participant-id", "did:web:foo", "foobar");
             service.createHolder(expectedParticipant);
 
-            context.getAdminEndpoint().baseRequest()
+            runtime.getAdminEndpoint().baseRequest()
                     .header(new Header("x-api-key", token))
                     .get("/v1alpha/participants/%s/holders/test-participant-id".formatted(toBase64(USER)))
                     .then()
@@ -278,8 +281,14 @@ public class HolderApiEndToEndTest {
 
     @Nested
     @EndToEndTest
-    @ExtendWith(IssuerServiceEndToEndExtension.InMemory.class)
     class InMemory extends Tests {
+
+        @RegisterExtension
+        static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
+                .id(ISSUER_RUNTIME_ID)
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(ISSUER_RUNTIME_MEM_MODULES)
+                .build();
     }
 
     @Nested
@@ -300,7 +309,11 @@ public class HolderApiEndToEndTest {
 
         @Order(2)
         @RegisterExtension
-        static final IssuerServiceEndToEndExtension ISSUER_SERVICE = IssuerServiceEndToEndExtension.Postgres
-                .withConfig(cfg -> POSTGRESQL_EXTENSION.configFor(ISSUER));
+        static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
+                .id(ISSUER_RUNTIME_ID)
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(ISSUER_RUNTIME_SQL_MODULES)
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
+                .build();
     }
 }
