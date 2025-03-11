@@ -130,9 +130,9 @@ maven/mavencentral/io.opentelemetry/opentelemetry-context/1.32.0, Apache-2.0, ap
 maven/mavencentral/io.opentelemetry/opentelemetry-context/1.47.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/io.prometheus/simpleclient/0.16.0, Apache-2.0 AND CC0-1.0, approved, #19721
 maven/mavencentral/io.prometheus/simpleclient_common/0.16.0, Apache-2.0, approved, #19730
-maven/mavencentral/io.prometheus/simpleclient_httpserver/0.16.0, Apache-2.0, approved, clearlydefined
+maven/mavencentral/io.prometheus/simpleclient_httpserver/0.16.0, Apache-2.0, approved, #20015
 maven/mavencentral/io.prometheus/simpleclient_tracer_common/0.16.0, Apache-2.0, approved, #19716
-maven/mavencentral/io.prometheus/simpleclient_tracer_otel/0.16.0, Apache-2.0, approved, clearlydefined
+maven/mavencentral/io.prometheus/simpleclient_tracer_otel/0.16.0, Apache-2.0, approved, #20002
 maven/mavencentral/io.prometheus/simpleclient_tracer_otel_agent/0.16.0, Apache-2.0, approved, #19706
 maven/mavencentral/io.rest-assured/json-path/5.5.1, Apache-2.0, approved, #19524
 maven/mavencentral/io.rest-assured/rest-assured-common/5.5.1, Apache-2.0, approved, #19522
