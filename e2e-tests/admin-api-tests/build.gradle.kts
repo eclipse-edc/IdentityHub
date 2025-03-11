@@ -35,7 +35,7 @@ dependencies {
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.jakarta.rsApi)
     testImplementation(project(":spi:sts-spi"))
-    testImplementation(testFixtures(project(":e2e-tests:fixtures")))
+    testImplementation(testFixtures(project(":e2e-tests:identityhub-test-fixtures")))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
 }
 

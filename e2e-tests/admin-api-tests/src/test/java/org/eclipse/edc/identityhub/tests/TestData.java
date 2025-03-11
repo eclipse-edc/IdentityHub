@@ -71,4 +71,10 @@ public class TestData {
             DZaNndBQUFBQUF0UVZRZGI1Z0FFQUFBQT09In19.EI-kWzpDykZxbvedDgEG0cOJRFfEDZHJtHlnGD6fbQEm13GcLGKBMVT_KJEmsdjBBhys
             Sh0KW-2S2mm3jS9w1w
             """;
+
+    public static final String ISSUER_RUNTIME_NAME = "issuerservice";
+    public static final String ISSUER_RUNTIME_ID = "issuerservice";
+
+    public static final String[] ISSUER_RUNTIME_SQL_MODULES = new String[]{":dist:bom:issuerservice-bom", ":dist:bom:issuerservice-feature-sql-bom"};
+    public static final String[] ISSUER_RUNTIME_MEM_MODULES = new String[]{":dist:bom:issuerservice-bom"};
 }

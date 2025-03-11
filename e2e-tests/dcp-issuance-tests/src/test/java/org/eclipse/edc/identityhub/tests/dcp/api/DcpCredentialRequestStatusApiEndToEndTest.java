@@ -19,8 +19,8 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerRuntime;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
@@ -32,6 +32,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
+import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
@@ -52,6 +53,10 @@ import java.util.UUID;
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_ID;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_MEM_MODULES;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_SQL_MODULES;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.mockito.ArgumentMatchers.eq;
@@ -75,12 +80,12 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
 
         @BeforeAll
-        static void beforeAll(IssuerServiceEndToEndTestContext context) {
-            var pipelineFactory = context.getRuntime().getService(AttestationSourceFactoryRegistry.class);
-            var validationRegistry = context.getRuntime().getService(AttestationDefinitionValidatorRegistry.class);
+        static void beforeAll(IssuerRuntime issuerRuntime) {
+            var pipelineFactory = issuerRuntime.getService(AttestationSourceFactoryRegistry.class);
+            var validationRegistry = issuerRuntime.getService(AttestationDefinitionValidatorRegistry.class);
             pipelineFactory.registerFactory("Attestation", ATTESTATION_SOURCE_FACTORY);
             validationRegistry.registerValidator("Attestation", def -> ValidationResult.success());
-            context.createParticipant(ISSUER_ID);
+            issuerRuntime.createParticipant(ISSUER_ID);
         }
 
         private static @NotNull String issuanceStatusUrl(String id) {
@@ -98,7 +103,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
-        void credentialStatus(IssuerServiceEndToEndTestContext context, HolderService holderService,
+        void credentialStatus(IssuerExtension issuerExtension, HolderService holderService,
                               IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             var process = createIssuanceProcess();
@@ -111,7 +116,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
 
-            var response = context.getDcpIssuanceEndpoint().baseRequest()
+            var response = issuerExtension.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .get(issuanceStatusUrl(process.getId()))
@@ -129,7 +134,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
-        void credentialStatus_wrongParticipant_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService,
+        void credentialStatus_wrongParticipant_shouldReturn401(IssuerExtension issuerExtension, HolderService holderService,
                                                                IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             var process = createIssuanceProcess();
@@ -147,7 +152,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(wrongParticipantKeyId))).thenReturn(Result.success(wrongParticipantKey.toPublicKey()));
 
-            context.getDcpIssuanceEndpoint().baseRequest()
+            issuerExtension.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .get(issuanceStatusUrl(process.getId()))
@@ -158,8 +163,8 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
-        void credentialStatus_tokenNotPresent_shouldReturn401(IssuerServiceEndToEndTestContext context) {
-            context.getDcpIssuanceEndpoint().baseRequest()
+        void credentialStatus_tokenNotPresent_shouldReturn401(IssuerExtension issuerExtension) {
+            issuerExtension.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
                     .get(issuanceStatusUrl("credentialRequestId"))
                     .then()
@@ -169,10 +174,10 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
-        void credentialStatus_participantNotFound_shouldReturn401(IssuerServiceEndToEndTestContext context) {
+        void credentialStatus_participantNotFound_shouldReturn401(IssuerExtension issuerExtension) {
             var token = generateSiToken();
 
-            context.getDcpIssuanceEndpoint().baseRequest()
+            issuerExtension.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .get(issuanceStatusUrl("credentialRequestId"))
@@ -183,7 +188,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
-        void credentialStatus_tokenVerificationFails_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
+        void credentialStatus_tokenVerificationFails_shouldReturn401(IssuerExtension issuerExtension, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             var process = createIssuanceProcess();
 
@@ -198,7 +203,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(spoofedKey.toPublicKey()));
 
-            context.getDcpIssuanceEndpoint().baseRequest()
+            issuerExtension.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .get(issuanceStatusUrl(process.getId()))
@@ -209,7 +214,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
-        void credentialStatus_spoofedKeyId_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
+        void credentialStatus_spoofedKeyId_shouldReturn401(IssuerExtension issuerExtension, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
             var process = createIssuanceProcess();
             holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
             issuanceProcessStore.save(process);
@@ -220,7 +225,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(spoofedKeyId))).thenReturn(Result.success(spoofedKey.toPublicKey()));
 
-            context.getDcpIssuanceEndpoint().baseRequest()
+            issuerExtension.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .get(issuanceStatusUrl(process.getId()))
@@ -232,7 +237,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         @Test
-        void credentialStatus_wrongTokenAudience_shouldReturn401(IssuerServiceEndToEndTestContext context, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
+        void credentialStatus_wrongTokenAudience_shouldReturn401(IssuerExtension issuerExtension, HolderService holderService, IssuanceProcessStore issuanceProcessStore) throws JOSEException {
 
             var process = createIssuanceProcess();
 
@@ -246,7 +251,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
 
-            context.getDcpIssuanceEndpoint().baseRequest()
+            issuerExtension.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
                     .get(issuanceStatusUrl(process.getId()))
@@ -299,21 +304,18 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
     }
 
-
     @Nested
     @EndToEndTest
     @Order(1)
     class InMemory extends Tests {
 
-
         @RegisterExtension
-        static IssuerServiceEndToEndExtension runtime;
-
-        static {
-            runtime = new IssuerServiceEndToEndExtension.InMemory();
-            runtime.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
-        }
-
+        static final RuntimeExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
+                .id(ISSUER_RUNTIME_ID)
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(ISSUER_RUNTIME_MEM_MODULES)
+                .build()
+                .registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
     }
 
     @Nested
@@ -334,11 +336,13 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
         @Order(2)
         @RegisterExtension
-        static final IssuerServiceEndToEndExtension ISSUER_SERVICE = IssuerServiceEndToEndExtension.Postgres
-                .withConfig(cfg -> POSTGRESQL_EXTENSION.configFor(ISSUER));
+        static final RuntimeExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
+                .id(ISSUER_RUNTIME_ID)
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(ISSUER_RUNTIME_SQL_MODULES)
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
+                .build()
+                .registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
 
-        static {
-            ISSUER_SERVICE.registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER);
-        }
     }
 }

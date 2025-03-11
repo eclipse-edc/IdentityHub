@@ -17,10 +17,10 @@ package org.eclipse.edc.identityhub.tests.dcp.flow;
 import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
-import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndTestContext;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerServiceEndToEndTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerRuntime;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
@@ -54,6 +54,14 @@ import java.util.Map;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_ID;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_MEM_MODULES;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_SQL_MODULES;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_ID;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_MEM_MODULES;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_SQL_MODULES;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.refEq;
@@ -79,23 +87,23 @@ public class DcpIssuanceFlowEndToEndTest {
         private static String participantDid;
 
         @BeforeAll
-        static void beforeAll(IssuerServiceEndToEndTestContext issuer, IdentityHubEndToEndTestContext credentialService) {
-            var pipelineFactory = issuer.getRuntime().getService(AttestationSourceFactoryRegistry.class);
-            var validationRegistry = issuer.getRuntime().getService(AttestationDefinitionValidatorRegistry.class);
+        static void beforeAll(IssuerRuntime issuer, IdentityHubRuntime credentialService) {
+            var pipelineFactory = issuer.getService(AttestationSourceFactoryRegistry.class);
+            var validationRegistry = issuer.getService(AttestationDefinitionValidatorRegistry.class);
             pipelineFactory.registerFactory("Attestation", ATTESTATION_SOURCE_FACTORY);
             validationRegistry.registerValidator("Attestation", def -> ValidationResult.success());
 
             // Create an issuer
             issuerDid = issuer.didFor(ISSUER_ID);
-            issuer.createParticipant(ISSUER_ID, issuerDid, issuer.createServiceEndpoint(ISSUER_ID));
+            issuer.createParticipant(ISSUER_ID, issuerDid, issuerDid + "#key");
 
             // Create a participant and store the token
             participantDid = credentialService.didFor(PARTICIPANT_ID);
-            participantToken = credentialService.createParticipant(PARTICIPANT_ID, participantDid, credentialService.createServiceEndpoint(PARTICIPANT_ID));
+            participantToken = credentialService.createParticipant(PARTICIPANT_ID, participantDid, participantDid + "#key").apiKey();
         }
 
         @Test
-        void issuanceFlow(IssuerServiceEndToEndTestContext issuer, IdentityHubEndToEndTestContext credentialService) {
+        void issuanceFlow(IssuerRuntime issuer, IdentityHubRuntime identityHub) {
 
             var mappingDefinition = new MappingDefinition("participant.name", "credentialSubject.name", true);
             var attestationDefinition = setupIssuer(issuer, Map.of(
@@ -116,7 +124,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     }
                     """.formatted(issuerDid);
 
-            credentialService.getIdentityApiEndpoint().baseRequest()
+            identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
@@ -129,7 +137,7 @@ public class DcpIssuanceFlowEndToEndTest {
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(credentialService.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
                                 assertThat(t.getHolderPid()).isEqualTo("test-request-id");
@@ -146,7 +154,7 @@ public class DcpIssuanceFlowEndToEndTest {
                             }));
 
             // checks that the credential was issued on the holder side
-            assertThat(credentialService.getCredentialsForParticipant(PARTICIPANT_ID))
+            assertThat(identityHub.getCredentialsForParticipant(PARTICIPANT_ID))
                     .hasSize(1)
                     .allSatisfy(vc -> {
                         assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
@@ -174,10 +182,10 @@ public class DcpIssuanceFlowEndToEndTest {
         /**
          * Setup the issuer with an attestation definition and a credential definition
          */
-        private @NotNull AttestationDefinition setupIssuer(IssuerServiceEndToEndTestContext issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition) {
-            var participantService = issuer.getRuntime().getService(HolderService.class);
-            var credentialDefinitionService = issuer.getRuntime().getService(CredentialDefinitionService.class);
-            var attestationDefinitionService = issuer.getRuntime().getService(AttestationDefinitionService.class);
+        private @NotNull AttestationDefinition setupIssuer(IssuerRuntime issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition) {
+            var participantService = issuer.getService(HolderService.class);
+            var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
+            var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
 
             participantService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId("participantContextId").build());
 
@@ -214,10 +222,18 @@ public class DcpIssuanceFlowEndToEndTest {
     class InMemory extends Tests {
 
         @RegisterExtension
-        static IssuerServiceEndToEndExtension issuerService = new IssuerServiceEndToEndExtension.InMemory();
+        static final IdentityHubExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
+                .id(IH_RUNTIME_ID)
+                .name(IH_RUNTIME_NAME)
+                .modules(IH_RUNTIME_MEM_MODULES)
+                .build();
 
         @RegisterExtension
-        static IdentityHubEndToEndExtension credentialService = new IdentityHubEndToEndExtension.InMemory();
+        static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
+                .id(ISSUER_RUNTIME_ID)
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(ISSUER_RUNTIME_MEM_MODULES)
+                .build();
 
     }
 
@@ -232,8 +248,13 @@ public class DcpIssuanceFlowEndToEndTest {
 
         @Order(2)
         @RegisterExtension
-        static final IssuerServiceEndToEndExtension ISSUER_SERVICE = IssuerServiceEndToEndExtension.Postgres
-                .withConfig(cfg -> POSTGRESQL_EXTENSION.configFor(ISSUER));
+        static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
+                .id(ISSUER_RUNTIME_ID)
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(ISSUER_RUNTIME_SQL_MODULES)
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
+                .build();
+
         private static final String IDENTITY_HUB = "identityhub";
         @Order(1) // must be the first extension to be evaluated since it starts the DB server
         @RegisterExtension
@@ -244,8 +265,12 @@ public class DcpIssuanceFlowEndToEndTest {
 
         @Order(2)
         @RegisterExtension
-        static final IdentityHubEndToEndExtension CREDENTIAL_SERVICE = IdentityHubEndToEndExtension.Postgres
-                .withConfig((cfg) -> POSTGRESQL_EXTENSION.configFor(IDENTITY_HUB));
+        static final IdentityHubExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
+                .id(IH_RUNTIME_ID)
+                .name(IH_RUNTIME_NAME)
+                .modules(IH_RUNTIME_SQL_MODULES)
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(IDENTITY_HUB))
+                .build();
 
 
     }

@@ -23,8 +23,8 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubEndToEndTestContext;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.event.EventRouter;
@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
@@ -46,6 +45,10 @@ import java.util.List;
 import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_ID;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_MEM_MODULES;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_SQL_MODULES;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -74,12 +77,12 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void publishDid_notOwner_expect403(IdentityHubEndToEndTestContext context, EventRouter router) {
+        void publishDid_notOwner_expect403(IdentityHubRuntime identityHubRuntime, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentPublished.class, subscriber);
 
             var user1 = "user1";
-            context.createParticipant(user1);
+            identityHubRuntime.createParticipant(user1);
 
 
             // create second user
@@ -89,12 +92,12 @@ public class DidManagementApiEndToEndTest {
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();
-            var user2Token = context.storeParticipant(user2Context);
+            var user2Token = identityHubRuntime.storeParticipant(user2Context);
 
             reset(subscriber); // need to reset here, to ignore a previous interaction
 
             // attempt to publish user1's DID document, which should fail
-            context.getIdentityApiEndpoint().baseRequest()
+            identityHubRuntime.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", user2Token))
                     .body("""
@@ -112,18 +115,18 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void publishDid(IdentityHubEndToEndTestContext context, EventRouter router) {
-            var superUserKey = context.createSuperUser();
+        void publishDid(IdentityHubRuntime identityHubRuntime, EventRouter router) {
+            var superUserKey = identityHubRuntime.createSuperUser().apiKey();
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentPublished.class, subscriber);
 
             var user = "test-user";
-            var token = context.createParticipant(user);
+            var token = identityHubRuntime.createParticipant(user).apiKey();
 
             assertThat(Arrays.asList(token, superUserKey))
                     .allSatisfy(t -> {
                         reset(subscriber);
-                        context.getIdentityApiEndpoint().baseRequest()
+                        identityHubRuntime.getIdentityEndpoint().baseRequest()
                                 .contentType(JSON)
                                 .header(new Header("x-api-key", t))
                                 .body("""
@@ -151,18 +154,18 @@ public class DidManagementApiEndToEndTest {
 
 
         @Test
-        void publishDid_participantNotActivated_expect400(IdentityHubEndToEndTestContext context, EventRouter router) {
-            var superUserKey = context.createSuperUser();
+        void publishDid_participantNotActivated_expect400(IdentityHubRuntime identityHubRuntime, EventRouter router) {
+            var superUserKey = identityHubRuntime.createSuperUser().apiKey();
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentPublished.class, subscriber);
 
             var user = "test-user";
-            var token = context.createParticipant(user, List.of(), false);
+            var token = identityHubRuntime.createParticipant(user, List.of(), false).apiKey();
 
             assertThat(Arrays.asList(token, superUserKey))
                     .allSatisfy(t -> {
                         reset(subscriber);
-                        context.getIdentityApiEndpoint().baseRequest()
+                        identityHubRuntime.getIdentityEndpoint().baseRequest()
                                 .contentType(JSON)
                                 .header(new Header("x-api-key", t))
                                 .body("""
@@ -182,12 +185,12 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void unpublishDid_notOwner_expect403(IdentityHubEndToEndTestContext context, EventRouter router) {
+        void unpublishDid_notOwner_expect403(IdentityHubRuntime identityHubRuntime, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentPublished.class, subscriber);
 
             var user1 = "user1";
-            context.createParticipant(user1);
+            identityHubRuntime.createParticipant(user1);
 
 
             // create second user
@@ -197,12 +200,12 @@ public class DidManagementApiEndToEndTest {
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();
-            var user2Token = context.storeParticipant(user2Context);
+            var user2Token = identityHubRuntime.storeParticipant(user2Context);
 
             reset(subscriber); // need to reset here, to ignore a previous interaction
 
             // attempt to publish user1's DID document, which should fail
-            context.getIdentityApiEndpoint().baseRequest()
+            identityHubRuntime.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", user2Token))
                     .body("""
@@ -220,18 +223,18 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void unpublishDid_withSuperUserToken(IdentityHubEndToEndTestContext context, EventRouter router, ParticipantContextService participantContextService) {
-            var superUserKey = context.createSuperUser();
+        void unpublishDid_withSuperUserToken(IdentityHubRuntime identityHubRuntime, EventRouter router, ParticipantContextService participantContextService) {
+            var superUserKey = identityHubRuntime.createSuperUser().apiKey();
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentUnpublished.class, subscriber);
 
             var user = "test-user";
-            context.createParticipant(user);
+            identityHubRuntime.createParticipant(user);
 
             participantContextService.updateParticipant(user, ParticipantContext::deactivate);
 
             reset(subscriber);
-            context.getIdentityApiEndpoint().baseRequest()
+            identityHubRuntime.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", superUserKey))
                     .body("""
@@ -250,18 +253,18 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void unpublishDid_withUserToken(IdentityHubEndToEndTestContext context, EventRouter router, ParticipantContextService participantContextService) {
+        void unpublishDid_withUserToken(IdentityHubRuntime identityHubRuntime, EventRouter router, ParticipantContextService participantContextService) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentUnpublished.class, subscriber);
 
             var user = "test-user";
-            var token = context.createParticipant(user);
+            var token = identityHubRuntime.createParticipant(user).apiKey();
 
             participantContextService.updateParticipant(user, ParticipantContext::deactivate);
 
 
             reset(subscriber);
-            context.getIdentityApiEndpoint().baseRequest()
+            identityHubRuntime.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
                     .body("""
@@ -280,15 +283,15 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void unpublishDid_participantActive_expect400(IdentityHubEndToEndTestContext context, EventRouter router) {
+        void unpublishDid_participantActive_expect400(IdentityHubRuntime identityHubRuntime, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentUnpublished.class, subscriber);
 
             var user = "test-user";
-            var token = context.createParticipant(user, List.of(), true);
+            var token = identityHubRuntime.createParticipant(user, List.of(), true).apiKey();
 
             reset(subscriber);
-            context.getIdentityApiEndpoint().baseRequest()
+            identityHubRuntime.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
                     .body("""
@@ -307,14 +310,14 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void getState_nowOwner_expect403(IdentityHubEndToEndTestContext context) {
+        void getState_nowOwner_expect403(IdentityHubRuntime identityHubRuntime) {
             var user1 = "user1";
-            context.createParticipant(user1);
+            identityHubRuntime.createParticipant(user1);
 
             var user2 = "user2";
-            var token2 = context.createParticipant(user2);
+            var token2 = identityHubRuntime.createParticipant(user2).apiKey();
 
-            context.getIdentityApiEndpoint().baseRequest()
+            identityHubRuntime.getIdentityEndpoint().baseRequest()
                     .header(new Header("x-api-key", token2))
                     .contentType(JSON)
                     .body(""" 
@@ -329,11 +332,11 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void getAll(IdentityHubEndToEndTestContext context) {
-            var superUserKey = context.createSuperUser();
-            range(0, 20).forEach(i -> context.createParticipant("user-" + i));
+        void getAll(IdentityHubRuntime identityHubRuntime) {
+            var superUserKey = identityHubRuntime.createSuperUser().apiKey();
+            range(0, 20).forEach(i -> identityHubRuntime.createParticipant("user-" + i));
 
-            var docs = context.getIdentityApiEndpoint().baseRequest()
+            var docs = identityHubRuntime.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", superUserKey))
                     .get("/v1alpha/dids")
@@ -346,11 +349,11 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void getAll_withDefaultPaging(IdentityHubEndToEndTestContext context) {
-            var superUserKey = context.createSuperUser();
-            range(0, 70).forEach(i -> context.createParticipant("user-" + i));
+        void getAll_withDefaultPaging(IdentityHubRuntime identityHubRuntime) {
+            var superUserKey = identityHubRuntime.createSuperUser().apiKey();
+            range(0, 70).forEach(i -> identityHubRuntime.createParticipant("user-" + i));
 
-            var docs = context.getIdentityApiEndpoint().baseRequest()
+            var docs = identityHubRuntime.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", superUserKey))
                     .get("/v1alpha/dids")
@@ -363,11 +366,11 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void getAll_withPaging(IdentityHubEndToEndTestContext context) {
-            var superUserKey = context.createSuperUser();
-            range(0, 20).forEach(i -> context.createParticipant("user-" + i));
+        void getAll_withPaging(IdentityHubRuntime identityHubRuntime) {
+            var superUserKey = identityHubRuntime.createSuperUser().apiKey();
+            range(0, 20).forEach(i -> identityHubRuntime.createParticipant("user-" + i));
 
-            var docs = context.getIdentityApiEndpoint().baseRequest()
+            var docs = identityHubRuntime.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", superUserKey))
                     .get("/v1alpha/dids?offset=5&limit=10")
@@ -380,11 +383,11 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void getAll_notAuthorized(IdentityHubEndToEndTestContext context) {
+        void getAll_notAuthorized(IdentityHubRuntime identityHubRuntime) {
 
-            var attackerToken = context.createParticipant("attacker");
+            var attackerToken = identityHubRuntime.createParticipant("attacker").apiKey();
 
-            context.getIdentityApiEndpoint().baseRequest()
+            identityHubRuntime.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", attackerToken))
                     .get("/v1alpha/dids")
@@ -397,8 +400,15 @@ public class DidManagementApiEndToEndTest {
 
     @Nested
     @EndToEndTest
-    @ExtendWith(IdentityHubEndToEndExtension.InMemory.class)
     class InMemory extends Tests {
+
+        @RegisterExtension
+        static final IdentityHubExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
+                .name(IH_RUNTIME_NAME)
+                .id(IH_RUNTIME_ID)
+                .modules(IH_RUNTIME_MEM_MODULES)
+                .build();
+
     }
 
     @Nested
@@ -416,9 +426,13 @@ public class DidManagementApiEndToEndTest {
             POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
 
-        @RegisterExtension
         @Order(2)
-        static final IdentityHubEndToEndExtension RUNTIME = IdentityHubEndToEndExtension.Postgres.withConfig((it) -> POSTGRESQL_EXTENSION.configFor(DB_NAME));
-
+        @RegisterExtension
+        static final IdentityHubExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
+                .name(IH_RUNTIME_NAME)
+                .id(IH_RUNTIME_ID)
+                .modules(IH_RUNTIME_SQL_MODULES)
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(DB_NAME))
+                .build();
     }
 }
