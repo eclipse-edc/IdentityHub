@@ -1033,6 +1033,7 @@ _None_
 - `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager` (optional)
 - `org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
+- `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher` (required)
 
 Module `issuerservice-database-attestations`
 --------------------------------------------
@@ -1305,6 +1306,39 @@ _None_
 - `org.eclipse.edc.identityhub.spi.did.DidWebParser` (optional)
 - `java.time.Clock` (required)
 - `org.eclipse.edc.spi.event.EventRouter` (required)
+
+Module `local-statuslist-publisher`
+-----------------------------------
+**Artifact:** org.eclipse.edc:local-statuslist-publisher:0.12.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.issuerservice.publisher.LocalStatusListCredentialPublisherExtension`
+**Name:** "IssuerService Default Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                        | Required | Type     | Default       | Pattern | Min | Max | Description                                     |
+| -------------------------- | -------- | -------- | ------------- | ------- | --- | --- | ----------------------------------------------- |
+| `web.http.statuslist.port` | `*`      | `string` | `9999`        |         |     |     | Port of the status list credential web endpoint |
+| `web.http.statuslist.path` | `*`      | `string` | `/statuslist` |         |     |     | Port of the status list credential web endpoint |
+
+#### Provided services
+- `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore` (required)
+- `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
+- `org.eclipse.edc.spi.system.Hostname` (required)
+- `org.eclipse.edc.web.spi.WebService` (required)
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 
 Module `participant-context-api`
 --------------------------------
