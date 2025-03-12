@@ -29,6 +29,19 @@ import org.eclipse.edc.spi.result.ServiceResult;
  */
 public interface StatusListManager {
     /**
+     * the current status list index. needed to detect overflow or "fullness"s
+     */
+    String CURRENT_INDEX = "currentIndex";
+    /**
+     * the public URL where the status list credential can be obtained
+     */
+    String PUBLIC_URL = "publicUrl";
+    /**
+     * marks the "active" credential, i.e. the ones where new holder credentials get added
+     */
+    String IS_ACTIVE = "isActive";
+
+    /**
      * Obtains the currently active status list credential for a particular participant context id (=tenant). If the current
      * status list credential is saturated, a new one is created and published transparently and then returned
      *

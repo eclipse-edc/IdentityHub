@@ -18,6 +18,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.BitString;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
@@ -25,6 +26,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialEntry;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.spi.EdcException;
@@ -48,18 +50,7 @@ import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.Bit
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.REVOCATION;
 
 public class BitstringStatusListManager implements StatusListManager {
-    /**
-     * the current status list index. needed to detect overflow or "fullness"s
-     */
-    public static final String CURRENT_INDEX = "currentIndex";
-    /**
-     * the public URL where the status list credential can be obtained
-     */
-    public static final String PUBLIC_URL = "publicUrl";
-    /**
-     * marks the "active" credential, i.e. the ones where new holder credentials get added
-     */
-    public static final String IS_ACTIVE = "isActive";
+
     /**
      * the size of the bitstring in the status list credential. Defaults to 16kB.
      */
@@ -69,12 +60,18 @@ public class BitstringStatusListManager implements StatusListManager {
     private final TransactionContext transactionContext;
     private final CredentialGeneratorRegistry credentialGenerator;
     private final ParticipantContextService participantContextService;
+    private final StatusListCredentialPublisher publisher;
 
-    public BitstringStatusListManager(CredentialStore store, TransactionContext transactionContext, CredentialGeneratorRegistry credentialGenerator, ParticipantContextService participantContextService) {
+    public BitstringStatusListManager(CredentialStore store,
+                                      TransactionContext transactionContext,
+                                      CredentialGeneratorRegistry credentialGenerator,
+                                      ParticipantContextService participantContextService,
+                                      StatusListCredentialPublisher publisher) {
         this.store = store;
         this.transactionContext = transactionContext;
         this.credentialGenerator = credentialGenerator;
         this.participantContextService = participantContextService;
+        this.publisher = publisher;
     }
 
     @Override
@@ -113,12 +110,14 @@ public class BitstringStatusListManager implements StatusListManager {
         });
     }
 
+
     /**
      * inserts or updates ("up-serts") a credential resource, specifically a status list credential
      *
      * @param statusListCredential the status list credential to insert/update
      */
     private ServiceResult<Void> upsert(VerifiableCredentialResource statusListCredential) {
+
         var res = store.update(statusListCredential);
         if (res.failed() && res.reason() == StoreFailure.Reason.NOT_FOUND) {
             return ServiceResult.from(store.create(statusListCredential));
@@ -145,6 +144,7 @@ public class BitstringStatusListManager implements StatusListManager {
                         .claim("encodedList", createEmptyBitstring())
                         //todo: add support for statusMessage, statusSize, etc.
                         .build())
+                .id(UUID.randomUUID().toString())
                 .issuanceDate(now)
                 .expirationDate(now.plus(365, ChronoUnit.DAYS)) //todo: make configurable
                 .issuer(new Issuer(participantDid))
@@ -152,19 +152,43 @@ public class BitstringStatusListManager implements StatusListManager {
                 .build();
 
         // sign and package in resource
-        return credentialGenerator.signCredential(participantContextId, credential, CredentialFormat.VC1_0_JWT)
-                .map(signedCredential -> VerifiableCredentialResource.Builder.newInstance()
-                        .id(UUID.randomUUID().toString())
-                        .state(VcStatus.ISSUED)
-                        .metadata(Map.of(CURRENT_INDEX, 0,
-                                IS_ACTIVE, true,
-                                PUBLIC_URL, "http://foo.bar",  // todo: wait for publish result
-                                BITSTRING_SIZE, DEFAULT_BITSTRING_SIZE)) //todo: make configurable
-                        .participantContextId(participantContextId)
-                        .credential(signedCredential)
-                        .issuerId(participantDid)
-                        .holderId(participantDid)
-                        .build());
+        //do not upsert - this must be an insert
+        return credentialGenerator.signCredential(participantContextId, credential, CredentialFormat.VC1_0_JWT)// todo: change to VC2_0_JOSE
+                .map(signedCredential -> createCredentialResource(participantContextId, signedCredential, participantDid))
+                .compose(this::storeResource)
+                .compose(this::publish);
+    }
+
+    private Result<VerifiableCredentialResource> storeResource(VerifiableCredentialResource res) {
+        var createResult = store.create(res);
+        return createResult.succeeded() ? Result.success(res) : Result.failure(createResult.getFailureDetail());
+    }
+
+    private VerifiableCredentialResource createCredentialResource(String participantContextId, VerifiableCredentialContainer signedCredential, String issuerDid) {
+        return VerifiableCredentialResource.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .state(VcStatus.ISSUED)
+                .metadata(Map.of(CURRENT_INDEX, 0,
+                        IS_ACTIVE, true,
+                        BITSTRING_SIZE, DEFAULT_BITSTRING_SIZE)) //todo: make configurable
+                .participantContextId(participantContextId)
+                .credential(signedCredential)
+                .issuerId(issuerDid)
+                .holderId(issuerDid)
+                .build();
+    }
+
+    private Result<VerifiableCredentialResource> publish(VerifiableCredentialResource statusListCredential) {
+        var participantContextId = statusListCredential.getParticipantContextId();
+        var urlResult = publisher.publish(participantContextId, statusListCredential.getId());
+        return urlResult.compose(url -> {
+            var meta = new HashMap<>(statusListCredential.getMetadata());
+            meta.put(PUBLIC_URL, url);
+            var updated = statusListCredential.toBuilder().metadata(meta).build();
+            var storeResult = upsert(updated);
+            return storeResult.succeeded() ?
+                    Result.success(updated) : Result.failure(storeResult.getFailureDetail());
+        });
     }
 
     // creates an empty 16kb bitstring:

@@ -20,6 +20,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -39,6 +40,7 @@ import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -47,14 +49,17 @@ import static org.mockito.Mockito.when;
 
 class BitstringStatusListManagerTest {
     private static final String PARTICIPANT_CONTEXT_ID = "participant-context-id";
+    private static final String CREDENTIAL_URL = "http://foo.bar.com/barbaz/credential1.json";
     private final CredentialStore store = mock();
     private final CredentialGeneratorRegistry generator = mock();
     private final ParticipantContextService participantContextService = mock();
-    private final BitstringStatusListManager manager = new BitstringStatusListManager(store, new NoopTransactionContext(), generator, participantContextService);
-
+    private final StatusListCredentialPublisher publisher = mock();
+    private final BitstringStatusListManager manager = new BitstringStatusListManager(store, new NoopTransactionContext(), generator, participantContextService, publisher);
 
     @BeforeEach
     void setUp() {
+
+        when(publisher.publish(anyString(), anyString())).thenReturn(Result.success(CREDENTIAL_URL));
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID)))
                 .thenReturn(success(ParticipantContext.Builder.newInstance()
                         .participantContextId(PARTICIPANT_CONTEXT_ID)
@@ -96,15 +101,20 @@ class BitstringStatusListManagerTest {
     @Test
     void getActiveCredential_whenEmptyResult_shouldCreateNew() {
         when(store.query(any())).thenReturn(StoreResult.success(List.of()));
+        when(store.update(any())).thenReturn(StoreResult.success());
+        when(store.create(any())).thenReturn(StoreResult.success());
+
         var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
         assertThat(entry).isSucceeded()
                 .satisfies(e -> {
                     assertThat(e.credentialUrl()).isNotNull();
                     assertThat(e.statusListIndex()).isEqualTo(0);
-                    assertThat(e.credentialUrl()).isEqualTo("http://foo.bar"); //todo: change when publishing is implemented
+                    assertThat(e.credentialUrl()).isEqualTo(CREDENTIAL_URL);
                 });
 
         verify(store).query(any());
+        verify(store).create(hasParticipantId(PARTICIPANT_CONTEXT_ID));
+        verify(store).update(hasParticipantId(PARTICIPANT_CONTEXT_ID));
         verify(participantContextService).getParticipantContext(PARTICIPANT_CONTEXT_ID);
         verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
         verifyNoMoreInteractions(store, generator, participantContextService);
@@ -117,6 +127,9 @@ class BitstringStatusListManagerTest {
                 .metadata(PUBLIC_URL, "http://bar.com/quizz")
                 .metadata(IS_ACTIVE, true)
                 .build())));
+        when(store.create(any())).thenReturn(StoreResult.success());
+        when(store.update(any())).thenReturn(StoreResult.success());
+
         var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
         assertThat(entry).isSucceeded()
                 .satisfies(e -> {
@@ -125,6 +138,8 @@ class BitstringStatusListManagerTest {
                 });
 
         verify(store).query(any());
+        verify(store).create(hasParticipantId(PARTICIPANT_CONTEXT_ID));
+        verify(store).update(hasParticipantId(PARTICIPANT_CONTEXT_ID));
         verify(participantContextService).getParticipantContext(PARTICIPANT_CONTEXT_ID);
         verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
         verifyNoMoreInteractions(store, generator, participantContextService);
@@ -137,6 +152,9 @@ class BitstringStatusListManagerTest {
                 .metadata(PUBLIC_URL, "http://bar.com/quizz")
                 .metadata(IS_ACTIVE, false) // triggers creation
                 .build())));
+        when(store.create(any())).thenReturn(StoreResult.success());
+        when(store.update(any())).thenReturn(StoreResult.success());
+
         var entry = manager.getActiveCredential(PARTICIPANT_CONTEXT_ID);
         assertThat(entry).isSucceeded()
                 .satisfies(e -> {
@@ -145,6 +163,8 @@ class BitstringStatusListManagerTest {
                 });
 
         verify(store).query(any());
+        verify(store).create(hasParticipantId(PARTICIPANT_CONTEXT_ID));
+        verify(store).update(hasParticipantId(PARTICIPANT_CONTEXT_ID));
         verify(participantContextService).getParticipantContext(PARTICIPANT_CONTEXT_ID);
         verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
         verifyNoMoreInteractions(store, generator, participantContextService);
@@ -164,7 +184,6 @@ class BitstringStatusListManagerTest {
         verify(generator).signCredential(eq(PARTICIPANT_CONTEXT_ID), any(), eq(CredentialFormat.VC1_0_JWT));
         verifyNoMoreInteractions(store, generator, participantContextService);
     }
-
 
     @Test
     void getActiveCredential_whenCreateNew_participantNotFound() {
@@ -222,6 +241,10 @@ class BitstringStatusListManagerTest {
         verify(store).update(any());
         verify(store).create(any());
         verifyNoMoreInteractions(store, generator, participantContextService);
+    }
+
+    private VerifiableCredentialResource hasParticipantId(String participantContextId) {
+        return argThat(res -> res.getParticipantContextId().equals(participantContextId));
     }
 
     private VerifiableCredentialResource.Builder createVerifiableCredentialResource() {
