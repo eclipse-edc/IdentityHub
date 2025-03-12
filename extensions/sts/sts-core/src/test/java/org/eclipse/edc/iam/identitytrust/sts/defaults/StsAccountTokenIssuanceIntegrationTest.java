@@ -26,6 +26,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.identityhub.sts.accountservice.RandomStringGenerator;
 import org.eclipse.edc.identityhub.sts.accountservice.StsAccountServiceImpl;
 import org.eclipse.edc.junit.annotations.ComponentTest;
+import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.VaultPrivateKeyResolver;
@@ -86,12 +87,13 @@ public class StsAccountTokenIssuanceIntegrationTest {
 
     @Test
     void authenticateAndGenerateToken() throws Exception {
+        var participantId = "participant_id";
         var clientId = "client_id";
         var secretAlias = "client_secret_alias";
         var privateKeyAlias = "client_id";
         var audience = "aud";
         var did = "did:example:subject";
-        var client = createClientBuilder(clientId)
+        var client = createClientBuilder(participantId)
                 .clientId(clientId)
                 .privateKeyAlias(privateKeyAlias)
                 .secretAlias(secretAlias)
@@ -104,7 +106,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         vault.storeSecret(privateKeyAlias, loadResourceFile("ec-privatekey.pem"));
 
         var createResult = clientService.createAccount(ParticipantManifest.Builder.newInstance()
-                .participantId(clientId)
+                .participantId(participantId)
                 .did(did)
                 .key(KeyDescriptor.Builder.newInstance()
                         .keyId("public-key")
@@ -114,6 +116,9 @@ public class StsAccountTokenIssuanceIntegrationTest {
         assertThat(createResult.succeeded()).isTrue();
 
         var tokenResult = tokenGeneratorService.tokenFor(client, additional);
+
+        AbstractResultAssert.assertThat(tokenResult).isSucceeded();
+
         var jwt = SignedJWT.parse(tokenResult.getContent().getToken());
 
         assertThat(jwt.getJWTClaimsSet().getClaims())
@@ -127,13 +132,14 @@ public class StsAccountTokenIssuanceIntegrationTest {
 
     @Test
     void authenticateAndGenerateToken_withBearerAccessScope() throws Exception {
+        var participantId = "participant_id";
         var clientId = "client_id";
         var secretAlias = "client_secret_alias";
         var privateKeyAlias = "client_id";
         var did = "did:example:subject";
         var audience = "aud";
         var scope = "scope:test";
-        var client = createClientBuilder(clientId)
+        var client = createClientBuilder(participantId)
                 .clientId(clientId)
                 .privateKeyAlias(privateKeyAlias)
                 .secretAlias(secretAlias)
@@ -146,7 +152,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         vault.storeSecret(privateKeyAlias, loadResourceFile("ec-privatekey.pem"));
 
         var createResult = clientService.createAccount(ParticipantManifest.Builder.newInstance()
-                .participantId(clientId)
+                .participantId(participantId)
                 .did(did)
                 .key(KeyDescriptor.Builder.newInstance()
                         .keyId("public-key")
@@ -169,6 +175,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
 
     @Test
     void authenticateAndGenerateToken_withAccessToken() throws Exception {
+        var participantId = "participant_id";
         var clientId = "client_id";
         var secretAlias = "client_secret_alias";
         var privateKeyAlias = "client_id";
@@ -176,7 +183,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         var accessToken = "tokenTest";
         var did = "did:example:subject";
 
-        var client = createClientBuilder(clientId)
+        var client = createClientBuilder(participantId)
                 .clientId(clientId)
                 .privateKeyAlias(privateKeyAlias)
                 .secretAlias(secretAlias)
@@ -189,7 +196,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         vault.storeSecret(privateKeyAlias, loadResourceFile("ec-privatekey.pem"));
 
         var createResult = clientService.createAccount(ParticipantManifest.Builder.newInstance()
-                .participantId(clientId)
+                .participantId(participantId)
                 .did(did)
                 .key(KeyDescriptor.Builder.newInstance()
                         .keyId("public-key")
