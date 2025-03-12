@@ -50,7 +50,6 @@ jobs:
       - name: 'Start Identity Hub'
         run: |
           docker run -d --rm --name identityhub \
-            -e "EDC_IH_IAM_ID=did:web:test" \
             -e "WEB_HTTP_IDENTITY_PORT=8182" \
             -e "WEB_HTTP_IDENTITY_PATH=/api/identity" \
             -e "WEB_HTTP_PRESENTATION_PORT=10001" \
@@ -77,7 +76,7 @@ jobs:
       - name: 'Build Docker image'
         run: docker build -t issuer-service ./launcher/issuer-service
 
-      - name: 'Start Identity Hub'
+      - name: 'Start Issuer Service'
         run: |
           docker run -d --rm --name issuer-service \
             -e "EDC_IH_IAM_ID=did:web:issuer" \
