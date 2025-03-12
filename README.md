@@ -82,14 +82,14 @@ docker build -t identity-hub ./launcher/identityhub
 ### Start the Identity Hub
 
 ```bash
-docker run --rm --name identity-hub \
-            -e "WEB_HTTP_PRESENTATION_PORT=10001" \
-            -e "WEB_HTTP_PRESENTATION_PATH=/api/presentation/" \
-            -e "WEB_HTTP_PATH=/api" \
-            -e "WEB_HTTP_PORT=8181" \
+docker run -d --rm --name identityhub \
             -e "WEB_HTTP_IDENTITY_PORT=8182" \
             -e "WEB_HTTP_IDENTITY_PATH=/api/identity" \
-            identity-hub:latest
+            -e "WEB_HTTP_PRESENTATION_PORT=10001" \
+            -e "WEB_HTTP_PRESENTATION_PATH=/api/presentation" \
+            -e "EDC_IAM_STS_PRIVATEKEY_ALIAS=privatekey-alias" \
+            -e "EDC_IAM_STS_PUBLICKEY_ID=publickey-id" \
+            identityhub:latest
 ```
 
 ## Architectural concepts of IdentityHub
