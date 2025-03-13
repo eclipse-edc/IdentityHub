@@ -22,6 +22,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetada
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialObjectTransformer;
+import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialOfferMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialRequestStatusTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromIssuerMetadataTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialRequestMessageTransformer;
@@ -128,6 +129,7 @@ public class IssuerApiExtension implements ServiceExtension {
         dcpRegistry.register(new JsonObjectFromCredentialRequestStatusTransformer(namespace, builderFactory));
         dcpRegistry.register(new JsonObjectFromIssuerMetadataTransformer(namespace));
         dcpRegistry.register(new JsonObjectFromCredentialObjectTransformer(typeManager, JSON_LD, namespace));
+        dcpRegistry.register(new JsonObjectFromCredentialOfferMessageTransformer(namespace));
 
         // to
         dcpRegistry.register(new JsonObjectToCredentialRequestMessageTransformer(typeManager, JSON_LD, namespace));
