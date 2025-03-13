@@ -94,8 +94,12 @@ public class StorageApiExtension implements ServiceExtension {
 
         var factory = Json.createBuilderFactory(Map.of());
         var scopedTransformerRegistry = typeTransformer.forContext(scope);
+
+        // inbound
         scopedTransformerRegistry.register(new JsonObjectToCredentialMessageTransformer(typeManager, JSON_LD, namespace));
         scopedTransformerRegistry.register(new JsonValueToGenericTypeTransformer(typeManager, JSON_LD));
+
+        //outbound
         scopedTransformerRegistry.register(new JsonObjectFromCredentialMessageTransformer(factory, typeManager, JSON_LD, namespace));
         scopedTransformerRegistry.register(new JsonObjectFromCredentialRequestMessageTransformer(factory, typeManager, JSON_LD, DSPACE_DCP_NAMESPACE_V_1_0));
 
