@@ -8,6 +8,7 @@ dependencies {
     api(project(":spi:issuerservice:issuerservice-holder-spi"))
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))
     api(project(":spi:identity-hub-spi"))
+    api(project(":protocols:dcp:dcp-spi")) // CredentialOfferMessage
     api(libs.edc.spi.http) // for the Request
     implementation(libs.edc.lib.token)
     implementation(libs.nimbus.jwt)

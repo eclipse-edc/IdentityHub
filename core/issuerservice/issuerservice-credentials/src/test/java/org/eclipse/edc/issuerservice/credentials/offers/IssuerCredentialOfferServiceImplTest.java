@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.issuerservice.credentials.offers;
 
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
@@ -30,6 +32,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
+import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,12 +64,14 @@ class IssuerCredentialOfferServiceImplTest {
     private final ParticipantContextService participantContextService = mock();
     private final EdcHttpClient httpClient = mock();
 
+    private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final IssuerCredentialOfferService credentialOfferService = new IssuerCredentialOfferServiceImpl(new NoopTransactionContext(),
             holderStore,
             credentialServiceUrlResolver,
             sts,
             participantContextService,
-            httpClient, mock()
+            httpClient, mock(),
+            typeTransformerRegistry
     );
 
     @BeforeEach
@@ -76,6 +81,7 @@ class IssuerCredentialOfferServiceImplTest {
         when(sts.createToken(anyString(), anyMap(), isNull())).thenReturn(success(TokenRepresentation.Builder.newInstance().token("test-token").build()));
         when(credentialServiceUrlResolver.resolve(anyString())).thenReturn(success(HOLDER_CS_ENDPOINT));
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID))).thenReturn(ServiceResult.success(issuerParticipant()));
+        when(typeTransformerRegistry.transform(any(), eq(JsonObject.class))).thenReturn(success(Json.createObjectBuilder().build()));
     }
 
     @Test
@@ -154,6 +160,20 @@ class IssuerCredentialOfferServiceImplTest {
 
     @Test
     void sendCredentialOffer_webRequestFails() {
+    }
+
+    @Test
+    void sendCredentialOffer_transformationFails() {
+        when(typeTransformerRegistry.transform(any(), eq(JsonObject.class))).thenReturn(Result.failure("transformation failure"));
+
+        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential")));
+
+        assertThat(result).isFailed().detail().contains("transformation failure");
+        verify(holderStore).findById(eq(HOLDER_ID));
+        verify(participantContextService).getParticipantContext(eq(PARTICIPANT_CONTEXT_ID));
+        verify(sts).createToken(anyString(), anyMap(), isNull());
+        verify(credentialServiceUrlResolver).resolve(anyString());
+        verifyNoMoreInteractions(holderStore, participantContextService, sts, httpClient);
     }
 
     private ParticipantContext issuerParticipant() {
