@@ -95,8 +95,11 @@ public class PresentationApiExtension implements ServiceExtension {
 
     void registerTransformers(String scope, JsonLdNamespace namespace) {
         var scopedTransformerRegistry = typeTransformer.forContext(scope);
+        // inbound
         scopedTransformerRegistry.register(new JsonObjectToPresentationQueryTransformer(typeManager, JSON_LD, namespace));
         scopedTransformerRegistry.register(new JsonValueToGenericTypeTransformer(typeManager, JSON_LD));
+
+        // outbound
         scopedTransformerRegistry.register(new JsonObjectFromPresentationResponseMessageTransformer(namespace));
     }
 
