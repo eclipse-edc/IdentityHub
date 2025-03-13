@@ -26,6 +26,7 @@ import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public abstract class CredentialDefinitionStoreTestBase {
@@ -141,6 +142,7 @@ public abstract class CredentialDefinitionStoreTestBase {
                 .id(id)
                 .participantContextId(UUID.randomUUID().toString())
                 .credentialType(type)
+                .format(VC1_0_JWT)
                 .jsonSchemaUrl("http://example.com/schema");
     }
 
@@ -223,6 +225,29 @@ public abstract class CredentialDefinitionStoreTestBase {
 
             var query = QuerySpec.Builder.newInstance()
                     .filter(new Criterion("attestations", "contains", "att2"))
+                    .build();
+
+            var result = getStore().query(query);
+            assertThat(result).isSucceeded();
+
+            assertThat(result.getContent())
+                    .hasSize(2)
+                    .usingRecursiveFieldByFieldElementComparator()
+                    .containsExactlyInAnyOrder(def1, def2);
+        }
+
+        @Test
+        void byFormats() {
+            var def1 = createCredentialDefinitionBuilder("id1", "Membership")
+                    .build();
+            var def2 = createCredentialDefinitionBuilder("id2", "Iso9001Cert")
+                    .build();
+
+            var r = getStore().create(def1).compose(v -> getStore().create(def2));
+            assertThat(r).isSucceeded();
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("formats", "contains", VC1_0_JWT.name()))
                     .build();
 
             var result = getStore().query(query);

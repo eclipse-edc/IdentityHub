@@ -22,7 +22,6 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
@@ -46,6 +45,7 @@ import java.util.UUID;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.VERIFIABLE_CREDENTIAL_CLAIM;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -89,7 +89,7 @@ public class JwtCredentialGeneratorTest {
 
         var container = result.getContent();
         assertThat(container.rawVc()).isNotNull();
-        assertThat(container.format()).isEqualTo(CredentialFormat.VC1_0_JWT);
+        assertThat(container.format()).isEqualTo(VC1_0_JWT);
         assertThat(container.credential()).satisfies(verifiableCredential -> {
             assertThat(verifiableCredential.getType()).contains("MembershipCredential");
             assertThat(verifiableCredential.getIssuer().id()).isEqualTo("did:example:issuer");
@@ -127,7 +127,7 @@ public class JwtCredentialGeneratorTest {
 
         var container = result.getContent();
         assertThat(container.rawVc()).isNotNull();
-        assertThat(container.format()).isEqualTo(CredentialFormat.VC1_0_JWT);
+        assertThat(container.format()).isEqualTo(VC1_0_JWT);
         assertThat(container.credential()).satisfies(verifiableCredential -> {
             assertThat(verifiableCredential.getType()).contains("MembershipCredential");
             assertThat(verifiableCredential.getIssuer().id()).isEqualTo("did:example:issuer");
@@ -260,6 +260,7 @@ public class JwtCredentialGeneratorTest {
                 .mapping(new MappingDefinition("input", "outut", true))
                 .jsonSchema("{}")
                 .participantContextId(UUID.randomUUID().toString())
+                .format(VC1_0_JWT)
                 .build();
     }
 

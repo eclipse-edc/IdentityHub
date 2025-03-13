@@ -18,14 +18,17 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,11 +42,11 @@ public class CredentialDefinitionDto {
     private final List<String> attestations = new ArrayList<>();
     private final List<CredentialRuleDefinition> rules = new ArrayList<>();
     private final List<MappingDefinition> mappings = new ArrayList<>();
+    private final Set<String> formats = new HashSet<>();
     private String credentialType;
     private String jsonSchema;
     private String jsonSchemaUrl;
     private long validity;
-    private DataModelVersion dataModel = DataModelVersion.V_1_1;
     private String id;
 
     private CredentialDefinitionDto() {
@@ -57,8 +60,8 @@ public class CredentialDefinitionDto {
         return credentialType;
     }
 
-    public DataModelVersion getDataModel() {
-        return dataModel;
+    public Set<String> getFormats() {
+        return formats;
     }
 
     public String getJsonSchema() {
@@ -92,7 +95,7 @@ public class CredentialDefinitionDto {
                 .jsonSchema(jsonSchema)
                 .jsonSchemaUrl(jsonSchemaUrl)
                 .validity(validity)
-                .dataModel(dataModel)
+                .formats(formats.stream().map(String::toUpperCase).map(CredentialFormat::valueOf).collect(Collectors.toSet()))
                 .attestations(attestations)
                 .rules(rules)
                 .mappings(mappings)
@@ -139,8 +142,8 @@ public class CredentialDefinitionDto {
             return this;
         }
 
-        public Builder dataModel(DataModelVersion dataModel) {
-            this.entity.dataModel = dataModel;
+        public Builder formats(Collection<String> formats) {
+            this.entity.formats.addAll(formats);
             return this;
         }
 

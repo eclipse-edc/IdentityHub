@@ -55,6 +55,7 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_ID;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_MEM_MODULES;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_NAME;
@@ -226,6 +227,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .mapping(mappingDefinition)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
                     .participantContextId("participantContextId")
+                    .format(VC1_0_JWT)
                     .build();
 
             credentialDefinitionService.createCredentialDefinition(credentialDefinition);
