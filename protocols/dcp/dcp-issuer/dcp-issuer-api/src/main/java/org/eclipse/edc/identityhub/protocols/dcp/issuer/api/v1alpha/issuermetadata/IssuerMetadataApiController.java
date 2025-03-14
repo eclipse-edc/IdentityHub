@@ -14,30 +14,67 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata;
 
+import jakarta.json.JsonObject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.Response;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
+import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
+import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
+import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1alpha/.well-known/vci")
+@Path("/v1alpha/participants/{participantContextId}/metadata")
 public class IssuerMetadataApiController implements IssuerMetadataApi {
 
+    private final ParticipantContextService participantContextService;
+    private final DcpHolderTokenVerifier tokenValidator;
+    private final DcpIssuerMetadataService issuerMetadataService;
     private final TypeTransformerRegistry dcpRegistry;
 
-    public IssuerMetadataApiController(TypeTransformerRegistry dcpRegistry) {
+
+    public IssuerMetadataApiController(ParticipantContextService participantContextService, DcpHolderTokenVerifier tokenValidator, DcpIssuerMetadataService issuerMetadataService, TypeTransformerRegistry dcpRegistry) {
+        this.participantContextService = participantContextService;
+        this.tokenValidator = tokenValidator;
+        this.issuerMetadataService = issuerMetadataService;
         this.dcpRegistry = dcpRegistry;
     }
 
     @GET
     @Path("/")
     @Override
-    public Response getIssuerMetadata() {
-        return Response.ok().build();
+    public JsonObject getIssuerMetadata(@PathParam("participantContextId") String participantContextId, @HeaderParam(AUTHORIZATION) String token) {
+        if (token == null) {
+            throw new AuthenticationFailedException("Authorization header missing");
+        }
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+
+        var participantContext = participantContextService.getParticipantContext(decodedParticipantContextId)
+                .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
+
+        var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(token).build();
+
+        tokenValidator.verify(participantContext, tokenRepresentation)
+                .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+
+        var metadata = issuerMetadataService.getIssuerMetadata(participantContext)
+                .orElseThrow(f -> new EdcException("Error creating response body: " + f.getFailureDetail()));
+
+
+        return dcpRegistry.transform(metadata, JsonObject.class)
+                .orElseThrow(f -> new EdcException("Error creating response body: " + f.getFailureDetail()));
+
     }
 }

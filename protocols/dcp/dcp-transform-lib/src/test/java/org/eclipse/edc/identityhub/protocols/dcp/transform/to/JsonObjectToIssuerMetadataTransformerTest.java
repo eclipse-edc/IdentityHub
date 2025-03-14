@@ -33,7 +33,7 @@ public class JsonObjectToIssuerMetadataTransformerTest {
     void transform() {
 
         var input = Json.createObjectBuilder()
-                .add(toIri(IssuerMetadata.ISSUER_METADATA_CREDENTIAL_ISSUER_TERM), "issuer")
+                .add(IssuerMetadata.ISSUER_METADATA_ISSUER_IRI, "issuer")
                 .add(toIri(IssuerMetadata.ISSUER_METADATA_CREDENTIALS_SUPPORTED_TERM), Json.createArrayBuilder()
                         .add(Json.createObjectBuilder()))
                 .build();
@@ -41,7 +41,7 @@ public class JsonObjectToIssuerMetadataTransformerTest {
         var issuerMetadata = transformer.transform(input, context);
 
         assertThat(issuerMetadata).isNotNull();
-        assertThat(issuerMetadata.getCredentialIssuer()).isEqualTo("issuer");
+        assertThat(issuerMetadata.getIssuer()).isEqualTo("issuer");
         assertThat(issuerMetadata.getCredentialsSupported()).hasSize(1);
     }
 

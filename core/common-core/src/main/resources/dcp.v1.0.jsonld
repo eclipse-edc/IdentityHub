@@ -3,7 +3,7 @@
     "@version": 1.1,
     "@protected": true,
     "dcp": "https://w3id.org/dspace-dcp/v1.0/",
-    "cred": "https://www.w3.org/2018/credentials/",
+    "cred": "https://www.w3.org/2018/credentials#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "id": "@id",
     "type": "@type",
@@ -31,6 +31,13 @@
         "holderPid": {
           "@id": "dcp:holderPid",
           "@type": "@id"
+        },
+        "status": {
+          "@id": "dcp:status",
+          "@type": "@id"
+        },
+        "rejectionReason": {
+          "@id": "dcp:rejectionReason"
         }
       }
     },
@@ -38,8 +45,7 @@
       "@id": "dcp:CredentialObject",
       "@context": {
         "credentialType": {
-          "@id": "dcp:credentialType",
-          "@container": "@set"
+          "@id": "dcp:credentialType"
         },
         "offerReason": {
           "@id": "dcp:offerReason",
@@ -64,7 +70,10 @@
     "CredentialOfferMessage": {
       "@id": "dcp:CredentialOfferMessage",
       "@context": {
-        "credentialIssuer": "cred:issuer",
+        "issuer": {
+          "@id": "cred:issuer",
+          "@type": "@id"
+        },
         "credentials": {
           "@id": "dcp:credentials",
           "@container": "@set"
@@ -108,7 +117,10 @@
     "IssuerMetadata": {
       "@id": "dcp:IssuerMetadata",
       "@context": {
-        "credentialIssuer": "cred:issuer",
+        "issuer": {
+          "@id": "cred:issuer",
+          "@type": "@id"
+        },
         "credentialsSupported": {
           "@id": "dcp:credentialsSupported",
           "@container": "@set"
