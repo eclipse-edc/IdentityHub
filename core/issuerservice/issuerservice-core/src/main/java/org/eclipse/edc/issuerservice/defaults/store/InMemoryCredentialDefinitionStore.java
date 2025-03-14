@@ -97,6 +97,8 @@ public class InMemoryCredentialDefinitionStore extends InMemoryEntityStore<Crede
 
     @Override
     protected QueryResolver<CredentialDefinition> createQueryResolver() {
+        criterionOperatorRegistry.registerPropertyLookup(new CredentialDefinitionLookup());
+
         return new ReflectionBasedQueryResolver<>(CredentialDefinition.class, criterionOperatorRegistry);
     }
 }

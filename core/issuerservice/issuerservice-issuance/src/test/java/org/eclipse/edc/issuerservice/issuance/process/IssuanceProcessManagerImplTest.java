@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.issuerservice.issuance.process;
 
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
@@ -50,6 +49,7 @@ import java.util.Map;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.APPROVED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.DELIVERED;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.ERRORED;
@@ -100,11 +100,12 @@ public class IssuanceProcessManagerImplTest {
                 .jsonSchemaUrl("http://example.org/schema")
                 .jsonSchema("{}")
                 .participantContextId("participantContextId")
+                .format(VC1_0_JWT)
                 .build();
 
-        var generationRequests = new CredentialGenerationRequest(credentialDefinition, CredentialFormat.VC1_0_JWT);
+        var generationRequests = new CredentialGenerationRequest(credentialDefinition, VC1_0_JWT);
 
-        var credential = new VerifiableCredentialContainer("", CredentialFormat.VC1_0_JWT, VerifiableCredential.Builder.newInstance()
+        var credential = new VerifiableCredentialContainer("", VC1_0_JWT, VerifiableCredential.Builder.newInstance()
                 .type("MembershipCredential")
                 .issuer(new Issuer("did:example:issuer"))
                 .issuanceDate(Instant.now())
@@ -118,7 +119,7 @@ public class IssuanceProcessManagerImplTest {
                 .holderId("holderId")
                 .participantContextId("participantContextId")
                 .holderPid("holderPid")
-                .credentialFormats(Map.of(credentialDefinition.getCredentialType(), CredentialFormat.VC1_0_JWT))
+                .credentialFormats(Map.of(credentialDefinition.getCredentialType(), VC1_0_JWT))
                 .build();
 
         when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(APPROVED.code()))).thenReturn(List.of(process)).thenReturn(emptyList());
@@ -156,15 +157,16 @@ public class IssuanceProcessManagerImplTest {
                 .jsonSchemaUrl("http://example.org/schema")
                 .jsonSchema("{}")
                 .participantContextId("participantContextId")
+                .format(VC1_0_JWT)
                 .build();
 
-        var generationRequests = new CredentialGenerationRequest(credentialDefinition, CredentialFormat.VC1_0_JWT);
+        var generationRequests = new CredentialGenerationRequest(credentialDefinition, VC1_0_JWT);
 
         var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
                 .holderId("holderId")
                 .participantContextId("participantContextId")
                 .holderPid("holderPid")
-                .credentialFormats(Map.of(credentialDefinition.getCredentialType(), CredentialFormat.VC1_0_JWT))
+                .credentialFormats(Map.of(credentialDefinition.getCredentialType(), VC1_0_JWT))
                 .stateCount(2)
                 .build();
 

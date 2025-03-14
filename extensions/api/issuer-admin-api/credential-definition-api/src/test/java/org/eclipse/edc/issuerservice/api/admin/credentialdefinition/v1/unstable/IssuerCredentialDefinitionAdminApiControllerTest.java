@@ -31,6 +31,7 @@ import java.util.Set;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.notNullValue;
@@ -52,7 +53,7 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
     void setUp() {
         when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
     }
-    
+
     @Test
     void createCredentialDefinition() {
         when(credentialDefinitionService.createCredentialDefinition(any())).thenReturn(ServiceResult.success());
@@ -185,6 +186,7 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
                 .jsonSchema("json-schema")
                 .jsonSchemaUrl("json-schema-url")
                 .participantContextId(PARTICIPANT_ID)
+                .format(VC1_0_JWT)
                 .build();
     }
 }

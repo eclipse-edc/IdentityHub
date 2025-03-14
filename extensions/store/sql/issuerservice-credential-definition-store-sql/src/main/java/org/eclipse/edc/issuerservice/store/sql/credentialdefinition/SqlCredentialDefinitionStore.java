@@ -16,7 +16,7 @@ package org.eclipse.edc.issuerservice.store.sql.credentialdefinition;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
@@ -54,6 +54,9 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
     };
 
     private static final TypeReference<List<MappingDefinition>> MAPPINGS_LIST_REF = new TypeReference<>() {
+    };
+
+    private static final TypeReference<List<CredentialFormat>> FORMATS_LIST_REF = new TypeReference<>() {
     };
 
     private final CredentialDefinitionStoreStatements statements;
@@ -109,7 +112,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                         toJson(credentialDefinition.getJsonSchema()),
                         credentialDefinition.getJsonSchemaUrl(),
                         credentialDefinition.getValidity(),
-                        credentialDefinition.getDataModel().name(),
+                        toJson(credentialDefinition.getFormats()),
                         timestamp,
                         timestamp
                 );
@@ -145,7 +148,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                             toJson(credentialDefinition.getJsonSchema()),
                             credentialDefinition.getJsonSchemaUrl(),
                             credentialDefinition.getValidity(),
-                            credentialDefinition.getDataModel().name(),
+                            toJson(credentialDefinition.getFormats()),
                             clock.millis(),
                             credentialDefinition.getId()
                     );
@@ -213,7 +216,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                 .jsonSchema(resultSet.getString(statements.getJsonSchemaColumn()))
                 .jsonSchemaUrl(resultSet.getString(statements.getJsonSchemaUrlColumn()))
                 .validity(resultSet.getLong(statements.getValidityColumn()))
-                .dataModel(DataModelVersion.valueOf(resultSet.getString(statements.getDataModelColumn())))
+                .formats(fromJson(resultSet.getString(statements.getFormatsColumn()), FORMATS_LIST_REF))
                 .build();
     }
 }

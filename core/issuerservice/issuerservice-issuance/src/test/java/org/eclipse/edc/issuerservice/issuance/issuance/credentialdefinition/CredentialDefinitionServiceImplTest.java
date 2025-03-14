@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -253,6 +254,8 @@ public class CredentialDefinitionServiceImplTest {
                 .attestation("test-attestation")
                 .participantContextId(UUID.randomUUID().toString())
                 .rule(new CredentialRuleDefinition("test-rule", Map.of()))
-                .credentialType(type).build();
+                .credentialType(type)
+                .format(VC1_0_JWT)
+                .build();
     }
 }

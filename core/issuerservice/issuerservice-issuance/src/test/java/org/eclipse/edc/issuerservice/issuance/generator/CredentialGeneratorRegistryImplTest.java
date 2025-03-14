@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -62,7 +63,7 @@ public class CredentialGeneratorRegistryImplTest {
     void generate() {
 
         var generator = mock(CredentialGenerator.class);
-        credentialGeneratorRegistry.addGenerator(CredentialFormat.VC1_0_JWT, generator);
+        credentialGeneratorRegistry.addGenerator(VC1_0_JWT, generator);
         var definition = createCredentialDefinition();
 
         var participantContext = ParticipantContext.Builder.newInstance().participantContextId("participantContextId").apiTokenAlias("apiTokenAlias")
@@ -78,7 +79,7 @@ public class CredentialGeneratorRegistryImplTest {
         when(holderService.findById("holderId")).thenReturn(ServiceResult.success(participant));
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(key)));
         when(generator.generateCredential(eq(definition), eq(key.getPrivateKeyAlias()), eq(key.getKeyId()), eq("issuerDid"), eq("participantDid"), any())).thenReturn(Result.success(mock()));
-        var request = new CredentialGenerationRequest(definition, CredentialFormat.VC1_0_JWT);
+        var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
 
         assertThat(result).isSucceeded();
@@ -92,7 +93,7 @@ public class CredentialGeneratorRegistryImplTest {
 
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
 
-        var request = new CredentialGenerationRequest(definition, CredentialFormat.VC1_0_JWT);
+        var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
 
         assertThat(result).isFailed().detail().contains("No generator found for format VC1_0_JWT");
@@ -102,14 +103,14 @@ public class CredentialGeneratorRegistryImplTest {
     void generate_shouldFail_ParticipantContextNotFound() {
 
         var generator = mock(CredentialGenerator.class);
-        credentialGeneratorRegistry.addGenerator(CredentialFormat.VC1_0_JWT, generator);
+        credentialGeneratorRegistry.addGenerator(VC1_0_JWT, generator);
 
         var definition = createCredentialDefinition();
 
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(ServiceResult.notFound("not found"));
 
-        var request = new CredentialGenerationRequest(definition, CredentialFormat.VC1_0_JWT);
+        var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
 
         assertThat(result).isFailed().detail().contains("not found");
@@ -119,7 +120,7 @@ public class CredentialGeneratorRegistryImplTest {
     void generate_shouldFail_whenParticipantNotFound() {
 
         var generator = mock(CredentialGenerator.class);
-        credentialGeneratorRegistry.addGenerator(CredentialFormat.VC1_0_JWT, generator);
+        credentialGeneratorRegistry.addGenerator(VC1_0_JWT, generator);
 
         var definition = createCredentialDefinition();
 
@@ -131,7 +132,7 @@ public class CredentialGeneratorRegistryImplTest {
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(ServiceResult.success(participantContext));
         when(holderService.findById("holderId")).thenReturn(ServiceResult.notFound("not found"));
 
-        var request = new CredentialGenerationRequest(definition, CredentialFormat.VC1_0_JWT);
+        var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
 
         assertThat(result).isFailed().detail().contains("not found");
@@ -141,7 +142,7 @@ public class CredentialGeneratorRegistryImplTest {
     void generate_shouldFail_whenNoKeysFound() {
 
         var generator = mock(CredentialGenerator.class);
-        credentialGeneratorRegistry.addGenerator(CredentialFormat.VC1_0_JWT, generator);
+        credentialGeneratorRegistry.addGenerator(VC1_0_JWT, generator);
 
         var definition = createCredentialDefinition();
 
@@ -157,7 +158,7 @@ public class CredentialGeneratorRegistryImplTest {
         when(holderService.findById("holderId")).thenReturn(ServiceResult.success(participant));
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of()));
 
-        var request = new CredentialGenerationRequest(definition, CredentialFormat.VC1_0_JWT);
+        var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
 
         assertThat(result).isFailed().detail().contains("No active key pair found");
@@ -167,7 +168,7 @@ public class CredentialGeneratorRegistryImplTest {
     void generate_shouldFail_GenerationFails() {
 
         var generator = mock(CredentialGenerator.class);
-        credentialGeneratorRegistry.addGenerator(CredentialFormat.VC1_0_JWT, generator);
+        credentialGeneratorRegistry.addGenerator(VC1_0_JWT, generator);
         var definition = createCredentialDefinition();
 
         var participantContext = ParticipantContext.Builder.newInstance().participantContextId("participantContextId").apiTokenAlias("apiTokenAlias")
@@ -183,7 +184,7 @@ public class CredentialGeneratorRegistryImplTest {
         when(holderService.findById("holderId")).thenReturn(ServiceResult.success(participant));
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(key)));
         when(generator.generateCredential(eq(definition), eq(key.getPrivateKeyAlias()), eq(key.getKeyId()), eq("issuerDid"), eq("participantDid"), any())).thenReturn(Result.failure("failed"));
-        var request = new CredentialGenerationRequest(definition, CredentialFormat.VC1_0_JWT);
+        var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
 
         assertThat(result).isFailed().detail().contains("failed");
@@ -267,6 +268,7 @@ public class CredentialGeneratorRegistryImplTest {
                 .mapping(new MappingDefinition("input", "outut", true))
                 .participantContextId("participantContextId")
                 .jsonSchema("{}")
+                .format(VC1_0_JWT)
                 .build();
     }
 }

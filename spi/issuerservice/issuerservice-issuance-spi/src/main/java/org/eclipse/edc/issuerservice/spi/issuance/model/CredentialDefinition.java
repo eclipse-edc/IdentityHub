@@ -18,13 +18,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.DataModelVersion;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
@@ -39,11 +41,11 @@ public class CredentialDefinition extends AbstractParticipantResource {
     private final List<String> attestations = new ArrayList<>();
     private final List<CredentialRuleDefinition> rules = new ArrayList<>();
     private final List<MappingDefinition> mappings = new ArrayList<>();
+    private final Set<CredentialFormat> formats = new HashSet<>();
     private String credentialType;
     private String jsonSchema;
     private String jsonSchemaUrl;
     private long validity;
-    private DataModelVersion dataModel = DataModelVersion.V_1_1;
     private String id;
 
     private CredentialDefinition() {
@@ -57,8 +59,8 @@ public class CredentialDefinition extends AbstractParticipantResource {
         return credentialType;
     }
 
-    public DataModelVersion getDataModel() {
-        return dataModel;
+    public Set<CredentialFormat> getFormats() {
+        return formats;
     }
 
     public String getJsonSchema() {
@@ -123,8 +125,14 @@ public class CredentialDefinition extends AbstractParticipantResource {
             return this;
         }
 
-        public Builder dataModel(DataModelVersion dataModel) {
-            this.entity.dataModel = dataModel;
+        @JsonIgnore
+        public Builder format(CredentialFormat format) {
+            this.entity.formats.add(format);
+            return this;
+        }
+
+        public Builder formats(Collection<CredentialFormat> formats) {
+            this.entity.formats.addAll(formats);
             return this;
         }
 
@@ -175,6 +183,10 @@ public class CredentialDefinition extends AbstractParticipantResource {
 
             if (entity.jsonSchema == null && entity.jsonSchemaUrl == null) {
                 throw new IllegalStateException("Either jsonSchema or jsonSchemaUrl must be non-null");
+            }
+
+            if (entity.formats.isEmpty()) {
+                throw new IllegalStateException("Credential formats cannot be empty");
             }
             Objects.requireNonNull(entity.participantContextId, "Must have an participantContextId");
             return super.build();

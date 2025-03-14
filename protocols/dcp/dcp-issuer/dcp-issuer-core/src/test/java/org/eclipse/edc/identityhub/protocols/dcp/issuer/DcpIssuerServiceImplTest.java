@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -77,6 +78,7 @@ public class DcpIssuerServiceImplTest {
                 .attestations(attestations)
                 .participantContextId("participantContextId")
                 .rule(credentialRuleDefinition)
+                .format(VC1_0_JWT)
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
@@ -106,5 +108,5 @@ public class DcpIssuerServiceImplTest {
         assertThat(issuanceProcess.getParticipantContextId()).isEqualTo("participantContextId");
         assertThat(issuanceProcess.getHolderPid()).isEqualTo(message.getHolderPid());
     }
-    
+
 }

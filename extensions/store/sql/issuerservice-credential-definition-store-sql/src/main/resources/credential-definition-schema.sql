@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS credential_definitions
     json_schema                  JSON,
     json_schema_url              VARCHAR,
     validity                     BIGINT   NOT NULL,
-    data_model                   VARCHAR  NOT NULL,
+    formats                      JSON     NOT NULL DEFAULT '[]',
     created_date                 BIGINT   NOT NULL, -- POSIX timestamp of the creation of the PC
     last_modified_date           BIGINT,            -- POSIX timestamp of the last modified date
     PRIMARY KEY (id)
