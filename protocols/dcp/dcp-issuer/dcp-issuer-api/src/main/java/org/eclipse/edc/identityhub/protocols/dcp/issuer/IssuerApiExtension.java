@@ -19,6 +19,7 @@ import jakarta.json.Json;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest.CredentialRequestApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequeststatus.CredentialRequestStatusApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata.IssuerMetadataApiController;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialObjectTransformer;
@@ -101,6 +102,9 @@ public class IssuerApiExtension implements ServiceExtension {
     @Inject
     private IssuanceProcessService issuanceProcessService;
 
+    @Inject
+    private DcpIssuerMetadataService issuerMetadataService;
+
     @Override
     public void initialize(ServiceExtensionContext context) {
 
@@ -112,7 +116,7 @@ public class IssuerApiExtension implements ServiceExtension {
 
         webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(participantContextService, dcpIssuerService, dcpHolderTokenVerifier, validatorRegistry, dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0));
         webService.registerResource(ISSUANCE_API, new CredentialRequestStatusApiController(participantContextService, dcpHolderTokenVerifier, issuanceProcessService, dcpRegistry));
-        webService.registerResource(ISSUANCE_API, new IssuerMetadataApiController(dcpRegistry));
+        webService.registerResource(ISSUANCE_API, new IssuerMetadataApiController(participantContextService, dcpHolderTokenVerifier, issuerMetadataService, dcpRegistry));
 
         webService.registerResource(ISSUANCE_API, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(ISSUANCE_API, new JerseyJsonLdInterceptor(jsonLd, typeManager, JSON_LD, DCP_SCOPE_V_1_0));
