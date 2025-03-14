@@ -25,6 +25,7 @@ import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAME
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata.ISSUER_METADATA_CREDENTIALS_SUPPORTED_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata.ISSUER_METADATA_CREDENTIAL_ISSUER_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata.ISSUER_METADATA_TERM;
+import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -50,7 +51,7 @@ public class JsonObjectFromIssuerMetadataTransformerTest {
 
         assertThat(jsonLd).isNotNull();
         assertThat(jsonLd.getString(TYPE)).isEqualTo(toIri(ISSUER_METADATA_TERM));
-        assertThat(jsonLd.getString(toIri(ISSUER_METADATA_CREDENTIAL_ISSUER_TERM))).isEqualTo("issuer");
+        assertThat(jsonLd.getJsonObject(toIri(ISSUER_METADATA_CREDENTIAL_ISSUER_TERM)).getString(ID)).isEqualTo("issuer");
         assertThat(jsonLd.getJsonArray(toIri(ISSUER_METADATA_CREDENTIALS_SUPPORTED_TERM))).hasSize(1);
 
     }
