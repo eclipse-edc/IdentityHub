@@ -20,6 +20,7 @@ import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -102,6 +103,9 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     @Inject
     private DidResolverRegistry didResolverRegistry;
 
+    @Inject
+    private DcpProfileRegistry profileRegistry;
+
     @Override
     public void initialize(ServiceExtensionContext context) {
         rulesRegistry.addRule(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT, new IssuerEqualsSubjectRule());
@@ -110,7 +114,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     @Provider
     public DcpIssuerService createIssuerService() {
-        return new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService, issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator);
+        return new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService, issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, profileRegistry);
     }
 
     @Provider

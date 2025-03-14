@@ -77,6 +77,7 @@ include(":extensions:sts:sts-api")
 
 // DCP protocol modules
 include(":protocols:dcp:dcp-spi")
+include(":protocols:dcp:dcp-core")
 include(":protocols:dcp:dcp-issuer:dcp-issuer-spi")
 include(":protocols:dcp:dcp-transform-lib")
 include(":protocols:dcp:dcp-validation-lib")
