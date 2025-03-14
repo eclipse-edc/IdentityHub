@@ -15,8 +15,10 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpProfile;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
@@ -55,8 +57,9 @@ public class DcpIssuerServiceImplTest {
     private final TransactionContext transactionContext = new NoopTransactionContext();
     private final IssuanceProcessStore issuanceProcessStore = mock();
     private final CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator = mock();
+    private final DcpProfileRegistry dcpProfileRegistry = mock();
 
-    private final DcpIssuerService dcpIssuerService = new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService, issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator);
+    private final DcpIssuerService dcpIssuerService = new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService, issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, dcpProfileRegistry);
 
 
     @Test
@@ -89,6 +92,7 @@ public class DcpIssuerServiceImplTest {
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
         when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(claims));
         when(credentialRuleDefinitionEvaluator.evaluate(eq(List.of(credentialRuleDefinition)), any())).thenReturn(Result.success());
+        when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));
 
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 

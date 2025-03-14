@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
@@ -43,18 +44,20 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
     private final IssuanceProcessStore issuanceProcessStore;
     private final AttestationPipeline attestationPipeline;
     private final CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator;
-
+    private final DcpProfileRegistry profileRegistry;
 
     public DcpIssuerServiceImpl(TransactionContext transactionContext,
                                 CredentialDefinitionService credentialDefinitionService,
                                 IssuanceProcessStore issuanceProcessStore,
                                 AttestationPipeline attestationPipeline,
-                                CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator) {
+                                CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator,
+                                DcpProfileRegistry profileRegistry) {
         this.transactionContext = transactionContext;
         this.credentialDefinitionService = credentialDefinitionService;
         this.issuanceProcessStore = issuanceProcessStore;
         this.attestationPipeline = attestationPipeline;
         this.credentialRuleDefinitionEvaluator = credentialRuleDefinitionEvaluator;
+        this.profileRegistry = profileRegistry;
     }
 
     @Override
@@ -68,7 +71,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
             return credentialFormats.mapFailure();
 
         }
-        return transactionContext.execute(() -> getCredentialsDefinitions(message)
+        return transactionContext.execute(() -> getCredentialsDefinitions(message, credentialFormats.getContent())
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
                 .compose(this::evaluateRules)
                 .compose(evaluation -> createIssuanceProcess(participantContextId, message.getHolderPid(), credentialFormats.getContent(), context, evaluation))
@@ -77,7 +80,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
     }
 
 
-    private ServiceResult<Collection<CredentialDefinition>> getCredentialsDefinitions(CredentialRequestMessage message) {
+    private ServiceResult<Collection<CredentialDefinition>> getCredentialsDefinitions(CredentialRequestMessage message, Map<String, CredentialFormat> credentialFormats) {
 
         var credentialTypes = message.getCredentials().stream()
                 .map(CredentialRequest::credentialType)
@@ -88,12 +91,25 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 .build();
 
         return credentialDefinitionService.queryCredentialDefinitions(query)
-                .compose(credentialDefinitions -> validateCredentialDefinitions(message, credentialDefinitions));
+                .compose(credentialDefinitions -> validateCredentialDefinitions(message, credentialDefinitions, credentialFormats));
     }
 
-    private ServiceResult<Collection<CredentialDefinition>> validateCredentialDefinitions(CredentialRequestMessage message, Collection<CredentialDefinition> credentialDefinitions) {
+    private ServiceResult<Collection<CredentialDefinition>> validateCredentialDefinitions(CredentialRequestMessage message, Collection<CredentialDefinition> credentialDefinitions, Map<String, CredentialFormat> credentialFormats) {
         if (message.getCredentials().size() != credentialDefinitions.size()) {
             return ServiceResult.badRequest("Not all requested credential types have a corresponding credential definition");
+        }
+        return validateCredentialFormats(credentialDefinitions, credentialFormats);
+    }
+
+    private ServiceResult<Collection<CredentialDefinition>> validateCredentialFormats(Collection<CredentialDefinition> credentialDefinitions, Map<String, CredentialFormat> credentialFormats) {
+        for (var credentialDefinition : credentialDefinitions) {
+            var requestedFormat = credentialFormats.get(credentialDefinition.getCredentialType());
+            if (!credentialDefinition.getFormats().contains(requestedFormat)) {
+                return ServiceResult.badRequest("Credential format %s not supported for credential type %s".formatted(requestedFormat, credentialDefinition.getCredentialType()));
+            }
+            if (profileRegistry.profilesFor(requestedFormat).isEmpty()) {
+                return ServiceResult.badRequest("No DCP profiles found for credential format %s".formatted(requestedFormat));
+            }
         }
         return ServiceResult.success(credentialDefinitions);
     }
