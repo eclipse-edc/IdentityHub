@@ -82,6 +82,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
+import static org.mockserver.model.StringBody.subString;
+import static org.mockserver.verify.VerificationTimes.exactly;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 public class CredentialApiEndToEndTest {
@@ -414,9 +416,9 @@ public class CredentialApiEndToEndTest {
             var token = runtime.createParticipant(USER).apiKey();
 
             var port = getFreePort();
-            try (var mockedHolderDidServer = ClientAndServer.startClientAndServer(port)) {
+            try (var mockedHolderEndpoint = ClientAndServer.startClientAndServer(port)) {
 
-                mockedHolderDidServer.when(request()
+                mockedHolderEndpoint.when(request()
                                 .withPath("/api/holder/offers")
                                 .withMethod("POST"))
                         .respond(response()
@@ -445,6 +447,13 @@ public class CredentialApiEndToEndTest {
                         .then()
                         .log().ifValidationFails()
                         .statusCode(200);
+
+                mockedHolderEndpoint.verify(request()
+                        .withMethod("POST")
+                        .withPath("/api/holder/offers")
+                        .withBody(subString("credentialIssuer"))
+                        .withBody(subString("credentials"))
+                        .withBody(subString("TestCredential")), exactly(1));
             }
         }
 

@@ -40,8 +40,10 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.issuerservice.credentials.CredentialServiceExtension.NAME;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.BITSTRING_STATUS_LIST_ENTRY;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
@@ -82,6 +84,8 @@ public class CredentialServiceExtension implements ServiceExtension {
     private ParticipantContextService particpantContextService;
     @Inject
     private StatusListCredentialPublisher credentialPublisher;
+    @Inject
+    private TypeTransformerRegistry transformerRegistry;
 
     @Provider
     public CredentialStatusService getStatusListService(ServiceExtensionContext context) {
@@ -99,7 +103,7 @@ public class CredentialServiceExtension implements ServiceExtension {
 
     @Provider
     public IssuerCredentialOfferService credentialOfferService(ServiceExtensionContext context) {
-        return new IssuerCredentialOfferServiceImpl(transactionContext, holderStore, credentialServiceUrlResolver, sts, participantContextService, httpClient, context.getMonitor());
+        return new IssuerCredentialOfferServiceImpl(transactionContext, holderStore, credentialServiceUrlResolver, sts, participantContextService, httpClient, context.getMonitor(), transformerRegistry.forContext(DCP_SCOPE_V_1_0));
     }
 
     @Provider
