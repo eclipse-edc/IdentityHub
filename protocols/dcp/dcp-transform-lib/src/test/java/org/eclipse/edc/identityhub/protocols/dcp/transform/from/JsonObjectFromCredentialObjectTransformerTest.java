@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.transform.from;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
@@ -67,10 +68,10 @@ public class JsonObjectFromCredentialObjectTransformerTest {
 
         assertThat(jsonLd).isNotNull();
         assertThat(jsonLd.getString(TYPE)).isEqualTo(toIri(CREDENTIAL_OBJECT_TERM));
-        assertThat(jsonLd.getJsonArray(toIri(CREDENTIAL_OBJECT_PROFILES_TERM))).contains(Json.createValue("profile1"), Json.createValue("profile2"));
-        assertThat(jsonLd.getJsonArray(toIri(CREDENTIAL_OBJECT_BINDING_METHODS_TERM))).contains(Json.createValue("binding1"));
+        assertThat(jsonLd.getJsonArray(toIri(CREDENTIAL_OBJECT_PROFILES_TERM))).contains(stringValue("profile1"), stringValue("profile2"));
+        assertThat(jsonLd.getJsonArray(toIri(CREDENTIAL_OBJECT_BINDING_METHODS_TERM))).contains(stringValue("binding1"));
         assertThat(jsonLd.getString(toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM))).isEqualTo("MembershipCredential");
-        assertThat(jsonLd.getString(toIri(CREDENTIAL_OBJECT_OFFER_REASON_TERM))).isEqualTo("myReason");
+        assertThat(jsonLd.getJsonObject(toIri(CREDENTIAL_OBJECT_OFFER_REASON_TERM))).isEqualTo(stringValue("myReason"));
         assertThat(jsonLd.getJsonArray(toIri(CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM))).first()
                 .satisfies(jsonValue -> {
                     assertThat(jsonValue.asJsonObject().getString(TYPE)).isEqualTo(JsonLdKeywords.JSON);
@@ -78,6 +79,11 @@ public class JsonObjectFromCredentialObjectTransformerTest {
                         assertThat(issuancePolicy.get("id")).isNotNull().isEqualTo(Json.createValue("id"));
                     });
                 });
+    }
+
+    private JsonObject stringValue(String value) {
+        return Json.createObjectBuilder().add(VALUE, value).add(TYPE, "http://www.w3.org/2001/XMLSchema#string").build();
+
     }
 
     private String toIri(String term) {
