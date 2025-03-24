@@ -38,7 +38,7 @@ public class JsonObjectFromCredentialOfferMessageTransformer extends AbstractNam
                 .collect(toJsonArray());
 
         return Json.createObjectBuilder()
-                .add(TYPE, forNamespace(CredentialOfferMessage.TYPE))
+                .add(TYPE, forNamespace(CredentialOfferMessage.CREDENTIAL_OFFER_MESSAGE_TERM))
                 .add(forNamespace(CredentialOfferMessage.CREDENTIAL_ISSUER_TERM), credentialOfferMessage.getIssuer())
                 .add(forNamespace(CredentialOfferMessage.CREDENTIALS_TERM), credentials)
                 .build();
