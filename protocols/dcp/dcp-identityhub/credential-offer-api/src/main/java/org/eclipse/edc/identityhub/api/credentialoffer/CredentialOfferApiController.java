@@ -26,6 +26,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
@@ -88,7 +89,12 @@ public class CredentialOfferApiController implements CredentialOfferApi {
         issuerTokenVerifier.verify(participantContext, authToken)
                 .orElseThrow(f -> new NotAuthorizedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
-        var credentialOffer = new CredentialOffer(offerMessage.getIssuer(), offerMessage.getCredentials().stream().map(co -> (Object) co).toList());
+        var credentialOffer = CredentialOffer.Builder.newInstance()
+                .participantContextId(participantContextId)
+                .issuer(offerMessage.getIssuer())
+                .credentialObjects(offerMessage.getCredentials().stream().map(co -> (Object) co).toList())
+                .state(CredentialOfferStatus.RECEIVED.code())
+                .build();
         credentialOfferService.create(credentialOffer).orElseThrow(exceptionMapper(CredentialOffer.class, credentialOffer.getId()));
 
         return Response.ok().build();

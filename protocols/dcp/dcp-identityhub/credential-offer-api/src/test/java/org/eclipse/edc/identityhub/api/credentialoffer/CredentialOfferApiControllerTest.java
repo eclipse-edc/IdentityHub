@@ -74,7 +74,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
         when(typeTransformerRegistry.forContext(anyString())).thenReturn(typeTransformerRegistry);
         when(typeTransformerRegistry.forContext(anyString())).thenReturn(typeTransformerRegistry);
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialOfferMessage.class)))
-                .thenReturn(Result.success(CredentialOfferMessage.Builder.newInstance().build()));
+                .thenReturn(Result.success(CredentialOfferMessage.Builder.newInstance().issuer("test-issuer").build()));
 
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(
                 ParticipantContext.Builder.newInstance()

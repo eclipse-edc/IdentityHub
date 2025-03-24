@@ -17,7 +17,6 @@ package org.eclipse.edc.identityhub.defaults.store;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
-import org.eclipse.edc.spi.entity.StateResolver;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -29,11 +28,11 @@ import java.util.UUID;
 
 public class InMemoryCredentialOfferStore extends InMemoryStatefulEntityStore<CredentialOffer> implements CredentialOfferStore {
     public InMemoryCredentialOfferStore(Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
-        this(UUID.randomUUID().toString(), clock, criterionOperatorRegistry, stringState -> CredentialOfferStatus.valueOf(stringState).code());
+        this(UUID.randomUUID().toString(), clock, criterionOperatorRegistry);
     }
 
-    public InMemoryCredentialOfferStore(String leaserId, Clock clock, CriterionOperatorRegistry criterionOperatorRegistry, StateResolver stateResolver) {
-        super(CredentialOffer.class, leaserId, clock, criterionOperatorRegistry, stateResolver);
+    public InMemoryCredentialOfferStore(String leaserId, Clock clock, CriterionOperatorRegistry criterionOperatorRegistry) {
+        super(CredentialOffer.class, leaserId, clock, criterionOperatorRegistry, state -> CredentialOfferStatus.valueOf(state).code());
     }
 
     @Override
@@ -44,6 +43,9 @@ public class InMemoryCredentialOfferStore extends InMemoryStatefulEntityStore<Cr
     @Override
     public StoreResult<Void> deleteById(String id) {
         try {
+            if (findById(id) == null) {
+                return StoreResult.notFound("CredentialOffer with id '%s' not found".formatted(id));
+            }
             delete(id);
             return StoreResult.success();
         } catch (IllegalStateException ex) {
