@@ -24,4 +24,6 @@ public interface DcpConstants {
     @Deprecated(since = "0.12.0")
     String DCP_SCOPE_V_0_8 = DCP_SCOPE_PREFIX + DCP_SCOPE_SEPARATOR + V_0_8;
     String DCP_SCOPE_V_1_0 = DCP_SCOPE_PREFIX + DCP_SCOPE_SEPARATOR + V_1_0;
+    // URL where the DCP Specification resides. Could be used for externalDocs properties in Swagger
+    String DCP_SPECIFICATION_URL = "https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol";
 }

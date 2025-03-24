@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class JsonObjectToCredentialOfferMessageTransformer extends AbstractNamespaceAwareJsonLdTransformer<JsonObject, CredentialOfferMessage> {
-    protected JsonObjectToCredentialOfferMessageTransformer(JsonLdNamespace namespace) {
+    public JsonObjectToCredentialOfferMessageTransformer(JsonLdNamespace namespace) {
         super(JsonObject.class, CredentialOfferMessage.class, namespace);
     }
 
