@@ -49,7 +49,7 @@ class CredentialOfferMessageValidatorTest {
                 .build();
 
         assertThat(validator.validate(msg)).isFailed()
-                .detail().contains("Must contain a 'credentialIssuer' property.");
+                .detail().contains("Invalid format: must contain a 'credentialIssuer' property.");
     }
 
     @Test

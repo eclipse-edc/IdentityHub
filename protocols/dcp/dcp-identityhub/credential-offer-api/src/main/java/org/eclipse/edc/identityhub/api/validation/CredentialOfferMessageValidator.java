@@ -44,7 +44,7 @@ public class CredentialOfferMessageValidator extends JsonValidator {
         }
         var issuer = input.get(namespace.toIri(CREDENTIAL_ISSUER_TERM));
         if (isNullObject(issuer)) {
-            return failure(violation("Must contain a '%s' property.".formatted(CREDENTIAL_ISSUER_TERM), null));
+            return failure(violation("Invalid format: must contain a '%s' property.".formatted(CREDENTIAL_ISSUER_TERM), null));
         }
 
         //sending an empty offer is nonsensical, but strictly speaking, it's allowed

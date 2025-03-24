@@ -25,7 +25,8 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
@@ -38,6 +39,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
+import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -46,20 +48,19 @@ public class CredentialOfferApiController implements CredentialOfferApi {
 
     private final JsonObjectValidatorRegistry validatorRegistry;
     private final TypeTransformerRegistry transformerRegistry;
-    private final Monitor monitor;
     private final DcpIssuerTokenVerifier issuerTokenVerifier;
     private final ParticipantContextService participantContextService;
+    private final CredentialOfferService credentialOfferService;
 
     public CredentialOfferApiController(JsonObjectValidatorRegistry validatorRegistry,
                                         TypeTransformerRegistry transformerRegistry,
-                                        Monitor monitor,
                                         DcpIssuerTokenVerifier issuerTokenVerifier,
-                                        ParticipantContextService participantContextService) {
+                                        ParticipantContextService participantContextService, CredentialOfferService credentialOfferService) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
-        this.monitor = monitor;
         this.issuerTokenVerifier = issuerTokenVerifier;
         this.participantContextService = participantContextService;
+        this.credentialOfferService = credentialOfferService;
     }
 
 
@@ -87,9 +88,9 @@ public class CredentialOfferApiController implements CredentialOfferApi {
         issuerTokenVerifier.verify(participantContext, authToken)
                 .orElseThrow(f -> new NotAuthorizedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
+        var credentialOffer = new CredentialOffer(offerMessage.getIssuer(), offerMessage.getCredentials().stream().map(co -> (Object) co).toList());
+        credentialOfferService.create(credentialOffer).orElseThrow(exceptionMapper(CredentialOffer.class, credentialOffer.getId()));
 
-        //todo: process credential offer message
-        monitor.warning("Credential offer was received but processing it is not yet implemented");
         return Response.ok().build();
     }
 

@@ -22,6 +22,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessag
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -57,7 +58,8 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final DcpIssuerTokenVerifier tokenVerifier = mock();
     private final ParticipantContextService participantContextService = mock();
-    private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, mock(), tokenVerifier, participantContextService);
+    private final CredentialOfferService offerService = mock();
+    private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, tokenVerifier, participantContextService, offerService);
 
     @BeforeEach
     void setUp() {
@@ -82,6 +84,8 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                         .apiTokenAlias("test-alias")
                         .build()
         ));
+
+        when(offerService.create(any())).thenReturn(ServiceResult.success());
     }
 
     @Test
@@ -159,6 +163,17 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(400);
+    }
+
+    @Test
+    void offerCredential_storageFails_expect40x() {
+        when(offerService.create(any())).thenReturn(ServiceResult.conflict("foobar"));
+        baseRequest()
+                .body(createRequestBody())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(409);
     }
 
     @Override

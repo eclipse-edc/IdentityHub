@@ -22,6 +22,7 @@ import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.core.services.query.CredentialQueryResolverImpl;
+import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialOfferServiceImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialRequestManagerImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialStatusCheckServiceImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialWriterImpl;
@@ -44,7 +45,9 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusChe
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
 import org.eclipse.edc.jsonld.spi.JsonLd;
@@ -138,7 +141,8 @@ public class CoreServicesExtension implements ServiceExtension {
     private EdcHttpClient httpClient;
     @Inject
     private HolderCredentialRequestStore holderCredentialRequestStore;
-
+    @Inject
+    private CredentialOfferStore credentialOfferStore;
     private CredentialRequestManagerImpl credentialRequestService;
 
     @Override
@@ -216,5 +220,10 @@ public class CoreServicesExtension implements ServiceExtension {
                     .build();
         }
         return credentialRequestService;
+    }
+
+    @Provider
+    public CredentialOfferService createDefaultCredentialOfferService() {
+        return new CredentialOfferServiceImpl(credentialOfferStore, transactionContext);
     }
 }

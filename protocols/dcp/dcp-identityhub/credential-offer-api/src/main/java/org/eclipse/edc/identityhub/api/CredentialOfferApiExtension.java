@@ -21,6 +21,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCreden
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialOfferMessageTransformer;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -36,7 +37,7 @@ import org.eclipse.edc.web.spi.WebService;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.api.CredentialOfferApiExtension.NAME;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIAL_MESSAGE_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIAL_OFFER_MESSAGE_TERM;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.CREDENTIALS;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
@@ -64,6 +65,8 @@ public class CredentialOfferApiExtension implements ServiceExtension {
 
     @Inject
     private ParticipantContextService participantContextService;
+    @Inject
+    private CredentialOfferService credentialOfferService;
 
     @Override
     public String name() {
@@ -73,9 +76,9 @@ public class CredentialOfferApiExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
 
-        validatorRegistry.register(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_MESSAGE_TERM), new CredentialOfferMessageValidator());
+        validatorRegistry.register(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OFFER_MESSAGE_TERM), new CredentialOfferMessageValidator());
 
-        var controller = new CredentialOfferApiController(validatorRegistry, typeTransformer, context.getMonitor().withPrefix("CredentialOfferApi"), issuerTokenVerifier, participantContextService);
+        var controller = new CredentialOfferApiController(validatorRegistry, typeTransformer, issuerTokenVerifier, participantContextService, credentialOfferService);
         webService.registerResource(CREDENTIALS, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(CREDENTIALS, controller);
 
