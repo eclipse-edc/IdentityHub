@@ -6,19 +6,6 @@ info:
 servers:
 - url: /
 paths:
-  /v1alpha/.well-known/vci:
-    get:
-      tags:
-      - Issuer Metadata API
-      description: Requests information about the capabilities of this issuer.
-      operationId: getIssuerMetadata
-      responses:
-        "200":
-          description: Gets the issuer metadata.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/IssuerMetadata"
   /v1alpha/participants/{participantContextId}/credentials:
     post:
       tags:
@@ -89,6 +76,42 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/participants/{participantContextId}/metadata:
+    get:
+      tags:
+      - Issuer Metadata API
+      description: Requests information about the capabilities of this issuer.
+      operationId: getIssuerMetadata
+      parameters:
+      - name: participantContextId
+        in: path
+        description: Base64-Url encode Participant Context ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: false
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Gets the issuer metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssuerMetadata"
   /v1alpha/participants/{participantContextId}/requests/{credentialRequestId}:
     get:
       tags:
