@@ -25,6 +25,7 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialObject;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
@@ -92,7 +93,13 @@ public class CredentialOfferApiController implements CredentialOfferApi {
         var credentialOffer = CredentialOffer.Builder.newInstance()
                 .participantContextId(participantContextId)
                 .issuer(offerMessage.getIssuer())
-                .credentialObjects(offerMessage.getCredentials().stream().map(co -> (Object) co).toList())
+                .credentialObjects(offerMessage.getCredentials().stream().map(co -> CredentialObject.Builder.newInstance()
+                        .bindingMethods(co.getBindingMethods())
+                        .credentialType(co.getCredentialType())
+                        .issuancePolicy(co.getIssuancePolicy())
+                        .offerReason(co.getOfferReason())
+                        .profiles(co.getProfiles())
+                        .build()).toList())
                 .state(CredentialOfferStatus.RECEIVED.code())
                 .build();
         credentialOfferService.create(credentialOffer).orElseThrow(exceptionMapper(CredentialOffer.class, credentialOffer.getId()));

@@ -18,14 +18,18 @@ import org.eclipse.edc.spi.entity.Entity;
 import org.eclipse.edc.spi.entity.StatefulEntity;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus.from;
 
+/**
+ * this is the database entity for storing {@code CredentialOfferMessage}s
+ */
 public class CredentialOffer extends StatefulEntity<CredentialOffer> {
-    private List<Object> credentialObjects = new ArrayList<>();
+    private Collection<CredentialObject> credentialObjects = new ArrayList<>();
     private String issuer;
     private String participantContextId;
 
@@ -37,7 +41,7 @@ public class CredentialOffer extends StatefulEntity<CredentialOffer> {
         return issuer;
     }
 
-    public List<Object> getCredentialObjects() {
+    public Collection<CredentialObject> getCredentialObjects() {
         return credentialObjects;
     }
 
@@ -121,18 +125,17 @@ public class CredentialOffer extends StatefulEntity<CredentialOffer> {
             return this;
         }
 
-
         public Builder participantContextId(String participantContextId) {
             this.entity.participantContextId = participantContextId;
             return this;
         }
 
-        public Builder credentialObject(Object credentialObject) {
+        public Builder credentialObject(CredentialObject credentialObject) {
             this.entity.credentialObjects.add(credentialObject);
             return this;
         }
 
-        public Builder credentialObjects(List<Object> credentialObjects) {
+        public Builder credentialObjects(Collection<CredentialObject> credentialObjects) {
             this.entity.credentialObjects = credentialObjects;
             return this;
         }
@@ -141,7 +144,7 @@ public class CredentialOffer extends StatefulEntity<CredentialOffer> {
         public CredentialOffer build() {
             super.build();
             Objects.requireNonNull(entity.issuer, "'issuer' cannot be null");
-            Objects.requireNonNull(entity.credentialObjects, "'credentials' cannot be null");
+            Objects.requireNonNull(entity.credentialObjects, "'credentialObjects' cannot be null");
             Objects.requireNonNull(entity.participantContextId, "'participantContextId' cannot be null");
 
             if (entity.state == 0) {

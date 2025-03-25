@@ -14,8 +14,10 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentialoffer.schema;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialObject;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
@@ -47,6 +49,8 @@ import static java.util.stream.Collectors.toList;
  */
 public class SqlCredentialOfferStore extends AbstractSqlStore implements CredentialOfferStore {
 
+    private static final TypeReference<Collection<CredentialObject>> LIST_TYPE_REF = new TypeReference<>() {
+    };
     private final String leaseHolderName;
     private final SqlLeaseContextBuilder leaseContext;
     private final CredentialOfferStoreStatements statements;
@@ -206,8 +210,6 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
 
     private CredentialOffer mapResultSet(ResultSet resultSet) throws Exception {
 
-        List<Object> objects = fromJson(resultSet.getString(statements.getCredentialsColumn()), getTypeRef());
-
         return CredentialOffer.Builder.newInstance()
                 .id(resultSet.getString(statements.getIdColumn()))
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
@@ -219,7 +221,7 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
                 .errorDetail(resultSet.getString(statements.getErrorDetailColumn()))
                 .issuer(resultSet.getString(statements.getIssuerColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantIdColumn()))
-                .credentialObjects(objects)
+                .credentialObjects(fromJson(resultSet.getString(statements.getCredentialsColumn()), LIST_TYPE_REF))
                 .build();
 
     }

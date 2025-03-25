@@ -14,7 +14,9 @@
 
 package org.eclipse.edc.identityhub.verifiablecredentials.store;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialObject;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
@@ -81,6 +83,16 @@ public abstract class CredentialOfferStoreTestBase {
         return createOfferBuilder()
                 .id(id)
                 .state(state.code())
+                .credentialObject(CredentialObject.Builder.newInstance()
+                        .profile("test-profile")
+                        .bindingMethod("did:web")
+                        .credentialType("TestCredential")
+                        .issuancePolicy(PresentationDefinition.Builder.newInstance()
+                                .id(UUID.randomUUID().toString())
+                                .purpose("test-purpose")
+                                .name("test-name")
+                                .build())
+                        .build())
                 .build();
     }
 
@@ -104,7 +116,8 @@ public abstract class CredentialOfferStoreTestBase {
             var updatedOffer = createOffer("test-offer", PROCESSED);
             getStore().save(updatedOffer);
 
-            assertThat(getStore().query(QuerySpec.max())).isNotNull()
+            var query = getStore().query(QuerySpec.max());
+            assertThat(query).isNotNull()
                     .usingRecursiveFieldByFieldElementComparator()
                     .containsExactly(updatedOffer);
         }
