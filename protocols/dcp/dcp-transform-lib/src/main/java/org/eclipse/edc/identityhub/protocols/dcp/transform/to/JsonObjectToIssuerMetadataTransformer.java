@@ -37,9 +37,9 @@ public class JsonObjectToIssuerMetadataTransformer extends AbstractNamespaceAwar
 
         var issuerMetadata = IssuerMetadata.Builder.newInstance();
 
-        Optional.ofNullable(jsonObject.get(forNamespace(IssuerMetadata.ISSUER_METADATA_CREDENTIAL_ISSUER_TERM)))
+        Optional.ofNullable(jsonObject.get(IssuerMetadata.ISSUER_METADATA_ISSUER_IRI))
                 .map(issuer -> transformString(issuer, transformerContext))
-                .map(issuerMetadata::credentialIssuer);
+                .map(issuerMetadata::issuer);
 
         Optional.ofNullable(jsonObject.get(forNamespace(IssuerMetadata.ISSUER_METADATA_CREDENTIALS_SUPPORTED_TERM)))
                 .map(issuer -> transformArray(issuer, CredentialObject.class, transformerContext))

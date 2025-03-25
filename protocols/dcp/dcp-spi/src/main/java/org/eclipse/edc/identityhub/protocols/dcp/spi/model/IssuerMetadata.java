@@ -17,21 +17,23 @@ package org.eclipse.edc.identityhub.protocols.dcp.spi.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.VC_PREFIX;
+
 public class IssuerMetadata {
 
     public static final String ISSUER_METADATA_TERM = "IssuerMetadata";
-    public static final String ISSUER_METADATA_CREDENTIAL_ISSUER_TERM = "credentialIssuer";
+    public static final String ISSUER_METADATA_ISSUER_IRI = VC_PREFIX + "issuer";
     public static final String ISSUER_METADATA_CREDENTIALS_SUPPORTED_TERM = "credentialsSupported";
 
-    private String credentialIssuer;
+    private String issuer;
     private List<CredentialObject> credentialsSupported = new ArrayList<>();
 
     public List<CredentialObject> getCredentialsSupported() {
         return credentialsSupported;
     }
 
-    public String getCredentialIssuer() {
-        return credentialIssuer;
+    public String getIssuer() {
+        return issuer;
     }
 
     public static class Builder {
@@ -45,8 +47,8 @@ public class IssuerMetadata {
             return new Builder();
         }
 
-        public Builder credentialIssuer(String credentialIssuer) {
-            this.issuerMetadata.credentialIssuer = credentialIssuer;
+        public Builder issuer(String issuer) {
+            this.issuerMetadata.issuer = issuer;
             return this;
         }
 
