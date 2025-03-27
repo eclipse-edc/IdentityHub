@@ -159,6 +159,10 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
     }
 
     private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, String suiteIdentifier, PrivateKey pk, String publicKeyId, String controller) {
+        if (!publicKeyId.startsWith(controller)) {
+            publicKeyId = controller + "#" + publicKeyId;
+        }
+
         var keyIdUri = URI.create(publicKeyId);
         var controllerUri = URI.create(controller);
         var verificationMethodType = URI.create(suiteIdentifier);
@@ -169,7 +173,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
 
         var proofDraft = Jws2020ProofDraft.Builder.newInstance()
                 .proofPurpose(ASSERTION_METHOD)
-                .verificationMethod(new JsonWebKeyPair(URI.create(controller + "#" + publicKeyId), verificationMethodType, controllerUri, null))
+                .verificationMethod(new JsonWebKeyPair(keyIdUri, verificationMethodType, controllerUri, null))
                 .created(Instant.now())
                 .mapper(typeManager.getMapper(typeContext))
                 .build();
