@@ -56,7 +56,7 @@ class JsonObjectFromCredentialOfferMessageTransformerTest {
         var result = transformer.transform(msg, transformerContext);
 
         assertThat(result).isNotNull();
-        assertThat(result.getString(toIri("credentialIssuer"))).isEqualTo("test-issuer");
+        assertThat(result.getString(toIri("issuer"))).isEqualTo("test-issuer");
         assertThat(result.getJsonArray(toIri("credentials"))).hasSize(1);
 
         verify(transformerContext).transform(isA(CredentialObject.class), eq(JsonObject.class));
@@ -72,7 +72,7 @@ class JsonObjectFromCredentialOfferMessageTransformerTest {
         var result = transformer.transform(msg, transformerContext);
 
         assertThat(result).isNotNull();
-        assertThat(result.getString(toIri("credentialIssuer"))).isEqualTo("test-issuer");
+        assertThat(result.getString(toIri("issuer"))).isEqualTo("test-issuer");
         assertThat(result.getJsonArray(toIri("credentials"))).isEmpty();
 
         verifyNoMoreInteractions(transformerContext);

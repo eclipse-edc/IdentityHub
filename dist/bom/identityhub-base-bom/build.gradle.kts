@@ -26,6 +26,7 @@ dependencies {
     runtimeOnly(project(":protocols:dcp:dcp-core"))
     runtimeOnly(project(":protocols:dcp:dcp-identityhub:presentation-api"))
     runtimeOnly(project(":protocols:dcp:dcp-identityhub:storage-api"))
+    runtimeOnly(project(":protocols:dcp:dcp-identityhub:credential-offer-api"))
     runtimeOnly(project(":protocols:dcp:dcp-identityhub:dcp-identityhub-core"))
 
     runtimeOnly(project(":extensions:common:credential-watchdog"))

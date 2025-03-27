@@ -19,7 +19,7 @@ import java.util.List;
 
 public class CredentialOfferMessage {
     public static final String CREDENTIAL_OFFER_MESSAGE_TERM = "CredentialOfferMessage";
-    public static final String CREDENTIAL_ISSUER_TERM = "credentialIssuer";
+    public static final String CREDENTIAL_ISSUER_TERM = "issuer";
     public static final String CREDENTIALS_TERM = "credentials";
     private List<CredentialObject> credentials = new ArrayList<>();
     private String issuer;

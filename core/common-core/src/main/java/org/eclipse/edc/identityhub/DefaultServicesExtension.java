@@ -23,6 +23,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstrings
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.statuslist2021.StatusList2021Status;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialOfferStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryHolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryKeyPairResourceStore;
@@ -32,6 +33,7 @@ import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredential
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
@@ -168,6 +170,11 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Provider(isDefault = true)
     public HolderCredentialRequestStore createHolderCredentialRequestStore() {
         return new InMemoryHolderCredentialRequestStore(clock, criterionOperatorRegistry);
+    }
+
+    @Provider(isDefault = true)
+    public CredentialOfferStore createCredentialOfferStore() {
+        return new InMemoryCredentialOfferStore(clock, criterionOperatorRegistry);
     }
 
     private void cacheContextDocuments(ClassLoader classLoader) {

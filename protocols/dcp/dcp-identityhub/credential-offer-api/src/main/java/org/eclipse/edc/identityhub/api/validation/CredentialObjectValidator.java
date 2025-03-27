@@ -35,7 +35,7 @@ public class CredentialObjectValidator extends JsonValidator {
 
         var credentialType = input.get(namespace.toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM));
         if (isNullObject(credentialType)) {
-            return failure(violation("Must contain a '%s' property.".formatted(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), null));
+            return failure(violation("Invalid format: must contain a '%s' property.".formatted(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), null));
         }
 
         return success();
