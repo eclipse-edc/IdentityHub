@@ -22,6 +22,8 @@ import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.core.services.query.CredentialQueryResolverImpl;
+import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialOfferEventPublisher;
+import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialOfferObservableImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialOfferServiceImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialRequestManagerImpl;
 import org.eclipse.edc.identityhub.core.services.verifiablecredential.CredentialStatusCheckServiceImpl;
@@ -42,6 +44,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.events.CredentialOfferObservable;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
@@ -60,6 +63,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
+import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -143,7 +147,10 @@ public class CoreServicesExtension implements ServiceExtension {
     private HolderCredentialRequestStore holderCredentialRequestStore;
     @Inject
     private CredentialOfferStore credentialOfferStore;
+    @Inject
+    private EventRouter eventRouter;
     private CredentialRequestManagerImpl credentialRequestService;
+    private CredentialOfferObservable credentialOfferObservable;
 
     @Override
     public String name() {
@@ -224,6 +231,15 @@ public class CoreServicesExtension implements ServiceExtension {
 
     @Provider
     public CredentialOfferService createDefaultCredentialOfferService() {
-        return new CredentialOfferServiceImpl(credentialOfferStore, transactionContext);
+        return new CredentialOfferServiceImpl(credentialOfferStore, transactionContext, credentialOfferObservable());
+    }
+
+    @Provider
+    public CredentialOfferObservable credentialOfferObservable() {
+        if (credentialOfferObservable == null) {
+            credentialOfferObservable = new CredentialOfferObservableImpl();
+            credentialOfferObservable.registerListener(new CredentialOfferEventPublisher(clock, eventRouter));
+        }
+        return credentialOfferObservable;
     }
 }

@@ -23,6 +23,7 @@ dependencies {
     runtimeOnly(project(":core:identity-hub-participants"))
     runtimeOnly(project(":core:identity-hub-keypairs"))
     runtimeOnly(project(":extensions:did:local-did-publisher"))
+    runtimeOnly(project(":extensions:credentials:credential-offer-handler"))
     runtimeOnly(project(":protocols:dcp:dcp-core"))
     runtimeOnly(project(":protocols:dcp:dcp-identityhub:presentation-api"))
     runtimeOnly(project(":protocols:dcp:dcp-identityhub:storage-api"))
