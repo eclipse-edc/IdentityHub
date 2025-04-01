@@ -48,7 +48,6 @@ paths:
             Location:
               description: contains the relative URL where the status of the request
                 can be queried (Credential Request Status API)
-              style: simple
               explode: false
         "400":
           description: "Request body was malformed, e.g. required parameter or properties\
