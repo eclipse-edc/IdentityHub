@@ -58,7 +58,12 @@ public class CredentialWatchdog implements Runnable {
     private final Duration expiryGracePeriod;
     private final CredentialRequestManager credentialRequestManager;
 
-    public CredentialWatchdog(CredentialStore credentialStore, CredentialStatusCheckService credentialStatusCheckService, Monitor monitor, TransactionContext transactionContext, Duration expiryGracePeriod, CredentialRequestManager credentialRequestManager) {
+    public CredentialWatchdog(CredentialStore credentialStore,
+                              CredentialStatusCheckService credentialStatusCheckService,
+                              Monitor monitor,
+                              TransactionContext transactionContext,
+                              Duration expiryGracePeriod,
+                              CredentialRequestManager credentialRequestManager) {
         this.credentialStore = credentialStore;
         this.credentialStatusCheckService = credentialStatusCheckService;
         this.monitor = monitor;
