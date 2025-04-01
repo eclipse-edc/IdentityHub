@@ -35,7 +35,9 @@ import java.util.UUID;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class CredentialStatusCheckServiceImplTest {
@@ -139,7 +141,7 @@ class CredentialStatusCheckServiceImplTest {
                 .build();
         assertThat(service.checkStatus(createCredentialBuilder(credential).build()))
                 .isSucceeded()
-                .isEqualTo(VcStatus.EXPIRED);
+                .isEqualTo(VcStatus.REVOKED);
     }
 
     @Test
@@ -234,8 +236,9 @@ class CredentialStatusCheckServiceImplTest {
 
         assertThat(service.checkStatus(createCredentialBuilder(credential).state(VcStatus.ISSUED).build()))
                 .isSucceeded()
-                .isEqualTo(VcStatus.EXPIRED);
-        verifyNoInteractions(revocationServiceRegistry);
+                .isEqualTo(VcStatus.REVOKED);
+        verify(revocationServiceRegistry).getRevocationStatus(credential);
+        verifyNoMoreInteractions(revocationServiceRegistry);
     }
 
     @Test
@@ -247,8 +250,9 @@ class CredentialStatusCheckServiceImplTest {
 
         assertThat(service.checkStatus(createCredentialBuilder(credential).state(VcStatus.ISSUED).build()))
                 .isSucceeded()
-                .isEqualTo(VcStatus.EXPIRED);
-        verifyNoInteractions(revocationServiceRegistry);
+                .isEqualTo(VcStatus.SUSPENDED);
+        verify(revocationServiceRegistry, times(2)).getRevocationStatus(credential);
+        verifyNoMoreInteractions(revocationServiceRegistry);
     }
 
     private VerifiableCredentialResource.Builder createCredentialBuilder(VerifiableCredential credential) {

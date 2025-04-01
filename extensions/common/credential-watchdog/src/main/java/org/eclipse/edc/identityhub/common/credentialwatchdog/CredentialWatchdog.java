@@ -14,17 +14,25 @@
 
 package org.eclipse.edc.identityhub.common.credentialwatchdog;
 
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+import java.util.function.Function;
 
+import static java.util.stream.Collectors.toMap;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.EXPIRED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.NOT_YET_VALID;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.SUSPENDED;
@@ -34,7 +42,7 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
  * and update their status. Every execution (fetch-all - check-each - update-each) will run in a transaction.
  * <p>
  * Note that this will materialize <strong>all</strong> credentials into memory at once, as the general assumption is that typically, wallets don't
- * store an enormous amount of credentials. To mitigate this, the watchdog only considers credentials in states {@link VcStatus#ISSUED},
+ * store an enormous amount of credentials. To mitigate this, the watchdog only considers credentials in states {@link VcStatus#EXPIRED}, {@link VcStatus#ISSUED},
  * {@link VcStatus#SUSPENDED} and {@link VcStatus#NOT_YET_VALID}, c.f. {@link CredentialWatchdog#ALLOWED_STATES}.
  *
  * <p>
@@ -42,17 +50,21 @@ import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStat
  */
 public class CredentialWatchdog implements Runnable {
     //todo: add more states once we have to check issuance status
-    public static final List<Integer> ALLOWED_STATES = List.of(ISSUED.code(), NOT_YET_VALID.code(), SUSPENDED.code());
+    public static final List<Integer> ALLOWED_STATES = List.of(ISSUED.code(), NOT_YET_VALID.code(), SUSPENDED.code(), EXPIRED.code());
     private final CredentialStore credentialStore;
     private final CredentialStatusCheckService credentialStatusCheckService;
     private final Monitor monitor;
     private final TransactionContext transactionContext;
+    private final Duration expiryGracePeriod;
+    private final CredentialRequestManager credentialRequestManager;
 
-    public CredentialWatchdog(CredentialStore credentialStore, CredentialStatusCheckService credentialStatusCheckService, Monitor monitor, TransactionContext transactionContext) {
+    public CredentialWatchdog(CredentialStore credentialStore, CredentialStatusCheckService credentialStatusCheckService, Monitor monitor, TransactionContext transactionContext, Duration expiryGracePeriod, CredentialRequestManager credentialRequestManager) {
         this.credentialStore = credentialStore;
         this.credentialStatusCheckService = credentialStatusCheckService;
         this.monitor = monitor;
         this.transactionContext = transactionContext;
+        this.expiryGracePeriod = expiryGracePeriod;
+        this.credentialRequestManager = credentialRequestManager;
     }
 
     @Override
@@ -64,6 +76,7 @@ public class CredentialWatchdog implements Runnable {
 
             monitor.debug("checking %d credentials".formatted(allCredentials.size()));
 
+            // check status
             allCredentials.forEach(credential -> {
                 var newStatus = credentialStatusCheckService.checkStatus(credential)
                         .orElse(f -> {
@@ -72,11 +85,28 @@ public class CredentialWatchdog implements Runnable {
                         });
                 var changed = credential.getState() != newStatus.code();
                 if (changed) {
+                    monitor.debug("Credential '%s' is now in status '%s'".formatted(credential.getId(), newStatus));
                     credential.setCredentialStatus(newStatus);
                     credentialStore.update(credential);
                 }
             });
+
+            // check credentials that are nearing expiry
+            allCredentials.stream()
+                    .filter(cred -> Instant.now().isAfter(cred.getVerifiableCredential().credential().getExpirationDate().minusSeconds(expiryGracePeriod.toSeconds())))
+                    .forEach(this::startReissuance);
         });
+    }
+
+    private void startReissuance(VerifiableCredentialResource expiringCredential) {
+
+        var formatString = expiringCredential.getVerifiableCredential().format().toString();
+        var typesAndFormats = expiringCredential.getVerifiableCredential().credential().getType().stream().collect(toMap(Function.identity(), s -> formatString));
+        credentialRequestManager.initiateRequest(expiringCredential.getParticipantContextId(),
+                        expiringCredential.getIssuerId(),
+                        UUID.randomUUID().toString(),
+                        typesAndFormats)
+                .onFailure(f -> monitor.warning("Error sending re-issuance request: %s".formatted(f.getFailureDetail())));
     }
 
     private QuerySpec allExcludingExpiredAndRevoked() {
