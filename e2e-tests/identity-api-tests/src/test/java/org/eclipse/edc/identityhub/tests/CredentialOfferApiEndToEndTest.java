@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_BINDING_METHODS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
@@ -141,9 +142,9 @@ public class CredentialOfferApiEndToEndTest {
                     .log().ifValidationFails()
                     .statusCode(200);
 
-            assertThat(credentialOfferStore.query(QuerySpec.max()))
+            await().untilAsserted(() -> assertThat(credentialOfferStore.query(QuerySpec.max()))
                     .hasSize(1)
-                    .allSatisfy(co -> assertThat(co.getStateAsEnum()).isEqualTo(CredentialOfferStatus.RECEIVED));
+                    .allSatisfy(co -> assertThat(co.getStateAsEnum()).isEqualTo(CredentialOfferStatus.PROCESSED)));
         }
 
         @DisplayName("Issuer's DID not resolvable, expect HTTP 401")
@@ -241,7 +242,7 @@ public class CredentialOfferApiEndToEndTest {
 
         private JsonObject createCredentialContainer() {
             return Json.createObjectBuilder()
-                    .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OBJECT_PROFILES_TERM), Json.createArrayBuilder(List.of("profile")))
+                    .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OBJECT_PROFILES_TERM), Json.createArrayBuilder(List.of("vc20-bssl/jwt")))
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OBJECT_OFFER_REASON_TERM), "reissuance")
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), "MembershipCredential")
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OBJECT_BINDING_METHODS_TERM), Json.createArrayBuilder(List.of("did:web")))

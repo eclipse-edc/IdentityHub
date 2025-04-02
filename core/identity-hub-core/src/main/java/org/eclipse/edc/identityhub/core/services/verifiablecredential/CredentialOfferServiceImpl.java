@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.events.CredentialOfferObservable;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
@@ -25,10 +26,12 @@ public class CredentialOfferServiceImpl implements CredentialOfferService {
 
     private final CredentialOfferStore credentialOfferStore;
     private final TransactionContext transactionContext;
+    private final CredentialOfferObservable credentialOfferObservable;
 
-    public CredentialOfferServiceImpl(CredentialOfferStore credentialOfferStore, TransactionContext transactionContext) {
+    public CredentialOfferServiceImpl(CredentialOfferStore credentialOfferStore, TransactionContext transactionContext, CredentialOfferObservable credentialOfferObservable) {
         this.credentialOfferStore = credentialOfferStore;
         this.transactionContext = transactionContext;
+        this.credentialOfferObservable = credentialOfferObservable;
     }
 
     @Override
@@ -36,6 +39,7 @@ public class CredentialOfferServiceImpl implements CredentialOfferService {
         return transactionContext.execute(() -> {
             try {
                 credentialOfferStore.save(credentialOffer);
+                credentialOfferObservable.invokeForEach(l -> l.received(credentialOffer));
                 return ServiceResult.success();
             } catch (EdcException ex) {
                 return ServiceResult.badRequest(ex.getMessage());
