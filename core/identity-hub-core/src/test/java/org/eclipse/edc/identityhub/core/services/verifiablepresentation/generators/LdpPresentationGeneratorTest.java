@@ -154,6 +154,17 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThat(result).isNotNull();
     }
 
+    @Test
+    public void create_whenPublicKeyContainsController() {
+        var ldpVc = TestData.LDP_VC_WITH_PROOF;
+        var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.VC1_0_LD, createDummyCredential());
+        var publicKeyIdWithController = ADDITIONAL_DATA.get("controller").toString() + "#" + PUBLIC_KEY_ID;
+
+        var result = creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, publicKeyIdWithController, issuerId, ADDITIONAL_DATA);
+        assertThat(result).isNotNull();
+        assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
+    }
+
     @NotNull
     private TitaniumJsonLd initializeJsonLd() {
         var jld = new TitaniumJsonLd(mock());
