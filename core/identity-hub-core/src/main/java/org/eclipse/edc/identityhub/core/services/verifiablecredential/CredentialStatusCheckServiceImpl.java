@@ -41,29 +41,30 @@ public class CredentialStatusCheckServiceImpl implements CredentialStatusCheckSe
     }
 
     @Override
-    public Result<VcStatus> checkStatus(VerifiableCredentialResource resource) {
-
-        if (isExpired(resource)) {
-            return success(VcStatus.EXPIRED);
-        }
-        VcStatus targetStatus;
-        if (isNotYetValid(resource)) {
-            targetStatus = VcStatus.NOT_YET_VALID;
-        } else {
-            targetStatus = VcStatus.ISSUED;
-        }
+    public Result<VcStatus> checkStatus(VerifiableCredentialResource credential) {
 
         try {
-            if (isRevoked(resource)) {
+            if (isRevoked(credential)) {
                 return success(VcStatus.REVOKED); //irreversible, cannot be overwritten
-            }
-            if (isSuspended(resource)) {
-                targetStatus = VcStatus.SUSPENDED;
+            } else if (isSuspended(credential)) {
+                return success(VcStatus.SUSPENDED);
             }
 
         } catch (EdcException ex) {
             return failure(ex.getMessage());
         }
+
+        if (isExpired(credential)) {
+            return success(VcStatus.EXPIRED);
+        }
+        VcStatus targetStatus;
+        if (isNotYetValid(credential)) {
+            targetStatus = VcStatus.NOT_YET_VALID;
+        } else {
+            targetStatus = VcStatus.ISSUED;
+        }
+
+
         return success(targetStatus);
     }
 

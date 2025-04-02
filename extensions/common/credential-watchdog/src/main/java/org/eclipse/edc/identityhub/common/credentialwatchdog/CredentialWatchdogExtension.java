@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.common.credentialwatchdog;
 
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -26,6 +27,7 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -39,15 +41,21 @@ public class CredentialWatchdogExtension implements ServiceExtension {
 
     public static final int DEFAULT_WATCHDOG_PERIOD = 60;
     public static final int DEFAULT_WATCHDOG_INITIAL_DELAY = 5;
+    public static final int DEFAULT_GRACE_PERIOD_SECONDS = 7 * 24 * 3600; // 1 week
     public static final String CREDENTIAL_WATCHDOG = "CredentialWatchdog";
     private final SecureRandom random = new SecureRandom();
 
     @Setting(description = "Period (in seconds) at which the Watchdog thread checks all stored credentials for their status. Configuring a number <=0 disables the Watchdog.",
             min = 0, defaultValue = DEFAULT_WATCHDOG_PERIOD + "", key = "edc.iam.credential.status.check.period")
     private int watchdogPeriod;
+
     @Setting(description = "Initial delay (in seconds) before the Watchdog thread begins its work.",
             min = 0, key = "edc.iam.credential.status.check.delay", required = false)
     private Integer initialDelay;
+
+    @Setting(description = "Grace period (in seconds) before credential expiry at which automatic renewal is triggered", key = "edc.iam.credential.renewal.graceperiod",
+            min = 0, defaultValue = DEFAULT_GRACE_PERIOD_SECONDS + "")
+    private long gracePeriodSeconds;
 
     @Inject
     private ExecutorInstrumentation executorInstrumentation;
@@ -57,6 +65,8 @@ public class CredentialWatchdogExtension implements ServiceExtension {
     private CredentialStore credentialStore;
     @Inject
     private TransactionContext transactionContext;
+    @Inject
+    private CredentialRequestManager credentialRequestManager;
     private ScheduledExecutorService scheduledExecutorService;
     private Monitor monitor;
 
@@ -82,7 +92,8 @@ public class CredentialWatchdogExtension implements ServiceExtension {
     public void start() {
         if (scheduledExecutorService != null && !scheduledExecutorService.isShutdown()) {
             monitor.debug(() -> "Starting credential watchdog in %d seconds, every %d seconds".formatted(initialDelay, watchdogPeriod));
-            scheduledExecutorService.scheduleAtFixedRate(new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext), initialDelay, watchdogPeriod, TimeUnit.SECONDS);
+            var watchdog = new CredentialWatchdog(credentialStore, credentialStatusCheckService, monitor, transactionContext, Duration.ofSeconds(gracePeriodSeconds), credentialRequestManager);
+            scheduledExecutorService.scheduleAtFixedRate(watchdog, initialDelay, watchdogPeriod, TimeUnit.SECONDS);
         }
     }
 
