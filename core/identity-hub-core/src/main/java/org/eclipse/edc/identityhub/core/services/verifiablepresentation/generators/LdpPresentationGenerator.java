@@ -159,11 +159,12 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
     }
 
     private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, String suiteIdentifier, PrivateKey pk, String publicKeyId, String controller) {
+        var composedKeyId = publicKeyId;
         if (!publicKeyId.startsWith(controller)) {
-            publicKeyId = controller + "#" + publicKeyId;
+            composedKeyId = controller + "#" + publicKeyId;
         }
 
-        var keyIdUri = URI.create(publicKeyId);
+        var keyIdUri = URI.create(composedKeyId);
         var controllerUri = URI.create(controller);
         var verificationMethodType = URI.create(suiteIdentifier);
 
