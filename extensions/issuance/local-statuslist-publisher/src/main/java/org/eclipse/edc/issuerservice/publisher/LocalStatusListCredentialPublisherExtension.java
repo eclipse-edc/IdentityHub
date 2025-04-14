@@ -33,6 +33,8 @@ import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 import org.jetbrains.annotations.NotNull;
 
+import static java.util.Optional.ofNullable;
+
 
 @Extension(value = LocalStatusListCredentialPublisherExtension.NAME)
 public class LocalStatusListCredentialPublisherExtension implements ServiceExtension {
@@ -59,6 +61,9 @@ public class LocalStatusListCredentialPublisherExtension implements ServiceExten
         return NAME;
     }
 
+    @Setting(description = "Configures endpoint for reaching the StatusList API in the form \"<hostname:protocol.port/protocol.path>\"", key = "edc.statuslist.callback.address", required = false)
+    private String callbackAddress;
+
     @Override
     public void initialize(ServiceExtensionContext context) {
         portMappingRegistry.register(new PortMapping(STATUS_LIST, config.port(), config.path()));
@@ -72,7 +77,7 @@ public class LocalStatusListCredentialPublisherExtension implements ServiceExten
     }
 
     private @NotNull String baseUrl() {
-        return "http://%s:%s%s".formatted(hostname.get(), config.port(), config.path());
+        return ofNullable(callbackAddress).orElse("http://%s:%s%s".formatted(hostname.get(), config.port(), config.path()));
     }
 
     @Settings
