@@ -25,6 +25,7 @@ dependencies {
     implementation(libs.edc.spi.transaction)
     implementation(libs.jakarta.rsApi)
     implementation(libs.edc.spi.web)
+    implementation(libs.edc.lib.jsonld)
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.restAssured)
