@@ -182,9 +182,10 @@ public class BitstringStatusListManager implements StatusListManager {
         var participantContextId = statusListCredential.getParticipantContextId();
         var urlResult = publisher.publish(participantContextId, statusListCredential.getId());
         return urlResult.compose(url -> {
-            var meta = new HashMap<>(statusListCredential.getMetadata());
+            var reloaded = store.findById(statusListCredential.getId()).getContent();
+            var meta = new HashMap<>(reloaded.getMetadata());
             meta.put(PUBLIC_URL, url);
-            var updated = statusListCredential.toBuilder().metadata(meta).build();
+            var updated = reloaded.toBuilder().metadata(meta).build();
             var storeResult = upsert(updated);
             return storeResult.succeeded() ?
                     Result.success(updated) : Result.failure(storeResult.getFailureDetail());
