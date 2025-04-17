@@ -61,7 +61,7 @@ public class LocalStatusListCredentialPublisherExtension implements ServiceExten
         return NAME;
     }
 
-    @Setting(description = "Configures endpoint for reaching the StatusList API in the form \"<hostname:protocol.port/protocol.path>\"", key = "edc.statuslist.callback.address", required = false)
+    @Setting(description = "Configures endpoint for reaching the StatusList API.", key = "edc.statuslist.callback.address", required = false)
     private String callbackAddress;
 
     @Override
