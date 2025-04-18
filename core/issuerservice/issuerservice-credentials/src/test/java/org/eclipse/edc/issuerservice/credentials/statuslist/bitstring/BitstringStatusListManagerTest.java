@@ -58,8 +58,7 @@ class BitstringStatusListManagerTest {
 
     @BeforeEach
     void setUp() {
-
-        when(publisher.publish(anyString(), anyString())).thenReturn(Result.success(CREDENTIAL_URL));
+        when(publisher.publish(any())).thenReturn(Result.success(CREDENTIAL_URL));
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID)))
                 .thenReturn(success(ParticipantContext.Builder.newInstance()
                         .participantContextId(PARTICIPANT_CONTEXT_ID)
