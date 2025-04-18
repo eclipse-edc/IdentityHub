@@ -145,7 +145,6 @@ public class DcpIssuanceFlowEndToEndTest {
                                 assertThat(t.getHolderPid()).isEqualTo("test-request-id");
                             }));
 
-
             // wait for the issuance process to be delivered on the issuer side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
@@ -182,8 +181,7 @@ public class DcpIssuanceFlowEndToEndTest {
             // verify that the status credential on the issuer side is accessible
             assertThat(issuer.getCredentialsForParticipant(ISSUER_ID))
                     .anySatisfy(vc -> {
-                        assertThat(vc.getMetadata()).isNotNull().isNotEmpty();
-                        assertThat(vc.getMetadata()).containsKey("publicUrl");
+                        assertThat(vc.getMetadata()).isNotNull().isNotEmpty().containsKey("publicUrl");
 
                         var url = vc.getMetadata().get("publicUrl");
                         given()

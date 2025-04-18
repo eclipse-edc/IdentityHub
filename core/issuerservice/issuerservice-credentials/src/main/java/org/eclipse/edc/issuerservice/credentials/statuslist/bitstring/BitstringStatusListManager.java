@@ -85,14 +85,12 @@ public class BitstringStatusListManager implements StatusListManager {
             var bitStringCredentials = credentialQueryResult.getContent();
 
             // obtain the current index, current credential by ID and its published URL
-            var slCred = bitStringCredentials.stream()
+            return bitStringCredentials.stream()
                     .filter(this::isActive)
                     .filter(this::isNotFull)
                     .findFirst()
-                    .map(Result::success)
-                    .orElseGet(() -> createNewStatusListCredential(participantContextId));
-
-            return ServiceResult.from(slCred)
+                    .map(ServiceResult::success)
+                    .orElseGet(() -> createNewStatusListCredential(participantContextId))
                     .map(cred -> new BitstringStatusListCredentialEntry(statusListIndex(cred), cred, publicUri(cred)));
         });
     }
@@ -110,7 +108,6 @@ public class BitstringStatusListManager implements StatusListManager {
         });
     }
 
-
     /**
      * inserts or updates ("up-serts") a credential resource, specifically a status list credential
      *
@@ -125,11 +122,11 @@ public class BitstringStatusListManager implements StatusListManager {
         return ServiceResult.from(res);
     }
 
-    private Result<VerifiableCredentialResource> createNewStatusListCredential(String participantContextId) {
+    private ServiceResult<VerifiableCredentialResource> createNewStatusListCredential(String participantContextId) {
 
         var participant = participantContextService.getParticipantContext(participantContextId);
         if (participant.failed()) {
-            return Result.failure(participant.getFailureDetail());
+            return participant.mapFailure();
         }
         var participantDid = participant.getContent().getDid();
 
@@ -156,7 +153,8 @@ public class BitstringStatusListManager implements StatusListManager {
         return credentialGenerator.signCredential(participantContextId, credential, CredentialFormat.VC1_0_JWT)// todo: change to VC2_0_JOSE
                 .map(signedCredential -> createCredentialResource(participantContextId, signedCredential, participantDid))
                 .compose(this::storeResource)
-                .compose(this::publish);
+                .compose(this::publish)
+                .flatMap(ServiceResult::from);
     }
 
     private Result<VerifiableCredentialResource> storeResource(VerifiableCredentialResource res) {
@@ -179,16 +177,16 @@ public class BitstringStatusListManager implements StatusListManager {
     }
 
     private Result<VerifiableCredentialResource> publish(VerifiableCredentialResource statusListCredential) {
-        var participantContextId = statusListCredential.getParticipantContextId();
-        var urlResult = publisher.publish(participantContextId, statusListCredential.getId());
-        return urlResult.compose(url -> {
-            var meta = new HashMap<>(statusListCredential.getMetadata());
-            meta.put(PUBLIC_URL, url);
-            var updated = statusListCredential.toBuilder().metadata(meta).build();
-            var storeResult = upsert(updated);
-            return storeResult.succeeded() ?
-                    Result.success(updated) : Result.failure(storeResult.getFailureDetail());
-        });
+        return publisher.publish(statusListCredential)
+                .compose(url -> {
+                    var meta = new HashMap<>(statusListCredential.getMetadata());
+                    meta.put("published", true);
+                    meta.put(PUBLIC_URL, url);
+                    var updated = statusListCredential.toBuilder().metadata(meta).build();
+                    var storeResult = upsert(updated);
+                    return storeResult.succeeded() ?
+                            Result.success(updated) : Result.failure(storeResult.getFailureDetail());
+                });
     }
 
     // creates an empty 16kb bitstring:

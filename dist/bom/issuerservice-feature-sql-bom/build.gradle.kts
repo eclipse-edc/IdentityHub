@@ -22,6 +22,7 @@ dependencies {
     api(project(":extensions:store:sql:issuerservice-holder-store-sql"))
     api(project(":extensions:store:sql:issuerservice-attestation-definition-store-sql"))
     api(project(":extensions:store:sql:issuerservice-credential-definition-store-sql"))
+    api(project(":extensions:store:sql:identity-hub-credentials-store-sql"))
     api(project(":extensions:store:sql:issuance-process-store-sql"))
     api(project(":extensions:issuance:issuerservice-database-attestations"))
 

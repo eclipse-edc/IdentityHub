@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS credential_resource
     metadata              JSON DEFAULT '{}',
     issuance_policy       JSON,
     reissuance_policy     JSON,
-    raw_vc                VARCHAR             NOT NULL, -- Representation of the VC exactly as it was received by the issuer. Can be JWT or JSON(-LD)
+    raw_vc                VARCHAR,                      -- Representation of the VC exactly as it was received by the issuer. Can be JWT or JSON(-LD)
     vc_format             INTEGER             NOT NULL, -- 0 = JSON-LD, 1 = JWT
     verifiable_credential JSON                NOT NULL, -- JSON-representation of the verifiable credential
     participant_context_id        VARCHAR               -- ID of the ParticipantContext that owns this credentials

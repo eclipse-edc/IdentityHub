@@ -27,7 +27,6 @@ import org.eclipse.edc.runtime.metamodel.annotation.Settings;
 import org.eclipse.edc.spi.system.Hostname;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
@@ -53,8 +52,6 @@ public class LocalStatusListCredentialPublisherExtension implements ServiceExten
 
     @Configuration
     private StatusListCredentialEndpointConfig config;
-    @Inject
-    private TransactionContext transactionContext;
 
     @Override
     public String name() {
@@ -73,7 +70,7 @@ public class LocalStatusListCredentialPublisherExtension implements ServiceExten
 
     @Provider(isDefault = true)
     public StatusListCredentialPublisher createInMemoryStatusListCredentialPublisher() {
-        return new LocalCredentialPublisher(store, baseUrl(), transactionContext);
+        return new LocalCredentialPublisher(baseUrl());
     }
 
     private @NotNull String baseUrl() {
