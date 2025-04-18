@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.tests.dcp.flow;
 
 import io.restassured.http.Header;
-import io.restassured.response.ValidatableResponse;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
