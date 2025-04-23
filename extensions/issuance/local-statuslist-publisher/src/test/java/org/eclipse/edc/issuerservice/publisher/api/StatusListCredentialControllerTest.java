@@ -22,6 +22,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
@@ -42,6 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+@ApiTest
 class StatusListCredentialControllerTest extends RestControllerTestBase {
 
 
@@ -149,7 +151,7 @@ class StatusListCredentialControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new StatusListCredentialController(store, monitor, objectMapper);
+        return new StatusListCredentialController(store, monitor, () -> objectMapper);
     }
 
     private RequestSpecification baseRequest() {

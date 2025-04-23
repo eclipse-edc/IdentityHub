@@ -33,6 +33,7 @@ import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ObjectConflictException;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -41,9 +42,9 @@ public class StatusListCredentialController {
     private static final List<String> SUPPORTED_TYPES = List.of(APPLICATION_JSON, "application/vc+jwt", MediaType.WILDCARD);
     private final CredentialStore store;
     private final Monitor monitor;
-    private final ObjectMapper mapper;
+    private final Supplier<ObjectMapper> mapper;
 
-    public StatusListCredentialController(CredentialStore store, Monitor monitor, ObjectMapper mapper) {
+    public StatusListCredentialController(CredentialStore store, Monitor monitor, Supplier<ObjectMapper> mapper) {
         this.store = store;
         this.monitor = monitor;
         this.mapper = mapper;
@@ -89,7 +90,7 @@ public class StatusListCredentialController {
         var contentType = "application/vc+jwt";
         if (acceptHeader.equals(APPLICATION_JSON)) {
             try {
-                body = mapper.writeValueAsString(selectedCredential.getVerifiableCredential().credential());
+                body = mapper.get().writeValueAsString(selectedCredential.getVerifiableCredential().credential());
                 contentType = APPLICATION_JSON;
             } catch (JsonProcessingException e) {
                 throw new EdcException(e);
