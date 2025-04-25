@@ -22,7 +22,6 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -54,8 +53,6 @@ class LocalStatusListCredentialPublisherExtensionTest {
     private static final String DEFAULT_STATUS_LIST_PATH = "/statuslist";
     private static final String CUSTOM_CALLBACK_ADDRESS = "http://example.com" + DEFAULT_STATUS_LIST_PATH;
     private static final String RAW_CREDENTIAL = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
-    private static final String PARTICIPANT_CONTEXT_ID = "participantContextId";
-    private static final String STATUS_LIST_CREDENTIAL_RESOURCE_ID = "statusListCredentialResourceId";
     private static final String CREDENTIAL_ID = "credentialId";
     private static final String TEST_CREDENTIAL = "TestCredential";
     private static final String DID_WEB_ISSUER = "did:web:issuer";
@@ -72,7 +69,6 @@ class LocalStatusListCredentialPublisherExtensionTest {
             .holderId(DID_WEB_ISSUER)
             .credential(new VerifiableCredentialContainer(RAW_CREDENTIAL, CredentialFormat.VC1_0_JWT, credential))
             .build();
-
 
     @BeforeEach
     void setUp(ServiceExtensionContext context) {
@@ -110,10 +106,16 @@ class LocalStatusListCredentialPublisherExtensionTest {
     }
 
     private static Result<String> getStatusListPublisherResult(ObjectFactory factory) {
-        LocalStatusListCredentialPublisherExtension localStatusListCredentialPublisherExtension = factory.constructInstance(LocalStatusListCredentialPublisherExtension.class);
-        StatusListCredentialPublisher statusListCredentialPublisher = localStatusListCredentialPublisherExtension.createInMemoryStatusListCredentialPublisher();
+        var localStatusListCredentialPublisherExtension = factory.constructInstance(LocalStatusListCredentialPublisherExtension.class);
+        var statusListCredentialPublisher = localStatusListCredentialPublisherExtension.createInMemoryStatusListCredentialPublisher();
         assertThat(statusListCredentialPublisher).isInstanceOf(LocalCredentialPublisher.class);
-        Result<String> result = statusListCredentialPublisher.publish(PARTICIPANT_CONTEXT_ID, STATUS_LIST_CREDENTIAL_RESOURCE_ID);
-        return result;
+        var credential = VerifiableCredential.Builder.newInstance().id("credentialId").type("any")
+                .issuer(new Issuer("any")).credentialSubject(new CredentialSubject()).issuanceDate(Instant.now())
+                .build();
+        var resource = VerifiableCredentialResource.Builder.newInstance()
+                .issuerId("any").holderId("any")
+                .credential(new VerifiableCredentialContainer("any", CredentialFormat.VC1_0_JWT, credential))
+                .build();
+        return statusListCredentialPublisher.publish(resource);
     }
 }

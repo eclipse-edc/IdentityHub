@@ -28,7 +28,6 @@ import org.eclipse.edc.spi.system.Hostname;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
@@ -63,8 +62,7 @@ public class LocalStatusListCredentialPublisherExtension implements ServiceExten
 
     @Configuration
     private StatusListCredentialEndpointConfig config;
-    @Inject
-    private TransactionContext transactionContext;
+
     @Setting(description = "Configures endpoint for reaching the StatusList API.", key = "edc.statuslist.callback.address", required = false)
     private String callbackAddress;
 
@@ -82,7 +80,7 @@ public class LocalStatusListCredentialPublisherExtension implements ServiceExten
 
     @Provider(isDefault = true)
     public StatusListCredentialPublisher createInMemoryStatusListCredentialPublisher() {
-        return new LocalCredentialPublisher(store, baseUrl(), transactionContext);
+        return new LocalCredentialPublisher(baseUrl());
     }
 
     private @NotNull String baseUrl() {
