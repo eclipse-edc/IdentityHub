@@ -6,10 +6,12 @@ assertj = "3.27.3"
 awaitility = "4.3.0"
 bouncyCastle-jdk18on = "1.80"
 edc = "0.13.0-SNAPSHOT"
+dcp-tck = "0.1.1-SNAPSHOT"
 jackson = "2.18.3"
 jakarta-annotation = "2.1.1"
 jersey = "3.1.10"
 jupiter = "5.12.0"
+junit = "1.12.2"
 mockserver = "5.15.0"
 nimbus = "10.1"
 postgres = "42.7.5"
@@ -108,6 +110,14 @@ jakarta-annotation = { module = "jakarta.annotation:jakarta.annotation-api", ver
 jersey-common = { module = "org.glassfish.jersey.core:jersey-common", version.ref = "jersey" }
 tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
 opentelemetry-instrumentation-annotations = { module = "io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations", version.ref = "opentelemetry" }
+
+# DCP-TCK libraries
+dcp-testcases = { module = "org.eclipse.dataspacetck.dcp:dcp-testcases", version.ref = "dcp-tck" }
+dcp-tck-runtime = { module = "org.eclipse.dataspacetck.dsp:tck-runtime", version.ref = "dcp-tck" }
+dsp-boot = { module = "org.eclipse.dataspacetck.dsp:boot", version.ref = "dcp-tck" }
+dsp-core = { module = "org.eclipse.dataspacetck.dsp:core", version.ref = "dcp-tck" }
+dcp-system = { module = "org.eclipse.dataspacetck.dcp:dcp-system", version.ref = "dcp-tck" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
 
 [bundles]
 connector = ["edc-boot", "edc-core-connector", "edc-core-runtime", "edc-http", "edc-observability", "edc-jsonld", "edc-config-fs"]

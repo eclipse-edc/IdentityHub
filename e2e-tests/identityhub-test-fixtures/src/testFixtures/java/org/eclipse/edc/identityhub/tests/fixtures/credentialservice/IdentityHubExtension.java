@@ -48,6 +48,10 @@ public class IdentityHubExtension extends AbstractIdentityHubExtension {
         apiClient = new IdentityHubApiClient(this);
     }
 
+    public Endpoint getStsEndpoint() {
+        return stsEndpoint.get();
+    }
+
     @Override
     public Config getConfiguration() {
         return ConfigFactory.fromMap(new HashMap<>() {
