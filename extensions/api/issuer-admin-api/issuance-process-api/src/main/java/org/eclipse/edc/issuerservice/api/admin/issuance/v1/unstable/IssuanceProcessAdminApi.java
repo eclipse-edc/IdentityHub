@@ -16,8 +16,6 @@ package org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -39,10 +37,6 @@ public interface IssuanceProcessAdminApi {
 
     @Operation(description = "Gets an issuance process by its ID.",
             operationId = "getIssuanceProcessById",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "issuanceProcessId", description = "ID of the issuance process that should be returned", required = true, in = ParameterIn.PATH)
-            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The issuance process was found.",
                             content = @Content(schema = @Schema(implementation = IssuanceProcessDto.class), mediaType = "application/json")),
@@ -59,9 +53,6 @@ public interface IssuanceProcessAdminApi {
     @Operation(description = "Gets all issuance processes for a certain query.",
             operationId = "queryIssuanceProcesses",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of issuance processes.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = IssuanceProcessDto.class)), mediaType = "application/json")),

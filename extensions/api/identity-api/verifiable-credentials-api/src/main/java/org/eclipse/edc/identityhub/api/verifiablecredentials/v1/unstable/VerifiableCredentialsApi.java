@@ -17,7 +17,6 @@ package org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -42,9 +41,6 @@ public interface VerifiableCredentialsApi {
 
     @Operation(description = "Finds a VerifiableCredential by ID.",
             operationId = "getCredential",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The VerifiableCredential.",
                             content = @Content(schema = @Schema(implementation = VerifiableCredentialResource.class))),
@@ -56,13 +52,10 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    VerifiableCredentialResource getCredential(String id, SecurityContext securityContext);
+    VerifiableCredentialResource getCredential(String participantContextId, String id, SecurityContext securityContext);
 
     @Operation(description = "Adds a new VerifiableCredential into the system.",
             operationId = "addCredential",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
-            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = VerifiableCredentialManifest.class))),
             responses = {
                     @ApiResponse(responseCode = "204", description = "The VerifiableCredential was successfully created."),
@@ -74,13 +67,10 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void addCredential(String participantId, VerifiableCredentialManifest manifest, SecurityContext securityContext);
+    void addCredential(String participantContextId, VerifiableCredentialManifest manifest, SecurityContext securityContext);
 
     @Operation(description = "Update an existing VerifiableCredential.",
             operationId = "updateCredential",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
-            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = VerifiableCredentialManifest.class))),
             responses = {
                     @ApiResponse(responseCode = "204", description = "The VerifiableCredential was updated successfully."),
@@ -92,13 +82,12 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void updateCredential(VerifiableCredentialManifest manifest, SecurityContext securityContext);
+    void updateCredential(String participantContextId, VerifiableCredentialManifest manifest, SecurityContext securityContext);
 
 
     @Operation(description = "Query VerifiableCredentials by type.",
             operationId = "queryCredentialsByType",
             parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
                     @Parameter(name = "type", description = "Credential type. If omitted, all credentials are returned (limited to 50 elements).")
             },
             responses = {
@@ -110,13 +99,10 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             }
     )
-    Collection<VerifiableCredentialResource> queryCredentialsByType(String type, SecurityContext securityContext);
+    Collection<VerifiableCredentialResource> queryCredentialsByType(String participantContextId, String type, SecurityContext securityContext);
 
     @Operation(description = "Delete a VerifiableCredential.",
             operationId = "deleteCredential",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The VerifiableCredential was deleted successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
@@ -127,13 +113,10 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void deleteCredential(String id, SecurityContext securityContext);
+    void deleteCredential(String participantContextId, String id, SecurityContext securityContext);
 
     @Operation(description = "Triggers a credential request that is send to the issuer via the DCP protocol.",
             operationId = "requestCredential",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
-            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = CredentialRequestDto.class))),
             responses = {
                     @ApiResponse(responseCode = "201", description = "The request was processed and sent to the issuer. The issuer-created ID (\"issuerPid\") is returned in the response.",
@@ -150,10 +133,6 @@ public interface VerifiableCredentialsApi {
 
     @Operation(description = "Finds a credential request by ID.",
             operationId = "getCredentialRequest",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "issuerPid", description = "The issuer-assigned ID of the issuance process", required = true, in = ParameterIn.PATH),
-            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The VerifiableCredential.",
                             content = @Content(schema = @Schema(implementation = VerifiableCredentialResource.class))),
@@ -165,5 +144,5 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    HolderCredentialRequestDto getCredentialRequest(String participantContextId, String issuerPid, SecurityContext securityContext);
+    HolderCredentialRequestDto getCredentialRequest(String participantContextId, String holderPid, SecurityContext securityContext);
 }

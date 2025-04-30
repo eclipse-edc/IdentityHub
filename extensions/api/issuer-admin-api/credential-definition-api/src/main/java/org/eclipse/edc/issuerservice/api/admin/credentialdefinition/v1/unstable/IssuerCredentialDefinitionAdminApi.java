@@ -16,8 +16,6 @@ package org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -41,9 +39,6 @@ public interface IssuerCredentialDefinitionAdminApi {
 
     @Operation(description = "Adds a new credential definition.",
             operationId = "createCredentialDefinition",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
-            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = CredentialDefinitionDto.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "201", description = "The credential definition was created successfully."),
@@ -55,13 +50,10 @@ public interface IssuerCredentialDefinitionAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response createCredentialDefinition(String participantId, CredentialDefinitionDto credentialDefinition, SecurityContext context);
+    Response createCredentialDefinition(String participantContextId, CredentialDefinitionDto credentialDefinition, SecurityContext context);
 
     @Operation(description = "Updates credential definition.",
             operationId = "updateCredentialDefinition",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
-            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = CredentialDefinitionDto.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The credential definition was updated successfully."),
@@ -73,14 +65,10 @@ public interface IssuerCredentialDefinitionAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response updateCredentialDefinition(String participantId, CredentialDefinitionDto credentialDefinition, SecurityContext context);
+    Response updateCredentialDefinition(String participantContextId, CredentialDefinitionDto credentialDefinition, SecurityContext context);
 
     @Operation(description = "Gets a credential definition by its ID.",
             operationId = "getCredentialDefinitionById",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "credentialDefinitionId", description = "ID of the credential definition that should be returned", required = true, in = ParameterIn.PATH)
-            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The credential definition was found.",
                             content = @Content(schema = @Schema(implementation = CredentialDefinition.class), mediaType = "application/json")),
@@ -92,13 +80,10 @@ public interface IssuerCredentialDefinitionAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    CredentialDefinition getCredentialDefinitionById(String credentialDefinitionId, SecurityContext securityContext);
+    CredentialDefinition getCredentialDefinitionById(String participantContextId, String credentialDefinitionId, SecurityContext securityContext);
 
     @Operation(description = "Gets all credential definitions for a certain query.",
             operationId = "queryCredentialDefinitions",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of credentials definitions.",
@@ -114,10 +99,6 @@ public interface IssuerCredentialDefinitionAdminApi {
 
     @Operation(description = "Deletes a credential definition by its ID.",
             operationId = "deleteCredentialDefinitionById",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "credentialDefinitionId", description = "ID of the credential definition that should be returned", required = true, in = ParameterIn.PATH)
-            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The credential definition was deleted.",
                             content = @Content(schema = @Schema(implementation = CredentialDefinition.class), mediaType = "application/json")),
@@ -128,6 +109,6 @@ public interface IssuerCredentialDefinitionAdminApi {
                     @ApiResponse(responseCode = "404", description = "The credential definition was not found.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             })
-    void deleteCredentialDefinitionById(String credentialDefinitionId, SecurityContext context);
+    void deleteCredentialDefinitionById(String participantContextId, String credentialDefinitionId, SecurityContext context);
 
 }

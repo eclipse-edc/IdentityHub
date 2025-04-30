@@ -79,7 +79,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @GET
     @Path("/{credentialDefinitionId}")
     @Override
-    public CredentialDefinition getCredentialDefinitionById(@PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
+    public CredentialDefinition getCredentialDefinitionById(@PathParam("participantContextId") String participantContextId, @PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
         return authorizationService.isAuthorized(context, credentialDefinitionId, CredentialDefinition.class)
                 .compose(u -> credentialDefinitionService.findCredentialDefinitionById(credentialDefinitionId))
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinitionId));
@@ -102,7 +102,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @DELETE
     @Path("/{credentialDefinitionId}")
     @Override
-    public void deleteCredentialDefinitionById(@PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
+    public void deleteCredentialDefinitionById(@PathParam("participantContextId") String participantContextId, @PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
         authorizationService.isAuthorized(context, credentialDefinitionId, CredentialDefinition.class)
                 .compose(u -> credentialDefinitionService.deleteCredentialDefinition(credentialDefinitionId))
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinitionId));
