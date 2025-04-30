@@ -69,7 +69,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     @DELETE
     @Path("/{attestationDefinitionId}")
     @Override
-    public void deleteAttestationDefinition(@PathParam("attestationDefinitionId") String attestationDefinitionId, @Context SecurityContext context) {
+    public void deleteAttestationDefinition(@PathParam("participantContextId") String participantContextId, @PathParam("attestationDefinitionId") String attestationDefinitionId, @Context SecurityContext context) {
         authorizationService.isAuthorized(context, attestationDefinitionId, AttestationDefinition.class)
                 .compose(u -> attestationDefinitionService.deleteAttestation(attestationDefinitionId))
                 .orElseThrow(exceptionMapper(AttestationDefinition.class, attestationDefinitionId));

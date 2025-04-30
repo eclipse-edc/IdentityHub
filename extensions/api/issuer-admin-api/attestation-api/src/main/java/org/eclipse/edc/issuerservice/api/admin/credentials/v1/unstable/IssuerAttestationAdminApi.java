@@ -16,8 +16,6 @@ package org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -41,9 +39,6 @@ public interface IssuerAttestationAdminApi {
     @Operation(description = "Creates an attestation definition in the runtime.",
             operationId = "createAttestation",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = AttestationDefinitionRequest.class), mediaType = "application/json")),
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
-            },
             responses = {
                     @ApiResponse(responseCode = "201", description = "The attestation definition was added successfully."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
@@ -60,11 +55,6 @@ public interface IssuerAttestationAdminApi {
 
     @Operation(description = "Deletes an attestation definition.",
             operationId = "deleteAttestation",
-            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "attestationDefinitionId", description = "ID of the attestation to be removed", required = true, in = ParameterIn.PATH)
-            },
             responses = {
                     @ApiResponse(responseCode = "204", description = "The attestation was successfully deleted."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
@@ -75,13 +65,10 @@ public interface IssuerAttestationAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void deleteAttestationDefinition(String attestationDefinitionId, SecurityContext securityContext);
-    
+    void deleteAttestationDefinition(String participantContextId, String attestationDefinitionId, SecurityContext securityContext);
+
     @Operation(description = "Query attestation definitions",
             operationId = "queryAttestations",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
-            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of attestation metadata.",
