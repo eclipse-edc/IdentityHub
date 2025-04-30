@@ -43,7 +43,11 @@ public class IdentityHubExtension extends AbstractIdentityHubExtension {
     protected final IdentityHubApiClient apiClient;
 
     private IdentityHubExtension(EmbeddedRuntime runtime) {
-        super(runtime);
+        this(runtime, "localhost");
+    }
+
+    private IdentityHubExtension(EmbeddedRuntime runtime, String host) {
+        super(runtime, host);
         identityHubRuntime = new IdentityHubRuntime(this);
         apiClient = new IdentityHubApiClient(this);
     }
@@ -110,6 +114,8 @@ public class IdentityHubExtension extends AbstractIdentityHubExtension {
 
     public static class Builder extends AbstractIdentityHubExtension.Builder<IdentityHubExtension, Builder> {
 
+        private String host = null;
+
         protected Builder() {
             super();
         }
@@ -118,8 +124,22 @@ public class IdentityHubExtension extends AbstractIdentityHubExtension {
             return new Builder();
         }
 
+        /**
+         * Override the host name. By default, this is {@code localhost}, but in some circumstances it may be necessary to override that,
+         * for example in some scenarios involving Docker networking
+         *
+         * @param host The hostname
+         */
+        public Builder host(String host) {
+            this.host = host;
+            return this;
+        }
+
         @Override
         protected IdentityHubExtension internalBuild() {
+            if (host != null) {
+                return new IdentityHubExtension(runtime, host);
+            }
             return new IdentityHubExtension(runtime);
         }
 

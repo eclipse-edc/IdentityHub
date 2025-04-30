@@ -14,14 +14,12 @@
 
 package org.eclipse.edc.test.e2e.tck.presentation;
 
-import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.util.Base64;
 import org.assertj.core.api.Assertions;
 import org.eclipse.dataspacetck.core.system.ConsoleMonitor;
 import org.eclipse.dataspacetck.runtime.TckRuntime;
 import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
@@ -34,22 +32,19 @@ import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransforme
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
-import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
-import static org.eclipse.edc.util.io.Ports.getFreePort;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Asserts the correct functionality of the presentation flow according to the Technology Compatibility Kit (TCK).
@@ -60,12 +55,12 @@ import static org.mockito.Mockito.when;
  * @see <a href="https://github.com/eclipse-dataspacetck/dcp-tck">Eclipse Dataspace TCK - DCP</a>
  */
 @EndToEndTest
-public class DcpTechnologyCompatibilityTests {
+@Testcontainers
+public class DcpPresentationFlowTest {
     public static final String ISSUANCE_CORRELATION_ID = UUID.randomUUID().toString();
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "holder";
-    private static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
     private static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
-    private static final int CALLBACK_PORT = getFreePort();
+    private static final int CALLBACK_PORT = 42420;
     private static final ScopeToCriterionTransformer TCK_TRANSFORMER = new TckTransformer();
     @RegisterExtension
     static final IdentityHubExtension IDENTITY_HUB_EXTENSION = (IdentityHubExtension) IdentityHubExtension.Builder.newInstance()
@@ -76,17 +71,14 @@ public class DcpTechnologyCompatibilityTests {
             .registerServiceMock(ScopeToCriterionTransformer.class, TCK_TRANSFORMER)
             .registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
     private static final String ISSUER_DID = "did:web:issuer";
-    public static String holderDid = "did:web:localhost%3A" + CALLBACK_PORT + ":holder";
-    private final String baseCallbackUrl = "http://localhost:%s".formatted(CALLBACK_PORT);
+    public String holderDid;
     private ECKey holderKey;
 
     @BeforeEach
-    void setup(HolderCredentialRequestStore requestStore) throws JOSEException {
+    void setup(HolderCredentialRequestStore requestStore) {
 
         holderDid = IDENTITY_HUB_EXTENSION.didFor(TEST_PARTICIPANT_CONTEXT_ID);
         holderKey = generateEcKey(holderDid + "#key1");
-        // set holder configuration
-        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(holderDid))).thenReturn(Result.success(holderKey.toPublicKey()));
 
         // fake credentials
         requestStore.save(HolderCredentialRequest.Builder.newInstance()
@@ -110,6 +102,7 @@ public class DcpTechnologyCompatibilityTests {
         var stsPort = IDENTITY_HUB_EXTENSION.getStsEndpoint().getUrl().getPort();
         var stsPath = IDENTITY_HUB_EXTENSION.getStsEndpoint().getUrl().getPath();
 
+        var baseCallbackUrl = "http://localhost:%s".formatted(CALLBACK_PORT);
         var baseCredentialServiceUrl = "http://localhost:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
 
         var response = createParticipant(runtime, baseCredentialServiceUrl);
@@ -135,6 +128,7 @@ public class DcpTechnologyCompatibilityTests {
             Assertions.fail(result.getTotalFailureCount() + " TCK test cases failed:\n" + failures);
         }
     }
+
 
     private CreateParticipantContextResponse createParticipant(IdentityHubRuntime runtime, String credentialServiceUrl) {
         var service = runtime.getService(ParticipantContextService.class);
