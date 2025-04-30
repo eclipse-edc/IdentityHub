@@ -18,7 +18,6 @@ package org.eclipse.edc.identityhub.api.didmanagement.v1.unstable;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -41,7 +40,6 @@ public interface DidManagementApi {
 
     @Operation(description = "Publish an (existing) DID document. The DID is expected to exist in the database.",
             operationId = "publishDid",
-            parameters = {@Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully published."),
@@ -51,11 +49,10 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void publishDid(DidRequestPayload didRequestPayload, SecurityContext securityContext);
+    void publishDid(String participantContextId, DidRequestPayload didRequestPayload, SecurityContext securityContext);
 
     @Operation(description = "Un-Publish an (existing) DID document. The DID is expected to exist in the database.",
             operationId = "unpublishDid",
-            parameters = {@Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully un-published."),
@@ -67,11 +64,10 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void unpublishDid(DidRequestPayload didRequestPayload, SecurityContext securityContext);
+    void unpublishDid(String participantContextId, DidRequestPayload didRequestPayload, SecurityContext securityContext);
 
     @Operation(description = "Query for DID documents.",
             operationId = "queryDids",
-            parameters = {@Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of DID Documents.",
@@ -82,11 +78,10 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             }
     )
-    Collection<DidDocument> queryDids(QuerySpec querySpec, SecurityContext securityContext);
+    Collection<DidDocument> queryDids(String participantContextId, QuerySpec querySpec, SecurityContext securityContext);
 
     @Operation(description = "Get state of a DID document",
             operationId = "getDidState",
-            parameters = {@Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID state was successfully obtained"),
@@ -96,14 +91,13 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             }
     )
-    String getDidState(DidRequestPayload request, SecurityContext securityContext);
+    String getDidState(String participantContextId, DidRequestPayload request, SecurityContext securityContext);
 
     @Operation(description = "Adds a service endpoint to a particular DID document.",
             operationId = "addDidEndpoint",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
             parameters = {
                     @Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false."),
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
@@ -115,14 +109,13 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void addDidEndpoint(String did, Service service, boolean autoPublish, SecurityContext securityContext);
+    void addDidEndpoint(String participantContextId, String did, Service service, boolean autoPublish, SecurityContext securityContext);
 
     @Operation(description = "Replaces a service endpoint of a particular DID document.",
             operationId = "replaceDidEndpoint",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = Service.class), mediaType = "application/json")),
             parameters = {
                     @Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false."),
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
@@ -134,14 +127,13 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void replaceDidEndpoint(String did, Service service, boolean autoPublish, SecurityContext securityContext);
+    void replaceDidEndpoint(String participantContextId, String did, Service service, boolean autoPublish, SecurityContext securityContext);
 
     @Operation(description = "Removes a service endpoint from a particular DID document.",
             operationId = "deleteDidEndpoint",
             parameters = {
                     @Parameter(name = "serviceId", description = "The ID of the service that should get removed"),
                     @Parameter(name = "autoPublish", description = "Whether the DID should " + "get republished after the removal. Defaults to false."),
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
             },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
@@ -153,6 +145,6 @@ public interface DidManagementApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void deleteDidEndpoint(String did, String serviceId, boolean autoPublish, SecurityContext securityContext);
+    void deleteDidEndpoint(String participantContextId, String did, String serviceId, boolean autoPublish, SecurityContext securityContext);
 
 }
