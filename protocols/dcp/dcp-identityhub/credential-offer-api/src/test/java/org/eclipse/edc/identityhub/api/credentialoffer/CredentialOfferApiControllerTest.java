@@ -23,6 +23,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
+import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -59,7 +60,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     private final DcpIssuerTokenVerifier tokenVerifier = mock();
     private final ParticipantContextService participantContextService = mock();
     private final CredentialOfferService offerService = mock();
-    private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, tokenVerifier, participantContextService, offerService);
+    private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, tokenVerifier, participantContextService, offerService, new TitaniumJsonLd(mock()));
 
     @BeforeEach
     void setUp() {

@@ -80,7 +80,10 @@ public class StorageApiController implements StorageApi {
         if (authHeader == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
-        var authToken = authHeader.replace("Bearer", "").trim();
+        if (!authHeader.startsWith("Bearer ")) {
+            throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
+        }
+        var authToken = authHeader.replace("Bearer ", "").trim();
         credentialMessageJson = jsonLd.expand(credentialMessageJson).orElseThrow(InvalidRequestException::new);
         validatorRegistry.validate(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_MESSAGE_TERM), credentialMessageJson).orElseThrow(ValidationFailureException::new);
         var protocolRegistry = transformerRegistry.forContext(DCP_SCOPE_V_1_0);

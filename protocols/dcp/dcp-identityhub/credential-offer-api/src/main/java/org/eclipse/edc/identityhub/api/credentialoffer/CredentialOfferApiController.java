@@ -29,6 +29,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialObj
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
+import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
@@ -53,16 +54,18 @@ public class CredentialOfferApiController implements CredentialOfferApi {
     private final DcpIssuerTokenVerifier issuerTokenVerifier;
     private final ParticipantContextService participantContextService;
     private final CredentialOfferService credentialOfferService;
+    private final JsonLd jsonLd;
 
     public CredentialOfferApiController(JsonObjectValidatorRegistry validatorRegistry,
                                         TypeTransformerRegistry transformerRegistry,
                                         DcpIssuerTokenVerifier issuerTokenVerifier,
-                                        ParticipantContextService participantContextService, CredentialOfferService credentialOfferService) {
+                                        ParticipantContextService participantContextService, CredentialOfferService credentialOfferService, JsonLd jsonLd) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
         this.issuerTokenVerifier = issuerTokenVerifier;
         this.participantContextService = participantContextService;
         this.credentialOfferService = credentialOfferService;
+        this.jsonLd = jsonLd;
     }
 
 
@@ -75,7 +78,11 @@ public class CredentialOfferApiController implements CredentialOfferApi {
         if (authHeader == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
-        var authToken = authHeader.replace("Bearer", "").trim();
+        if (!authHeader.startsWith("Bearer ")) {
+            throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
+        }
+        var authToken = authHeader.replace("Bearer ", "").trim();
+        credentialOfferMessage = jsonLd.expand(credentialOfferMessage).orElseThrow(InvalidRequestException::new);
         validatorRegistry.validate(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CredentialOfferMessage.CREDENTIAL_OFFER_MESSAGE_TERM), credentialOfferMessage).orElseThrow(ValidationFailureException::new);
         var protocolRegistry = transformerRegistry.forContext(DCP_SCOPE_V_1_0);
 

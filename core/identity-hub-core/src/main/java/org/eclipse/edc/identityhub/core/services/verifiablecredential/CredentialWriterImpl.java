@@ -20,6 +20,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
@@ -39,6 +40,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
@@ -46,6 +48,7 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 public class CredentialWriterImpl implements CredentialWriter {
     private static final List<String> VALID_CREDENTIAL_FORMATS = Arrays.stream(CredentialFormat.values()).map(Object::toString).toList();
+    private static final List<HolderRequestState> ALLOWED_STATES = List.of(REQUESTED, ISSUED);
     private final CredentialStore credentialStore;
     private final TypeTransformerRegistry credentialTransformerRegistry;
     private final TransactionContext transactionContext;
@@ -71,8 +74,8 @@ public class CredentialWriterImpl implements CredentialWriter {
             }
 
             var holderRequest = holderRequestResult.getContent();
-            if (holderRequest.getState() != REQUESTED.code()) {
-                return ServiceResult.badRequest("HolderCredentialRequest is expected to be in state '%s' but was '%s'".formatted(REQUESTED, holderRequest.stateAsString()));
+            if (!ALLOWED_STATES.contains(holderRequest.stateAsEnum())) {
+                return ServiceResult.badRequest("HolderCredentialRequest is expected to be in any of the states '%s' but was '%s'".formatted(ALLOWED_STATES, holderRequest.stateAsString()));
             }
 
             // store actual credentials

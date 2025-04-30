@@ -118,6 +118,10 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         return from(state).toString();
     }
 
+    public HolderRequestState stateAsEnum() {
+        return from(state);
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(id);

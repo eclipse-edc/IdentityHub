@@ -23,6 +23,9 @@ import org.eclipse.dataspacetck.runtime.TckRuntime;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
+import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -30,6 +33,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
+import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,9 +59,10 @@ import static org.mockito.Mockito.when;
  *
  * @see <a href="https://github.com/eclipse-dataspacetck/dcp-tck">Eclipse Dataspace TCK - DCP</a>
  */
-public class PresentationFlowTest {
+@EndToEndTest
+public class DcpTechnologyCompatibilityTests {
+    public static final String ISSUANCE_CORRELATION_ID = UUID.randomUUID().toString();
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "holder";
-    private static final ECKey HOLDER_KEY = generateEcKey("did:web:localhost%3A19026:holder#key1");
     private static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
     private static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
     private static final int CALLBACK_PORT = getFreePort();
@@ -68,26 +73,36 @@ public class PresentationFlowTest {
             .id("identity-hub")
             .modules(":dist:bom:identityhub-bom")
             .build()
-//            .registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER)
             .registerServiceMock(ScopeToCriterionTransformer.class, TCK_TRANSFORMER)
             .registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
+    private static final String ISSUER_DID = "did:web:issuer";
     public static String holderDid = "did:web:localhost%3A" + CALLBACK_PORT + ":holder";
     private final String baseCallbackUrl = "http://localhost:%s".formatted(CALLBACK_PORT);
+    private ECKey holderKey;
 
     @BeforeEach
-    void setup() throws JOSEException {
+    void setup(HolderCredentialRequestStore requestStore) throws JOSEException {
 
         holderDid = IDENTITY_HUB_EXTENSION.didFor(TEST_PARTICIPANT_CONTEXT_ID);
+        holderKey = generateEcKey(holderDid + "#key1");
         // set holder configuration
-        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(holderDid))).thenReturn(Result.success(HOLDER_KEY.toPublicKey()));
+        when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(holderDid))).thenReturn(Result.success(holderKey.toPublicKey()));
 
+        // fake credentials
+        requestStore.save(HolderCredentialRequest.Builder.newInstance()
+                .issuerDid(ISSUER_DID)
+                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                .requestId(ISSUANCE_CORRELATION_ID)
+                .state(HolderRequestState.REQUESTED.code())
+                .issuerPid(UUID.randomUUID().toString())
+                .typesAndFormats(Map.of("MembershipCredential", "VC1_0_JWT", "SensitiveDataCredential", "VC1_0_JWT"))
+                .build());
     }
 
-    @DisplayName("Run TCK tests")
+    @DisplayName("Run TCK Presentation Flow tests")
     @Test
-    void runDcpTck(IdentityHubRuntime runtime) {
+    void runPresentationFlowTests(IdentityHubRuntime runtime) {
         var monitor = new ConsoleMonitor(true, true);
-
 
         var credentialsPort = IDENTITY_HUB_EXTENSION.getCredentialsEndpoint().getUrl().getPort();
         var credentialsPath = IDENTITY_HUB_EXTENSION.getCredentialsEndpoint().getUrl().getPath();
@@ -105,7 +120,8 @@ public class PresentationFlowTest {
                         "dataspacetck.did.holder", holderDid,
                         "dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath),
                         "dataspacetck.sts.client.id", response.clientId(),
-                        "dataspacetck.sts.client.secret", response.clientSecret()
+                        "dataspacetck.sts.client.secret", response.clientSecret(),
+                        "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID
                 ))
                 .addPackage("org.eclipse.dataspacetck.dcp.verification")
                 .monitor(monitor)
@@ -120,22 +136,21 @@ public class PresentationFlowTest {
         }
     }
 
-
     private CreateParticipantContextResponse createParticipant(IdentityHubRuntime runtime, String credentialServiceUrl) {
         var service = runtime.getService(ParticipantContextService.class);
         var vault = runtime.getService(Vault.class);
 
         var privateKeyAlias = "%s-privatekey-alias".formatted(TEST_PARTICIPANT_CONTEXT_ID);
-        vault.storeSecret(privateKeyAlias, HOLDER_KEY.toJSONString());
+        vault.storeSecret(privateKeyAlias, holderKey.toJSONString());
         var manifest = ParticipantManifest.Builder.newInstance()
                 .participantId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(holderDid)
                 .active(true)
                 .serviceEndpoint(new Service(UUID.randomUUID().toString(), "CredentialService", credentialServiceUrl))
                 .key(KeyDescriptor.Builder.newInstance()
-                        .publicKeyJwk(HOLDER_KEY.toPublicJWK().toJSONObject())
+                        .publicKeyJwk(holderKey.toPublicJWK().toJSONObject())
                         .privateKeyAlias(privateKeyAlias)
-                        .keyId(HOLDER_KEY.getKeyID())
+                        .keyId(holderKey.getKeyID())
                         .build())
                 .build();
         return service.createParticipantContext(manifest)
