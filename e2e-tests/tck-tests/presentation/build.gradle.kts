@@ -24,7 +24,6 @@ dependencies {
 
     testImplementation(libs.dcp.tck.runtime)
     testImplementation(libs.dcp.system)
-    testImplementation(libs.dsp.boot)
     testImplementation(libs.dsp.core)
     testImplementation(testFixtures(project(":e2e-tests:identityhub-test-fixtures")))
     testImplementation(libs.junit.platform.launcher)

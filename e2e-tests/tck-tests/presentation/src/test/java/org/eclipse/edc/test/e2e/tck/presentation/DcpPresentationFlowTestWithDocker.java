@@ -110,8 +110,7 @@ public class DcpPresentationFlowTestWithDocker {
 
         var response = createParticipant(runtime, baseCredentialServiceUrl);
 
-        try (var tckContainer = new GenericContainer<>("dcp-tck:latest")
-                // .withAccessToHost(true)
+        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:latest")
                 .withExtraHost("host.docker.internal", "host-gateway")
                 .withExposedPorts(CALLBACK_PORT)
                 .withEnv(Map.of(
@@ -122,20 +121,20 @@ public class DcpPresentationFlowTestWithDocker {
                         "dataspacetck.sts.client.id", response.clientId(),
                         "dataspacetck.sts.client.secret", response.clientSecret(),
                         "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID,
-                        "JAVA_TOOL_OPTIONS", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+                        "dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.presentation"
                 ))
         ) {
-            tckContainer.setPortBindings(List.of("5005:5005", "%s:%s".formatted(CALLBACK_PORT, CALLBACK_PORT)));
+            tckContainer.setPortBindings(List.of("%s:%s".formatted(CALLBACK_PORT, CALLBACK_PORT)));
             tckContainer.start();
             var latch = new CountDownLatch(1);
             var hasFailed = new AtomicBoolean(false);
             tckContainer.followOutput(outputFrame -> {
                 monitor.info(outputFrame.getUtf8String());
-                if (outputFrame.getUtf8String().toLowerCase().contains("test run complete")) {
-                    latch.countDown();
-                }
                 if (outputFrame.getUtf8String().toLowerCase().contains("there were failing tests")) {
                     hasFailed.set(true);
+                }
+                if (outputFrame.getUtf8String().toLowerCase().contains("test run complete")) {
+                    latch.countDown();
                 }
 
             });
