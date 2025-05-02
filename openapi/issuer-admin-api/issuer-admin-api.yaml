@@ -1333,7 +1333,6 @@ components:
           type: object
           additionalProperties:
             type: object
-          writeOnly: true
         id:
           type: string
         type:
@@ -1350,6 +1349,10 @@ components:
     CredentialSubject:
       type: object
       properties:
+        claims:
+          type: object
+          additionalProperties:
+            type: object
         id:
           type: string
     Criterion:
