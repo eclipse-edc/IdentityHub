@@ -29,11 +29,17 @@ import static org.eclipse.edc.util.io.Ports.getFreePort;
  */
 public abstract class AbstractIdentityHubExtension extends ComponentExtension {
 
-    protected final LazySupplier<Endpoint> didEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://localhost:" + getFreePort() + "/"), Map.of()));
-    protected final LazySupplier<Endpoint> identityEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/identity"), Map.of()));
+    protected final LazySupplier<Endpoint> didEndpoint;
+    protected final LazySupplier<Endpoint> identityEndpoint;
 
     protected AbstractIdentityHubExtension(EmbeddedRuntime runtime) {
+        this(runtime, "localhost");
+    }
+
+    protected AbstractIdentityHubExtension(EmbeddedRuntime runtime, String host) {
         super(runtime);
+        didEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/".formatted(host, getFreePort())), Map.of()));
+        identityEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/identity".formatted(host, getFreePort())), Map.of()));
     }
 
     public abstract Config getConfiguration();

@@ -85,7 +85,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     void storeCredential_success_expect200() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
         baseRequest()
-                .header("Authorization", "Bearer: " + generateJwt())
+                .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
                 .post()
                 .then()
@@ -110,7 +110,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     void storeCredential_validationError_shouldReturn400() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.failure(violation("foo", null)));
         baseRequest()
-                .header("Authorization", "Bearer: " + generateJwt())
+                .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
                 .post()
                 .then()
@@ -124,7 +124,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
         when(transformerRegistry.transform(isA(JsonObject.class), eq(CredentialMessage.class))).thenReturn(Result.failure("foobar"));
         baseRequest()
-                .header("Authorization", "Bearer: " + generateJwt())
+                .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
                 .post()
                 .then()
@@ -139,7 +139,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.notFound("foo"));
 
         baseRequest()
-                .header("Authorization", "Bearer: " + generateJwt())
+                .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
                 .post()
                 .then()
@@ -152,7 +152,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
         when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foo"));
         baseRequest()
-                .header("Authorization", "Bearer: " + generateJwt())
+                .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
                 .post()
                 .then()
@@ -166,7 +166,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
         // todo: add mock for credential storing service
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
         baseRequest()
-                .header("Authorization", "Bearer: " + generateJwt())
+                .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
                 .post()
                 .then()
@@ -180,7 +180,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
         when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.badRequest("foo"));
 
         baseRequest()
-                .header("Authorization", "Bearer: " + generateJwt())
+                .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
                 .post()
                 .then()
@@ -195,7 +195,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
         when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.unauthorized("foo"));
 
         baseRequest()
-                .header("Authorization", "Bearer: " + generateJwt())
+                .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
                 .post()
                 .then()

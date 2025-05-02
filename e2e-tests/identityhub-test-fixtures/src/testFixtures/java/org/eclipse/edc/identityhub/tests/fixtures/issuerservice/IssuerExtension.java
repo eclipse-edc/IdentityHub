@@ -37,14 +37,20 @@ import static org.eclipse.edc.util.io.Ports.getFreePort;
  */
 public class IssuerExtension extends AbstractIdentityHubExtension {
 
-    protected final LazySupplier<Endpoint> adminEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/admin"), Map.of()));
-    protected final LazySupplier<Endpoint> issuerApiEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/issuance"), Map.of()));
+    protected final LazySupplier<Endpoint> adminEndpoint;
+    protected final LazySupplier<Endpoint> issuerApiEndpoint;
 
     private final IssuerRuntime issuerRuntime;
 
     private IssuerExtension(EmbeddedRuntime runtime) {
+        this(runtime, "localhost");
+    }
+
+    private IssuerExtension(EmbeddedRuntime runtime, String host) {
         super(runtime);
         issuerRuntime = new IssuerRuntime(this);
+        adminEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/admin".formatted(host, getFreePort())), Map.of()));
+        issuerApiEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/issuance".formatted(host, getFreePort())), Map.of()));
     }
 
     @Override

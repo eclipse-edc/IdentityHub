@@ -170,7 +170,8 @@ class CredentialWriterImplTest {
                 .build()));
 
         var result = credentialWriter.write("holderPid", "issuerPid", Set.of(new CredentialWriteRequest("raw-cred", TEST_CREDENTIAL_FORMAT)), PARTICIPANT_ID);
-        assertThat(result).isFailed().detail().isEqualTo("HolderCredentialRequest is expected to be in state 'REQUESTED' but was 'REQUESTING'");
+        assertThat(result).isFailed()
+                .detail().startsWith("HolderCredentialRequest is expected to be in ");
         verifyNoInteractions(credentialStore, credentialTransformerRegistry);
     }
 

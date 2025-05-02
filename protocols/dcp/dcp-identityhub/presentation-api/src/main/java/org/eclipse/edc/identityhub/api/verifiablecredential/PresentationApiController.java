@@ -100,6 +100,10 @@ public class PresentationApiController implements PresentationApi {
             throw new AuthenticationFailedException("Authorization header missing");
         }
 
+        if (!token.startsWith("Bearer")) {
+            throw new AuthenticationFailedException("Authorization header must start with 'Bearer'");
+        }
+
         token = token.replace("Bearer", "").trim();
 
         query = jsonLd.expand(query).orElseThrow(InvalidRequestException::new);

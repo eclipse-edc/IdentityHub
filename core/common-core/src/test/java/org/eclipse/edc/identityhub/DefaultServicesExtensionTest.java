@@ -19,6 +19,8 @@ import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
+import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
+import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +50,8 @@ class DefaultServicesExtensionTest {
     void initialize_verifyTokenRules(DefaultServicesExtension extension, ServiceExtensionContext context) {
         extension.initialize(context);
         verify(registry).addRule(eq("dcp-si"), isA(ClaimIsPresentRule.class));
+        verify(registry).addRule(eq("dcp-si"), isA(ExpirationIssuedAtValidationRule.class));
+        verify(registry).addRule(eq("dcp-si"), isA(NotBeforeValidationRule.class));
         verify(registry).addRule(eq("dcp-access-token"), isA(ClaimIsPresentRule.class));
         verifyNoMoreInteractions(registry);
     }
@@ -59,6 +63,9 @@ class DefaultServicesExtensionTest {
 
         factory.constructInstance(DefaultServicesExtension.class).initialize(context);
         verify(registry).addRule(eq("dcp-si"), isA(ClaimIsPresentRule.class));
+        verify(registry).addRule(eq("dcp-si"), isA(ExpirationIssuedAtValidationRule.class));
+        verify(registry).addRule(eq("dcp-si"), isA(NotBeforeValidationRule.class));
+        verify(registry).addRule(eq("dcp-si"), isA(JtiValidationRule.class));
         verify(registry).addRule(eq("dcp-access-token"), isA(ClaimIsPresentRule.class));
         verify(registry).addRule(eq("dcp-access-token"), isA(JtiValidationRule.class));
         verifyNoMoreInteractions(registry);

@@ -139,6 +139,7 @@ include(":e2e-tests:identityhub-test-fixtures")
 include(":e2e-tests:admin-api-tests")
 include(":e2e-tests:dcp-issuance-tests")
 include(":e2e-tests:sts-api-tests")
+include(":e2e-tests:tck-tests:presentation")
 
 // BOM modules
 include(":dist:bom:identityhub-base-bom")

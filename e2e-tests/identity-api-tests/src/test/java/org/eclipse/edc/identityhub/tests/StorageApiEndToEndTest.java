@@ -271,7 +271,7 @@ public class StorageApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
-                    .body(containsString("HolderCredentialRequest is expected to be in state 'REQUESTED' but was 'CREATED'"));
+                    .body(containsString("HolderCredentialRequest is expected to be in any of the states '[REQUESTED, ISSUED]' but was 'CREATED'"));
         }
 
         @DisplayName("Corresponding holder credential request was made for a different credential type, expect 400")

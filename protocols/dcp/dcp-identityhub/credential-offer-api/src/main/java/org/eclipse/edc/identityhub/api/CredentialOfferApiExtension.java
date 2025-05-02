@@ -78,7 +78,7 @@ public class CredentialOfferApiExtension implements ServiceExtension {
 
         validatorRegistry.register(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OFFER_MESSAGE_TERM), new CredentialOfferMessageValidator());
 
-        var controller = new CredentialOfferApiController(validatorRegistry, typeTransformer, issuerTokenVerifier, participantContextService, credentialOfferService);
+        var controller = new CredentialOfferApiController(validatorRegistry, typeTransformer, issuerTokenVerifier, participantContextService, credentialOfferService, jsonLd);
         webService.registerResource(CREDENTIALS, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(CREDENTIALS, controller);
 

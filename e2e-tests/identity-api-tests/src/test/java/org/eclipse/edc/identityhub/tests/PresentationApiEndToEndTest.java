@@ -186,7 +186,7 @@ public class PresentationApiEndToEndTest {
                     """;
             runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, generateSiToken())
+                    .header(AUTHORIZATION, "Bearer " + generateSiToken())
                     .body(query)
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -211,7 +211,7 @@ public class PresentationApiEndToEndTest {
                     """;
             runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, generateSiToken())
+                    .header(AUTHORIZATION, "Bearer " + generateSiToken())
                     .body(query)
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -229,7 +229,7 @@ public class PresentationApiEndToEndTest {
             var token = generateSiToken();
             runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -251,7 +251,7 @@ public class PresentationApiEndToEndTest {
 
             runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -273,7 +273,7 @@ public class PresentationApiEndToEndTest {
 
             runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -317,7 +317,7 @@ public class PresentationApiEndToEndTest {
 
             runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_ADDITIONAL_SCOPE)
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -338,7 +338,7 @@ public class PresentationApiEndToEndTest {
 
             var response = runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -375,7 +375,7 @@ public class PresentationApiEndToEndTest {
 
             var response = runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -428,7 +428,7 @@ public class PresentationApiEndToEndTest {
 
             var response = runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -466,7 +466,7 @@ public class PresentationApiEndToEndTest {
 
             var response = runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -526,7 +526,7 @@ public class PresentationApiEndToEndTest {
 
             var response = runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
@@ -562,7 +562,7 @@ public class PresentationApiEndToEndTest {
 
             runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
                     // attempt to request the presentation for a different participant than the one who issued the access token
                     .post("/v1/participants/%s/presentations/query".formatted(Base64.getUrlEncoder().encodeToString("attacker".getBytes())))
@@ -594,7 +594,7 @@ public class PresentationApiEndToEndTest {
 
             runtime.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
+                    .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
                     // attempt to request the presentation for a different participant than the one who issued the access token
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))

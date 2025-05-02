@@ -48,6 +48,8 @@ import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
+import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
+import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 
@@ -100,6 +102,8 @@ public class DefaultServicesExtension implements ServiceExtension {
     private CriterionOperatorRegistry criterionOperatorRegistry;
     @Inject
     private JsonLd jsonLd;
+    @Inject
+    private JtiValidationStore jtiValidationStore;
 
     @Override
     public String name() {
@@ -111,11 +115,14 @@ public class DefaultServicesExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         var accessTokenRule = new ClaimIsPresentRule(TOKEN_CLAIM);
         registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, accessTokenRule);
+        registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, new ExpirationIssuedAtValidationRule(clock, 5, true));
+        registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, new NotBeforeValidationRule(clock, 5, true));
 
         var scopeIsPresentRule = new ClaimIsPresentRule(ACCESS_TOKEN_SCOPE_CLAIM);
         registry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, scopeIsPresentRule);
 
         if (activateJtiCheck) {
+            registry.addRule(DCP_PRESENTATION_SELF_ISSUED_TOKEN_CONTEXT, new JtiValidationRule(jtiValidationStore, context.getMonitor()));
             registry.addRule(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT, new JtiValidationRule(jwtValidationStore, context.getMonitor()));
         } else {
             context.getMonitor().warning("JWT Token ID (\"jti\" claim) Validation is not active. Please consider setting '%s=true' for protection against replay attacks".formatted(ACCESSTOKEN_JTI_VALIDATION_ACTIVATE));
