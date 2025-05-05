@@ -64,6 +64,7 @@ public class JsonObjectFromCredentialMessageTransformerTest {
         var status = Builder.newInstance()
                 .issuerPid("issuerId")
                 .holderPid("holderId")
+                .status("ISSUED")
                 .credential(new CredentialContainer("MembershipCredential", "myFormat", "SOMEPAYLOAD"))
                 .build();
 
@@ -92,6 +93,7 @@ public class JsonObjectFromCredentialMessageTransformerTest {
         var status = Builder.newInstance()
                 .issuerPid("requestId")
                 .holderPid("holderId")
+                .status("ISSUED")
                 .build();
 
         var jsonLd = transformer.transform(status, context);

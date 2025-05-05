@@ -33,11 +33,11 @@ import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubE
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.test.e2e.tck.TckTransformer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Map;
 import java.util.UUID;
@@ -55,9 +55,8 @@ import static org.mockito.Mockito.mock;
  * @see <a href="https://github.com/eclipse-dataspacetck/dcp-tck">Eclipse Dataspace TCK - DCP</a>
  */
 @EndToEndTest
-@Testcontainers
 public class DcpPresentationFlowTest {
-    public static final String ISSUANCE_CORRELATION_ID = UUID.randomUUID().toString();
+    public static final String ISSUANCE_CORRELATION_ID = "issuance-correlation-id";
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "holder";
     private static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
     private static final int CALLBACK_PORT = 42420;
@@ -121,6 +120,9 @@ public class DcpPresentationFlowTest {
                 .build()
                 .execute();
 
+        monitor.enableBold().message("DCP Tests done: %s succeeded, %s failed".formatted(
+                result.getTestsSucceededCount(), result.getTotalFailureCount()
+        )).resetMode();
         if (!result.getFailures().isEmpty()) {
             var failures = result.getFailures().stream()
                     .map(f -> "- " + f.getTestIdentifier().getDisplayName() + " (" + f.getException() + ")")
@@ -128,7 +130,6 @@ public class DcpPresentationFlowTest {
             Assertions.fail(result.getTotalFailureCount() + " TCK test cases failed:\n" + failures);
         }
     }
-
 
     private CreateParticipantContextResponse createParticipant(IdentityHubRuntime runtime, String credentialServiceUrl) {
         var service = runtime.getService(ParticipantContextService.class);

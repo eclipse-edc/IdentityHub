@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.test.e2e.tck.presentation;
+package org.eclipse.edc.test.e2e.tck.issuance;
 
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.util.Base64;
@@ -37,7 +37,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 import java.util.Map;
@@ -50,18 +49,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.mockito.Mockito.mock;
 
-/**
- * Asserts the correct functionality of the presentation flow according to the Technology Compatibility Kit (TCK).
- * <p>
- * IdentityHub is started in an in-mem runtime, the TCK is started in another runtime, and executes its test cases against
- * IdentityHubs Presentation API.
- *
- * @see <a href="https://github.com/eclipse-dataspacetck/dcp-tck">Eclipse Dataspace TCK - DCP</a>
- */
 @EndToEndTest
-@Testcontainers
-public class DcpPresentationFlowTestWithDocker {
-    public static final String ISSUANCE_CORRELATION_ID = UUID.randomUUID().toString();
+public class DcpIssuanceFlowTestWithDocker {
+    private static final String ISSUANCE_CORRELATION_ID = "issuance-correlation-id";
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "holder";
     private static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
     private static final int CALLBACK_PORT = 42420;
@@ -96,9 +86,9 @@ public class DcpPresentationFlowTestWithDocker {
                 .build());
     }
 
-    @DisplayName("Run TCK Presentation Flow tests (using docker)")
+    @DisplayName("Run TCK Issuance Flow tests (using docker)")
     @Test
-    void runPresentationFlowTestsDocker(IdentityHubRuntime runtime) throws InterruptedException {
+    void runIssuanceFlowTests(IdentityHubRuntime runtime) throws InterruptedException {
 
         var monitor = new ConsoleMonitor("TCK", ConsoleMonitor.Level.DEBUG, true);
         var credentialsPort = IDENTITY_HUB_EXTENSION.getCredentialsEndpoint().getUrl().getPort();
@@ -123,7 +113,7 @@ public class DcpPresentationFlowTestWithDocker {
                         "dataspacetck.sts.client.id", response.clientId(),
                         "dataspacetck.sts.client.secret", response.clientSecret(),
                         "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID,
-                        "dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.presentation"
+                        "dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.issuance.cs"
                 ))
         ) {
             tckContainer.setPortBindings(List.of("%s:%s".formatted(CALLBACK_PORT, CALLBACK_PORT)));

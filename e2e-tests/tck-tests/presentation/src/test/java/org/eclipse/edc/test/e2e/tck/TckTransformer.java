@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.test.e2e.tck.presentation;
+package org.eclipse.edc.test.e2e.tck;
 
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.spi.query.Criterion;
@@ -27,7 +27,7 @@ import static org.eclipse.edc.spi.result.Result.success;
  * A simple test stub that transforms a scope string that is used by the TCK (e.g. "org.eclipse.dspace.dcp.vc.type:CredentialType:read") into
  * a Criterion object. This is very similar to the {@code EdcScopeToCriterionTransformer} but uses a different alias literal.
  */
-class TckTransformer implements ScopeToCriterionTransformer {
+public class TckTransformer implements ScopeToCriterionTransformer {
     public static final String TYPE_OPERAND = "verifiableCredential.credential.type";
     public static final String ALIAS_LITERAL = "org.eclipse.dspace.dcp.vc.type";
     public static final String CONTAINS_OPERATOR = "contains";

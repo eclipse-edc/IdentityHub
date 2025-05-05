@@ -27,6 +27,7 @@ import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAME
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.STATUS_TERM;
 import static org.eclipse.edc.validator.spi.ValidationResult.failure;
 import static org.eclipse.edc.validator.spi.ValidationResult.success;
 import static org.eclipse.edc.validator.spi.Violation.violation;
@@ -53,6 +54,12 @@ public class CredentialMessageValidator implements Validator<JsonObject> {
         if (isNullObject(holderPid)) {
             return failure(violation("Must contain a 'holderPid' property.", null));
         }
+
+        var status = input.get(namespace.toIri(STATUS_TERM));
+        if (isNullObject(status)) {
+            return failure(violation("Must contain a 'status' property.", null));
+        }
+
         var credentialsObject = input.get(namespace.toIri(CREDENTIALS_TERM));
         if (isNullObject(credentialsObject)) {
             return failure(violation("Credentials array was null", null));
@@ -74,7 +81,9 @@ public class CredentialMessageValidator implements Validator<JsonObject> {
                 return false; // empty arrays are OK
             }
             value = jarray.get(0).asJsonObject().get(JsonLdKeywords.VALUE);
-            return ofNullable(value).map(jv -> jv.getValueType() == JsonValue.ValueType.NULL).orElse(false);
+            return ofNullable(value)
+                    .map(jv -> jv.getValueType() == JsonValue.ValueType.NULL)
+                    .orElse(false);
         }
         return value == null;
     }
