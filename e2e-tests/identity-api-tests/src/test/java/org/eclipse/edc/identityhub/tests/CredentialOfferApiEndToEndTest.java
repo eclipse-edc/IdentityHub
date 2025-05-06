@@ -61,6 +61,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.CREDENTIALS_NAMESPACE_W3C;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_BINDING_METHODS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
@@ -234,7 +235,7 @@ public class CredentialOfferApiEndToEndTest {
             var credentialsArray = Json.createArrayBuilder();
             Arrays.stream(credentials).forEach(credentialsArray::add);
             return Json.createObjectBuilder()
-                    .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer")
+                    .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer")
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CredentialOfferMessage.CREDENTIALS_TERM), credentialsArray)
                     .build();
 

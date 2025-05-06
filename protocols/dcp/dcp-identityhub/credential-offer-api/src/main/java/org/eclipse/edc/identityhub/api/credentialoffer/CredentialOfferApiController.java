@@ -41,6 +41,7 @@ import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIAL_OFFER_MESSAGE_TERM;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
@@ -82,13 +83,13 @@ public class CredentialOfferApiController implements CredentialOfferApi {
             throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
         }
         var authToken = authHeader.replace("Bearer ", "").trim();
-        credentialOfferMessage = jsonLd.expand(credentialOfferMessage).orElseThrow(InvalidRequestException::new);
-        validatorRegistry.validate(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CredentialOfferMessage.CREDENTIAL_OFFER_MESSAGE_TERM), credentialOfferMessage).orElseThrow(ValidationFailureException::new);
+        var expanded = jsonLd.expand(credentialOfferMessage).orElseThrow(InvalidRequestException::new);
+        validatorRegistry.validate(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OFFER_MESSAGE_TERM), expanded).orElseThrow(ValidationFailureException::new);
         var protocolRegistry = transformerRegistry.forContext(DCP_SCOPE_V_1_0);
 
         participantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        var offerMessage = protocolRegistry.forContext(DCP_SCOPE_V_1_0).transform(credentialOfferMessage, CredentialOfferMessage.class).orElseThrow(InvalidRequestException::new);
+        var offerMessage = protocolRegistry.forContext(DCP_SCOPE_V_1_0).transform(expanded, CredentialOfferMessage.class).orElseThrow(InvalidRequestException::new);
 
         var participantContext = participantContextService.getParticipantContext(participantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid participant"));

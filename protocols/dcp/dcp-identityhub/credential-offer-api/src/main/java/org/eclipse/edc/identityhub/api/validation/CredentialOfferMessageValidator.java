@@ -20,6 +20,7 @@ import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.validator.spi.ValidationResult;
 
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.CREDENTIALS_NAMESPACE_W3C;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIAL_ISSUER_TERM;
 import static org.eclipse.edc.validator.spi.ValidationResult.failure;
@@ -42,7 +43,7 @@ public class CredentialOfferMessageValidator extends JsonValidator {
         if (input == null) {
             return failure(violation("CredentialOfferMessage was null", "."));
         }
-        var issuer = input.get(namespace.toIri(CREDENTIAL_ISSUER_TERM));
+        var issuer = input.get(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM));
         if (isNullObject(issuer)) {
             return failure(violation("Invalid format: must contain a '%s' property.".formatted(CREDENTIAL_ISSUER_TERM), null));
         }

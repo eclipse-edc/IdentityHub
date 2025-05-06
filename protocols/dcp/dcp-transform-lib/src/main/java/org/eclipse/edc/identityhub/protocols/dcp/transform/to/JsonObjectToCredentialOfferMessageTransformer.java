@@ -23,7 +23,9 @@ import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.CREDENTIALS_NAMESPACE_W3C;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIALS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIAL_ISSUER_TERM;
 
 public class JsonObjectToCredentialOfferMessageTransformer extends AbstractNamespaceAwareJsonLdTransformer<JsonObject, CredentialOfferMessage> {
     public JsonObjectToCredentialOfferMessageTransformer(JsonLdNamespace namespace) {
@@ -34,7 +36,7 @@ public class JsonObjectToCredentialOfferMessageTransformer extends AbstractNames
     public @Nullable CredentialOfferMessage transform(@NotNull JsonObject jsonObject, @NotNull TransformerContext transformerContext) {
         var builder = CredentialOfferMessage.Builder.newInstance();
 
-        builder.issuer(transformString(jsonObject.get(forNamespace(CredentialOfferMessage.CREDENTIAL_ISSUER_TERM)), transformerContext));
+        builder.issuer(transformString(jsonObject.get(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM)), transformerContext));
 
         var credentialsArray = jsonObject.getJsonArray(forNamespace(CREDENTIALS_TERM));
 

@@ -25,7 +25,6 @@ import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCreden
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.spi.JsonLd;
-import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -87,20 +86,20 @@ public class StorageApiExtension implements ServiceExtension {
         webService.registerResource(contextString, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(contextString, controller);
 
-        registerTransformers(DCP_SCOPE_V_1_0, DSPACE_DCP_NAMESPACE_V_1_0);
+        registerTransformers();
     }
 
-    void registerTransformers(String scope, JsonLdNamespace namespace) {
+    void registerTransformers() {
 
         var factory = Json.createBuilderFactory(Map.of());
-        var scopedTransformerRegistry = typeTransformer.forContext(scope);
+        var scopedTransformerRegistry = typeTransformer.forContext(DCP_SCOPE_V_1_0);
 
         // inbound
-        scopedTransformerRegistry.register(new JsonObjectToCredentialMessageTransformer(typeManager, JSON_LD, namespace));
+        scopedTransformerRegistry.register(new JsonObjectToCredentialMessageTransformer(typeManager, JSON_LD, DSPACE_DCP_NAMESPACE_V_1_0));
         scopedTransformerRegistry.register(new JsonValueToGenericTypeTransformer(typeManager, JSON_LD));
 
         //outbound
-        scopedTransformerRegistry.register(new JsonObjectFromCredentialMessageTransformer(factory, typeManager, JSON_LD, namespace));
+        scopedTransformerRegistry.register(new JsonObjectFromCredentialMessageTransformer(factory, typeManager, JSON_LD, DSPACE_DCP_NAMESPACE_V_1_0));
         scopedTransformerRegistry.register(new JsonObjectFromCredentialRequestMessageTransformer(factory, typeManager, JSON_LD, DSPACE_DCP_NAMESPACE_V_1_0));
 
         typeTransformer.register(new JwtToVerifiableCredentialTransformer(monitor));
