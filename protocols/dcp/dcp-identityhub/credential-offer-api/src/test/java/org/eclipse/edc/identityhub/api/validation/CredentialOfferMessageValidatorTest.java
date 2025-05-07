@@ -16,18 +16,20 @@ package org.eclipse.edc.identityhub.api.validation;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.CREDENTIALS_NAMESPACE_W3C;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_BINDING_METHODS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILES_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIALS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIAL_ISSUER_TERM;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 class CredentialOfferMessageValidatorTest {
@@ -36,7 +38,7 @@ class CredentialOfferMessageValidatorTest {
     @Test
     void validate_noCredentials_success() {
         var msg = Json.createObjectBuilder()
-                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CredentialOfferMessage.CREDENTIAL_ISSUER_TERM), "test-issuer")
+                .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer")
                 .build();
 
         assertThat(validator.validate(msg)).isSucceeded();
@@ -55,8 +57,8 @@ class CredentialOfferMessageValidatorTest {
     @Test
     void validate_withCredentials_success() {
         var msg = Json.createObjectBuilder()
-                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CredentialOfferMessage.CREDENTIAL_ISSUER_TERM), "test-issuer")
-                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CredentialOfferMessage.CREDENTIALS_TERM), Json.createArrayBuilder()
+                .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer")
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder()
                         .add(createCredentialObject())
                         .add(createCredentialObject()))
                 .build();
@@ -66,8 +68,8 @@ class CredentialOfferMessageValidatorTest {
     @Test
     void validate_withCredentials_withViolation() {
         var msg = Json.createObjectBuilder()
-                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CredentialOfferMessage.CREDENTIAL_ISSUER_TERM), "test-issuer")
-                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CredentialOfferMessage.CREDENTIALS_TERM), Json.createArrayBuilder()
+                .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer")
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder()
                         .add(Json.createObjectBuilder().add("invalid-key", "invalid-value").build()))
                 .build();
         assertThat(validator.validate(msg)).isFailed();

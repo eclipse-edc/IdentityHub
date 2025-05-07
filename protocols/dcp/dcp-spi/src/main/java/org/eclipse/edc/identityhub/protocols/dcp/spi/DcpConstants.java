@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.spi;
 
+import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
+
 public interface DcpConstants {
 
     String V_1_0 = "v1.0";
@@ -26,4 +28,5 @@ public interface DcpConstants {
     String DCP_SCOPE_V_1_0 = DCP_SCOPE_PREFIX + DCP_SCOPE_SEPARATOR + V_1_0;
     // URL where the DCP Specification resides. Could be used for externalDocs properties in Swagger
     String DCP_SPECIFICATION_URL = "https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol";
+    JsonLdNamespace CREDENTIALS_NAMESPACE_W3C = new JsonLdNamespace("https://www.w3.org/2018/credentials#");
 }

@@ -232,12 +232,14 @@ class StorageApiControllerTest extends RestControllerTestBase {
         return CredentialMessage.Builder.newInstance()
                 .issuerPid(UUID.randomUUID().toString())
                 .holderPid(UUID.randomUUID().toString())
+                .status("ISSUED")
                 .credential(new CredentialContainer("SomeCredential", "vcdm11_jwt", "SOME_JWT_STRING"))
                 .build();
     }
 
     private JsonObject credentialMessageJson() {
         return Json.createObjectBuilder()
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("status"), "ISSUED")
                 .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("requestId"), UUID.randomUUID().toString())
                 .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri("credentials"), Json.createArrayBuilder()
                         .add(Json.createObjectBuilder()

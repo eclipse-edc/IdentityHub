@@ -16,17 +16,26 @@ package org.eclipse.edc.identityhub.protocols.dcp.spi.model;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Objects;
+import java.util.List;
+
+import static java.util.Objects.requireNonNull;
 
 public class CredentialMessage {
     public static final String CREDENTIALS_TERM = "credentials";
     public static final String ISSUER_PID_TERM = "issuerPid";
     public static final String HOLDER_PID_TERM = "holderPid";
+    public static final String STATUS_TERM = "status";
     public static final String CREDENTIAL_MESSAGE_TERM = "CredentialMessage";
+    private static final List<String> ALLOWED_STATUS = List.of("ISSUED", "REJECTED");
 
     private Collection<CredentialContainer> credentials = new ArrayList<>();
     private String issuerPid;
     private String holderPid;
+    private String status;
+
+    public String getStatus() {
+        return status;
+    }
 
     public Collection<CredentialContainer> getCredentials() {
         return credentials;
@@ -71,9 +80,19 @@ public class CredentialMessage {
             return this;
         }
 
+        public Builder status(String status) {
+            this.credentialMessage.status = status;
+            return this;
+        }
+
         public CredentialMessage build() {
-            Objects.requireNonNull(credentialMessage.issuerPid, "issuerPid");
-            Objects.requireNonNull(credentialMessage.holderPid, "holderPid");
+            requireNonNull(credentialMessage.issuerPid, "issuerPid");
+            requireNonNull(credentialMessage.holderPid, "holderPid");
+            requireNonNull(credentialMessage.status, "status");
+
+            if (!ALLOWED_STATUS.contains(credentialMessage.status.toUpperCase())) {
+                throw new IllegalArgumentException("Invalid status value! Expected %s but got %s".formatted(ALLOWED_STATUS, credentialMessage.status));
+            }
             return credentialMessage;
         }
     }

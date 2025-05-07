@@ -12,10 +12,13 @@
  *
  */
 
-package org.eclipse.edc.test.e2e.tck.presentation;
+package org.eclipse.edc.test.e2e.tck.issuance;
 
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.util.Base64;
+import org.assertj.core.api.Assertions;
+import org.eclipse.dataspacetck.core.system.ConsoleMonitor;
+import org.eclipse.dataspacetck.runtime.TckRuntime;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
@@ -29,39 +32,23 @@ import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransforme
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
-import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.test.e2e.tck.TckTransformer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.mockito.Mockito.mock;
 
-/**
- * Asserts the correct functionality of the presentation flow according to the Technology Compatibility Kit (TCK).
- * <p>
- * IdentityHub is started in an in-mem runtime, the TCK is started in another runtime, and executes its test cases against
- * IdentityHubs Presentation API.
- *
- * @see <a href="https://github.com/eclipse-dataspacetck/dcp-tck">Eclipse Dataspace TCK - DCP</a>
- */
 @EndToEndTest
-@Testcontainers
-public class DcpPresentationFlowTestWithDocker {
-    public static final String ISSUANCE_CORRELATION_ID = UUID.randomUUID().toString();
+public class DcpIssuanceFlowTest {
+    private static final String ISSUANCE_CORRELATION_ID = "issuance-correlation-id";
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "holder";
     private static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
     private static final int CALLBACK_PORT = 42420;
@@ -71,7 +58,6 @@ public class DcpPresentationFlowTestWithDocker {
             .name("identity-hub")
             .id("identity-hub")
             .modules(":dist:bom:identityhub-bom")
-            .host("host.docker.internal")
             .build()
             .registerServiceMock(ScopeToCriterionTransformer.class, TCK_TRANSFORMER)
             .registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
@@ -96,53 +82,41 @@ public class DcpPresentationFlowTestWithDocker {
                 .build());
     }
 
-    @DisplayName("Run TCK Presentation Flow tests (using docker)")
+    @DisplayName("Run TCK Issuance Flow tests")
     @Test
-    void runPresentationFlowTestsDocker(IdentityHubRuntime runtime) throws InterruptedException {
+    void runIssuanceFlowTests(IdentityHubRuntime runtime) {
+        var monitor = new ConsoleMonitor(true, true);
 
-        var monitor = new ConsoleMonitor("TCK", ConsoleMonitor.Level.DEBUG, true);
         var credentialsPort = IDENTITY_HUB_EXTENSION.getCredentialsEndpoint().getUrl().getPort();
         var credentialsPath = IDENTITY_HUB_EXTENSION.getCredentialsEndpoint().getUrl().getPath();
 
         var stsPort = IDENTITY_HUB_EXTENSION.getStsEndpoint().getUrl().getPort();
         var stsPath = IDENTITY_HUB_EXTENSION.getStsEndpoint().getUrl().getPath();
 
-        var baseCallbackAddress = "http://0.0.0.0:%s".formatted(CALLBACK_PORT);
-        var baseCredentialServiceUrl = "http://host.docker.internal:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
+        var baseCallbackUrl = "http://localhost:%s".formatted(CALLBACK_PORT);
+        var baseCredentialServiceUrl = "http://localhost:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
 
         var response = createParticipant(runtime, baseCredentialServiceUrl);
-
-        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:latest")
-                .withExtraHost("host.docker.internal", "host-gateway")
-                .withExposedPorts(CALLBACK_PORT)
-                .withEnv(Map.of(
-                        "dataspacetck.callback.address", baseCallbackAddress,
+        var result = TckRuntime.Builder.newInstance()
+                .properties(Map.of(
+                        "dataspacetck.callback.address", baseCallbackUrl,
                         "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
                         "dataspacetck.did.holder", holderDid,
-                        "dataspacetck.sts.url", "http://host.docker.internal:%s%s".formatted(stsPort, stsPath),
+                        "dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath),
                         "dataspacetck.sts.client.id", response.clientId(),
                         "dataspacetck.sts.client.secret", response.clientSecret(),
-                        "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID,
-                        "dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.presentation"
+                        "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID
                 ))
-        ) {
-            tckContainer.setPortBindings(List.of("%s:%s".formatted(CALLBACK_PORT, CALLBACK_PORT)));
-            tckContainer.start();
-            var latch = new CountDownLatch(1);
-            var hasFailed = new AtomicBoolean(false);
-            tckContainer.followOutput(outputFrame -> {
-                monitor.info(outputFrame.getUtf8String());
-                if (outputFrame.getUtf8String().toLowerCase().contains("there were failing tests")) {
-                    hasFailed.set(true);
-                }
-                if (outputFrame.getUtf8String().toLowerCase().contains("test run complete")) {
-                    latch.countDown();
-                }
+                .addPackage("org.eclipse.dataspacetck.dcp.verification.issuance.cs")
+                .monitor(monitor)
+                .build()
+                .execute();
 
-            });
-
-            assertThat(latch.await(1, TimeUnit.MINUTES)).isTrue();
-            assertThat(hasFailed.get()).describedAs("There were failing TCK tests, please check the log output above").isFalse();
+        if (!result.getFailures().isEmpty()) {
+            var failures = result.getFailures().stream()
+                    .map(f -> "- " + f.getTestIdentifier().getDisplayName() + " (" + f.getException() + ")")
+                    .collect(Collectors.joining("\n"));
+            Assertions.fail(result.getTotalFailureCount() + " TCK test cases failed:\n" + failures);
         }
     }
 

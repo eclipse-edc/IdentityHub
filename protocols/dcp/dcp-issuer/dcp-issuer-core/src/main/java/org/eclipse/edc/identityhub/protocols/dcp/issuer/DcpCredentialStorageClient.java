@@ -49,6 +49,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMess
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIAL_MESSAGE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.STATUS_TERM;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
@@ -138,6 +139,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
                 .add(ISSUER_PID_TERM, issuanceProcess.getId())
                 .add(HOLDER_PID_TERM, issuanceProcess.getHolderPid())
                 .add(CREDENTIALS_TERM, credentials.stream().map(this::toJson).collect(toJsonArray()))
+                .add(STATUS_TERM, "ISSUED")
                 .build();
     }
 

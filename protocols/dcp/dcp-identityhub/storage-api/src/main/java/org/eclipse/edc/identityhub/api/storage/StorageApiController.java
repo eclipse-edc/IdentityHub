@@ -84,13 +84,13 @@ public class StorageApiController implements StorageApi {
             throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
         }
         var authToken = authHeader.replace("Bearer ", "").trim();
-        credentialMessageJson = jsonLd.expand(credentialMessageJson).orElseThrow(InvalidRequestException::new);
-        validatorRegistry.validate(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_MESSAGE_TERM), credentialMessageJson).orElseThrow(ValidationFailureException::new);
+        var expanded = jsonLd.expand(credentialMessageJson).orElseThrow(InvalidRequestException::new);
+        validatorRegistry.validate(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_MESSAGE_TERM), expanded).orElseThrow(ValidationFailureException::new);
         var protocolRegistry = transformerRegistry.forContext(DCP_SCOPE_V_1_0);
 
         participantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        var credentialMessage = protocolRegistry.forContext(DCP_SCOPE_V_1_0).transform(credentialMessageJson, CredentialMessage.class).orElseThrow(InvalidRequestException::new);
+        var credentialMessage = protocolRegistry.forContext(DCP_SCOPE_V_1_0).transform(expanded, CredentialMessage.class).orElseThrow(InvalidRequestException::new);
 
 
         var participantContext = participantContextService.getParticipantContext(participantContextId)

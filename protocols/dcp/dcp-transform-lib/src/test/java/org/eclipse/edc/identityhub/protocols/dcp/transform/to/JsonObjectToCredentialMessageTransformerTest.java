@@ -28,6 +28,7 @@ import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAME
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.STATUS_TERM;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -65,6 +66,7 @@ public class JsonObjectToCredentialMessageTransformerTest {
         var input = Json.createObjectBuilder()
                 .add(toIri(ISSUER_PID_TERM), "test-request-id")
                 .add(toIri(HOLDER_PID_TERM), "test-holder-id")
+                .add(toIri(STATUS_TERM), "ISSUED")
                 .add(toIri(CREDENTIALS_TERM), credentialsJsonArray)
                 .build();
 
@@ -87,6 +89,7 @@ public class JsonObjectToCredentialMessageTransformerTest {
                 .add(toIri(ISSUER_PID_TERM), "test-request-id")
                 .add(toIri(HOLDER_PID_TERM), "test-holder-id")
                 .add(toIri(CREDENTIALS_TERM), credentialsJsonArray)
+                .add(toIri(STATUS_TERM), "ISSUED")
                 .build();
 
         var credentialRequestMessage = transformer.transform(input, context);
@@ -112,6 +115,7 @@ public class JsonObjectToCredentialMessageTransformerTest {
         var input = Json.createObjectBuilder()
                 .add(toIri(ISSUER_PID_TERM), "test-request-id")
                 .add(toIri(HOLDER_PID_TERM), "test-holder-id")
+                .add(toIri(STATUS_TERM), "ISSUED")
                 .add(toIri(CREDENTIALS_TERM), credentialsJsonArray)
                 .build();
 

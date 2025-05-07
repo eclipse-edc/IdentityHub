@@ -60,6 +60,9 @@ public class JsonObjectToCredentialMessageTransformer extends AbstractNamespaceA
         var holderPid = transformString(jsonObject.get(forNamespace(HOLDER_PID_TERM)), transformerContext);
         requestMessage.holderPid(holderPid);
 
+        var status = transformString(jsonObject.get(forNamespace(CredentialMessage.STATUS_TERM)), transformerContext);
+        requestMessage.status(status);
+
         if (credentials != null) {
             ofNullable(readCredentialContainers(credentials, transformerContext))
                     .map(requestMessage::credentials);
