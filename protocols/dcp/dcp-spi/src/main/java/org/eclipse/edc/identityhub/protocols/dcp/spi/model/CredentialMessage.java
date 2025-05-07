@@ -21,6 +21,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 public class CredentialMessage {
+    public static final String TYPE_TERM = "type";
     public static final String CREDENTIALS_TERM = "credentials";
     public static final String ISSUER_PID_TERM = "issuerPid";
     public static final String HOLDER_PID_TERM = "holderPid";

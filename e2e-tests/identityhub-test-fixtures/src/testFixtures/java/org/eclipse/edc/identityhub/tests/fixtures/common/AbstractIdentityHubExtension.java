@@ -31,6 +31,7 @@ public abstract class AbstractIdentityHubExtension extends ComponentExtension {
 
     protected final LazySupplier<Endpoint> didEndpoint;
     protected final LazySupplier<Endpoint> identityEndpoint;
+    protected final LazySupplier<Endpoint> stsEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/sts"), Map.of()));
 
     protected AbstractIdentityHubExtension(EmbeddedRuntime runtime) {
         this(runtime, "localhost");
@@ -40,6 +41,10 @@ public abstract class AbstractIdentityHubExtension extends ComponentExtension {
         super(runtime);
         didEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/".formatted(host, getFreePort())), Map.of()));
         identityEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/identity".formatted(host, getFreePort())), Map.of()));
+    }
+
+    public Endpoint getStsEndpoint() {
+        return stsEndpoint.get();
     }
 
     public abstract Config getConfiguration();

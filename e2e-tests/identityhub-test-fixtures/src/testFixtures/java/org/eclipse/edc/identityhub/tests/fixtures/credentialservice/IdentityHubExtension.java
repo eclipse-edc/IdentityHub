@@ -38,7 +38,6 @@ import static org.eclipse.edc.util.io.Ports.getFreePort;
 public class IdentityHubExtension extends AbstractIdentityHubExtension {
 
     protected final LazySupplier<Endpoint> credentialsEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/credentials"), Map.of()));
-    protected final LazySupplier<Endpoint> stsEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/sts"), Map.of()));
     protected final IdentityHubRuntime identityHubRuntime;
     protected final IdentityHubApiClient apiClient;
 
@@ -52,9 +51,6 @@ public class IdentityHubExtension extends AbstractIdentityHubExtension {
         apiClient = new IdentityHubApiClient(this);
     }
 
-    public Endpoint getStsEndpoint() {
-        return stsEndpoint.get();
-    }
 
     @Override
     public Config getConfiguration() {

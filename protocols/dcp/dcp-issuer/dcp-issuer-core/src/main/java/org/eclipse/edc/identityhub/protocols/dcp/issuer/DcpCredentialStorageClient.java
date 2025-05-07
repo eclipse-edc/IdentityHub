@@ -50,6 +50,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMess
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.STATUS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.TYPE_TERM;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
@@ -135,7 +136,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
         return Json.createObjectBuilder()
                 .add(JsonLdKeywords.CONTEXT, Json.createArrayBuilder()
                         .add(DSPACE_DCP_V_1_0_CONTEXT))
-                .add(JsonLdKeywords.TYPE, CREDENTIAL_MESSAGE_TERM)
+                .add(TYPE_TERM, CREDENTIAL_MESSAGE_TERM)
                 .add(ISSUER_PID_TERM, issuanceProcess.getId())
                 .add(HOLDER_PID_TERM, issuanceProcess.getHolderPid())
                 .add(CREDENTIALS_TERM, credentials.stream().map(this::toJson).collect(toJsonArray()))

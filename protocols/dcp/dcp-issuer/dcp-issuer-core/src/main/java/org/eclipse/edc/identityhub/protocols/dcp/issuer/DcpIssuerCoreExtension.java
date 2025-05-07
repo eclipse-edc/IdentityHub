@@ -30,18 +30,23 @@ import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.Credentia
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
+import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
+import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
+import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 
 import java.time.Clock;
 
@@ -53,7 +58,7 @@ import static org.eclipse.edc.spi.result.Result.success;
 public class DcpIssuerCoreExtension implements ServiceExtension {
 
     public static final String DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT = "dcp-issuer-si";
-
+    static final String ACCESSTOKEN_JTI_VALIDATION_ACTIVATE = "edc.iam.accesstoken.jti.validation";
     private static final String CREDENTIAL_SERVICE_TYPE = "CredentialService";
 
     @Inject
@@ -106,11 +111,24 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     @Inject
     private DcpProfileRegistry profileRegistry;
+    @Setting(description = "Activates the JTI check: access tokens can only be used once to guard against replay attacks", defaultValue = "false", key = ACCESSTOKEN_JTI_VALIDATION_ACTIVATE)
+    private boolean activateJtiCheck;
+    @Inject(required = false)
+    private JtiValidationStore jtiValidationStore;
 
     @Override
     public void initialize(ServiceExtensionContext context) {
         rulesRegistry.addRule(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT, new IssuerEqualsSubjectRule());
+        rulesRegistry.addRule(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT, new NotBeforeValidationRule(clock, 5, true));
         rulesRegistry.addRule(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT, new ExpirationIssuedAtValidationRule(clock, 5, false));
+
+        if (activateJtiCheck) {
+            if (jtiValidationStore == null) {
+                throw new EdcException("JTI validation is activated ('%s') but no JtiValidationStore is provided.".formatted(ACCESSTOKEN_JTI_VALIDATION_ACTIVATE));
+            }
+            rulesRegistry.addRule(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT, new JtiValidationRule(jtiValidationStore, context.getMonitor()));
+        }
+
     }
 
     @Provider

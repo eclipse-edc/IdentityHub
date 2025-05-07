@@ -140,6 +140,7 @@ include(":e2e-tests:admin-api-tests")
 include(":e2e-tests:dcp-issuance-tests")
 include(":e2e-tests:sts-api-tests")
 include(":e2e-tests:tck-tests:presentation")
+include(":e2e-tests:tck-tests:test-attestations")
 
 // BOM modules
 include(":dist:bom:identityhub-base-bom")
