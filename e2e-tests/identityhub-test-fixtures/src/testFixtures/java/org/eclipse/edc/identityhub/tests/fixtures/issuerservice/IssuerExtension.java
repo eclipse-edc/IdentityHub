@@ -47,7 +47,7 @@ public class IssuerExtension extends AbstractIdentityHubExtension {
     }
 
     private IssuerExtension(EmbeddedRuntime runtime, String host) {
-        super(runtime);
+        super(runtime, host);
         issuerRuntime = new IssuerRuntime(this);
         adminEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/admin".formatted(host, getFreePort())), Map.of()));
         issuerApiEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/issuance".formatted(host, getFreePort())), Map.of()));
@@ -122,6 +122,9 @@ public class IssuerExtension extends AbstractIdentityHubExtension {
 
         @Override
         protected IssuerExtension internalBuild() {
+            if (host != null) {
+                return new IssuerExtension(runtime, host);
+            }
             return new IssuerExtension(runtime);
         }
 

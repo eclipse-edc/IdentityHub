@@ -20,8 +20,6 @@ import org.assertj.core.api.Assertions;
 import org.eclipse.dataspacetck.core.system.ConsoleMonitor;
 import org.eclipse.dataspacetck.runtime.TckRuntime;
 import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
@@ -51,20 +49,15 @@ import java.util.stream.Stream;
 
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
-import static org.mockito.Mockito.mock;
 
 @EndToEndTest
-public class DcpIssuerTest {
+public class DcpIssuerIssuanceFlowTest {
     @RegisterExtension
     public static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
             .id("issuer-service")
             .name("issuerservice")
             .modules(":dist:bom:issuerservice-bom", ":e2e-tests:tck-tests:test-attestations")
             .build();
-    protected static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
-    protected static final DidResolverRegistry DID_RESOLVER_REGISTRY = mock();
-    //            .registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER)
-//            .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
     private static final int CALLBACK_PORT = getFreePort();
     private static final String ISSUANCE_CORRELATION_ID = "issuance-correlation-id";
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "issuer";

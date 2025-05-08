@@ -110,7 +110,6 @@ public class IdentityHubExtension extends AbstractIdentityHubExtension {
 
     public static class Builder extends AbstractIdentityHubExtension.Builder<IdentityHubExtension, Builder> {
 
-        private String host = null;
 
         protected Builder() {
             super();
@@ -120,16 +119,6 @@ public class IdentityHubExtension extends AbstractIdentityHubExtension {
             return new Builder();
         }
 
-        /**
-         * Override the host name. By default, this is {@code localhost}, but in some circumstances it may be necessary to override that,
-         * for example in some scenarios involving Docker networking
-         *
-         * @param host The hostname
-         */
-        public Builder host(String host) {
-            this.host = host;
-            return this;
-        }
 
         @Override
         protected IdentityHubExtension internalBuild() {

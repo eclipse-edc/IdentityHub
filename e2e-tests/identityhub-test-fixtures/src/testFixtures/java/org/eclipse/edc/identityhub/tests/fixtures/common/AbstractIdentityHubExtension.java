@@ -31,7 +31,7 @@ public abstract class AbstractIdentityHubExtension extends ComponentExtension {
 
     protected final LazySupplier<Endpoint> didEndpoint;
     protected final LazySupplier<Endpoint> identityEndpoint;
-    protected final LazySupplier<Endpoint> stsEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://localhost:" + getFreePort() + "/api/sts"), Map.of()));
+    protected final LazySupplier<Endpoint> stsEndpoint;
 
     protected AbstractIdentityHubExtension(EmbeddedRuntime runtime) {
         this(runtime, "localhost");
@@ -41,6 +41,7 @@ public abstract class AbstractIdentityHubExtension extends ComponentExtension {
         super(runtime);
         didEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/".formatted(host, getFreePort())), Map.of()));
         identityEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/identity".formatted(host, getFreePort())), Map.of()));
+        stsEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/sts".formatted(host, getFreePort())), Map.of()));
     }
 
     public Endpoint getStsEndpoint() {
@@ -60,8 +61,20 @@ public abstract class AbstractIdentityHubExtension extends ComponentExtension {
     }
 
     public abstract static class Builder<P extends AbstractIdentityHubExtension, B extends Builder<P, B>> extends ComponentExtension.Builder<P, B> {
+        protected String host = null;
 
         protected Builder() {
+        }
+
+        /**
+         * Override the host name. By default, this is {@code localhost}, but in some circumstances it may be necessary to override that,
+         * for example in some scenarios involving Docker networking
+         *
+         * @param host The hostname
+         */
+        public B host(String host) {
+            this.host = host;
+            return self();
         }
 
     }

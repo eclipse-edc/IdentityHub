@@ -89,7 +89,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
     void requestCredential_validationError_shouldReturn400() {
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(failure(violation("foo", "bar")));
 
-        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), generateJwt()))
+        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), "Bearer " + generateJwt()))
                 .isInstanceOf(ValidationFailureException.class)
                 .hasMessage("foo");
         verifyNoInteractions(dcpIssuerService, dcpIssuerTokenVerifier, typeTransformerRegistry);
@@ -101,7 +101,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(validatorRegistryMock.validate(eq(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM)), any())).thenReturn(success());
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.failure("cannot transform"));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
-        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), generateJwt()))
+        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), "Bearer " + generateJwt()))
                 .isInstanceOf(InvalidRequestException.class)
                 .hasMessage("cannot transform");
 
@@ -116,7 +116,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.unauthorized("unauthorized"));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
 
-        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), generateJwt()))
+        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), "Bearer " + generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessageContaining("unauthorized");
 
@@ -130,7 +130,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.notFound("not found"));
 
-        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), generateJwt()))
+        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), "Bearer " + generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessageContaining("Invalid issuer");
 
@@ -150,7 +150,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(dcpIssuerService.initiateCredentialsIssuance(eq(participantContextId), any(), any())).thenReturn(ServiceResult.unauthorized("cannot initiate unauthorized"));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
 
-        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), token))
+        assertThatThrownBy(() -> controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), "Bearer " + token))
                 .isExactlyInstanceOf(NotAuthorizedException.class)
                 .hasMessage("cannot initiate unauthorized");
 
@@ -173,7 +173,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(dcpIssuerService.initiateCredentialsIssuance(eq(participantContextId), any(), any())).thenReturn(ServiceResult.success(responseMessage));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
 
-        var response = controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), token);
+        var response = controller().requestCredential(participantContextIdEncoded, createObjectBuilder().build(), "Bearer " + token);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(201);
