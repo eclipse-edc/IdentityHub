@@ -16,8 +16,6 @@ package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -41,9 +39,6 @@ public interface IssuerHolderAdminApi {
 
     @Operation(description = "Adds a new holder.",
             operationId = "addHolder",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
-            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = HolderDto.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "201", description = "The holder was added successfully."),
@@ -55,13 +50,10 @@ public interface IssuerHolderAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response addHolder(String participantId, HolderDto holder, SecurityContext context);
+    Response addHolder(String participantContextId, HolderDto holder, SecurityContext context);
 
     @Operation(description = "Updates holder data.",
             operationId = "updateHolder",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)
-            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = HolderDto.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "The holder was updated successfully."),
@@ -73,14 +65,10 @@ public interface IssuerHolderAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response updateHolder(String participantId, HolderDto holder, SecurityContext context);
+    Response updateHolder(String participantContextId, HolderDto holder, SecurityContext context);
 
     @Operation(description = "Gets metadata for a certain holder.",
             operationId = "getHolderById",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "holderId", description = "ID of the holder who should be returned", required = true, in = ParameterIn.PATH)
-            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of verifiable credential metadata. Note that these are not actual VerifiableCredentials.",
                             content = @Content(schema = @Schema(implementation = Holder.class), mediaType = "application/json")),
@@ -92,13 +80,10 @@ public interface IssuerHolderAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Holder getHolderById(String holderId, SecurityContext context);
+    Holder getHolderById(String participantContextId, String holderId, SecurityContext context);
 
     @Operation(description = "Gets all holders for a certain query.",
             operationId = "queryHolders",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-            },
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of holders metadata.",
