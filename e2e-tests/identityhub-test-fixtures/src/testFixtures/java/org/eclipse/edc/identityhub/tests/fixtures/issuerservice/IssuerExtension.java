@@ -47,7 +47,7 @@ public class IssuerExtension extends AbstractIdentityHubExtension {
     }
 
     private IssuerExtension(EmbeddedRuntime runtime, String host) {
-        super(runtime);
+        super(runtime, host);
         issuerRuntime = new IssuerRuntime(this);
         adminEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/admin".formatted(host, getFreePort())), Map.of()));
         issuerApiEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/issuance".formatted(host, getFreePort())), Map.of()));
@@ -86,8 +86,8 @@ public class IssuerExtension extends AbstractIdentityHubExtension {
                 put("web.http.path", "/api/v1");
                 put("web.http.issueradmin.port", String.valueOf(adminEndpoint.get().getUrl().getPort()));
                 put("web.http.issueradmin.path", adminEndpoint.get().getUrl().getPath());
-                put("web.http.sts.port", String.valueOf(getFreePort()));
-                put("web.http.sts.path", "/api/v1/sts");
+                put("web.http.sts.port", String.valueOf(stsEndpoint.get().getUrl().getPort()));
+                put("web.http.sts.path", stsEndpoint.get().getUrl().getPath());
                 put("web.http.identity.port", String.valueOf(identityEndpoint.get().getUrl().getPort()));
                 put("web.http.identity.path", identityEndpoint.get().getUrl().getPath());
                 put("web.http.issuance.port", String.valueOf(issuerApiEndpoint.get().getUrl().getPort()));
@@ -96,9 +96,10 @@ public class IssuerExtension extends AbstractIdentityHubExtension {
                 put("web.http.version.path", "/.well-known/api");
                 put("web.http.did.port", String.valueOf(didEndpoint.get().getUrl().getPort()));
                 put("web.http.did.path", didEndpoint.get().getUrl().getPath());
+
                 put("web.http.statuslist.port", String.valueOf(getFreePort()));
                 put("edc.sql.schema.autocreate", "true");
-                put("edc.iam.accesstoken.jti.validation", String.valueOf(false));
+                put("edc.iam.accesstoken.jti.validation", String.valueOf(true));
                 put("edc.issuer.statuslist.signing.key.alias", "signing-key");
                 // config for the embedded STS
                 put("edc.iam.sts.publickey.id", "test-public-key");
@@ -121,6 +122,9 @@ public class IssuerExtension extends AbstractIdentityHubExtension {
 
         @Override
         protected IssuerExtension internalBuild() {
+            if (host != null) {
+                return new IssuerExtension(runtime, host);
+            }
             return new IssuerExtension(runtime);
         }
 

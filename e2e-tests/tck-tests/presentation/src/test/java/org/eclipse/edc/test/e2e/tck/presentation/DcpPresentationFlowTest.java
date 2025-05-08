@@ -44,6 +44,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
+import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -59,7 +60,7 @@ public class DcpPresentationFlowTest {
     public static final String ISSUANCE_CORRELATION_ID = "issuance-correlation-id";
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "holder";
     private static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
-    private static final int CALLBACK_PORT = 42420;
+    private static final int CALLBACK_PORT = getFreePort();
     private static final ScopeToCriterionTransformer TCK_TRANSFORMER = new TckTransformer();
     @RegisterExtension
     static final IdentityHubExtension IDENTITY_HUB_EXTENSION = (IdentityHubExtension) IdentityHubExtension.Builder.newInstance()

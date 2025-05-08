@@ -104,7 +104,7 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
         newRules.add(new IssuerKeyIdValidationRule(kid));
         var res = tokenValidationService.validate(token.getToken(), publicKeyResolver, newRules);
         if (res.failed()) {
-            return ServiceResult.unauthorized("Token validation failed");
+            return ServiceResult.unauthorized("Token validation failed: " + res.getFailureDetail());
         }
         return ServiceResult.success(new DcpRequestContext(holder, Map.of()));
     }

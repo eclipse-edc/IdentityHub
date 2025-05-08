@@ -448,7 +448,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         private String generateSiToken() {
-            return generateSiToken(ISSUER_DID);
+            return "Bearer " + generateSiToken(ISSUER_DID);
         }
 
         private String generateSiToken(ECKey key) {

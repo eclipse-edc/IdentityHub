@@ -71,11 +71,14 @@ public class CredentialRequestApiController implements CredentialRequestApi {
     @POST
     @Path("/")
     @Override
-    public Response requestCredential(@PathParam("participantContextId") String participantContextId, JsonObject message, @HeaderParam(AUTHORIZATION) String token) {
-        if (token == null) {
+    public Response requestCredential(@PathParam("participantContextId") String participantContextId, JsonObject message, @HeaderParam(AUTHORIZATION) String authHeader) {
+        if (authHeader == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
-        token = token.replace("Bearer", "").trim();
+        if (!authHeader.startsWith("Bearer ")) {
+            throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
+        }
+        var token = authHeader.replace("Bearer", "").trim();
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
         validatorRegistry.validate(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM), message).orElseThrow(ValidationFailureException::new);

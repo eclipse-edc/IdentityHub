@@ -98,6 +98,7 @@ public class JwtCredentialGenerator implements CredentialGenerator {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private VerifiableCredential.Builder generateVerifiableCredential(String type, long validity, String issuer, String holderId, Map<String, Object> credentialSubject) {
         return VerifiableCredential.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
                 .issuer(new Issuer(issuer))
                 .dataModelVersion(DataModelVersion.V_1_1)
                 .issuanceDate(Instant.now(clock))
@@ -144,8 +145,20 @@ public class JwtCredentialGenerator implements CredentialGenerator {
         var claims = new HashMap<>(
                 Map.of(JsonLdKeywords.CONTEXT, List.of(VcConstants.W3C_CREDENTIALS_URL),
                         TYPE_PROPERTY, Arrays.asList(type),
+                        "id", verifiableCredential.getId(),
+                        "issuanceDate", verifiableCredential.getIssuanceDate().toString(),
+                        "issuer", verifiableCredential.getIssuer().id(),
                         CREDENTIAL_SUBJECT, credentialSubjectClaims(verifiableCredential)
                 ));
+        if (verifiableCredential.getExpirationDate() != null) {
+            claims.put("expirationDate", verifiableCredential.getExpirationDate().toString());
+        }
+        if (verifiableCredential.getDescription() != null) {
+            claims.put("description", verifiableCredential.getDescription());
+        }
+        if (verifiableCredential.getName() != null) {
+            claims.put("name", verifiableCredential.getName());
+        }
 
         var status = credentialStatusClaims(verifiableCredential);
         if (!status.isEmpty()) {

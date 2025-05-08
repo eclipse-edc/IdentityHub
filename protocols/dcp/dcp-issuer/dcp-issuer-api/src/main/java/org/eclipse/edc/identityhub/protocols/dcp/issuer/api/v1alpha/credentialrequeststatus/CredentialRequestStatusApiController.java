@@ -61,17 +61,21 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
     @GET
     @Path("/{credentialRequestId}")
     @Override
-    public JsonObject credentialStatus(@PathParam("participantContextId") String participantContextId, @PathParam("credentialRequestId") String credentialRequestId, @HeaderParam(AUTHORIZATION) String token) {
-        if (token == null) {
+    public JsonObject credentialStatus(@PathParam("participantContextId") String participantContextId, @PathParam("credentialRequestId") String credentialRequestId, @HeaderParam(AUTHORIZATION) String authHeader) {
+        if (authHeader == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
+        if (!authHeader.startsWith("Bearer ")) {
+            throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
+        }
+        var authToken = authHeader.replace("Bearer ", "").trim();
 
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
         var participantContext = participantContextService.getParticipantContext(decodedParticipantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
 
-        var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(token).build();
+        var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(authToken).build();
 
         var requestContext = tokenValidator.verify(participantContext, tokenRepresentation)
                 .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));

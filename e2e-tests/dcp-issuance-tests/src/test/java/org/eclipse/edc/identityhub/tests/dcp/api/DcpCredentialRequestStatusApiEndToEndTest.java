@@ -279,7 +279,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         private String generateSiToken(String audience, String participantDid, ECKey participantKey) {
-            return generateJwt(audience, participantDid, participantDid, Map.of(), participantKey);
+            return "Bearer " + generateJwt(audience, participantDid, participantDid, Map.of(), participantKey);
         }
 
         private IssuanceProcess createIssuanceProcess() {
