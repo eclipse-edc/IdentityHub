@@ -56,7 +56,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ApiTest
-@SuppressWarnings("resource")
 class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
@@ -86,7 +85,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
         when(typeTransformerRegistry.transform(isA(CredentialRequestStatus.class), eq(JsonObject.class))).thenReturn(Result.failure("cannot transform"));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
-        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), generateJwt()))
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), generateToken()))
                 .isInstanceOf(EdcException.class)
                 .hasMessageContaining("cannot transform");
 
@@ -97,7 +96,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.unauthorized("unauthorized"));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
 
-        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), generateJwt()))
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), generateToken()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessageContaining("unauthorized");
 
@@ -108,7 +107,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     void credentialStatus_participantNotFound_shouldReturn401() {
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.notFound("not found"));
 
-        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), generateJwt()))
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextIdEncoded, UUID.randomUUID().toString(), generateToken()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessageContaining("Invalid issuer");
 
@@ -122,7 +121,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
         var participant = createHolder("id", "did", "name");
         var ctx = new DcpRequestContext(participant, Map.of());
 
-        var token = generateJwt();
+        var token = generateToken();
 
         when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess())));
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
@@ -133,7 +132,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
         assertThat(response).isNotNull();
 
-        verify(dcpIssuerTokenVerifier).verify(any(), argThat(tr -> tr.getToken().equals(token)));
+        verify(dcpIssuerTokenVerifier).verify(any(), argThat(tr -> token.contains(tr.getToken())));
     }
 
     @Override
@@ -169,7 +168,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
                 .build();
     }
 
-    private String generateJwt() {
+    private String generateToken() {
         var ecKey = generateEcKey(null);
         var jwt = buildSignedJwt(new JWTClaimsSet.Builder().audience("test-audience")
                 .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
@@ -177,7 +176,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
                 .subject("test-subject")
                 .jwtID(UUID.randomUUID().toString()).build(), ecKey);
 
-        return jwt.serialize();
+        return "Bearer " + jwt.serialize();
     }
 
 }
