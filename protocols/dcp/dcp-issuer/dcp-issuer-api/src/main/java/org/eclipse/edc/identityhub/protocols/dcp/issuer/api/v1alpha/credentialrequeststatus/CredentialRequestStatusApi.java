@@ -16,8 +16,6 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialr
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -44,9 +42,6 @@ public interface CredentialRequestStatusApi {
     @Tag(name = "Credential Request Status API")
     @Operation(description = "Requests status information about an issuance request from an issuer",
             operationId = "getCredentialRequestStatus",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-                    @Parameter(name = "credentialRequestId", description = "ID of the Credential Request that was sent previously", required = true, in = ParameterIn.PATH)},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Gets the status of a credentials request.",
                             content = @Content(schema = @Schema(implementation = ApiSchema.CredentialStatusSchema.class))),

@@ -87,7 +87,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @GET
     @Path("/{credentialId}")
     @Override
-    public VerifiableCredentialResource getCredential(@PathParam("credentialId") String id, @Context SecurityContext securityContext) {
+    public VerifiableCredentialResource getCredential(@PathParam("participantContextId") String participantId, @PathParam("credentialId") String id, @Context SecurityContext securityContext) {
         authorizationService.isAuthorized(securityContext, id, VerifiableCredentialResource.class)
                 .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
 
@@ -112,7 +112,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
     @PUT
     @Override
-    public void updateCredential(VerifiableCredentialManifest manifest, @Context SecurityContext securityContext) {
+    public void updateCredential(@PathParam("participantContextId") String participantId, VerifiableCredentialManifest manifest, @Context SecurityContext securityContext) {
         validator.validate(manifest).orElseThrow(ValidationFailureException::new);
 
         authorizationService.isAuthorized(securityContext, manifest.getId(), VerifiableCredentialResource.class)
@@ -125,7 +125,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
     @GET
     @Override
-    public Collection<VerifiableCredentialResource> queryCredentialsByType(@Nullable @QueryParam("type") String type, @Context SecurityContext securityContext) {
+    public Collection<VerifiableCredentialResource> queryCredentialsByType(@PathParam("participantContextId") String participantId, @Nullable @QueryParam("type") String type, @Context SecurityContext securityContext) {
         var query = QuerySpec.Builder.newInstance();
 
         if (!StringUtils.isNullOrEmpty(type)) {
@@ -142,7 +142,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @DELETE
     @Path("/{credentialId}")
     @Override
-    public void deleteCredential(@PathParam("credentialId") String id, @Context SecurityContext securityContext) {
+    public void deleteCredential(@PathParam("participantContextId") String participantId, @PathParam("credentialId") String id, @Context SecurityContext securityContext) {
         authorizationService.isAuthorized(securityContext, id, VerifiableCredentialResource.class)
                 .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
         var res = credentialStore.deleteById(id);
