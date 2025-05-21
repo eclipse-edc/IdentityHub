@@ -43,7 +43,7 @@ public interface StorageApi {
     @Operation(description = "Writes a set of credentials into storage",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ApiSchema.CredentialMessageSchema.class))),
             responses = {
-                    @ApiResponse(responseCode = "2xx", description = "The credentialMessage was successfully processed and stored"),
+                    @ApiResponse(responseCode = "200", description = "The credentialMessage was successfully processed and stored"),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)))),
                     @ApiResponse(responseCode = "401", description = "No Authorization header was given.",
