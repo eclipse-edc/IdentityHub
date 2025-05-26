@@ -116,7 +116,7 @@ public class DcpPresentationFlowTest {
                         "dataspacetck.sts.client.secret", response.clientSecret(),
                         "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID
                 ))
-                .addPackage("org.eclipse.dataspacetck.dcp.verification.presentation")
+                .addPackage("org.eclipse.dataspacetck.dcp.verification.presentation.cs")
                 .monitor(monitor)
                 .build()
                 .execute();

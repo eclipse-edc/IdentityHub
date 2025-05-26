@@ -124,7 +124,7 @@ public class DcpPresentationFlowWithDockerTest {
                         "dataspacetck.sts.client.id", response.clientId(),
                         "dataspacetck.sts.client.secret", response.clientSecret(),
                         "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID,
-                        "dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.presentation"
+                        "dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.presentation.cs"
                 ))
         ) {
             tckContainer.setPortBindings(List.of("%s:%s".formatted(CALLBACK_PORT, CALLBACK_PORT)));
