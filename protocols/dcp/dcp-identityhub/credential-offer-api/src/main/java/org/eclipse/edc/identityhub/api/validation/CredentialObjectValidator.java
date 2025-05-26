@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.api.validation;
 
 import jakarta.json.JsonObject;
+import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.validator.spi.ValidationResult;
 
@@ -33,9 +34,15 @@ public class CredentialObjectValidator extends JsonValidator {
             return failure(violation("CredentialObject was null", "."));
         }
 
-        var credentialType = input.get(namespace.toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM));
-        if (isNullObject(credentialType)) {
-            return failure(violation("Invalid format: must contain a '%s' property.".formatted(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), null));
+        var id = input.get(JsonLdKeywords.ID);
+        if (isNullObject(id)) {
+            return failure(violation("Invalid format: must contain an '@id' property.", null));
+        }
+        if (input.size() > 1) {
+            var credentialType = input.get(namespace.toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM));
+            if (isNullObject(credentialType)) {
+                return failure(violation("Invalid format: must contain a '%s' property if non-sparse CredentialObjects are sent.".formatted(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), null));
+            }
         }
 
         return success();

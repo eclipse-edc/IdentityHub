@@ -27,12 +27,16 @@ public class CredentialObject {
     public static final String CREDENTIAL_OBJECT_PROFILES_TERM = "profiles";
     public static final String CREDENTIAL_OBJECT_BINDING_METHODS_TERM = "bindingMethods";
     public static final String CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM = "issuancePolicy";
-
+    private String id;
     private String credentialType;
     private String offerReason;
     private List<String> profiles = new ArrayList<>();
     private List<String> bindingMethods = new ArrayList<>();
     private PresentationDefinition issuancePolicy;
+
+    public String getId() {
+        return id;
+    }
 
     public String getCredentialType() {
         return credentialType;
@@ -63,6 +67,11 @@ public class CredentialObject {
 
         public static Builder newInstance() {
             return new Builder();
+        }
+
+        public Builder id(String id) {
+            credentialObject.id = id;
+            return this;
         }
 
         public Builder credentialType(String credentialType) {

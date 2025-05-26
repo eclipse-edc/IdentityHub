@@ -52,7 +52,9 @@ public class CredentialOfferMessageValidator extends JsonValidator {
 
         var array = input.get(namespace.toIri(CREDENTIALS_TERM));
         if (!isNullObject(array) && array.getValueType() == JsonValue.ValueType.ARRAY) {
-            var results = array.asJsonArray().stream().map(jv -> credentialObjectValidator.validate(jv.asJsonObject()));
+            var results = array.asJsonArray().stream().map(jv -> {
+                return credentialObjectValidator.validate(jv.asJsonObject());
+            });
             return results.reduce(ValidationResult::merge).orElse(success());
         }
 

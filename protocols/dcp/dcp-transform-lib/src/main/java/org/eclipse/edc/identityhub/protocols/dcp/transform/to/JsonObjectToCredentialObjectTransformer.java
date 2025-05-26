@@ -52,30 +52,32 @@ public class JsonObjectToCredentialObjectTransformer extends AbstractNamespaceAw
     @Override
     public @Nullable CredentialObject transform(@NotNull JsonObject jsonObject, @NotNull TransformerContext transformerContext) {
 
-        var requestMessage = Builder.newInstance();
+        var credentialObject = Builder.newInstance();
         var issuancePolicy = jsonObject.get(forNamespace(CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM));
         if (issuancePolicy != null) {
             Optional.ofNullable(readIssuancePolicy(issuancePolicy, transformerContext))
-                    .map(requestMessage::issuancePolicy);
+                    .map(credentialObject::issuancePolicy);
         }
+
+        credentialObject.id(nodeId(jsonObject));
 
         Optional.ofNullable(jsonObject.get(forNamespace(CREDENTIAL_OBJECT_OFFER_REASON_TERM)))
                 .map(offerReason -> transformString(offerReason, transformerContext))
-                .ifPresent(requestMessage::offerReason);
+                .ifPresent(credentialObject::offerReason);
 
         Optional.ofNullable(jsonObject.get(forNamespace(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM)))
                 .map(credentialType -> transformString(credentialType, transformerContext))
-                .ifPresent(requestMessage::credentialType);
+                .ifPresent(credentialObject::credentialType);
 
         Optional.ofNullable(jsonObject.get(forNamespace(CREDENTIAL_OBJECT_PROFILES_TERM)))
-                .ifPresent(credentialType -> transformArrayOrObject(credentialType, Object.class, (obj) -> requestMessage.profile(obj.toString()), transformerContext));
+                .ifPresent(credentialType -> transformArrayOrObject(credentialType, Object.class, (obj) -> credentialObject.profile(obj.toString()), transformerContext));
 
 
         Optional.ofNullable(jsonObject.get(forNamespace(CREDENTIAL_OBJECT_BINDING_METHODS_TERM)))
-                .ifPresent(credentialType -> transformArrayOrObject(credentialType, Object.class, (obj) -> requestMessage.bindingMethod(obj.toString()), transformerContext));
+                .ifPresent(credentialType -> transformArrayOrObject(credentialType, Object.class, (obj) -> credentialObject.bindingMethod(obj.toString()), transformerContext));
 
 
-        return requestMessage.build();
+        return credentialObject.build();
     }
 
     private PresentationDefinition readIssuancePolicy(JsonValue v, TransformerContext context) {
