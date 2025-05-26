@@ -276,7 +276,7 @@ public class VerifiableCredentialApiEndToEndTest {
                                 {
                                   "issuerDid": "did:web:issuer",
                                   "holderPid": "%s",
-                                  "credentials": [{ "format": "VC1_0_JWT", "credentialType": "TestCredential"}]
+                                  "credentials": [{ "format": "VC1_0_JWT", "id": "TestCredential-id"}]
                                 }
                                 """.formatted(holderPid);
                 runtime.getIdentityEndpoint().baseRequest()

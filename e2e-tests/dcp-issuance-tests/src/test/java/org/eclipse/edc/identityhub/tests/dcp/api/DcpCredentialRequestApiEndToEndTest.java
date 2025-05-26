@@ -407,7 +407,7 @@ public class DcpCredentialRequestApiEndToEndTest {
 
 
             var credentialDefinition = CredentialDefinition.Builder.newInstance()
-                    .id("credential-id")
+                    .id("MembershipCredential-id")
                     .credentialType("MembershipCredential")
                     .jsonSchemaUrl("https://example.com/schema")
                     .jsonSchema("{}")
