@@ -106,7 +106,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                   "holderPid": "holderPid",
                   "credentials":[
                     {
-                        "credentialType": "MembershipCredential",
+                        "id": "MembershipCredential-id",
                         "format": "vc1_0_jwt"
                     }
                   ]
@@ -199,7 +199,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                         "value", true);
 
                 var credentialDefinition = CredentialDefinition.Builder.newInstance()
-                        .id("credential-id")
+                        .id("MembershipCredential-id")
                         .credentialType("MembershipCredential")
                         .jsonSchemaUrl("https://example.com/schema")
                         .jsonSchema("{}")
@@ -246,7 +246,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                     assertThat(issuanceProcess).isNotNull()
                             .satisfies(process -> {
                                 assertThat(process.getHolderId()).isEqualTo(PARTICIPANT_DID);
-                                assertThat(process.getCredentialDefinitions()).containsExactly("credential-id");
+                                assertThat(process.getCredentialDefinitions()).containsExactly("MembershipCredential-id");
                                 assertThat(process.getClaims()).containsAllEntriesOf(claims);
                                 assertThat(process.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
                                 assertThat(process.getParticipantContextId()).isEqualTo(ISSUER_ID);

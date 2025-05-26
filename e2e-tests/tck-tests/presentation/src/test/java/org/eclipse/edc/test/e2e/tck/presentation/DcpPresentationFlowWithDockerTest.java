@@ -93,7 +93,7 @@ public class DcpPresentationFlowWithDockerTest {
                 .requestId(ISSUANCE_CORRELATION_ID)
                 .state(HolderRequestState.REQUESTED.code())
                 .issuerPid(UUID.randomUUID().toString())
-                .typesAndFormats(Map.of("MembershipCredential", "VC1_0_JWT", "SensitiveDataCredential", "VC1_0_JWT"))
+                .idsAndFormats(Map.of("MembershipCredential", "VC1_0_JWT", "SensitiveDataCredential", "VC1_0_JWT"))
                 .build());
     }
 

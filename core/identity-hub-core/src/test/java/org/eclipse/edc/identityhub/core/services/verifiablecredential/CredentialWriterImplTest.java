@@ -64,7 +64,7 @@ class CredentialWriterImplTest {
     void setUp() {
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid("did:web:issuer")
-                .typesAndFormats(Map.of(TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT))
+                .idsAndFormats(Map.of(TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT))
                 .state(REQUESTED.code())
                 .participantContextId(PARTICIPANT_ID)
                 .build()));
@@ -164,7 +164,7 @@ class CredentialWriterImplTest {
     void write_holderRequestInWrongState_expectFailure() {
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid("did:web:issuer")
-                .typesAndFormats(Map.of(TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT))
+                .idsAndFormats(Map.of(TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT))
                 .state(REQUESTING.code())
                 .participantContextId(PARTICIPANT_ID)
                 .build()));

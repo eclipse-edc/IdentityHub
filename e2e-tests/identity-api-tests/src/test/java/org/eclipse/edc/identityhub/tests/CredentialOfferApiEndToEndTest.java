@@ -37,6 +37,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOff
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
+import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
@@ -57,6 +58,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -101,7 +103,7 @@ public class CredentialOfferApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .typesAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString(), // for tests involving the JWT credential
+                    .idsAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString(), // for tests involving the JWT credential
                             "SuperSecretCredential", CredentialFormat.VC1_0_LD.toString())) // for tests involving the LD credential
                     .state(REQUESTED.code())
                     .participantContextId(PROVIDER_DID)
@@ -243,6 +245,7 @@ public class CredentialOfferApiEndToEndTest {
 
         private JsonObject createCredentialContainer() {
             return Json.createObjectBuilder()
+                    .add(JsonLdKeywords.ID, UUID.randomUUID().toString())
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OBJECT_PROFILES_TERM), Json.createArrayBuilder(List.of("vc20-bssl/jwt")))
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OBJECT_OFFER_REASON_TERM), "reissuance")
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), "MembershipCredential")

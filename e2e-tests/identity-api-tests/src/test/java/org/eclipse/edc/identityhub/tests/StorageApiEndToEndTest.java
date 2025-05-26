@@ -100,7 +100,7 @@ public class StorageApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .typesAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString(), // for tests involving the JWT credential
+                    .idsAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString(), // for tests involving the JWT credential
                             "SuperSecretCredential", CredentialFormat.VC1_0_LD.toString())) // for tests involving the LD credential
                     .state(REQUESTED.code())
                     .participantContextId(PROVIDER_DID)
@@ -256,7 +256,7 @@ public class StorageApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .typesAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString()))
+                    .idsAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString()))
                     .state(CREATED.code())
                     .participantContextId(PROVIDER_DID)
                     .build());
@@ -283,7 +283,7 @@ public class StorageApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .typesAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
+                    .idsAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
                     .state(REQUESTED.code())
                     .participantContextId(PROVIDER_DID)
                     .build());

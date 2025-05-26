@@ -16,8 +16,8 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpProfile;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -67,14 +67,14 @@ public class DcpIssuerServiceImplTest {
 
         var message = CredentialRequestMessage.Builder.newInstance()
                 .holderPid(UUID.randomUUID().toString())
-                .credential(new CredentialRequest("MembershipCredential", "vc1_0_jwt", null))
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1", "vc1_0_jwt"))
                 .build();
 
         var attestations = Set.of("attestation1", "attestation2");
 
         var credentialRuleDefinition = new CredentialRuleDefinition("expression", Map.of());
         var credentialDefinition = CredentialDefinition.Builder.newInstance()
-                .id("credentialDefinitionId")
+                .id("credentialDefinitionId1")
                 .credentialType("MembershipCredential")
                 .jsonSchema("jsonSchema")
                 .jsonSchemaUrl("jsonSchemaUrl")
@@ -105,7 +105,7 @@ public class DcpIssuerServiceImplTest {
 
         assertThat(issuanceProcess).isNotNull();
         assertThat(issuanceProcess.getId()).isEqualTo(result.getContent().requestId());
-        assertThat(issuanceProcess.getCredentialDefinitions()).containsExactly("credentialDefinitionId");
+        assertThat(issuanceProcess.getCredentialDefinitions()).containsExactly("credentialDefinitionId1");
         assertThat(issuanceProcess.getHolderId()).isEqualTo("holderId");
         assertThat(issuanceProcess.getState()).isEqualTo(IssuanceProcessStates.APPROVED.code());
         assertThat(issuanceProcess.getClaims()).containsAllEntriesOf(claims);

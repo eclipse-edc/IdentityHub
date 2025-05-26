@@ -122,7 +122,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     {
                       "issuerDid": "%s",
                       "holderPid": "test-request-id",
-                      "credentials": [{ "format": "VC1_0_JWT", "credentialType": "MembershipCredential"}]
+                      "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id"}]
                     }
                     """.formatted(issuerDid);
 
@@ -216,7 +216,7 @@ public class DcpIssuanceFlowEndToEndTest {
 
 
             var credentialDefinition = CredentialDefinition.Builder.newInstance()
-                    .id("credential-id")
+                    .id("membershipCredential-id")
                     .credentialType("MembershipCredential")
                     .jsonSchemaUrl("https://example.com/schema")
                     .jsonSchema("{}")

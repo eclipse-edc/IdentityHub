@@ -19,8 +19,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.jsonld.spi.transformer.AbstractNamespaceAwareJsonLdTransformer;
@@ -59,7 +59,7 @@ public class JsonObjectToCredentialRequestMessageTransformer extends AbstractNam
         return requestMessage.build();
     }
 
-    private List<CredentialRequest> readCredentialRequests(JsonValue v, TransformerContext context) {
+    private List<CredentialRequestSpecifier> readCredentialRequests(JsonValue v, TransformerContext context) {
         var rawJson = getCredentials(v);
         try {
             return typeManager.getMapper(typeContext).readValue(rawJson.toString(), new TypeReference<>() {

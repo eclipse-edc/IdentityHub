@@ -32,10 +32,10 @@ public class CredentialRequestMessage {
     public static final String CREDENTIAL_REQUEST_MESSAGE_CREDENTIALS_TERM = "credentials";
     public static final String CREDENTIAL_REQUEST_MESSAGE_HOLDER_PID_TERM = "holderPid";
 
-    private List<CredentialRequest> credentials = new ArrayList<>();
+    private List<CredentialRequestSpecifier> credentials = new ArrayList<>();
     private String holderPid;
 
-    public List<CredentialRequest> getCredentials() {
+    public List<CredentialRequestSpecifier> getCredentials() {
         return credentials;
     }
 
@@ -58,12 +58,12 @@ public class CredentialRequestMessage {
         }
 
 
-        public Builder credentials(List<CredentialRequest> credentials) {
+        public Builder credentials(List<CredentialRequestSpecifier> credentials) {
             this.instance.credentials = credentials;
             return this;
         }
 
-        public Builder credential(CredentialRequest credential) {
+        public Builder credential(CredentialRequestSpecifier credential) {
             this.instance.credentials.add(credential);
             return this;
         }
