@@ -157,7 +157,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "credentialType": "MembershipCredential",
                               "jsonSchema": "{}",
                               "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
-                              "formats": ["VC1_0_JWT"]
+                              "format": "VC1_0_JWT"
                             }
                             """)
                     .post("/v1alpha/participants/%s/credentialdefinitions".formatted(toBase64(USER)))
@@ -190,7 +190,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "credentialType": "MembershipCredential",
                               "jsonSchema": "{}",
                               "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
-                              "formats": ["VC1_0_JWT"]
+                              "format": "VC1_0_JWT"
                             }
                             """)
                     .post("/v1alpha/participants/%s/credentialdefinitions".formatted(toBase64(USER)))
@@ -230,7 +230,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "jsonSchema": "{}",
                               "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
                               "attestations": ["notfound"],
-                              "formats": ["VC1_0_JWT"]
+                              "format": "VC1_0_JWT"
                             }
                             """)
                     .post("/v1alpha/participants/%s/credentialdefinitions".formatted(toBase64(USER)))

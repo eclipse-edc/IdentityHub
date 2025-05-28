@@ -14,12 +14,8 @@
 
 package org.eclipse.edc.issuerservice.defaults.store;
 
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.query.ReflectionPropertyLookup;
-
-import java.util.Collection;
-import java.util.stream.Collectors;
 
 
 /**
@@ -30,9 +26,8 @@ public class CredentialDefinitionLookup extends ReflectionPropertyLookup {
     @Override
     public Object getProperty(String key, Object object) {
         var fieldValue = super.getProperty(key, object);
-        if (key.equals("formats")) {
-            Collection<CredentialFormat> formats = (Collection<CredentialFormat>) fieldValue;
-            return formats.stream().map(CredentialFormat::name).collect(Collectors.toList());
+        if (key.equals("format")) {
+            return fieldValue.toString();
         }
         return fieldValue;
     }

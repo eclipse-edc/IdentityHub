@@ -106,7 +106,7 @@ public class CredentialOfferApiController implements CredentialOfferApi {
                         .credentialType(co.getCredentialType())
                         .issuancePolicy(co.getIssuancePolicy())
                         .offerReason(co.getOfferReason())
-                        .profiles(co.getProfiles())
+                        .profile(co.getProfile())
                         .build()).toList())
                 .state(CredentialOfferStatus.RECEIVED.code())
                 .build();

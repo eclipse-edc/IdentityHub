@@ -30,8 +30,9 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObje
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILES_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_TERM;
+import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 
 public class JsonObjectFromCredentialObjectTransformer extends AbstractNamespaceAwareJsonLdTransformer<CredentialObject, JsonObject> {
@@ -57,18 +58,18 @@ public class JsonObjectFromCredentialObjectTransformer extends AbstractNamespace
                         .add(JsonLdKeywords.VALUE, issuancePolicy))
                 .build();
 
-        var profiles = credentialObject.getProfiles().stream()
-                .map(profile -> createValue(profile, xsdNamespace.toIri("string")))
-                .collect(toJsonArray());
+
+        var p = createValue(credentialObject.getProfile(), xsdNamespace.toIri("string"));
 
         var bindingMethods = credentialObject.getBindingMethods().stream()
                 .map(bindingMethod -> createValue(bindingMethod, xsdNamespace.toIri("string")))
                 .collect(toJsonArray());
 
         return Json.createObjectBuilder()
+                .add(ID, credentialObject.getId())
                 .add(TYPE, forNamespace(CREDENTIAL_OBJECT_TERM))
                 .add(forNamespace(CREDENTIAL_OBJECT_OFFER_REASON_TERM), createValue(credentialObject.getOfferReason(), xsdNamespace.toIri("string")))
-                .add(forNamespace(CREDENTIAL_OBJECT_PROFILES_TERM), profiles)
+                .add(forNamespace(CREDENTIAL_OBJECT_PROFILE_TERM), p)
                 .add(forNamespace(CREDENTIAL_OBJECT_BINDING_METHODS_TERM), bindingMethods)
                 .add(forNamespace(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), credentialObject.getCredentialType())
                 .add(forNamespace(CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM), issuancePolicyJson)

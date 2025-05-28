@@ -45,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -67,7 +68,7 @@ public class DcpIssuerServiceImplTest {
 
         var message = CredentialRequestMessage.Builder.newInstance()
                 .holderPid(UUID.randomUUID().toString())
-                .credential(new CredentialRequestSpecifier("credentialDefinitionId1", "vc1_0_jwt"))
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
                 .build();
 
         var attestations = Set.of("attestation1", "attestation2");
@@ -90,6 +91,7 @@ public class DcpIssuerServiceImplTest {
         Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
 
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
+        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
         when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(claims));
         when(credentialRuleDefinitionEvaluator.evaluate(eq(List.of(credentialRuleDefinition)), any())).thenReturn(Result.success());
         when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));

@@ -21,6 +21,7 @@ import org.eclipse.edc.transform.spi.TransformerContext;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
@@ -28,7 +29,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.CREDENT
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_BINDING_METHODS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILES_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIAL_ISSUER_TERM;
 import static org.mockito.ArgumentMatchers.eq;
@@ -45,6 +46,7 @@ class JsonObjectToCredentialOfferMessageTransformerTest {
     void transform() {
 
         var credentialsObj = CredentialObject.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
                 .credentialType("TestCredential")
                 .profile("test-profile")
                 .build();
@@ -53,7 +55,7 @@ class JsonObjectToCredentialOfferMessageTransformerTest {
 
         var credentialsArray = Json.createArrayBuilder()
                 .add(Json.createObjectBuilder()
-                        .add(toIri(CREDENTIAL_OBJECT_PROFILES_TERM), Json.createArrayBuilder(List.of("profile")))
+                        .add(toIri(CREDENTIAL_OBJECT_PROFILE_TERM), Json.createArrayBuilder(List.of("profile")))
                         .add(toIri(CREDENTIAL_OBJECT_OFFER_REASON_TERM), "offerReason")
                         .add(toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), "MembershipCredential")
                         .add(toIri(CREDENTIAL_OBJECT_BINDING_METHODS_TERM), Json.createArrayBuilder(List.of("binding")))
@@ -73,6 +75,7 @@ class JsonObjectToCredentialOfferMessageTransformerTest {
     void transform_noIssuer() {
 
         var credentialsObj = CredentialObject.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
                 .credentialType("TestCredential")
                 .profile("test-profile")
                 .build();
@@ -81,7 +84,7 @@ class JsonObjectToCredentialOfferMessageTransformerTest {
 
         var credentialsArray = Json.createArrayBuilder()
                 .add(Json.createObjectBuilder()
-                        .add(toIri(CREDENTIAL_OBJECT_PROFILES_TERM), Json.createArrayBuilder(List.of("profile")))
+                        .add(toIri(CREDENTIAL_OBJECT_PROFILE_TERM), Json.createArrayBuilder(List.of("profile")))
                         .add(toIri(CREDENTIAL_OBJECT_OFFER_REASON_TERM), "offerReason")
                         .add(toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), "MembershipCredential")
                         .add(toIri(CREDENTIAL_OBJECT_BINDING_METHODS_TERM), Json.createArrayBuilder(List.of("binding")))

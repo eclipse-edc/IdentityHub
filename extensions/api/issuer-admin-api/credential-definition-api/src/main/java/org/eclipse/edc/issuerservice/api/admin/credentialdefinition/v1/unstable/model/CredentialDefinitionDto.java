@@ -25,10 +25,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,7 +39,7 @@ public class CredentialDefinitionDto {
     private final List<String> attestations = new ArrayList<>();
     private final List<CredentialRuleDefinition> rules = new ArrayList<>();
     private final List<MappingDefinition> mappings = new ArrayList<>();
-    private final Set<String> formats = new HashSet<>();
+    private String format;
     private String credentialType;
     private String jsonSchema;
     private String jsonSchemaUrl;
@@ -60,8 +57,8 @@ public class CredentialDefinitionDto {
         return credentialType;
     }
 
-    public Set<String> getFormats() {
-        return formats;
+    public String getFormat() {
+        return format;
     }
 
     public String getJsonSchema() {
@@ -95,7 +92,7 @@ public class CredentialDefinitionDto {
                 .jsonSchema(jsonSchema)
                 .jsonSchemaUrl(jsonSchemaUrl)
                 .validity(validity)
-                .formats(formats.stream().map(String::toUpperCase).map(CredentialFormat::valueOf).collect(Collectors.toSet()))
+                .format(CredentialFormat.valueOf(format.toUpperCase()))
                 .attestations(attestations)
                 .rules(rules)
                 .mappings(mappings)
@@ -142,8 +139,8 @@ public class CredentialDefinitionDto {
             return this;
         }
 
-        public Builder formats(Collection<String> formats) {
-            this.entity.formats.addAll(formats);
+        public Builder format(String format) {
+            this.entity.format = format;
             return this;
         }
 

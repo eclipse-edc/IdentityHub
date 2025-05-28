@@ -68,7 +68,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         var credentialFormats = parseCredentialFormats(message);
 
         if (credentialFormats.failed()) {
-            return credentialFormats.mapFailure();
+            return ServiceResult.badRequest(credentialFormats.getFailureMessages());
 
         }
         return transactionContext.execute(() -> getCredentialsDefinitions(message, credentialFormats.getContent())
@@ -100,7 +100,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         }
         for (var credentialDefinition : credentialDefinitions) {
             var requestedFormat = requestedFormats.get(credentialDefinition.getId());
-            if (!credentialDefinition.getFormats().contains(requestedFormat)) {
+            if (!credentialDefinition.getFormatAsEnum().equals(requestedFormat)) {
                 return ServiceResult.badRequest("Credential format %s not supported for credential type %s".formatted(requestedFormat, credentialDefinition.getCredentialType()));
             }
             if (profileRegistry.profilesFor(requestedFormat).isEmpty()) {
@@ -165,10 +165,15 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         var credentialFormats = new HashMap<String, CredentialFormat>();
         for (var credential : message.getCredentials()) {
             try {
-                var format = CredentialFormat.valueOf(credential.format().toUpperCase());
+                var id = credential.credentialObjectId();
+                var credentialDefinition = credentialDefinitionService.findCredentialDefinitionById(id);
+                if (credentialDefinition.failed()) {
+                    return credentialDefinition.mapFailure();
+                }
+                var format = credentialDefinition.getContent().getFormatAsEnum();
                 credentialFormats.put(credential.credentialObjectId(), format);
             } catch (IllegalArgumentException e) {
-                return ServiceResult.badRequest("Invalid credential format: " + credential.format());
+                return ServiceResult.badRequest("Credential format not supported for credential object ID: %s".formatted(credential.credentialObjectId()));
             }
         }
         return ServiceResult.success(credentialFormats);

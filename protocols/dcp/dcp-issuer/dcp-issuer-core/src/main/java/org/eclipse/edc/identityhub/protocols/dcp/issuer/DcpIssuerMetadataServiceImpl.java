@@ -26,7 +26,8 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.UUID;
 
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 
@@ -54,26 +55,26 @@ public class DcpIssuerMetadataServiceImpl implements DcpIssuerMetadataService {
             if (credentialObject.failed()) {
                 return credentialObject.mapFailure();
             }
-            issuerMetadata.credentialSupported(credentialObject.getContent());
+            credentialObject.getContent().forEach(issuerMetadata::credentialSupported);
         }
         return ServiceResult.success(issuerMetadata.build());
     }
 
-    public ServiceResult<CredentialObject> toCredentialObject(CredentialDefinition credentialDefinition) {
+    public ServiceResult<List<CredentialObject>> toCredentialObject(CredentialDefinition credentialDefinition) {
 
-        var profiles = credentialDefinition.getFormats().stream().flatMap(format -> profileRegistry.profilesFor(format).stream())
+        var credentialObjects = profileRegistry.profilesFor(credentialDefinition.getFormatAsEnum()).stream()
                 .map(DcpProfile::name)
-                .collect(Collectors.toSet());
+                .map(profile -> CredentialObject.Builder.newInstance()
+                        .id(credentialDefinition.getId())
+                        .credentialType(credentialDefinition.getCredentialType())
+                        .bindingMethod("did:web")
+                        .offerReason("reissue") // todo hardcoded?
+                        .profile(profile)
+                        .issuancePolicy(PresentationDefinition.Builder.newInstance().id(UUID.randomUUID().toString()).build())
+                        .build())
+                .toList();
 
-        var credentialObject = CredentialObject.Builder.newInstance()
-                .credentialType(credentialDefinition.getCredentialType())
-                .bindingMethod("did:web")
-                .offerReason("reissue") // todo hardcoded?
-                .profiles(profiles.stream().toList())
-                .issuancePolicy(PresentationDefinition.Builder.newInstance().id(credentialDefinition.getId()).build())
-                .build();
-
-        return ServiceResult.success(credentialObject);
+        return ServiceResult.success(credentialObjects);
     }
 
 

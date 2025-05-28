@@ -112,7 +112,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                         toJson(credentialDefinition.getJsonSchema()),
                         credentialDefinition.getJsonSchemaUrl(),
                         credentialDefinition.getValidity(),
-                        toJson(credentialDefinition.getFormats()),
+                        credentialDefinition.getFormat(),
                         timestamp,
                         timestamp
                 );
@@ -148,7 +148,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                             toJson(credentialDefinition.getJsonSchema()),
                             credentialDefinition.getJsonSchemaUrl(),
                             credentialDefinition.getValidity(),
-                            toJson(credentialDefinition.getFormats()),
+                            credentialDefinition.getFormat(),
                             clock.millis(),
                             credentialDefinition.getId()
                     );
@@ -216,7 +216,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                 .jsonSchema(resultSet.getString(statements.getJsonSchemaColumn()))
                 .jsonSchemaUrl(resultSet.getString(statements.getJsonSchemaUrlColumn()))
                 .validity(resultSet.getLong(statements.getValidityColumn()))
-                .formats(fromJson(resultSet.getString(statements.getFormatsColumn()), FORMATS_LIST_REF))
+                .format(resultSet.getString(statements.getFormatsColumn()))
                 .build();
     }
 }

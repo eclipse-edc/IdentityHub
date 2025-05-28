@@ -30,8 +30,9 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Subscribes to {@link CredentialOfferEvent}s and implements a default processing behaviour.
@@ -98,13 +99,10 @@ public class CredentialOfferHandler implements EventSubscriber {
                 .getCredentialObjects()
                 .forEach(credentialObject -> {
                     var type = credentialObject.getCredentialType();
-                    var format = credentialObject.getProfiles().stream()
-                            .map(dcpProfileRegistry::getProfile)
-                            .filter(Objects::nonNull)
-                            .findFirst()
+                    var format = ofNullable(dcpProfileRegistry.getProfile(credentialObject.getProfile()))
                             .map(dcpProfile -> dcpProfile.format().name());
                     if (format.isEmpty()) {
-                        monitor.warning("Credential offer for '%s': no credential format could be derived from any of the offered profiles: %s".formatted(type, credentialObject.getProfiles()));
+                        monitor.warning("Credential offer for '%s': no credential format could be derived from any of the offered profiles: %s".formatted(type, credentialObject.getProfile()));
                     } else {
                         typesAndFormats.put(type, format.get());
                     }

@@ -36,7 +36,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObje
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILES_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILE_TERM;
 
 public class JsonObjectToCredentialObjectTransformer extends AbstractNamespaceAwareJsonLdTransformer<JsonObject, CredentialObject> {
 
@@ -69,7 +69,7 @@ public class JsonObjectToCredentialObjectTransformer extends AbstractNamespaceAw
                 .map(credentialType -> transformString(credentialType, transformerContext))
                 .ifPresent(credentialObject::credentialType);
 
-        Optional.ofNullable(jsonObject.get(forNamespace(CREDENTIAL_OBJECT_PROFILES_TERM)))
+        Optional.ofNullable(jsonObject.get(forNamespace(CREDENTIAL_OBJECT_PROFILE_TERM)))
                 .ifPresent(credentialType -> transformArrayOrObject(credentialType, Object.class, (obj) -> credentialObject.profile(obj.toString()), transformerContext));
 
 

@@ -72,7 +72,6 @@ public class JsonObjectToCredentialRequestMessageTransformerTest {
         assertThat(credentialRequestMessage.getHolderPid()).isNotNull();
         assertThat(credentialRequestMessage.getCredentials()).hasSize(1).first().satisfies(credentialRequest -> {
             assertThat(credentialRequest.credentialObjectId()).isEqualTo("membershipCredential-object-id");
-            assertThat(credentialRequest.format()).isEqualTo("myFormat");
         });
     }
 

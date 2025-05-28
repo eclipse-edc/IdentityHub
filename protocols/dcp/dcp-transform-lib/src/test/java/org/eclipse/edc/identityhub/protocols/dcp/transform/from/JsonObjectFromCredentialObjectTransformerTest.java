@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
@@ -34,7 +35,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObje
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILES_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_TERM;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.VALUE;
@@ -56,19 +57,20 @@ public class JsonObjectFromCredentialObjectTransformerTest {
     @Test
     void transform() {
 
-        var status = CredentialObject.Builder.newInstance()
-                .profiles(List.of("profile1", "profile2"))
+        var credentialObject = CredentialObject.Builder.newInstance()
+                .id(UUID.randomUUID().toString())
+                .profile("profile1")
                 .bindingMethods(List.of("binding1"))
                 .credentialType("MembershipCredential")
                 .issuancePolicy(PresentationDefinition.Builder.newInstance().id("id").build())
                 .offerReason("myReason")
                 .build();
 
-        var jsonLd = transformer.transform(status, context);
+        var jsonLd = transformer.transform(credentialObject, context);
 
         assertThat(jsonLd).isNotNull();
         assertThat(jsonLd.getString(TYPE)).isEqualTo(toIri(CREDENTIAL_OBJECT_TERM));
-        assertThat(jsonLd.getJsonArray(toIri(CREDENTIAL_OBJECT_PROFILES_TERM))).contains(stringValue("profile1"), stringValue("profile2"));
+        assertThat(jsonLd.getJsonObject(toIri(CREDENTIAL_OBJECT_PROFILE_TERM)).getString("@value")).isEqualTo("profile1");
         assertThat(jsonLd.getJsonArray(toIri(CREDENTIAL_OBJECT_BINDING_METHODS_TERM))).contains(stringValue("binding1"));
         assertThat(jsonLd.getString(toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM))).isEqualTo("MembershipCredential");
         assertThat(jsonLd.getJsonObject(toIri(CREDENTIAL_OBJECT_OFFER_REASON_TERM))).isEqualTo(stringValue("myReason"));

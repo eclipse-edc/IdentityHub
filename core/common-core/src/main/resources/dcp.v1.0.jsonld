@@ -56,10 +56,9 @@
           "@type": "xsd:string",
           "@container": "@set"
         },
-        "profiles": {
-          "@id": "dcp:profiles",
-          "@type": "xsd:string",
-          "@container": "@set"
+        "profile": {
+          "@id": "dcp:profile",
+          "@type": "xsd:string"
         },
         "issuancePolicy": {
           "@id": "dcp:issuancePolicy",

@@ -20,6 +20,8 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata.ISSUER_METADATA_CREDENTIALS_SUPPORTED_TERM;
@@ -44,7 +46,7 @@ public class JsonObjectFromIssuerMetadataTransformerTest {
 
         var issuerMetadata = IssuerMetadata.Builder.newInstance()
                 .issuer("issuer")
-                .credentialSupported(CredentialObject.Builder.newInstance().build())
+                .credentialSupported(CredentialObject.Builder.newInstance().id(UUID.randomUUID().toString()).build())
                 .build();
 
         var jsonLd = transformer.transform(issuerMetadata, context);

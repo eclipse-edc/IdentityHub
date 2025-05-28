@@ -106,8 +106,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                   "holderPid": "holderPid",
                   "credentials":[
                     {
-                        "id": "MembershipCredential-id",
-                        "format": "vc1_0_jwt"
+                        "id": "MembershipCredential-id"
                     }
                   ]
                 }

@@ -16,10 +16,9 @@ package org.eclipse.edc.identityhub.protocols.dcp.spi.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record CredentialRequestSpecifier(@JsonProperty(value = "id", required = true) String credentialObjectId,
-                                         @JsonProperty(value = "format", required = true) String format) {
+public record CredentialRequestSpecifier(@JsonProperty(value = "id", required = true) String credentialObjectId) {
 
     public boolean validate() {
-        return credentialObjectId != null && !credentialObjectId.isBlank() && format != null && !format.isBlank();
+        return credentialObjectId != null;
     }
 }

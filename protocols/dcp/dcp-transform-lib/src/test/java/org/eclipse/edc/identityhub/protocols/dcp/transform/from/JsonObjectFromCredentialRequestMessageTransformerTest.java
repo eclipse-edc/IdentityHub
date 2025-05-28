@@ -60,7 +60,7 @@ public class JsonObjectFromCredentialRequestMessageTransformerTest {
 
         when(context.transform(isA(CredentialRequest.class), eq(JsonObject.class))).thenReturn(JsonObject.EMPTY_JSON_OBJECT);
         var status = CredentialRequestMessage.Builder.newInstance()
-                .credential(new CredentialRequestSpecifier("MembershipCredential-id", "myFormat"))
+                .credential(new CredentialRequestSpecifier("MembershipCredential-id"))
                 .holderPid("test-request-id")
                 .build();
 
@@ -75,7 +75,6 @@ public class JsonObjectFromCredentialRequestMessageTransformerTest {
                     assertThat(credentials).hasSize(1);
                     var credential = credentials.getJsonObject(0);
                     assertThat(credential.getString("id")).isEqualTo("MembershipCredential-id");
-                    assertThat(credential.getString("format")).isEqualTo("myFormat");
                     assertThat(credential.get("payload")).isNull();
                 });
     }

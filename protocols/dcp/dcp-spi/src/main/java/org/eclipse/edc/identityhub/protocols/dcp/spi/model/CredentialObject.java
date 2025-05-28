@@ -19,18 +19,20 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinitio
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 public class CredentialObject {
 
     public static final String CREDENTIAL_OBJECT_TERM = "CredentialObject";
     public static final String CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM = "credentialType";
     public static final String CREDENTIAL_OBJECT_OFFER_REASON_TERM = "offerReason";
-    public static final String CREDENTIAL_OBJECT_PROFILES_TERM = "profiles";
+    public static final String CREDENTIAL_OBJECT_PROFILE_TERM = "profile";
     public static final String CREDENTIAL_OBJECT_BINDING_METHODS_TERM = "bindingMethods";
     public static final String CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM = "issuancePolicy";
+    private String profile;
     private String id;
     private String credentialType;
     private String offerReason;
-    private List<String> profiles = new ArrayList<>();
     private List<String> bindingMethods = new ArrayList<>();
     private PresentationDefinition issuancePolicy;
 
@@ -46,8 +48,8 @@ public class CredentialObject {
         return bindingMethods;
     }
 
-    public List<String> getProfiles() {
-        return profiles;
+    public String getProfile() {
+        return profile;
     }
 
     public PresentationDefinition getIssuancePolicy() {
@@ -84,13 +86,8 @@ public class CredentialObject {
             return this;
         }
 
-        public Builder profiles(List<String> profiles) {
-            credentialObject.profiles = profiles;
-            return this;
-        }
-
         public Builder profile(String profile) {
-            credentialObject.profiles.add(profile);
+            credentialObject.profile = profile;
             return this;
         }
 
@@ -110,6 +107,7 @@ public class CredentialObject {
         }
 
         public CredentialObject build() {
+            requireNonNull(credentialObject.id, "id must not be null");
             return credentialObject;
         }
     }

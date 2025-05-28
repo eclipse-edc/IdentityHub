@@ -96,6 +96,7 @@ public class DcpIssuerMetadataApiEndToEndTest {
         void issuerMetadata(IssuerExtension issuerExtension, HolderService holderService, CredentialDefinitionService credentialDefinitionService) throws JOSEException {
 
             var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                    .id(UUID.randomUUID().toString())
                     .credentialType("MembershipCredential")
                     .jsonSchema("{}")
                     .participantContextId(ISSUER_ID)

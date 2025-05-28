@@ -185,7 +185,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         var rqMessage = CredentialRequestMessage.Builder.newInstance();
         rqMessage.holderPid(holderPid);
 
-        idsAndFormats.forEach((id, format) -> rqMessage.credential(new CredentialRequestSpecifier(id, format)));
+        idsAndFormats.forEach((id, format) -> rqMessage.credential(new CredentialRequestSpecifier(id)));
 
         var jsonObj = dcpTypeTransformerRegistry.transform(rqMessage.build(), JsonObject.class);
 

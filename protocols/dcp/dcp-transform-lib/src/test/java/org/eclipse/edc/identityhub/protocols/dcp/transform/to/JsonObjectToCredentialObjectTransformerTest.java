@@ -36,7 +36,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObje
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILES_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILE_TERM;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -70,7 +70,7 @@ public class JsonObjectToCredentialObjectTransformerTest {
         var input = Json.createObjectBuilder()
                 .add(JsonLdKeywords.ID, UUID.randomUUID().toString())
                 .add(toIri(CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM), issuancePolicyJsonLd)
-                .add(toIri(CREDENTIAL_OBJECT_PROFILES_TERM), Json.createArrayBuilder(List.of("profile")))
+                .add(toIri(CREDENTIAL_OBJECT_PROFILE_TERM), Json.createArrayBuilder(List.of("profile")))
                 .add(toIri(CREDENTIAL_OBJECT_OFFER_REASON_TERM), "offerReason")
                 .add(toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), "MembershipCredential")
                 .add(toIri(CREDENTIAL_OBJECT_BINDING_METHODS_TERM), Json.createArrayBuilder(List.of("binding")))
@@ -82,7 +82,7 @@ public class JsonObjectToCredentialObjectTransformerTest {
         assertThat(credentialObject.getId()).isNotNull();
         assertThat(credentialObject.getOfferReason()).isEqualTo("offerReason");
         assertThat(credentialObject.getCredentialType()).isEqualTo("MembershipCredential");
-        assertThat(credentialObject.getProfiles()).hasSize(1).contains("profile");
+        assertThat(credentialObject.getProfile()).isEqualTo("profile");
         assertThat(credentialObject.getBindingMethods()).hasSize(1).contains("binding");
         assertThat(credentialObject.getIssuancePolicy()).isNotNull()
                 .satisfies(presentationDefinition -> {
