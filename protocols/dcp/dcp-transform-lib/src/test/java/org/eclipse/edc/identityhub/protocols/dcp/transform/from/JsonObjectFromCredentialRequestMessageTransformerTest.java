@@ -20,6 +20,7 @@ import jakarta.json.JsonBuilderFactory;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -59,7 +60,7 @@ public class JsonObjectFromCredentialRequestMessageTransformerTest {
 
         when(context.transform(isA(CredentialRequest.class), eq(JsonObject.class))).thenReturn(JsonObject.EMPTY_JSON_OBJECT);
         var status = CredentialRequestMessage.Builder.newInstance()
-                .credential(new CredentialRequest("MembershipCredential", "myFormat", null))
+                .credential(new CredentialRequestSpecifier("MembershipCredential-id"))
                 .holderPid("test-request-id")
                 .build();
 
@@ -73,8 +74,7 @@ public class JsonObjectFromCredentialRequestMessageTransformerTest {
                     var credentials = jsonValue.asJsonObject().getJsonArray(JsonLdKeywords.VALUE);
                     assertThat(credentials).hasSize(1);
                     var credential = credentials.getJsonObject(0);
-                    assertThat(credential.getString("credentialType")).isEqualTo("MembershipCredential");
-                    assertThat(credential.getString("format")).isEqualTo("myFormat");
+                    assertThat(credential.getString("id")).isEqualTo("MembershipCredential-id");
                     assertThat(credential.get("payload")).isNull();
                 });
     }

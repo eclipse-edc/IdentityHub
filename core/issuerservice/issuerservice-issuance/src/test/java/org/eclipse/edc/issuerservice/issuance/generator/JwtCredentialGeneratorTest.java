@@ -260,7 +260,7 @@ public class JwtCredentialGeneratorTest {
                 .mapping(new MappingDefinition("input", "outut", true))
                 .jsonSchema("{}")
                 .participantContextId(UUID.randomUUID().toString())
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .build();
     }
 

@@ -111,7 +111,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
 
     private StatusResult<Collection<VerifiableCredentialContainer>> generateCredential(IssuanceProcess process, Collection<CredentialDefinition> credentialDefinitions) {
         var requests = credentialDefinitions.stream()
-                .map(credentialDefinition -> new CredentialGenerationRequest(credentialDefinition, process.getCredentialFormats().get(credentialDefinition.getCredentialType())))
+                .map(credentialDefinition -> new CredentialGenerationRequest(credentialDefinition, process.getCredentialFormats().get(credentialDefinition.getId())))
                 .toList();
 
         var result = credentialGenerator.generateCredentials(process.getParticipantContextId(), process.getHolderId(), requests, process.getClaims());

@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.credentials;
 
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -86,6 +87,8 @@ public class CredentialServiceExtension implements ServiceExtension {
     private StatusListCredentialPublisher credentialPublisher;
     @Inject
     private TypeTransformerRegistry transformerRegistry;
+    @Inject
+    private DcpIssuerMetadataService issuerMetadataService;
 
     @Provider
     public CredentialStatusService getStatusListService(ServiceExtensionContext context) {
@@ -103,7 +106,9 @@ public class CredentialServiceExtension implements ServiceExtension {
 
     @Provider
     public IssuerCredentialOfferService credentialOfferService(ServiceExtensionContext context) {
-        return new IssuerCredentialOfferServiceImpl(transactionContext, holderStore, credentialServiceUrlResolver, sts, participantContextService, httpClient, context.getMonitor(), transformerRegistry.forContext(DCP_SCOPE_V_1_0));
+        return new IssuerCredentialOfferServiceImpl(transactionContext, holderStore, credentialServiceUrlResolver, sts, participantContextService, httpClient, context.getMonitor(),
+                transformerRegistry.forContext(DCP_SCOPE_V_1_0),
+                issuerMetadataService);
     }
 
     @Provider

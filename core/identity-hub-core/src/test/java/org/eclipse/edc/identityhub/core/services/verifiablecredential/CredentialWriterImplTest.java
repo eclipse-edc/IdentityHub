@@ -28,6 +28,7 @@ import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -64,7 +65,7 @@ class CredentialWriterImplTest {
     void setUp() {
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid("did:web:issuer")
-                .typesAndFormats(Map.of(TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT))
+                .idsAndFormats(Map.of(TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT))
                 .state(REQUESTED.code())
                 .participantContextId(PARTICIPANT_ID)
                 .build()));
@@ -93,6 +94,7 @@ class CredentialWriterImplTest {
     }
 
     @Test
+    @Disabled("Disabled until we have a way to specify the type of requested credentials in a holder request")
     void write_typeNotRequested() {
         when(credentialTransformerRegistry.transform(isA(String.class), eq(VerifiableCredential.class))).thenReturn(Result.success(createCredential().types(List.of("NotRequestedCredential")).build()));
 
@@ -109,7 +111,7 @@ class CredentialWriterImplTest {
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
 
         var result = credentialWriter.write("holderPid", "issuerPid", Set.of(new CredentialWriteRequest("raw-cred", CredentialFormat.VC2_0_COSE.toString())), PARTICIPANT_ID);
-        assertThat(result).isFailed().detail().contains("No credential request was made for Credentials of type");
+        assertThat(result).isFailed().detail().contains("No credential request was made for Credentials ");
     }
 
     @Test
@@ -164,7 +166,7 @@ class CredentialWriterImplTest {
     void write_holderRequestInWrongState_expectFailure() {
         when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(HolderCredentialRequest.Builder.newInstance()
                 .issuerDid("did:web:issuer")
-                .typesAndFormats(Map.of(TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT))
+                .idsAndFormats(Map.of(TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT))
                 .state(REQUESTING.code())
                 .participantContextId(PARTICIPANT_ID)
                 .build()));

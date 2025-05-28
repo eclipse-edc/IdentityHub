@@ -18,8 +18,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
@@ -191,7 +191,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
 
     private CredentialRequestMessage createCredentialRequestMessage() {
         return createCredentialRequestMessageBuilder()
-                .credential(new CredentialRequest("test-credential1", "test-issuer1", null))
+                .credential(new CredentialRequestSpecifier("test-credential1"))
                 .build();
     }
 

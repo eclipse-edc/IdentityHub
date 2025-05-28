@@ -15,10 +15,9 @@
 package org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.eclipse.edc.issuerservice.spi.credentials.CredentialDescriptor;
 
 import java.util.Collection;
 
 public record CredentialOfferDto(@JsonProperty(required = true) String holderId,
-                                 @JsonProperty(required = true) Collection<CredentialDescriptor> credentials) {
+                                 @JsonProperty(required = true) Collection<String> credentials) {
 }

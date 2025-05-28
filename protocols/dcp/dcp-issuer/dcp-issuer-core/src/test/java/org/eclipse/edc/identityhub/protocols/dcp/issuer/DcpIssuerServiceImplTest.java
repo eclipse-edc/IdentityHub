@@ -16,8 +16,8 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpProfile;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -45,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -67,21 +68,21 @@ public class DcpIssuerServiceImplTest {
 
         var message = CredentialRequestMessage.Builder.newInstance()
                 .holderPid(UUID.randomUUID().toString())
-                .credential(new CredentialRequest("MembershipCredential", "vc1_0_jwt", null))
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
                 .build();
 
         var attestations = Set.of("attestation1", "attestation2");
 
         var credentialRuleDefinition = new CredentialRuleDefinition("expression", Map.of());
         var credentialDefinition = CredentialDefinition.Builder.newInstance()
-                .id("credentialDefinitionId")
+                .id("credentialDefinitionId1")
                 .credentialType("MembershipCredential")
                 .jsonSchema("jsonSchema")
                 .jsonSchemaUrl("jsonSchemaUrl")
                 .attestations(attestations)
                 .participantContextId("participantContextId")
                 .rule(credentialRuleDefinition)
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
@@ -90,6 +91,7 @@ public class DcpIssuerServiceImplTest {
         Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
 
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
+        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
         when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(claims));
         when(credentialRuleDefinitionEvaluator.evaluate(eq(List.of(credentialRuleDefinition)), any())).thenReturn(Result.success());
         when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));
@@ -105,7 +107,7 @@ public class DcpIssuerServiceImplTest {
 
         assertThat(issuanceProcess).isNotNull();
         assertThat(issuanceProcess.getId()).isEqualTo(result.getContent().requestId());
-        assertThat(issuanceProcess.getCredentialDefinitions()).containsExactly("credentialDefinitionId");
+        assertThat(issuanceProcess.getCredentialDefinitions()).containsExactly("credentialDefinitionId1");
         assertThat(issuanceProcess.getHolderId()).isEqualTo("holderId");
         assertThat(issuanceProcess.getState()).isEqualTo(IssuanceProcessStates.APPROVED.code());
         assertThat(issuanceProcess.getClaims()).containsAllEntriesOf(claims);

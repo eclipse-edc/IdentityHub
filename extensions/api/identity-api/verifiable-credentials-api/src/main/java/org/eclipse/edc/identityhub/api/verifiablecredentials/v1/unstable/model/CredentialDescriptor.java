@@ -16,8 +16,8 @@ package org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 
-public record CredentialDescriptor(String format, String credentialType) {
-    public CredentialDescriptor(CredentialFormat format, String credentialType) {
-        this(format.name(), credentialType);
+public record CredentialDescriptor(String format, String id) {
+    public CredentialDescriptor(CredentialFormat format, String id) {
+        this(format.name(), id);
     }
 }

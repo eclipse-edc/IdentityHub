@@ -23,10 +23,8 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticip
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
@@ -41,7 +39,7 @@ public class CredentialDefinition extends AbstractParticipantResource {
     private final List<String> attestations = new ArrayList<>();
     private final List<CredentialRuleDefinition> rules = new ArrayList<>();
     private final List<MappingDefinition> mappings = new ArrayList<>();
-    private final Set<CredentialFormat> formats = new HashSet<>();
+    private String format;
     private String credentialType;
     private String jsonSchema;
     private String jsonSchemaUrl;
@@ -59,8 +57,13 @@ public class CredentialDefinition extends AbstractParticipantResource {
         return credentialType;
     }
 
-    public Set<CredentialFormat> getFormats() {
-        return formats;
+    @JsonIgnore
+    public CredentialFormat getFormatAsEnum() {
+        return CredentialFormat.valueOf(format.toUpperCase());
+    }
+
+    public String getFormat() {
+        return format;
     }
 
     public String getJsonSchema() {
@@ -126,13 +129,13 @@ public class CredentialDefinition extends AbstractParticipantResource {
         }
 
         @JsonIgnore
-        public Builder format(CredentialFormat format) {
-            this.entity.formats.add(format);
+        public Builder formatFrom(CredentialFormat format) {
+            this.entity.format = format.name();
             return this;
         }
 
-        public Builder formats(Collection<CredentialFormat> formats) {
-            this.entity.formats.addAll(formats);
+        public Builder format(String format) {
+            this.entity.format = format;
             return this;
         }
 
@@ -185,8 +188,8 @@ public class CredentialDefinition extends AbstractParticipantResource {
                 throw new IllegalStateException("Either jsonSchema or jsonSchemaUrl must be non-null");
             }
 
-            if (entity.formats.isEmpty()) {
-                throw new IllegalStateException("Credential formats cannot be empty");
+            if (entity.format == null) {
+                throw new IllegalStateException("Credential format cannot be null");
             }
             Objects.requireNonNull(entity.participantContextId, "Must have an participantContextId");
             return super.build();

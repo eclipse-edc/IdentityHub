@@ -530,7 +530,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .thenReturn(HolderCredentialRequest.Builder.newInstance()
                             .issuerDid("did:web:issuer")
                             .participantContextId("test-participant")
-                            .typesAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
+                            .idsAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
                             .build());
 
             baseRequest()

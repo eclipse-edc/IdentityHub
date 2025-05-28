@@ -273,7 +273,7 @@ class CredentialRequestManagerImplTest {
 
         private HolderCredentialRequest.Builder createRequest() {
             return HolderCredentialRequest.Builder.newInstance()
-                    .credentialType("FooCredential", CredentialFormat.VC1_0_JWT.toString())
+                    .credentialObjectId("foo-credential-id", CredentialFormat.VC1_0_JWT.toString())
                     .state(REQUESTED.code())
                     .id("test-request")
                     .issuerDid(ISSUER_DID)

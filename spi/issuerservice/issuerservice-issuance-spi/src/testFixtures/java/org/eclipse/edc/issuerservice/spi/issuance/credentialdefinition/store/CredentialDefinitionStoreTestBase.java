@@ -128,6 +128,15 @@ public abstract class CredentialDefinitionStoreTestBase {
 
     protected abstract CredentialDefinitionStore getStore();
 
+    protected CredentialDefinition.Builder createCredentialDefinitionBuilder(String id, String type) {
+        return CredentialDefinition.Builder.newInstance()
+                .id(id)
+                .participantContextId(UUID.randomUUID().toString())
+                .credentialType(type)
+                .formatFrom(VC1_0_JWT)
+                .jsonSchemaUrl("http://example.com/schema");
+    }
+
     private CredentialDefinition createCredentialDefinition() {
         return createCredentialDefinition(UUID.randomUUID().toString(), "Membership");
     }
@@ -135,15 +144,6 @@ public abstract class CredentialDefinitionStoreTestBase {
     private CredentialDefinition createCredentialDefinition(String id, String type) {
         return createCredentialDefinitionBuilder(id, type)
                 .build();
-    }
-
-    protected CredentialDefinition.Builder createCredentialDefinitionBuilder(String id, String type) {
-        return CredentialDefinition.Builder.newInstance()
-                .id(id)
-                .participantContextId(UUID.randomUUID().toString())
-                .credentialType(type)
-                .format(VC1_0_JWT)
-                .jsonSchemaUrl("http://example.com/schema");
     }
 
     @Nested
@@ -247,7 +247,7 @@ public abstract class CredentialDefinitionStoreTestBase {
             assertThat(r).isSucceeded();
 
             var query = QuerySpec.Builder.newInstance()
-                    .filter(new Criterion("formats", "contains", VC1_0_JWT.name()))
+                    .filter(new Criterion("format", "=", VC1_0_JWT.name()))
                     .build();
 
             var result = getStore().query(query);

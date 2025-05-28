@@ -50,7 +50,7 @@ public class JsonObjectToCredentialRequestMessageTransformerTest {
     void transform() {
 
         var credentialRequests = Json.createArrayBuilder().add(Json.createObjectBuilder()
-                        .add("credentialType", "MembershipCredential")
+                        .add("id", "membershipCredential-object-id")
                         .add("format", "myFormat")
                         .build())
                 .build();
@@ -71,9 +71,7 @@ public class JsonObjectToCredentialRequestMessageTransformerTest {
         assertThat(credentialRequestMessage).isNotNull();
         assertThat(credentialRequestMessage.getHolderPid()).isNotNull();
         assertThat(credentialRequestMessage.getCredentials()).hasSize(1).first().satisfies(credentialRequest -> {
-            assertThat(credentialRequest.credentialType()).isEqualTo("MembershipCredential");
-            assertThat(credentialRequest.format()).isEqualTo("myFormat");
-            assertThat(credentialRequest.payload()).isNull();
+            assertThat(credentialRequest.credentialObjectId()).isEqualTo("membershipCredential-object-id");
         });
     }
 

@@ -84,7 +84,7 @@ public abstract class HolderCredentialRequestStoreTestBase {
 
     private HolderCredentialRequest.Builder createHolderRequestBuilder() {
         return HolderCredentialRequest.Builder.newInstance()
-                .credentialType("TestCredential", "VC1_0_JWT")
+                .credentialObjectId("TestCredential", "VC1_0_JWT")
                 .state(CREATED.code())
                 .id("test-id")
                 .participantContextId("test-participant")
@@ -480,19 +480,21 @@ public abstract class HolderCredentialRequestStoreTestBase {
         }
 
         @Test
-        void queryByCredentialType() {
+        void queryByCredentialObjectId() {
 
             range(0, 10)
                     .mapToObj(i -> createHolderRequest("id" + i))
                     .forEach(getStore()::save);
 
             var request = createHolderRequestBuilder().id("testprocess1")
-                    .typesAndFormats(Map.of("FooBarCredential", "VC1_0_JWT", "BarBazCredential", "VC1_0_JWT"))
+                    .idsAndFormats(Map.of(
+                            "FooBarCredential-id", "VC1_0_JWT",
+                            "BarBazCredential-id", "VC1_0_JWT"))
                     .build();
             getStore().save(request);
 
             var query = QuerySpec.Builder.newInstance()
-                    .filter(List.of(new Criterion("typesAndFormats.FooBarCredential", "=", "VC1_0_JWT")))
+                    .filter(List.of(new Criterion("idsAndFormats.FooBarCredential-id", "=", "VC1_0_JWT")))
                     .build();
 
             var result = getStore().query(query);

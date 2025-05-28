@@ -44,6 +44,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -122,20 +123,19 @@ public class DcpIssuerIssuanceFlowTest {
                 .orElseThrow(f -> new AssertionError(f.getFailureDetail()));
 
         var credentialDefinitionService = runtime.getService(CredentialDefinitionService.class);
-
-        Stream.of("MembershipCredential", "SensitiveDataCredential").forEach(type -> {
-            credentialDefinitionService.createCredentialDefinition(CredentialDefinition.Builder.newInstance()
-                            .credentialType(type)
-                            .id("tck-test-credential-def-%s".formatted(UUID.randomUUID().toString()))
-                            .attestation("tck-test-attestation")
-                            .format(CredentialFormat.VC1_0_JWT)
-                            .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                            .jsonSchemaUrl("https://example.com/schema/%s-schema.json".formatted(type.toLowerCase()))
-                            .jsonSchema("{}")
-                            .mapping(new MappingDefinition("participant.name", "credentialSubject.participant_name", true))
-                            .build())
-                    .orElseThrow(f -> new AssertionError(f.getFailureDetail()));
-        });
+        var count = new AtomicInteger(1);
+        Stream.of("MembershipCredential", "SensitiveDataCredential").forEach(type ->
+                credentialDefinitionService.createCredentialDefinition(CredentialDefinition.Builder.newInstance()
+                                .credentialType(type)
+                                .id("credential-object-id%d".formatted(count.getAndIncrement()))
+                                .attestation("tck-test-attestation")
+                                .formatFrom(CredentialFormat.VC1_0_JWT)
+                                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                                .jsonSchemaUrl("https://example.com/schema/%s-schema.json".formatted(type.toLowerCase()))
+                                .jsonSchema("{}")
+                                .mapping(new MappingDefinition("participant.name", "credentialSubject.participant_name", true))
+                                .build())
+                        .orElseThrow(f -> new AssertionError(f.getFailureDetail())));
     }
 
     private void createHolder(IssuerRuntime runtime, String holderDid) {

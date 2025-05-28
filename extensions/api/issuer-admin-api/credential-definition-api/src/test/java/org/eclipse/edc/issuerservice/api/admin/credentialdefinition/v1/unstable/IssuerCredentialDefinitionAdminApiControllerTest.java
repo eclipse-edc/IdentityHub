@@ -186,7 +186,7 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
                 .jsonSchema("json-schema")
                 .jsonSchemaUrl("json-schema-url")
                 .participantContextId(PARTICIPANT_ID)
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .build();
     }
 }

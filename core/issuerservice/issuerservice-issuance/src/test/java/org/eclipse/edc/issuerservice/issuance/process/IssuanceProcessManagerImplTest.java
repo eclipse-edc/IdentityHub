@@ -96,11 +96,13 @@ public class IssuanceProcessManagerImplTest {
     @Test
     void approved_shouldGenerateAndDispatchCredentials() {
 
-        var credentialDefinition = CredentialDefinition.Builder.newInstance().credentialType("MembershipCredential")
+        var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                .id("membership-credential-id")
+                .credentialType("MembershipCredential")
                 .jsonSchemaUrl("http://example.org/schema")
                 .jsonSchema("{}")
                 .participantContextId("participantContextId")
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .build();
 
         var generationRequests = new CredentialGenerationRequest(credentialDefinition, VC1_0_JWT);
@@ -119,7 +121,7 @@ public class IssuanceProcessManagerImplTest {
                 .holderId("holderId")
                 .participantContextId("participantContextId")
                 .holderPid("holderPid")
-                .credentialFormats(Map.of(credentialDefinition.getCredentialType(), VC1_0_JWT))
+                .credentialFormats(Map.of(credentialDefinition.getId(), VC1_0_JWT))
                 .build();
 
         when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(APPROVED.code()))).thenReturn(List.of(process)).thenReturn(emptyList());
@@ -157,7 +159,7 @@ public class IssuanceProcessManagerImplTest {
                 .jsonSchemaUrl("http://example.org/schema")
                 .jsonSchema("{}")
                 .participantContextId("participantContextId")
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .build();
 
         var generationRequests = new CredentialGenerationRequest(credentialDefinition, VC1_0_JWT);

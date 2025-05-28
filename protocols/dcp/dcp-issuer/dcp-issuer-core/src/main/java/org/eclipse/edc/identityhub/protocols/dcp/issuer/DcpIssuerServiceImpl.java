@@ -17,8 +17,8 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
@@ -68,7 +68,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         var credentialFormats = parseCredentialFormats(message);
 
         if (credentialFormats.failed()) {
-            return credentialFormats.mapFailure();
+            return ServiceResult.badRequest(credentialFormats.getFailureMessages());
 
         }
         return transactionContext.execute(() -> getCredentialsDefinitions(message, credentialFormats.getContent())
@@ -82,29 +82,25 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
 
     private ServiceResult<Collection<CredentialDefinition>> getCredentialsDefinitions(CredentialRequestMessage message, Map<String, CredentialFormat> credentialFormats) {
 
-        var credentialTypes = message.getCredentials().stream()
-                .map(CredentialRequest::credentialType)
+        var ids = message.getCredentials().stream()
+                .map(CredentialRequestSpecifier::credentialObjectId)
                 .collect(Collectors.toSet());
 
         var query = QuerySpec.Builder.newInstance()
-                .filter(Criterion.criterion("credentialType", "in", credentialTypes))
+                .filter(Criterion.criterion("id", "in", ids))
                 .build();
 
         return credentialDefinitionService.queryCredentialDefinitions(query)
                 .compose(credentialDefinitions -> validateCredentialDefinitions(message, credentialDefinitions, credentialFormats));
     }
 
-    private ServiceResult<Collection<CredentialDefinition>> validateCredentialDefinitions(CredentialRequestMessage message, Collection<CredentialDefinition> credentialDefinitions, Map<String, CredentialFormat> credentialFormats) {
+    private ServiceResult<Collection<CredentialDefinition>> validateCredentialDefinitions(CredentialRequestMessage message, Collection<CredentialDefinition> credentialDefinitions, Map<String, CredentialFormat> requestedFormats) {
         if (message.getCredentials().size() != credentialDefinitions.size()) {
             return ServiceResult.badRequest("Not all requested credential types have a corresponding credential definition");
         }
-        return validateCredentialFormats(credentialDefinitions, credentialFormats);
-    }
-
-    private ServiceResult<Collection<CredentialDefinition>> validateCredentialFormats(Collection<CredentialDefinition> credentialDefinitions, Map<String, CredentialFormat> credentialFormats) {
         for (var credentialDefinition : credentialDefinitions) {
-            var requestedFormat = credentialFormats.get(credentialDefinition.getCredentialType());
-            if (!credentialDefinition.getFormats().contains(requestedFormat)) {
+            var requestedFormat = requestedFormats.get(credentialDefinition.getId());
+            if (!credentialDefinition.getFormatAsEnum().equals(requestedFormat)) {
                 return ServiceResult.badRequest("Credential format %s not supported for credential type %s".formatted(requestedFormat, credentialDefinition.getCredentialType()));
             }
             if (profileRegistry.profilesFor(requestedFormat).isEmpty()) {
@@ -113,6 +109,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         }
         return ServiceResult.success(credentialDefinitions);
     }
+
 
     private ServiceResult<AttestationEvaluationResponse> evaluateAttestations(DcpRequestContext context, Collection<CredentialDefinition> credentialDefinitions) {
 
@@ -168,10 +165,15 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         var credentialFormats = new HashMap<String, CredentialFormat>();
         for (var credential : message.getCredentials()) {
             try {
-                var format = CredentialFormat.valueOf(credential.format().toUpperCase());
-                credentialFormats.put(credential.credentialType(), format);
+                var id = credential.credentialObjectId();
+                var credentialDefinition = credentialDefinitionService.findCredentialDefinitionById(id);
+                if (credentialDefinition.failed()) {
+                    return credentialDefinition.mapFailure();
+                }
+                var format = credentialDefinition.getContent().getFormatAsEnum();
+                credentialFormats.put(credential.credentialObjectId(), format);
             } catch (IllegalArgumentException e) {
-                return ServiceResult.badRequest("Invalid credential format: " + credential.format());
+                return ServiceResult.badRequest("Credential format not supported for credential object ID: %s".formatted(credential.credentialObjectId()));
             }
         }
         return ServiceResult.success(credentialFormats);

@@ -55,10 +55,14 @@ public class IssuerMetadataApiController implements IssuerMetadataApi {
     @GET
     @Path("/")
     @Override
-    public JsonObject getIssuerMetadata(@PathParam("participantContextId") String participantContextId, @HeaderParam(AUTHORIZATION) String token) {
-        if (token == null) {
+    public JsonObject getIssuerMetadata(@PathParam("participantContextId") String participantContextId, @HeaderParam(AUTHORIZATION) String authHeader) {
+        if (authHeader == null) {
             throw new AuthenticationFailedException("Authorization header missing");
         }
+        if (!authHeader.startsWith("Bearer ")) {
+            throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
+        }
+        var token = authHeader.replace("Bearer", "").trim();
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
         var participantContext = participantContextService.getParticipantContext(decodedParticipantContextId)

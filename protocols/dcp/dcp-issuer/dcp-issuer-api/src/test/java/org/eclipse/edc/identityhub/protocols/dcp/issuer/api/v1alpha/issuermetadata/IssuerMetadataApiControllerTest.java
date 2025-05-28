@@ -59,12 +59,6 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
     private final String participantContextId = "participantContextId";
     private final String participantContextIdEncoded = Base64.getEncoder().encodeToString(participantContextId.getBytes());
 
-    @Override
-    protected IssuerMetadataApiController controller() {
-        return new IssuerMetadataApiController(participantContextService, dcpIssuerTokenVerifier, issuerMetadataService, typeTransformerRegistry);
-    }
-
-
     @Test
     void issuerMetadata_tokenNotPresent_shouldReturn401() {
         assertThatThrownBy(() -> controller().getIssuerMetadata(participantContextIdEncoded, null))
@@ -98,7 +92,6 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
         verifyNoInteractions(issuerMetadataService, dcpIssuerTokenVerifier);
     }
 
-
     @Test
     void issuerMetadata() {
 
@@ -115,6 +108,11 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
 
         assertThat(response).isEqualTo(object);
 
+    }
+
+    @Override
+    protected IssuerMetadataApiController controller() {
+        return new IssuerMetadataApiController(participantContextService, dcpIssuerTokenVerifier, issuerMetadataService, typeTransformerRegistry);
     }
 
     private ParticipantContext createParticipantContext() {
@@ -142,6 +140,6 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
                 .subject("test-subject")
                 .jwtID(UUID.randomUUID().toString()).build(), ecKey);
 
-        return jwt.serialize();
+        return "Bearer " + jwt.serialize();
     }
 }

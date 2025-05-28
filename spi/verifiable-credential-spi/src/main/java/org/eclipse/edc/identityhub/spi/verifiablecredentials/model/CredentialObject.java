@@ -29,7 +29,7 @@ public class CredentialObject {
 
     private String credentialType;
     private String offerReason;
-    private List<String> profiles = new ArrayList<>();
+    private String profile;
     private List<String> bindingMethods = new ArrayList<>();
     private PresentationDefinition issuancePolicy;
 
@@ -41,8 +41,8 @@ public class CredentialObject {
         return bindingMethods;
     }
 
-    public List<String> getProfiles() {
-        return profiles;
+    public String getProfile() {
+        return profile;
     }
 
     public PresentationDefinition getIssuancePolicy() {
@@ -74,13 +74,8 @@ public class CredentialObject {
             return this;
         }
 
-        public Builder profiles(List<String> profiles) {
-            credentialObject.profiles = profiles;
-            return this;
-        }
-
-        public Builder profile(String profile) {
-            credentialObject.profiles.add(profile);
+        public Builder profile(String profiles) {
+            credentialObject.profile = profiles;
             return this;
         }
 

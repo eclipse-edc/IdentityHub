@@ -100,7 +100,7 @@ public class StorageApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .typesAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString(), // for tests involving the JWT credential
+                    .idsAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString(), // for tests involving the JWT credential
                             "SuperSecretCredential", CredentialFormat.VC1_0_LD.toString())) // for tests involving the LD credential
                     .state(REQUESTED.code())
                     .participantContextId(PROVIDER_DID)
@@ -256,7 +256,7 @@ public class StorageApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .typesAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString()))
+                    .idsAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString()))
                     .state(CREATED.code())
                     .participantContextId(PROVIDER_DID)
                     .build());
@@ -275,15 +275,15 @@ public class StorageApiEndToEndTest {
                     .body(containsString("HolderCredentialRequest is expected to be in any of the states '[REQUESTED, ISSUED]' but was 'CREATED'"));
         }
 
-        @DisplayName("Corresponding holder credential request was made for a different credential type, expect 400")
+        @DisplayName("Corresponding holder credential request was made for a different credential format, expect 400")
         @Test
-        void storeCredential_whenTypeNotRequested(IdentityHubRuntime identityHubRuntime) throws JOSEException {
+        void storeCredential_whenFormatNotRequested(IdentityHubRuntime identityHubRuntime) throws JOSEException {
 
             identityHubRuntime.storeHolderRequest(HolderCredentialRequest.Builder.newInstance()
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .typesAndFormats(Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()))
+                    .idsAndFormats(Map.of("TestCredential", CredentialFormat.VC2_0_COSE.toString()))
                     .state(REQUESTED.code())
                     .participantContextId(PROVIDER_DID)
                     .build());
@@ -299,7 +299,7 @@ public class StorageApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
-                    .body(containsString("No credential request was made for Credentials of type"));
+                    .body(containsString("No credential request was made for Credentials "));
         }
 
         private void createParticipant(IdentityHubRuntime identityHubRuntime) {

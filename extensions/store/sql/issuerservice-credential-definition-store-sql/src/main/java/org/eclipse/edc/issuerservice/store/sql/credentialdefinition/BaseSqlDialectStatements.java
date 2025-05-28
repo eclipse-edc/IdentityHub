@@ -41,7 +41,7 @@ public class BaseSqlDialectStatements implements CredentialDefinitionStoreStatem
                 .jsonColumn(getJsonSchemaColumn())
                 .column(getJsonSchemaUrlColumn())
                 .column(getValidityColumn())
-                .jsonColumn(getFormatsColumn())
+                .column(getFormatsColumn())
                 .column(getCreateTimestampColumn())
                 .column(getLastModifiedTimestampColumn())
                 .insertInto(getCredentialDefinitionTable());
@@ -57,7 +57,7 @@ public class BaseSqlDialectStatements implements CredentialDefinitionStoreStatem
                 .jsonColumn(getJsonSchemaColumn())
                 .column(getJsonSchemaUrlColumn())
                 .column(getValidityColumn())
-                .jsonColumn(getFormatsColumn())
+                .column(getFormatsColumn())
                 .column(getLastModifiedTimestampColumn())
                 .update(getCredentialDefinitionTable(), getIdColumn());
     }

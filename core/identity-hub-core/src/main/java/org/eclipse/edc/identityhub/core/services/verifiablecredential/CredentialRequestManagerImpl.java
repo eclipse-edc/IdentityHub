@@ -21,8 +21,8 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequest;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
@@ -84,7 +84,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         var newRequest = HolderCredentialRequest.Builder.newInstance()
                 .id(holderPid)
                 .issuerDid(issuerDid)
-                .typesAndFormats(typesAndFormats)
+                .idsAndFormats(typesAndFormats)
                 .participantContextId(participantContextId)
                 .state(CREATED.code())
                 .build();
@@ -117,13 +117,13 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private Result<String> sendCredentialRequest(HolderCredentialRequest request, String endpoint) {
         var issuerDid = request.getIssuerDid();
         var holderPid = request.getId();
-        var typesAndFormats = request.getTypesAndFormats();
+        var idsAndFormats = request.getIdsAndFormats();
 
         return transactionContext.execute(() -> {
             request.transitionRequesting();
             updateRequest(request);
             return getAuthToken(request.getParticipantContextId(), issuerDid)
-                    .compose(token -> createCredentialsRequest(token, endpoint, holderPid, typesAndFormats))
+                    .compose(token -> createCredentialsRequest(token, endpoint, holderPid, idsAndFormats))
                     .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
         });
     }
@@ -178,14 +178,14 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * @param token                    the token that should be used in the Authorization header of the DCP request
      * @param issuerRequestEndpointUrl the URL of the Issuer's Credential Request API endpoint
      * @param holderPid                the request ID property that will be attached to the request
-     * @param typesAndFormats          a map of credential-type-to-format entries. The credential-type is the entry's key, the format is the entry's value
+     * @param idsAndFormats            a map of credential-object-id-to-format entries. The credential-type is the entry's key, the format is the entry's value
      * @return a Result containing the Issuer-assigned issuance process ID
      */
-    private Result<Request> createCredentialsRequest(TokenRepresentation token, String issuerRequestEndpointUrl, String holderPid, Map<String, String> typesAndFormats) {
+    private Result<Request> createCredentialsRequest(TokenRepresentation token, String issuerRequestEndpointUrl, String holderPid, Map<String, String> idsAndFormats) {
         var rqMessage = CredentialRequestMessage.Builder.newInstance();
         rqMessage.holderPid(holderPid);
 
-        typesAndFormats.forEach((type, format) -> rqMessage.credential(new CredentialRequest(type, format, null)));
+        idsAndFormats.forEach((id, format) -> rqMessage.credential(new CredentialRequestSpecifier(id)));
 
         var jsonObj = dcpTypeTransformerRegistry.transform(rqMessage.build(), JsonObject.class);
 

@@ -162,7 +162,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
 
         var holderPid = ofNullable(credentialRequestDto.holderPid());
-        var requestParameters = credentialRequestDto.credentials().stream().collect(Collectors.toMap(CredentialDescriptor::credentialType, CredentialDescriptor::format));
+        var requestParameters = credentialRequestDto.credentials().stream().collect(Collectors.toMap(CredentialDescriptor::id, CredentialDescriptor::format));
 
         var credentialRequestResult = credentialRequestService.initiateRequest(participantId, credentialRequestDto.issuerDid(),
                 holderPid.orElseGet(() -> UUID.randomUUID().toString()),
@@ -189,7 +189,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
 
         return ofNullable(credentialRequestService.findById(holderPid))
-                .map(req -> new HolderCredentialRequestDto(req.getIssuerDid(), req.getHolderPid(), req.getIssuerPid(), req.stateAsString(), req.getTypesAndFormats()))
+                .map(req -> new HolderCredentialRequestDto(req.getIssuerDid(), req.getHolderPid(), req.getIssuerPid(), req.stateAsString(), req.getIdsAndFormats()))
                 .orElseThrow(() -> new ObjectNotFoundException(HolderCredentialRequest.class, holderPid));
     }
 

@@ -276,7 +276,7 @@ public class VerifiableCredentialApiEndToEndTest {
                                 {
                                   "issuerDid": "did:web:issuer",
                                   "holderPid": "%s",
-                                  "credentials": [{ "format": "VC1_0_JWT", "credentialType": "TestCredential"}]
+                                  "credentials": [{ "format": "VC1_0_JWT", "id": "TestCredential-id"}]
                                 }
                                 """.formatted(holderPid);
                 runtime.getIdentityEndpoint().baseRequest()
@@ -313,7 +313,7 @@ public class VerifiableCredentialApiEndToEndTest {
                     .participantContextId(userId)
                     .issuerDid("did:web:issuer")
                     .issuerPid("dummy-issuance-id")
-                    .credentialType("TestCredential", CredentialFormat.VC2_0_JOSE.toString())
+                    .credentialObjectId("TestCredential", CredentialFormat.VC2_0_JOSE.toString())
                     .build();
 
             trx.execute(() -> store.save(holderRequest));
@@ -344,7 +344,7 @@ public class VerifiableCredentialApiEndToEndTest {
                     .participantContextId(user1)
                     .issuerDid("did:web:issuer")
                     .issuerPid("dummy-issuance-id")
-                    .credentialType("TestCredential", CredentialFormat.VC2_0_JOSE.toString())
+                    .credentialObjectId("TestCredential", CredentialFormat.VC2_0_JOSE.toString())
                     .build();
 
             trx.execute(() -> store.save(holderRequest));

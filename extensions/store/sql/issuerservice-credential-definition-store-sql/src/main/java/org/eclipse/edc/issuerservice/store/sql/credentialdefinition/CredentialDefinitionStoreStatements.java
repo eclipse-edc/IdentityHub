@@ -65,7 +65,7 @@ public interface CredentialDefinitionStoreStatements extends SqlStatements {
     }
 
     default String getFormatsColumn() {
-        return "formats";
+        return "format";
     }
 
     default String getCreateTimestampColumn() {

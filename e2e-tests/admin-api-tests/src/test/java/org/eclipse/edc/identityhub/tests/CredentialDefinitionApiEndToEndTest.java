@@ -86,7 +86,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
                     .attestation("test-attestation")
                     .participantContextId(USER)
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             runtime.getAdminEndpoint().baseRequest()
@@ -120,7 +120,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .rule(new CredentialRuleDefinition("notFound", Map.of()))
                     .attestation("test-attestation")
                     .participantContextId("participantContextId")
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             runtime.getAdminEndpoint().baseRequest()
@@ -143,7 +143,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("https://example.org/membership-credential-schema.json")
                     .credentialType("MyType")
                     .participantContextId("participantContextId")
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             service.createCredentialDefinition(definition);
@@ -157,7 +157,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "credentialType": "MembershipCredential",
                               "jsonSchema": "{}",
                               "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
-                              "formats": ["VC1_0_JWT"]
+                              "format": "VC1_0_JWT"
                             }
                             """)
                     .post("/v1alpha/participants/%s/credentialdefinitions".formatted(toBase64(USER)))
@@ -176,7 +176,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("https://example.org/membership-credential-schema.json")
                     .credentialType("MembershipCredential")
                     .participantContextId("participantContextId")
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             service.createCredentialDefinition(definition);
@@ -190,7 +190,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "credentialType": "MembershipCredential",
                               "jsonSchema": "{}",
                               "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
-                              "formats": ["VC1_0_JWT"]
+                              "format": "VC1_0_JWT"
                             }
                             """)
                     .post("/v1alpha/participants/%s/credentialdefinitions".formatted(toBase64(USER)))
@@ -230,7 +230,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "jsonSchema": "{}",
                               "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
                               "attestations": ["notfound"],
-                              "formats": ["VC1_0_JWT"]
+                              "format": "VC1_0_JWT"
                             }
                             """)
                     .post("/v1alpha/participants/%s/credentialdefinitions".formatted(toBase64(USER)))
@@ -250,7 +250,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId(USER)
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             service.createCredentialDefinition(definition);
@@ -278,7 +278,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId("anotherUser")
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             service.createCredentialDefinition(definition);
@@ -323,7 +323,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId(USER)
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             service.createCredentialDefinition(definition);
@@ -349,7 +349,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId("anotherUser")
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             service.createCredentialDefinition(definition);
@@ -386,7 +386,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId(USER)
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             service.createCredentialDefinition(definition);
@@ -397,7 +397,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId(USER)
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             runtime.getAdminEndpoint().baseRequest()
@@ -423,7 +423,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId("participantContextId")
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
 
@@ -447,7 +447,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId("participantContextId")
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             service.createCredentialDefinition(definition);
@@ -458,7 +458,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId("participantContextId")
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             runtime.getAdminEndpoint().baseRequest()
@@ -481,7 +481,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId(USER)
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             service.createCredentialDefinition(definition);
@@ -520,7 +520,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
                     .participantContextId(USER)
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             service.createCredentialDefinition(definition);
