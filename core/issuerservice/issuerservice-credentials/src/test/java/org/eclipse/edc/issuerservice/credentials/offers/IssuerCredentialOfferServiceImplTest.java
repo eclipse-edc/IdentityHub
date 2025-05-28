@@ -19,11 +19,12 @@ import jakarta.json.JsonObject;
 import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.issuerservice.spi.credentials.CredentialDescriptor;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -55,9 +56,11 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings("unchecked")
 class IssuerCredentialOfferServiceImplTest {
 
+    public static final String CREDENTIAL_OBJECT_UD = "testcredential-id";
     private static final String HOLDER_ID = "holder-id";
     private static final String PARTICIPANT_CONTEXT_ID = "issuer-context-id";
     private static final String HOLDER_CS_ENDPOINT = "https://holder.com/credentialservice";
+    private static final String ISSUER_DID = "did:web:issuer";
     private final HolderStore holderStore = mock();
     private final CredentialServiceUrlResolver credentialServiceUrlResolver = mock();
     private final ParticipantSecureTokenService sts = mock();
@@ -65,13 +68,15 @@ class IssuerCredentialOfferServiceImplTest {
     private final EdcHttpClient httpClient = mock();
 
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
+    private final DcpIssuerMetadataService issuerMetadataService = mock();
     private final IssuerCredentialOfferService credentialOfferService = new IssuerCredentialOfferServiceImpl(new NoopTransactionContext(),
             holderStore,
             credentialServiceUrlResolver,
             sts,
             participantContextService,
             httpClient, mock(),
-            typeTransformerRegistry
+            typeTransformerRegistry,
+            issuerMetadataService
     );
 
     @BeforeEach
@@ -82,11 +87,20 @@ class IssuerCredentialOfferServiceImplTest {
         when(credentialServiceUrlResolver.resolve(anyString())).thenReturn(success(HOLDER_CS_ENDPOINT));
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID))).thenReturn(ServiceResult.success(issuerParticipant()));
         when(typeTransformerRegistry.transform(any(), eq(JsonObject.class))).thenReturn(success(Json.createObjectBuilder().build()));
+        when(issuerMetadataService.getIssuerMetadata(any())).thenReturn(ServiceResult.success(IssuerMetadata.Builder.newInstance()
+                .issuer(ISSUER_DID)
+                .credentialSupported(CredentialObject.Builder.newInstance()
+                        .id(CREDENTIAL_OBJECT_UD)
+                        .credentialType("TestCredential")
+                        .profile("vc11-sl2021/jwt")
+                        .bindingMethod("did:web")
+                        .build())
+                .build()));
     }
 
     @Test
     void sendCredentialOffer_success() {
-        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential")));
+        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD));
 
         assertThat(result).isSucceeded();
         verify(holderStore).findById(eq(HOLDER_ID));
@@ -98,9 +112,19 @@ class IssuerCredentialOfferServiceImplTest {
     }
 
     @Test
+    void sendCredentialOffer_credentialObjectNotExists() {
+        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of("not-exist"));
+
+        assertThat(result).isFailed();
+        verify(holderStore).findById(eq(HOLDER_ID));
+        verify(participantContextService).getParticipantContext(eq(PARTICIPANT_CONTEXT_ID));
+        verifyNoMoreInteractions(holderStore, credentialServiceUrlResolver, participantContextService, sts, httpClient);
+    }
+
+    @Test
     void sendCredentialOffer_holderNotExist() {
         when(holderStore.findById(HOLDER_ID)).thenReturn(StoreResult.notFound("foobar"));
-        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential")));
+        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD));
 
         assertThat(result).isFailed().detail().contains("foobar");
         verify(holderStore).findById(eq(HOLDER_ID));
@@ -111,7 +135,7 @@ class IssuerCredentialOfferServiceImplTest {
     @Test
     void sendCredentialOffer_offerRequestFailure() {
         when(httpClient.execute(any(), (Function<Response, Result<String>>) any())).thenReturn(Result.failure("not reachable"));
-        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential")));
+        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD));
 
         assertThat(result).isFailed().detail().contains("not reachable");
         verify(holderStore).findById(eq(HOLDER_ID));
@@ -125,7 +149,7 @@ class IssuerCredentialOfferServiceImplTest {
     @Test
     void sendCredentialOffer_participantContextNotExist() {
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID))).thenReturn(ServiceResult.notFound("not found"));
-        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential")));
+        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD));
 
         assertThat(result).isFailed().detail().contains("not found");
         verify(holderStore).findById(eq(HOLDER_ID));
@@ -136,7 +160,7 @@ class IssuerCredentialOfferServiceImplTest {
     @Test
     void sendCredentialOffer_holderDidNotResolvable() {
         when(credentialServiceUrlResolver.resolve(any())).thenReturn(Result.failure("not resolvable"));
-        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential")));
+        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD));
 
         assertThat(result).isFailed().detail().contains("not resolvable");
         verify(holderStore).findById(eq(HOLDER_ID));
@@ -148,7 +172,7 @@ class IssuerCredentialOfferServiceImplTest {
     @Test
     void sendCredentialOffer_stsFails() {
         when(sts.createToken(anyString(), anyMap(), isNull())).thenReturn(Result.failure("random STS failure"));
-        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential")));
+        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD));
 
         assertThat(result).isFailed().detail().contains("random STS failure");
         verify(holderStore).findById(eq(HOLDER_ID));
@@ -166,7 +190,7 @@ class IssuerCredentialOfferServiceImplTest {
     void sendCredentialOffer_transformationFails() {
         when(typeTransformerRegistry.transform(any(), eq(JsonObject.class))).thenReturn(Result.failure("transformation failure"));
 
-        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential")));
+        var result = credentialOfferService.sendCredentialOffer(PARTICIPANT_CONTEXT_ID, HOLDER_ID, List.of(CREDENTIAL_OBJECT_UD));
 
         assertThat(result).isFailed().detail().contains("transformation failure");
         verify(holderStore).findById(eq(HOLDER_ID));

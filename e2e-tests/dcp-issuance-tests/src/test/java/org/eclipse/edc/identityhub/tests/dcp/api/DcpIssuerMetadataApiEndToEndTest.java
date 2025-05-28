@@ -106,7 +106,7 @@ public class DcpIssuerMetadataApiEndToEndTest {
             credentialDefinitionService.createCredentialDefinition(credentialDefinition);
             holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
-            var token = generateSiToken();
+            var token = "Bearer " + generateSiToken();
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
 
@@ -121,7 +121,7 @@ public class DcpIssuerMetadataApiEndToEndTest {
                     .body("credentialsSupported.size()", equalTo(1))
                     .body("credentialsSupported[0].credentialType", equalTo("MembershipCredential"))
                     .body("credentialsSupported[0].bindingMethods[0]", equalTo("did:web"))
-                    .body("credentialsSupported[0].profiles[0]", equalTo("vc11-sl2021/jwt"));
+                    .body("credentialsSupported[0].profile", equalTo("vc11-sl2021/jwt"));
 
         }
 
@@ -137,8 +137,22 @@ public class DcpIssuerMetadataApiEndToEndTest {
         }
 
         @Test
-        void issuerMetadata_participantNotFound_shouldReturn401(IssuerExtension issuerExtension) {
+        void issuerMetadata_noBearerPrefix_shouldReturn401(IssuerExtension issuerExtension) {
             var token = generateSiToken();
+
+            issuerExtension.getIssuerApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .get(issuanceMetadataUrl())
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(401);
+
+        }
+
+        @Test
+        void issuerMetadata_participantNotFound_shouldReturn401(IssuerExtension issuerExtension) {
+            var token = "Bearer " + generateSiToken();
 
             issuerExtension.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
@@ -159,7 +173,7 @@ public class DcpIssuerMetadataApiEndToEndTest {
 
             var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID(DID_WEB_PARTICIPANT_KEY_1).generate();
 
-            var token = generateSiToken();
+            var token = "Bearer " + generateSiToken();
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(spoofedKey.toPublicKey()));
 

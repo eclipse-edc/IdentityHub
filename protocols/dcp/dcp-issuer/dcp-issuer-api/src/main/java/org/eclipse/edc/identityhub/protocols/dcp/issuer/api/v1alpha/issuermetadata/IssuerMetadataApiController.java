@@ -25,6 +25,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataSer
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
@@ -55,22 +56,22 @@ public class IssuerMetadataApiController implements IssuerMetadataApi {
     @Path("/")
     @Override
     public JsonObject getIssuerMetadata(@PathParam("participantContextId") String participantContextId, @HeaderParam(AUTHORIZATION) String authHeader) {
-//        if (authHeader == null) {
-//            throw new AuthenticationFailedException("Authorization header missing");
-//        }
-//        if (!authHeader.startsWith("Bearer ")) {
-//            throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
-//        }
-//        var token = authHeader.replace("Bearer", "").trim();
+        if (authHeader == null) {
+            throw new AuthenticationFailedException("Authorization header missing");
+        }
+        if (!authHeader.startsWith("Bearer ")) {
+            throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
+        }
+        var token = authHeader.replace("Bearer", "").trim();
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
         var participantContext = participantContextService.getParticipantContext(decodedParticipantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
 
-//        var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(token).build();
+        var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(token).build();
 
-//        tokenValidator.verify(participantContext, tokenRepresentation)
-//                .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+        tokenValidator.verify(participantContext, tokenRepresentation)
+                .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
         var metadata = issuerMetadataService.getIssuerMetadata(participantContext)
                 .orElseThrow(f -> new EdcException("Error creating response body: " + f.getFailureDetail()));

@@ -38,6 +38,8 @@ import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerRuntime;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
+import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
@@ -147,7 +149,7 @@ public class CredentialApiEndToEndTest {
                         {
                       "holderId": "test-holder-id",
                       "credentials": [
-                        {"format": "VC1_1_JWT", "credentialType": "TestCredential", "reason": "test-reason"}
+                        "test-credential-id"
                       ]
                     }
                     """;
@@ -412,8 +414,17 @@ public class CredentialApiEndToEndTest {
         }
 
         @Test
-        void sendCredentialOffer(IssuerRuntime runtime, HolderStore holderStore) {
+        void sendCredentialOffer(IssuerRuntime runtime, HolderStore holderStore, CredentialDefinitionStore definitionStore) {
             var token = runtime.createParticipant(USER).apiKey();
+            definitionStore.create(CredentialDefinition.Builder.newInstance()
+                            .id("test-credential-id")
+                            .credentialType("TestCredential")
+                            .formatFrom(CredentialFormat.VC1_0_JWT)
+                            .jsonSchemaUrl("https://example.com/schemas/test-credential.json")
+                            .participantContextId(USER)
+                            .build())
+                    .orElseThrow(AssertionError::new);
+
 
             var port = getFreePort();
             try (var mockedHolderEndpoint = ClientAndServer.startClientAndServer(port)) {

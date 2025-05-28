@@ -26,7 +26,6 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialOfferDto;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
-import org.eclipse.edc.issuerservice.spi.credentials.CredentialDescriptor;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -59,6 +58,7 @@ import static org.mockito.Mockito.when;
 
 class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
+    public static final String CREDENTIAL_OBJECT_ID = "test-id";
     private static final String PARTICIPANT_ID = "test-participant";
     private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
     private final CredentialStatusService credentialStatusService = mock();
@@ -185,7 +185,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
     @Test
     void sendCredentialOffer() {
         baseRequest()
-                .body(new CredentialOfferDto("holder", List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential"))))
+                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
                 .post("/offer")
                 .then()
                 .log().ifValidationFails()
@@ -199,7 +199,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
         when(authorizationService.isAuthorized(any(), anyString(), any()))
                 .thenReturn(ServiceResult.notFound("holder"));
         baseRequest()
-                .body(new CredentialOfferDto("holder", List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential"))))
+                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
                 .post("/offer")
                 .then()
                 .log().ifValidationFails()
@@ -215,7 +215,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
         when(authorizationService.isAuthorized(any(), anyString(), any()))
                 .thenReturn(ServiceResult.unauthorized("barbaz"));
         baseRequest()
-                .body(new CredentialOfferDto("holder", List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential"))))
+                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
                 .post("/offer")
                 .then()
                 .log().ifValidationFails()
@@ -231,7 +231,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
         when(credentialOfferService.sendCredentialOffer(anyString(), anyString(), anyCollection()))
                 .thenReturn(ServiceResult.notFound("foo"));
         baseRequest()
-                .body(new CredentialOfferDto("holder", List.of(new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "TestCredential"))))
+                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
                 .post("/offer")
                 .then()
                 .log().ifValidationFails()
