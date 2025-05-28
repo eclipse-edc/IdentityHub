@@ -1643,9 +1643,9 @@ components:
     CredentialDescriptor:
       type: object
       properties:
-        credentialType:
-          type: string
         format:
+          type: string
+        id:
           type: string
     CredentialRequestDto:
       required:

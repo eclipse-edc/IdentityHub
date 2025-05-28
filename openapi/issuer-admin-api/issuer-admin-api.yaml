@@ -1226,19 +1226,8 @@ components:
             type: string
         credentialType:
           type: string
-        formats:
-          uniqueItems: true
-          type: array
-          items:
-            type: string
-            enum:
-            - JSON_LD
-            - JWT
-            - VC1_0_LD
-            - VC1_0_JWT
-            - VC2_0_JOSE
-            - VC2_0_SD_JWT
-            - VC2_0_COSE
+        format:
+          type: string
         id:
           type: string
         jsonSchema:
@@ -1267,11 +1256,8 @@ components:
             type: string
         credentialType:
           type: string
-        formats:
-          uniqueItems: true
-          type: array
-          items:
-            type: string
+        format:
+          type: string
         id:
           type: string
         jsonSchema:
@@ -1289,15 +1275,6 @@ components:
         validity:
           type: integer
           format: int64
-    CredentialDescriptor:
-      type: object
-      properties:
-        credentialType:
-          type: string
-        format:
-          type: string
-        reason:
-          type: string
     CredentialOfferDto:
       required:
       - credentials
@@ -1307,7 +1284,7 @@ components:
         credentials:
           type: array
           items:
-            $ref: "#/components/schemas/CredentialDescriptor"
+            type: string
         holderId:
           type: string
     CredentialRuleDefinition:
