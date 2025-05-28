@@ -207,7 +207,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                         .mapping(new MappingDefinition("participant.name", "credentialSubject.name", true))
                         .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
                         .participantContextId("participantContextId")
-                        .format(VC1_0_JWT)
+                        .formatFrom(VC1_0_JWT)
                         .build();
 
 
@@ -413,7 +413,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                     .attestation("attestation-id")
                     .rule(new CredentialRuleDefinition("expression", credentialRuleConfiguration))
                     .participantContextId("participantContextId")
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             credentialDefinitionService.createCredentialDefinition(credentialDefinition);

@@ -100,7 +100,7 @@ public class DcpIssuerMetadataApiEndToEndTest {
                     .credentialType("MembershipCredential")
                     .jsonSchema("{}")
                     .participantContextId(ISSUER_ID)
-                    .format(CredentialFormat.VC1_0_JWT)
+                    .formatFrom(CredentialFormat.VC1_0_JWT)
                     .build();
 
             credentialDefinitionService.createCredentialDefinition(credentialDefinition);

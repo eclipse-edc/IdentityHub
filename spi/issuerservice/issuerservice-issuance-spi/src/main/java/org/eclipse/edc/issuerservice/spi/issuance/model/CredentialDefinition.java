@@ -129,7 +129,7 @@ public class CredentialDefinition extends AbstractParticipantResource {
         }
 
         @JsonIgnore
-        public Builder format(CredentialFormat format) {
+        public Builder formatFrom(CredentialFormat format) {
             this.entity.format = format.name();
             return this;
         }

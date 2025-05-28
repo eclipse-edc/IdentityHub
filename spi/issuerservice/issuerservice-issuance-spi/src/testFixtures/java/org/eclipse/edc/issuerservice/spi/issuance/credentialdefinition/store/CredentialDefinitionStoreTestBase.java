@@ -133,7 +133,7 @@ public abstract class CredentialDefinitionStoreTestBase {
                 .id(id)
                 .participantContextId(UUID.randomUUID().toString())
                 .credentialType(type)
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .jsonSchemaUrl("http://example.com/schema");
     }
 

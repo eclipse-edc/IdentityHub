@@ -102,7 +102,7 @@ public class IssuanceProcessManagerImplTest {
                 .jsonSchemaUrl("http://example.org/schema")
                 .jsonSchema("{}")
                 .participantContextId("participantContextId")
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .build();
 
         var generationRequests = new CredentialGenerationRequest(credentialDefinition, VC1_0_JWT);
@@ -159,7 +159,7 @@ public class IssuanceProcessManagerImplTest {
                 .jsonSchemaUrl("http://example.org/schema")
                 .jsonSchema("{}")
                 .participantContextId("participantContextId")
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .build();
 
         var generationRequests = new CredentialGenerationRequest(credentialDefinition, VC1_0_JWT);

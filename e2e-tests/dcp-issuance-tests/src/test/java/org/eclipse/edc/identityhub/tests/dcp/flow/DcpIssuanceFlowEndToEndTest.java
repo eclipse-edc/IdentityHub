@@ -225,7 +225,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .mapping(mappingDefinition)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
                     .participantContextId("participantContextId")
-                    .format(VC1_0_JWT)
+                    .formatFrom(VC1_0_JWT)
                     .build();
 
             credentialDefinitionService.createCredentialDefinition(credentialDefinition);

@@ -144,7 +144,7 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
                             .credentialType(type)
                             .id("credential-object-id%d".formatted(count.getAndIncrement()))
                             .attestation("tck-test-attestation")
-                            .format(CredentialFormat.VC1_0_JWT)
+                            .formatFrom(CredentialFormat.VC1_0_JWT)
                             .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                             .jsonSchemaUrl("https://example.com/schema/%s-schema.json".formatted(type.toLowerCase()))
                             .jsonSchema("{}")

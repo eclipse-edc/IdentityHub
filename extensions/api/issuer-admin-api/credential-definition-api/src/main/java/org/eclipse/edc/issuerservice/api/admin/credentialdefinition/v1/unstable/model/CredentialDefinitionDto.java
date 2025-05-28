@@ -92,7 +92,7 @@ public class CredentialDefinitionDto {
                 .jsonSchema(jsonSchema)
                 .jsonSchemaUrl(jsonSchemaUrl)
                 .validity(validity)
-                .format(CredentialFormat.valueOf(format.toUpperCase()))
+                .formatFrom(CredentialFormat.valueOf(format.toUpperCase()))
                 .attestations(attestations)
                 .rules(rules)
                 .mappings(mappings)

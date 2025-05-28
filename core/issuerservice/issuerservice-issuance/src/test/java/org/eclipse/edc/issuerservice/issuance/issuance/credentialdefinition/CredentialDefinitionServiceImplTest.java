@@ -255,7 +255,7 @@ public class CredentialDefinitionServiceImplTest {
                 .participantContextId(UUID.randomUUID().toString())
                 .rule(new CredentialRuleDefinition("test-rule", Map.of()))
                 .credentialType(type)
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .build();
     }
 }

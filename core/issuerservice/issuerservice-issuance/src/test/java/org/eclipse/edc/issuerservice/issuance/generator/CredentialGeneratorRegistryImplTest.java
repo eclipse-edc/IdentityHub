@@ -268,7 +268,7 @@ public class CredentialGeneratorRegistryImplTest {
                 .mapping(new MappingDefinition("input", "outut", true))
                 .participantContextId("participantContextId")
                 .jsonSchema("{}")
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .build();
     }
 }

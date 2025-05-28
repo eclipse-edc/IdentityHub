@@ -82,7 +82,7 @@ public class DcpIssuerServiceImplTest {
                 .attestations(attestations)
                 .participantContextId("participantContextId")
                 .rule(credentialRuleDefinition)
-                .format(VC1_0_JWT)
+                .formatFrom(VC1_0_JWT)
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
