@@ -26,6 +26,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpec
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
+import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
@@ -48,6 +49,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -79,12 +81,12 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     @Override
-    public ServiceResult<String> initiateRequest(String participantContextId, String issuerDid, String holderPid, Map<String, String> typesAndFormats) {
+    public ServiceResult<String> initiateRequest(String participantContextId, String issuerDid, String holderPid, List<RequestedCredential> typesAndFormats) {
 
         var newRequest = HolderCredentialRequest.Builder.newInstance()
                 .id(holderPid)
                 .issuerDid(issuerDid)
-                .idsAndFormats(typesAndFormats)
+                .requestedCredentials(typesAndFormats)
                 .participantContextId(participantContextId)
                 .state(CREATED.code())
                 .build();
@@ -181,11 +183,11 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * @param idsAndFormats            a map of credential-object-id-to-format entries. The credential-type is the entry's key, the format is the entry's value
      * @return a Result containing the Issuer-assigned issuance process ID
      */
-    private Result<Request> createCredentialsRequest(TokenRepresentation token, String issuerRequestEndpointUrl, String holderPid, Map<String, String> idsAndFormats) {
+    private Result<Request> createCredentialsRequest(TokenRepresentation token, String issuerRequestEndpointUrl, String holderPid, List<RequestedCredential> idsAndFormats) {
         var rqMessage = CredentialRequestMessage.Builder.newInstance();
         rqMessage.holderPid(holderPid);
 
-        idsAndFormats.forEach((id, format) -> rqMessage.credential(new CredentialRequestSpecifier(id)));
+        idsAndFormats.forEach((rq) -> rqMessage.credential(new CredentialRequestSpecifier(rq.id())));
 
         var jsonObj = dcpTypeTransformerRegistry.transform(rqMessage.build(), JsonObject.class);
 

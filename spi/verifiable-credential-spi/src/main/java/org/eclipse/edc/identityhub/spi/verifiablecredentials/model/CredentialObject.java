@@ -27,6 +27,7 @@ import java.util.List;
  */
 public class CredentialObject {
 
+    private String id;
     private String credentialType;
     private String offerReason;
     private String profile;
@@ -51,6 +52,10 @@ public class CredentialObject {
 
     public String getOfferReason() {
         return offerReason;
+    }
+
+    public String getId() {
+        return id;
     }
 
     public static class Builder {
@@ -91,6 +96,11 @@ public class CredentialObject {
 
         public Builder issuancePolicy(PresentationDefinition issuancePolicy) {
             credentialObject.issuancePolicy = issuancePolicy;
+            return this;
+        }
+
+        public Builder id(String id) {
+            credentialObject.id = id;
             return this;
         }
 

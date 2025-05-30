@@ -26,6 +26,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMess
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
+import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
@@ -45,7 +46,6 @@ import org.mockito.ArgumentMatchers;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -122,7 +122,7 @@ class CredentialRequestManagerImplTest {
     class Initiate {
         @Test
         void initiateRequest() {
-            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, "test-holder-request-id", Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()));
+            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, "test-holder-request-id", List.of(new RequestedCredential("test-id", "TestCredential", CredentialFormat.VC1_0_JWT.toString())));
             assertThat(result)
                     .isSucceeded()
                     .isEqualTo("test-holder-request-id");
@@ -134,7 +134,7 @@ class CredentialRequestManagerImplTest {
         @Test
         void initiateRequest_whenStorageFailure() {
             doThrow(new EdcPersistenceException("foo")).when(store).save(any());
-            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, "test-holder-request-id", Map.of("TestCredential", CredentialFormat.VC1_0_JWT.toString()));
+            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, "test-holder-request-id", List.of(new RequestedCredential("test-id", "TestCredential", CredentialFormat.VC1_0_JWT.toString())));
             assertThat(result)
                     .isFailed()
                     .detail().isEqualTo("foo");
@@ -273,7 +273,7 @@ class CredentialRequestManagerImplTest {
 
         private HolderCredentialRequest.Builder createRequest() {
             return HolderCredentialRequest.Builder.newInstance()
-                    .credentialObjectId("foo-credential-id", CredentialFormat.VC1_0_JWT.toString())
+                    .requestedCredential("foo-credential-id", "FooCredential", CredentialFormat.VC1_0_JWT.toString())
                     .state(REQUESTED.code())
                     .id("test-request")
                     .issuerDid(ISSUER_DID)

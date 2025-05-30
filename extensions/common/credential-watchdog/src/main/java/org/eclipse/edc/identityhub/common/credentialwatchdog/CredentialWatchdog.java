@@ -28,7 +28,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
@@ -107,11 +106,11 @@ public class CredentialWatchdog implements Runnable {
 
         var formatString = expiringCredential.getVerifiableCredential().format().toString();
         var typesAndFormats = expiringCredential.getVerifiableCredential().credential().getType().stream().collect(toMap(Function.identity(), s -> formatString));
-        credentialRequestManager.initiateRequest(expiringCredential.getParticipantContextId(),
-                        expiringCredential.getIssuerId(),
-                        UUID.randomUUID().toString(),
-                        typesAndFormats)
-                .onFailure(f -> monitor.warning("Error sending re-issuance request: %s".formatted(f.getFailureDetail())));
+//        credentialRequestManager.initiateRequest(expiringCredential.getParticipantContextId(),
+//                        expiringCredential.getIssuerId(),
+//                        UUID.randomUUID().toString(),
+//                        typesAndFormats)
+//                .onFailure(f -> monitor.warning("Error sending re-issuance request: %s".formatted(f.getFailureDetail())));
     }
 
     private QuerySpec allExcludingExpiredAndRevoked() {

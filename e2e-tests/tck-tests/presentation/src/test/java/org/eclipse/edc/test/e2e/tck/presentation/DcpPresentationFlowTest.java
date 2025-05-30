@@ -87,7 +87,8 @@ public class DcpPresentationFlowTest {
                 .requestId(ISSUANCE_CORRELATION_ID)
                 .state(HolderRequestState.REQUESTED.code())
                 .issuerPid(UUID.randomUUID().toString())
-                .idsAndFormats(Map.of("membershipCredential-id", "VC1_0_JWT", "sensitiveDataCredential-id", "VC1_0_JWT"))
+                .requestedCredential("membershipCredential-id", "MembershipCredential", "VC1_0_JWT")
+                .requestedCredential("sensitiveDataCredential-id", "SensitiveDataCredential", "VC1_0_JWT")
                 .build());
     }
 

@@ -29,7 +29,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
@@ -84,7 +83,7 @@ public abstract class HolderCredentialRequestStoreTestBase {
 
     private HolderCredentialRequest.Builder createHolderRequestBuilder() {
         return HolderCredentialRequest.Builder.newInstance()
-                .credentialObjectId("TestCredential", "VC1_0_JWT")
+                .requestedCredential("test-credential-id", "TestCredential", "VC1_0_JWT")
                 .state(CREATED.code())
                 .id("test-id")
                 .participantContextId("test-participant")
@@ -487,14 +486,13 @@ public abstract class HolderCredentialRequestStoreTestBase {
                     .forEach(getStore()::save);
 
             var request = createHolderRequestBuilder().id("testprocess1")
-                    .idsAndFormats(Map.of(
-                            "FooBarCredential-id", "VC1_0_JWT",
-                            "BarBazCredential-id", "VC1_0_JWT"))
+                    .requestedCredential("FooBarCredential-id", "FooBarCredential", "VC1_0_JWT")
+                    .requestedCredential("BarBazCredential-id", "BarBazCredential", "VC1_0_JWT")
                     .build();
             getStore().save(request);
 
             var query = QuerySpec.Builder.newInstance()
-                    .filter(List.of(new Criterion("idsAndFormats.FooBarCredential-id", "=", "VC1_0_JWT")))
+                    .filter(List.of(new Criterion("idsAndFormats.id", "=", "FooBarCredential-id")))
                     .build();
 
             var result = getStore().query(query);

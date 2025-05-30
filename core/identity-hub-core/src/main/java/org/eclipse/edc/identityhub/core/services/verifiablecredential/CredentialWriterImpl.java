@@ -91,8 +91,14 @@ public class CredentialWriterImpl implements CredentialWriter {
                 var receivedTypes = container.credential().getType();
                 var receivedFormat = container.format().toString();
 
-                // todo: HolderCredentialRequest does not yet contain the requested type - need to add this!!
-                if (holderRequest.getIdsAndFormats().values().stream().noneMatch(receivedFormat::equals)) {
+
+                //1. check if the received format is the requested formats
+                if (holderRequest.getIdsAndFormats().stream().noneMatch(rc -> receivedTypes.contains(rc.credentialType()))) {
+                    return ServiceResult.unauthorized("No credential request was made for Credentials of type '%s'".formatted(receivedFormat));
+                }
+
+                //2. check if the received type is one of the requested types
+                if (holderRequest.getIdsAndFormats().stream().noneMatch(rc -> receivedFormat.equalsIgnoreCase(rc.format()))) {
                     return ServiceResult.unauthorized("No credential request was made for Credentials serialized as '%s'".formatted(receivedFormat));
                 }
 

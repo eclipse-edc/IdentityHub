@@ -15,12 +15,13 @@
 package org.eclipse.edc.identityhub.spi.verifiablecredentials;
 
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.entity.StateEntityManager;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * Makes credential requests to a given issuer and manages the state on the holder side
@@ -41,7 +42,7 @@ public interface CredentialRequestManager extends StateEntityManager {
      * @param typesAndFormats      A map containing credential-type - credential-format entries
      * @return A ServiceResult containing the database ID of the {@code HolderCredentialRequest}.
      */
-    ServiceResult<String> initiateRequest(String participantContextId, String issuerDid, String holderPid, Map<String, String> typesAndFormats);
+    ServiceResult<String> initiateRequest(String participantContextId, String issuerDid, String holderPid, List<RequestedCredential> typesAndFormats);
 
     /**
      * Finds a {@link HolderCredentialRequest} for the given participant context, with the given ID

@@ -37,7 +37,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -63,7 +63,7 @@ class CredentialOfferHandlerTest {
     @BeforeEach
     void setUp() {
         when(credentialOfferStore.findById(anyString())).thenReturn(createOffer());
-        when(requestManager.initiateRequest(anyString(), anyString(), anyString(), anyMap())).thenReturn(ServiceResult.success(UUID.randomUUID().toString()));
+        when(requestManager.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.success(UUID.randomUUID().toString()));
         when(profileRegistry.getProfile(startsWith("test-profile")))
                 .thenReturn(new DcpProfile("test-profile", CredentialFormat.VC1_0_JWT, "BitStringStatusList"));
     }
@@ -74,16 +74,16 @@ class CredentialOfferHandlerTest {
 
         credentialOfferHandler.on(event());
         verifyNoInteractions(monitor);
-        verify(requestManager).initiateRequest(eq("test-participant"), eq("did:web:issuer"), anyString(), anyMap());
+        verify(requestManager).initiateRequest(eq("test-participant"), eq("did:web:issuer"), anyString(), anyList());
     }
 
     @Test
     void onCredentialOfferEvent_initiateFails() {
-        when(requestManager.initiateRequest(anyString(), anyString(), anyString(), anyMap())).thenReturn(ServiceResult.badRequest("foobar"));
+        when(requestManager.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.badRequest("foobar"));
 
         credentialOfferHandler.on(event());
 
-        verify(requestManager).initiateRequest(eq("test-participant"), eq("did:web:issuer"), anyString(), anyMap());
+        verify(requestManager).initiateRequest(eq("test-participant"), eq("did:web:issuer"), anyString(), anyList());
         verify(monitor).warning(matches("Could not initiate credential request.*foobar"));
     }
 

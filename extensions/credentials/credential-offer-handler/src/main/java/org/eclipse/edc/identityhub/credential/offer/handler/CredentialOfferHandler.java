@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.credential.offer.handler;
 
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
+import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.events.CredentialOfferEvent;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.events.CredentialOfferReceived;
@@ -28,8 +29,8 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static java.util.Optional.ofNullable;
@@ -92,8 +93,8 @@ public class CredentialOfferHandler implements EventSubscriber {
         });
     }
 
-    private Map<String, String> extractTypes(CredentialOffer credentialOffer) {
-        Map<String, String> typesAndFormats = new HashMap<>();
+    private List<RequestedCredential> extractTypes(CredentialOffer credentialOffer) {
+        List<RequestedCredential> typesAndFormats = new ArrayList<>();
 
         credentialOffer
                 .getCredentialObjects()
@@ -104,7 +105,7 @@ public class CredentialOfferHandler implements EventSubscriber {
                     if (format.isEmpty()) {
                         monitor.warning("Credential offer for '%s': no credential format could be derived from any of the offered profiles: %s".formatted(type, credentialObject.getProfile()));
                     } else {
-                        typesAndFormats.put(type, format.get());
+                        typesAndFormats.add(new RequestedCredential(credentialObject.getId(), type, format.get()));
                     }
                 });
         return typesAndFormats;
