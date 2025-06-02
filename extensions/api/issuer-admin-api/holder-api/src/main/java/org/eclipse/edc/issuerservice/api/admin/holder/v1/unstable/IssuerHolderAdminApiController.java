@@ -77,7 +77,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @GET
     @Path("/{holderId}")
     @Override
-    public Holder getHolderById(@PathParam("holderId") String holderId, @Context SecurityContext context) {
+    public Holder getHolderById(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, @Context SecurityContext context) {
         return authorizationService.isAuthorized(context, holderId, Holder.class)
                 .compose(u -> holderService.findById(holderId))
                 .orElseThrow(exceptionMapper(Holder.class, holderId));

@@ -16,8 +16,6 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialr
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -45,11 +43,14 @@ public interface CredentialRequestApi {
     @Tag(name = "Credential Request API")
     @Operation(description = "Requests the issuance of one or several verifiable credentials from an issuer",
             operationId = "requestCredentials",
-            parameters = {@Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH)},
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ApiSchema.CredentialRequestMessageSchema.class))),
             responses = {
-                    @ApiResponse(responseCode = "201", description = "The request was successfully received and is being processed.", headers = {@Header(name = "Location",
-                            description = "contains the relative URL where the status of the request can be queried (Credential Request Status API)")}),
+                    @ApiResponse(responseCode = "201", description = "The request was successfully received and is being processed.",
+                            headers = @Header(
+                                    name = "Location",
+                                    description = "contains the relative URL where the status of the request can be queried (Credential Request Status API)",
+                                    schema = @Schema(implementation = String.class)
+                            )),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, e.g. required parameter or properties were missing",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)))),
                     @ApiResponse(responseCode = "401", description = "No Authorization header was provided.",

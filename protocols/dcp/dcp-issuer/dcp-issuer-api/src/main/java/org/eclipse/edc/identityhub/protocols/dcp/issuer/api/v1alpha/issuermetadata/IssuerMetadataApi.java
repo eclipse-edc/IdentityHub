@@ -16,8 +16,6 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetad
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -37,9 +35,6 @@ public interface IssuerMetadataApi {
     @Tag(name = "Issuer Metadata API")
     @Operation(description = "Requests information about the capabilities of this issuer.",
             operationId = "getIssuerMetadata",
-            parameters = {
-                    @Parameter(name = "participantContextId", description = "Base64-Url encode Participant Context ID", required = true, in = ParameterIn.PATH),
-            },
             responses = {
                     @ApiResponse(responseCode = "200", description = "Gets the issuer metadata.",
                             content = @Content(schema = @Schema(implementation = ApiSchema.IssuerMetadataSchema.class)))
