@@ -15,14 +15,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantContextId
-        in: path
         required: true
         style: simple
         explode: false
@@ -79,14 +71,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantContextId
-        in: path
         required: true
         style: simple
         explode: false
@@ -132,15 +116,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: attestationDefinitionId
-        in: path
-        description: ID of the attestation to be removed
         required: true
         style: simple
         explode: false
@@ -153,11 +128,6 @@ paths:
         explode: false
         schema:
           type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/QuerySpec"
       responses:
         "204":
           description: The attestation was successfully deleted.
@@ -193,14 +163,6 @@ paths:
       description: Updates credential definition.
       operationId: updateCredentialDefinition
       parameters:
-      - name: participantContextId
-        in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
       - name: participantContextId
         in: path
         required: true
@@ -247,14 +209,6 @@ paths:
       description: Adds a new credential definition.
       operationId: createCredentialDefinition
       parameters:
-      - name: participantContextId
-        in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
       - name: participantContextId
         in: path
         required: true
@@ -305,14 +259,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantContextId
-        in: path
         required: true
         style: simple
         explode: false
@@ -358,15 +304,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialDefinitionId
-        in: path
-        description: ID of the credential definition that should be returned
         required: true
         style: simple
         explode: false
@@ -419,15 +356,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialDefinitionId
-        in: path
-        description: ID of the credential definition that should be returned
         required: true
         style: simple
         explode: false
@@ -481,14 +409,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantContextId
-        in: path
         required: true
         style: simple
         explode: false
@@ -539,14 +459,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantContextId
-        in: path
         required: true
         style: simple
         explode: false
@@ -594,15 +506,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        description: ID of the credential to resume
         required: true
         style: simple
         explode: false
@@ -654,15 +557,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        description: ID of the credential to revoke
         required: true
         style: simple
         explode: false
@@ -714,15 +608,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        description: ID of the credential to check
         required: true
         style: simple
         explode: false
@@ -774,15 +659,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        description: ID of the credential to revoke
         required: true
         style: simple
         explode: false
@@ -833,14 +709,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantContextId
-        in: path
         required: true
         style: simple
         explode: false
@@ -885,14 +753,6 @@ paths:
       description: Adds a new holder.
       operationId: addHolder
       parameters:
-      - name: participantContextId
-        in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
       - name: participantContextId
         in: path
         required: true
@@ -941,14 +801,6 @@ paths:
       description: Gets all holders for a certain query.
       operationId: queryHolders
       parameters:
-      - name: participantContextId
-        in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
       - name: participantContextId
         in: path
         required: true
@@ -1004,15 +856,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: holderId
-        in: path
-        description: ID of the holder who should be returned
         required: true
         style: simple
         explode: false
@@ -1067,14 +910,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantContextId
-        in: path
         required: true
         style: simple
         explode: false
@@ -1118,22 +953,6 @@ paths:
       description: Gets an issuance process by its ID.
       operationId: getIssuanceProcessById
       parameters:
-      - name: participantContextId
-        in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: issuanceProcessId
-        in: path
-        description: ID of the issuance process that should be returned
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
       - name: participantContextId
         in: path
         required: true

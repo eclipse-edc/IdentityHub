@@ -16,14 +16,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantContextId
-        in: path
         required: true
         style: simple
         explode: false
@@ -50,6 +42,8 @@ paths:
                 can be queried (Credential Request Status API)
               style: simple
               explode: false
+              schema:
+                type: string
         "400":
           description: "Request body was malformed, e.g. required parameter or properties\
             \ were missing"
@@ -85,14 +79,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantContextId
-        in: path
         required: true
         style: simple
         explode: false
@@ -119,22 +105,6 @@ paths:
       description: Requests status information about an issuance request from an issuer
       operationId: getCredentialRequestStatus
       parameters:
-      - name: participantContextId
-        in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialRequestId
-        in: path
-        description: ID of the Credential Request that was sent previously
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
       - name: participantContextId
         in: path
         required: true

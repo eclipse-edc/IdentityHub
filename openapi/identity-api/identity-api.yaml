@@ -358,7 +358,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -405,7 +404,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -451,14 +449,6 @@ paths:
       description: Adds a new VerifiableCredential into the system.
       operationId: addCredential
       parameters:
-      - name: participantContextId
-        in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
       - name: participantContextId
         in: path
         required: true
@@ -508,14 +498,6 @@ paths:
         DCP protocol.
       operationId: requestCredential
       parameters:
-      - name: participantContextId
-        in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
       - name: participantContextId
         in: path
         required: true
@@ -571,22 +553,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: issuerPid
-        in: path
-        description: The issuer-assigned ID of the issuance process
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: participantContextId
-        in: path
         required: true
         style: simple
         explode: false
@@ -640,7 +606,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -693,7 +658,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -748,7 +712,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -788,7 +751,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -834,7 +796,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -875,7 +836,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -924,7 +884,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -987,7 +946,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -1052,7 +1010,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -1220,7 +1177,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -1275,7 +1231,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -1326,7 +1281,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
@@ -1383,7 +1337,6 @@ paths:
       parameters:
       - name: participantContextId
         in: path
-        description: Base64-Url encode Participant Context ID
         required: true
         style: simple
         explode: false
