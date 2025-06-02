@@ -64,7 +64,7 @@ public class CredentialWriterImpl implements CredentialWriter {
     }
 
     @Override
-    public ServiceResult<Void> write(String holderPid, String issuerPid, Collection<CredentialWriteRequest> requests, String participantContextId) {
+    public ServiceResult<Void> write(String holderPid, String issuerPid, Collection<CredentialWriteRequest> writeRequests, String participantContextId) {
         return transactionContext.execute(() -> {
 
             // get holder request
@@ -79,22 +79,29 @@ public class CredentialWriterImpl implements CredentialWriter {
             }
 
             // store actual credentials
-            for (var rq : requests) { // use for loop to abort early: merging ServiceResults in a stream operation is not really possible
-                var convertResult = convertToResource(rq, participantContextId);
+            for (var writeRequest : writeRequests) { // use for loop to abort early: merging ServiceResults in a stream operation is not really possible
+                var convertResult = convertToResource(writeRequest, participantContextId);
                 if (convertResult.failed()) {
                     return convertResult.mapEmpty();
                 }
                 var resource = convertResult.getContent();
 
                 // verify that the received credentials correspond to the credential request that was made prior
-                var container = resource.getVerifiableCredential();
-                var receivedTypes = container.credential().getType();
-                var receivedFormat = container.format().toString();
+                var receivedCredential = resource.getVerifiableCredential();
+                var receivedTypes = receivedCredential.credential().getType();
+                var receivedFormat = receivedCredential.format().toString();
 
-                // todo: HolderCredentialRequest does not yet contain the requested type - need to add this!!
-                if (holderRequest.getIdsAndFormats().values().stream().noneMatch(receivedFormat::equals)) {
-                    return ServiceResult.unauthorized("No credential request was made for Credentials serialized as '%s'".formatted(receivedFormat));
+                // check if the list of originally requested credentials contains the received credential
+                var requestedCredential = holderRequest.getIdsAndFormats().stream()
+                        .filter(rqc -> receivedTypes.contains(rqc.credentialType()) && receivedFormat.equalsIgnoreCase(rqc.format()))
+                        .findFirst();
+
+                if (requestedCredential.isEmpty()) {
+                    return ServiceResult.unauthorized("No credential request was made for Credentials of type '%s' serialized as '%s'".formatted(receivedTypes, receivedFormat));
                 }
+
+                // store the credential object ID for later use, e.g. automatic re-issuance
+                resource.getMetadata().put("credentialObjectId", requestedCredential.get().id());
 
                 var createResult = credentialStore.create(resource);
 

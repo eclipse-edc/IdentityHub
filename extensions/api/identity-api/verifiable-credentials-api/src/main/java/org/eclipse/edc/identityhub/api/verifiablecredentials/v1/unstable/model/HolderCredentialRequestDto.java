@@ -14,7 +14,9 @@
 
 package org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model;
 
-import java.util.Map;
+import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
+
+import java.util.List;
 
 /**
  * Represents a credential request of the holder.
@@ -26,5 +28,5 @@ import java.util.Map;
  * @param typesAndFormats list of credential types/formats that were originally requested
  */
 public record HolderCredentialRequestDto(String issuerDid, String holderPid, String issuerPid, String status,
-                                         Map<String, String> typesAndFormats) {
+                                         List<RequestedCredential> typesAndFormats) {
 }

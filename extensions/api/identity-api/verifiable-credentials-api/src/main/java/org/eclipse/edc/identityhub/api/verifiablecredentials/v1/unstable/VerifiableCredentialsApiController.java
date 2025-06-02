@@ -29,11 +29,11 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.verifiablecredential.validation.VerifiableCredentialManifestValidator;
-import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialDescriptor;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialRequestDto;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.HolderCredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
@@ -53,7 +53,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.util.Optional.ofNullable;
@@ -162,7 +161,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
 
         var holderPid = ofNullable(credentialRequestDto.holderPid());
-        var requestParameters = credentialRequestDto.credentials().stream().collect(Collectors.toMap(CredentialDescriptor::id, CredentialDescriptor::format));
+        var requestParameters = credentialRequestDto.credentials().stream().map(cd -> new RequestedCredential(cd.id(), cd.type(), cd.format())).toList();
 
         var credentialRequestResult = credentialRequestService.initiateRequest(participantId, credentialRequestDto.issuerDid(),
                 holderPid.orElseGet(() -> UUID.randomUUID().toString()),

@@ -55,7 +55,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
@@ -100,8 +99,8 @@ public class StorageApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .idsAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString(), // for tests involving the JWT credential
-                            "SuperSecretCredential", CredentialFormat.VC1_0_LD.toString())) // for tests involving the LD credential
+                    .requestedCredential("test-id1", "ExamplePersonCredential", "VC1_0_JWT")
+                    .requestedCredential("test-id2", "SuperSecretCredential", "VC1_0_LD")
                     .state(REQUESTED.code())
                     .participantContextId(PROVIDER_DID)
                     .build());
@@ -256,7 +255,7 @@ public class StorageApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .idsAndFormats(Map.of("ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString()))
+                    .requestedCredential("example-cred-id", "ExamplePersonCredential", CredentialFormat.VC1_0_JWT.toString())
                     .state(CREATED.code())
                     .participantContextId(PROVIDER_DID)
                     .build());
@@ -283,7 +282,7 @@ public class StorageApiEndToEndTest {
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .idsAndFormats(Map.of("TestCredential", CredentialFormat.VC2_0_COSE.toString()))
+                    .requestedCredential("test-cred-id", "TestCredential", CredentialFormat.VC1_0_JWT.toString())
                     .state(REQUESTED.code())
                     .participantContextId(PROVIDER_DID)
                     .build());

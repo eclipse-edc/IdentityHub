@@ -122,7 +122,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     {
                       "issuerDid": "%s",
                       "holderPid": "test-request-id",
-                      "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id"}]
+                      "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id", "type": "MembershipCredential" }]
                     }
                     """.formatted(issuerDid);
 

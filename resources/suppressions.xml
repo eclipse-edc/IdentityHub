@@ -7,4 +7,5 @@
     <!-- Excludes generated source files -->
     <suppress files="[/\\]build[/\\]" checks=".*"/>
     <suppress files="package-info.java" checks="[a-zA-Z0-9]*"/>
+    <suppress files=".*" checks="Indentation"/>
 </suppressions>

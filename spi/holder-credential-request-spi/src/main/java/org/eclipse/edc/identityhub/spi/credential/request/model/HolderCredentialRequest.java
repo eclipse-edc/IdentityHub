@@ -17,7 +17,8 @@ package org.eclipse.edc.identityhub.spi.credential.request.model;
 import org.eclipse.edc.spi.entity.Entity;
 import org.eclipse.edc.spi.entity.StatefulEntity;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -39,7 +40,7 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
 
     private String participantContextId;
     private String issuerDid;
-    private Map<String, String> idsAndFormats = new HashMap<>();
+    private List<RequestedCredential> idsAndFormats = new ArrayList<>();
     private String issuerPid;
 
     private HolderCredentialRequest() {
@@ -89,7 +90,7 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         return getId();
     }
 
-    public Map<String, String> getIdsAndFormats() {
+    public List<RequestedCredential> getIdsAndFormats() {
         return idsAndFormats;
     }
 
@@ -98,7 +99,7 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
         return Builder.newInstance()
                 .state(state)
                 .id(id)
-                .idsAndFormats(Map.copyOf(idsAndFormats))
+                .requestedCredentials(List.copyOf(idsAndFormats))
                 .issuerDid(issuerDid)
                 .participantContextId(participantContextId)
                 .issuerPid(issuerPid)
@@ -178,13 +179,13 @@ public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequ
             return this;
         }
 
-        public Builder idsAndFormats(Map<String, String> typesAndFormats) {
+        public Builder requestedCredentials(List<RequestedCredential> typesAndFormats) {
             this.entity.idsAndFormats = typesAndFormats;
             return this;
         }
 
-        public Builder credentialObjectId(String credentialObjectId, String format) {
-            this.entity.idsAndFormats.put(credentialObjectId, format);
+        public Builder requestedCredential(String credentialObjectId, String type, String format) {
+            this.entity.idsAndFormats.add(new RequestedCredential(credentialObjectId, type, format));
             return this;
         }
 

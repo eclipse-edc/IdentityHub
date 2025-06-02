@@ -14,8 +14,10 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentialrequest.schema;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
@@ -46,9 +48,10 @@ import static java.util.stream.Collectors.toList;
  */
 public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements HolderCredentialRequestStore {
 
+    private static final TypeReference<List<RequestedCredential>> LIST_REF = new TypeReference<>() {
+    };
     private final String leaseHolderName;
     private final SqlLeaseContextBuilder leaseContext;
-
     private final HolderCredentialRequestStoreStatements statements;
     private final Clock clock;
 
@@ -195,7 +198,7 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 .stateCount(resultSet.getInt(statements.getStateCountColumn()))
                 .traceContext(fromJson(resultSet.getString(statements.getTraceContextColumn()), getTypeRef()))
                 .errorDetail(resultSet.getString(statements.getErrorDetailColumn()))
-                .idsAndFormats(fromJson(resultSet.getString(statements.getCredentialFormatsColumn()), getTypeRef()))
+                .requestedCredentials(fromJson(resultSet.getString(statements.getCredentialFormatsColumn()), LIST_REF))
                 .issuerDid(resultSet.getString(statements.getIssuerDidColumn()))
                 .issuerPid(resultSet.getString(statements.getissuerPidColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantIdColumn()))
