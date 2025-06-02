@@ -189,7 +189,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .post("/offer")
                 .then()
                 .log().ifValidationFails()
-                .statusCode(200);
+                .statusCode(204);
 
         verify(credentialOfferService).sendCredentialOffer(anyString(), eq("holder"), anyCollection());
     }

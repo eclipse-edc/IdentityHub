@@ -42,7 +42,7 @@ public interface DidManagementApi {
             operationId = "publishDid",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The DID document was successfully published."),
+                    @ApiResponse(responseCode = "204", description = "The DID document was successfully published."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "404", description = "The DID could not be published because it does not exist.",
@@ -55,7 +55,7 @@ public interface DidManagementApi {
             operationId = "unpublishDid",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = DidRequestPayload.class), mediaType = "application/json")),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The DID document was successfully un-published."),
+                    @ApiResponse(responseCode = "204", description = "The DID document was successfully un-published."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "The DID could not be unpublished because the underlying VDR does not support un-publishing.",
@@ -100,7 +100,7 @@ public interface DidManagementApi {
                     @Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false."),
             },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
+                    @ApiResponse(responseCode = "204", description = "The DID document was successfully updated."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "409", description = "The DID document could not be updated, because a service endpoint with the same ID already exists.",
@@ -118,7 +118,7 @@ public interface DidManagementApi {
                     @Parameter(name = "autoPublish", description = "Whether the DID should get republished after the removal. Defaults to false."),
             },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
+                    @ApiResponse(responseCode = "204", description = "The DID document was successfully updated."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "The DID document could not be updated, because a service endpoint with the given ID does not exist.",
@@ -136,7 +136,7 @@ public interface DidManagementApi {
                     @Parameter(name = "autoPublish", description = "Whether the DID should " + "get republished after the removal. Defaults to false."),
             },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The DID document was successfully updated."),
+                    @ApiResponse(responseCode = "204", description = "The DID document was successfully updated."),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "The DID document could not be updated, because a service endpoint with the same ID already exists.",

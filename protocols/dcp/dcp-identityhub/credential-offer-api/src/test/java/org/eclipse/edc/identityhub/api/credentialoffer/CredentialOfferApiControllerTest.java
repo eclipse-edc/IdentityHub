@@ -24,6 +24,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantConte
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.jsonld.TitaniumJsonLd;
+import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -52,6 +53,7 @@ import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ApiTest
 class CredentialOfferApiControllerTest extends RestControllerTestBase {
 
     private static final String PARTICIPANT_ID = "test-participant";
@@ -96,7 +98,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .post()
                 .then()
                 .log().ifValidationFails()
-                .statusCode(200);
+                .statusCode(204);
     }
 
     @Test
