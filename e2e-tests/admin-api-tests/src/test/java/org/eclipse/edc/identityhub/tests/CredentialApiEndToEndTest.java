@@ -457,7 +457,7 @@ public class CredentialApiEndToEndTest {
                         .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
                         .then()
                         .log().ifValidationFails()
-                        .statusCode(200);
+                        .statusCode(204);
 
                 mockedHolderEndpoint.verify(request()
                         .withMethod("POST")

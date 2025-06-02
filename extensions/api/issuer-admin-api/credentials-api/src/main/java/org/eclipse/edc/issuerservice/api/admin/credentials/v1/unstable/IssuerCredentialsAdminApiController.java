@@ -74,10 +74,9 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @POST
     @Path("/{credentialId}/revoke")
     @Override
-    public Response revokeCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
-        return authorizationService.isAuthorized(context, credentialId, VerifiableCredentialResource.class)
+    public void revokeCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
+        authorizationService.isAuthorized(context, credentialId, VerifiableCredentialResource.class)
                 .compose(u -> credentialStatusService.revokeCredential(credentialId))
-                .map(v -> Response.noContent().build())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }
 
@@ -108,7 +107,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @POST
     @Path("/offer")
     @Override
-    public Response sendCredentialOffer(@PathParam("participantContextId") String participantContextId, CredentialOfferDto credentialOffer, @Context SecurityContext context) {
+    public void sendCredentialOffer(@PathParam("participantContextId") String participantContextId, CredentialOfferDto credentialOffer, @Context SecurityContext context) {
 
         var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
         var holderId = credentialOffer.holderId();
@@ -120,7 +119,5 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
 
         credentialOfferService.sendCredentialOffer(decodedParticipantId, holderId, credentialOffer.credentials())
                 .orElseThrow(InvalidRequestException::new);
-
-        return Response.ok().build();
     }
 }
