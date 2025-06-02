@@ -1600,6 +1600,8 @@ components:
           type: string
         id:
           type: string
+        type:
+          type: string
     CredentialRequestDto:
       required:
       - credentials
@@ -1697,9 +1699,9 @@ components:
         status:
           type: string
         typesAndFormats:
-          type: object
-          additionalProperties:
-            type: string
+          type: array
+          items:
+            $ref: "#/components/schemas/RequestedCredential"
     Issuer:
       type: object
       properties:
@@ -1896,6 +1898,15 @@ components:
           enum:
           - ASC
           - DESC
+    RequestedCredential:
+      type: object
+      properties:
+        credentialType:
+          type: string
+        format:
+          type: string
+        id:
+          type: string
     Service:
       type: object
       properties:
