@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.common.credentialwatchdog;
 
+import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
@@ -28,9 +29,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
+import java.util.UUID;
 
-import static java.util.stream.Collectors.toMap;
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.EXPIRED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.NOT_YET_VALID;
@@ -105,12 +106,24 @@ public class CredentialWatchdog implements Runnable {
     private void startReissuance(VerifiableCredentialResource expiringCredential) {
 
         var formatString = expiringCredential.getVerifiableCredential().format().toString();
-        var typesAndFormats = expiringCredential.getVerifiableCredential().credential().getType().stream().collect(toMap(Function.identity(), s -> formatString));
-//        credentialRequestManager.initiateRequest(expiringCredential.getParticipantContextId(),
-//                        expiringCredential.getIssuerId(),
-//                        UUID.randomUUID().toString(),
-//                        typesAndFormats)
-//                .onFailure(f -> monitor.warning("Error sending re-issuance request: %s".formatted(f.getFailureDetail())));
+        var type = expiringCredential.getVerifiableCredential().credential().getType()
+                .stream()
+                .filter(s -> !s.equalsIgnoreCase("VerifiableCredential"))
+                .findAny()
+                .orElse(null);
+        var credentialObjectId = ofNullable(expiringCredential.getMetadata().get("credentialObjectId")).map(Object::toString);
+
+        if (credentialObjectId.isEmpty()) {
+            monitor.warning("Attempting to start re-issuance for credential '%s' failed: No CredentialObjectId found (metadata property 'credentialObjectId'). Will abort re-issuance.".formatted(expiringCredential.getId()));
+            return;
+        }
+
+        var requestedCredential = new RequestedCredential(credentialObjectId.get(), type, formatString);
+        credentialRequestManager.initiateRequest(expiringCredential.getParticipantContextId(),
+                        expiringCredential.getIssuerId(),
+                        UUID.randomUUID().toString(),
+                        List.of(requestedCredential))
+                .onFailure(f -> monitor.warning("Error sending re-issuance request: %s".formatted(f.getFailureDetail())));
     }
 
     private QuerySpec allExcludingExpiredAndRevoked() {

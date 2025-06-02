@@ -135,6 +135,7 @@ class CredentialWatchdogTest {
     @Test
     void run_whenCredentialIsExpiring_shouldInitiateRenewal() {
         var cred = createCredentialBuilder()
+                .metadata("credentialObjectId", "cred-object-id")
                 .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
                         .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
                         .build()))
@@ -149,18 +150,18 @@ class CredentialWatchdogTest {
                         querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
 
         verify(credentialRequestManager)
-                .initiateRequest(eq(cred.getParticipantContextId()), eq(cred.getIssuerId()), anyString(), argThat(map ->
-                                map.size() == 2
-//                                &&
-//                                map.get("VerifiableCredential").equals(VC1_0_JWT.toString()) &&
-//                                map.get("DemoCredential").equals(VC1_0_JWT.toString()))
-                ));
+                .initiateRequest(eq(cred.getParticipantContextId()), eq(cred.getIssuerId()), anyString(), argThat(list ->
+                        list.size() == 1 &&
+                                list.get(0).credentialType().equalsIgnoreCase("DemoCredential") &&
+                                list.get(0).format().equals(VC1_0_JWT.name())));
+
     }
 
 
     @Test
     void run_whenCredentialIsExpiring_renewalFails() {
         var cred = createCredentialBuilder()
+                .metadata("credentialObjectId", "cred-object-id")
                 .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
                         .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
                         .build()))
@@ -177,14 +178,38 @@ class CredentialWatchdogTest {
                         querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
 
         verify(credentialRequestManager)
-                .initiateRequest(eq(cred.getParticipantContextId()), eq(cred.getIssuerId()), anyString(), argThat(map ->
-                                map.size() == 2
-//                                &&
-//                                map.get("VerifiableCredential").equals(VC1_0_JWT.toString()) &&
-//                                map.get("DemoCredential").equals(VC1_0_JWT.toString())));
-                ));
+                .initiateRequest(eq(cred.getParticipantContextId()), eq(cred.getIssuerId()), anyString(), argThat(list ->
+                        list.size() == 1 &&
+                                list.get(0).credentialType().equalsIgnoreCase("DemoCredential") &&
+                                list.get(0).format().equals(VC1_0_JWT.name()))
+                );
 
         verify(monitor).warning(contains("foobarbaz"));
+    }
+
+    @Test
+    void run_whenCredentialIsExpiring_noObjectIdPresent() {
+        var cred = createCredentialBuilder()
+                // .metadata("credentialObjectId", "cred-object-id") missing!
+                .credential(new VerifiableCredentialContainer("raw-vc-content", VC1_0_JWT, createVerifiableCredential()
+                        .expirationDate(Instant.now().plusSeconds(GRACE_PERIOD / 2))
+                        .build()))
+                .build();
+        when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialRequestManager.initiateRequest(anyString(), anyString(), anyString(), anyList()))
+                .thenReturn(ServiceResult.badRequest("foobarbaz"));
+
+        watchdog.run();
+
+        // verify the store was queried with the proper filter expressions
+        verify(credentialStore).query(argThat(querySpec ->
+                querySpec.getFilterExpression().size() == 1 &&
+                        querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
+
+        verify(credentialRequestManager, never())
+                .initiateRequest(anyString(), anyString(), anyString(), anyList());
+
+        verify(monitor).warning(contains("No CredentialObjectId found"));
     }
 
     private VerifiableCredentialResource.Builder createCredentialBuilder() {

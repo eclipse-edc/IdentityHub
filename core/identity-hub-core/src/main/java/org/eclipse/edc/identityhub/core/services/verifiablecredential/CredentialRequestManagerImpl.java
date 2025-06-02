@@ -81,12 +81,12 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     @Override
-    public ServiceResult<String> initiateRequest(String participantContextId, String issuerDid, String holderPid, List<RequestedCredential> typesAndFormats) {
+    public ServiceResult<String> initiateRequest(String participantContextId, String issuerDid, String holderPid, List<RequestedCredential> requestedCredentials) {
 
         var newRequest = HolderCredentialRequest.Builder.newInstance()
                 .id(holderPid)
                 .issuerDid(issuerDid)
-                .requestedCredentials(typesAndFormats)
+                .requestedCredentials(requestedCredentials)
                 .participantContextId(participantContextId)
                 .state(CREATED.code())
                 .build();
@@ -119,13 +119,13 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private Result<String> sendCredentialRequest(HolderCredentialRequest request, String endpoint) {
         var issuerDid = request.getIssuerDid();
         var holderPid = request.getId();
-        var idsAndFormats = request.getIdsAndFormats();
+        var requestedCredentials = request.getIdsAndFormats();
 
         return transactionContext.execute(() -> {
             request.transitionRequesting();
             updateRequest(request);
             return getAuthToken(request.getParticipantContextId(), issuerDid)
-                    .compose(token -> createCredentialsRequest(token, endpoint, holderPid, idsAndFormats))
+                    .compose(token -> createCredentialsRequest(token, endpoint, holderPid, requestedCredentials))
                     .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
         });
     }
