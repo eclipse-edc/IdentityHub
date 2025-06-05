@@ -121,7 +121,8 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
 
     private boolean filterInvalidCredentials(VerifiableCredentialResource verifiableCredentialResource) {
         var now = Instant.now();
-        var credential = verifiableCredentialResource.getVerifiableCredential().credential();
+        var container = verifiableCredentialResource.getVerifiableCredential();
+        var credential = container.credential();
         // issuance date can not be null, due to builder validation
         if (credential.getIssuanceDate().isAfter(now)) {
             monitor.warning("Credential '%s' is not yet valid.".formatted(credential.getId()));
@@ -176,8 +177,9 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         var filterByParticipant = new Criterion("participantContextId", "=", participantContextId);
         var filterNotRevoked = new Criterion("state", "!=", VcStatus.REVOKED.code());
         var filterNotExpired = new Criterion("state", "!=", VcStatus.EXPIRED.code());
+        var filterNoRawVc = new Criterion("verifiableCredential.rawVc", "!=", "");
         return QuerySpec.Builder.newInstance()
-                .filter(List.of(criteria, filterByParticipant, filterNotRevoked, filterNotExpired))
+                .filter(List.of(criteria, filterByParticipant, filterNotRevoked, filterNotExpired, filterNoRawVc))
                 .build();
     }
 
