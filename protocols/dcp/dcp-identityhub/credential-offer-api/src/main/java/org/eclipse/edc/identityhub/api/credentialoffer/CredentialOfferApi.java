@@ -28,7 +28,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.json.JsonObject;
-import jakarta.ws.rs.core.Response;
 
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SPECIFICATION_URL;
 
@@ -46,7 +45,7 @@ public interface CredentialOfferApi {
     @Operation(description = "Notifies the holder about the availability of a particular credential for issuance",
             requestBody = @RequestBody(content = @Content(schema = @Schema(externalDocs = @ExternalDocumentation(description = "DCP Credential Offer API", url = DCP_SPECIFICATION_URL)))),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The offer notification was successfully received."),
+                    @ApiResponse(responseCode = "204", description = "The offer notification was successfully received."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiSchema.ApiErrorDetailSchema.class)))),
                     @ApiResponse(responseCode = "401", description = "No Authorization header was given.",
@@ -56,5 +55,5 @@ public interface CredentialOfferApi {
 
             }
     )
-    Response offerCredential(String participantContextId, JsonObject credentialOfferMessage, String authHeader);
+    void offerCredential(String participantContextId, JsonObject credentialOfferMessage, String authHeader);
 }
