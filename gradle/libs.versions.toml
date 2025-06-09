@@ -4,7 +4,7 @@ format.version = "1.1"
 [versions]
 assertj = "3.27.3"
 awaitility = "4.3.0"
-bouncyCastle-jdk18on = "1.80"
+bouncyCastle-jdk18on = "1.81"
 edc = "0.14.0-SNAPSHOT"
 dcp-tck = "0.1.1-SNAPSHOT"
 jackson = "2.18.3"
