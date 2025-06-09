@@ -22,10 +22,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
@@ -40,14 +38,12 @@ import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantCont
 public class IssuerMetadataApiController implements IssuerMetadataApi {
 
     private final ParticipantContextService participantContextService;
-    private final DcpHolderTokenVerifier tokenValidator;
     private final DcpIssuerMetadataService issuerMetadataService;
     private final TypeTransformerRegistry dcpRegistry;
 
 
-    public IssuerMetadataApiController(ParticipantContextService participantContextService, DcpHolderTokenVerifier tokenValidator, DcpIssuerMetadataService issuerMetadataService, TypeTransformerRegistry dcpRegistry) {
+    public IssuerMetadataApiController(ParticipantContextService participantContextService, DcpIssuerMetadataService issuerMetadataService, TypeTransformerRegistry dcpRegistry) {
         this.participantContextService = participantContextService;
-        this.tokenValidator = tokenValidator;
         this.issuerMetadataService = issuerMetadataService;
         this.dcpRegistry = dcpRegistry;
     }
@@ -56,22 +52,10 @@ public class IssuerMetadataApiController implements IssuerMetadataApi {
     @Path("/")
     @Override
     public JsonObject getIssuerMetadata(@PathParam("participantContextId") String participantContextId, @HeaderParam(AUTHORIZATION) String authHeader) {
-        if (authHeader == null) {
-            throw new AuthenticationFailedException("Authorization header missing");
-        }
-        if (!authHeader.startsWith("Bearer ")) {
-            throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
-        }
-        var token = authHeader.replace("Bearer", "").trim();
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
         var participantContext = participantContextService.getParticipantContext(decodedParticipantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
-
-        var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(token).build();
-
-        tokenValidator.verify(participantContext, tokenRepresentation)
-                .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
         var metadata = issuerMetadataService.getIssuerMetadata(participantContext)
                 .orElseThrow(f -> new EdcException("Error creating response body: " + f.getFailureDetail()));
