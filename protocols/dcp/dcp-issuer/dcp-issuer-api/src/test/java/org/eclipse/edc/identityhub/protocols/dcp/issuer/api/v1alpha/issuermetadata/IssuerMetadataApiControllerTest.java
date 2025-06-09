@@ -31,6 +31,9 @@ import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EmptySource;
+import org.junit.jupiter.params.provider.NullSource;
 
 import java.sql.Date;
 import java.time.Instant;
@@ -59,26 +62,22 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
     private final String participantContextId = "participantContextId";
     private final String participantContextIdEncoded = Base64.getEncoder().encodeToString(participantContextId.getBytes());
 
-    @Test
-    void issuerMetadata_tokenNotPresent_shouldReturn401() {
-        assertThatThrownBy(() -> controller().getIssuerMetadata(participantContextIdEncoded, null))
-                .isInstanceOf(AuthenticationFailedException.class)
-                .hasMessage("Authorization header missing");
+    @ParameterizedTest
+    @NullSource
+    @EmptySource
+    void issuerMetadata_noAuthToken_success(String emptyAuthHeader) {
+        var participant = createHolder("id", "did", "name");
+        var ctx = new DcpRequestContext(participant, Map.of());
+        var object = Json.createObjectBuilder().build();
 
-        verifyNoInteractions(issuerMetadataService, participantContextService, dcpIssuerTokenVerifier, typeTransformerRegistry);
-
-    }
-
-    @Test
-    void issuerMetadata_tokenVerificationFails_shouldReturn401() {
-        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.unauthorized("unauthorized"));
+        var metadata = IssuerMetadata.Builder.newInstance().build();
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
+        when(issuerMetadataService.getIssuerMetadata(argThat(p -> p.getParticipantContextId().equals(participantContextId)))).thenReturn(ServiceResult.success(metadata));
+        when(typeTransformerRegistry.transform(eq(metadata), eq(JsonObject.class))).thenReturn(Result.success(object));
+        var response = controller().getIssuerMetadata(participantContextIdEncoded, emptyAuthHeader);
 
-        assertThatThrownBy(() -> controller().getIssuerMetadata(participantContextIdEncoded, generateJwt()))
-                .isExactlyInstanceOf(AuthenticationFailedException.class)
-                .hasMessageContaining("unauthorized");
-
-        verifyNoInteractions(issuerMetadataService);
+        assertThat(response).isEqualTo(object);
     }
 
     @Test
@@ -112,7 +111,7 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected IssuerMetadataApiController controller() {
-        return new IssuerMetadataApiController(participantContextService, dcpIssuerTokenVerifier, issuerMetadataService, typeTransformerRegistry);
+        return new IssuerMetadataApiController(participantContextService, issuerMetadataService, typeTransformerRegistry);
     }
 
     private ParticipantContext createParticipantContext() {

@@ -15,9 +15,7 @@
 package org.eclipse.edc.identityhub.tests.dcp.api;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerExtension;
@@ -42,16 +40,13 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Base64;
-import java.util.Map;
 import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
-import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_ID;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_MEM_MODULES;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_SQL_MODULES;
-import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.eq;
@@ -106,13 +101,11 @@ public class DcpIssuerMetadataApiEndToEndTest {
             credentialDefinitionService.createCredentialDefinition(credentialDefinition);
             holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
 
-            var token = "Bearer " + generateSiToken();
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
 
             issuerExtension.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(AUTHORIZATION, token)
                     .get(issuanceMetadataUrl())
                     .then()
                     .log().ifValidationFails()
@@ -123,131 +116,6 @@ public class DcpIssuerMetadataApiEndToEndTest {
                     .body("credentialsSupported[0].bindingMethods[0]", equalTo("did:web"))
                     .body("credentialsSupported[0].profile", equalTo("vc11-sl2021/jwt"));
 
-        }
-
-        @Test
-        void issuerMetadata_tokenNotPresent_shouldReturn401(IssuerExtension issuerExtension) {
-            issuerExtension.getIssuerApiEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .get(issuanceMetadataUrl())
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(401);
-
-        }
-
-        @Test
-        void issuerMetadata_noBearerPrefix_shouldReturn401(IssuerExtension issuerExtension) {
-            var token = generateSiToken();
-
-            issuerExtension.getIssuerApiEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(AUTHORIZATION, token)
-                    .get(issuanceMetadataUrl())
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(401);
-
-        }
-
-        @Test
-        void issuerMetadata_participantNotFound_shouldReturn401(IssuerExtension issuerExtension) {
-            var token = "Bearer " + generateSiToken();
-
-            issuerExtension.getIssuerApiEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(AUTHORIZATION, token)
-                    .get(issuanceMetadataUrl())
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(401);
-
-        }
-
-        @Test
-        void issuerMetadata_tokenVerificationFails_shouldReturn401(IssuerExtension issuerExtension, HolderService holderService) throws JOSEException {
-
-            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
-
-            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
-
-            var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID(DID_WEB_PARTICIPANT_KEY_1).generate();
-
-            var token = "Bearer " + generateSiToken();
-
-            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(spoofedKey.toPublicKey()));
-
-            issuerExtension.getIssuerApiEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(AUTHORIZATION, token)
-                    .get(issuanceMetadataUrl())
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(401);
-
-        }
-
-        @Test
-        void issuerMetadata_spoofedKeyId_shouldReturn401(IssuerExtension issuerExtension, HolderService holderService) throws JOSEException {
-            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
-            var spoofedKeyId = "did:web:spoofed#key1";
-            var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID(spoofedKeyId).generate();
-
-            var token = generateSiToken(spoofedKey);
-
-            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(spoofedKeyId))).thenReturn(Result.success(spoofedKey.toPublicKey()));
-
-            issuerExtension.getIssuerApiEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(AUTHORIZATION, token)
-                    .get(issuanceMetadataUrl())
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(401);
-
-
-        }
-
-        @Test
-        void issuerMetadata_wrongTokenAudience_shouldReturn401(IssuerExtension issuerExtension, HolderService holderService) throws JOSEException {
-
-            generateEcKey(DID_WEB_PARTICIPANT_KEY_1);
-
-            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
-
-            var token = generateSiToken("wrong-audience");
-
-            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
-
-            issuerExtension.getIssuerApiEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(AUTHORIZATION, token)
-                    .get(issuanceMetadataUrl())
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(401);
-
-        }
-
-
-        private String generateSiToken() {
-            return generateSiToken(ISSUER_DID);
-        }
-
-        private String generateSiToken(String audience) {
-            return generateSiToken(audience, PARTICIPANT_DID, PARTICIPANT_KEY);
-        }
-
-        private String generateSiToken(ECKey key) {
-            return generateSiToken(ISSUER_DID, key);
-        }
-
-        private String generateSiToken(String audience, ECKey key) {
-            return generateJwt(audience, PARTICIPANT_DID, PARTICIPANT_DID, Map.of(), key);
-        }
-
-        private String generateSiToken(String audience, String participantDid, ECKey participantKey) {
-            return generateJwt(audience, participantDid, participantDid, Map.of(), participantKey);
         }
 
 
