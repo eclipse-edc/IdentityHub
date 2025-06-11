@@ -141,7 +141,7 @@ public class CredentialOfferApiEndToEndTest {
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/offers")
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(200);
+                    .statusCode(204);
 
             await().untilAsserted(() -> assertThat(credentialOfferStore.query(QuerySpec.max()))
                     .hasSize(1)

@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub;
 
+import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.revocation.RevocationServiceRegistryImpl;
 import org.eclipse.edc.iam.verifiablecredentials.revocation.bitstring.BitstringStatusListRevocationService;
@@ -55,6 +56,7 @@ import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 
 import java.net.URISyntaxException;
 import java.time.Clock;
+import java.util.List;
 
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DCP_CONTEXT_URL;
 import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
@@ -63,6 +65,7 @@ import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.JWS_2020
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.PRESENTATION_SUBMISSION_URL;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.W3C_CREDENTIALS_URL;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.validation.TrustedIssuerRegistry.WILDCARD;
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT;
@@ -87,6 +90,9 @@ public class DefaultServicesExtension implements ServiceExtension {
     private boolean activateJtiCheck;
     @Setting(description = "Validity period of cached StatusList2021 credential entries in milliseconds.", defaultValue = DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS + "", key = "edc.iam.credential.revocation.cache.validity")
     private long revocationCacheValidity;
+    @Setting(key = "edc.iam.credential.revocation.mimetype", description = "A comma-separated list of accepted content types of the revocation list credential.", defaultValue = WILDCARD)
+    private String contentTypes;
+
     @Inject
     private TokenValidationRulesRegistry registry;
     @Inject
@@ -104,6 +110,8 @@ public class DefaultServicesExtension implements ServiceExtension {
     private JsonLd jsonLd;
     @Inject
     private JtiValidationStore jtiValidationStore;
+    @Inject
+    private EdcHttpClient httpClient;
 
     @Override
     public String name() {
@@ -156,10 +164,11 @@ public class DefaultServicesExtension implements ServiceExtension {
 
     @Provider(isDefault = true)
     public RevocationServiceRegistry createRevocationListService(ServiceExtensionContext context) {
+        var acceptedContentTypes = List.of(contentTypes.split(","));
         if (revocationService == null) {
             revocationService = new RevocationServiceRegistryImpl(context.getMonitor());
-            revocationService.addService(StatusList2021Status.TYPE, new StatusList2021RevocationService(typeManager.getMapper(), revocationCacheValidity));
-            revocationService.addService(BitstringStatusListStatus.TYPE, new BitstringStatusListRevocationService(typeManager.getMapper(), revocationCacheValidity));
+            revocationService.addService(StatusList2021Status.TYPE, new StatusList2021RevocationService(typeManager.getMapper(), revocationCacheValidity, acceptedContentTypes, httpClient));
+            revocationService.addService(BitstringStatusListStatus.TYPE, new BitstringStatusListRevocationService(typeManager.getMapper(), revocationCacheValidity, acceptedContentTypes, httpClient));
         }
         return revocationService;
     }

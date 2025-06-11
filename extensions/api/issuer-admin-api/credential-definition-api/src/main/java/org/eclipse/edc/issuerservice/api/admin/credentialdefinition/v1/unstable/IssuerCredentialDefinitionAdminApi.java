@@ -100,7 +100,7 @@ public interface IssuerCredentialDefinitionAdminApi {
     @Operation(description = "Deletes a credential definition by its ID.",
             operationId = "deleteCredentialDefinitionById",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The credential definition was deleted.",
+                    @ApiResponse(responseCode = "204", description = "The credential definition was deleted.",
                             content = @Content(schema = @Schema(implementation = CredentialDefinition.class), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),

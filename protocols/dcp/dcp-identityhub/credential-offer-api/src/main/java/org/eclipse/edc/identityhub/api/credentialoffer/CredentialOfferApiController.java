@@ -21,7 +21,6 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
@@ -72,7 +71,7 @@ public class CredentialOfferApiController implements CredentialOfferApi {
 
     @POST
     @Override
-    public Response offerCredential(@PathParam("participantContextId") String participantContextId, JsonObject credentialOfferMessage, @HeaderParam(AUTHORIZATION) String authHeader) {
+    public void offerCredential(@PathParam("participantContextId") String participantContextId, JsonObject credentialOfferMessage, @HeaderParam(AUTHORIZATION) String authHeader) {
         if (credentialOfferMessage == null) {
             throw new InvalidRequestException("Request body is null");
         }
@@ -111,8 +110,6 @@ public class CredentialOfferApiController implements CredentialOfferApi {
                 .state(CredentialOfferStatus.RECEIVED.code())
                 .build();
         credentialOfferService.create(credentialOffer).orElseThrow(exceptionMapper(CredentialOffer.class, credentialOffer.getId()));
-
-        return Response.ok().build();
     }
 
 }

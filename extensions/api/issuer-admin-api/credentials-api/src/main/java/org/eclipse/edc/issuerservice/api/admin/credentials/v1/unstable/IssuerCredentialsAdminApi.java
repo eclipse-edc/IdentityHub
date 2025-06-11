@@ -65,7 +65,7 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response revokeCredential(String participantContextId, String credentialId, SecurityContext context);
+    void revokeCredential(String participantContextId, String credentialId, SecurityContext context);
 
 
     @Operation(description = "Suspends a credential with the given ID for the given participant. Suspended credentials will be added to the Revocation List. Suspension is reversible.",
@@ -114,7 +114,7 @@ public interface IssuerCredentialsAdminApi {
             operationId = "sendCredentialOffer",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = CredentialOfferDto.class), mediaType = "application/json")),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The CredentialOfferMessage was sent to the holder successfully."),
+                    @ApiResponse(responseCode = "204", description = "The CredentialOfferMessage was sent to the holder successfully."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed. For example when the holder DID is not resolvable, or the credential type, format, etc. is not known/invalid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -123,5 +123,5 @@ public interface IssuerCredentialsAdminApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Response sendCredentialOffer(String participantContextId, CredentialOfferDto credentialOffer, SecurityContext context);
+    void sendCredentialOffer(String participantContextId, CredentialOfferDto credentialOffer, SecurityContext context);
 }
