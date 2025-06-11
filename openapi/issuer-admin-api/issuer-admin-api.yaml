@@ -369,7 +369,7 @@ paths:
         schema:
           type: string
       responses:
-        "200":
+        "204":
           description: The credential definition was deleted.
           content:
             application/json:
@@ -420,7 +420,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CredentialOfferDto"
       responses:
-        "200":
+        "204":
           description: The CredentialOfferMessage was sent to the holder successfully.
         "400":
           description: "Request body was malformed, or the request could not be processed.\

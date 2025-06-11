@@ -225,7 +225,7 @@ paths:
             schema:
               $ref: "#/components/schemas/ParticipantManifest"
       responses:
-        "200":
+        "201":
           description: "The ParticipantContext was created successfully, its API token\
             \ is returned in the response body."
           content:
@@ -318,7 +318,7 @@ paths:
         schema:
           type: string
       responses:
-        "200":
+        "204":
           description: The ParticipantContext was deleted successfully
           content:
             application/json:
@@ -515,7 +515,7 @@ paths:
           description: The request was processed and sent to the issuer. The issuer-created
             ID ("issuerPid") is returned in the response.
           content:
-            application/json:
+            test/plain:
               schema:
                 type: string
         "400":
@@ -723,7 +723,7 @@ paths:
             schema:
               $ref: "#/components/schemas/DidRequestPayload"
       responses:
-        "200":
+        "204":
           description: The DID document was successfully published.
         "401":
           description: "The request could not be completed, because either the authentication\
@@ -847,7 +847,7 @@ paths:
             schema:
               $ref: "#/components/schemas/DidRequestPayload"
       responses:
-        "200":
+        "204":
           description: The DID document was successfully un-published.
         "400":
           description: The DID could not be unpublished because the underlying VDR
@@ -909,7 +909,7 @@ paths:
             schema:
               $ref: "#/components/schemas/Service"
       responses:
-        "200":
+        "204":
           description: The DID document was successfully updated.
         "401":
           description: "The request could not be completed, because either the authentication\
@@ -973,7 +973,7 @@ paths:
         schema:
           type: boolean
       responses:
-        "200":
+        "204":
           description: The DID document was successfully updated.
         "400":
           description: "The DID document could not be updated, because a service endpoint\
@@ -1035,7 +1035,7 @@ paths:
             schema:
               $ref: "#/components/schemas/Service"
       responses:
-        "200":
+        "204":
           description: The DID document was successfully updated.
         "400":
           description: "The DID document could not be updated, because a service endpoint\
@@ -1140,7 +1140,7 @@ paths:
             schema:
               $ref: "#/components/schemas/KeyDescriptor"
       responses:
-        "200":
+        "201":
           description: The KeyPairResource was successfully created and linked to
             the participant.
         "400":
@@ -1244,7 +1244,7 @@ paths:
         schema:
           type: string
       responses:
-        "200":
+        "204":
           description: The KeyPairResource.
         "400":
           description: "Request body was malformed, or the request could not be processed."
@@ -1299,7 +1299,7 @@ paths:
             schema:
               $ref: "#/components/schemas/KeyDescriptor"
       responses:
-        "200":
+        "204":
           description: The KeyPairResource was successfully rotated and linked to
             the participant.
         "400":
@@ -1363,7 +1363,7 @@ paths:
             schema:
               $ref: "#/components/schemas/KeyDescriptor"
       responses:
-        "200":
+        "204":
           description: The KeyPairResource was successfully rotated and linked to
             the participant.
         "400":
@@ -1415,7 +1415,7 @@ paths:
               items:
                 type: string
       responses:
-        "200":
+        "204":
           description: The ParticipantContext was updated successfully
         "400":
           description: "Request body was malformed, or the request could not be processed"
@@ -1470,7 +1470,7 @@ paths:
             schema:
               $ref: "#/components/schemas/ParticipantManifest"
       responses:
-        "200":
+        "204":
           description: The ParticipantContext was activated/deactivated successfully
           content:
             application/json:
