@@ -164,9 +164,9 @@ public class DefaultServicesExtension implements ServiceExtension {
 
     @Provider(isDefault = true)
     public RevocationServiceRegistry createRevocationListService(ServiceExtensionContext context) {
-        var acceptedContentTypes = List.of(contentTypes.split(","));
         if (revocationService == null) {
             revocationService = new RevocationServiceRegistryImpl(context.getMonitor());
+            var acceptedContentTypes = List.of(contentTypes.split(","));
             revocationService.addService(StatusList2021Status.TYPE, new StatusList2021RevocationService(typeManager.getMapper(), revocationCacheValidity, acceptedContentTypes, httpClient));
             revocationService.addService(BitstringStatusListStatus.TYPE, new BitstringStatusListRevocationService(typeManager.getMapper(), revocationCacheValidity, acceptedContentTypes, httpClient));
         }
