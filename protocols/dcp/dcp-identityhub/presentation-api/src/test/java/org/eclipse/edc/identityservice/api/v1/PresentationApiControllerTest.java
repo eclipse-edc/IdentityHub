@@ -138,7 +138,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(PresentationQueryMessage.class))).thenReturn(Result.success(presentationQueryBuilder.build()));
 
         var response = controller().queryPresentation(PARTICIPANT_ID, createObjectBuilder().build(), generateAuthToken());
-        assertThat(response.getStatus()).isEqualTo(503);
+        assertThat(response.getStatus()).isEqualTo(501);
         assertThat(response.getEntity()).extracting(o -> (ApiErrorDetail) o).satisfies(ed -> {
             assertThat(ed.getMessage()).isEqualTo("Not implemented.");
             assertThat(ed.getType()).isEqualTo("Not implemented.");

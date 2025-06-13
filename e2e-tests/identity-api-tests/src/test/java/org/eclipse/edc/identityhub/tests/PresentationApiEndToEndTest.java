@@ -196,7 +196,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_withPresentationDefinition_shouldReturn503(IdentityHubRuntime runtime) {
+        void query_withPresentationDefinition_shouldReturn501(IdentityHubRuntime runtime) {
 
             var query = """
                     {
@@ -206,6 +206,9 @@ public class PresentationApiEndToEndTest {
                       ],
                       "@type": "PresentationQueryMessage",
                       "presentationDefinition":{
+                        "id": "presentation1",
+                            "input_descriptors": [
+                            ]
                       }
                     }
                     """;
@@ -215,7 +218,7 @@ public class PresentationApiEndToEndTest {
                     .body(query)
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
                     .then()
-                    .statusCode(503)
+                    .statusCode(501)
                     .extract().body().asString();
         }
 
