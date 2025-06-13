@@ -1,27 +1,15 @@
 rootProject.name = "identity-hub"
 
-// this is needed to have access to snapshot builds of plugins
 pluginManagement {
     repositories {
-        mavenLocal()
         maven {
-            url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
         }
         mavenCentral()
         gradlePluginPortal()
     }
 }
 
-dependencyResolutionManagement {
-
-    repositories {
-        maven {
-            url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
-        }
-        mavenCentral()
-        mavenLocal()
-    }
-}
 // IdentityHub SPI modules
 include(":spi:identity-hub-spi")
 include(":spi:participant-context-spi")
