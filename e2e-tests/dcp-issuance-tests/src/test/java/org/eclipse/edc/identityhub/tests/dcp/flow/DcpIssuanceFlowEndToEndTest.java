@@ -221,7 +221,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .jsonSchemaUrl("https://example.com/schema")
                     .jsonSchema("{}")
                     .attestation(attestationDefinition.getId())
-                    .validity(3600)
+                    .validity(Duration.ofDays(365).toSeconds()) // one year
                     .mapping(mappingDefinition)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
                     .participantContextId("participantContextId")
