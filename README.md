@@ -95,12 +95,12 @@ docker run -d --rm --name identityhub \
 ## Architectural concepts of IdentityHub
 
 Key architectural concepts are
-outlined [here](docs/developer/architecture/identity-trust-protocol/identity.hub.architecture.md).
+outlined [here](docs/developer/architecture/decentralized-claims-protocol/identity.hub.architecture.md).
 
 ## Module structure of IdentityHub
 
 IdentityHub's module structure and key SPIs is
-described [here](docs/developer/architecture/identity-trust-protocol/identity-hub-modules.md).
+described [here](docs/developer/architecture/decentralized-claims-protocol/identity-hub-modules.md).
 
 _Please note that some classes or functionalities mentioned there may not yet have been implemented, for example
 automatic credential renewal._
