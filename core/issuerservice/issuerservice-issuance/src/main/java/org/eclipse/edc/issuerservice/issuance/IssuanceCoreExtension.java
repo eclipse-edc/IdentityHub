@@ -25,47 +25,30 @@ import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.retry.IssuanceProcessRetryStrategy;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
+import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
-import org.eclipse.edc.runtime.metamodel.annotation.Setting;
+import org.eclipse.edc.runtime.metamodel.annotation.SettingContext;
 import org.eclipse.edc.spi.monitor.Monitor;
-import org.eclipse.edc.spi.retry.ExponentialWaitStrategy;
 import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.telemetry.Telemetry;
-import org.eclipse.edc.statemachine.retry.EntityRetryProcessConfiguration;
+import org.eclipse.edc.statemachine.StateMachineConfiguration;
 import org.eclipse.edc.transaction.spi.TransactionContext;
-import org.jetbrains.annotations.NotNull;
 
 import java.time.Clock;
 
 import static org.eclipse.edc.issuerservice.issuance.IssuanceCoreExtension.NAME;
-import static org.eclipse.edc.statemachine.AbstractStateEntityManager.DEFAULT_BATCH_SIZE;
-import static org.eclipse.edc.statemachine.AbstractStateEntityManager.DEFAULT_ITERATION_WAIT;
-import static org.eclipse.edc.statemachine.AbstractStateEntityManager.DEFAULT_SEND_RETRY_BASE_DELAY;
-import static org.eclipse.edc.statemachine.AbstractStateEntityManager.DEFAULT_SEND_RETRY_LIMIT;
 
 @Extension(NAME)
 public class IssuanceCoreExtension implements ServiceExtension {
 
     public static final String NAME = "Issuance Core Extension";
 
-
-    @Setting(description = "The iteration wait time in milliseconds in the issuance process state machine. Default value " + DEFAULT_ITERATION_WAIT,
-            key = "edc.issuer.issuance.state-machine.iteration-wait-millis",
-            defaultValue = DEFAULT_ITERATION_WAIT + "")
-    private long stateMachineIterationWaitMillis;
-
-    @Setting(description = "The batch size in the issuance process state machine. Default value " + DEFAULT_BATCH_SIZE, key = "edc.issuer.issuance.state-machine.batch-size", defaultValue = DEFAULT_BATCH_SIZE + "")
-    private int stateMachineBatchSize;
-
-    @Setting(description = "How many times a specific operation must be tried before terminating the issuance with error", key = "edc.issuer.issuance.send.retry.limit", defaultValue = DEFAULT_SEND_RETRY_LIMIT + "")
-    private int sendRetryLimit;
-
-    @Setting(description = "The base delay for the issuance retry mechanism in millisecond", key = "edc.issuer.issuance.send.retry.base-delay.ms", defaultValue = DEFAULT_SEND_RETRY_BASE_DELAY + "")
-    private long sendRetryBaseDelay;
-
+    @SettingContext("edc.issuer.issuance")
+    @Configuration
+    private StateMachineConfiguration stateMachineConfiguration;
 
     private IssuanceProcessManager issuanceProcessManager;
 
@@ -108,11 +91,11 @@ public class IssuanceCoreExtension implements ServiceExtension {
     public IssuanceProcessManager createIssuanceProcessManager() {
 
         if (issuanceProcessManager == null) {
-            var waitStrategy = retryStrategy != null ? retryStrategy : new ExponentialWaitStrategy(stateMachineIterationWaitMillis);
+            var waitStrategy = retryStrategy != null ? retryStrategy : stateMachineConfiguration.iterationWaitExponentialWaitStrategy();
             issuanceProcessManager = IssuanceProcessManagerImpl.Builder.newInstance()
                     .store(issuanceProcessStore)
                     .monitor(monitor)
-                    .batchSize(stateMachineBatchSize)
+                    .batchSize(stateMachineConfiguration.batchSize())
                     .waitStrategy(waitStrategy)
                     .telemetry(telemetry)
                     .clock(clock)
@@ -122,7 +105,7 @@ public class IssuanceCoreExtension implements ServiceExtension {
                     .credentialStore(credentialStore)
                     .credentialStorageClient(credentialStorageClient)
                     .credentialStatusService(credentialStatusService)
-                    .entityRetryProcessConfiguration(getEntityRetryProcessConfiguration())
+                    .entityRetryProcessConfiguration(stateMachineConfiguration.entityRetryProcessConfiguration())
                     .build();
         }
         return issuanceProcessManager;
@@ -143,11 +126,5 @@ public class IssuanceCoreExtension implements ServiceExtension {
         if (issuanceProcessManager != null) {
             issuanceProcessManager.stop();
         }
-    }
-
-
-    @NotNull
-    private EntityRetryProcessConfiguration getEntityRetryProcessConfiguration() {
-        return new EntityRetryProcessConfiguration(sendRetryLimit, () -> new ExponentialWaitStrategy(sendRetryBaseDelay));
     }
 }
