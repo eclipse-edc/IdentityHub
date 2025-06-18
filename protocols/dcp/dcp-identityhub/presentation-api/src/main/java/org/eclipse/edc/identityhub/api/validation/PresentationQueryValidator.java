@@ -51,11 +51,11 @@ public class PresentationQueryValidator implements Validator<JsonObject> {
         var presentationDef = input.get(namespace.toIri(PRESENTATION_QUERY_MESSAGE_DEFINITION_TERM));
 
         if (isNullObject(scope) && isNullObject(presentationDef)) {
-            return failure(violation("Must contain either a 'scope' or a 'presentationDefinition' property.", null));
+            return failure(violation("Must contain either a non-null, non-empty 'scopes' property or a non-empty 'presentationDefinition' property.", null));
         }
 
         if (!isNullObject(scope) && !isNullObject(presentationDef)) {
-            return failure(violation("Must contain either a 'scope' or a 'presentationDefinition', not both.", null));
+            return failure(violation("Must contain either a non-null, non-empty 'scopes' property or a non-empty 'presentationDefinition' property, not both.", null));
         }
 
         return success();
@@ -69,11 +69,17 @@ public class PresentationQueryValidator implements Validator<JsonObject> {
      * @return true if the JsonValue object is either null, or its value type is NULL, false otherwise
      */
     private boolean isNullObject(JsonValue value) {
-        if (value instanceof JsonArray) {
-            value = ((JsonArray) value).get(0).asJsonObject().get(JsonLdKeywords.VALUE);
+        if (value instanceof JsonArray jsonArray) {
+            if (jsonArray.isEmpty()) {
+                return true;
+            }
+            value = jsonArray.get(0).asJsonObject().get(JsonLdKeywords.VALUE);
 
-            return value.getValueType() == JsonValue.ValueType.NULL;
+            if (value.getValueType() == JsonValue.ValueType.NULL) {
+                return true;
+            }
+            return isNullObject(value);
         }
-        return value == null;
+        return value == null || (value instanceof JsonObject jsonObject && jsonObject.isEmpty());
     }
 }

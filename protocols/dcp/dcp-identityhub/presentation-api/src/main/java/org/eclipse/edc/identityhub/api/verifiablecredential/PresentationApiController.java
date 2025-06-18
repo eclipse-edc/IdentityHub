@@ -172,7 +172,7 @@ public class PresentationApiController implements PresentationApi {
                 .message("Not implemented.")
                 .type("Not implemented.")
                 .build();
-        return Response.status(503)
+        return Response.status(501)
                 .entity(error)
                 .build();
     }
