@@ -40,7 +40,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -194,7 +193,7 @@ public class BitstringStatusListManager implements StatusListManager {
         var bs = BitString.Builder.newInstance()
                 .size(DEFAULT_BITSTRING_SIZE) //todo: make configurable
                 .build();
-        return BitString.Writer.newInstance().encoder(Base64.getUrlEncoder()).write(bs).orElseThrow(f -> new EdcException(f.getFailureDetail()));
+        return BitString.Writer.newInstance().writeMultibase(bs).orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 
     private @Nullable String publicUri(VerifiableCredentialResource res) {

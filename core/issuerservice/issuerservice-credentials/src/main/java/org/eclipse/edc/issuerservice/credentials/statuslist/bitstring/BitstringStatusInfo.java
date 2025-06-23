@@ -20,8 +20,6 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.spi.result.Result;
 
-import java.util.Base64;
-
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListCredential.BITSTRING_ENCODED_LIST_LITERAL;
 import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.Result.success;
@@ -62,14 +60,13 @@ record BitstringStatusInfo(int index, VerifiableCredentialResource statusListCre
         // set "revoked" bit
         return uncompressedBitString.compose(bs -> {
             bs.set(index, status);
-            var res = BitString.Writer.newInstance().encoder(Base64.getUrlEncoder()).write(bs);
-
+            var res = BitString.Writer.newInstance().writeMultibase(bs);
 
             // update bitstring in credential status
 
             res.onSuccess(newBitString -> {
                 createBitStringCredential().getCredentialSubject().get(0)
-                        .toBuilder() //modifies original instance
+                        .toBuilder() //modifies the original instance
                         .claim(BITSTRING_ENCODED_LIST_LITERAL, newBitString)
                         .build();
             });
@@ -95,15 +92,8 @@ record BitstringStatusInfo(int index, VerifiableCredentialResource statusListCre
 
     private Result<BitString> decode() {
         var bitString = createBitStringCredential().encodedList();
-        var decoder = Base64.getDecoder();
 
-        if (bitString.charAt(0) == 'u') { // base64 url
-            decoder = Base64.getUrlDecoder();
-            bitString = bitString.substring(1); //chop off header
-        } else if (bitString.charAt(0) == 'z') { //base58btc
-            return failure("The encoded list is using the Base58-BTC alphabet ('z' multibase header), which is not supported.");
-        }
-        var decompressionResult = BitString.Parser.newInstance().decoder(decoder).parse(bitString);
+        var decompressionResult = BitString.Parser.newInstance().parse(bitString);
         if (decompressionResult.failed()) {
             return failure("Failed to decode compressed BitString: '%s'".formatted(decompressionResult.getFailureDetail()));
         }
