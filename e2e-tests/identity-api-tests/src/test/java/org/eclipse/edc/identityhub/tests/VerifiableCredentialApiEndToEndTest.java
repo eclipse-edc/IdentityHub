@@ -62,6 +62,7 @@ import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAM
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_SQL_MODULES;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.createCredential;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.eq;
@@ -287,7 +288,7 @@ public class VerifiableCredentialApiEndToEndTest {
                         .then()
                         .log().ifValidationFails()
                         .statusCode(201)
-                        .body(equalTo(holderPid));
+                        .header("Location", endsWith("/v1alpha/participants/%s/credentials/request/%s".formatted(toBase64(user), holderPid)));
 
                 // wait until the state machine has progress to the REQUESTED state
                 await().pollInterval(Duration.ofSeconds(1))

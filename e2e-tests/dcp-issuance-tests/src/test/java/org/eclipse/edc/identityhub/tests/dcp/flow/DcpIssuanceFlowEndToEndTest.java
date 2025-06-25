@@ -134,7 +134,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
-                    .body(Matchers.equalTo("test-request-id"));
+                    .header("Location", Matchers.endsWith("/credentials/request/test-request-id"));
 
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)

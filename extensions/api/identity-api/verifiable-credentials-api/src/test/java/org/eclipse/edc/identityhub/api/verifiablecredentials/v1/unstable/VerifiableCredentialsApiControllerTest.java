@@ -39,6 +39,7 @@ import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Violation;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -458,10 +459,11 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     class CreateCredentialRequest {
         @Test
         void success() {
+            var id = UUID.randomUUID().toString();
             var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential", UUID.randomUUID().toString())
             ));
-            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.success("issuer-id"));
+            when(credentialRequestService.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.success(id));
             baseRequest()
                     .contentType(JSON)
                     .body(request)
@@ -469,7 +471,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
-                    .body(equalTo("issuer-id"));
+                    .header("Location", Matchers.endsWith("/credentials/request/" + id));
         }
 
         @Test
@@ -489,7 +491,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         }
 
         @Test
-        void whenDcpError_returns400() {
+        void whenDcpError_returns500() {
             var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential", UUID.randomUUID().toString())
             ));
@@ -500,8 +502,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .post("/request")
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(400)
-                    .body(containsString("foo"));
+                    .statusCode(500);
         }
 
         @Test

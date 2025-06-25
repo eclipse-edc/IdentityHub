@@ -119,8 +119,7 @@ public interface VerifiableCredentialsApi {
             operationId = "requestCredential",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = CredentialRequestDto.class))),
             responses = {
-                    @ApiResponse(responseCode = "201", description = "The request was processed and sent to the issuer. The issuer-created ID (\"issuerPid\") is returned in the response.",
-                            content = {@Content(schema = @Schema(type = "string"), mediaType = "test/plain")}),
+                    @ApiResponse(responseCode = "201", description = "The request was processed and sent to the issuer. The issuer-created ID (\"issuerPid\") is returned in the response."),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "403", description = "The request could not be completed, because either the authentication was missing or was not valid.",

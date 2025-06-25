@@ -41,16 +41,15 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.util.string.StringUtils;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
-import org.eclipse.edc.web.spi.exception.ObjectConflictException;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -154,26 +153,16 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @Path("/request")
     @Override
     public Response requestCredential(@PathParam("participantContextId") String participantContextId, CredentialRequestDto credentialRequestDto, @Context SecurityContext securityContext) {
-
         var participantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-
         authorizationService.isAuthorized(securityContext, participantId, ParticipantContext.class)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, participantId));
 
-        var holderPid = ofNullable(credentialRequestDto.holderPid());
+        var holderPid = ofNullable(credentialRequestDto.holderPid()).orElseGet(() -> UUID.randomUUID().toString());
         var requestParameters = credentialRequestDto.credentials().stream().map(cd -> new RequestedCredential(cd.id(), cd.type(), cd.format())).toList();
 
-        var credentialRequestResult = credentialRequestService.initiateRequest(participantId, credentialRequestDto.issuerDid(),
-                holderPid.orElseGet(() -> UUID.randomUUID().toString()),
-                requestParameters);
-
-        return credentialRequestResult.map(id -> Response.status(201).entity(id).build())
-                .orElseThrow(sf -> {
-                    if (sf.getReason().equals(ServiceFailure.Reason.CONFLICT)) {
-                        throw new ObjectConflictException(sf.getFailureDetail());
-                    }
-                    throw new InvalidRequestException(sf.getMessages());
-                });
+        return credentialRequestService.initiateRequest(participantId, credentialRequestDto.issuerDid(), holderPid, requestParameters)
+                .map(id -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/credentials/request/%s".formatted(participantContextId, id))).build())
+                .orElseThrow(exceptionMapper(CredentialRequestDto.class));
     }
 
     @GET
