@@ -28,9 +28,9 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
-import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.test.e2e.tck.TckTest;
 import org.eclipse.edc.test.e2e.tck.TckTransformer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -59,7 +59,7 @@ import static org.mockito.Mockito.mock;
  *
  * @see <a href="https://github.com/eclipse-dataspacetck/dcp-tck">Eclipse Dataspace TCK - DCP</a>
  */
-@EndToEndTest
+@TckTest
 @Testcontainers
 public class DcpPresentationFlowWithDockerTest {
     public static final String ISSUANCE_CORRELATION_ID = UUID.randomUUID().toString();
@@ -114,7 +114,7 @@ public class DcpPresentationFlowWithDockerTest {
 
         var response = createParticipant(runtime, baseCredentialServiceUrl);
 
-        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:latest")
+        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:1.0.0-RC3")
                 .withExtraHost("host.docker.internal", "host-gateway")
                 .withExposedPorts(CALLBACK_PORT)
                 .withEnv(Map.of(
