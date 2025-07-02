@@ -28,6 +28,7 @@ import java.util.Map;
 @ExtensionPoint
 public interface IssuanceClaimsMapper {
 
+
     /**
      * Applies the mapping definition to the input claims.
      *
@@ -45,27 +46,38 @@ public interface IssuanceClaimsMapper {
      * @return the output claims
      */
     default Result<Map<String, Object>> apply(List<MappingDefinition> mappingDefinitions, Map<String, Object> inputClaims) {
-        var mergedClaims = new HashMap<String, Object>();
-
+        Map<String, Object> mergedClaims = new HashMap<>();
         for (var mappingDefinition : mappingDefinitions) {
             var result = apply(mappingDefinition, inputClaims);
             if (result.failed()) {
                 return Result.failure("Failed to apply mapping definition");
             }
-            var outputClaims = result.getContent();
-
-            //merge outputClaims into the collated map
-            outputClaims.forEach((claimKey, claimValue) -> {
-
-                if (claimValue instanceof Map valueMap) {
-                    var newValue = (Map) mergedClaims.computeIfAbsent(claimKey, s -> new HashMap<>());
-                    newValue.putAll(valueMap);
-                } else {
-                    mergedClaims.put(claimKey, claimValue);
-                }
-
-            });
+            deepMerge(mergedClaims, result.getContent());
         }
         return Result.success(mergedClaims);
     }
+
+    /**
+     * Merges two maps deeply, meaning that if a key in the source map is a nested map, it will be merged into the corresponding
+     * nested map in the target map.
+     *
+     * @param target the target map to merge into
+     * @param source the source map to merge from
+     * @return the merged map
+     */
+    private Map<String, Object> deepMerge(Map<String, Object> target, Map<String, Object> source) {
+        for (var entry : source.entrySet()) {
+            var key = entry.getKey();
+            var value = entry.getValue();
+            if (value instanceof Map && target.get(key) instanceof Map) {
+                var targetChild = (Map<String, Object>) target.get(key);
+                var sourceChild = (Map<String, Object>) value;
+                target.put(key, deepMerge(targetChild, sourceChild));
+            } else {
+                target.put(key, value);
+            }
+        }
+        return target;
+    }
+
 }

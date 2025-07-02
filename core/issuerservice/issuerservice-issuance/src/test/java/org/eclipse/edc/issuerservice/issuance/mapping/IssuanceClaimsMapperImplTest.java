@@ -27,9 +27,7 @@ import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public class IssuanceClaimsMapperImplTest {
 
-
     private final IssuanceClaimsMapper mapper = new IssuanceClaimsMapperImpl();
-
 
     @Test
     void apply() {
@@ -72,4 +70,31 @@ public class IssuanceClaimsMapperImplTest {
             assertThat(claims).hasEntrySatisfying("issuanceDate", v -> assertThat(v).isNotNull());
         });
     }
+
+    @Test
+    void apply_whenNestedProperties() {
+        var mappingDefinition1 = new MappingDefinition("person.address.country", "credentialSubject.address.country", true);
+        var mappingDefinition2 = new MappingDefinition("person.address.city", "credentialSubject.address.city", true);
+
+        var result = mapper.apply(List.of(mappingDefinition1, mappingDefinition2), Map.of(
+                        "person", Map.of(
+                                "address", Map.of(
+                                        "city", "Paris",
+                                        "country", "France"
+                                )
+                        )
+                )
+        );
+        assertThat(result).isSucceeded()
+                .satisfies(claims -> assertThat(claims)
+                        .containsEntry("credentialSubject", Map.of(
+                                        "address", Map.of(
+                                                "country", "France",
+                                                "city", "Paris"
+                                        )
+                                )
+                        )
+                );
+    }
+
 }
