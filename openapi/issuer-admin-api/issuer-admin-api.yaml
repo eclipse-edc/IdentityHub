@@ -1202,8 +1202,6 @@ components:
           additionalProperties:
             type: string
             enum:
-            - JSON_LD
-            - JWT
             - VC1_0_LD
             - VC1_0_JWT
             - VC2_0_JOSE
@@ -1306,8 +1304,6 @@ components:
         format:
           type: string
           enum:
-          - JSON_LD
-          - JWT
           - VC1_0_LD
           - VC1_0_JWT
           - VC2_0_JOSE
