@@ -36,7 +36,7 @@ class VerifiableCredentialManifestValidatorTest {
         var manifest = VerifiableCredentialManifest.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .participantContextId(UUID.randomUUID().toString())
-                .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, VerifiableCredential.Builder.newInstance()
+                .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.VC1_0_JWT, VerifiableCredential.Builder.newInstance()
                         .type("type")
                         .credentialSubject(CredentialSubject.Builder.newInstance()
                                 .id("id")
@@ -61,7 +61,7 @@ class VerifiableCredentialManifestValidatorTest {
 
         var result = validator.validate(manifest);
 
-        assertThat(result).isFailed().withFailMessage("VerifiableCredentialContainer was null");
+        assertThat(result).isFailed().messages().containsOnly("VerifiableCredentialContainer was null");
     }
 
     @Test
@@ -72,7 +72,7 @@ class VerifiableCredentialManifestValidatorTest {
 
         var result = validator.validate(manifest);
 
-        assertThat(result).isFailed().withFailMessage("Participant id was null");
+        assertThat(result).isFailed().messages().containsOnly("participantContextId id was null");
     }
 
     @Test
@@ -80,19 +80,19 @@ class VerifiableCredentialManifestValidatorTest {
         var manifest = VerifiableCredentialManifest.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .participantContextId(UUID.randomUUID().toString())
-                .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, null))
+                .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.VC1_0_JWT, null))
                 .build();
 
         var result = validator.validate(manifest);
 
-        assertThat(result).isFailed().withFailMessage("VerifiableCredential was null");
+        assertThat(result).isFailed().messages().containsOnly("VerifiableCredential was null");
     }
 
     @Test
     void validate_nullManifest_shouldFailValidation() {
         var result = validator.validate(null);
 
-        assertThat(result).isFailed().withFailMessage("Input was null");
+        assertThat(result).isFailed().messages().containsOnly("Input was null");
     }
 
 }

@@ -19,6 +19,7 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.extensions.EmbeddedRuntime;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimePerMethodExtension;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -56,8 +57,8 @@ public class BomSmokeTests {
 
         @RegisterExtension
         protected RuntimeExtension runtime =
-                new RuntimePerMethodExtension(new EmbeddedRuntime("identityhub-bom",
-                        new HashMap<>() {
+                new RuntimePerMethodExtension(new EmbeddedRuntime("identityhub-bom", ":dist:bom:identityhub-bom")
+                        .configurationProvider(() -> ConfigFactory.fromMap(new HashMap<>() {
                             {
                                 put("web.http.port", DEFAULT_PORT);
                                 put("web.http.path", DEFAULT_PATH);
@@ -79,9 +80,7 @@ public class BomSmokeTests {
                                 put("edc.iam.sts.privatekey.alias", "test-private-key");
 
                             }
-                        },
-                        ":dist:bom:identityhub-bom"
-                ));
+                        })));
     }
 
     @Nested
@@ -89,8 +88,8 @@ public class BomSmokeTests {
     class IssuerService extends SmokeTest {
         @RegisterExtension
         protected RuntimeExtension runtime =
-                new RuntimePerMethodExtension(new EmbeddedRuntime("issuer-service-bom",
-                        new HashMap<>() {
+                new RuntimePerMethodExtension(new EmbeddedRuntime("issuer-service-bom", ":dist:bom:issuerservice-bom")
+                        .configurationProvider(() -> ConfigFactory.fromMap(new HashMap<>() {
                             {
                                 put("web.http.port", DEFAULT_PORT);
                                 put("web.http.path", DEFAULT_PATH);
@@ -106,8 +105,6 @@ public class BomSmokeTests {
                                 put("edc.iam.sts.publickey.id", "test-public-key");
                                 put("edc.iam.sts.privatekey.alias", "test-private-key");
                             }
-                        },
-                        ":dist:bom:issuerservice-bom"
-                ));
+                        })));
     }
 }

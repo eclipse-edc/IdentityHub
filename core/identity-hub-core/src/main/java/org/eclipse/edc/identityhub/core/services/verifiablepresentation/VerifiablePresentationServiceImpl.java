@@ -54,7 +54,7 @@ public class VerifiablePresentationServiceImpl implements VerifiablePresentation
     }
 
     /**
-     * Creates a presentation based on the given list of verifiable credentials and optional presentation definition. If the desired format ist {@link CredentialFormat#JSON_LD},
+     * Creates a presentation based on the given list of verifiable credentials and optional presentation definition. If the desired format ist {@link CredentialFormat#VC1_0_LD},
      * all JWT-VCs in the list will be packaged in a separate JWT VP, because LDP-VPs cannot contain JWT-VCs.
      * <em>Note: submitting a {@link PresentationDefinition} is not supported at the moment, and it will be ignored after logging a warning. </em>
      *

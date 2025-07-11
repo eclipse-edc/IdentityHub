@@ -108,7 +108,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
 
         assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc, vcc2), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("One or more VerifiableCredentials cannot be represented in the desired format %s".formatted(CredentialFormat.JSON_LD));
+                .hasMessageContaining("One or more VerifiableCredentials cannot be represented in the desired format %s".formatted(CredentialFormat.VC1_0_LD));
     }
 
     @Override
