@@ -105,7 +105,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         var cred = createCredential(types);
         return VerifiableCredentialResource.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
-                .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.JSON_LD, cred))
+                .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.VC1_0_LD, cred))
                 .holderId("test-holder")
                 .issuerId("test-issuer");
     }
@@ -114,7 +114,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         return VerifiableCredentialManifest.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .participantContextId(PARTICIPANT_ID)
-                .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JSON_LD, credential))
+                .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.VC1_0_LD, credential))
                 .build();
     }
 

@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.JSON_LD;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_LD;
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.PresentationGeneratorConstants.VERIFIABLE_CREDENTIAL_PROPERTY;
@@ -122,8 +121,8 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
             throw new IllegalArgumentException("No SignatureSuite for identifier '%s' was found.".formatted(suiteIdentifier));
         }
 
-        if (credentials.stream().anyMatch(c -> c.format() != JSON_LD && c.format() != CredentialFormat.VC1_0_LD)) {
-            throw new IllegalArgumentException("One or more VerifiableCredentials cannot be represented in the desired format %s/%s.".formatted(JSON_LD, VC1_0_LD));
+        if (credentials.stream().anyMatch(c -> c.format() != CredentialFormat.VC1_0_LD)) {
+            throw new IllegalArgumentException("One or more VerifiableCredentials cannot be represented in the desired format %s.".formatted(VC1_0_LD));
         }
 
         // check if private key can be resolved

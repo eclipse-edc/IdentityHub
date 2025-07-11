@@ -46,6 +46,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -71,7 +72,7 @@ class CredentialQueryResolverImplTest {
         when(storeMock.query(any())).thenAnswer(i -> success(List.of()));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
-        assertThat(res.succeeded()).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
     }
 
@@ -79,7 +80,7 @@ class CredentialQueryResolverImplTest {
     void query_invalidAccessTokenScope_shouldReturnEmpty() {
         when(storeMock.query(any())).thenReturn(success(Collections.emptyList()));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery(), List.of("foobar"));
-        assertThat(res.succeeded()).isFalse();
+        assertThat(res).isFailed();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
         assertThat(res.getFailureDetail()).contains("Scope string cannot be converted: Scope string has invalid format.");
     }
@@ -88,7 +89,7 @@ class CredentialQueryResolverImplTest {
     void query_noAccessTokenScope_noQueryScope_shouldReturnEmpty() {
         when(storeMock.query(any())).thenReturn(success(Collections.emptyList()));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery(/*empty scopes*/), List.of());
-        assertThat(res.succeeded()).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
     }
 
@@ -98,7 +99,7 @@ class CredentialQueryResolverImplTest {
         when(storeMock.query(any())).thenReturn(success(List.of(credential)));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery(/*empty scopes*/), List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
-        assertThat(res.succeeded()).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(credential.getVerifiableCredential());
     }
 
@@ -109,7 +110,7 @@ class CredentialQueryResolverImplTest {
                 .thenReturn(success(List.of(credential)));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery("org.eclipse.edc.vc.type:AnotherCredential:read"), List.of());
-        assertThat(res.succeeded()).isFalse();
+        assertThat(res).isFailed();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
         verify(monitor).warning("Permission was not granted on any credentials (empty access token scope list), but 1 were requested.");
     }
@@ -138,7 +139,7 @@ class CredentialQueryResolverImplTest {
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential)));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
-        assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).containsExactly(credential.getVerifiableCredential());
     }
 
@@ -154,7 +155,7 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
 
-        assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(credential2.getVerifiableCredential());
     }
 
@@ -164,7 +165,7 @@ class CredentialQueryResolverImplTest {
 
         var res = resolver.query("another_participant_context_id",
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
-        assertThat(res.succeeded()).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
     }
 
@@ -182,7 +183,7 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read",
                         "org.eclipse.edc.vc.type:AnotherCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read", "org.eclipse.edc.vc.type:AnotherCredential:read"));
-        assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).containsExactlyInAnyOrder(credential1.getVerifiableCredential(), credential2.getVerifiableCredential());
     }
 
@@ -207,7 +208,7 @@ class CredentialQueryResolverImplTest {
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read",
                         "org.eclipse.edc.vc.type:AnotherCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
 
-        assertThat(res.succeeded()).isFalse();
+        assertThat(res).isFailed();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
         assertThat(res.getFailureDetail()).isEqualTo("Invalid query: requested Credentials outside of scope.");
     }
@@ -220,7 +221,7 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read", "org.eclipse.edc.vc.type:AnotherCredential:read"));
 
-        assertThat(res.succeeded()).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).containsOnly(credential1.getVerifiableCredential());
     }
 
@@ -232,7 +233,7 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
 
-        assertThat(res.succeeded()).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).containsOnly(credential1.getVerifiableCredential());
     }
 
@@ -267,7 +268,7 @@ class CredentialQueryResolverImplTest {
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read", "org.eclipse.edc.vc.type:AnotherCredential:read"),
                 List.of("org.eclipse.edc.vc.type:FooCredential:read", "org.eclipse.edc.vc.type:BarCredential:read"));
 
-        assertThat(res.succeeded()).isFalse();
+        assertThat(res).isFailed();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
         assertThat(res.getFailureDetail()).isEqualTo("Invalid query: requested Credentials outside of scope.");
     }
@@ -296,7 +297,7 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
 
-        assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
         verify(monitor).warning(eq("Credential '%s' is expired.".formatted(credential.getId())));
     }
@@ -312,7 +313,7 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
 
-        assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
         verify(monitor).warning(eq("Credential '%s' is not yet valid.".formatted(credential.getId())));
     }
@@ -331,7 +332,7 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
 
-        assertThat(res.succeeded()).withFailMessage(res::getFailureDetail).isTrue();
+        assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
         verify(monitor).warning(eq("Credential '%s' not valid: revoked".formatted(credential.getId())));
     }

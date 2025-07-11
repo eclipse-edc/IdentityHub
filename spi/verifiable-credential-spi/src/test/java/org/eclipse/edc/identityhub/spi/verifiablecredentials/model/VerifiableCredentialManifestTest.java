@@ -36,7 +36,7 @@ class VerifiableCredentialManifestTest {
         var manifest = VerifiableCredentialManifest.Builder.newInstance()
                 .id("id")
                 .participantContextId("participantId")
-                .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, VerifiableCredential.Builder.newInstance()
+                .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.VC1_0_JWT, VerifiableCredential.Builder.newInstance()
                         .type("type")
                         .credentialSubject(CredentialSubject.Builder.newInstance().id("id").claim("foo", "bar").build())
                         .issuer(new Issuer("issuer"))

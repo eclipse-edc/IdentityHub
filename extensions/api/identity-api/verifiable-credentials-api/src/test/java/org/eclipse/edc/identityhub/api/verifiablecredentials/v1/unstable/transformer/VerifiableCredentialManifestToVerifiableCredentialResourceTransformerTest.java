@@ -46,7 +46,7 @@ class VerifiableCredentialManifestToVerifiableCredentialResourceTransformerTest 
                 .participantContextId("participantId")
                 .issuancePolicy(mock())
                 .reissuancePolicy(mock())
-                .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.JWT, credential))
+                .verifiableCredentialContainer(new VerifiableCredentialContainer("rawVc", CredentialFormat.VC1_0_JWT, credential))
                 .build();
 
         var resource = transformer.transform(manifest, null);
