@@ -19,3 +19,22 @@ updates:
       - "java"
     ignore:
       - dependency-name: "org.eclipse.edc:*"
+
+  - package-ecosystem: "docker"
+    target-branch: main
+    directory: launcher/identityhub
+    labels:
+      - "dependabot"
+      - "docker"
+    schedule:
+      interval: "weekly"
+
+
+  - package-ecosystem: "docker"
+    target-branch: main
+    directory: launcher/issuer-service
+    labels:
+      - "dependabot"
+      - "docker"
+    schedule:
+      interval: "weekly"
