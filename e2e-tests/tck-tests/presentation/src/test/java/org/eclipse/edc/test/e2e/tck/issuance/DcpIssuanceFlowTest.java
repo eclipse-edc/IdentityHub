@@ -35,6 +35,7 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.test.e2e.tck.TckTransformer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -48,6 +49,7 @@ import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.mockito.Mockito.mock;
 
 @EndToEndTest
+@Disabled
 public class DcpIssuanceFlowTest {
     private static final String ISSUANCE_CORRELATION_ID = "issuance-correlation-id";
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "holder";

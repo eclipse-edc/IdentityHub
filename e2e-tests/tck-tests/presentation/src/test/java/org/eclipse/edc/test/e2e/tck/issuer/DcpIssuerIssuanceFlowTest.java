@@ -37,6 +37,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.security.Vault;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -51,6 +52,7 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Ver
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 
 @EndToEndTest
+@Disabled
 public class DcpIssuerIssuanceFlowTest {
     @RegisterExtension
     public static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()

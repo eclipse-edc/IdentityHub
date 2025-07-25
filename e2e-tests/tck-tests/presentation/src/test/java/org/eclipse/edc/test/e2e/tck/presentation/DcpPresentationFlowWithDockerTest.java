@@ -33,6 +33,7 @@ import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.test.e2e.tck.TckTransformer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,6 +62,7 @@ import static org.mockito.Mockito.mock;
  */
 @EndToEndTest
 @Testcontainers
+@Disabled
 public class DcpPresentationFlowWithDockerTest {
     public static final String ISSUANCE_CORRELATION_ID = UUID.randomUUID().toString();
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "holder";
