@@ -2,11 +2,11 @@ rootProject.name = "identity-hub"
 
 pluginManagement {
     repositories {
+        gradlePluginPortal()
+        mavenCentral()
         maven {
             url = uri("https://central.sonatype.com/repository/maven-snapshots/")
         }
-        mavenCentral()
-        gradlePluginPortal()
     }
 }
 
@@ -115,8 +115,6 @@ include(":extensions:issuance:local-statuslist-publisher")
 // other modules
 include(":launcher:identityhub")
 include(":launcher:issuer-service")
-
-include(":version-catalog")
 
 // test modules
 include(":e2e-tests")
