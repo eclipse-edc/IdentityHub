@@ -22,7 +22,6 @@ include(":spi:sts-spi")
 // IssuerService SPI modules
 include(":spi:issuerservice:issuerservice-holder-spi")
 include(":spi:issuerservice:issuerservice-credential-spi")
-include(":spi:issuerservice:credential-revocation-spi")
 include(":spi:issuerservice:issuerservice-issuance-spi")
 
 // IdentityHub core modules
@@ -36,7 +35,6 @@ include(":core:identity-hub-did")
 include(":core:issuerservice:issuerservice-core")
 include(":core:issuerservice:issuerservice-holders")
 include(":core:issuerservice:issuerservice-credentials")
-include(":core:issuerservice:issuerservice-credential-revocation")
 include(":core:issuerservice:issuerservice-issuance")
 
 // lib modules
@@ -78,7 +76,6 @@ include(":protocols:dcp:dcp-identityhub:credentials-api-configuration")
 include(":protocols:dcp:dcp-identityhub:presentation-api")
 include(":protocols:dcp:dcp-identityhub:storage-api")
 include(":protocols:dcp:dcp-identityhub:credential-offer-api")
-include(":protocols:dcp:dcp-identityhub:dcp-identityhub-transform-lib")
 include(":protocols:dcp:dcp-identityhub:dcp-identityhub-core")
 
 // Identity APIs
