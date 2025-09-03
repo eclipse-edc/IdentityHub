@@ -89,7 +89,7 @@ docker run -d --rm --name identityhub \
             -e "WEB_HTTP_PRESENTATION_PATH=/api/presentation" \
             -e "EDC_IAM_STS_PRIVATEKEY_ALIAS=privatekey-alias" \
             -e "EDC_IAM_STS_PUBLICKEY_ID=publickey-id" \
-            identityhub:latest
+            identity-hub:latest
 ```
 
 ## Architectural concepts of IdentityHub
