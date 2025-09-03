@@ -834,6 +834,24 @@ Module `identity-hub-participants`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension`
+**Name:** "ParticipantContext Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.identityhub.spi.did.DidDocumentService` (required)
+- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
+- `java.time.Clock` (required)
+- `org.eclipse.edc.spi.event.EventRouter` (required)
+- `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
+
 #### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextExtension`
 **Name:** "ParticipantContext Extension"
 
@@ -854,24 +872,6 @@ _None_
 - `org.eclipse.edc.spi.event.EventRouter` (required)
 - `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner` (required)
-
-#### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension`
-**Name:** "ParticipantContext Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-_None_
-
-#### Referenced (injected) services
-- `org.eclipse.edc.identityhub.spi.did.DidDocumentService` (required)
-- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
-- `java.time.Clock` (required)
-- `org.eclipse.edc.spi.event.EventRouter` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService` (required)
 
 Module `identityhub-api-authentication`
 ---------------------------------------
@@ -1722,20 +1722,6 @@ Module `sts-core`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.iam.identitytrust.sts.defaults.StsDefaultServicesExtension`
-**Name:** "Secure Token Service Default Services"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
-
 #### Class: `org.eclipse.edc.iam.identitytrust.sts.EmbeddedStsServiceExtension`
 **Name:** "Local (embedded) STS Account Service Extension"
 
@@ -1757,6 +1743,20 @@ _None_
 - `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService` (required)
+
+#### Class: `org.eclipse.edc.iam.identitytrust.sts.defaults.StsDefaultServicesExtension`
+**Name:** "Secure Token Service Default Services"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `test-attestations`
 --------------------------
