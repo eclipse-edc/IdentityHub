@@ -18,9 +18,11 @@ import org.awaitility.Awaitility;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
+import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
+import org.eclipse.edc.spi.result.StoreFailure;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -353,7 +355,9 @@ public abstract class HolderCredentialRequestStoreTestBase {
             request.transitionCreated();
 
             // leased by someone else -> throw exception
-            assertThatThrownBy(() -> getStore().save(request)).isInstanceOf(IllegalStateException.class);
+            AbstractResultAssert.assertThat(getStore().save(request)).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.ALREADY_LEASED);
         }
     }
 

@@ -20,9 +20,11 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialObj
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOffer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
+import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
+import org.eclipse.edc.spi.result.StoreFailure;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -377,7 +379,9 @@ public abstract class CredentialOfferStoreTestBase {
             offer.transition(PROCESSED);
 
             // leased by someone else -> throw exception
-            assertThatThrownBy(() -> getStore().save(offer)).isInstanceOf(IllegalStateException.class);
+            AbstractResultAssert.assertThat(getStore().save(offer)).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.ALREADY_LEASED);
         }
     }
 

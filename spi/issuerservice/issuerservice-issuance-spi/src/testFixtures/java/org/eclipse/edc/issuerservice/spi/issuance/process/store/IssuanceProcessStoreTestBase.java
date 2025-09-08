@@ -19,9 +19,11 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
+import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
+import org.eclipse.edc.spi.result.StoreFailure;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -356,7 +358,9 @@ public abstract class IssuanceProcessStoreTestBase {
             var updatedIssuanceProcess = issuanceProcess.toBuilder().state(DELIVERED.code()).build();
 
             // leased by someone else -> throw exception
-            assertThatThrownBy(() -> getStore().save(updatedIssuanceProcess)).isInstanceOf(IllegalStateException.class);
+            AbstractResultAssert.assertThat(getStore().save(updatedIssuanceProcess)).isFailed()
+                    .extracting(StoreFailure::getReason)
+                    .isEqualTo(StoreFailure.Reason.ALREADY_LEASED);
         }
 
     }

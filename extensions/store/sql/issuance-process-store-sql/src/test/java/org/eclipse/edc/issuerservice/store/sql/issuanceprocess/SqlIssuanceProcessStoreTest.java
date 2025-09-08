@@ -21,18 +21,21 @@ import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.sql.QueryExecutor;
+import org.eclipse.edc.sql.lease.BaseSqlLeaseStatements;
+import org.eclipse.edc.sql.lease.SqlLeaseContextBuilderImpl;
+import org.eclipse.edc.sql.lease.spi.LeaseStatements;
 import org.eclipse.edc.sql.testfixtures.LeaseUtil;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.time.Clock;
 import java.time.Duration;
 
 @PostgresqlIntegrationTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
 class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
+    private final LeaseStatements leaseStatements = new BaseSqlLeaseStatements();
 
     private IssuanceProcessStoreStatements statements;
     private SqlIssuanceProcessStore store;
@@ -42,11 +45,13 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
         var typeManager = new JacksonTypeManager();
 
-        statements = new PostgresDialectStatements();
-        store = new SqlIssuanceProcessStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements, RUNTIME_ID, Clock.systemUTC());
+        statements = new PostgresDialectStatements(leaseStatements, clock);
+        var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(extension.getTransactionContext(), RUNTIME_ID, statements.getIssuanceProcessTable(), leaseStatements, clock, queryExecutor);
 
-        leaseUtil = new LeaseUtil(extension.getTransactionContext(), extension::getConnection, statements, clock);
+        store = new SqlIssuanceProcessStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
+                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements, leaseContextBuilder);
+
+        leaseUtil = new LeaseUtil(extension.getTransactionContext(), extension::getConnection, statements.getIssuanceProcessTable(), leaseStatements, clock);
 
         var schema = TestUtils.getResourceFileContentAsString("issuance-process-schema.sql");
         extension.runQuery(schema);
@@ -55,7 +60,7 @@ class SqlIssuanceProcessStoreTest extends IssuanceProcessStoreTestBase {
     @AfterEach
     void tearDown(PostgresqlStoreSetupExtension extension) {
         extension.runQuery("DROP TABLE " + statements.getIssuanceProcessTable() + " CASCADE");
-        extension.runQuery("DROP TABLE " + statements.getLeaseTableName() + " CASCADE");
+        extension.runQuery("DROP TABLE " + leaseStatements.getLeaseTableName() + " CASCADE");
     }
 
     @Override
