@@ -24,7 +24,7 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.lease.SqlLeaseContextBuilder;
+import org.eclipse.edc.sql.lease.spi.SqlLeaseContextBuilder;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -33,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -50,10 +49,8 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
 
     private static final TypeReference<List<RequestedCredential>> LIST_REF = new TypeReference<>() {
     };
-    private final String leaseHolderName;
     private final SqlLeaseContextBuilder leaseContext;
     private final HolderCredentialRequestStoreStatements statements;
-    private final Clock clock;
 
     public SqlHolderCredentialRequestStore(DataSourceRegistry dataSourceRegistry,
                                            String dataSourceName,
@@ -61,13 +58,10 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                                            ObjectMapper objectMapper,
                                            QueryExecutor queryExecutor,
                                            HolderCredentialRequestStoreStatements statements,
-                                           String leaseHolderName,
-                                           Clock clock) {
+                                           SqlLeaseContextBuilder leaseContext) {
         super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
         this.statements = statements;
-        this.leaseHolderName = leaseHolderName;
-        this.clock = clock;
-        leaseContext = SqlLeaseContextBuilder.with(transactionContext, leaseHolderName, statements, clock, queryExecutor);
+        this.leaseContext = leaseContext;
     }
 
     @Override
@@ -86,16 +80,13 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
         return transactionContext.execute(() -> {
             var filter = Arrays.stream(criteria).collect(toList());
             var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(max).build();
-            var statement = statements.createQuery(querySpec)
-                    .addWhereClause(statements.getNotLeasedFilter(), clock.millis());
-
+            var statement = statements.createNextNotLeaseQuery(querySpec);
             try (
                     var connection = getConnection();
                     var stream = queryExecutor.query(connection, true, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())
             ) {
-                var issuanceProcesses = stream.collect(Collectors.toList());
-                issuanceProcesses.forEach(issuanceProcess -> leaseContext.withConnection(connection).acquireLease(issuanceProcess.getId()));
-                return issuanceProcesses;
+                return stream.filter(entity -> leaseContext.withConnection(connection).acquireLease(entity.getId()).succeeded())
+                        .collect(Collectors.toList());
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -111,10 +102,7 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                     return StoreResult.notFound(format("HolderCredentialRequest %s not found", id));
                 }
 
-                leaseContext.withConnection(connection).acquireLease(entity.getId());
-                return StoreResult.success(entity);
-            } catch (IllegalStateException e) {
-                return StoreResult.alreadyLeased(format("HolderCredentialRequest %s is already leased", id));
+                return leaseContext.withConnection(connection).acquireLease(entity.getId()).map(it -> entity);
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -122,15 +110,19 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
     }
 
     @Override
-    public void save(HolderCredentialRequest issuanceProcess) {
+    public StoreResult<Void> save(HolderCredentialRequest issuanceProcess) {
         try (var conn = getConnection()) {
             var existing = findByIdInternal(conn, issuanceProcess.getId());
             if (existing != null) {
-                leaseContext.by(leaseHolderName).withConnection(conn).breakLease(issuanceProcess.getId());
+                var result = leaseContext.withConnection(conn).breakLease(issuanceProcess.getId());
+                if (result.failed()) {
+                    return result;
+                }
                 update(conn, issuanceProcess);
             } else {
                 insert(conn, issuanceProcess);
             }
+            return StoreResult.success();
         } catch (SQLException e) {
             throw new EdcPersistenceException(e);
         }

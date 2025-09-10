@@ -16,14 +16,14 @@ package org.eclipse.edc.identityhub.store.sql.credentialoffer.schema;
 
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.sql.lease.LeaseStatements;
 import org.eclipse.edc.sql.lease.StatefulEntityStatements;
+import org.eclipse.edc.sql.statement.SqlStatements;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 /**
  * Defines SQL-statements and column names for use with a SQL-based {@link HolderCredentialRequest}
  */
-public interface CredentialOfferStoreStatements extends StatefulEntityStatements, LeaseStatements {
+public interface CredentialOfferStoreStatements extends StatefulEntityStatements, SqlStatements {
 
     default String getCredentialOffersTable() {
         return "edc_credential_offers";
@@ -56,6 +56,8 @@ public interface CredentialOfferStoreStatements extends StatefulEntityStatements
 
 
     SqlQueryStatement createQuery(QuerySpec query);
+
+    SqlQueryStatement createNextNotLeaseQuery(QuerySpec querySpec);
 
     String getSelectStatement();
 }

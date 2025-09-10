@@ -24,7 +24,7 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.lease.SqlLeaseContextBuilder;
+import org.eclipse.edc.sql.lease.spi.SqlLeaseContextBuilder;
 import org.eclipse.edc.sql.store.AbstractSqlStore;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -33,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -54,11 +53,9 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
 
     private static final TypeReference<Map<String, CredentialFormat>> CREDENTIAL_FORMATS_REF = new TypeReference<>() {
     };
-    private final String leaseHolderName;
     private final SqlLeaseContextBuilder leaseContext;
 
     private final IssuanceProcessStoreStatements statements;
-    private final Clock clock;
 
     public SqlIssuanceProcessStore(DataSourceRegistry dataSourceRegistry,
                                    String dataSourceName,
@@ -66,13 +63,10 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                                    ObjectMapper objectMapper,
                                    QueryExecutor queryExecutor,
                                    IssuanceProcessStoreStatements statements,
-                                   String leaseHolderName,
-                                   Clock clock) {
+                                   SqlLeaseContextBuilder leaseContext) {
         super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
         this.statements = statements;
-        this.leaseHolderName = leaseHolderName;
-        this.clock = clock;
-        leaseContext = SqlLeaseContextBuilder.with(transactionContext, leaseHolderName, statements, clock, queryExecutor);
+        this.leaseContext = leaseContext;
     }
 
     @Override
@@ -91,16 +85,13 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
         return transactionContext.execute(() -> {
             var filter = Arrays.stream(criteria).collect(toList());
             var querySpec = QuerySpec.Builder.newInstance().filter(filter).sortField("stateTimestamp").limit(max).build();
-            var statement = statements.createQuery(querySpec)
-                    .addWhereClause(statements.getNotLeasedFilter(), clock.millis());
-
+            var statement = statements.createNextNotLeaseQuery(querySpec);
             try (
                     var connection = getConnection();
                     var stream = queryExecutor.query(connection, true, this::mapResultSet, statement.getQueryAsString(), statement.getParameters())
             ) {
-                var issuanceProcesses = stream.collect(Collectors.toList());
-                issuanceProcesses.forEach(issuanceProcess -> leaseContext.withConnection(connection).acquireLease(issuanceProcess.getId()));
-                return issuanceProcesses;
+                return stream.filter(it -> leaseContext.withConnection(connection).acquireLease(it.getId()).succeeded())
+                        .collect(Collectors.toList());
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -116,10 +107,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                     return StoreResult.notFound(format("IssuanceProcess %s not found", id));
                 }
 
-                leaseContext.withConnection(connection).acquireLease(entity.getId());
-                return StoreResult.success(entity);
-            } catch (IllegalStateException e) {
-                return StoreResult.alreadyLeased(format("IssuanceProcess %s is already leased", id));
+                return leaseContext.withConnection(connection).acquireLease(entity.getId()).map(it -> entity);
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -127,16 +115,20 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     }
 
     @Override
-    public void save(IssuanceProcess issuanceProcess) {
-        transactionContext.execute(() -> {
+    public StoreResult<Void> save(IssuanceProcess issuanceProcess) {
+        return transactionContext.execute(() -> {
             try (var conn = getConnection()) {
                 var existing = findByIdInternal(conn, issuanceProcess.getId());
                 if (existing != null) {
-                    leaseContext.by(leaseHolderName).withConnection(conn).breakLease(issuanceProcess.getId());
+                    var result = leaseContext.withConnection(conn).breakLease(issuanceProcess.getId());
+                    if (result.failed()) {
+                        return result;
+                    }
                     update(conn, issuanceProcess);
                 } else {
                     insert(conn, issuanceProcess);
                 }
+                return StoreResult.success();
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }

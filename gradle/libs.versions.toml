@@ -84,6 +84,7 @@ edc-lib-validator = { module = "org.eclipse.edc:validator-lib", version.ref = "e
 edc-sql-bootstrapper = { module = "org.eclipse.edc:sql-bootstrapper", version.ref = "edc" }
 edc-sql-core = { module = "org.eclipse.edc:sql-core", version.ref = "edc" }
 edc-sql-lease = { module = "org.eclipse.edc:sql-lease", version.ref = "edc" }
+edc-sql-lease-core = { module = "org.eclipse.edc:sql-lease-core", version.ref = "edc" }
 edc-sql-jtivdalidation = { module = "org.eclipse.edc:jti-validation-store-sql", version.ref = "edc" }
 edc-sql-pool = { module = "org.eclipse.edc:sql-pool-apache-commons", version.ref = "edc" }
 edc-sql-test-fixtures = { module = "org.eclipse.edc:sql-test-fixtures", version.ref = "edc" }

@@ -17,8 +17,11 @@ package org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.schema.po
 import org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.BaseSqlDialectStatements;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.dialect.PostgresDialect;
+import org.eclipse.edc.sql.lease.spi.LeaseStatements;
 import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
+
+import java.time.Clock;
 
 import static org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.schema.postgres.HolderCredentialRequestMapping.FIELD_IDS_AND_FORMATS;
 import static org.eclipse.edc.identityhub.store.sql.credentialrequest.schema.schema.postgres.HolderCredentialRequestMapping.FORMATS_ALIAS;
@@ -30,8 +33,8 @@ import static org.eclipse.edc.sql.dialect.PostgresDialect.getSelectFromJsonArray
 public class PostgresDialectStatements extends BaseSqlDialectStatements {
 
 
-    public PostgresDialectStatements() {
-        super(new PostgresqlOperatorTranslator());
+    public PostgresDialectStatements(LeaseStatements leaseStatements, Clock clock) {
+        super(new PostgresqlOperatorTranslator(), leaseStatements, clock);
     }
 
 

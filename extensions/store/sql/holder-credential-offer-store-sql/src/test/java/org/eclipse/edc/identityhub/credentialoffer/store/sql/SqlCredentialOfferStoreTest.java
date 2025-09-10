@@ -22,19 +22,22 @@ import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.testfixtures.TestUtils;
 import org.eclipse.edc.sql.QueryExecutor;
+import org.eclipse.edc.sql.lease.BaseSqlLeaseStatements;
+import org.eclipse.edc.sql.lease.SqlLeaseContextBuilderImpl;
+import org.eclipse.edc.sql.lease.spi.LeaseStatements;
 import org.eclipse.edc.sql.testfixtures.LeaseUtil;
 import org.eclipse.edc.sql.testfixtures.PostgresqlStoreSetupExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.time.Clock;
 import java.time.Duration;
 
 @PostgresqlIntegrationTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
 class SqlCredentialOfferStoreTest extends CredentialOfferStoreTestBase {
 
+    private final LeaseStatements leaseStatements = new BaseSqlLeaseStatements();
 
     private CredentialOfferStoreStatements statements;
     private SqlCredentialOfferStore store;
@@ -44,11 +47,14 @@ class SqlCredentialOfferStoreTest extends CredentialOfferStoreTestBase {
     void setup(PostgresqlStoreSetupExtension extension, QueryExecutor queryExecutor) {
         var typeManager = new JacksonTypeManager();
 
-        statements = new PostgresDialectStatements();
-        store = new SqlCredentialOfferStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
-                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements, RUNTIME_ID, Clock.systemUTC());
+        statements = new PostgresDialectStatements(leaseStatements, clock);
+        var leaseContextBuilder = SqlLeaseContextBuilderImpl.with(extension.getTransactionContext(), RUNTIME_ID, statements.getCredentialOffersTable(), leaseStatements, clock, queryExecutor);
 
-        leaseUtil = new LeaseUtil(extension.getTransactionContext(), extension::getConnection, statements, clock);
+        store = new SqlCredentialOfferStore(extension.getDataSourceRegistry(), extension.getDatasourceName(),
+                extension.getTransactionContext(), typeManager.getMapper(), queryExecutor, statements, leaseContextBuilder);
+
+
+        leaseUtil = new LeaseUtil(extension.getTransactionContext(), extension::getConnection, statements.getCredentialOffersTable(), leaseStatements, clock);
 
         var schema = TestUtils.getResourceFileContentAsString("credential-offer-schema.sql");
         extension.runQuery(schema);
@@ -57,7 +63,7 @@ class SqlCredentialOfferStoreTest extends CredentialOfferStoreTestBase {
     @AfterEach
     void tearDown(PostgresqlStoreSetupExtension extension) {
         extension.runQuery("DROP TABLE " + statements.getCredentialOffersTable() + " CASCADE");
-        extension.runQuery("DROP TABLE " + statements.getLeaseTableName() + " CASCADE");
+        extension.runQuery("DROP TABLE " + leaseStatements.getLeaseTableName() + " CASCADE");
     }
 
     @Override

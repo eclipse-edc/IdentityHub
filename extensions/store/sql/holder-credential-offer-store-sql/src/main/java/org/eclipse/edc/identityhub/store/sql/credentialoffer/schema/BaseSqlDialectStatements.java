@@ -16,18 +16,25 @@ package org.eclipse.edc.identityhub.store.sql.credentialoffer.schema;
 
 import org.eclipse.edc.identityhub.store.sql.credentialoffer.schema.schema.postgres.CredentialOfferMapping;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.sql.lease.spi.LeaseStatements;
 import org.eclipse.edc.sql.translation.PostgresqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlOperatorTranslator;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
+
+import java.time.Clock;
 
 import static java.lang.String.format;
 
 public class BaseSqlDialectStatements implements CredentialOfferStoreStatements {
 
     protected final SqlOperatorTranslator operatorTranslator;
+    protected final LeaseStatements leaseStatements;
+    protected final Clock clock;
 
-    public BaseSqlDialectStatements(SqlOperatorTranslator operatorTranslator) {
+    public BaseSqlDialectStatements(SqlOperatorTranslator operatorTranslator, LeaseStatements leaseStatements, Clock clock) {
         this.operatorTranslator = operatorTranslator;
+        this.leaseStatements = leaseStatements;
+        this.clock = clock;
     }
 
     @Override
@@ -81,36 +88,22 @@ public class BaseSqlDialectStatements implements CredentialOfferStoreStatements 
         return new SqlQueryStatement(select, querySpec, new CredentialOfferMapping(this), new PostgresqlOperatorTranslator());
     }
 
+
+    @Override
+    public SqlQueryStatement createNextNotLeaseQuery(QuerySpec querySpec) {
+        var queryTemplate = "%s LEFT JOIN %s l ON %s.%s = l.%s".formatted(getSelectStatement(), leaseStatements.getLeaseTableName(), getCredentialOffersTable(), getIdColumn(), leaseStatements.getResourceIdColumn());
+        return new SqlQueryStatement(queryTemplate, querySpec, new CredentialOfferMapping(this), operatorTranslator)
+                .addWhereClause(getNotLeasedFilter(), clock.millis(), getCredentialOffersTable());
+    }
+
+    private String getNotLeasedFilter() {
+        return format("(l.%s IS NULL OR (? > (%s + %s) AND ? = l.%s))",
+                leaseStatements.getResourceIdColumn(), leaseStatements.getLeasedAtColumn(), leaseStatements.getLeaseDurationColumn(), leaseStatements.getResourceKindColumn());
+    }
+
     @Override
     public String getSelectStatement() {
         return format("SELECT * FROM %s", getCredentialOffersTable());
     }
 
-    @Override
-    public String getDeleteLeaseTemplate() {
-        return executeStatement().delete(getLeaseTableName(), getLeaseIdColumn());
-    }
-
-    @Override
-    public String getInsertLeaseTemplate() {
-        return executeStatement()
-                .column(getLeaseIdColumn())
-                .column(getLeasedByColumn())
-                .column(getLeasedAtColumn())
-                .column(getLeaseDurationColumn())
-                .insertInto(getLeaseTableName());
-    }
-
-    @Override
-    public String getUpdateLeaseTemplate() {
-        return executeStatement()
-                .column(getLeaseIdColumn())
-                .update(getCredentialOffersTable(), getIdColumn());
-    }
-
-    @Override
-    public String getFindLeaseByEntityTemplate() {
-        return format("SELECT * FROM %s  WHERE %s = (SELECT lease_id FROM %s WHERE %s=? )",
-                getLeaseTableName(), getLeaseIdColumn(), getCredentialOffersTable(), getIdColumn());
-    }
 }

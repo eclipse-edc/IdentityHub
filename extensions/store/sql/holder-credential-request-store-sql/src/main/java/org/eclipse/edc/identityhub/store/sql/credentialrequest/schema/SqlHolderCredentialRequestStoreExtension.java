@@ -25,6 +25,7 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper;
+import org.eclipse.edc.sql.lease.spi.SqlLeaseContextBuilderProvider;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
@@ -51,6 +52,9 @@ public class SqlHolderCredentialRequestStoreExtension implements ServiceExtensio
     private SqlSchemaBootstrapper sqlSchemaBootstrapper;
 
     @Inject
+    private SqlLeaseContextBuilderProvider contextBuilderProvider;
+
+    @Inject
     private Clock clock;
 
 
@@ -62,11 +66,11 @@ public class SqlHolderCredentialRequestStoreExtension implements ServiceExtensio
     @Provider
     public HolderCredentialRequestStore createSqlStore(ServiceExtensionContext context) {
         return new SqlHolderCredentialRequestStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
-                queryExecutor, getStatementImpl(), context.getRuntimeId(), clock);
+                queryExecutor, getStatementImpl(), contextBuilderProvider.createContextBuilder(getStatementImpl().getHolderCredentialRequestTable()));
     }
 
     private HolderCredentialRequestStoreStatements getStatementImpl() {
-        return statements != null ? statements : new PostgresDialectStatements();
+        return statements != null ? statements : new PostgresDialectStatements(contextBuilderProvider.getStatements(), clock);
     }
 
 }

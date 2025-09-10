@@ -25,6 +25,7 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.sql.QueryExecutor;
 import org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper;
+import org.eclipse.edc.sql.lease.spi.SqlLeaseContextBuilderProvider;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
@@ -53,6 +54,9 @@ public class SqlIssuanceProcessStoreExtension implements ServiceExtension {
     private SqlSchemaBootstrapper sqlSchemaBootstrapper;
 
     @Inject
+    private SqlLeaseContextBuilderProvider contextBuilderProvider;
+
+    @Inject
     private Clock clock;
 
 
@@ -64,11 +68,11 @@ public class SqlIssuanceProcessStoreExtension implements ServiceExtension {
     @Provider
     public IssuanceProcessStore createSqlStore(ServiceExtensionContext context) {
         return new SqlIssuanceProcessStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
-                queryExecutor, getStatementImpl(), context.getRuntimeId(), clock);
+                queryExecutor, getStatementImpl(), contextBuilderProvider.createContextBuilder(getStatementImpl().getIssuanceProcessTable()));
     }
 
     private IssuanceProcessStoreStatements getStatementImpl() {
-        return statements != null ? statements : new PostgresDialectStatements();
+        return statements != null ? statements : new PostgresDialectStatements(contextBuilderProvider.getStatements(), clock);
     }
 
 }
