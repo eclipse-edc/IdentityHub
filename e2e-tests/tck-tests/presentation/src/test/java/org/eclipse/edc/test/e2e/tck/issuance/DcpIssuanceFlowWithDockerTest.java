@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -103,6 +104,7 @@ public class DcpIssuanceFlowWithDockerTest {
 
         var baseCallbackAddress = "http://0.0.0.0:%s".formatted(CALLBACK_PORT);
         var baseCredentialServiceUrl = "http://host.docker.internal:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
+        var baseCallbackUri = URI.create(baseCallbackAddress);
 
         var response = createParticipant(runtime, baseCredentialServiceUrl);
 
@@ -111,6 +113,8 @@ public class DcpIssuanceFlowWithDockerTest {
                 .withExposedPorts(CALLBACK_PORT)
                 .withEnv(Map.of(
                         "dataspacetck.callback.address", baseCallbackAddress,
+                        "dataspacetck.host", baseCallbackUri.getHost(),
+                        "dataspacetck.port", String.valueOf(baseCallbackUri.getPort()),
                         "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
                         "dataspacetck.did.holder", holderDid,
                         "dataspacetck.sts.url", "http://host.docker.internal:%s%s".formatted(stsPort, stsPath),

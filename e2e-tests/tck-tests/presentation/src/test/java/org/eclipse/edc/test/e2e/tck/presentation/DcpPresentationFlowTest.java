@@ -39,6 +39,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -105,11 +106,14 @@ public class DcpPresentationFlowTest {
 
         var baseCallbackUrl = "http://localhost:%s".formatted(CALLBACK_PORT);
         var baseCredentialServiceUrl = "http://localhost:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
+        var baseCallbackUri = URI.create(baseCallbackUrl);
 
         var response = createParticipant(runtime, baseCredentialServiceUrl);
         var result = TckRuntime.Builder.newInstance()
                 .properties(Map.of(
                         "dataspacetck.callback.address", baseCallbackUrl,
+                        "dataspacetck.host", baseCallbackUri.getHost(),
+                        "dataspacetck.port", String.valueOf(baseCallbackUri.getPort()),
                         "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
                         "dataspacetck.did.holder", holderDid,
                         "dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath),

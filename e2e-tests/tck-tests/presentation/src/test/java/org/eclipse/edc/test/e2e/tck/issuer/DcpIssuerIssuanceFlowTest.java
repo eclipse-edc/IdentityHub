@@ -41,6 +41,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -85,6 +86,7 @@ public class DcpIssuerIssuanceFlowTest {
 
         var baseCallbackUrl = "http://localhost:%s".formatted(CALLBACK_PORT);
         var baseIssuerServiceUrl = "http://localhost:%s%s/v1alpha/participants/%s".formatted(issuancePort, issuancePath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
+        var baseCallbackUri = URI.create(baseCallbackUrl);
 
         // prepare the issuer service:
         createHolder(runtime, holderDid);
@@ -94,6 +96,8 @@ public class DcpIssuerIssuanceFlowTest {
         var result = TckRuntime.Builder.newInstance()
                 .properties(Map.of(
                         "dataspacetck.callback.address", baseCallbackUrl,
+                        "dataspacetck.host", baseCallbackUri.getHost(),
+                        "dataspacetck.port", String.valueOf(baseCallbackUri.getPort()),
                         "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
                         "dataspacetck.did.issuer", issuerDid,
                         "dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath),
