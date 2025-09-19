@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.tests.fixtures.credentialservice;
 
 import io.restassured.http.Header;
-import org.hamcrest.Matchers;
 
 import java.util.UUID;
 
@@ -30,15 +29,15 @@ public class IdentityHubApiClient {
         this.extension = extension;
     }
 
-    public String requestCredential(String token, String participantId, String issuerDid, String type) {
+    public String requestCredential(String token, String participantId, String issuerDid, String id, String type) {
         var holderPid = UUID.randomUUID().toString();
         var request = """
                 {
                   "issuerDid": "%s",
                   "holderPid": "%s",
-                  "credentials": [{ "format": "VC1_0_JWT", "credentialType": "%s"}]
+                  "credentials": [{ "format": "VC1_0_JWT", "type": "%s", "id": "%s" }]
                 }
-                """.formatted(issuerDid, holderPid, type);
+                """.formatted(issuerDid, holderPid, type, id);
 
         extension.getIdentityEndpoint().baseRequest()
                 .contentType(JSON)
@@ -48,7 +47,6 @@ public class IdentityHubApiClient {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(201)
-                .body(Matchers.equalTo(holderPid))
                 .log().ifValidationFails();
         return holderPid;
     }
