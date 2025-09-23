@@ -2,9 +2,12 @@ openapi: 3.0.1
 info:
   title: sts-api
   description: REST API documentation for the sts-api
+  license:
+    name: "The Apache License, Version 2.0"
+    url: http://www.apache.org/licenses/LICENSE-2.0.txt
   version: 0.15.0-SNAPSHOT
 servers:
-- url: /
+- url: http://localhost:8080
 paths:
   /token:
     post:
@@ -15,31 +18,7 @@ paths:
         content:
           application/x-www-form-urlencoded:
             schema:
-              required:
-              - audience
-              - client_id
-              - client_secret
-              - grant_type
-              type: object
-              properties:
-                audience:
-                  type: string
-                  description: Audience for the SI token
-                bearer_access_scope:
-                  type: string
-                  description: Scope to be added in the VP token
-                client_id:
-                  type: string
-                  description: Id of the client requesting an SI token
-                client_secret:
-                  type: string
-                  description: Secret of the client requesting an SI token
-                grant_type:
-                  type: string
-                  description: "Type of grant: must be set to client_credentials"
-                token:
-                  type: string
-                  description: VP token to be added as a claim in the SI token
+              $ref: "#/components/schemas/token_request"
             encoding:
               audience:
                 style: form
@@ -70,13 +49,6 @@ paths:
                   $ref: "#/components/schemas/StsTokenErrorResponse"
 components:
   schemas:
-    StsTokenErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
     StsTokenResponse:
       type: object
       properties:
@@ -87,3 +59,43 @@ components:
           format: int64
         token_type:
           type: string
+      example:
+        access_token: access_token
+        token_type: token_type
+        expires_in: 0
+    StsTokenErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+      example:
+        error_description: error_description
+        error: error
+    token_request:
+      required:
+      - audience
+      - client_id
+      - client_secret
+      - grant_type
+      type: object
+      properties:
+        audience:
+          type: string
+          description: Audience for the SI token
+        bearer_access_scope:
+          type: string
+          description: Scope to be added in the VP token
+        client_id:
+          type: string
+          description: Id of the client requesting an SI token
+        client_secret:
+          type: string
+          description: Secret of the client requesting an SI token
+        grant_type:
+          type: string
+          description: "Type of grant: must be set to client_credentials"
+        token:
+          type: string
+          description: VP token to be added as a claim in the SI token
