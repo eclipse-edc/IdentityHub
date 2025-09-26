@@ -2,7 +2,7 @@
 format.version = "1.1"
 
 [versions]
-assertj = "3.27.4"
+assertj = "3.27.5"
 awaitility = "4.3.0"
 bouncyCastle-jdk18on = "1.82"
 edc = "0.15.0-SNAPSHOT"
