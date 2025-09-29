@@ -1,3 +1,5 @@
+import org.eclipse.edc.plugins.edcbuild.plugins.MergeOpenApiSpecTask
+
 /*
  *  Copyright (c) 2022 Microsoft Corporation
  *
@@ -45,4 +47,8 @@ allprojects {
         configDirectory.set(rootProject.file("resources"))
     }
 
+}
+
+tasks.withType(MergeOpenApiSpecTask::class.java) {
+    skipOperationExample.set(true)
 }

@@ -27,7 +27,6 @@ dependencies {
     testImplementation(libs.edc.lib.json)
     testFixturesImplementation(libs.edc.junit)
     testFixturesImplementation(libs.junit.jupiter.api)
-    testFixturesImplementation(libs.assertj)
     testFixturesImplementation(libs.awaitility)
     testFixturesImplementation(libs.nimbus.jwt)
     testFixturesImplementation(libs.edc.spi.identity.did)

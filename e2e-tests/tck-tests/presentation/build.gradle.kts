@@ -19,7 +19,6 @@ plugins {
 dependencies {
     testRuntimeOnly(libs.dcp.testcases)
     testImplementation(libs.restAssured)
-    testImplementation(libs.assertj)
     testImplementation(libs.junit.jupiter.api)
 
     testImplementation(libs.dcp.tck.runtime)

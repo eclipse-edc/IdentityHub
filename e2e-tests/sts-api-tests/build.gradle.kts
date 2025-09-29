@@ -23,7 +23,6 @@ dependencies {
     testImplementation(libs.edc.oauth2.client)
 
     testImplementation(libs.restAssured)
-    testImplementation(libs.assertj)
     testImplementation(libs.awaitility)
     testImplementation(libs.junit.jupiter.api)
 
