@@ -24,6 +24,5 @@ dependencies {
     api(libs.edc.spi.core)
 
     testFixturesImplementation(libs.edc.junit)
-    testFixturesImplementation(libs.assertj)
     testFixturesImplementation(libs.junit.jupiter.api)
 }

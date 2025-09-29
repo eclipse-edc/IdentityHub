@@ -26,7 +26,6 @@ dependencies {
 
     testFixturesImplementation(libs.junit.jupiter.api)
     testFixturesImplementation(libs.junit.jupiter.params)
-    testFixturesImplementation(libs.assertj)
     testFixturesImplementation(libs.edc.junit)
 
 }

@@ -19,7 +19,6 @@ plugins {
 dependencies {
     testImplementation(libs.edc.junit)
     testImplementation(libs.restAssured)
-    testImplementation(libs.assertj)
     testImplementation(libs.awaitility)
 }
 

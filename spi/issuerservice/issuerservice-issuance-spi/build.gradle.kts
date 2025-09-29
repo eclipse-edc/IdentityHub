@@ -24,7 +24,6 @@ dependencies {
     api(libs.edc.spi.validator)
     api(project(":spi:participant-context-spi"))
     testFixturesImplementation(libs.edc.junit)
-    testFixturesImplementation(libs.assertj)
     testFixturesImplementation(libs.awaitility)
     testFixturesImplementation(libs.junit.jupiter.api)
 }
