@@ -324,10 +324,6 @@ paths:
       responses:
         "204":
           description: The ParticipantContext was deleted successfully
-          content:
-            application/json:
-              schema:
-                type: string
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1204,10 +1200,6 @@ paths:
       responses:
         "204":
           description: The ParticipantContext was activated/deactivated successfully
-          content:
-            application/json:
-              schema:
-                type: string
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
