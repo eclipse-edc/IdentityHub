@@ -59,10 +59,6 @@ components:
           format: int64
         token_type:
           type: string
-      example:
-        access_token: access_token
-        token_type: token_type
-        expires_in: 0
     StsTokenErrorResponse:
       type: object
       properties:
@@ -70,9 +66,6 @@ components:
           type: string
         error_description:
           type: string
-      example:
-        error_description: error_description
-        error: error
     token_request:
       required:
       - audience

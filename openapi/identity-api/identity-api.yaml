@@ -1598,315 +1598,6 @@ components:
           format: int64
         verifiableCredential:
           $ref: "#/components/schemas/VerifiableCredentialContainer"
-      example:
-        issuerId: issuerId
-        metadata:
-          key: "{}"
-        issuancePolicy:
-          inheritsFrom: inheritsFrom
-          '@type': SET
-          permissions:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-            duties:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-            duties:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-          assigner: assigner
-          obligations:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          profiles:
-          - profiles
-          - profiles
-          assignee: assignee
-          extensibleProperties:
-            key: "{}"
-          prohibitions:
-          - remedies:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - remedies:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          target: target
-        timeOfLastStatusUpdate: 2000-01-23T04:56:07.000+00:00
-        participantContextId: participantContextId
-        reissuancePolicy:
-          inheritsFrom: inheritsFrom
-          '@type': SET
-          permissions:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-            duties:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-            duties:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-          assigner: assigner
-          obligations:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          profiles:
-          - profiles
-          - profiles
-          assignee: assignee
-          extensibleProperties:
-            key: "{}"
-          prohibitions:
-          - remedies:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - remedies:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          target: target
-        id: id
-        state: 0
-        holderId: holderId
-        credentialStatus: INITIAL
-        timestamp: 6
-        verifiableCredential:
-          rawVc: rawVc
-          credential:
-            credentialSchema:
-            - id: id
-              type: type
-            - id: id
-              type: type
-            credentialSubject:
-            - claims:
-                key: "{}"
-              id: id
-            - claims:
-                key: "{}"
-              id: id
-            issuanceDate: 2000-01-23T04:56:07.000+00:00
-            name: name
-            description: description
-            id: id
-            type:
-            - type
-            - type
-            dataModelVersion: V_1_1
-            issuer:
-              additionalProperties:
-                key: "{}"
-              id: id
-            credentialStatus:
-            - additionalProperties:
-                key: "{}"
-              id: id
-              type: type
-            - additionalProperties:
-                key: "{}"
-              id: id
-              type: type
-            expirationDate: 2000-01-23T04:56:07.000+00:00
-          format: VC1_0_LD
     Policy:
       type: object
       properties:
@@ -1944,136 +1635,6 @@ components:
             $ref: "#/components/schemas/Prohibition"
         target:
           type: string
-      example:
-        inheritsFrom: inheritsFrom
-        '@type': SET
-        permissions:
-        - action:
-            includedIn: includedIn
-            constraint:
-              edctype: edctype
-            type: type
-          constraints:
-          - edctype: edctype
-          - edctype: edctype
-          duties:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-        - action:
-            includedIn: includedIn
-            constraint:
-              edctype: edctype
-            type: type
-          constraints:
-          - edctype: edctype
-          - edctype: edctype
-          duties:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-        assigner: assigner
-        obligations:
-        - action:
-            includedIn: includedIn
-            constraint:
-              edctype: edctype
-            type: type
-          constraints:
-          - edctype: edctype
-          - edctype: edctype
-        - action:
-            includedIn: includedIn
-            constraint:
-              edctype: edctype
-            type: type
-          constraints:
-          - edctype: edctype
-          - edctype: edctype
-        profiles:
-        - profiles
-        - profiles
-        assignee: assignee
-        extensibleProperties:
-          key: "{}"
-        prohibitions:
-        - remedies:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          action:
-            includedIn: includedIn
-            constraint:
-              edctype: edctype
-            type: type
-          constraints:
-          - edctype: edctype
-          - edctype: edctype
-        - remedies:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          action:
-            includedIn: includedIn
-            constraint:
-              edctype: edctype
-            type: type
-          constraints:
-          - edctype: edctype
-          - edctype: edctype
-        target: target
     Duty:
       type: object
       properties:
@@ -2083,15 +1644,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Constraint"
-      example:
-        action:
-          includedIn: includedIn
-          constraint:
-            edctype: edctype
-          type: type
-        constraints:
-        - edctype: edctype
-        - edctype: edctype
     Action:
       type: object
       properties:
@@ -2101,11 +1653,6 @@ components:
           type: string
         type:
           type: string
-      example:
-        includedIn: includedIn
-        constraint:
-          edctype: edctype
-        type: type
     Constraint:
       required:
       - edctype
@@ -2113,8 +1660,6 @@ components:
       properties:
         edctype:
           type: string
-      example:
-        edctype: edctype
       discriminator:
         propertyName: edctype
     Permission:
@@ -2130,32 +1675,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Duty"
-      example:
-        action:
-          includedIn: includedIn
-          constraint:
-            edctype: edctype
-          type: type
-        constraints:
-        - edctype: edctype
-        - edctype: edctype
-        duties:
-        - action:
-            includedIn: includedIn
-            constraint:
-              edctype: edctype
-            type: type
-          constraints:
-          - edctype: edctype
-          - edctype: edctype
-        - action:
-            includedIn: includedIn
-            constraint:
-              edctype: edctype
-            type: type
-          constraints:
-          - edctype: edctype
-          - edctype: edctype
     Prohibition:
       type: object
       properties:
@@ -2169,32 +1688,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Duty"
-      example:
-        remedies:
-        - action:
-            includedIn: includedIn
-            constraint:
-              edctype: edctype
-            type: type
-          constraints:
-          - edctype: edctype
-          - edctype: edctype
-        - action:
-            includedIn: includedIn
-            constraint:
-              edctype: edctype
-            type: type
-          constraints:
-          - edctype: edctype
-          - edctype: edctype
-        action:
-          includedIn: includedIn
-          constraint:
-            edctype: edctype
-          type: type
-        constraints:
-        - edctype: edctype
-        - edctype: edctype
     VerifiableCredentialContainer:
       type: object
       properties:
@@ -2210,44 +1703,6 @@ components:
           - VC2_0_COSE
         rawVc:
           type: string
-      example:
-        rawVc: rawVc
-        credential:
-          credentialSchema:
-          - id: id
-            type: type
-          - id: id
-            type: type
-          credentialSubject:
-          - claims:
-              key: "{}"
-            id: id
-          - claims:
-              key: "{}"
-            id: id
-          issuanceDate: 2000-01-23T04:56:07.000+00:00
-          name: name
-          description: description
-          id: id
-          type:
-          - type
-          - type
-          dataModelVersion: V_1_1
-          issuer:
-            additionalProperties:
-              key: "{}"
-            id: id
-          credentialStatus:
-          - additionalProperties:
-              key: "{}"
-            id: id
-            type: type
-          - additionalProperties:
-              key: "{}"
-            id: id
-            type: type
-          expirationDate: 2000-01-23T04:56:07.000+00:00
-        format: VC1_0_LD
     VerifiableCredential:
       type: object
       properties:
@@ -2286,41 +1741,6 @@ components:
           type: array
           items:
             type: string
-      example:
-        credentialSchema:
-        - id: id
-          type: type
-        - id: id
-          type: type
-        credentialSubject:
-        - claims:
-            key: "{}"
-          id: id
-        - claims:
-            key: "{}"
-          id: id
-        issuanceDate: 2000-01-23T04:56:07.000+00:00
-        name: name
-        description: description
-        id: id
-        type:
-        - type
-        - type
-        dataModelVersion: V_1_1
-        issuer:
-          additionalProperties:
-            key: "{}"
-          id: id
-        credentialStatus:
-        - additionalProperties:
-            key: "{}"
-          id: id
-          type: type
-        - additionalProperties:
-            key: "{}"
-          id: id
-          type: type
-        expirationDate: 2000-01-23T04:56:07.000+00:00
     CredentialSchema:
       type: object
       properties:
@@ -2328,9 +1748,6 @@ components:
           type: string
         type:
           type: string
-      example:
-        id: id
-        type: type
     CredentialStatus:
       type: object
       properties:
@@ -2342,11 +1759,6 @@ components:
           type: string
         type:
           type: string
-      example:
-        additionalProperties:
-          key: "{}"
-        id: id
-        type: type
     CredentialSubject:
       type: object
       properties:
@@ -2356,10 +1768,6 @@ components:
             type: object
         id:
           type: string
-      example:
-        claims:
-          key: "{}"
-        id: id
     Issuer:
       type: object
       properties:
@@ -2369,10 +1777,6 @@ components:
             type: object
         id:
           type: string
-      example:
-        additionalProperties:
-          key: "{}"
-        id: id
     ApiErrorDetail:
       type: object
       properties:
@@ -2384,11 +1788,6 @@ components:
           type: string
         type:
           type: string
-      example:
-        path: path
-        message: message
-        type: type
-        invalidValue: "{}"
     DidDocument:
       type: object
       properties:
@@ -2410,34 +1809,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/VerificationMethod"
-      example:
-        service:
-        - id: id
-          serviceEndpoint: serviceEndpoint
-          type: type
-        - id: id
-          serviceEndpoint: serviceEndpoint
-          type: type
-        id: id
-        verificationMethod:
-        - publicKeyMultibase: publicKeyMultibase
-          controller: controller
-          publicKeyJwk:
-            key: "{}"
-          id: id
-          type: type
-        - publicKeyMultibase: publicKeyMultibase
-          controller: controller
-          publicKeyJwk:
-            key: "{}"
-          id: id
-          type: type
-        '@context':
-        - "{}"
-        - "{}"
-        authentication:
-        - authentication
-        - authentication
     Service:
       type: object
       properties:
@@ -2447,10 +1818,6 @@ components:
           type: string
         type:
           type: string
-      example:
-        id: id
-        serviceEndpoint: serviceEndpoint
-        type: type
     VerificationMethod:
       type: object
       properties:
@@ -2466,13 +1833,6 @@ components:
           type: string
         type:
           type: string
-      example:
-        publicKeyMultibase: publicKeyMultibase
-        controller: controller
-        publicKeyJwk:
-          key: "{}"
-        id: id
-        type: type
     QuerySpec:
       type: object
       properties:
@@ -2493,18 +1853,6 @@ components:
           enum:
           - ASC
           - DESC
-      example:
-        offset: 6
-        sortOrder: ASC
-        filterExpression:
-        - operandRight: "{}"
-          operandLeft: "{}"
-          operator: operator
-        - operandRight: "{}"
-          operandLeft: "{}"
-          operator: operator
-        limit: 0
-        sortField: sortField
     Criterion:
       type: object
       properties:
@@ -2514,10 +1862,6 @@ components:
           type: object
         operator:
           type: string
-      example:
-        operandRight: "{}"
-        operandLeft: "{}"
-        operator: operator
     ParticipantManifest:
       type: object
       properties:
@@ -2542,33 +1886,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Service"
-      example:
-        participantId: participantId
-        roles:
-        - roles
-        - roles
-        active: true
-        additionalProperties:
-          key: "{}"
-        did: did
-        key:
-          resourceId: resourceId
-          publicKeyPem: publicKeyPem
-          active: true
-          keyId: keyId
-          publicKeyJwk:
-            key: "{}"
-          privateKeyAlias: privateKeyAlias
-          type: type
-          keyGeneratorParams:
-            key: "{}"
-        serviceEndpoints:
-        - id: id
-          serviceEndpoint: serviceEndpoint
-          type: type
-        - id: id
-          serviceEndpoint: serviceEndpoint
-          type: type
     KeyDescriptor:
       type: object
       properties:
@@ -2592,17 +1909,6 @@ components:
           type: string
         type:
           type: string
-      example:
-        resourceId: resourceId
-        publicKeyPem: publicKeyPem
-        active: true
-        keyId: keyId
-        publicKeyJwk:
-          key: "{}"
-        privateKeyAlias: privateKeyAlias
-        type: type
-        keyGeneratorParams:
-          key: "{}"
     ParticipantContext:
       type: object
       properties:
@@ -2629,25 +1935,11 @@ components:
         state:
           type: integer
           format: int32
-      example:
-        createdAt: 0
-        participantContextId: participantContextId
-        roles:
-        - roles
-        - roles
-        lastModified: 6
-        state: 1
-        apiTokenAlias: apiTokenAlias
-        did: did
-        properties:
-          key: "{}"
     DidRequestPayload:
       type: object
       properties:
         did:
           type: string
-      example:
-        did: did
     VerifiableCredentialManifest:
       type: object
       properties:
@@ -2661,307 +1953,6 @@ components:
           $ref: "#/components/schemas/Policy"
         verifiableCredentialContainer:
           $ref: "#/components/schemas/VerifiableCredentialContainer"
-      example:
-        verifiableCredentialContainer:
-          rawVc: rawVc
-          credential:
-            credentialSchema:
-            - id: id
-              type: type
-            - id: id
-              type: type
-            credentialSubject:
-            - claims:
-                key: "{}"
-              id: id
-            - claims:
-                key: "{}"
-              id: id
-            issuanceDate: 2000-01-23T04:56:07.000+00:00
-            name: name
-            description: description
-            id: id
-            type:
-            - type
-            - type
-            dataModelVersion: V_1_1
-            issuer:
-              additionalProperties:
-                key: "{}"
-              id: id
-            credentialStatus:
-            - additionalProperties:
-                key: "{}"
-              id: id
-              type: type
-            - additionalProperties:
-                key: "{}"
-              id: id
-              type: type
-            expirationDate: 2000-01-23T04:56:07.000+00:00
-          format: VC1_0_LD
-        issuancePolicy:
-          inheritsFrom: inheritsFrom
-          '@type': SET
-          permissions:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-            duties:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-            duties:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-          assigner: assigner
-          obligations:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          profiles:
-          - profiles
-          - profiles
-          assignee: assignee
-          extensibleProperties:
-            key: "{}"
-          prohibitions:
-          - remedies:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - remedies:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          target: target
-        participantContextId: participantContextId
-        reissuancePolicy:
-          inheritsFrom: inheritsFrom
-          '@type': SET
-          permissions:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-            duties:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-            duties:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-          assigner: assigner
-          obligations:
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          profiles:
-          - profiles
-          - profiles
-          assignee: assignee
-          extensibleProperties:
-            key: "{}"
-          prohibitions:
-          - remedies:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          - remedies:
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            - action:
-                includedIn: includedIn
-                constraint:
-                  edctype: edctype
-                type: type
-              constraints:
-              - edctype: edctype
-              - edctype: edctype
-            action:
-              includedIn: includedIn
-              constraint:
-                edctype: edctype
-              type: type
-            constraints:
-            - edctype: edctype
-            - edctype: edctype
-          target: target
-        id: id
     CredentialRequestDto:
       required:
       - credentials
@@ -2976,16 +1967,6 @@ components:
           type: string
         issuerDid:
           type: string
-      example:
-        credentials:
-        - format: format
-          id: id
-          type: type
-        - format: format
-          id: id
-          type: type
-        holderPid: holderPid
-        issuerDid: issuerDid
     CredentialDescriptor:
       type: object
       properties:
@@ -2995,10 +1976,6 @@ components:
           type: string
         type:
           type: string
-      example:
-        format: format
-        id: id
-        type: type
     KeyPairResource:
       type: object
       properties:
@@ -3030,19 +2007,6 @@ components:
         useDuration:
           type: integer
           format: int64
-      example:
-        keyContext: keyContext
-        groupName: groupName
-        participantContextId: participantContextId
-        serializedPublicKey: serializedPublicKey
-        rotationDuration: 0
-        defaultPair: true
-        keyId: keyId
-        useDuration: 5
-        id: id
-        privateKeyAlias: privateKeyAlias
-        state: 6
-        timestamp: 1
     CreateParticipantContextResponse:
       type: object
       properties:
@@ -3052,7 +2016,3 @@ components:
           type: string
         clientSecret:
           type: string
-      example:
-        clientId: clientId
-        apiKey: apiKey
-        clientSecret: clientSecret
