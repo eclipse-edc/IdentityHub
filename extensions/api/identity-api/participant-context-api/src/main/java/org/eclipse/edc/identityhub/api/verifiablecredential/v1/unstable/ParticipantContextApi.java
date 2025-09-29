@@ -37,7 +37,6 @@ import java.util.List;
 @Tag(name = "Participant Context")
 public interface ParticipantContextApi {
 
-
     @Operation(description = "Creates a new ParticipantContext object.",
             operationId = "createParticipant",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
@@ -53,7 +52,6 @@ public interface ParticipantContextApi {
             }
     )
     CreateParticipantContextResponse createParticipant(ParticipantManifest manifest);
-
 
     @Operation(description = "Gets ParticipantContexts by ID.",
             operationId = "getParticipant",
@@ -90,7 +88,7 @@ public interface ParticipantContextApi {
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = ParticipantManifest.class), mediaType = "application/json")),
             parameters = {@Parameter(name = "isActive", description = "Whether the participantContext should be activated or deactivated. Defaults to 'false'")},
             responses = {
-                    @ApiResponse(responseCode = "204", description = "The ParticipantContext was activated/deactivated successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
+                    @ApiResponse(responseCode = "204", description = "The ParticipantContext was activated/deactivated successfully"),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -104,7 +102,7 @@ public interface ParticipantContextApi {
     @Operation(description = "Delete a ParticipantContext.",
             operationId = "deleteParticipant",
             responses = {
-                    @ApiResponse(responseCode = "204", description = "The ParticipantContext was deleted successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
+                    @ApiResponse(responseCode = "204", description = "The ParticipantContext was deleted successfully"),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
