@@ -17,7 +17,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":extensions:api:identity-api:api-configuration"))
+    api(project(":extensions:api:identity-api:identity-api-configuration"))
     api(project(":extensions:api:identity-api:did-api"))
     api(project(":extensions:api:identity-api:keypair-api"))
     api(project(":extensions:api:identity-api:participant-context-api"))
