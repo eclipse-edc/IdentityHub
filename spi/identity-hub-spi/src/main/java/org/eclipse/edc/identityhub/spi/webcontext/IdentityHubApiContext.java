@@ -20,4 +20,5 @@ public interface IdentityHubApiContext {
     String ISSUANCE_API = "issuance";
     String CREDENTIALS = "credentials";
     String ISSUERADMIN = "issueradmin";
+    String STS = "sts";
 }

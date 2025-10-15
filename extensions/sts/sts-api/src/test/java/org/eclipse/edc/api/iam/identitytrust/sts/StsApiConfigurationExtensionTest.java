@@ -15,6 +15,7 @@
 package org.eclipse.edc.api.iam.identitytrust.sts;
 
 import org.eclipse.edc.boot.system.DefaultServiceExtensionContext;
+import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -52,7 +53,7 @@ public class StsApiConfigurationExtensionTest {
 
         extension.initialize(context);
 
-        verify(portMappingRegistry).register(new PortMapping("sts", DEFAULT_STS_PORT, DEFAULT_STS_PATH));
+        verify(portMappingRegistry).register(new PortMapping(IdentityHubApiContext.STS, DEFAULT_STS_PORT, DEFAULT_STS_PATH));
     }
 
     @NotNull
