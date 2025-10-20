@@ -15,18 +15,19 @@
 -- only intended for and tested with Postgres!
 CREATE TABLE IF NOT EXISTS credential_resource
 (
-    id                    VARCHAR PRIMARY KEY NOT NULL, -- ID of the VC, duplicated here for indexing purposes
-    create_timestamp      BIGINT              NOT NULL, -- POSIX timestamp of the creation of the VC
-    issuer_id             VARCHAR             NOT NULL,
-    holder_id             VARCHAR             NOT NULL,
-    vc_state              INTEGER             NOT NULL,
-    metadata              JSON DEFAULT '{}',
-    issuance_policy       JSON,
-    reissuance_policy     JSON,
-    raw_vc                VARCHAR,                      -- Representation of the VC exactly as it was received by the issuer. Can be JWT or JSON(-LD)
-    vc_format             INTEGER             NOT NULL, -- 0 = JSON-LD, 1 = JWT
-    verifiable_credential JSON                NOT NULL, -- JSON-representation of the verifiable credential
-    participant_context_id        VARCHAR               -- ID of the ParticipantContext that owns this credentials
+    id                     VARCHAR PRIMARY KEY NOT NULL, -- ID of the VC, duplicated here for indexing purposes
+    create_timestamp       BIGINT              NOT NULL, -- POSIX timestamp of the creation of the VC
+    issuer_id              VARCHAR             NOT NULL,
+    holder_id              VARCHAR             NOT NULL,
+    vc_state               INTEGER             NOT NULL,
+    metadata               JSON DEFAULT '{}',
+    issuance_policy        JSON,
+    reissuance_policy      JSON,
+    raw_vc                 VARCHAR,                      -- Representation of the VC exactly as it was received by the issuer. Can be JWT or JSON(-LD)
+    vc_format              INTEGER             NOT NULL, -- 0 = JSON-LD, 1 = JWT
+    verifiable_credential  JSON                NOT NULL, -- JSON-representation of the verifiable credential
+    participant_context_id VARCHAR,                      -- ID of the ParticipantContext that owns this credentials
+    usage                  VARCHAR             NOT NULL  -- 'holder', 'statuslist' or 'issuancetracking'
 );
 CREATE UNIQUE INDEX IF NOT EXISTS credential_resource_credential_id_uindex ON credential_resource USING btree (id);
 COMMENT ON COLUMN credential_resource.id IS 'ID of the VC, duplicated here for indexing purposes';

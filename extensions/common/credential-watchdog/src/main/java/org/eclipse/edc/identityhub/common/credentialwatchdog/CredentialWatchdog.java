@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.common.credentialwatchdog;
 import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialStatusCheckService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -129,6 +130,7 @@ public class CredentialWatchdog implements Runnable {
     private QuerySpec allExcludingExpiredAndRevoked() {
         return QuerySpec.Builder.newInstance()
                 .filter(new Criterion("state", "in", ALLOWED_STATES))
+                .filter(new Criterion("usage", "=", CredentialUsage.Holder.toString()))
                 .build();
     }
 }

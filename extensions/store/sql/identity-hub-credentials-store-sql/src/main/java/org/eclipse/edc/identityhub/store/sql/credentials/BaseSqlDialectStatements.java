@@ -37,6 +37,7 @@ public class BaseSqlDialectStatements implements CredentialStoreStatements {
                 .column(getRawVcColumn())
                 .jsonColumn(getVerifiableCredentialColumn())
                 .column(getParticipantContextIdColumn())
+                .column(getUsageColumn())
                 .insertInto(getCredentialResourceTable());
     }
 
@@ -55,6 +56,7 @@ public class BaseSqlDialectStatements implements CredentialStoreStatements {
                 .column(getRawVcColumn())
                 .jsonColumn(getVerifiableCredentialColumn())
                 .column(getParticipantContextIdColumn())
+                .column(getUsageColumn())
                 .update(getCredentialResourceTable(), getIdColumn());
     }
 

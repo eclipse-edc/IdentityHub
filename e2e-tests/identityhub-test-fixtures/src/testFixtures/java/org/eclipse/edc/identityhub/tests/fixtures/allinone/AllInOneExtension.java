@@ -112,6 +112,8 @@ public class AllInOneExtension extends ComponentExtension {
                 put("web.http.accounts.port", String.valueOf(getFreePort()));
                 put("web.http.accounts.path", "/api/accounts");
                 put("edc.runtime.id", name);
+
+                put("edc.iam.credential.status.check.period", "5");
             }
         });
     }

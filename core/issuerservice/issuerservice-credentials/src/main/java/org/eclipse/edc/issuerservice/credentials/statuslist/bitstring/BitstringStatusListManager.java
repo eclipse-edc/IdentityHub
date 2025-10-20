@@ -22,6 +22,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.BitString;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -162,7 +163,7 @@ public class BitstringStatusListManager implements StatusListManager {
     }
 
     private VerifiableCredentialResource createCredentialResource(String participantContextId, VerifiableCredentialContainer signedCredential, String issuerDid) {
-        return VerifiableCredentialResource.Builder.newInstance()
+        return VerifiableCredentialResource.Builder.newStatusList()
                 .id(UUID.randomUUID().toString())
                 .state(VcStatus.ISSUED)
                 .metadata(Map.of(CURRENT_INDEX, 0,
@@ -234,6 +235,7 @@ public class BitstringStatusListManager implements StatusListManager {
         return QuerySpec.Builder.newInstance()
                 .filter(ParticipantResource.filterByParticipantContextId(participantContextId))
                 .filter(new Criterion("credential.credentialSubject.type", "=", BITSTRING_STATUS_LIST))
+                .filter(new Criterion("usage", "=", CredentialUsage.StatusList.toString()))
                 .build();
     }
 }

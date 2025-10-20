@@ -39,6 +39,7 @@ public class VerifiableCredentialResource extends IdentityResource {
     private Policy issuancePolicy;
     private Policy reissuancePolicy;
     private VerifiableCredentialContainer verifiableCredential;
+    private CredentialUsage usage = CredentialUsage.Holder;
 
     private VerifiableCredentialResource() {
 
@@ -115,6 +116,10 @@ public class VerifiableCredentialResource extends IdentityResource {
         return new Builder(this);
     }
 
+    public CredentialUsage getUsage() {
+        return usage;
+    }
+
     public static class Builder extends IdentityResource.Builder<VerifiableCredentialResource, Builder> {
 
         protected Builder(VerifiableCredentialResource resource) {
@@ -123,6 +128,33 @@ public class VerifiableCredentialResource extends IdentityResource {
 
         public static Builder newInstance() {
             return new Builder(new VerifiableCredentialResource());
+        }
+
+        /**
+         * Initializes a new {@link VerifiableCredentialResource} intended for use as {@link CredentialUsage#Holder}.
+         */
+        public static Builder newHolder() {
+            var resource = new VerifiableCredentialResource();
+            resource.usage = CredentialUsage.Holder;
+            return new Builder(resource);
+        }
+
+        /**
+         * Initializes a new {@link VerifiableCredentialResource} intended for use as {@link CredentialUsage#StatusList}.
+         */
+        public static Builder newStatusList() {
+            var resource = new VerifiableCredentialResource();
+            resource.usage = CredentialUsage.StatusList;
+            return new Builder(resource);
+        }
+
+        /**
+         * Initializes a new {@link VerifiableCredentialResource} intended for use as {@link CredentialUsage#IssuanceTracking}.
+         */
+        public static Builder newIssuanceTracker() {
+            var resource = new VerifiableCredentialResource();
+            resource.usage = CredentialUsage.IssuanceTracking;
+            return new Builder(resource);
         }
 
         public Builder state(VcStatus state) {
@@ -152,6 +184,11 @@ public class VerifiableCredentialResource extends IdentityResource {
 
         public Builder credential(VerifiableCredentialContainer credential) {
             entity.verifiableCredential = credential;
+            return self();
+        }
+
+        public Builder usage(CredentialUsage usage) {
+            entity.usage = usage;
             return self();
         }
 

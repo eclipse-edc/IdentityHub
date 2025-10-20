@@ -94,39 +94,86 @@ public class DcpIssuanceFlowAllInOneTest {
             // Create a participant and store the token
             participantDid = runtime.didFor(PARTICIPANT_ID);
             participantToken = response.apiKey();
+
+            // seed attestations, credential definitions, rules, mappings etc. to the Issuer
+            prepareIssuer(runtime);
+
         }
 
-        @Test
-        void testCredentialIssuance(AllInOneRuntime allInOneRuntime) {
-
-            var mappingDefinition = new MappingDefinition("participant.name", "credentialSubject.name", true);
-            var attestationDefinition = setupIssuer(allInOneRuntime, Map.of(
+        /**
+         * Prepares the issuer facet by creating rules and mappings, credential definitions and a mocked attestation source
+         *
+         * @param allInOneRuntime the runtime that implements the issuer endpoint etc.
+         */
+        private static void prepareIssuer(AllInOneRuntime allInOneRuntime) {
+            var attestationDefinition = createRulesAndMappingsInIssuer(allInOneRuntime, Map.of(
                     "claim", "onboarding.signedDocuments",
                     "operator", "eq",
-                    "value", true), mappingDefinition);
+                    "value", true), new MappingDefinition("participant.name", "credentialSubject.name", true));
 
             var attestationSource = mock(AttestationSource.class);
             when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
             when(attestationSource.execute(any()))
                     .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice"))));
+        }
 
-            var request = """
+        /**
+         * Set the issuer up with an attestation definition and a credential definition
+         */
+        private static @NotNull AttestationDefinition createRulesAndMappingsInIssuer(AllInOneRuntime issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition) {
+            var participantService = issuer.getService(HolderService.class);
+            var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
+            var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
+
+            participantService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId("participantContextId").build());
+
+
+            var attestationDefinition = AttestationDefinition.Builder.newInstance().id("attestation-id")
+                    .attestationType("Attestation")
+                    .participantContextId("participantContextId")
+                    .configuration(Map.of())
+                    .build();
+            attestationDefinitionService.createAttestation(attestationDefinition);
+
+
+            var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                    .id("membershipCredential-id")
+                    .credentialType("MembershipCredential")
+                    .jsonSchemaUrl("https://example.com/schema")
+                    .jsonSchema("{}")
+                    .attestation(attestationDefinition.getId())
+                    .validity(Duration.ofDays(365).toSeconds()) // one year
+                    .mapping(mappingDefinition)
+                    .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
+                    .participantContextId("participantContextId")
+                    .formatFrom(VC1_0_JWT)
+                    .build();
+
+            credentialDefinitionService.createCredentialDefinition(credentialDefinition);
+            return attestationDefinition;
+        }
+
+        @Test
+        void testCredentialIssuance(AllInOneRuntime allInOneRuntime) {
+
+            var holderRequestId = "test-request-id";
+            var issuanceRequest = """
                     {
                       "issuerDid": "%s",
-                      "holderPid": "test-request-id",
+                      "holderPid": "%s",
                       "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id", "type": "MembershipCredential" }]
                     }
-                    """.formatted(issuerDid);
+                    """.formatted(issuerDid, holderRequestId);
 
             allInOneRuntime.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
-                    .body(request)
+                    .body(issuanceRequest)
                     .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
-                    .header("Location", Matchers.endsWith("/credentials/request/test-request-id"));
+                    .header("Location", Matchers.endsWith("/credentials/request/" + holderRequestId));
 
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
@@ -134,7 +181,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .untilAsserted(() -> assertThat(allInOneRuntime.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
-                                assertThat(t.getHolderPid()).isEqualTo("test-request-id");
+                                assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
                             }));
 
             // wait for the issuance process to be delivered on the issuer side
@@ -142,7 +189,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .atMost(TIMEOUT)
                     .untilAsserted(() -> assertThat(allInOneRuntime.getIssuanceProcessesForParticipant(ISSUER_ID)).hasSize(1)
                             .allSatisfy(t -> {
-                                assertThat(t.getHolderPid()).isEqualTo("test-request-id");
+                                assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
                                 assertThat(t.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
                             }));
 
@@ -188,45 +235,38 @@ public class DcpIssuanceFlowAllInOneTest {
                     });
         }
 
-
         @Test
-        void testPresentation(AllInOneRuntime allInOneRuntime) {
-        }
+        void testRenewal(AllInOneRuntime allInOneRuntime) {
+            var holderRequestId = "test-request-id";
+            var issuanceRequest = """
+                    {
+                      "issuerDid": "%s",
+                      "holderPid": "%s",
+                      "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id", "type": "MembershipCredential" }]
+                    }
+                    """.formatted(issuerDid, holderRequestId);
 
-        /**
-         * Set the issuer up with an attestation definition and a credential definition
-         */
-        private @NotNull AttestationDefinition setupIssuer(AllInOneRuntime issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition) {
-            var participantService = issuer.getService(HolderService.class);
-            var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
-            var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
+            allInOneRuntime.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(issuanceRequest)
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201)
+                    .header("Location", Matchers.endsWith("/credentials/request/" + holderRequestId));
 
-            participantService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId("participantContextId").build());
+            // wait for the request status to be ISSUED on the holder side
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(allInOneRuntime.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
+                            .allSatisfy(t -> {
+                                assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
+                                assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
+                            }));
 
+            await().atMost(Duration.ofHours(10)).until(() -> false);
 
-            var attestationDefinition = AttestationDefinition.Builder.newInstance().id("attestation-id")
-                    .attestationType("Attestation")
-                    .participantContextId("participantContextId")
-                    .configuration(Map.of())
-                    .build();
-            attestationDefinitionService.createAttestation(attestationDefinition);
-
-
-            var credentialDefinition = CredentialDefinition.Builder.newInstance()
-                    .id("membershipCredential-id")
-                    .credentialType("MembershipCredential")
-                    .jsonSchemaUrl("https://example.com/schema")
-                    .jsonSchema("{}")
-                    .attestation(attestationDefinition.getId())
-                    .validity(Duration.ofDays(365).toSeconds()) // one year
-                    .mapping(mappingDefinition)
-                    .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
-                    .participantContextId("participantContextId")
-                    .formatFrom(VC1_0_JWT)
-                    .build();
-
-            credentialDefinitionService.createCredentialDefinition(credentialDefinition);
-            return attestationDefinition;
         }
 
     }
@@ -239,7 +279,8 @@ public class DcpIssuanceFlowAllInOneTest {
         static final AllInOneExtension IDENTITY_HUB_EXTENSION = AllInOneExtension.Builder.newInstance()
                 .id("all-in-one-runtime")
                 .name("all-in-one-runtime")
-                .modules(new String[]{IH_RUNTIME_MEM_MODULES[0], ISSUER_RUNTIME_MEM_MODULES[0]})
+                .module(IH_RUNTIME_MEM_MODULES[0])
+                .module(ISSUER_RUNTIME_MEM_MODULES[0])
                 .build();
     }
 
