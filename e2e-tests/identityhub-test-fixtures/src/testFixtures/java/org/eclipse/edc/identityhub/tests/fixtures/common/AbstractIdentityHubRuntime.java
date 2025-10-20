@@ -185,7 +185,7 @@ public abstract class AbstractIdentityHubRuntime<T extends AbstractIdentityHubEx
     }
 
     public String storeCredential(VerifiableCredential credential, String participantContextId) {
-        var resource = VerifiableCredentialResource.Builder.newInstance()
+        var resource = VerifiableCredentialResource.Builder.newHolder()
                 .id(UUID.randomUUID().toString())
                 .state(VcStatus.ISSUED)
                 .participantContextId(participantContextId)

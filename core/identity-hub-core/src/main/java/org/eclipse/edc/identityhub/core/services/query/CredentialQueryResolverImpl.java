@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.core.services.query;
 import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
@@ -176,8 +177,9 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         var filterByParticipant = new Criterion("participantContextId", "=", participantContextId);
         var filterNotRevoked = new Criterion("state", "!=", VcStatus.REVOKED.code());
         var filterNotExpired = new Criterion("state", "!=", VcStatus.EXPIRED.code());
+        var filterUsageHolder = new Criterion("usage", "=", CredentialUsage.Holder.toString());
         return QuerySpec.Builder.newInstance()
-                .filter(List.of(criteria, filterByParticipant, filterNotRevoked, filterNotExpired))
+                .filter(List.of(criteria, filterByParticipant, filterNotRevoked, filterNotExpired, filterUsageHolder))
                 .build();
     }
 

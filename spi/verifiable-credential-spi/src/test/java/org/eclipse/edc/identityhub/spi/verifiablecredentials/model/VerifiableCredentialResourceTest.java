@@ -24,21 +24,21 @@ class VerifiableCredentialResourceTest {
     @Test
     void verifyBuilder_whenInvalidRequiredProperties() {
         // missing holder and issuer
-        assertThatThrownBy(() -> VerifiableCredentialResource.Builder.newInstance().build()).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> VerifiableCredentialResource.Builder.newHolder().build()).isInstanceOf(NullPointerException.class);
         // missing issuer
-        assertThatThrownBy(() -> VerifiableCredentialResource.Builder.newInstance()
+        assertThatThrownBy(() -> VerifiableCredentialResource.Builder.newHolder()
                 .holderId("test-holder")
                 .build()).isInstanceOf(NullPointerException.class);
 
         //missing holder
-        assertThatThrownBy(() -> VerifiableCredentialResource.Builder.newInstance()
+        assertThatThrownBy(() -> VerifiableCredentialResource.Builder.newHolder()
                 .issuerId("test-issuer")
                 .build()).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void verifyBuilder_assertDefaultValues() {
-        var vc = VerifiableCredentialResource.Builder.newInstance()
+        var vc = VerifiableCredentialResource.Builder.newHolder()
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .participantContextId("test-participant")

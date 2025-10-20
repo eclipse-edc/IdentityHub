@@ -82,7 +82,7 @@ class CredentialWatchdogTest {
 
         // verify the store was queried with the proper filter expressions
         verify(credentialStore).query(argThat(querySpec ->
-                querySpec.getFilterExpression().size() == 1 &&
+                querySpec.getFilterExpression().size() == 2 &&
                         querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
     }
 
@@ -146,7 +146,7 @@ class CredentialWatchdogTest {
 
         // verify the store was queried with the proper filter expressions
         verify(credentialStore).query(argThat(querySpec ->
-                querySpec.getFilterExpression().size() == 1 &&
+                querySpec.getFilterExpression().size() == 2 &&
                         querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
 
         verify(credentialRequestManager)
@@ -174,7 +174,7 @@ class CredentialWatchdogTest {
 
         // verify the store was queried with the proper filter expressions
         verify(credentialStore).query(argThat(querySpec ->
-                querySpec.getFilterExpression().size() == 1 &&
+                querySpec.getFilterExpression().size() == 2 &&
                         querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
 
         verify(credentialRequestManager)
@@ -203,7 +203,7 @@ class CredentialWatchdogTest {
 
         // verify the store was queried with the proper filter expressions
         verify(credentialStore).query(argThat(querySpec ->
-                querySpec.getFilterExpression().size() == 1 &&
+                querySpec.getFilterExpression().size() == 2 &&
                         querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
 
         verify(credentialRequestManager, never())
@@ -214,7 +214,7 @@ class CredentialWatchdogTest {
 
     private VerifiableCredentialResource.Builder createCredentialBuilder() {
 
-        return VerifiableCredentialResource.Builder.newInstance()
+        return VerifiableCredentialResource.Builder.newHolder()
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .state(VcStatus.ISSUED)

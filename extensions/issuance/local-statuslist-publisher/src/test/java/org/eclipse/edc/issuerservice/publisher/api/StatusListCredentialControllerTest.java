@@ -57,7 +57,7 @@ class StatusListCredentialControllerTest extends RestControllerTestBase {
             .issuer(new Issuer("did:web:issuer"))
             .issuanceDate(Instant.now())
             .build();
-    private final VerifiableCredentialResource credentialResource = VerifiableCredentialResource.Builder.newInstance()
+    private final VerifiableCredentialResource credentialResource = VerifiableCredentialResource.Builder.newStatusList()
             .issuerId("did:web:issuer")
             .holderId("did:web:issuer")
             .metadata("publicUrl", "http://localhost:%s/statuslist/foobar/%s".formatted(port, CREDENTIAL_ID))
