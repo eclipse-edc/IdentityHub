@@ -22,7 +22,6 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.configuration.Config;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.web.spi.configuration.ApiContext;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +52,7 @@ public class StsApiConfigurationExtensionTest {
 
         extension.initialize(context);
 
-        verify(portMappingRegistry).register(new PortMapping(ApiContext.STS, DEFAULT_STS_PORT, DEFAULT_STS_PATH));
+        verify(portMappingRegistry).register(new PortMapping("sts", DEFAULT_STS_PORT, DEFAULT_STS_PATH));
     }
 
     @NotNull
