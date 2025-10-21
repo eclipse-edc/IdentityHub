@@ -24,6 +24,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialSto
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.time.Duration;
@@ -120,10 +121,13 @@ public class CredentialWatchdog implements Runnable {
         }
 
         var requestedCredential = new RequestedCredential(credentialObjectId.get(), type, formatString);
+        expiringCredential.setCredentialStatus(VcStatus.REQUESTED);
+
         credentialRequestManager.initiateRequest(expiringCredential.getParticipantContextId(),
                         expiringCredential.getIssuerId(),
                         UUID.randomUUID().toString(),
                         List.of(requestedCredential))
+                .compose(holderRequestId -> ServiceResult.from(credentialStore.update(expiringCredential)))
                 .onFailure(f -> monitor.warning("Error sending re-issuance request: %s".formatted(f.getFailureDetail())));
     }
 

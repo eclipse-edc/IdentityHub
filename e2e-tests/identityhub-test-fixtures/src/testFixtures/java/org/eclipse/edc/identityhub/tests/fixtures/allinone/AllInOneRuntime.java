@@ -16,7 +16,6 @@ package org.eclipse.edc.identityhub.tests.fixtures.allinone;
 
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
-import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
@@ -31,6 +30,7 @@ import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.query.Criterion;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -39,8 +39,6 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 
@@ -103,16 +101,6 @@ public class AllInOneRuntime {
         return extension.getCredentialsEndpoint();
     }
 
-    public void waitForCredentialIssuer(String requestId, String participantContext, HolderRequestState state) {
-        await().pollInterval(extension.getInterval())
-                .atMost(extension.getTimeout())
-                .untilAsserted(() -> assertThat(getCredentialRequestForParticipant(participantContext)).hasSize(1)
-                        .allSatisfy(t -> {
-                            assertThat(t.getState()).isEqualTo(state.code());
-                            assertThat(t.getHolderPid()).isEqualTo(requestId);
-                        }));
-    }
-
     public Endpoint getIdentityEndpoint() {
         return extension.getIdentityEndpoint();
     }
@@ -125,13 +113,17 @@ public class AllInOneRuntime {
                 .toList();
     }
 
-    public Collection<HolderCredentialRequest> getCredentialRequestForParticipant(String participantContextId) {
+    public Collection<HolderCredentialRequest> getCredentialRequestForParticipant(String participantContextId, String holderRequestId) {
+        var builder = queryByParticipantContextId(participantContextId)
+                .filter(new Criterion("id", "=", holderRequestId));
         return getService(HolderCredentialRequestStore.class)
-                .query(queryByParticipantContextId(participantContextId).build());
+                .query(builder.build());
     }
 
-    public List<IssuanceProcess> getIssuanceProcessesForParticipant(String participantContextId) {
-        var query = ParticipantResource.queryByParticipantContextId(participantContextId).build();
+    public List<IssuanceProcess> getIssuanceProcessesForParticipant(String participantContextId, String holderRequestId) {
+        var query = ParticipantResource.queryByParticipantContextId(participantContextId)
+                .filter(new Criterion("holderPid", "=", holderRequestId))
+                .build();
         return getService(IssuanceProcessStore.class).query(query)
                 .toList();
     }

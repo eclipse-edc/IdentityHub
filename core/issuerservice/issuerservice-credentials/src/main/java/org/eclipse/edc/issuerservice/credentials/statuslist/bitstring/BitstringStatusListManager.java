@@ -234,7 +234,7 @@ public class BitstringStatusListManager implements StatusListManager {
     private QuerySpec whereTypeIsBitstringCredential(String participantContextId) {
         return QuerySpec.Builder.newInstance()
                 .filter(ParticipantResource.filterByParticipantContextId(participantContextId))
-                .filter(new Criterion("credential.credentialSubject.type", "=", BITSTRING_STATUS_LIST))
+                .filter(new Criterion("verifiableCredential.credential.credentialSubject.type", "=", BITSTRING_STATUS_LIST))
                 .filter(new Criterion("usage", "=", CredentialUsage.StatusList.toString()))
                 .build();
     }

@@ -42,6 +42,7 @@ import java.util.UUID;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.identityhub.common.credentialwatchdog.CredentialWatchdog.ALLOWED_STATES;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -141,6 +142,7 @@ class CredentialWatchdogTest {
                         .build()))
                 .build();
         when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
 
         watchdog.run();
 
@@ -155,6 +157,7 @@ class CredentialWatchdogTest {
                                 list.get(0).credentialType().equalsIgnoreCase("DemoCredential") &&
                                 list.get(0).format().equals(VC1_0_JWT.name())));
 
+        verify(credentialStore).update(argThat(vc -> vc.getStateAsEnum() == REQUESTED));
     }
 
 

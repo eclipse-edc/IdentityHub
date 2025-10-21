@@ -16,7 +16,9 @@ package org.eclipse.edc.identityhub.tests.dcp.flow;
 
 import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.tests.fixtures.allinone.AllInOneExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.allinone.AllInOneRuntime;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
@@ -32,7 +34,10 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
@@ -47,6 +52,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
@@ -142,7 +148,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .jsonSchemaUrl("https://example.com/schema")
                     .jsonSchema("{}")
                     .attestation(attestationDefinition.getId())
-                    .validity(Duration.ofDays(365).toSeconds()) // one year
+                    .validity(Duration.ofSeconds(5).toSeconds()) // one second - trigger renewal
                     .mapping(mappingDefinition)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
                     .participantContextId("participantContextId")
@@ -156,7 +162,7 @@ public class DcpIssuanceFlowAllInOneTest {
         @Test
         void testCredentialIssuance(AllInOneRuntime allInOneRuntime) {
 
-            var holderRequestId = "test-request-id";
+            var holderRequestId = UUID.randomUUID().toString();
             var issuanceRequest = """
                     {
                       "issuerDid": "%s",
@@ -178,7 +184,7 @@ public class DcpIssuanceFlowAllInOneTest {
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(allInOneRuntime.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
+                    .untilAsserted(() -> assertThat(allInOneRuntime.getCredentialRequestForParticipant(PARTICIPANT_ID, holderRequestId)).hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
                                 assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
@@ -187,7 +193,8 @@ public class DcpIssuanceFlowAllInOneTest {
             // wait for the issuance process to be delivered on the issuer side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(allInOneRuntime.getIssuanceProcessesForParticipant(ISSUER_ID)).hasSize(1)
+                    .untilAsserted(() -> assertThat(allInOneRuntime.getIssuanceProcessesForParticipant(ISSUER_ID, holderRequestId))
+                            .hasSizeGreaterThanOrEqualTo(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
                                 assertThat(t.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
@@ -201,7 +208,8 @@ public class DcpIssuanceFlowAllInOneTest {
                         assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
                         assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
                         assertThat(vc.getHolderId()).isEqualTo(participantDid);
-                        assertThat(vc.getVerifiableCredential().credential().getCredentialStatus()).hasSize(1)
+                        assertThat(vc.getVerifiableCredential().credential().getCredentialStatus())
+                                .hasSize(1)
                                 .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
                     })
                     .anySatisfy(vc -> {
@@ -237,7 +245,7 @@ public class DcpIssuanceFlowAllInOneTest {
 
         @Test
         void testRenewal(AllInOneRuntime allInOneRuntime) {
-            var holderRequestId = "test-request-id";
+            var holderRequestId = UUID.randomUUID().toString();
             var issuanceRequest = """
                     {
                       "issuerDid": "%s",
@@ -259,14 +267,40 @@ public class DcpIssuanceFlowAllInOneTest {
             // wait for the request status to be ISSUED on the holder side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(allInOneRuntime.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
+                    .untilAsserted(() -> assertThat(allInOneRuntime.getCredentialRequestForParticipant(PARTICIPANT_ID, holderRequestId))
+                            .hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
                                 assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
                             }));
 
-            await().atMost(Duration.ofHours(10)).until(() -> false);
 
+            //we expect each one new entry for CredentialUsage.Holder and CredentialUsage.IssuanceTracking
+            var store = allInOneRuntime.getService(CredentialStore.class);
+            var issuanceProcessStore = allInOneRuntime.getService(IssuanceProcessStore.class);
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> {
+                        assertThat(store.query(QuerySpec.Builder.newInstance()
+                                        .filter(new Criterion("usage", "=", CredentialUsage.IssuanceTracking.toString()))
+                                        .build())
+                                .getContent())
+                                .hasSizeGreaterThanOrEqualTo(2);
+
+                        assertThat(store.query(QuerySpec.Builder.newInstance()
+                                        .filter(new Criterion("usage", "=", CredentialUsage.Holder.toString()))
+                                        .build())
+                                .getContent())
+                                .hasSizeGreaterThanOrEqualTo(2);
+
+                        // no issuance process should be in a state _other than_ DELIVERED
+                        var query = QuerySpec.Builder.newInstance()
+                                .filter(new Criterion("state", "!=", IssuanceProcessStates.DELIVERED.code()))
+                                .build();
+                        assertThat(issuanceProcessStore.query(query))
+                                .isEmpty();
+
+                    });
         }
 
     }
