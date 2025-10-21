@@ -64,11 +64,25 @@ class LocalStatusListCredentialPublisherExtensionTest {
             .id(CREDENTIAL_ID)
             .build();
 
-    private final VerifiableCredentialResource credentialResource = VerifiableCredentialResource.Builder.newInstance()
+    private final VerifiableCredentialResource credentialResource = VerifiableCredentialResource.Builder.newStatusList()
             .issuerId(DID_WEB_ISSUER)
             .holderId(DID_WEB_ISSUER)
             .credential(new VerifiableCredentialContainer(RAW_CREDENTIAL, CredentialFormat.VC1_0_JWT, credential))
             .build();
+
+    private static Result<String> getStatusListPublisherResult(ObjectFactory factory) {
+        var localStatusListCredentialPublisherExtension = factory.constructInstance(LocalStatusListCredentialPublisherExtension.class);
+        var statusListCredentialPublisher = localStatusListCredentialPublisherExtension.createInMemoryStatusListCredentialPublisher();
+        assertThat(statusListCredentialPublisher).isInstanceOf(LocalCredentialPublisher.class);
+        var credential = VerifiableCredential.Builder.newInstance().id("credentialId").type("any")
+                .issuer(new Issuer("any")).credentialSubject(new CredentialSubject()).issuanceDate(Instant.now())
+                .build();
+        var resource = VerifiableCredentialResource.Builder.newStatusList()
+                .issuerId("any").holderId("any")
+                .credential(new VerifiableCredentialContainer("any", CredentialFormat.VC1_0_JWT, credential))
+                .build();
+        return statusListCredentialPublisher.publish(resource);
+    }
 
     @BeforeEach
     void setUp(ServiceExtensionContext context) {
@@ -103,19 +117,5 @@ class LocalStatusListCredentialPublisherExtensionTest {
         Result<String> result = getStatusListPublisherResult(factory);
         String defaultUrl = "http://%s:%s%s".formatted(DEFAULT_HOST, DEFAULT_PORT, DEFAULT_STATUS_LIST_PATH);
         assertEquals(defaultUrl + "/" + CREDENTIAL_ID, result.getContent());
-    }
-
-    private static Result<String> getStatusListPublisherResult(ObjectFactory factory) {
-        var localStatusListCredentialPublisherExtension = factory.constructInstance(LocalStatusListCredentialPublisherExtension.class);
-        var statusListCredentialPublisher = localStatusListCredentialPublisherExtension.createInMemoryStatusListCredentialPublisher();
-        assertThat(statusListCredentialPublisher).isInstanceOf(LocalCredentialPublisher.class);
-        var credential = VerifiableCredential.Builder.newInstance().id("credentialId").type("any")
-                .issuer(new Issuer("any")).credentialSubject(new CredentialSubject()).issuanceDate(Instant.now())
-                .build();
-        var resource = VerifiableCredentialResource.Builder.newInstance()
-                .issuerId("any").holderId("any")
-                .credential(new VerifiableCredentialContainer("any", CredentialFormat.VC1_0_JWT, credential))
-                .build();
-        return statusListCredentialPublisher.publish(resource);
     }
 }

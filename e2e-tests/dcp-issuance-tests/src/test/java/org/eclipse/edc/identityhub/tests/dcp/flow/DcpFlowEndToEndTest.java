@@ -71,7 +71,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
-public class DcpIssuanceFlowEndToEndTest {
+public class DcpFlowEndToEndTest {
 
 
     protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();

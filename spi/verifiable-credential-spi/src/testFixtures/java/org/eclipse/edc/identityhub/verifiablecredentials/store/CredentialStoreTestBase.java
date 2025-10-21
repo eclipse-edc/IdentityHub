@@ -531,7 +531,7 @@ public abstract class CredentialStoreTestBase {
 
     protected VerifiableCredentialResource.Builder createCredentialBuilder() {
 
-        return VerifiableCredentialResource.Builder.newInstance()
+        return VerifiableCredentialResource.Builder.newHolder()
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .state(VcStatus.ISSUED)

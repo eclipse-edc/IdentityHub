@@ -247,7 +247,7 @@ class BitstringStatusListManagerTest {
     }
 
     private VerifiableCredentialResource.Builder createVerifiableCredentialResource() {
-        return VerifiableCredentialResource.Builder.newInstance()
+        return VerifiableCredentialResource.Builder.newIssuanceTracker()
                 .issuerId("issuer-id")
                 .holderId("holder-id");
     }

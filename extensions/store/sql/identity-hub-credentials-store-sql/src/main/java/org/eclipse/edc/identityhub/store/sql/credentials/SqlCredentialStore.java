@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -75,7 +76,8 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                         credentialResource.getVerifiableCredential().format().ordinal(),
                         credentialResource.getVerifiableCredential().rawVc(),
                         toJson(credentialResource.getVerifiableCredential().credential()),
-                        credentialResource.getParticipantContextId());
+                        credentialResource.getParticipantContextId(),
+                        credentialResource.getUsage().toString());
                 return success();
 
             } catch (SQLException e) {
@@ -118,6 +120,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                             credentialResource.getVerifiableCredential().rawVc(),
                             toJson(credentialResource.getVerifiableCredential().credential()),
                             credentialResource.getParticipantContextId(),
+                            credentialResource.getUsage().toString(),
                             id);
                     return StoreResult.success();
                 }
@@ -175,6 +178,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
         var vcc = new VerifiableCredentialContainer(rawVc, format, vcJson);
 
         return VerifiableCredentialResource.Builder.newInstance()
+                .usage(CredentialUsage.valueOf(resultSet.getString(statements.getUsageColumn())))
                 .id(resultSet.getString(statements.getIdColumn()))
                 .timestamp(resultSet.getLong(statements.getCreateTimestampColumn()))
                 .issuerId(resultSet.getString(statements.getIssuerIdColumn()))

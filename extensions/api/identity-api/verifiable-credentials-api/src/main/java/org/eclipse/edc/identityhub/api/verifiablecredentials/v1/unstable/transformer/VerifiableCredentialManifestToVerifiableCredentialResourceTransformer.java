@@ -37,7 +37,7 @@ public class VerifiableCredentialManifestToVerifiableCredentialResourceTransform
     @Override
     public @Nullable VerifiableCredentialResource transform(@NotNull VerifiableCredentialManifest manifest, @NotNull TransformerContext transformerContext) {
         var container = manifest.getVerifiableCredentialContainer();
-        return VerifiableCredentialResource.Builder.newInstance()
+        return VerifiableCredentialResource.Builder.newHolder()
                 .id(manifest.getId())
                 .participantContextId(manifest.getParticipantContextId())
                 .issuerId(container.credential().getIssuer().id())

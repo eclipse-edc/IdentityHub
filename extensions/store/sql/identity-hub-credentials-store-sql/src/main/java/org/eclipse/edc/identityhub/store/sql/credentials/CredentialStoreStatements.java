@@ -75,6 +75,10 @@ public interface CredentialStoreStatements extends SqlStatements {
         return "metadata";
     }
 
+    default String getUsageColumn() {
+        return "usage";
+    }
+
     String getInsertTemplate();
 
     String getUpdateTemplate();

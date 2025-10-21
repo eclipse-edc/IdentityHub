@@ -124,7 +124,7 @@ class CredentialStatusServiceImplTest {
     private VerifiableCredentialResource.Builder createCredentialBuilder(String credentialJson, @Nullable String rawVc) {
         try {
             var credential = objectMapper.readValue(credentialJson, VerifiableCredential.class);
-            return VerifiableCredentialResource.Builder.newInstance()
+            return VerifiableCredentialResource.Builder.newStatusList()
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(rawVc, CredentialFormat.VC1_0_JWT, credential))
                     .issuerId(credential.getIssuer().id())

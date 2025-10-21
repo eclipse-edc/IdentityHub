@@ -18,7 +18,6 @@ import org.eclipse.edc.api.iam.identitytrust.sts.controller.SecureTokenServiceAp
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
-import org.eclipse.edc.web.spi.configuration.ApiContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +41,7 @@ public class SecureTokenServiceApiExtensionTest {
     void initialize(ServiceExtensionContext context, SecureTokenServiceApiExtension extension) {
         extension.initialize(context);
 
-        verify(webService).registerResource(eq(ApiContext.STS), isA(SecureTokenServiceApiController.class));
+        verify(webService).registerResource(eq("sts"), isA(SecureTokenServiceApiController.class));
     }
 
 }

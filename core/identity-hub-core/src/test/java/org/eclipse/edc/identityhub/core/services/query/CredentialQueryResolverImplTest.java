@@ -338,7 +338,7 @@ class CredentialQueryResolverImplTest {
     }
 
     private VerifiableCredentialResource.Builder createCredentialResource(VerifiableCredential cred) {
-        return VerifiableCredentialResource.Builder.newInstance()
+        return VerifiableCredentialResource.Builder.newHolder()
                 .credential(new VerifiableCredentialContainer("foobar", CredentialFormat.VC1_0_LD, cred))
                 .holderId("test-holder")
                 .issuerId("test-issuer")

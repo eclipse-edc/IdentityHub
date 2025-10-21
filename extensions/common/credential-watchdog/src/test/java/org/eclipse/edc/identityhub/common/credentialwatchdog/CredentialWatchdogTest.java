@@ -42,6 +42,7 @@ import java.util.UUID;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.identityhub.common.credentialwatchdog.CredentialWatchdog.ALLOWED_STATES;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.ISSUED;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus.REVOKED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -82,7 +83,7 @@ class CredentialWatchdogTest {
 
         // verify the store was queried with the proper filter expressions
         verify(credentialStore).query(argThat(querySpec ->
-                querySpec.getFilterExpression().size() == 1 &&
+                querySpec.getFilterExpression().size() == 2 &&
                         querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
     }
 
@@ -141,12 +142,13 @@ class CredentialWatchdogTest {
                         .build()))
                 .build();
         when(credentialStore.query(any())).thenReturn(StoreResult.success(List.of(cred)));
+        when(credentialStore.update(any())).thenReturn(StoreResult.success());
 
         watchdog.run();
 
         // verify the store was queried with the proper filter expressions
         verify(credentialStore).query(argThat(querySpec ->
-                querySpec.getFilterExpression().size() == 1 &&
+                querySpec.getFilterExpression().size() == 2 &&
                         querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
 
         verify(credentialRequestManager)
@@ -155,6 +157,7 @@ class CredentialWatchdogTest {
                                 list.get(0).credentialType().equalsIgnoreCase("DemoCredential") &&
                                 list.get(0).format().equals(VC1_0_JWT.name())));
 
+        verify(credentialStore).update(argThat(vc -> vc.getStateAsEnum() == REQUESTED));
     }
 
 
@@ -174,7 +177,7 @@ class CredentialWatchdogTest {
 
         // verify the store was queried with the proper filter expressions
         verify(credentialStore).query(argThat(querySpec ->
-                querySpec.getFilterExpression().size() == 1 &&
+                querySpec.getFilterExpression().size() == 2 &&
                         querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
 
         verify(credentialRequestManager)
@@ -203,7 +206,7 @@ class CredentialWatchdogTest {
 
         // verify the store was queried with the proper filter expressions
         verify(credentialStore).query(argThat(querySpec ->
-                querySpec.getFilterExpression().size() == 1 &&
+                querySpec.getFilterExpression().size() == 2 &&
                         querySpec.getFilterExpression().get(0).toString().equals("state in " + ALLOWED_STATES)));
 
         verify(credentialRequestManager, never())
@@ -214,7 +217,7 @@ class CredentialWatchdogTest {
 
     private VerifiableCredentialResource.Builder createCredentialBuilder() {
 
-        return VerifiableCredentialResource.Builder.newInstance()
+        return VerifiableCredentialResource.Builder.newHolder()
                 .issuerId("test-issuer")
                 .holderId("test-holder")
                 .state(VcStatus.ISSUED)

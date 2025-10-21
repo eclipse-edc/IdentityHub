@@ -24,7 +24,6 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
-import org.eclipse.edc.web.spi.configuration.ApiContext;
 
 @Extension(SecureTokenServiceApiExtension.NAME)
 public class SecureTokenServiceApiExtension implements ServiceExtension {
@@ -47,7 +46,7 @@ public class SecureTokenServiceApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        webService.registerResource(ApiContext.STS, new SecureTokenServiceApiController(clientService, tokenService, new StsTokenRequestValidator()));
-        webService.registerResource(ApiContext.STS, new StsTokenExceptionMapper());
+        webService.registerResource("sts", new SecureTokenServiceApiController(clientService, tokenService, new StsTokenRequestValidator()));
+        webService.registerResource("sts", new StsTokenExceptionMapper());
     }
 }

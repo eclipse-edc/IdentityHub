@@ -142,7 +142,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     }
 
     private VerifiableCredentialResource toResource(IssuanceProcess process, VerifiableCredentialContainer credentialContainer) {
-        return VerifiableCredentialResource.Builder.newInstance()
+        return VerifiableCredentialResource.Builder.newIssuanceTracker()
                 .issuerId(credentialContainer.credential().getIssuer().id())
                 .holderId(extractHolder(credentialContainer.credential()))
                 .participantContextId(process.getParticipantContextId())

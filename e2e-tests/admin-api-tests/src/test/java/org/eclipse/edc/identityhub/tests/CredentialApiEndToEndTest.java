@@ -115,7 +115,7 @@ public class CredentialApiEndToEndTest {
                 )))
                 .issuer(new Issuer(UUID.randomUUID().toString()))
                 .build();
-        return VerifiableCredentialResource.Builder.newInstance()
+        return VerifiableCredentialResource.Builder.newHolder()
                 .state(VcStatus.ISSUED)
                 .issuerId("issuer-id")
                 .holderId("holder-id")
@@ -128,7 +128,7 @@ public class CredentialApiEndToEndTest {
     private VerifiableCredentialResource createRevocationCredential(String credentialJson, String credentialJwt) {
         try {
             var credential = objectMapper.readValue(credentialJson, VerifiableCredential.class);
-            return VerifiableCredentialResource.Builder.newInstance()
+            return VerifiableCredentialResource.Builder.newIssuanceTracker()
                     .state(VcStatus.ISSUED)
                     .issuerId("issuer-id")
                     .holderId("holder-id")

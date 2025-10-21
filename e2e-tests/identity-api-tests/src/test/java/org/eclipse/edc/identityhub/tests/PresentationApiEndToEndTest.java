@@ -297,7 +297,7 @@ public class PresentationApiEndToEndTest {
 
             // create the credential in the store
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
-            var res = VerifiableCredentialResource.Builder.newInstance()
+            var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
@@ -308,7 +308,7 @@ public class PresentationApiEndToEndTest {
 
             // create another credential in the store
             var cred2 = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE_2, VerifiableCredential.class);
-            var res2 = VerifiableCredentialResource.Builder.newInstance()
+            var res2 = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT, cred2))
                     .issuerId("https://example.edu/issuers/12345")
@@ -362,7 +362,7 @@ public class PresentationApiEndToEndTest {
         void query_success_containsCredential(String dcpContext, IdentityHubRuntime runtime, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
-            var res = VerifiableCredentialResource.Builder.newInstance()
+            var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
@@ -405,7 +405,7 @@ public class PresentationApiEndToEndTest {
         void query_success_containsMultiplePresentations(String dcpContext, IdentityHubRuntime runtime, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
-            var res = VerifiableCredentialResource.Builder.newInstance()
+            var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
@@ -414,7 +414,7 @@ public class PresentationApiEndToEndTest {
                     .build();
             store.create(res);
 
-            var res1 = VerifiableCredentialResource.Builder.newInstance()
+            var res1 = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC2_0_JOSE, cred))
                     .issuerId("https://example.edu/issuers/565049")
@@ -453,7 +453,7 @@ public class PresentationApiEndToEndTest {
         void query_success_containsEnvelopedCredential(IdentityHubRuntime runtime, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
-            var res = VerifiableCredentialResource.Builder.newInstance()
+            var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(TestData.JWT_VC_EXAMPLE, CredentialFormat.VC2_0_JOSE, cred))
                     .issuerId("https://example.edu/issuers/565049")
@@ -513,7 +513,7 @@ public class PresentationApiEndToEndTest {
                         .thenReturn(Result.failure("suspended"));
             }
             // create the credential in the store
-            var res = VerifiableCredentialResource.Builder.newInstance()
+            var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.from(vcStateCode))
                     .credential(new VerifiableCredentialContainer(vcContent, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
@@ -550,7 +550,7 @@ public class PresentationApiEndToEndTest {
             createParticipant(runtime, "attacker", generateEcKey("did:web:attacker#key-1"));
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
-            var res = VerifiableCredentialResource.Builder.newInstance()
+            var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
@@ -579,7 +579,7 @@ public class PresentationApiEndToEndTest {
         void query_accessTokenAudienceDoesNotBelongToParticipant_shouldReturn401(IdentityHubRuntime runtime, CredentialStore store) throws JsonProcessingException, JOSEException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
-            var res = VerifiableCredentialResource.Builder.newInstance()
+            var res = VerifiableCredentialResource.Builder.newHolder()
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
                     .issuerId("https://example.edu/issuers/565049")
@@ -605,6 +605,61 @@ public class PresentationApiEndToEndTest {
                     .statusCode(401)
                     .log().ifValidationFails()
                     .body(Matchers.containsString("The DID associated with the Participant Context ID of this request ('did:web:consumer') must match 'aud' claim in 'access_token' ([did:web:someone_else])."));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT})
+        void query_filterCredentialWithWrongUsage(String dcpContext, IdentityHubRuntime runtime, CredentialStore store) throws JsonProcessingException, JOSEException {
+
+            var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
+            var res = VerifiableCredentialResource.Builder.newHolder()
+                    .state(VcStatus.ISSUED)
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
+                    .issuerId("https://example.edu/issuers/565049")
+                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .build();
+
+            store.create(res);
+
+
+            var issuedCred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE_2, VerifiableCredential.class);
+            var resIssuanceTracker = VerifiableCredentialResource.Builder.newIssuanceTracker()
+                    .state(VcStatus.ISSUED)
+                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT, issuedCred))
+                    .issuerId("https://example.edu/issuers/565049")
+                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .build();
+            store.create(resIssuanceTracker);
+
+            var token = generateSiToken();
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var response = runtime.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
+                    .hasEntrySatisfying("presentation", jsonValue -> {
+                        assertThat(vpTokensExtractor(jsonValue)).hasSize(1)
+                                .first()
+                                .satisfies(vpToken -> {
+                                    assertThat(vpToken).isNotNull();
+                                    assertThat(extractCredentials(vpToken)).hasSize(1);
+                                });
+                    });
+
         }
 
         /**

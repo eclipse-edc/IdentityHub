@@ -254,7 +254,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .credentialSubject(CredentialSubject.Builder.newInstance().id(UUID.randomUUID().toString()).claim("foo", "bar").build())
                 .issuer(new Issuer(UUID.randomUUID().toString()))
                 .build();
-        return VerifiableCredentialResource.Builder.newInstance()
+        return VerifiableCredentialResource.Builder.newHolder()
                 .state(VcStatus.ISSUED)
                 .issuerId("issuer-id")
                 .holderId("holder-id")

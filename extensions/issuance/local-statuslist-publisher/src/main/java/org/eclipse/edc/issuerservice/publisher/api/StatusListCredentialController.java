@@ -24,6 +24,7 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -67,6 +68,7 @@ public class StatusListCredentialController {
         var query = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("verifiableCredential.credential.id", "=", credentialId))
                 .filter(new Criterion("metadata.published", "=", true))
+                .filter(new Criterion("usage", "=", CredentialUsage.StatusList.toString()))
                 .build();
         var statusListCredential = store.query(query)
                 .orElseThrow(InvalidRequestException::new);

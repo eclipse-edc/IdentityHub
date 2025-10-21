@@ -26,7 +26,6 @@ import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.apiversion.ApiVersionService;
 import org.eclipse.edc.spi.system.apiversion.VersionRecord;
 import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.web.spi.configuration.ApiContext;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 
@@ -58,7 +57,7 @@ public class StsApiConfigurationExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        portMappingRegistry.register(new PortMapping(ApiContext.STS, apiConfiguration.port(), apiConfiguration.path()));
+        portMappingRegistry.register(new PortMapping("sts", apiConfiguration.port(), apiConfiguration.path()));
         registerVersionInfo(getClass().getClassLoader());
     }
 
@@ -70,7 +69,7 @@ public class StsApiConfigurationExtension implements ServiceExtension {
             Stream.of(typeManager.getMapper()
                             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
                             .readValue(versionContent, VersionRecord[].class))
-                    .forEach(vr -> apiVersionService.addRecord(ApiContext.STS, vr));
+                    .forEach(vr -> apiVersionService.addRecord("sts", vr));
         } catch (IOException e) {
             throw new EdcException(e);
         }
@@ -78,9 +77,9 @@ public class StsApiConfigurationExtension implements ServiceExtension {
 
     @Settings
     record StsApiConfiguration(
-            @Setting(key = "web.http." + ApiContext.STS + ".port", description = "Port for " + ApiContext.STS + " api context", defaultValue = DEFAULT_STS_PORT + "")
+            @Setting(key = "web.http.sts.port", description = "Port for sts api context", defaultValue = DEFAULT_STS_PORT + "")
             int port,
-            @Setting(key = "web.http." + ApiContext.STS + ".path", description = "Path for " + ApiContext.STS + " api context", defaultValue = DEFAULT_STS_PATH)
+            @Setting(key = "web.http.sts.path", description = "Path for sts api context", defaultValue = DEFAULT_STS_PATH)
             String path
     ) {
 

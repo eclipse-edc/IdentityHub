@@ -139,7 +139,7 @@ public class CredentialWriterImpl implements CredentialWriter {
 
         var container = new VerifiableCredentialContainer(credentialWriteRequest.rawCredential(), credentialFormat, credential);
 
-        var resource = VerifiableCredentialResource.Builder.newInstance()
+        var resource = VerifiableCredentialResource.Builder.newHolder()
                 .credential(container)
                 .id(credential.getId())
                 .state(VcStatus.ISSUED)

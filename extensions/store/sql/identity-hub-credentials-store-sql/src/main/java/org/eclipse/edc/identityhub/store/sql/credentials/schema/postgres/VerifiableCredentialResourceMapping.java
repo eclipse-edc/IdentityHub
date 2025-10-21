@@ -35,6 +35,7 @@ public class VerifiableCredentialResourceMapping extends TranslationMapping {
     public static final String FIELD_VERIFIABLE_CREDENTIAL = "verifiableCredential";
     public static final String FIELD_PARTICIPANT_CONTEXT_ID = "participantContextId";
     public static final String FIELD_METADATA = "metadata";
+    public static final String FIELD_USAGE = "usage";
 
     public VerifiableCredentialResourceMapping(CredentialStoreStatements statements) {
         add(FIELD_ID, statements.getIdColumn());
@@ -47,5 +48,6 @@ public class VerifiableCredentialResourceMapping extends TranslationMapping {
         add(FIELD_VERIFIABLE_CREDENTIAL, new VerifiableCredentialContainerMapping(statements));
         add(FIELD_PARTICIPANT_CONTEXT_ID, statements.getParticipantContextIdColumn());
         add(FIELD_METADATA, new JsonFieldTranslator(statements.getMetadataColumn()));
+        add(FIELD_USAGE, statements.getUsageColumn());
     }
 }
