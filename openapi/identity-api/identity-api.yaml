@@ -1588,6 +1588,12 @@ components:
         timestamp:
           type: integer
           format: int64
+        usage:
+          type: string
+          enum:
+          - Holder
+          - StatusList
+          - IssuanceTracking
         verifiableCredential:
           $ref: "#/components/schemas/VerifiableCredentialContainer"
     Policy:
