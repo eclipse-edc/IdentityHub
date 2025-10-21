@@ -26,6 +26,7 @@ dependencies {
     testImplementation(project(":spi:sts-spi"))
 
     testImplementation(libs.edc.junit)
+    testImplementation(libs.edc.lib.jsonld)
     testImplementation(libs.restAssured)
     testImplementation(libs.awaitility)
     testImplementation(testFixtures(project(":e2e-tests:identityhub-test-fixtures")))

@@ -14,7 +14,23 @@
 
 package org.eclipse.edc.identityhub.tests.dcp.flow;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.SignedJWT;
 import io.restassured.http.Header;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
+import org.eclipse.edc.iam.did.spi.document.DidDocument;
+import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
+import org.eclipse.edc.iam.did.spi.resolution.DidResolver;
+import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
@@ -35,10 +51,12 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
+import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.hamcrest.Matchers;
@@ -50,12 +68,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.text.ParseException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
@@ -64,8 +85,10 @@ import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_SQL_MODU
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_MEM_MODULES;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_SQL_MODULES;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.refEq;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -77,6 +100,9 @@ public class DcpIssuanceFlowAllInOneTest {
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(60);
     protected static final Duration INTERVAL = Duration.ofSeconds(1);
+    private static final ObjectMapper OBJECT_MAPPER = JacksonJsonLd.createObjectMapper()
+            .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+            .enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT);
 
     abstract static class Tests {
 
@@ -202,32 +228,41 @@ public class DcpIssuanceFlowAllInOneTest {
 
 
             // checks that the credential was issued correctly: we expect 1 status list credential, 1 "holder" credential and 1 tracked issuance
-            assertThat(allInOneRuntime.getCredentialsForParticipant(ISSUER_ID))
-                    .hasSize(3)
-                    .anySatisfy(vc -> {
-                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
-                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
-                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
-                        assertThat(vc.getVerifiableCredential().credential().getCredentialStatus())
-                                .hasSize(1)
-                                .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
-                    })
-                    .anySatisfy(vc -> {
-                        assertThat(vc.getVerifiableCredential().rawVc()).isNull(); //that's the credential tracked by the issuer
-                    })
-                    .anySatisfy(vc -> {
-                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
-                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
-                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
-                        assertThat(vc.getVerifiableCredential().credential().getCredentialStatus()).isNotEmpty()
-                                .anySatisfy(t -> {
-                                    assertThat(t.getProperty("", "statusPurpose").toString()).isEqualTo("revocation");
-                                });
-                    });
-
+            var credentials = allInOneRuntime.getCredentialsForParticipant(ISSUER_ID);
+            await()
+                    .pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() ->
+                            assertThat(credentials)
+                                    .hasSizeGreaterThanOrEqualTo(3)
+                                    .anySatisfy(vc -> {
+                                        assertThat(vc.getUsage()).isEqualTo(CredentialUsage.Holder);
+                                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+                                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
+                                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                                        assertThat(vc.getVerifiableCredential().credential().getCredentialStatus())
+                                                .hasSize(1)
+                                                .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
+                                    })
+                                    .anySatisfy(vc -> {
+                                        assertThat(vc.getUsage()).isEqualTo(CredentialUsage.IssuanceTracking);
+                                        assertThat(vc.getVerifiableCredential().rawVc()).isNull();
+                                    })
+                                    .anySatisfy(vc -> {
+                                        assertThat(vc.getUsage()).isEqualTo(CredentialUsage.StatusList);
+                                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+                                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
+                                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                                        assertThat(vc.getVerifiableCredential().credential().getCredentialSubject()).isNotEmpty()
+                                                .anySatisfy(t -> {
+                                                    assertThat(t.getClaim("", "statusPurpose").toString()).isEqualTo("revocation");
+                                                });
+                                    })
+                    );
             // verify that the status credential on the issuer side is accessible
-            assertThat(allInOneRuntime.getCredentialsForParticipant(ISSUER_ID))
+            assertThat(credentials)
                     .anySatisfy(vc -> {
+                        assertThat(vc.getUsage()).isEqualTo(CredentialUsage.StatusList);
                         assertThat(vc.getMetadata()).isNotNull().isNotEmpty().containsKey("publicUrl");
 
                         var url = vc.getMetadata().get("publicUrl");
@@ -241,6 +276,7 @@ public class DcpIssuanceFlowAllInOneTest {
                                 .header("Content-Type", "application/vc+jwt")
                                 .body(Matchers.notNullValue());
                     });
+
         }
 
         @Test
@@ -303,6 +339,123 @@ public class DcpIssuanceFlowAllInOneTest {
                     });
         }
 
+        @Test
+        void testPresentationQuery(AllInOneRuntime runtime) throws JOSEException, ParseException {
+            // set up consumer DID
+            var consumerDid = "did:example:consumer";
+            var consumerKey = new ECKeyGenerator(Curve.P_256).keyID(consumerDid + "#key").generate();
+            //  and a mocked DID resolver
+            var exampleResolverMock = mock(DidResolver.class);
+            when(exampleResolverMock.getMethod()).thenReturn("example");
+            when(exampleResolverMock.resolve(startsWith("did:example"))).thenReturn(Result.success(DidDocument.Builder.newInstance()
+                    .verificationMethod(List.of(VerificationMethod.Builder.newInstance()
+                            .id(consumerDid + "#key")
+                            .publicKeyJwk(consumerKey.toPublicJWK().toJSONObject())
+                            .controller(consumerDid)
+                            .type("JsonWebKey2020")
+                            .build()))
+                    .build()));
+            runtime.getService(DidResolverRegistry.class).register(exampleResolverMock);
+
+            // issue credential to holder
+
+            var holderRequestId = UUID.randomUUID().toString();
+            var issuanceRequest = """
+                    {
+                      "issuerDid": "%s",
+                      "holderPid": "%s",
+                      "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id", "type": "MembershipCredential" }]
+                    }
+                    """.formatted(issuerDid, holderRequestId);
+
+            runtime.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(issuanceRequest)
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201)
+                    .header("Location", Matchers.endsWith("/credentials/request/" + holderRequestId));
+
+            // wait for the request status to be requested on the holder side
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(runtime.getCredentialRequestForParticipant(PARTICIPANT_ID, holderRequestId)).hasSize(1)
+                            .allSatisfy(t -> {
+                                assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
+                                assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
+                            }));
+
+            // create token, for that we need the provider's private key
+            var providerJwk = runtime.getService(Vault.class).resolveSecret(PARTICIPANT_ID + "-alias");
+            assertThat(providerJwk).isNotNull();
+            var accessToken = generateJwt(participantDid, participantDid, consumerDid, Map.of("scope", "org.eclipse.edc.vc.type:MembershipCredential:read"), ECKey.parse(providerJwk));
+            var token = generateJwt(participantDid, consumerDid, consumerDid, Map.of("client_id", consumerDid, "token", accessToken), consumerKey);
+
+
+            var response = runtime.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body("""
+                            {
+                              "@context": [
+                                "https://identity.foundation/presentation-exchange/submission/v1",
+                                 "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
+                              ],
+                              "@type": "PresentationQueryMessage",
+                              "scope":[
+                                "org.eclipse.edc.vc.type:MembershipCredential:read"
+                              ]
+                            }
+                            """)
+                    .post("/v1/participants/%s/presentations/query".formatted(base64Encode(PARTICIPANT_ID)))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
+                    .hasEntrySatisfying("presentation", jsonValue -> {
+                        assertThat(vpTokensExtractor(jsonValue)).hasSize(1)
+                                .first()
+                                .satisfies(vpToken -> {
+                                    assertThat(vpToken).isNotNull();
+                                    assertThat(extractCredentials(vpToken)).hasSize(1);
+                                });
+                    });
+
+        }
+
+        private List<String> vpTokensExtractor(JsonValue jsonValue) {
+            if (jsonValue.getValueType() == JsonValue.ValueType.ARRAY) {
+                return ((JsonArray) jsonValue).stream()
+                        .map(JsonString.class::cast)
+                        .map(JsonString::getString)
+                        .toList();
+            } else {
+                return List.of(((JsonString) jsonValue).getString());
+            }
+
+        }
+
+        @SuppressWarnings("unchecked")
+        private List<VerifiableCredential> extractCredentials(String vpToken) {
+            try {
+                var jwt = SignedJWT.parse(vpToken);
+                var vpClaim = jwt.getJWTClaimsSet().getClaim("vp");
+                if (vpClaim == null) return List.of();
+
+                Map<String, Object> map = (Map<String, Object>) OBJECT_MAPPER.convertValue(vpClaim, Map.class);
+
+                return (List<VerifiableCredential>) map.get("verifiableCredential");
+
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Nested
