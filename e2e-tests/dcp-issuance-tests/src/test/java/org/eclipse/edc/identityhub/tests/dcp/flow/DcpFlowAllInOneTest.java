@@ -229,36 +229,30 @@ public class DcpFlowAllInOneTest {
 
             // checks that the credential was issued correctly: we expect 1 status list credential, 1 "holder" credential and 1 tracked issuance
             var credentials = allInOneRuntime.getCredentialsForParticipant(ISSUER_ID);
-            await()
-                    .pollInterval(INTERVAL)
-                    .atMost(TIMEOUT)
-                    .untilAsserted(() ->
-                            assertThat(credentials)
-                                    .hasSizeGreaterThanOrEqualTo(3)
-                                    .anySatisfy(vc -> {
-                                        assertThat(vc.getUsage()).isEqualTo(CredentialUsage.Holder);
-                                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
-                                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
-                                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
-                                        assertThat(vc.getVerifiableCredential().credential().getCredentialStatus())
-                                                .hasSize(1)
-                                                .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
-                                    })
-                                    .anySatisfy(vc -> {
-                                        assertThat(vc.getUsage()).isEqualTo(CredentialUsage.IssuanceTracking);
-                                        assertThat(vc.getVerifiableCredential().rawVc()).isNull();
-                                    })
-                                    .anySatisfy(vc -> {
-                                        assertThat(vc.getUsage()).isEqualTo(CredentialUsage.StatusList);
-                                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
-                                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
-                                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
-                                        assertThat(vc.getVerifiableCredential().credential().getCredentialSubject()).isNotEmpty()
-                                                .anySatisfy(t -> {
-                                                    assertThat(t.getClaim("", "statusPurpose").toString()).isEqualTo("revocation");
-                                                });
-                                    })
-                    );
+            assertThat(credentials)
+                    .hasSizeGreaterThanOrEqualTo(3);
+            assertThat(credentials).anySatisfy(vc -> {
+                assertThat(vc.getUsage()).isEqualTo(CredentialUsage.Holder);
+                assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+                assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
+                assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                assertThat(vc.getVerifiableCredential().credential().getCredentialStatus())
+                        .hasSize(1)
+                        .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
+            });
+            assertThat(credentials).anySatisfy(vc -> {
+                assertThat(vc.getUsage()).isEqualTo(CredentialUsage.IssuanceTracking);
+                assertThat(vc.getVerifiableCredential().rawVc()).isNull();
+            });
+            assertThat(credentials).anySatisfy(vc -> {
+                assertThat(vc.getUsage()).isEqualTo(CredentialUsage.StatusList);
+                assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
+                assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                assertThat(vc.getVerifiableCredential().credential().getCredentialSubject()).isNotEmpty()
+                        .anySatisfy(t -> {
+                            assertThat(t.getClaim("", "statusPurpose").toString()).isEqualTo("revocation");
+                        });
+            });
             // verify that the status credential on the issuer side is accessible
             assertThat(credentials)
                     .anySatisfy(vc -> {
