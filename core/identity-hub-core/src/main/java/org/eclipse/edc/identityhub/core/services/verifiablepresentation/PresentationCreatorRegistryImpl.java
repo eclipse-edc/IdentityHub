@@ -75,7 +75,7 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
                 signingKeyPair = keyPairResult.stream().filter(KeyPairResource::isDefaultPair).findAny() // find the default key
                         .orElseThrow(() -> new EdcException("Multiple key-pairs found for signing presentations, but none was marked as 'default'"));
             } else { //skip check for
-                signingKeyPair = keyPairResult.stream().findFirst().orElseThrow(() -> new EdcException("No active key pair found for participant '%s' with usage %s".formatted(participantContextId, PRESENTATION_SIGNING.toString())));
+                signingKeyPair = keyPairResult.stream().findFirst().orElseThrow(() -> new EdcException("No active key pair found for participant '%s' with usage '%s'".formatted(participantContextId, PRESENTATION_SIGNING.name())));
             }
 
 

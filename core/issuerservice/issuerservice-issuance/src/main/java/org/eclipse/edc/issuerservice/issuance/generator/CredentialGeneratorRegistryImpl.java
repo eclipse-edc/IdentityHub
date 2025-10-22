@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.PRESENTATION_SIGNING;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.CREDENTIAL_SIGNING;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.Result.success;
 
@@ -103,9 +103,9 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
         Result<KeyPairResource> selectedKeyPairResult;
         if (keyPairs.size() > 1) {
             selectedKeyPairResult = keyPairs.stream().filter(KeyPairResource::isDefaultPair).findAny().map(Result::success) // find the default key
-                    .orElse(Result.failure("Multiple key-pairs found for signing presentations, but none was marked as 'default'"));
+                    .orElse(Result.failure("Multiple key-pairs found for signing credentials, but none was marked as 'default'"));
         } else { //skip check for
-            selectedKeyPairResult = keyPairs.stream().findFirst().map(Result::success).orElse(Result.failure("No active key pair found for participant '%s' with usage %s".formatted(participantContextId, PRESENTATION_SIGNING.toString())));
+            selectedKeyPairResult = keyPairs.stream().findFirst().map(Result::success).orElse(Result.failure("No active key pair found for participant '%s' with usage '%s'".formatted(participantContextId, CREDENTIAL_SIGNING.name())));
         }
 
         return selectedKeyPairResult;

@@ -167,7 +167,7 @@ public class DcpIssuerIssuanceFlowTest {
                 .active(true)
                 .serviceEndpoint(new Service(UUID.randomUUID().toString(), "IssuerService", issuerServiceUrl))
                 .key(KeyDescriptor.Builder.newInstance()
-                        .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
+                        .usage(Set.of(KeyPairUsage.CREDENTIAL_SIGNING))
                         .publicKeyJwk(issuerKey.toPublicJWK().toJSONObject())
                         .privateKeyAlias(privateKeyAlias)
                         .keyId(issuerKey.getKeyID())
