@@ -15,6 +15,7 @@
 package org.eclipse.edc.api.iam.identitytrust.sts;
 
 import org.eclipse.edc.api.iam.identitytrust.sts.controller.SecureTokenServiceApiController;
+import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
@@ -41,7 +42,7 @@ public class SecureTokenServiceApiExtensionTest {
     void initialize(ServiceExtensionContext context, SecureTokenServiceApiExtension extension) {
         extension.initialize(context);
 
-        verify(webService).registerResource(eq("sts"), isA(SecureTokenServiceApiController.class));
+        verify(webService).registerResource(eq(IdentityHubApiContext.STS), isA(SecureTokenServiceApiController.class));
     }
 
 }

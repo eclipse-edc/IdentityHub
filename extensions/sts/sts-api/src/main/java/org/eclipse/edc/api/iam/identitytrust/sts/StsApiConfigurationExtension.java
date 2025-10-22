@@ -15,6 +15,7 @@
 package org.eclipse.edc.api.iam.identitytrust.sts;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -57,7 +58,7 @@ public class StsApiConfigurationExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        portMappingRegistry.register(new PortMapping("sts", apiConfiguration.port(), apiConfiguration.path()));
+        portMappingRegistry.register(new PortMapping(IdentityHubApiContext.STS, apiConfiguration.port(), apiConfiguration.path()));
         registerVersionInfo(getClass().getClassLoader());
     }
 
@@ -69,7 +70,7 @@ public class StsApiConfigurationExtension implements ServiceExtension {
             Stream.of(typeManager.getMapper()
                             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
                             .readValue(versionContent, VersionRecord[].class))
-                    .forEach(vr -> apiVersionService.addRecord("sts", vr));
+                    .forEach(vr -> apiVersionService.addRecord(IdentityHubApiContext.STS, vr));
         } catch (IOException e) {
             throw new EdcException(e);
         }
@@ -77,9 +78,9 @@ public class StsApiConfigurationExtension implements ServiceExtension {
 
     @Settings
     record StsApiConfiguration(
-            @Setting(key = "web.http.sts.port", description = "Port for sts api context", defaultValue = DEFAULT_STS_PORT + "")
+            @Setting(key = "web.http." + IdentityHubApiContext.STS + ".port", description = "Port for " + IdentityHubApiContext.STS + " api context", defaultValue = DEFAULT_STS_PORT + "")
             int port,
-            @Setting(key = "web.http.sts.path", description = "Path for sts api context", defaultValue = DEFAULT_STS_PATH)
+            @Setting(key = "web.http." + IdentityHubApiContext.STS + ".path", description = "Path for " + IdentityHubApiContext.STS + " api context", defaultValue = DEFAULT_STS_PATH)
             String path
     ) {
 

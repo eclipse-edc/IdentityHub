@@ -19,6 +19,7 @@ import org.eclipse.edc.api.iam.identitytrust.sts.exception.StsTokenExceptionMapp
 import org.eclipse.edc.api.iam.identitytrust.sts.validation.StsTokenRequestValidator;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientTokenGeneratorService;
+import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -46,7 +47,7 @@ public class SecureTokenServiceApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        webService.registerResource("sts", new SecureTokenServiceApiController(clientService, tokenService, new StsTokenRequestValidator()));
-        webService.registerResource("sts", new StsTokenExceptionMapper());
+        webService.registerResource(IdentityHubApiContext.STS, new SecureTokenServiceApiController(clientService, tokenService, new StsTokenRequestValidator()));
+        webService.registerResource(IdentityHubApiContext.STS, new StsTokenExceptionMapper());
     }
 }
