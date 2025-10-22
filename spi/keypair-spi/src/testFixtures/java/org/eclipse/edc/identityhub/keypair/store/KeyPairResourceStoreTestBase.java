@@ -150,27 +150,6 @@ public abstract class KeyPairResourceStoreTestBase {
     }
 
     @Test
-    void query_byUsage() {
-        var kp1 = createKeyPairResource().id("id1").usage(KeyPairUsage.PRESENTATION_SIGNING).build();
-        var kp2 = createKeyPairResource().id("id2").usage(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.ACCESS_TOKEN, KeyPairUsage.ID_TOKEN).build();
-
-        List.of(kp1, kp2).forEach(getStore()::create);
-
-
-        assertThat(getStore().query(KeyPairResource.queryByUsage(KeyPairUsage.PRESENTATION_SIGNING).build()))
-                .isSucceeded()
-                .satisfies(res -> assertThat(res)
-                        .usingRecursiveFieldByFieldElementComparator()
-                        .containsExactlyInAnyOrder(kp1, kp2));
-
-        assertThat(getStore().query(KeyPairResource.queryByUsage(KeyPairUsage.ACCESS_TOKEN).build()))
-                .isSucceeded()
-                .satisfies(res -> assertThat(res)
-                        .usingRecursiveFieldByFieldElementComparator()
-                        .containsExactly(kp2));
-    }
-
-    @Test
     void update() {
         var keyPairResource = createKeyPairResource();
         var result = getStore().create(keyPairResource.build());

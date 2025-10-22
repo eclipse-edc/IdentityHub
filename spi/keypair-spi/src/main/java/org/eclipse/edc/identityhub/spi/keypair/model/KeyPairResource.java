@@ -21,7 +21,6 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantConte
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
-import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -50,14 +49,6 @@ public class KeyPairResource extends AbstractParticipantResource {
 
     public static QuerySpec.Builder queryById(String id) {
         return QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id));
-    }
-
-    public static QuerySpec.Builder queryByUsage(KeyPairUsage usage) {
-        return QuerySpec.Builder.newInstance().filter(filterByUsage(usage));
-    }
-
-    public static @NotNull Criterion filterByUsage(KeyPairUsage usage) {
-        return new Criterion("usage", "like", "%" + usage.name() + "%");
     }
 
     public Set<KeyPairUsage> getUsage() {

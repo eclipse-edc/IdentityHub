@@ -33,12 +33,15 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.CREDENTIAL_SIGNING;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -63,7 +66,7 @@ class PresentationCreatorRegistryImplTest {
 
     @Test
     void createPresentation_whenSingleKey() {
-        var keyPair = createKeyPair(TEST_PARTICIPANT, "key-1").build();
+        var keyPair = createKeyPair("key-1").build();
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(keyPair)));
 
         var generator = mock(PresentationGenerator.class);
@@ -85,9 +88,24 @@ class PresentationCreatorRegistryImplTest {
     }
 
     @Test
-    void createPresentation_whenNoDefaultKey() {
-        var keyPair1 = createKeyPair(TEST_PARTICIPANT, "key-1").isDefaultPair(false).build();
-        var keyPair2 = createKeyPair(TEST_PARTICIPANT, "key-2").isDefaultPair(false).build();
+    void createPresentation_whenMultipleAndNoDefaultKey_expectException() {
+        var keyPair1 = createKeyPair("key-1").isDefaultPair(false).build();
+        var keyPair2 = createKeyPair("key-2").isDefaultPair(false).build();
+        when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(keyPair1, keyPair2)));
+
+        var generator = mock(PresentationGenerator.class);
+        registry.addCreator(generator, CredentialFormat.VC1_0_JWT);
+        assertThatThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.VC1_0_JWT, Map.of()))
+                .isInstanceOf(EdcException.class)
+                .hasMessage("Multiple key-pairs found for signing presentations, but none was marked as 'default'");
+        verify(generator, never()).generatePresentation(anyList(),
+                anyString(), anyString(), anyString(), anyMap());
+    }
+
+    @Test
+    void createPresentation_whenMultiple_withMultipleDefaultKeys() {
+        var keyPair1 = createKeyPair("key-1").isDefaultPair(true).build();
+        var keyPair2 = createKeyPair("key-2").isDefaultPair(true).build();
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(keyPair1, keyPair2)));
 
         var generator = mock(PresentationGenerator.class);
@@ -101,10 +119,10 @@ class PresentationCreatorRegistryImplTest {
 
 
     @Test
-    void createPresentation_whenDefaultKey() {
-        var keyPair1 = createKeyPair(TEST_PARTICIPANT, "key-1").isDefaultPair(false).build();
-        var keyPair2 = createKeyPair(TEST_PARTICIPANT, "key-2").isDefaultPair(true).build();
-        var keyPair3 = createKeyPair(TEST_PARTICIPANT, "key-3").isDefaultPair(false).build();
+    void createPresentation_whenMultiple_withDefaultKey() {
+        var keyPair1 = createKeyPair("key-1").isDefaultPair(false).build();
+        var keyPair2 = createKeyPair("key-2").isDefaultPair(true).build();
+        var keyPair3 = createKeyPair("key-3").isDefaultPair(false).build();
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(keyPair1, keyPair2, keyPair3)));
 
         var generator = mock(PresentationGenerator.class);
@@ -121,16 +139,27 @@ class PresentationCreatorRegistryImplTest {
         registry.addCreator(generator, CredentialFormat.VC1_0_JWT);
         assertThatThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.VC1_0_JWT, Map.of()))
                 .isInstanceOf(EdcException.class)
-                .hasMessage("No active key pair found for participant 'test-participant'");
+                .hasMessageStartingWith("No active key pair found for participant 'test-participant'");
         verifyNoInteractions(generator);
     }
 
-    private KeyPairResource.Builder createKeyPair(String participantContextId, String keyId) {
+    @Test
+    void createPresentation_whenIncorrectUsage() {
+        var keyPair = createKeyPair("key-1").usage(CREDENTIAL_SIGNING).build();
+        when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of()));
+
+        var generator = mock(PresentationGenerator.class);
+        registry.addCreator(generator, CredentialFormat.VC1_0_JWT);
+        assertThatThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.VC1_0_JWT, Map.of())).isInstanceOf(EdcException.class);
+        verify(generator, never()).generatePresentation(anyList(), eq(keyPair.getPrivateKeyAlias()), eq(keyPair.getKeyId()), eq(ISSUER_ID), argThat(additional -> ISSUER_ID.equals(additional.get("controller"))));
+    }
+
+    private KeyPairResource.Builder createKeyPair(String keyId) {
         return KeyPairResource.Builder.newPresentationSigning()
                 .id(UUID.randomUUID().toString())
                 .keyId(keyId)
                 .state(KeyPairState.ACTIVATED)
                 .isDefaultPair(true)
-                .privateKeyAlias("%s-%s-alias".formatted(participantContextId, keyId));
+                .privateKeyAlias("%s-%s-alias".formatted(PresentationCreatorRegistryImplTest.TEST_PARTICIPANT, keyId));
     }
 }

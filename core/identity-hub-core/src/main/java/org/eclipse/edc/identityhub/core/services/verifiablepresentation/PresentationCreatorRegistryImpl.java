@@ -34,6 +34,7 @@ import java.util.Map;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.PRESENTATION_SIGNING;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 
 public class PresentationCreatorRegistryImpl implements PresentationCreatorRegistry {
@@ -67,13 +68,16 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
             var keyPairResult = keyPairService.query(query)
                     .orElseThrow(f -> new EdcException("Error obtaining private key for participant '%s': %s".formatted(participantContextId, f.getFailureDetail())));
 
-            // check if there is a default key pair
-            var keyPair = keyPairResult.stream().filter(KeyPairResource::isDefaultPair).findAny()
-                    .orElseGet(() -> keyPairResult.stream().findFirst().orElse(null));
+            keyPairResult = keyPairResult.stream().filter(kp -> kp.getUsage().contains(PRESENTATION_SIGNING)).toList();
 
-            if (keyPair == null) {
-                throw new EdcException("No active key pair found for participant '%s'".formatted(participantContextId));
+            KeyPairResource signingKeyPair;
+            if (keyPairResult.size() > 1) {
+                signingKeyPair = keyPairResult.stream().filter(KeyPairResource::isDefaultPair).findAny() // find the default key
+                        .orElseThrow(() -> new EdcException("Multiple key-pairs found for signing presentations, but none was marked as 'default'"));
+            } else { //skip check for
+                signingKeyPair = keyPairResult.stream().findFirst().orElseThrow(() -> new EdcException("No active key pair found for participant '%s' with usage %s".formatted(participantContextId, PRESENTATION_SIGNING.toString())));
             }
+
 
             var did = participantContextService.getParticipantContext(participantContextId)
                     .map(ParticipantContext::getDid)
@@ -82,7 +86,7 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
             var additionalDataWithController = new HashMap<>(additionalData);
             additionalDataWithController.put(CONTROLLER_ADDITIONAL_DATA, did);
 
-            return (T) creator.generatePresentation(credentials, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), did, additionalDataWithController);
+            return (T) creator.generatePresentation(credentials, signingKeyPair.getPrivateKeyAlias(), signingKeyPair.getKeyId(), did, additionalDataWithController);
         });
     }
 }

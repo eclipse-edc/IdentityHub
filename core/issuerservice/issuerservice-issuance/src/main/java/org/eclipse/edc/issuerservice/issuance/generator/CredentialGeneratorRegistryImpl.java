@@ -21,6 +21,7 @@ import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -38,6 +39,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.PRESENTATION_SIGNING;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.Result.success;
 
@@ -95,16 +97,18 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
             return Result.failure("Error obtaining private key for participant '%s': %s".formatted(participantContextId, keyPairResult.getFailureDetail()));
         }
 
-        var keyPairs = keyPairResult.getContent();
-        // check if there is a default key pair
-        var keyPair = keyPairs.stream().filter(KeyPairResource::isDefaultPair).findAny()
-                .orElseGet(() -> keyPairs.stream().findFirst().orElse(null));
 
-        if (keyPair == null) {
-            return Result.failure("No active key pair found for participant '%s'".formatted(participantContextId));
+        var keyPairs = keyPairResult.getContent().stream().filter(kp -> kp.getUsage().contains(KeyPairUsage.CREDENTIAL_SIGNING)).toList();
+        // check if there is a default key pair
+        Result<KeyPairResource> selectedKeyPairResult;
+        if (keyPairs.size() > 1) {
+            selectedKeyPairResult = keyPairs.stream().filter(KeyPairResource::isDefaultPair).findAny().map(Result::success) // find the default key
+                    .orElse(Result.failure("Multiple key-pairs found for signing presentations, but none was marked as 'default'"));
+        } else { //skip check for
+            selectedKeyPairResult = keyPairs.stream().findFirst().map(Result::success).orElse(Result.failure("No active key pair found for participant '%s' with usage %s".formatted(participantContextId, PRESENTATION_SIGNING.toString())));
         }
 
-        return success(keyPair);
+        return selectedKeyPairResult;
 
     }
 
