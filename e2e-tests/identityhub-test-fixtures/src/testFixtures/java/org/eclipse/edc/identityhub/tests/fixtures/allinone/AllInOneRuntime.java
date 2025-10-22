@@ -20,6 +20,7 @@ import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredential
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -37,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static java.lang.String.format;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
@@ -85,6 +87,7 @@ public class AllInOneRuntime {
                 .roles(roles)
                 .did(did)
                 .key(KeyDescriptor.Builder.newInstance()
+                        .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.ID_TOKEN, KeyPairUsage.ACCESS_TOKEN))
                         .privateKeyAlias(participantContextId + "-alias")
                         .resourceId(participantContextId + "-resource")
                         .keyId(keyId)

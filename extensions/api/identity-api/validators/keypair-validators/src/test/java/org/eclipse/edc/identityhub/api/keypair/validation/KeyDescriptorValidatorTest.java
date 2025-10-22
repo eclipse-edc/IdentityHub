@@ -15,10 +15,12 @@
 package org.eclipse.edc.identityhub.api.keypair.validation;
 
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
@@ -29,12 +31,25 @@ class KeyDescriptorValidatorTest {
     @Test
     void validate_success() {
         var descriptor = KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .keyId("key-id")
                 .privateKeyAlias("alias")
                 .keyGeneratorParams(Map.of("bar", "baz"))
                 .build();
 
         assertThat(validator.validate(descriptor)).isSucceeded();
+    }
+
+    @Test
+    void validate_noUsage() {
+        var descriptor = KeyDescriptor.Builder.newInstance()
+                .keyId("key-id")
+                .privateKeyAlias("alias")
+                .keyGeneratorParams(Map.of("bar", "baz"))
+                .build();
+
+        assertThat(validator.validate(descriptor)).isFailed()
+                .detail().isEqualTo("usage must be specified");
     }
 
     @Test
@@ -46,6 +61,7 @@ class KeyDescriptorValidatorTest {
     @Test
     void validate_keyIdNull() {
         var descriptor = KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .privateKeyAlias("alias")
                 .keyGeneratorParams(Map.of("bar", "baz"))
                 .build();
@@ -57,6 +73,7 @@ class KeyDescriptorValidatorTest {
     @Test
     void validate_privateKeyAliasNull() {
         var descriptor = KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .keyId("key-id")
                 .keyGeneratorParams(Map.of("bar", "baz"))
                 .build();
@@ -68,6 +85,7 @@ class KeyDescriptorValidatorTest {
     @Test
     void validate_allNull() {
         var descriptor = KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .keyId("key-id")
                 .privateKeyAlias("test-alias")
                 .build();
@@ -78,6 +96,7 @@ class KeyDescriptorValidatorTest {
     @Test
     void validate_bothPublicKeyFormats() {
         var descriptor = KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .keyId("key-id")
                 .privateKeyAlias("test-alias")
                 .publicKeyJwk(Map.of("foo", "bar"))
@@ -90,6 +109,7 @@ class KeyDescriptorValidatorTest {
     @Test
     void validate_publicKeyJwkAndGeneratorParams() {
         var descriptor = KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .keyId("key-id")
                 .privateKeyAlias("test-alias")
                 .publicKeyJwk(Map.of("foo", "bar"))
@@ -103,6 +123,7 @@ class KeyDescriptorValidatorTest {
     @Test
     void validate_publicKeyPemAndGeneratorParams() {
         var descriptor = KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .keyId("key-id")
                 .privateKeyAlias("test-alias")
                 .publicKeyPem("pemstring")

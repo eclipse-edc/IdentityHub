@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.spi.keypair.events;
 
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ class KeyPairRevokedTest {
     @Test
     void verify_serDes() {
         var evt = KeyPairRevoked.Builder.newInstance()
-                .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
+                .keyPairResource(KeyPairResource.Builder.newPresentationSigning().usage(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.ID_TOKEN, KeyPairUsage.ACCESS_TOKEN).id(UUID.randomUUID().toString()).build())
                 .keyId("key-id")
                 .participantContextId("participant-id")
                 .build();

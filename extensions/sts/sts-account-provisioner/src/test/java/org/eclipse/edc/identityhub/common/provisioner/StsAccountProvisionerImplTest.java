@@ -25,6 +25,7 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
@@ -35,6 +36,7 @@ import org.eclipse.edc.spi.security.Vault;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -110,7 +112,7 @@ class StsAccountProvisionerImplTest {
         when(accountServiceMock.updateAccount(any())).thenAnswer(a -> ServiceResult.success(a.getArguments()[0]));
         accountProvisioner.on(event(KeyPairRevoked.Builder.newInstance()
                 .participantContextId(PARTICIPANT_CONTEXT_ID)
-                .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
+                .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
                 .keyId(KEY_ID)
                 .build()));
 
@@ -126,7 +128,7 @@ class StsAccountProvisionerImplTest {
 
         accountProvisioner.on(event(KeyPairRotated.Builder.newInstance()
                 .participantContextId(PARTICIPANT_CONTEXT_ID)
-                .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
+                .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
                 .keyId(KEY_ID)
                 .build()));
 
@@ -170,6 +172,7 @@ class StsAccountProvisionerImplTest {
                 .active(true)
                 .did(PARTICIPANT_DID)
                 .key(KeyDescriptor.Builder.newInstance()
+                        .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                         .privateKeyAlias(KEY_ID + "-alias")
                         .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "Ed25519"))
                         .keyId(KEY_ID)

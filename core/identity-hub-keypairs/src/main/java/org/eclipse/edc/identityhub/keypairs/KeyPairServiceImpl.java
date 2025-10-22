@@ -101,6 +101,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
             }
 
             var newResource = KeyPairResource.Builder.newInstance()
+                    .usage(keyDescriptor.getUsage())
                     .id(keyDescriptor.getResourceId())
                     .keyId(keyDescriptor.getKeyId())
                     .state(keyDescriptor.isActive() ? KeyPairState.ACTIVATED : KeyPairState.CREATED)

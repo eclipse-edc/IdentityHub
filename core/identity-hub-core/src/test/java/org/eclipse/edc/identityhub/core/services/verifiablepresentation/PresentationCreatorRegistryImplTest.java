@@ -126,7 +126,7 @@ class PresentationCreatorRegistryImplTest {
     }
 
     private KeyPairResource.Builder createKeyPair(String participantContextId, String keyId) {
-        return KeyPairResource.Builder.newInstance()
+        return KeyPairResource.Builder.newPresentationSigning()
                 .id(UUID.randomUUID().toString())
                 .keyId(keyId)
                 .state(KeyPairState.ACTIVATED)

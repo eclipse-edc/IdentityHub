@@ -24,6 +24,7 @@ import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredential
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
@@ -42,6 +43,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -156,6 +158,7 @@ public class DcpIssuanceFlowWithDockerTest {
                 .active(true)
                 .serviceEndpoint(new Service(UUID.randomUUID().toString(), "CredentialService", credentialServiceUrl))
                 .key(KeyDescriptor.Builder.newInstance()
+                        .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                         .publicKeyJwk(holderKey.toPublicJWK().toJSONObject())
                         .privateKeyAlias(privateKeyAlias)
                         .keyId(holderKey.getKeyID())

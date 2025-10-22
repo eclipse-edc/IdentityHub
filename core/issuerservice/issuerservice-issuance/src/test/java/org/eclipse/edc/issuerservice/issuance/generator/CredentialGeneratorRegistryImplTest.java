@@ -72,7 +72,7 @@ public class CredentialGeneratorRegistryImplTest {
 
         var participant = createHolder("holderId", "participantDid", "name");
 
-        var key = KeyPairResource.Builder.newInstance().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
+        var key = KeyPairResource.Builder.newCredentialSigning().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
 
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(ServiceResult.success(participantContext));
@@ -165,7 +165,7 @@ public class CredentialGeneratorRegistryImplTest {
     }
 
     @Test
-    void generate_shouldFail_GenerationFails() {
+    void generate_shouldFail_generationFails() {
 
         var generator = mock(CredentialGenerator.class);
         credentialGeneratorRegistry.addGenerator(VC1_0_JWT, generator);
@@ -177,7 +177,7 @@ public class CredentialGeneratorRegistryImplTest {
 
         var participant = createHolder("holderId", "participantDid", "name");
 
-        var key = KeyPairResource.Builder.newInstance().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
+        var key = KeyPairResource.Builder.newCredentialSigning().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
 
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(ServiceResult.success(participantContext));
@@ -208,7 +208,7 @@ public class CredentialGeneratorRegistryImplTest {
         when(generator.signCredential(any(), any(), any())).thenReturn(Result.success("some-token"));
         credentialGeneratorRegistry.addGenerator(CredentialFormat.VC2_0_JOSE, generator);
 
-        var key = KeyPairResource.Builder.newInstance().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
+        var key = KeyPairResource.Builder.newCredentialSigning().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
         when(keyPairService.query(any())).thenReturn(ServiceResult.success(List.of(key)));
 
         var result = credentialGeneratorRegistry.signCredential("test-participant", credential, CredentialFormat.VC2_0_JOSE);

@@ -37,6 +37,7 @@ public class BaseSqlDialectStatements implements KeyPairResourceStoreStatements 
                 .column(getPrivateKeyAliasColumn())
                 .column(getStateColumn())
                 .column(getKeyContextColumn())
+                .column(getUsageColumn())
                 .insertInto(getTableName());
     }
 
@@ -55,6 +56,7 @@ public class BaseSqlDialectStatements implements KeyPairResourceStoreStatements 
                 .column(getPrivateKeyAliasColumn())
                 .column(getStateColumn())
                 .column(getKeyContextColumn())
+                .column(getUsageColumn())
                 .update(getTableName(), getIdColumn());
     }
 

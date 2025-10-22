@@ -24,6 +24,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerRuntime;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -165,6 +167,7 @@ public class DcpIssuerIssuanceFlowTest {
                 .active(true)
                 .serviceEndpoint(new Service(UUID.randomUUID().toString(), "IssuerService", issuerServiceUrl))
                 .key(KeyDescriptor.Builder.newInstance()
+                        .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                         .publicKeyJwk(issuerKey.toPublicJWK().toJSONObject())
                         .privateKeyAlias(privateKeyAlias)
                         .keyId(issuerKey.getKeyID())

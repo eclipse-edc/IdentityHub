@@ -547,7 +547,7 @@ class DidDocumentServiceImplTest {
                 .id(UUID.randomUUID().toString())
                 .payload(KeyPairActivated.Builder.newInstance()
                         .keyId(keyId)
-                        .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
+                        .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
                         .participantContextId("test-participant")
                         .publicKey(key.toPublicJWK().toJSONString(), JSON_WEB_KEY_2020)
                         .build())
@@ -582,7 +582,7 @@ class DidDocumentServiceImplTest {
                 .id(UUID.randomUUID().toString())
                 .payload(KeyPairRevoked.Builder.newInstance()
                         .keyId(keyId)
-                        .keyPairResource(KeyPairResource.Builder.newInstance().id(UUID.randomUUID().toString()).build())
+                        .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
                         .participantContextId("test-participant")
                         .build())
                 .build();

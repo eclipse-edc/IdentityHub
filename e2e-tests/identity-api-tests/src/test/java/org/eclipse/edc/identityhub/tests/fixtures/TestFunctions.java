@@ -19,10 +19,12 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class TestFunctions {
@@ -38,6 +40,7 @@ public class TestFunctions {
 
     public static KeyDescriptor.Builder createKeyDescriptor() {
         return KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .privateKeyAlias("another-alias")
                 .keyGeneratorParams(Map.of("algorithm", "EdDSA", "curve", "Ed25519"))
                 .keyId("another-keyid");

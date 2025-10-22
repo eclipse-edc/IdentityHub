@@ -21,6 +21,7 @@ import org.eclipse.edc.iam.did.spi.document.DidConstants;
 import org.eclipse.edc.spi.security.Vault;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -42,6 +43,8 @@ public class KeyDescriptor {
     private String publicKeyPem;
     private Map<String, Object> keyGeneratorParams;
     private boolean isActive = true;
+    // todo: this is done for backwards compatibility ONLY and will eventually go away
+    private Set<KeyPairUsage> usage;// = Set.of(KeyPairUsage.values());
 
     private KeyDescriptor() {
     }
@@ -104,6 +107,15 @@ public class KeyDescriptor {
         return resourceId;
     }
 
+    /**
+     * Determines the usage(s) of the key.
+     *
+     * @return the usage(s) of the key
+     */
+    public Set<KeyPairUsage> getUsage() {
+        return usage;
+    }
+
     @JsonPOJOBuilder(withPrefix = "")
     public static final class Builder {
         private final KeyDescriptor keyDescriptor;
@@ -154,6 +166,11 @@ public class KeyDescriptor {
 
         public Builder resourceId(String resourceId) {
             keyDescriptor.resourceId = resourceId;
+            return this;
+        }
+
+        public Builder usage(Set<KeyPairUsage> usages) {
+            keyDescriptor.usage = usages;
             return this;
         }
 

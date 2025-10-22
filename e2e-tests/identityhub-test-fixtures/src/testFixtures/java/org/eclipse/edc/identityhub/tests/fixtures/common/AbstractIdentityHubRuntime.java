@@ -29,6 +29,7 @@ import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
@@ -46,6 +47,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static java.lang.String.format;
@@ -109,6 +111,7 @@ public abstract class AbstractIdentityHubRuntime<T extends AbstractIdentityHubEx
                         .resourceId(participantContextId + "-resource")
                         .keyId(keyId)
                         .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"))
+                        .usage(Set.of(KeyPairUsage.values()))
                         .build())
                 .build();
         var srv = extension.getRuntime().getService(ParticipantContextService.class);
@@ -178,6 +181,7 @@ public abstract class AbstractIdentityHubRuntime<T extends AbstractIdentityHubEx
         var keyId = "key-id-%s".formatted(UUID.randomUUID());
         return KeyDescriptor.Builder.newInstance()
                 .keyId(keyId)
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .active(false)
                 .resourceId(UUID.randomUUID().toString())
                 .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_384.getStdName()))

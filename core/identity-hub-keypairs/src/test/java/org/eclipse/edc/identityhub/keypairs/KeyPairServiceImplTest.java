@@ -22,6 +22,7 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
@@ -39,6 +40,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -430,7 +432,7 @@ class KeyPairServiceImplTest {
     }
 
     private KeyPairResource.Builder createKeyPairResource() {
-        return KeyPairResource.Builder.newInstance()
+        return KeyPairResource.Builder.newPresentationSigning().usage(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.ID_TOKEN, KeyPairUsage.ACCESS_TOKEN)
                 .id(UUID.randomUUID().toString())
                 .keyId("test-key-1")
                 .privateKeyAlias("private-key-alias")
@@ -441,7 +443,9 @@ class KeyPairServiceImplTest {
 
     @NotNull
     private KeyDescriptor.Builder createKey() {
-        return KeyDescriptor.Builder.newInstance().keyId("test-kie")
+        return KeyDescriptor.Builder.newInstance()
+                .keyId("test-kid")
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .privateKeyAlias("private-alias")
                 .publicKeyJwk(createJwk());
     }

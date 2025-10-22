@@ -14,9 +14,11 @@
 
 package org.eclipse.edc.identityhub.store.sql.keypair;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -31,6 +33,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.notFound;
@@ -38,6 +41,8 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
 
 public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPairResourceStore {
 
+    private static final TypeReference<Set<KeyPairUsage>> LIST_TYPE = new TypeReference<>() {
+    };
     private final KeyPairResourceStoreStatements statements;
 
     public SqlKeyPairResourceStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext, ObjectMapper objectMapper, QueryExecutor queryExecutor, KeyPairResourceStoreStatements statements) {
@@ -65,7 +70,8 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                         keyPairResource.getSerializedPublicKey(),
                         keyPairResource.getPrivateKeyAlias(),
                         keyPairResource.getState(),
-                        keyPairResource.getKeyContext());
+                        keyPairResource.getKeyContext(),
+                        toJson(keyPairResource.getUsage()));
 
                 return success();
             } catch (SQLException e) {
@@ -110,6 +116,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                         keyPairResource.getPrivateKeyAlias(),
                         keyPairResource.getState(),
                         keyPairResource.getKeyContext(),
+                        toJson(keyPairResource.getUsage()),
                         id);
 
                 return success();
@@ -146,7 +153,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
 
     private KeyPairResource mapResultSet(ResultSet resultSet) throws Exception {
 
-        return KeyPairResource.Builder.newInstance()
+        return KeyPairResource.Builder.newPresentationSigning()
                 .id(resultSet.getString(statements.getIdColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantIdColumn()))
                 .timestamp(resultSet.getLong(statements.getTimestampColumn()))
@@ -159,6 +166,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                 .privateKeyAlias(resultSet.getString(statements.getPrivateKeyAliasColumn()))
                 .state(resultSet.getInt(statements.getStateColumn()))
                 .keyContext(resultSet.getString(statements.getKeyContextColumn()))
+                .usage(fromJson(resultSet.getString(statements.getUsageColumn()), LIST_TYPE))
                 .build();
     }
 

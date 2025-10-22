@@ -75,6 +75,10 @@ public interface KeyPairResourceStoreStatements extends SqlStatements {
         return "key_context";
     }
 
+    default String getUsageColumn() {
+        return "usage";
+    }
+
     String getInsertTemplate();
 
     String getUpdateTemplate();

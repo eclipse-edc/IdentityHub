@@ -79,6 +79,10 @@ public class KeyDescriptorValidator implements Validator<KeyDescriptor> {
             return failure(violation("Either the public key is specified (PEM or JWK), or the generator params are provided, not both.", "keyGeneratorPArams"));
         }
 
+        if (input.getUsage() == null || input.getUsage().isEmpty()) {
+            return failure(violation("usage must be specified", "usage"));
+        }
+
         return success();
     }
 

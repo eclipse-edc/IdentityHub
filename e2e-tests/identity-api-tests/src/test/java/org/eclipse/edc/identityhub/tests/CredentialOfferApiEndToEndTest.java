@@ -31,6 +31,7 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
@@ -56,6 +57,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -222,6 +224,7 @@ public class CredentialOfferApiEndToEndTest {
                     .did("did:web:%s".formatted(Tests.TEST_PARTICIPANT_CONTEXT_ID.replace("did:web:", "")))
                     .active(true)
                     .key(KeyDescriptor.Builder.newInstance()
+                            .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                             .publicKeyJwk(participantKey.toPublicJWK().toJSONObject())
                             .privateKeyAlias(privateKeyAlias)
                             .keyId(participantKey.getKeyID())

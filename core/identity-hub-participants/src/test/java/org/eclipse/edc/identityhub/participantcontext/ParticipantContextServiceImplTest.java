@@ -23,6 +23,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.AccountInfo;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -44,6 +45,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -384,6 +386,7 @@ class ParticipantContextServiceImplTest {
     @NotNull
     private KeyDescriptor.Builder createKey() {
         return KeyDescriptor.Builder.newInstance().keyId("test-kie")
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .privateKeyAlias("private-alias")
                 .publicKeyJwk(createJwk());
     }
