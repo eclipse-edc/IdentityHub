@@ -61,20 +61,12 @@ public class AllInOneExtension extends ComponentExtension {
         issuerApiEndpoint = new LazySupplier<>(() -> new Endpoint(URI.create("http://%s:%d/api/issuance".formatted(host, getFreePort())), Map.of()));
     }
 
-    public Endpoint getIssuerApiEndpoint() {
-        return issuerApiEndpoint.get();
-    }
-
     public Endpoint getAdminEndpoint() {
         return adminEndpoint.get();
     }
 
     public Endpoint getCredentialsEndpoint() {
         return credentialsEndpoint.get();
-    }
-
-    public Endpoint getStsEndpoint() {
-        return stsEndpoint.get();
     }
 
     @Override
