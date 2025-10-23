@@ -93,7 +93,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
-public class DcpFlowAllInOneTest {
+public class DcpIssuanceFlowAllInOneTest {
 
 
     protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
