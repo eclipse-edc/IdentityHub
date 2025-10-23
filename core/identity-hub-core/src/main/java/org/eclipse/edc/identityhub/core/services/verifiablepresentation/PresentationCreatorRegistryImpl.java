@@ -18,14 +18,11 @@ package org.eclipse.edc.identityhub.core.services.verifiablepresentation;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
-import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.HashMap;
@@ -35,7 +32,6 @@ import java.util.Map;
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators.PresentationGeneratorConstants.CONTROLLER_ADDITIONAL_DATA;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.PRESENTATION_SIGNING;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 
 public class PresentationCreatorRegistryImpl implements PresentationCreatorRegistry {
 
@@ -60,23 +56,9 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
     public <T> T createPresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, CredentialFormat format, Map<String, Object> additionalData) {
         var creator = ofNullable(creators.get(format)).orElseThrow(() -> new EdcException("No %s was found for CredentialFormat %s".formatted(PresentationGenerator.class.getSimpleName(), format)));
 
-        var query = queryByParticipantContextId(participantContextId)
-                .filter(new Criterion("state", "=", KeyPairState.ACTIVATED.code()))
-                .build();
-
         return transactionContext.execute(() -> {
-            var keyPairResult = keyPairService.query(query)
-                    .orElseThrow(f -> new EdcException("Error obtaining private key for participant '%s': %s".formatted(participantContextId, f.getFailureDetail())));
-
-            keyPairResult = keyPairResult.stream().filter(kp -> kp.getUsage().contains(PRESENTATION_SIGNING)).toList();
-
-            KeyPairResource signingKeyPair;
-            if (keyPairResult.size() > 1) {
-                signingKeyPair = keyPairResult.stream().filter(KeyPairResource::isDefaultPair).findAny() // find the default key
-                        .orElseThrow(() -> new EdcException("Multiple key-pairs found for signing presentations, but none was marked as 'default'"));
-            } else { //skip check for
-                signingKeyPair = keyPairResult.stream().findFirst().orElseThrow(() -> new EdcException("No active key pair found for participant '%s' with usage '%s'".formatted(participantContextId, PRESENTATION_SIGNING.name())));
-            }
+            var signingKeyPair = keyPairService.getActiveKeyPairForUsage(participantContextId, PRESENTATION_SIGNING)
+                    .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
 
             var did = participantContextService.getParticipantContext(participantContextId)

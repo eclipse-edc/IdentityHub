@@ -35,16 +35,17 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.CREDENTIAL_SIGNING;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -78,7 +79,7 @@ public class CredentialGeneratorRegistryImplTest {
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(success(participantContext));
         when(holderService.findById("holderId")).thenReturn(success(participant));
-        when(keyPairService.query(any())).thenReturn(success(List.of(key)));
+        when(keyPairService.getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING))).thenReturn(success(key));
         when(generator.generateCredential(eq(definition), eq(key.getPrivateKeyAlias()), eq(key.getKeyId()), eq("issuerDid"), eq("participantDid"), any())).thenReturn(Result.success(mock()));
         var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
@@ -157,114 +158,12 @@ public class CredentialGeneratorRegistryImplTest {
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(success(participantContext));
         when(holderService.findById("holderId")).thenReturn(success(participant));
-        when(keyPairService.query(any())).thenReturn(success(List.of()));
+        when(keyPairService.getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING))).thenReturn(ServiceResult.notFound("foobar"));
 
         var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
 
-        assertThat(result).isFailed().detail().contains("No active key pair found");
-    }
-
-    @Test
-    void generate_whenSingleKeyWrongUsage_shouldFail() {
-        var now = Instant.now();
-        var credential = createCredential(now).build();
-        var generator = mock(CredentialGenerator.class);
-        when(generator.signCredential(any(), any(), any())).thenReturn(Result.success("some-token"));
-        credentialGeneratorRegistry.addGenerator(CredentialFormat.VC2_0_JOSE, generator);
-
-        var key = KeyPairResource.Builder.newTokenSigning().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
-        when(keyPairService.query(any())).thenReturn(success(List.of(key)));
-
-        var result = credentialGeneratorRegistry.signCredential("test-participant", credential, CredentialFormat.VC2_0_JOSE);
-
-        assertThat(result).isFailed()
-                .detail().isEqualTo("No active key pair found for participant 'test-participant' with usage 'CREDENTIAL_SIGNING'");
-
-        verify(keyPairService).query(any());
-        verifyNoMoreInteractions(participantContextService, keyPairService, generator, holderService, claimsMapper);
-    }
-
-    @Test
-    void generate_whenMultipleKeys_noDefault_shouldFail() {
-        var generator = mock(CredentialGenerator.class);
-        credentialGeneratorRegistry.addGenerator(VC1_0_JWT, generator);
-        var definition = createCredentialDefinition();
-
-        var participantContext = ParticipantContext.Builder.newInstance()
-                .participantContextId("participantContextId")
-                .apiTokenAlias("apiTokenAlias")
-                .did("issuerDid")
-                .build();
-
-        var participant = createHolder();
-
-        var key1 = KeyPairResource.Builder.newCredentialSigning().id("keyId1").keyId("keyId1").privateKeyAlias("keyAlias1").isDefaultPair(false).build();
-        var key2 = KeyPairResource.Builder.newCredentialSigning().id("keyId2").keyId("keyId2").privateKeyAlias("keyAlias2").isDefaultPair(false).build();
-
-        when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
-        when(participantContextService.getParticipantContext("participantContextId")).thenReturn(success(participantContext));
-        when(holderService.findById("holderId")).thenReturn(success(participant));
-        when(keyPairService.query(any())).thenReturn(success(List.of(key1, key2)));
-        var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
-        var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
-
-        assertThat(result).isFailed();
-        verifyNoMoreInteractions(generator);
-    }
-
-    @Test
-    void generate_whenMultipleKeysWrongUsage_shouldFail() {
-        var generator = mock(CredentialGenerator.class);
-        credentialGeneratorRegistry.addGenerator(VC1_0_JWT, generator);
-        var definition = createCredentialDefinition();
-
-        var participantContext = ParticipantContext.Builder.newInstance()
-                .participantContextId("participantContextId")
-                .apiTokenAlias("apiTokenAlias")
-                .did("issuerDid")
-                .build();
-
-        var participant = createHolder();
-
-        var key1 = KeyPairResource.Builder.newTokenSigning().id("keyId1").keyId("keyId1").privateKeyAlias("keyAlias1").isDefaultPair(true).build();
-        var key2 = KeyPairResource.Builder.newTokenSigning().id("keyId2").keyId("keyId2").privateKeyAlias("keyAlias2").isDefaultPair(false).build();
-
-        when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
-        when(participantContextService.getParticipantContext("participantContextId")).thenReturn(success(participantContext));
-        when(holderService.findById("holderId")).thenReturn(success(participant));
-        when(keyPairService.query(any())).thenReturn(success(List.of(key1, key2)));
-        var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
-        var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
-
-        assertThat(result).isFailed().detail().isEqualTo("No active key pair found for participant 'participantContextId' with usage 'CREDENTIAL_SIGNING'");
-        verifyNoMoreInteractions(generator);
-    }
-
-    @Test
-    void generate_generationFails_shouldFail() {
-
-        var generator = mock(CredentialGenerator.class);
-        credentialGeneratorRegistry.addGenerator(VC1_0_JWT, generator);
-        var definition = createCredentialDefinition();
-
-        var participantContext = ParticipantContext.Builder.newInstance().participantContextId("participantContextId").apiTokenAlias("apiTokenAlias")
-                .did("issuerDid")
-                .build();
-
-        var participant = createHolder();
-
-        var key = KeyPairResource.Builder.newCredentialSigning().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
-
-        when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
-        when(participantContextService.getParticipantContext("participantContextId")).thenReturn(success(participantContext));
-        when(holderService.findById("holderId")).thenReturn(success(participant));
-        when(keyPairService.query(any())).thenReturn(success(List.of(key)));
-        when(generator.generateCredential(eq(definition), eq(key.getPrivateKeyAlias()), eq(key.getKeyId()), eq("issuerDid"), eq("participantDid"), any())).thenReturn(Result.failure("failed"));
-        var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
-        var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
-
-        assertThat(result).isFailed().detail().contains("failed");
+        assertThat(result).isFailed().detail().contains("foobar");
     }
 
     @Test
@@ -276,7 +175,7 @@ public class CredentialGeneratorRegistryImplTest {
         credentialGeneratorRegistry.addGenerator(CredentialFormat.VC2_0_JOSE, generator);
 
         var key = KeyPairResource.Builder.newCredentialSigning().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
-        when(keyPairService.query(any())).thenReturn(success(List.of(key)));
+        when(keyPairService.getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING))).thenReturn(success(key));
 
         var result = credentialGeneratorRegistry.signCredential("test-participant", credential, CredentialFormat.VC2_0_JOSE);
 
@@ -288,7 +187,7 @@ public class CredentialGeneratorRegistryImplTest {
                 });
 
         verify(generator).signCredential(any(), any(), any());
-        verify(keyPairService).query(any());
+        verify(keyPairService).getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING));
         verifyNoMoreInteractions(participantContextService, keyPairService, generator, holderService, claimsMapper);
     }
 
@@ -301,13 +200,13 @@ public class CredentialGeneratorRegistryImplTest {
         when(generator.signCredential(any(), any(), any())).thenReturn(Result.success("some-token"));
         credentialGeneratorRegistry.addGenerator(CredentialFormat.VC2_0_JOSE, generator);
 
-        when(keyPairService.query(any())).thenReturn(ServiceResult.notFound("foobar"));
+        when(keyPairService.getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING))).thenReturn(ServiceResult.notFound("foobar"));
 
         var result = credentialGeneratorRegistry.signCredential("test-participant", credential, CredentialFormat.VC2_0_JOSE);
 
         assertThat(result).isFailed()
                 .detail().contains("foobar");
-        verify(keyPairService).query(any());
+        verify(keyPairService).getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING));
         verifyNoMoreInteractions(participantContextService, keyPairService, generator, holderService, claimsMapper);
     }
 

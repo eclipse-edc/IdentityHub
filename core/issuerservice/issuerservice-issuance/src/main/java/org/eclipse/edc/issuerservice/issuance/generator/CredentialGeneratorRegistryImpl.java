@@ -19,9 +19,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -31,7 +29,6 @@ import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorR
 import org.eclipse.edc.issuerservice.spi.issuance.mapping.IssuanceClaimsMapper;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 
 import java.util.HashMap;
@@ -40,7 +37,6 @@ import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.CREDENTIAL_SIGNING;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.Result.success;
 
 public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegistry {
@@ -87,29 +83,9 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
     }
 
     private Result<KeyPairResource> fetchActiveKeyPair(String participantContextId) {
-        var query = queryByParticipantContextId(participantContextId)
-                .filter(new Criterion("state", "=", KeyPairState.ACTIVATED.code()))
-                .build();
 
-
-        var keyPairResult = keyPairService.query(query);
-        if (keyPairResult.failed()) {
-            return Result.failure("Error obtaining private key for participant '%s': %s".formatted(participantContextId, keyPairResult.getFailureDetail()));
-        }
-
-
-        var keyPairs = keyPairResult.getContent().stream().filter(kp -> kp.getUsage().contains(KeyPairUsage.CREDENTIAL_SIGNING)).toList();
-        // check if there is a default key pair
-        Result<KeyPairResource> selectedKeyPairResult;
-        if (keyPairs.size() > 1) {
-            selectedKeyPairResult = keyPairs.stream().filter(KeyPairResource::isDefaultPair).findAny().map(Result::success) // find the default key
-                    .orElse(Result.failure("Multiple key-pairs found for signing credentials, but none was marked as 'default'"));
-        } else { //skip check for
-            selectedKeyPairResult = keyPairs.stream().findFirst().map(Result::success).orElse(Result.failure("No active key pair found for participant '%s' with usage '%s'".formatted(participantContextId, CREDENTIAL_SIGNING.name())));
-        }
-
-        return selectedKeyPairResult;
-
+        var res = keyPairService.getActiveKeyPairForUsage(participantContextId, CREDENTIAL_SIGNING);
+        return res.succeeded() ? Result.success(res.getContent()) : Result.failure(res.getFailureDetail());
     }
 
     private Result<VerifiableCredentialContainer> generateCredentialInternal(String participantContextId, String participantId, CredentialGenerationRequest credentialGenerationRequest, Map<String, Object> mappedClaims) {

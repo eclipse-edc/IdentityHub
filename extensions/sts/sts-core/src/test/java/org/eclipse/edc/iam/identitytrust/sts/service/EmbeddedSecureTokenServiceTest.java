@@ -49,7 +49,7 @@ class EmbeddedSecureTokenServiceTest {
     private final TokenGenerationService tokenGenerationService = mock();
     private final StsAccountService stsAccountService = mock();
     private final KeyPairResourceStore keyPairStore = mock();
-    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(), stsAccountService, keyPairStore);
+    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(), stsAccountService);
 
     @BeforeEach
     void setup() {

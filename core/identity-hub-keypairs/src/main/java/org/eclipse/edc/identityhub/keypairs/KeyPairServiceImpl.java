@@ -22,6 +22,7 @@ import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
@@ -52,6 +53,7 @@ import java.util.stream.Collectors;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.ACTIVATED;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.CREATED;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     private final KeyPairResourceStore keyPairResourceStore;
@@ -119,7 +121,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                         if (keyDescriptor.isActive()) {
                             return activateKeyPair(newResource);
                         }
-                        return ServiceResult.success();
+                        return success();
                     });
         });
     }
@@ -194,6 +196,39 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     }
 
     @Override
+    public ServiceResult<KeyPairResource> getActiveKeyPairForUsage(String participantContextId, KeyPairUsage usage) {
+        return transactionContext.execute(() -> {
+            var query = queryByParticipantContextId(participantContextId)
+                    .filter(new Criterion("state", "=", KeyPairState.ACTIVATED.code()))
+                    .build();
+
+
+            var keyPairResult = keyPairResourceStore.query(query);
+            if (keyPairResult.failed()) {
+                return ServiceResult.unexpected("Error obtaining private key for participant '%s': %s".formatted(participantContextId, keyPairResult.getFailureDetail()));
+            }
+
+
+            var keyPairs = keyPairResult.getContent().stream().filter(kp -> kp.getUsage().contains(usage)).toList();
+            // check if there is a default key pair
+            ServiceResult<KeyPairResource> selectedKeyPairResult;
+            if (keyPairs.size() > 1) {
+                selectedKeyPairResult = keyPairs.stream()
+                        .filter(KeyPairResource::isDefaultPair)
+                        .findAny()
+                        .map(ServiceResult::success) // find the default key
+                        .orElse(ServiceResult.badRequest("Multiple key-pairs found for signing credentials, but none was marked as 'default'"));
+            } else { //skip check for
+                selectedKeyPairResult = keyPairs.stream().findFirst()
+                        .map(ServiceResult::success)
+                        .orElse(ServiceResult.notFound("No active key pair found for participant '%s' with usage '%s'".formatted(participantContextId, usage.name())));
+            }
+
+            return selectedKeyPairResult;
+        });
+    }
+
+    @Override
     public <E extends Event> void on(EventEnvelope<E> eventEnvelope) {
         var payload = eventEnvelope.getPayload();
         if (payload instanceof ParticipantContextDeleted deleted) {
@@ -219,7 +254,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
                                 return ServiceResult.badRequest("To add a key pair, the ParticipantContext with ID '%s' must be in state %s or %s but was %s."
                                         .formatted(participantContextId, ACTIVATED, CREATED, state));
                             }
-                            return ServiceResult.success();
+                            return success();
                         })
                         .orElse(ServiceResult.notFound("No ParticipantContext with ID '%s' was found.".formatted(participantContextId))));
         return result.mapEmpty();
