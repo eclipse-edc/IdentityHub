@@ -41,11 +41,25 @@ class KeyDescriptorValidatorTest {
     }
 
     @Test
-    void validate_noUsage() {
+    void validate_nullUsage() {
         var descriptor = KeyDescriptor.Builder.newInstance()
                 .keyId("key-id")
                 .privateKeyAlias("alias")
                 .keyGeneratorParams(Map.of("bar", "baz"))
+                .usage(null)
+                .build();
+
+        assertThat(validator.validate(descriptor)).isFailed()
+                .detail().isEqualTo("usage must be specified");
+    }
+
+    @Test
+    void validate_emptyUsage() {
+        var descriptor = KeyDescriptor.Builder.newInstance()
+                .keyId("key-id")
+                .privateKeyAlias("alias")
+                .keyGeneratorParams(Map.of("bar", "baz"))
+                .usage(Set.of())
                 .build();
 
         assertThat(validator.validate(descriptor)).isFailed()
