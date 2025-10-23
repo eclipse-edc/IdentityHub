@@ -45,7 +45,7 @@ public class KeyDescriptor {
     private Map<String, Object> keyGeneratorParams;
     private boolean isActive = true;
     // todo: this is done for backwards compatibility ONLY and will eventually go away
-    private Set<KeyPairUsage> usage;// = Set.of(KeyPairUsage.values());
+    private Set<KeyPairUsage> usage = Set.of(KeyPairUsage.values());
 
     private KeyDescriptor() {
     }
