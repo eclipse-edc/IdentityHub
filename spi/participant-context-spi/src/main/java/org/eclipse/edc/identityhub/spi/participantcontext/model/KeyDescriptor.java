@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.iam.did.spi.document.DidConstants;
@@ -169,6 +170,7 @@ public class KeyDescriptor {
             return this;
         }
 
+        @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
         public Builder usage(Set<KeyPairUsage> usages) {
             keyDescriptor.usage = usages;
             return this;

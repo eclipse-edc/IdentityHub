@@ -14,26 +14,27 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
-public enum KeyPairUsage {
-    CREDENTIAL_SIGNING("credential", 100),
-    PRESENTATION_SIGNING("presentation", 200),
-    TOKEN_SIGNING("token_signing", 300);
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-    private final String name;
+public enum KeyPairUsage {
+    @JsonProperty("sign_credentials")
+    CREDENTIAL_SIGNING("sign_credentials", 100),
+    @JsonProperty("sign_presentation")
+    PRESENTATION_SIGNING("sign_presentation", 200),
+    @JsonProperty("sign_token")
+    TOKEN_SIGNING("sign_token", 300);
+
+    private final String value;
     private final int code;
 
     KeyPairUsage(String keyPairName, int code) {
-        this.name = keyPairName;
+        this.value = keyPairName;
         this.code = code;
-    }
-
-    public static KeyPairUsage fromName(String s) {
-        return KeyPairUsage.valueOf(KeyPairUsage.class, s);
     }
 
     @Override
     public String toString() {
-        return name;
+        return value;
     }
 
     public int code() {

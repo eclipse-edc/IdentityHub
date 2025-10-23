@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.iam.did.spi.document.Service;
@@ -33,13 +34,13 @@ import static java.util.Optional.ofNullable;
  */
 @JsonDeserialize(builder = ParticipantManifest.Builder.class)
 public class ParticipantManifest {
+    private Set<KeyDescriptor> keys = new HashSet<>();
     private Map<String, Object> additionalProperties = new HashMap<>();
     private List<String> roles = new ArrayList<>();
     private Set<Service> serviceEndpoints = new HashSet<>();
     private boolean isActive;
     private String participantId;
     private String did;
-    private KeyDescriptor key;
 
     private ParticipantManifest() {
     }
@@ -77,8 +78,8 @@ public class ParticipantManifest {
     /**
      * Key material that is to be associated with this participant. May not be null.
      */
-    public KeyDescriptor getKey() {
-        return key;
+    public Set<KeyDescriptor> getKeys() {
+        return keys;
     }
 
     /**
@@ -132,7 +133,13 @@ public class ParticipantManifest {
         }
 
         public Builder key(KeyDescriptor key) {
-            manifest.key = key;
+            manifest.keys.add(key);
+            return this;
+        }
+
+        @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+        public Builder keys(Set<KeyDescriptor> keys) {
+            manifest.keys = keys;
             return this;
         }
 

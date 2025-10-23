@@ -19,7 +19,6 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
@@ -269,11 +268,6 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
 
         return ServiceResult.from(keyPairResourceStore.update(existingKeyPair)
                 .onSuccess(u -> observable.invokeForEach(l -> l.activated(existingKeyPair, existingKeyPair.getKeyContext()))));
-    }
-
-    private void created(ParticipantContextCreated event) {
-        addKeyPair(event.getParticipantContextId(), event.getManifest().getKey(), true)
-                .onFailure(f -> monitor.warning("Adding the key pair to a new ParticipantContext failed: %s".formatted(f.getFailureDetail())));
     }
 
     private void deleted(ParticipantContextDeleted event) {

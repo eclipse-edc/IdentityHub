@@ -67,9 +67,11 @@ class ParticipantManifestValidatorTest {
 
     @Test
     void validate_keyDescriptorNull() {
-        var manifest = createManifest().key(null).build();
-        assertThat(validator.validate(manifest)).isFailed()
+        assertThat(validator.validate(createManifest().keys(null).build())).isFailed()
                 .detail().isEqualTo("key descriptor cannot be null.");
+
+        assertThat(validator.validate(createManifest().keys(Set.of()).build())).isFailed()
+                .detail().isEqualTo("key descriptor cannot be empty.");
     }
 
     @Test

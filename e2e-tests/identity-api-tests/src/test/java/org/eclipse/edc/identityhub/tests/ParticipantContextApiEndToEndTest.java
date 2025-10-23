@@ -56,6 +56,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -182,7 +183,7 @@ public class ParticipantContextApiEndToEndTest {
                     .participantId(participantId)
                     .active(true)
                     .did("did:web:" + participantId)
-                    .key(createKeyDescriptor().active(true).build())
+                    .keys(Set.of(createKeyDescriptor().active(true).build()))
                     .build();
 
             router.registerSync(DidDocumentPublished.class, subscriber);
@@ -200,7 +201,8 @@ public class ParticipantContextApiEndToEndTest {
             verify(subscriber).on(argThat(env -> env.getPayload() instanceof ParticipantContextCreated created && created.getParticipantContextId().equals(manifest.getParticipantId())));
             verify(subscriber, times(1)).on(argThat(evt -> evt.getPayload() instanceof DidDocumentPublished));
 
-            assertThat(identityHubRuntime.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1)
+            assertThat(identityHubRuntime.getKeyPairsForParticipant(manifest.getParticipantId()))
+                    .hasSize(1)
                     .allSatisfy(kpr -> assertThat(kpr.getState()).isEqualTo(KeyPairState.ACTIVATED.code()));
             assertThat(identityHubRuntime.getDidForParticipant(manifest.getParticipantId()))
                     .hasSize(1)
@@ -245,7 +247,7 @@ public class ParticipantContextApiEndToEndTest {
                     .active(true)
                     .participantId(participantId)
                     .did("did:web:" + participantId)
-                    .key(createKeyDescriptor().active(false).build())
+                    .keys(Set.of(createKeyDescriptor().active(false).build()))
                     .build();
 
             identityHubRuntime.getIdentityEndpoint().baseRequest()
