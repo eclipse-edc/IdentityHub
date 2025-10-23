@@ -17,8 +17,7 @@ package org.eclipse.edc.identityhub.spi.participantcontext.model;
 public enum KeyPairUsage {
     CREDENTIAL_SIGNING("credential", 100),
     PRESENTATION_SIGNING("presentation", 200),
-    ACCESS_TOKEN("access_token", 300),
-    ID_TOKEN("id_token", 400);
+    TOKEN_SIGNING("token_signing", 300);
 
     private final String name;
     private final int code;

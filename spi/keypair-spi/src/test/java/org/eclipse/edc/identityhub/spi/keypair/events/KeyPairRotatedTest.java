@@ -31,7 +31,7 @@ class KeyPairRotatedTest {
     @Test
     void verify_serDes() {
         var evt = KeyPairRotated.Builder.newInstance()
-                .keyPairResource(KeyPairResource.Builder.newPresentationSigning().usage(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.ID_TOKEN, KeyPairUsage.ACCESS_TOKEN).id(UUID.randomUUID().toString()).build())
+                .keyPairResource(KeyPairResource.Builder.newPresentationSigning().usage(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.TOKEN_SIGNING).id(UUID.randomUUID().toString()).build())
                 .keyId("key-id")
                 .participantContextId("participant-id")
                 .build();

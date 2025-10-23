@@ -173,7 +173,7 @@ public class CredentialGeneratorRegistryImplTest {
         when(generator.signCredential(any(), any(), any())).thenReturn(Result.success("some-token"));
         credentialGeneratorRegistry.addGenerator(CredentialFormat.VC2_0_JOSE, generator);
 
-        var key = KeyPairResource.Builder.newAccessToken().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
+        var key = KeyPairResource.Builder.newTokenSigning().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
         when(keyPairService.query(any())).thenReturn(success(List.of(key)));
 
         var result = credentialGeneratorRegistry.signCredential("test-participant", credential, CredentialFormat.VC2_0_JOSE);
@@ -227,8 +227,8 @@ public class CredentialGeneratorRegistryImplTest {
 
         var participant = createHolder();
 
-        var key1 = KeyPairResource.Builder.newAccessToken().id("keyId1").keyId("keyId1").privateKeyAlias("keyAlias1").isDefaultPair(true).build();
-        var key2 = KeyPairResource.Builder.newIdToken().id("keyId2").keyId("keyId2").privateKeyAlias("keyAlias2").isDefaultPair(false).build();
+        var key1 = KeyPairResource.Builder.newTokenSigning().id("keyId1").keyId("keyId1").privateKeyAlias("keyAlias1").isDefaultPair(true).build();
+        var key2 = KeyPairResource.Builder.newTokenSigning().id("keyId2").keyId("keyId2").privateKeyAlias("keyAlias2").isDefaultPair(false).build();
 
         when(claimsMapper.apply(anyList(), any())).thenReturn(Result.success(Map.of()));
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(success(participantContext));

@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.spi.keypair;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
@@ -76,4 +77,23 @@ public interface KeyPairService {
      * @return return a failure if the key pair resource is not in either {@link KeyPairState#CREATED} or {@link KeyPairState#ACTIVATED}
      */
     ServiceResult<Void> activate(String keyPairResourceId);
+
+    /**
+     * Returns the {@link KeyPairResource} that fulfills the following properties:
+     * <ul>
+     *     <li>usage is equal to specified {@link KeyPairUsage}</li>
+     *     <li>is in state {@link KeyPairState#ACTIVATED}</li>
+     *     <li>is not revoked</li>
+     * </ul>
+     * <p>
+     * <p>
+     * If only a single key pair fulfills the above properties, it will be returned, but if multiple key pairs fulfill
+     * the above properties, the one with the {@link KeyPairResource#isDefaultPair()} flag set to {@code true} will be returned.
+     * If several have that flag set, one is picked at random. If none has that flag set, a failure will be returned.
+     *
+     * @param participantContextId The ID of the participant context.
+     * @param usage                The {@link KeyPairUsage} for which the key pair is requested.
+     * @return The default key pair for the given usage, or a failure if no key pair fulfills the above properties.
+     */
+    ServiceResult<KeyPairResource> getActiveKeyPairForUsage(String participantContextId, KeyPairUsage usage);
 }

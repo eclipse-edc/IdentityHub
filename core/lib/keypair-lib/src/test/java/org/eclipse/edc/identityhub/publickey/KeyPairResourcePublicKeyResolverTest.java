@@ -149,7 +149,7 @@ class KeyPairResourcePublicKeyResolverTest {
     }
 
     private KeyPairResource.Builder createKeyPairResource() {
-        return KeyPairResource.Builder.newIdToken()
+        return KeyPairResource.Builder.newTokenSigning()
                 .id(UUID.randomUUID().toString())
                 .keyId(UUID.randomUUID().toString())
                 .isDefaultPair(true)

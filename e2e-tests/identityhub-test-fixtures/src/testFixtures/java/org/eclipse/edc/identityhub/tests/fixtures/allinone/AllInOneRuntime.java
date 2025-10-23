@@ -87,7 +87,7 @@ public class AllInOneRuntime {
                 .roles(roles)
                 .did(did)
                 .key(KeyDescriptor.Builder.newInstance()
-                        .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.ID_TOKEN, KeyPairUsage.ACCESS_TOKEN))
+                        .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.TOKEN_SIGNING))
                         .privateKeyAlias(participantContextId + "-alias")
                         .resourceId(participantContextId + "-resource")
                         .keyId(keyId)

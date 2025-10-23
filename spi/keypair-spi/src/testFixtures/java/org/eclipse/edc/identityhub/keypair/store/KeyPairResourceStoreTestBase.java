@@ -194,7 +194,7 @@ public abstract class KeyPairResourceStoreTestBase {
 
     private KeyPairResource.Builder createKeyPairResource() {
         return KeyPairResource.Builder.newPresentationSigning()
-                .usage(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.ID_TOKEN, KeyPairUsage.ACCESS_TOKEN)
+                .usage(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.TOKEN_SIGNING)
                 .id(UUID.randomUUID().toString())
                 .keyId("test-key-1")
                 .privateKeyAlias("private-key-alias")

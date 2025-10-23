@@ -16,6 +16,7 @@ package org.eclipse.edc.iam.identitytrust.sts.service;
 
 import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccount;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
+import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -47,15 +48,14 @@ class EmbeddedSecureTokenServiceTest {
     public static final String TEST_PARTICIPANT = "test-participant";
     private final TokenGenerationService tokenGenerationService = mock();
     private final StsAccountService stsAccountService = mock();
-    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(), stsAccountService);
+    private final KeyPairResourceStore keyPairStore = mock();
+    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(), stsAccountService, keyPairStore);
 
     @BeforeEach
     void setup() {
         when(stsAccountService.findById(anyString())).thenReturn(
                 ServiceResult.success(StsAccount.Builder.newInstance()
                         .id("key-pair-id")
-                        .privateKeyAlias(TEST_PRIVATEKEY_ID)
-                        .publicKeyReference("key-id")
                         .clientId(TEST_PRIVATEKEY_ID)
                         .secretAlias(TEST_PARTICIPANT + "-alias")
                         .name(TEST_PARTICIPANT)

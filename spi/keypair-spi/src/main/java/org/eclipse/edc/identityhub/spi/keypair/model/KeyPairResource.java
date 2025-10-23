@@ -163,12 +163,8 @@ public class KeyPairResource extends AbstractParticipantResource {
             return new Builder().usage(KeyPairUsage.PRESENTATION_SIGNING);
         }
 
-        public static Builder newAccessToken() {
-            return new Builder().usage(KeyPairUsage.ACCESS_TOKEN);
-        }
-
-        public static Builder newIdToken() {
-            return new Builder().usage(KeyPairUsage.ID_TOKEN);
+        public static Builder newTokenSigning() {
+            return new Builder().usage(KeyPairUsage.TOKEN_SIGNING);
         }
 
         public Builder groupName(String groupName) {

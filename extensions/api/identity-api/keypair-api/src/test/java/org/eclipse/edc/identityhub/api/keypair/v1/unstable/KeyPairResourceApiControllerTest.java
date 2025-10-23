@@ -355,7 +355,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     }
 
     private KeyPairResource.Builder createKeyPair() {
-        return KeyPairResource.Builder.newIdToken()
+        return KeyPairResource.Builder.newTokenSigning()
                 .id("test-keypair")
                 .participantContextId(PARTICIPANT_ID)
                 .isDefaultPair(true)
