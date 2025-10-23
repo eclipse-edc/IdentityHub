@@ -19,7 +19,7 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.AccountInfo;
+import org.eclipse.edc.identityhub.spi.participantcontext.AccountCredentials;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -113,7 +113,7 @@ class ParticipantContextServiceImplTest {
     void shouldCreateParticipantContext_withAccountInfo(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
         when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
-        when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success(new AccountInfo("clientId", "clientSecret")));
+        when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success(new AccountCredentials("clientId", "clientSecret")));
 
         var pem = """
                 -----BEGIN PUBLIC KEY-----

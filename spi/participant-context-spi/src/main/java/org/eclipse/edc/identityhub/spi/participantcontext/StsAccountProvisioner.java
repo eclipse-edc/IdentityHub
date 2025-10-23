@@ -24,5 +24,5 @@ import org.eclipse.edc.spi.result.ServiceResult;
 public interface StsAccountProvisioner {
     String CLIENT_SECRET_PROPERTY = "clientSecret";
 
-    ServiceResult<AccountInfo> create(ParticipantManifest manifest);
+    ServiceResult<AccountCredentials> create(ParticipantManifest manifest);
 }

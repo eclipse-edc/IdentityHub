@@ -20,7 +20,7 @@ import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientSecretGenerato
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.participantcontext.AccountInfo;
+import org.eclipse.edc.identityhub.spi.participantcontext.AccountCredentials;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -76,16 +76,16 @@ public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountPro
     }
 
     @Override
-    public ServiceResult<AccountInfo> create(ParticipantManifest manifest) {
+    public ServiceResult<AccountCredentials> create(ParticipantManifest manifest) {
 
         var secretAlias = manifest.clientSecretAlias();
         var createResult = stsAccountService.createAccount(manifest, secretAlias)
                 .map(v -> stsClientSecretGenerator.generateClientSecret(null))
-                .map(secret -> new AccountInfo(manifest.getDid(), secret))
-                .onSuccess(accountInfo -> {
+                .map(secret -> new AccountCredentials(manifest.getDid(), secret))
+                .onSuccess(accountCredentials -> {
                     // the vault's result does not influence the service result, since that may cause the transaction to roll back,
                     // but vaults aren't transactional resources
-                    vault.storeSecret(secretAlias, accountInfo.clientSecret())
+                    vault.storeSecret(secretAlias, accountCredentials.clientSecret())
                             .onFailure(e -> monitor.severe(e.getFailureDetail()));
                 });
 
