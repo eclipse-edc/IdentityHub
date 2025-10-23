@@ -32,8 +32,6 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.spi.query.Criterion;
-import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
@@ -67,8 +65,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     public KeyPairResource getKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String id, @Context SecurityContext securityContext) {
         authorizationService.isAuthorized(securityContext, id, KeyPairResource.class).orElseThrow(exceptionMapper(KeyPairResource.class, id));
 
-        var query = QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build();
-        var result = keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, id));
+        var result = keyPairService.query(KeyPairResource.queryById(id).build())
+                .orElseThrow(exceptionMapper(KeyPairResource.class, id));
         if (result.isEmpty()) {
             throw new ObjectNotFoundException(KeyPairResource.class, id);
         }

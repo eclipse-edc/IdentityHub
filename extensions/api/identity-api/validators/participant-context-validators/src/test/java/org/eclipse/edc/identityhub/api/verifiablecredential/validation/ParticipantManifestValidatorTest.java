@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.api.verifiablecredential.validation;
 
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.jetbrains.annotations.NotNull;
@@ -25,6 +26,7 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
@@ -45,6 +47,7 @@ class ParticipantManifestValidatorTest {
     @NotNull
     private static KeyDescriptor.Builder createKeyDescriptor() {
         return KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .keyId("key-id")
                 .privateKeyAlias("alias")
                 .publicKeyJwk(Map.of("foo", "bar"));
@@ -64,9 +67,11 @@ class ParticipantManifestValidatorTest {
 
     @Test
     void validate_keyDescriptorNull() {
-        var manifest = createManifest().key(null).build();
-        assertThat(validator.validate(manifest)).isFailed()
+        assertThat(validator.validate(createManifest().keys(null).build())).isFailed()
                 .detail().isEqualTo("key descriptor cannot be null.");
+
+        assertThat(validator.validate(createManifest().keys(Set.of()).build())).isFailed()
+                .detail().isEqualTo("key descriptor cannot be empty.");
     }
 
     @Test

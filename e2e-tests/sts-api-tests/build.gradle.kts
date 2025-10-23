@@ -19,6 +19,7 @@ plugins {
 dependencies {
     testImplementation(libs.edc.junit)
     testImplementation(project(":spi:sts-spi"))
+    testImplementation(project(":spi:keypair-spi"))
     testImplementation(libs.edc.spi.dcp)
     testImplementation(libs.edc.oauth2.client)
 

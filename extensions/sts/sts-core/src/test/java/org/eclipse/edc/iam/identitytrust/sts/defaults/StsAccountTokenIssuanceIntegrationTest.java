@@ -21,6 +21,8 @@ import org.eclipse.edc.iam.identitytrust.sts.defaults.store.InMemoryStsAccountSt
 import org.eclipse.edc.iam.identitytrust.sts.service.EmbeddedSecureTokenService;
 import org.eclipse.edc.iam.identitytrust.sts.service.StsClientTokenGeneratorServiceImpl;
 import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccountTokenAdditionalParams;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.sts.accountservice.RandomStringGenerator;
@@ -35,6 +37,7 @@ import org.eclipse.edc.keys.keyparsers.PemParser;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.query.CriterionOperatorRegistryImpl;
 import org.eclipse.edc.security.token.jwt.DefaultJwsSignerProvider;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.token.JwtGenerationService;
@@ -46,6 +49,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static com.nimbusds.jwt.JWTClaimNames.EXPIRATION_TIME;
@@ -56,8 +60,11 @@ import static com.nimbusds.jwt.JWTClaimNames.SUBJECT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.identitytrust.spi.SelfIssuedTokenConstants.PRESENTATION_TOKEN_CLAIM;
 import static org.eclipse.edc.iam.identitytrust.sts.spi.store.fixtures.TestFunctions.createClientBuilder;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.TOKEN_SIGNING;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.CLIENT_ID;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -68,11 +75,12 @@ public class StsAccountTokenIssuanceIntegrationTest {
     private final Vault vault = new InMemoryVault(mock());
     private final KeyParserRegistry keyParserRegistry = new KeyParserRegistryImpl();
     private final JtiValidationStore jtiValidationStore = mock();
+    private final KeyPairService keyPairService = mock();
     private StsAccountServiceImpl clientService;
     private StsClientTokenGeneratorServiceImpl tokenGeneratorService;
 
     @BeforeEach
-    void setup() {
+    void setup() throws IOException {
         clientService = new StsAccountServiceImpl(clientStore, new NoopTransactionContext(), vault, new RandomStringGenerator());
 
         keyParserRegistry.register(new PemParser(mock()));
@@ -81,8 +89,17 @@ public class StsAccountTokenIssuanceIntegrationTest {
 
         when(jtiValidationStore.storeEntry(any())).thenReturn(StoreResult.success());
 
+        when(keyPairService.getActiveKeyPairForUsage(anyString(), eq(TOKEN_SIGNING)))
+                .thenReturn(ServiceResult.success(KeyPairResource.Builder.newInstance()
+                        .privateKeyAlias("client_id")
+                        .keyId("key1")
+                        .id(UUID.randomUUID().toString())
+                        .serializedPublicKey(loadResourceFile("ec-privatekey.pem"))
+                        .usage(TOKEN_SIGNING)
+                        .build()));
+
         tokenGeneratorService = new StsClientTokenGeneratorServiceImpl(60 * 5, new EmbeddedSecureTokenService(new NoopTransactionContext(), 60 * 5,
-                new JwtGenerationService(new DefaultJwsSignerProvider(privateKeyResolver)), Clock.systemUTC(), clientService));
+                new JwtGenerationService(new DefaultJwsSignerProvider(privateKeyResolver)), Clock.systemUTC(), clientService, keyPairService));
     }
 
     @Test
@@ -95,9 +112,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         var did = "did:example:subject";
         var client = createClientBuilder(participantId)
                 .clientId(clientId)
-                .privateKeyAlias(privateKeyAlias)
                 .secretAlias(secretAlias)
-                .publicKeyReference("public-key")
                 .did(did)
                 .build();
 
@@ -141,10 +156,8 @@ public class StsAccountTokenIssuanceIntegrationTest {
         var scope = "scope:test";
         var client = createClientBuilder(participantId)
                 .clientId(clientId)
-                .privateKeyAlias(privateKeyAlias)
                 .secretAlias(secretAlias)
                 .did(did)
-                .publicKeyReference("public-key")
                 .build();
 
         var additional = StsAccountTokenAdditionalParams.Builder.newInstance().audience(audience).bearerAccessScope(scope).build();
@@ -185,9 +198,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
 
         var client = createClientBuilder(participantId)
                 .clientId(clientId)
-                .privateKeyAlias(privateKeyAlias)
                 .secretAlias(secretAlias)
-                .publicKeyReference("public-key")
                 .did(did)
                 .build();
 

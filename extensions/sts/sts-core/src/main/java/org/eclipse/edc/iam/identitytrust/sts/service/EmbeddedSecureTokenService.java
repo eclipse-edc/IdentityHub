@@ -16,6 +16,7 @@ package org.eclipse.edc.iam.identitytrust.sts.service;
 
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.TOKEN_SIGNING;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.SCOPE;
@@ -50,17 +52,20 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
     private final TokenGenerationService tokenGenerationService;
     private final Clock clock;
     private final StsAccountService stsAccountService;
+    private final KeyPairService keyPairService;
 
     public EmbeddedSecureTokenService(TransactionContext transactionContext,
                                       long tokenValiditySeconds,
                                       TokenGenerationService tokenGenerationService,
                                       Clock clock,
-                                      StsAccountService stsAccountService) {
+                                      StsAccountService stsAccountService,
+                                      KeyPairService keyPairService) {
         this.transactionContext = transactionContext;
         this.tokenValiditySeconds = tokenValiditySeconds;
         this.tokenGenerationService = tokenGenerationService;
         this.clock = clock;
         this.stsAccountService = stsAccountService;
+        this.keyPairService = keyPairService;
     }
 
     @Override
@@ -71,11 +76,13 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
                 return Result.failure(result.getFailureDetail());
             }
 
+            var tokenSigningKey = keyPairService.getActiveKeyPairForUsage(participantContextId, TOKEN_SIGNING);
+            if (tokenSigningKey.failed()) {
+                return Result.failure(tokenSigningKey.getFailureDetail());
+            }
 
-            var account = result.getContent();
-
-            var keyId = account.getPublicKeyReference();
-            var privateKeyAlias = account.getPrivateKeyAlias();
+            var keyId = tokenSigningKey.getContent().getKeyId();
+            var privateKeyAlias = tokenSigningKey.getContent().getPrivateKeyAlias();
             var selfIssuedClaims = new HashMap<>(claims);
 
             return ofNullable(bearerAccessScope)

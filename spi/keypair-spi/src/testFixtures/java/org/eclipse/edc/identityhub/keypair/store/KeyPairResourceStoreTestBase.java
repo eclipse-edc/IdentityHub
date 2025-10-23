@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.identityhub.keypair.store;
 
-import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Test;
@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static java.util.stream.IntStream.range;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
@@ -58,7 +59,7 @@ public abstract class KeyPairResourceStoreTestBase {
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
-                .satisfies(str -> Assertions.assertThat(str).hasSize(1));
+                .satisfies(str -> assertThat(str).hasSize(1));
     }
 
     @Test
@@ -71,7 +72,7 @@ public abstract class KeyPairResourceStoreTestBase {
                 .build();
 
         assertThat(getStore().query(query)).isSucceeded()
-                .satisfies(str -> Assertions.assertThat(str)
+                .satisfies(str -> assertThat(str)
                         .hasSize(1)
                         .usingRecursiveFieldByFieldElementComparator()
                         .containsExactly(keyPairResource));
@@ -87,7 +88,7 @@ public abstract class KeyPairResourceStoreTestBase {
 
         var res = getStore().query(QuerySpec.none());
         assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent())
+        assertThat(res.getContent())
                 .usingRecursiveFieldByFieldElementComparator()
                 .containsExactlyInAnyOrder(resources.toArray(new KeyPairResource[0]));
     }
@@ -106,7 +107,7 @@ public abstract class KeyPairResourceStoreTestBase {
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent()).isEmpty();
+        assertThat(res.getContent()).isEmpty();
     }
 
     @Test
@@ -124,7 +125,7 @@ public abstract class KeyPairResourceStoreTestBase {
                 .build();
         var res = getStore().query(query);
         assertThat(res).isSucceeded();
-        Assertions.assertThat(res.getContent()).isNotNull().isEmpty();
+        assertThat(res.getContent()).isNotNull().isEmpty();
     }
 
     @Test
@@ -143,7 +144,7 @@ public abstract class KeyPairResourceStoreTestBase {
 
         assertThat(getStore().query(query))
                 .isSucceeded()
-                .satisfies(keyPairResources -> Assertions.assertThat(keyPairResources)
+                .satisfies(keyPairResources -> assertThat(keyPairResources)
                         .usingRecursiveFieldByFieldElementComparator()
                         .containsExactly(kp3));
     }
@@ -192,7 +193,8 @@ public abstract class KeyPairResourceStoreTestBase {
     protected abstract KeyPairResourceStore getStore();
 
     private KeyPairResource.Builder createKeyPairResource() {
-        return KeyPairResource.Builder.newInstance()
+        return KeyPairResource.Builder.newPresentationSigning()
+                .usage(KeyPairUsage.PRESENTATION_SIGNING, KeyPairUsage.CREDENTIAL_SIGNING, KeyPairUsage.TOKEN_SIGNING)
                 .id(UUID.randomUUID().toString())
                 .keyId("test-key-1")
                 .privateKeyAlias("private-key-alias")

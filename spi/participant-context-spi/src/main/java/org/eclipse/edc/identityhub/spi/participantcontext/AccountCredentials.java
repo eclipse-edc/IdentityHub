@@ -14,5 +14,5 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext;
 
-public record AccountInfo(String clientId, String clientSecret) {
+public record AccountCredentials(String clientId, String clientSecret) {
 }

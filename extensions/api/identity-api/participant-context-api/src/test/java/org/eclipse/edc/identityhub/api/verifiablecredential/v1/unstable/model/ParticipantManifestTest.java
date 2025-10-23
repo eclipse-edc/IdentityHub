@@ -50,4 +50,81 @@ class ParticipantManifestTest {
         var deser = mapper.readValue(json, ParticipantManifest.class);
         assertThat(deser).usingRecursiveComparison().isEqualTo(manifest);
     }
+
+    @Test
+    void verify_deserialize_singleValueAsArray() throws JsonProcessingException {
+        var json = """
+                {
+                    "roles":[],
+                    "serviceEndpoints":[
+                        {
+                            "type": "CredentialService",
+                            "serviceEndpoint": "http://foo.com/bar",
+                            "id": "cred-srv"
+                        }
+                    ],
+                    "active": true,
+                    "participantId": "quizzquazz",
+                    "did": "did:web:quizzquazz",
+                    "keys":{
+                        "keyId": "key-1",
+                        "privateKeyAlias": "key-1-alias",
+                        "usage": "sign_token",
+                        "keyGeneratorParams":{
+                            "algorithm": "EdDSA",
+                            "curve": "Ed25519"
+                        }
+                    }
+                }
+                """;
+        var manifest = mapper.readValue(json, ParticipantManifest.class);
+
+        assertThat(manifest.getServiceEndpoints()).hasSize(1);
+        assertThat(manifest.getKeys()).hasSize(1)
+                .allSatisfy(kd -> assertThat(kd.getKeyId()).isEqualTo("key-1"));
+    }
+
+    @Test
+    void verify_deserialize_array() throws JsonProcessingException {
+        var json = """
+                {
+                    "roles":[],
+                    "serviceEndpoints":[
+                        {
+                            "type": "CredentialService",
+                            "serviceEndpoint": "http://foo.com/bar",
+                            "id": "cred-srv"
+                        }
+                    ],
+                    "active": true,
+                    "participantId": "quizzquazz",
+                    "did": "did:web:quizzquazz",
+                    "keys":[{
+                        "keyId": "key-1",
+                        "privateKeyAlias": "key-1-alias",
+                        "usage": "sign_token",
+                        "keyGeneratorParams":{
+                            "algorithm": "EdDSA",
+                            "curve": "Ed25519"
+                        }
+                    },
+                    {
+                        "keyId": "key-2",
+                        "privateKeyAlias": "key-2-alias",
+                        "usage": "sign_presentation",
+                        "keyGeneratorParams":{
+                            "algorithm": "EdDSA",
+                            "curve": "Ed25519"
+                        }
+                    }
+                    ]
+                }
+                """;
+        var manifest = mapper.readValue(json, ParticipantManifest.class);
+
+        assertThat(manifest.getServiceEndpoints()).hasSize(1);
+        assertThat(manifest.getKeys()).hasSize(2)
+                .anySatisfy(kd -> assertThat(kd.getKeyId()).isEqualTo("key-1"))
+                .anySatisfy(kd -> assertThat(kd.getKeyId()).isEqualTo("key-2"));
+    }
 }

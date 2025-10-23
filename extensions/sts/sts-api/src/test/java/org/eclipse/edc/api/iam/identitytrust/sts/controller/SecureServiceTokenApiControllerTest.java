@@ -51,11 +51,9 @@ class SecureServiceTokenApiControllerTest extends RestControllerTestBase {
         var clientId = "clientId";
         var clientSecret = "client_secret";
         var clientKeyAlias = "secretAlias";
-        var privateKeyAlias = "secretAlias";
         var did = "did:example:subject";
         var audience = "audience";
         var token = "token";
-        var publicKeyReference = "publicKeyReference";
         var name = "Name";
         var expiresIn = 3600;
 
@@ -64,8 +62,6 @@ class SecureServiceTokenApiControllerTest extends RestControllerTestBase {
                 .clientId(clientId)
                 .name(name)
                 .secretAlias(clientKeyAlias)
-                .privateKeyAlias(privateKeyAlias)
-                .publicKeyReference(publicKeyReference)
                 .did(did)
                 .build();
 

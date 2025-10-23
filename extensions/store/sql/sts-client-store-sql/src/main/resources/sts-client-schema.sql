@@ -4,14 +4,12 @@
 
 CREATE TABLE IF NOT EXISTS edc_sts_client
 (
-   id                                   VARCHAR NOT NULL PRIMARY KEY,
-   client_id                            VARCHAR NOT NULL,
-   did                                  VARCHAR NOT NULL,
-   name                                 VARCHAR NOT NULL,
-   secret_alias                         VARCHAR NOT NULL,
-   private_key_alias                    VARCHAR NOT NULL,
-   public_key_reference                 VARCHAR NOT NULL,
-   created_at                           BIGINT  NOT NULL
+    id           VARCHAR NOT NULL PRIMARY KEY,
+    client_id    VARCHAR NOT NULL,
+    did          VARCHAR NOT NULL,
+    name         VARCHAR NOT NULL,
+    secret_alias VARCHAR NOT NULL,
+    created_at   BIGINT  NOT NULL
 );
 
 

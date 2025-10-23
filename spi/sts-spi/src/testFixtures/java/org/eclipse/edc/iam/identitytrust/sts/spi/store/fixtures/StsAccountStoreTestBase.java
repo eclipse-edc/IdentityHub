@@ -127,7 +127,7 @@ public abstract class StsAccountStoreTestBase {
     class FindAll {
 
         @ParameterizedTest
-        @ValueSource(ints = { 49, 50, 51, 100 })
+        @ValueSource(ints = {49, 50, 51, 100})
         void verifyQueryDefaults(int size) {
             var all = IntStream.range(0, size).mapToObj(i -> createClient("id" + i))
                     .peek(getStsClientStore()::create)
@@ -168,8 +168,6 @@ public abstract class StsAccountStoreTestBase {
                     .clientId("client_id")
                     .did("did:web:client")
                     .secretAlias("secret_alias")
-                    .privateKeyAlias("private_key_alias")
-                    .publicKeyReference("public_key_reference")
                     .build();
 
             getStsClientStore().create(client);
@@ -279,9 +277,7 @@ public abstract class StsAccountStoreTestBase {
                         Arguments.of("clientId", (Function<StsAccount, String>) StsAccount::getClientId),
                         Arguments.of("name", (Function<StsAccount, String>) StsAccount::getName),
                         Arguments.of("did", (Function<StsAccount, String>) StsAccount::getDid),
-                        Arguments.of("secretAlias", (Function<StsAccount, String>) StsAccount::getSecretAlias),
-                        Arguments.of("privateKeyAlias", (Function<StsAccount, String>) StsAccount::getPrivateKeyAlias),
-                        Arguments.of("publicKeyReference", (Function<StsAccount, String>) StsAccount::getPublicKeyReference)
+                        Arguments.of("secretAlias", (Function<StsAccount, String>) StsAccount::getSecretAlias)
                 );
             }
         }
@@ -359,8 +355,6 @@ public abstract class StsAccountStoreTestBase {
             var client2 = createClientBuilder("id")
                     .clientId(client1.getClientId())
                     .name("nameChanged")
-                    .privateKeyAlias("privateAliasChanged")
-                    .publicKeyReference("publicRefChanged")
                     .did("didChanged")
                     .secretAlias("aliasChanged")
                     .build();
@@ -376,8 +370,6 @@ public abstract class StsAccountStoreTestBase {
                 assertThat(client.getName()).isEqualTo(client2.getName());
                 assertThat(client.getDid()).isEqualTo(client2.getDid());
                 assertThat(client.getSecretAlias()).isEqualTo(client2.getSecretAlias());
-                assertThat(client.getPrivateKeyAlias()).isEqualTo(client2.getPrivateKeyAlias());
-                assertThat(client.getPublicKeyReference()).isEqualTo(client2.getPublicKeyReference());
                 assertThat(client.getClientId()).isEqualTo(client2.getClientId());
             });
         }

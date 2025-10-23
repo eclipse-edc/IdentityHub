@@ -44,6 +44,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +53,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.CREDENTIAL_SIGNING;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.TOKEN_SIGNING;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 
@@ -183,6 +186,7 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
                 .active(true)
                 .serviceEndpoint(new Service(UUID.randomUUID().toString(), "IssuerService", issuerServiceUrl))
                 .key(KeyDescriptor.Builder.newInstance()
+                        .usage(Set.of(CREDENTIAL_SIGNING, TOKEN_SIGNING))
                         .publicKeyJwk(issuerKey.toPublicJWK().toJSONObject())
                         .privateKeyAlias(privateKeyAlias)
                         .keyId(issuerKey.getKeyID())

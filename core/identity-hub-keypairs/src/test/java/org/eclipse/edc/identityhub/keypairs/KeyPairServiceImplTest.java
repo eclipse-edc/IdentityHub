@@ -39,8 +39,13 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.CREDENTIAL_SIGNING;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.PRESENTATION_SIGNING;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.TOKEN_SIGNING;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
@@ -429,8 +434,107 @@ class KeyPairServiceImplTest {
                 .isEqualTo("A KeyPairResource with ID 'notexists' does not exist.");
     }
 
+    @Test
+    void getActiveKeyPairForUsage_singleKeyPair() {
+        var keyPair = createKeyPairResource()
+                .usage(PRESENTATION_SIGNING)
+                .state(KeyPairState.ACTIVATED.code())
+                .build();
+
+        when(keyPairResourceStore.query(any())).thenReturn(success(List.of(keyPair)));
+
+        var result = keyPairService.getActiveKeyPairForUsage(PARTICIPANT_ID, PRESENTATION_SIGNING);
+
+        assertThat(result).isSucceeded()
+                .satisfies(kp -> assertThat(kp.getId()).isEqualTo(keyPair.getId()));
+    }
+
+    @Test
+    void getActiveKeyPairForUsage_multipleKeyPairs_oneIsDefault() {
+        var defaultKeyPair = createKeyPairResource()
+                .usage(CREDENTIAL_SIGNING)
+                .state(KeyPairState.ACTIVATED.code())
+                .isDefaultPair(true)
+                .build();
+
+        var nonDefaultKeyPair = createKeyPairResource()
+                .usage(CREDENTIAL_SIGNING)
+                .state(KeyPairState.ACTIVATED.code())
+                .isDefaultPair(false)
+                .build();
+
+        when(keyPairResourceStore.query(any())).thenReturn(success(List.of(defaultKeyPair, nonDefaultKeyPair)));
+
+        var result = keyPairService.getActiveKeyPairForUsage(PARTICIPANT_ID, CREDENTIAL_SIGNING);
+
+        assertThat(result).isSucceeded()
+                .satisfies(kp -> assertThat(kp.getId()).isEqualTo(defaultKeyPair.getId()));
+    }
+
+    @Test
+    void getActiveKeyPairForUsage_multipleKeyPairs_noneIsDefault() {
+        var keyPair1 = createKeyPairResource()
+                .usage((TOKEN_SIGNING))
+                .state(KeyPairState.ACTIVATED.code())
+                .isDefaultPair(false)
+                .build();
+
+        var keyPair2 = createKeyPairResource()
+                .usage((TOKEN_SIGNING))
+                .state(KeyPairState.ACTIVATED.code())
+                .isDefaultPair(false)
+                .build();
+
+        when(keyPairResourceStore.query(any())).thenReturn(success(List.of(keyPair1, keyPair2)));
+
+        var result = keyPairService.getActiveKeyPairForUsage(PARTICIPANT_ID, TOKEN_SIGNING);
+
+        assertThat(result).isFailed()
+                .detail().isEqualTo("Multiple key-pairs found for signing credentials, but none was marked as 'default'");
+    }
+
+    @Test
+    void getActiveKeyPairForUsage_noMatchingKeyPairs() {
+        var keyPair = createKeyPairResource()
+                .usage(Set.of(PRESENTATION_SIGNING))
+                .state(KeyPairState.ACTIVATED.code())
+                .build();
+
+        when(keyPairResourceStore.query(any())).thenReturn(success(List.of(keyPair)));
+
+        var result = keyPairService.getActiveKeyPairForUsage(PARTICIPANT_ID, CREDENTIAL_SIGNING);
+
+        assertThat(result).isFailed()
+                .detail().isEqualTo("No active key pair found for participant '%s' with usage 'CREDENTIAL_SIGNING'".formatted(PARTICIPANT_ID));
+    }
+
+    @Test
+    void getActiveKeyPairForUsage_storeQueryFails() {
+        when(keyPairResourceStore.query(any())).thenReturn(StoreResult.notFound("Store error"));
+
+        var result = keyPairService.getActiveKeyPairForUsage(PARTICIPANT_ID, TOKEN_SIGNING);
+
+        assertThat(result).isFailed()
+                .detail().contains("Error obtaining private key for participant '%s'".formatted(PARTICIPANT_ID));
+    }
+
+    @Test
+    void getActiveKeyPairForUsage_keyPairWithMultipleUsages() {
+        var keyPair = createKeyPairResource()
+                .usage(Set.of(PRESENTATION_SIGNING, CREDENTIAL_SIGNING))
+                .state(KeyPairState.ACTIVATED.code())
+                .build();
+
+        when(keyPairResourceStore.query(any())).thenReturn(success(List.of(keyPair)));
+
+        var result = keyPairService.getActiveKeyPairForUsage(PARTICIPANT_ID, CREDENTIAL_SIGNING);
+
+        assertThat(result).isSucceeded()
+                .satisfies(kp -> assertThat(kp.getId()).isEqualTo(keyPair.getId()));
+    }
+
     private KeyPairResource.Builder createKeyPairResource() {
-        return KeyPairResource.Builder.newInstance()
+        return KeyPairResource.Builder.newTokenSigning()
                 .id(UUID.randomUUID().toString())
                 .keyId("test-key-1")
                 .privateKeyAlias("private-key-alias")
@@ -441,7 +545,9 @@ class KeyPairServiceImplTest {
 
     @NotNull
     private KeyDescriptor.Builder createKey() {
-        return KeyDescriptor.Builder.newInstance().keyId("test-kie")
+        return KeyDescriptor.Builder.newInstance()
+                .keyId("test-kid")
+                .usage(Set.of(PRESENTATION_SIGNING))
                 .privateKeyAlias("private-alias")
                 .publicKeyJwk(createJwk());
     }

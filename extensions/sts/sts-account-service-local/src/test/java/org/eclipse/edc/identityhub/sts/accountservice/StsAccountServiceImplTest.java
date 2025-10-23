@@ -280,8 +280,6 @@ class StsAccountServiceImplTest {
                 .name("test-name")
                 .did("did:web:" + PARTICIPANT_CONTEXT_ID)
                 .secretAlias("test-secret")
-                .publicKeyReference("public-key-ref")
-                .privateKeyAlias("private-key-alias")
                 .clientId("client-id");
     }
 
@@ -291,8 +289,6 @@ class StsAccountServiceImplTest {
                 .name("test-name")
                 .did("did:web:" + PARTICIPANT_CONTEXT_ID)
                 .secretAlias("test-secret")
-                .publicKeyReference("public-key-ref")
-                .privateKeyAlias("private-key-alias")
                 .clientId(clientId)
                 .build();
     }

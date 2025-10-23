@@ -22,6 +22,7 @@ import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.junit.annotations.ApiTest;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
@@ -35,6 +36,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,6 +63,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     @NotNull
     private static KeyDescriptor.Builder createKeyDescriptor() {
         return KeyDescriptor.Builder.newInstance()
+                .usage(Set.of(KeyPairUsage.PRESENTATION_SIGNING))
                 .keyId("new-key-id")
                 .privateKeyAlias("test-alias")
                 .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"));
@@ -352,7 +355,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     }
 
     private KeyPairResource.Builder createKeyPair() {
-        return KeyPairResource.Builder.newInstance()
+        return KeyPairResource.Builder.newTokenSigning()
                 .id("test-keypair")
                 .participantContextId(PARTICIPANT_ID)
                 .isDefaultPair(true)

@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.spi.keypair.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -23,6 +24,7 @@ import org.eclipse.edc.spi.security.Vault;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A {@link KeyPairResource} contains key material for a particular {@link ParticipantContext}. The public key is stored in the database in serialized form (JWK or PEM) and the private
@@ -40,12 +42,17 @@ public class KeyPairResource extends AbstractParticipantResource {
     private String serializedPublicKey;
     private String privateKeyAlias;
     private int state;
+    private Set<KeyPairUsage> usage = Set.of();
 
     private KeyPairResource() {
     }
 
     public static QuerySpec.Builder queryById(String id) {
         return QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id));
+    }
+
+    public Set<KeyPairUsage> getUsage() {
+        return usage;
     }
 
     public String getGroupName() {
@@ -58,7 +65,6 @@ public class KeyPairResource extends AbstractParticipantResource {
     public String getId() {
         return id;
     }
-
 
     /**
      * Whether this KeyPair is the default for a {@link ParticipantContext}.
@@ -73,7 +79,6 @@ public class KeyPairResource extends AbstractParticipantResource {
     public String getKeyId() {
         return keyId;
     }
-
 
     /**
      * The alias under which the private key is stored in the vault.
@@ -120,7 +125,6 @@ public class KeyPairResource extends AbstractParticipantResource {
         return keyContext;
     }
 
-
     public int getState() {
         return state;
     }
@@ -151,6 +155,18 @@ public class KeyPairResource extends AbstractParticipantResource {
             return new Builder();
         }
 
+        public static Builder newCredentialSigning() {
+            return new Builder().usage(KeyPairUsage.CREDENTIAL_SIGNING);
+        }
+
+        public static Builder newPresentationSigning() {
+            return new Builder().usage(KeyPairUsage.PRESENTATION_SIGNING);
+        }
+
+        public static Builder newTokenSigning() {
+            return new Builder().usage(KeyPairUsage.TOKEN_SIGNING);
+        }
+
         public Builder groupName(String groupName) {
             entity.groupName = groupName;
             return this;
@@ -169,6 +185,9 @@ public class KeyPairResource extends AbstractParticipantResource {
         @Override
         public KeyPairResource build() {
             Objects.requireNonNull(entity.id);
+            if (entity.usage == null || entity.usage.isEmpty()) {
+                throw new IllegalStateException("KeyPair must have at least one usage"); // backwards compatibility should be handled elsewhere
+            }
             if (entity.useDuration == 0) {
                 entity.useDuration = Duration.ofDays(6 * 30).toMillis();
             }
@@ -220,9 +239,20 @@ public class KeyPairResource extends AbstractParticipantResource {
             return this;
         }
 
+        public Builder usage(KeyPairUsage... usages) {
+            entity.usage = Set.of(usages);
+            return self();
+        }
+
+        public Builder usage(Set<KeyPairUsage> usages) {
+            entity.usage = usages;
+            return self();
+        }
+
         public Builder state(KeyPairState state) {
             entity.state = state.code();
             return this;
         }
+
     }
 }
