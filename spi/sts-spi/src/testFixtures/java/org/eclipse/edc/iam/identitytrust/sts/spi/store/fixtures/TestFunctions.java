@@ -22,21 +22,19 @@ import java.util.UUID;
 public class TestFunctions {
 
     public static StsAccount createClient(String id, String secretAlias) {
-        return createClient(id, secretAlias, id, secretAlias, "did:example:subject");
+        return createClient(id, secretAlias, id, "did:example:subject");
     }
 
     public static StsAccount createClient(String id, String secretAlias, String clientId) {
-        return createClient(id, secretAlias, clientId, secretAlias, "did:example:subject");
+        return createClient(id, secretAlias, clientId, "did:example:subject");
     }
 
-    public static StsAccount createClient(String id, String secretAlias, String clientId, String publicKeyReference, String did) {
+    public static StsAccount createClient(String id, String secretAlias, String clientId, String did) {
         return createClientBuilder(id)
                 .clientId(clientId)
                 .name(UUID.randomUUID().toString())
                 .secretAlias(secretAlias)
-                .publicKeyReference(publicKeyReference)
-                .did(did)
-                .privateKeyAlias(UUID.randomUUID().toString()).build();
+                .did(did).build();
     }
 
     public static StsAccount.Builder createClientBuilder(String id) {

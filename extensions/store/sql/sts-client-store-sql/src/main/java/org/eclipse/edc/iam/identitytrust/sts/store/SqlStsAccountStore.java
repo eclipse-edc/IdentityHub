@@ -60,8 +60,6 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
                         client.getClientId(),
                         client.getDid(),
                         client.getSecretAlias(),
-                        client.getPrivateKeyAlias(),
-                        client.getPublicKeyReference(),
                         client.getCreatedAt()
                 );
 
@@ -157,8 +155,6 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
                 stsAccount.getClientId(),
                 stsAccount.getDid(),
                 stsAccount.getSecretAlias(),
-                stsAccount.getPrivateKeyAlias(),
-                stsAccount.getPublicKeyReference(),
                 stsAccount.getCreatedAt(),
                 stsAccount.getId());
     }
@@ -180,8 +176,6 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
                 .name(resultSet.getString(statements.getNameColumn()))
                 .clientId(resultSet.getString(statements.getClientIdColumn()))
                 .secretAlias(resultSet.getString(statements.getSecretAliasColumn()))
-                .privateKeyAlias(resultSet.getString(statements.getPrivateKeyAliasColumn()))
-                .publicKeyReference(resultSet.getString(statements.getPublicKeyReferenceColumn()))
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
                 .build();
     }

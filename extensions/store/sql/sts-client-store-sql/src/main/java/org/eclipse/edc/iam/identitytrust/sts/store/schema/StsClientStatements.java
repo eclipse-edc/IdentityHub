@@ -48,14 +48,6 @@ public interface StsClientStatements extends SqlStatements {
         return "secret_alias";
     }
 
-    default String getPrivateKeyAliasColumn() {
-        return "private_key_alias";
-    }
-
-    default String getPublicKeyReferenceColumn() {
-        return "public_key_reference";
-    }
-
     default String getCreatedAtColumn() {
         return "created_at";
     }

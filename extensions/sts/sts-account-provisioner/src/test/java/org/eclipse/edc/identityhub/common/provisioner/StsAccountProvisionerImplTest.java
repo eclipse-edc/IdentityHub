@@ -19,9 +19,6 @@ import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientSecretGenerator;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
-import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
-import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
-import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -107,37 +104,6 @@ class StsAccountProvisionerImplTest {
     }
 
     @Test
-    void onKeyRevoked_shouldUpdate() {
-        when(accountServiceMock.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.success(createStsClient().build()));
-        when(accountServiceMock.updateAccount(any())).thenAnswer(a -> ServiceResult.success(a.getArguments()[0]));
-        accountProvisioner.on(event(KeyPairRevoked.Builder.newInstance()
-                .participantContextId(PARTICIPANT_CONTEXT_ID)
-                .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
-                .keyId(KEY_ID)
-                .build()));
-
-        verify(accountServiceMock).findById(PARTICIPANT_CONTEXT_ID);
-        verify(accountServiceMock).updateAccount(any());
-        verifyNoMoreInteractions(accountServiceMock, didDocumentService, keyPairService);
-    }
-
-    @Test
-    void onKeyRotated_withNewKey_shouldUpdate() {
-        when(accountServiceMock.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.success(createStsClient().build()));
-        when(accountServiceMock.updateAccount(any())).thenAnswer(a -> ServiceResult.success(a.getArguments()[0]));
-
-        accountProvisioner.on(event(KeyPairRotated.Builder.newInstance()
-                .participantContextId(PARTICIPANT_CONTEXT_ID)
-                .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
-                .keyId(KEY_ID)
-                .build()));
-
-        verify(accountServiceMock).findById(PARTICIPANT_CONTEXT_ID);
-        verify(accountServiceMock).updateAccount(any());
-        verifyNoMoreInteractions(accountServiceMock, didDocumentService, keyPairService);
-    }
-
-    @Test
     void onParticipantDeleted_shouldDelete() {
         when(accountServiceMock.deleteAccount(PARTICIPANT_CONTEXT_ID)).thenReturn(ServiceResult.success());
         accountProvisioner.on(event(ParticipantContextDeleted.Builder.newInstance()
@@ -161,8 +127,6 @@ class StsAccountProvisionerImplTest {
                 .name("test-name")
                 .did("did:web:" + PARTICIPANT_CONTEXT_ID)
                 .secretAlias("test-secret")
-                .publicKeyReference("public-key-ref")
-                .privateKeyAlias("private-key-alias")
                 .clientId("client-id");
     }
 

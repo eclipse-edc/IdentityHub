@@ -59,7 +59,6 @@ import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_ID;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_MEM_MODULES;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_SQL_MODULES;
-import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -424,12 +423,6 @@ public class KeyPairResourceApiEndToEndTest {
                 return false;
             }));
 
-            // verify that the STS client got updated correctly
-            assertThat(accountStore.findById(participantId)).isSucceeded()
-                    .satisfies(stsClient -> {
-                        assertThat(stsClient.getPrivateKeyAlias()).isEqualTo("new-key-alias");
-                        assertThat(stsClient.getPublicKeyReference()).isEqualTo("did:web:" + participantId + "#new-key-id");
-                    });
         }
 
         @Test
@@ -465,12 +458,6 @@ public class KeyPairResourceApiEndToEndTest {
             // verify that the correct "added" event fired
             verify(subscriber, never()).on(argThat(env -> env.getPayload() instanceof KeyPairAdded));
 
-            // verify that the STS client got updated correctly
-            assertThat(accountStore.findById(participantId)).isSucceeded()
-                    .satisfies(stsClient -> {
-                        assertThat(stsClient.getPrivateKeyAlias()).isEqualTo("");
-                        assertThat(stsClient.getPublicKeyReference()).isEqualTo("");
-                    });
         }
 
         @Test
@@ -618,12 +605,6 @@ public class KeyPairResourceApiEndToEndTest {
                         assertThat(identityHubRuntime.getDidForParticipant(participantId)).hasSize(1)
                                 .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).noneMatch(vm -> vm.getId().equals(keyId)));
 
-                        // verify that the STS client got updated correctly
-                        assertThat(accountStore.findById(participantId)).isSucceeded()
-                                .satisfies(stsClient -> {
-                                    assertThat(stsClient.getPrivateKeyAlias()).isEqualTo("new-alias");
-                                    assertThat(stsClient.getPublicKeyReference()).isEqualTo("did:web:" + participantId + "#new-keyId");
-                                });
                     });
         }
 
@@ -658,12 +639,6 @@ public class KeyPairResourceApiEndToEndTest {
             // verify that the correct "added" event fired
             verify(subscriber, never()).on(argThat(env -> env.getPayload() instanceof KeyPairAdded));
 
-            // verify that the STS client got updated correctly
-            assertThat(accountStore.findById(participantId)).isSucceeded()
-                    .satisfies(stsClient -> {
-                        assertThat(stsClient.getPrivateKeyAlias()).isEqualTo("");
-                        assertThat(stsClient.getPublicKeyReference()).isEqualTo("");
-                    });
         }
 
         @Test

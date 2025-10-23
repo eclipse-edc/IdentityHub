@@ -29,8 +29,6 @@ public class StsClientMapping extends TranslationMapping {
         add("clientId", statements.getClientIdColumn());
         add("did", statements.getDidColumn());
         add("secretAlias", statements.getSecretAliasColumn());
-        add("privateKeyAlias", statements.getPrivateKeyAliasColumn());
-        add("publicKeyReference", statements.getPublicKeyReferenceColumn());
         add("createdAt", statements.getCreatedAtColumn());
     }
 }

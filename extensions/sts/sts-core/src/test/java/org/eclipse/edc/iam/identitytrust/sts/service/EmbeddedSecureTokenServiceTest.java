@@ -16,7 +16,10 @@ package org.eclipse.edc.iam.identitytrust.sts.service;
 
 import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccount;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
-import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -35,10 +38,12 @@ import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static com.nimbusds.jwt.JWTClaimNames.ISSUER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,19 +53,26 @@ class EmbeddedSecureTokenServiceTest {
     public static final String TEST_PARTICIPANT = "test-participant";
     private final TokenGenerationService tokenGenerationService = mock();
     private final StsAccountService stsAccountService = mock();
-    private final KeyPairResourceStore keyPairStore = mock();
-    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(), stsAccountService);
+    private final KeyPairService keyPairService = mock();
+    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(), stsAccountService, keyPairService);
 
     @BeforeEach
     void setup() {
         when(stsAccountService.findById(anyString())).thenReturn(
-                ServiceResult.success(StsAccount.Builder.newInstance()
+                success(StsAccount.Builder.newInstance()
                         .id("key-pair-id")
                         .clientId(TEST_PRIVATEKEY_ID)
                         .secretAlias(TEST_PARTICIPANT + "-alias")
                         .name(TEST_PARTICIPANT)
                         .did("did:web:" + TEST_PARTICIPANT)
                         .build()));
+
+        when(keyPairService.getActiveKeyPairForUsage(eq(TEST_PARTICIPANT), eq(KeyPairUsage.TOKEN_SIGNING)))
+                .thenReturn(success(createKeyPair()));
+
+        when(keyPairService.getActiveKeyPairForUsage(eq(TEST_PARTICIPANT), eq(KeyPairUsage.TOKEN_SIGNING)))
+                .thenReturn(success(createKeyPair()));
+
     }
 
     @Test
@@ -165,5 +177,31 @@ class EmbeddedSecureTokenServiceTest {
         assertThat(result).isFailed()
                 .detail()
                 .isEqualTo("foobar");
+    }
+
+    @Test
+    void createToken_whenKeyPairNotFound_expectFailure() {
+        var token = TokenRepresentation.Builder.newInstance().token("test").build();
+        when(keyPairService.getActiveKeyPairForUsage(eq(TEST_PARTICIPANT), eq(KeyPairUsage.TOKEN_SIGNING)))
+                .thenReturn(ServiceResult.notFound("foobar"));
+
+        when(tokenGenerationService.generate(eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class))).thenReturn(Result.success(token));
+        var result = sts.createToken(TEST_PARTICIPANT, Map.of(), null);
+
+        assertThat(result).isFailed()
+                .detail().isEqualTo("foobar");
+
+        verify(tokenGenerationService, never()).generate(any(), any());
+    }
+
+    private KeyPairResource createKeyPair() {
+        return KeyPairResource.Builder.newTokenSigning()
+                .id("test-key-pair-id")
+                .isDefaultPair(true)
+                .keyId("test-key-id")
+                .privateKeyAlias(TEST_PRIVATEKEY_ID)
+                .serializedPublicKey("JWK-GOES-HERE")
+                .state(KeyPairState.ACTIVATED)
+                .build();
     }
 }

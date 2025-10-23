@@ -65,8 +65,6 @@ public class StsAccountServiceImpl implements StsAccountService {
                     .name(manifest.getParticipantId())
                     .clientId(manifest.getDid())
                     .did(manifest.getDid())
-                    .privateKeyAlias(manifest.getKey().getPrivateKeyAlias())
-                    .publicKeyReference(manifest.getKey().getKeyId())
                     .secretAlias(secretAlias)
                     .build();
 

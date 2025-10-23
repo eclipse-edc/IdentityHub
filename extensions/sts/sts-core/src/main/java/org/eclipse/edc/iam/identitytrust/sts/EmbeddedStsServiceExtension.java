@@ -19,6 +19,7 @@ import org.eclipse.edc.iam.identitytrust.sts.service.StsClientTokenGeneratorServ
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
 import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientTokenGeneratorService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -49,6 +50,8 @@ public class EmbeddedStsServiceExtension implements ServiceExtension {
     private TransactionContext transactionContext;
     @Inject
     private StsAccountService stsAccountService;
+    @Inject
+    private KeyPairService keyPairService;
     private EmbeddedSecureTokenService embeddedSts;
 
     @Override
@@ -59,7 +62,7 @@ public class EmbeddedStsServiceExtension implements ServiceExtension {
     @Provider
     public ParticipantSecureTokenService secureTokenService() {
         if (embeddedSts == null) {
-            embeddedSts = new EmbeddedSecureTokenService(transactionContext, TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin), new JwtGenerationService(externalSigner), clock, stsAccountService);
+            embeddedSts = new EmbeddedSecureTokenService(transactionContext, TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin), new JwtGenerationService(externalSigner), clock, stsAccountService, keyPairService);
         }
         return embeddedSts;
     }
