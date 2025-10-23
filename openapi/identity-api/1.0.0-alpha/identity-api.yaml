@@ -1871,8 +1871,11 @@ components:
             type: object
         did:
           type: string
-        key:
-          $ref: "#/components/schemas/KeyDescriptor"
+        keys:
+          uniqueItems: true
+          type: array
+          items:
+            $ref: "#/components/schemas/KeyDescriptor"
         participantId:
           type: string
         roles:
@@ -1907,6 +1910,15 @@ components:
           type: string
         type:
           type: string
+        usage:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+            enum:
+            - sign_credentials
+            - sign_presentation
+            - sign_token
     ParticipantContext:
       type: object
       properties:
@@ -2002,6 +2014,15 @@ components:
         timestamp:
           type: integer
           format: int64
+        usage:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+            enum:
+            - sign_credentials
+            - sign_presentation
+            - sign_token
         useDuration:
           type: integer
           format: int64
