@@ -15,18 +15,29 @@
 package org.eclipse.edc.identityhub.tests.fixtures.credentialservice;
 
 import io.restassured.http.Header;
+import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.junit.extensions.ComponentRuntimeContext;
+import org.eclipse.edc.junit.utils.LazySupplier;
 
+import java.net.URI;
+import java.util.Objects;
 import java.util.UUID;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 
 public class IdentityHubApiClient {
 
-    private final IdentityHubExtension extension;
+    private final LazySupplier<URI> identityEndpoint;
 
-    public IdentityHubApiClient(IdentityHubExtension extension) {
-        this.extension = extension;
+    public IdentityHubApiClient(LazySupplier<URI> identityEndpoint) {
+        this.identityEndpoint = identityEndpoint;
+    }
+
+    public static IdentityHubApiClient forContext(ComponentRuntimeContext ctx) {
+        var identityEndpoint = Objects.requireNonNull(ctx.getEndpoint("identity"));
+        return new IdentityHubApiClient(identityEndpoint);
     }
 
     public String requestCredential(String token, String participantId, String issuerDid, String id, String type) {
@@ -39,7 +50,7 @@ public class IdentityHubApiClient {
                 }
                 """.formatted(issuerDid, holderPid, type, id);
 
-        extension.getIdentityEndpoint().baseRequest()
+        baseIdentityRequest()
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
                 .body(request)
@@ -49,6 +60,11 @@ public class IdentityHubApiClient {
                 .statusCode(201)
                 .log().ifValidationFails();
         return holderPid;
+    }
+
+
+    private RequestSpecification baseIdentityRequest() {
+        return given().baseUri(identityEndpoint.get().toString());
     }
 
 }

@@ -35,8 +35,9 @@ import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestSta
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.identityhub.tests.fixtures.allinone.AllInOneExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.allinone.AllInOneRuntime;
+import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
@@ -53,6 +54,9 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
+import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
+import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.junit.utils.Endpoints;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
@@ -68,6 +72,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.net.URI;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.List;
@@ -80,12 +85,9 @@ import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
-import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_MEM_MODULES;
-import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_SQL_MODULES;
-import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_MEM_MODULES;
-import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_SQL_MODULES;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
+import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.ArgumentMatchers.startsWith;
@@ -108,37 +110,53 @@ public class DcpIssuanceFlowAllInOneTest {
 
         protected static final String ISSUER_ID = "issuer";
         protected static final String PARTICIPANT_ID = "issuer"; //issuer and participant use the same ID -> issue to self
+
+        // Endpoints for issuer and identity hub runtimes
+        protected static final Endpoints.Builder ENDPOINTS = Endpoints.Builder.newInstance()
+                .endpoint("issueradmin", () -> URI.create("http://localhost:" + getFreePort() + "/api/admin"))
+                .endpoint("issuance", () -> URI.create("http://localhost:" + getFreePort() + "/api/issuance"))
+                .endpoint("sts", () -> URI.create("http://localhost:" + getFreePort() + "/api/sts"))
+                .endpoint("identity", () -> URI.create("http://localhost:" + getFreePort() + "/api/identity"))
+                .endpoint("did", () -> URI.create("http://localhost:" + getFreePort() + "/"))
+                .endpoint("statuslist", () -> URI.create("http://localhost:" + getFreePort() + "/statuslist"))
+                .endpoint("credentials", () -> URI.create("http://localhost:" + getFreePort() + "/api/credentials"));
+
         private static String participantToken;
         private static String issuerDid;
         private static String participantDid;
 
         @BeforeAll
-        static void beforeAll(AllInOneRuntime runtime) {
-            var pipelineFactory = runtime.getService(AttestationSourceFactoryRegistry.class);
-            var validationRegistry = runtime.getService(AttestationDefinitionValidatorRegistry.class);
+        static void beforeAll(IssuerService issuer, IdentityHub identityHub) {
+            var pipelineFactory = issuer.getService(AttestationSourceFactoryRegistry.class);
+            var validationRegistry = issuer.getService(AttestationDefinitionValidatorRegistry.class);
             pipelineFactory.registerFactory("Attestation", ATTESTATION_SOURCE_FACTORY);
             validationRegistry.registerValidator("Attestation", def -> ValidationResult.success());
 
             // Create an issuer
-            issuerDid = runtime.didFor(ISSUER_ID);
-            var response = runtime.createIssuerParticipant(ISSUER_ID, issuerDid, issuerDid + "#key");
+            issuerDid = issuer.didFor(ISSUER_ID);
+
+            var services = List.of(
+                    issuer.createServiceEndpoint(ISSUER_ID),
+                    identityHub.createServiceEndpoint(PARTICIPANT_ID));
+
+            var response = issuer.createParticipant(ISSUER_ID, issuerDid, issuerDid + "#key", services);
 
             // Create a participant and store the token
-            participantDid = runtime.didFor(PARTICIPANT_ID);
+            participantDid = issuer.didFor(PARTICIPANT_ID);
             participantToken = response.apiKey();
 
             // seed attestations, credential definitions, rules, mappings etc. to the Issuer
-            prepareIssuer(runtime);
+            prepareIssuer(issuer);
 
         }
 
         /**
          * Prepares the issuer facet by creating rules and mappings, credential definitions and a mocked attestation source
          *
-         * @param allInOneRuntime the runtime that implements the issuer endpoint etc.
+         * @param issuer the runtime that implements the issuer endpoint etc.
          */
-        private static void prepareIssuer(AllInOneRuntime allInOneRuntime) {
-            var attestationDefinition = createRulesAndMappingsInIssuer(allInOneRuntime, Map.of(
+        private static void prepareIssuer(IssuerService issuer) {
+            var attestationDefinition = createRulesAndMappingsInIssuer(issuer, Map.of(
                     "claim", "onboarding.signedDocuments",
                     "operator", "eq",
                     "value", true), new MappingDefinition("participant.name", "credentialSubject.name", true));
@@ -152,7 +170,7 @@ public class DcpIssuanceFlowAllInOneTest {
         /**
          * Set the issuer up with an attestation definition and a credential definition
          */
-        private static @NotNull AttestationDefinition createRulesAndMappingsInIssuer(AllInOneRuntime issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition) {
+        private static @NotNull AttestationDefinition createRulesAndMappingsInIssuer(IssuerService issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition) {
             var participantService = issuer.getService(HolderService.class);
             var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
             var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
@@ -186,7 +204,7 @@ public class DcpIssuanceFlowAllInOneTest {
         }
 
         @Test
-        void testCredentialIssuance(AllInOneRuntime allInOneRuntime) {
+        void testCredentialIssuance(IssuerService issuer, IdentityHub identityHub) {
 
             var holderRequestId = UUID.randomUUID().toString();
             var issuanceRequest = """
@@ -197,7 +215,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     }
                     """.formatted(issuerDid, holderRequestId);
 
-            allInOneRuntime.getIdentityEndpoint().baseRequest()
+            identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(issuanceRequest)
@@ -210,7 +228,7 @@ public class DcpIssuanceFlowAllInOneTest {
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(allInOneRuntime.getCredentialRequestForParticipant(PARTICIPANT_ID, holderRequestId)).hasSize(1)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, holderRequestId)).hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
                                 assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
@@ -219,7 +237,7 @@ public class DcpIssuanceFlowAllInOneTest {
             // wait for the issuance process to be delivered on the issuer side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(allInOneRuntime.getIssuanceProcessesForParticipant(ISSUER_ID, holderRequestId))
+                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID, holderRequestId))
                             .hasSizeGreaterThanOrEqualTo(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
@@ -228,7 +246,7 @@ public class DcpIssuanceFlowAllInOneTest {
 
 
             // checks that the credential was issued correctly: we expect 1 status list credential, 1 "holder" credential and 1 tracked issuance
-            var credentials = allInOneRuntime.getCredentialsForParticipant(ISSUER_ID);
+            var credentials = issuer.getCredentialsForParticipant(ISSUER_ID);
             assertThat(credentials)
                     .hasSizeGreaterThanOrEqualTo(3);
             assertThat(credentials).anySatisfy(vc -> {
@@ -274,7 +292,7 @@ public class DcpIssuanceFlowAllInOneTest {
         }
 
         @Test
-        void testRenewal(AllInOneRuntime allInOneRuntime) {
+        void testRenewal(IssuerService issuer, IdentityHub identityHub) {
             var holderRequestId = UUID.randomUUID().toString();
             var issuanceRequest = """
                     {
@@ -284,7 +302,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     }
                     """.formatted(issuerDid, holderRequestId);
 
-            allInOneRuntime.getIdentityEndpoint().baseRequest()
+            issuer.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(issuanceRequest)
@@ -297,7 +315,7 @@ public class DcpIssuanceFlowAllInOneTest {
             // wait for the request status to be ISSUED on the holder side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(allInOneRuntime.getCredentialRequestForParticipant(PARTICIPANT_ID, holderRequestId))
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, holderRequestId))
                             .hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
@@ -306,8 +324,8 @@ public class DcpIssuanceFlowAllInOneTest {
 
 
             //we expect each one new entry for CredentialUsage.Holder and CredentialUsage.IssuanceTracking
-            var store = allInOneRuntime.getService(CredentialStore.class);
-            var issuanceProcessStore = allInOneRuntime.getService(IssuanceProcessStore.class);
+            var store = issuer.getService(CredentialStore.class);
+            var issuanceProcessStore = issuer.getService(IssuanceProcessStore.class);
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
                     .untilAsserted(() -> {
@@ -334,7 +352,7 @@ public class DcpIssuanceFlowAllInOneTest {
         }
 
         @Test
-        void testPresentationQuery(AllInOneRuntime runtime) throws JOSEException, ParseException {
+        void testPresentationQuery(IssuerService issuer, IdentityHub identityHub) throws JOSEException, ParseException {
             // set up consumer DID
             var consumerDid = "did:example:consumer";
             var consumerKey = new ECKeyGenerator(Curve.P_256).keyID(consumerDid + "#key").generate();
@@ -349,7 +367,7 @@ public class DcpIssuanceFlowAllInOneTest {
                             .type("JsonWebKey2020")
                             .build()))
                     .build()));
-            runtime.getService(DidResolverRegistry.class).register(exampleResolverMock);
+            issuer.getService(DidResolverRegistry.class).register(exampleResolverMock);
 
             // issue credential to holder
 
@@ -362,7 +380,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     }
                     """.formatted(issuerDid, holderRequestId);
 
-            runtime.getIdentityEndpoint().baseRequest()
+            issuer.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(issuanceRequest)
@@ -375,20 +393,20 @@ public class DcpIssuanceFlowAllInOneTest {
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(runtime.getCredentialRequestForParticipant(PARTICIPANT_ID, holderRequestId)).hasSize(1)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, holderRequestId)).hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
                                 assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
                             }));
 
             // create token, for that we need the provider's private key
-            var providerJwk = runtime.getService(Vault.class).resolveSecret(PARTICIPANT_ID + "-alias");
+            var providerJwk = issuer.getService(Vault.class).resolveSecret(PARTICIPANT_ID + "-alias");
             assertThat(providerJwk).isNotNull();
             var accessToken = generateJwt(participantDid, participantDid, consumerDid, Map.of("scope", "org.eclipse.edc.vc.type:MembershipCredential:read"), ECKey.parse(providerJwk));
             var token = generateJwt(participantDid, consumerDid, consumerDid, Map.of("client_id", consumerDid, "token", accessToken), consumerKey);
 
 
-            var response = runtime.getCredentialsEndpoint().baseRequest()
+            var response = identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body("""
@@ -457,34 +475,41 @@ public class DcpIssuanceFlowAllInOneTest {
     class InMemory extends Tests {
 
         @RegisterExtension
-        static final AllInOneExtension IDENTITY_HUB_EXTENSION = AllInOneExtension.Builder.newInstance()
-                .id("all-in-one-runtime")
+        static final RuntimeExtension RUNTIME_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name("all-in-one-runtime")
-                .module(IH_RUNTIME_MEM_MODULES[0])
-                .module(ISSUER_RUNTIME_MEM_MODULES[0])
+                .modules(DefaultRuntimes.IdentityHub.MODULES)
+                .modules(DefaultRuntimes.Issuer.MODULES)
+                .endpoints(ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.Issuer::config)
+                .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .paramProvider(IdentityHub.class, IdentityHub::forContext)
+                .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
     }
 
     @Nested
     @EndToEndTest
     class Postgres extends Tests {
+
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
         private static final String ISSUER = "issuer";
+
         @Order(2)
         @RegisterExtension
-        static final AllInOneExtension IDENTITY_HUB_EXTENSION = AllInOneExtension.Builder.newInstance()
-                .id("all-in-one-runtime")
+        static final RuntimeExtension RUNTIME_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name("all-in-one-runtime")
-                .modules(new String[]{
-                        IH_RUNTIME_SQL_MODULES[0],
-                        IH_RUNTIME_SQL_MODULES[1],
-                        ISSUER_RUNTIME_SQL_MODULES[0],
-                        ISSUER_RUNTIME_SQL_MODULES[1]
-                })
+                .modules(DefaultRuntimes.IdentityHub.SQL_MODULES)
+                .modules(DefaultRuntimes.Issuer.SQL_MODULES)
+                .endpoints(ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.Issuer::config)
+                .configurationProvider(DefaultRuntimes.IdentityHub::config)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
+                .paramProvider(IdentityHub.class, IdentityHub::forContext)
+                .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
+
         @Order(1) // must be the first extension to be evaluated since it starts the DB server
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {

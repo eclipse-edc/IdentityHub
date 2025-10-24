@@ -17,13 +17,15 @@ package org.eclipse.edc.identityhub.tests;
 import io.restassured.http.Header;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerRuntime;
+import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
+import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
+import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
@@ -41,10 +43,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
-import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_ID;
-import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_MEM_MODULES;
 import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
-import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_SQL_MODULES;
 import static org.hamcrest.Matchers.equalTo;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
@@ -59,14 +58,14 @@ public class IssuanceProcessApiEndToEndTest {
         }
 
         @Test
-        void getIssuanceProcess(IssuerRuntime runtime, IssuanceProcessStore store) {
+        void getIssuanceProcess(IssuerService issuerService, IssuanceProcessStore store) {
             var issuer = "issuer";
-            var token = runtime.createParticipant(issuer).apiKey();
+            var token = issuerService.createParticipant(issuer).apiKey();
 
             var process = createIssuanceProcess(issuer);
             store.save(process);
 
-            runtime.getAdminEndpoint().baseRequest()
+            issuerService.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
                     .get("/v1alpha/participants/%s/issuanceprocesses/%s".formatted(toBase64(issuer), process.getId()))
@@ -83,17 +82,17 @@ public class IssuanceProcessApiEndToEndTest {
         }
 
         @Test
-        void getIssuanceProcess_notAuthorized(IssuerRuntime runtime, IssuanceProcessStore store) {
+        void getIssuanceProcess_notAuthorized(IssuerService issuerService, IssuanceProcessStore store) {
             var issuer = "issuer";
             var issuer2 = "issuer2";
-            runtime.createParticipant(issuer);
+            issuerService.createParticipant(issuer);
 
             var process = createIssuanceProcess(issuer);
             store.save(process);
 
-            var token = runtime.createParticipant(issuer2).apiKey();
+            var token = issuerService.createParticipant(issuer2).apiKey();
 
-            runtime.getAdminEndpoint().baseRequest()
+            issuerService.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
                     .get("/v1alpha/participants/%s/issuanceprocesses/%s".formatted(toBase64(issuer), process.getId()))
@@ -103,14 +102,14 @@ public class IssuanceProcessApiEndToEndTest {
         }
 
         @Test
-        void queryIssuanceProcesses(IssuerRuntime runtime, IssuanceProcessStore store) {
+        void queryIssuanceProcesses(IssuerService issuerService, IssuanceProcessStore store) {
             var issuer = "issuer";
-            var token = runtime.createParticipant(issuer).apiKey();
+            var token = issuerService.createParticipant(issuer).apiKey();
 
             var process = createIssuanceProcess(issuer);
             store.save(process);
 
-            runtime.getAdminEndpoint().baseRequest()
+            issuerService.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance()
@@ -134,17 +133,17 @@ public class IssuanceProcessApiEndToEndTest {
         }
 
         @Test
-        void queryIssuanceProcesses_notAuthorized(IssuerRuntime runtime, IssuanceProcessStore store) {
+        void queryIssuanceProcesses_notAuthorized(IssuerService issuerService, IssuanceProcessStore store) {
             var issuer = "issuer";
             var issuer2 = "issuer2";
-            runtime.createParticipant(issuer);
+            issuerService.createParticipant(issuer);
 
             var process = createIssuanceProcess(issuer);
             store.save(process);
 
-            var token = runtime.createParticipant(issuer2).apiKey();
+            var token = issuerService.createParticipant(issuer2).apiKey();
 
-            runtime.getAdminEndpoint().baseRequest()
+            issuerService.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
                     .body(QuerySpec.Builder.newInstance()
@@ -183,10 +182,12 @@ public class IssuanceProcessApiEndToEndTest {
     class InMemory extends Tests {
 
         @RegisterExtension
-        static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
-                .id(ISSUER_RUNTIME_ID)
+        static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name(ISSUER_RUNTIME_NAME)
-                .modules(ISSUER_RUNTIME_MEM_MODULES)
+                .modules(DefaultRuntimes.Issuer.MODULES)
+                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.Issuer::config)
+                .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
     }
 
@@ -208,11 +209,13 @@ public class IssuanceProcessApiEndToEndTest {
 
         @Order(2)
         @RegisterExtension
-        static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
-                .id(ISSUER_RUNTIME_ID)
+        static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name(ISSUER_RUNTIME_NAME)
-                .modules(ISSUER_RUNTIME_SQL_MODULES)
+                .modules(DefaultRuntimes.Issuer.SQL_MODULES)
+                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.Issuer::config)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
+                .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
     }
 }
