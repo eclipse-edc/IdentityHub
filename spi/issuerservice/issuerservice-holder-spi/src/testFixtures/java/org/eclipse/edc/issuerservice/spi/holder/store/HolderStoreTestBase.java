@@ -198,6 +198,7 @@ public abstract class HolderStoreTestBase {
                 .holderId(id)
                 .did(did)
                 .holderName(name)
+                .isAnonymous(true)
                 .build();
     }
 }
