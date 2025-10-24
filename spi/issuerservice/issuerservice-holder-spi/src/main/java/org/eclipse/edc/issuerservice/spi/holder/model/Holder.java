@@ -29,6 +29,7 @@ public class Holder extends AbstractParticipantResource {
     private String holderId;
     private String did;
     private String holderName;
+    private boolean anonymous;
 
     private Holder() {
     }
@@ -43,6 +44,14 @@ public class Holder extends AbstractParticipantResource {
 
     public String getHolderName() {
         return holderName;
+    }
+
+    /**
+     * Indicates whether the holder entity was created as part of a credential request, or whether it had existed before.
+     * {@code AttestationSource} implementations can use this to determine whether linked data exists or not.
+     */
+    public boolean isAnonymous() {
+        return anonymous;
     }
 
 
@@ -84,6 +93,11 @@ public class Holder extends AbstractParticipantResource {
             Objects.requireNonNull(entity.did, "DID must not be null");
             Objects.requireNonNull(entity.participantContextId, "Participant context ID must not be null");
             return super.build();
+        }
+
+        public Builder isAnonymous(boolean anonymous) {
+            entity.anonymous = anonymous;
+            return this;
         }
     }
 }

@@ -113,15 +113,15 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
 
     private ServiceResult<AttestationEvaluationResponse> evaluateAttestations(DcpRequestContext context, Collection<CredentialDefinition> credentialDefinitions) {
 
-        var attestations = credentialDefinitions.stream()
+        var attestationIds = credentialDefinitions.stream()
                 .flatMap(credentialDefinition -> credentialDefinition.getAttestations().stream())
                 .collect(Collectors.toSet());
 
-        if (attestations.isEmpty()) {
+        if (attestationIds.isEmpty()) {
             return ServiceResult.badRequest("No attestations found for requested credentials");
         }
 
-        var result = attestationPipeline.evaluate(attestations, new DcpAttestationContext(context));
+        var result = attestationPipeline.evaluate(attestationIds, new DcpAttestationContext(context));
         if (result.failed()) {
             return ServiceResult.unauthorized("unauthorized");
         }

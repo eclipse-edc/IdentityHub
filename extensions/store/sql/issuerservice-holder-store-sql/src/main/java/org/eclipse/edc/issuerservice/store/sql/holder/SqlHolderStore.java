@@ -87,22 +87,11 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                         holder.getDid(),
                         holder.getHolderName(),
                         0, //participant.createdAt(),
-                        0  //participant.lastModifiedAt());
+                        0,  //participant.lastModifiedAt());
+                        holder.isAnonymous()
                 );
                 return success();
 
-            } catch (SQLException e) {
-                throw new EdcPersistenceException(e);
-            }
-        });
-    }
-
-    @Override
-    public StoreResult<Collection<Holder>> query(QuerySpec querySpec) {
-        return transactionContext.execute(() -> {
-            try (var connection = getConnection()) {
-                var query = statements.createQuery(querySpec);
-                return success(queryExecutor.query(connection, true, this::mapResultSet, query.getQueryAsString(), query.getParameters()).toList());
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -125,11 +114,24 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                             holder.getHolderName(),
                             0, //participant.createdAt(),
                             0, //participant.lastModifiedAt());
+                            holder.isAnonymous(),
                             holder.getHolderId()
                     );
                     return StoreResult.success();
                 }
                 return StoreResult.notFound(notFoundErrorMessage(id));
+            } catch (SQLException e) {
+                throw new EdcPersistenceException(e);
+            }
+        });
+    }
+
+    @Override
+    public StoreResult<Collection<Holder>> query(QuerySpec querySpec) {
+        return transactionContext.execute(() -> {
+            try (var connection = getConnection()) {
+                var query = statements.createQuery(querySpec);
+                return success(queryExecutor.query(connection, true, this::mapResultSet, query.getQueryAsString(), query.getParameters()).toList());
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -173,6 +175,7 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                 .did(did)
                 .holderName(name)
                 .participantContextId(participantContextId)
+                .isAnonymous(resultSet.getBoolean(statements.getAnonymousColumn()))
                 .build();
     }
 }

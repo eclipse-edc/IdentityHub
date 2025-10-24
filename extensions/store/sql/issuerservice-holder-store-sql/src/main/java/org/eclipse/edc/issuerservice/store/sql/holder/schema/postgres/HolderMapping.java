@@ -29,6 +29,7 @@ public class HolderMapping extends TranslationMapping {
     public static final String FIELD_LASTMODIFIED_TIMESTAMP = "lastModified";
     public static final String FIELD_DID = "did";
     public static final String FIELD_NAME = "holderName";
+    public static final String FIELD_ANONYMOUS = "anonymous";
 
     public HolderMapping(HolderStoreStatements statements) {
         add(FIELD_ID, statements.getIdColumn());
@@ -37,5 +38,6 @@ public class HolderMapping extends TranslationMapping {
         add(FIELD_LASTMODIFIED_TIMESTAMP, statements.getLastModifiedTimestampColumn());
         add(FIELD_NAME, statements.getHolderNameColumn());
         add(FIELD_DID, statements.getDidColumn());
+        add(FIELD_ANONYMOUS, statements.getAnonymousColumn());
     }
 }

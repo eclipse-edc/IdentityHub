@@ -33,9 +33,9 @@ import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule
 
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.eclipse.edc.identityhub.protocols.dcp.issuer.DcpIssuerCoreExtension.DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT;
 
@@ -45,19 +45,21 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
     private final TokenValidationService tokenValidationService;
     private final PublicKeyResolver publicKeyResolver;
     private final HolderStore store;
+    private final boolean allowAnonymous;
 
-    public DcpHolderTokenVerifierImpl(TokenValidationRulesRegistry rulesRegistry, TokenValidationService tokenValidationService, PublicKeyResolver publicKeyResolver, HolderStore store) {
+    public DcpHolderTokenVerifierImpl(TokenValidationRulesRegistry rulesRegistry, TokenValidationService tokenValidationService, PublicKeyResolver publicKeyResolver, HolderStore store, boolean allowAnonymous) {
         this.rulesRegistry = rulesRegistry;
         this.tokenValidationService = tokenValidationService;
         this.publicKeyResolver = publicKeyResolver;
         this.store = store;
+        this.allowAnonymous = allowAnonymous;
     }
 
 
     @Override
     public ServiceResult<DcpRequestContext> verify(ParticipantContext issuerContext, TokenRepresentation tokenRepresentation) {
         return getTokenIssuer(tokenRepresentation.getToken())
-                .compose(this::getParticipant)
+                .compose(token -> getParticipant(issuerContext.getParticipantContextId(), token))
                 .compose(participant ->
                         getKid(tokenRepresentation.getToken())
                                 .compose(kid -> validateToken(issuerContext, tokenRepresentation, participant, kid))
@@ -85,15 +87,25 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
         }
     }
 
-    private ServiceResult<Holder> getParticipant(String issuer) {
-        var query = QuerySpec.Builder.newInstance().filter(Criterion.criterion("did", "=", issuer)).build();
-        return ServiceResult.from(store.query(query)).compose(this::findFirst);
-    }
+    private ServiceResult<Holder> getParticipant(String participantContextId, String holderDid) {
+        var query = QuerySpec.Builder.newInstance().filter(Criterion.criterion("did", "=", holderDid)).build();
+        var holdersResult = store.query(query);
+        if (holdersResult.failed()) {
+            return ServiceResult.from(holdersResult).mapFailure();
+        }
 
-    private ServiceResult<Holder> findFirst(Collection<Holder> holders) {
-        return holders.stream().findFirst()
-                .map(ServiceResult::success)
-                .orElseGet(() -> ServiceResult.unauthorized("Participant not found"));
+        var holders = holdersResult.getContent();
+
+        if (holders.isEmpty() && allowAnonymous) {
+            var newHolder = Holder.Builder.newInstance()
+                    .holderId(UUID.randomUUID().toString())
+                    .did(holderDid)
+                    .participantContextId(participantContextId)
+                    .isAnonymous(true)
+                    .build();
+            return ServiceResult.from(store.create(newHolder)).map(u -> newHolder);
+        }
+        return holders.stream().findFirst().map(ServiceResult::success).orElseGet(() -> ServiceResult.unauthorized("Participant not found"));
     }
 
     private ServiceResult<DcpRequestContext> validateToken(ParticipantContext issuerContext, TokenRepresentation token, Holder holder, String kid) {

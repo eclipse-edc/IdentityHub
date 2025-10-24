@@ -115,6 +115,8 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     private boolean activateJtiCheck;
     @Inject(required = false)
     private JtiValidationStore jtiValidationStore;
+    @Setting(description = "Allow anonymous onboarding", defaultValue = "false", key = "edc.issuance.anonymous.allowed")
+    private boolean allowAnonymousCredentialRequest;
 
     @Override
     public void initialize(ServiceExtensionContext context) {
@@ -138,7 +140,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     @Provider
     public DcpHolderTokenVerifier createTokenVerifier() {
-        return new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, didPublicKeyResolver, holderStore);
+        return new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, didPublicKeyResolver, holderStore, allowAnonymousCredentialRequest);
     }
 
     @Provider
