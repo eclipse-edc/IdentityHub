@@ -55,7 +55,7 @@ public class DcpHolderTokenVerifierImplTest {
     private final PublicKeyResolver publicKeyResolver = mock();
 
     private final HolderStore holderStore = mock();
-    private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, publicKeyResolver, holderStore);
+    private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, publicKeyResolver, holderStore, false);
 
     private final ParticipantContext participantContext = ParticipantContext.Builder.newInstance().participantContextId("holderId")
             .did(PARTICIPANT_DID)

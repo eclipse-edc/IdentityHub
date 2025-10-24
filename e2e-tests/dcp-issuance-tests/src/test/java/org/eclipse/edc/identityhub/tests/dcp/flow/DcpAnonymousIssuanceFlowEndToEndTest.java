@@ -35,7 +35,6 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
-import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
@@ -71,8 +70,13 @@ import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * This test verifies that holders, which do not yet exist as {@link Holder} entity, can still request a credential if the
+ * {@code edc.issuance.anonymous.allowed} property is set to {@code true}.
+ * This test is otherwise identical to {@link DcpIssuanceFlowEndToEndTest}.
+ */
 @SuppressWarnings("JUnitMalformedDeclaration")
-public class DcpIssuanceFlowEndToEndTest {
+public class DcpAnonymousIssuanceFlowEndToEndTest {
 
 
     protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
@@ -205,7 +209,7 @@ public class DcpIssuanceFlowEndToEndTest {
             var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
             var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
 
-            holderService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId(PARTICIPANT_ID).build());
+//            holderService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId(PARTICIPANT_ID).build());
 
 
             var attestationDefinition = AttestationDefinition.Builder.newInstance()
@@ -253,33 +257,13 @@ public class DcpIssuanceFlowEndToEndTest {
                 .id(ISSUER_RUNTIME_ID)
                 .name(ISSUER_RUNTIME_NAME)
                 .modules(ISSUER_RUNTIME_MEM_MODULES)
-                .build();
-
-    }
-
-    @Nested
-    @EndToEndTest
-    class AllowsAnonymousIssuance extends Tests {
-
-        @RegisterExtension
-        static final IdentityHubExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
-                .id(IH_RUNTIME_ID)
-                .name(IH_RUNTIME_NAME)
-                .modules(IH_RUNTIME_MEM_MODULES)
-                .build();
-
-        @RegisterExtension
-        static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
-                .id(ISSUER_RUNTIME_ID)
-                .name(ISSUER_RUNTIME_NAME)
-                .modules(ISSUER_RUNTIME_MEM_MODULES)
                 .configurationProvider(() -> ConfigFactory.fromMap(Map.of("edc.issuance.anonymous.allowed", "true")))
                 .build();
 
     }
 
     @Nested
-    @PostgresqlIntegrationTest
+    @EndToEndTest
     class Postgres extends Tests {
 
         @Order(0)
@@ -293,9 +277,16 @@ public class DcpIssuanceFlowEndToEndTest {
                 .id(ISSUER_RUNTIME_ID)
                 .name(ISSUER_RUNTIME_NAME)
                 .modules(ISSUER_RUNTIME_SQL_MODULES)
-                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER).merge(ConfigFactory.fromMap(Map.of("edc.issuance.anonymous.allowed", "true"))))
                 .build();
-
+        @Order(2)
+        @RegisterExtension
+        static final IdentityHubExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
+                .id(IH_RUNTIME_ID)
+                .name(IH_RUNTIME_NAME)
+                .modules(IH_RUNTIME_SQL_MODULES)
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER).merge(ConfigFactory.fromMap(Map.of("edc.issuance.anonymous.allowed", "true"))))
+                .build();
         private static final String IDENTITY_HUB = "identityhub";
         @Order(1) // must be the first extension to be evaluated since it starts the DB server
         @RegisterExtension
@@ -303,15 +294,6 @@ public class DcpIssuanceFlowEndToEndTest {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
             POSTGRESQL_EXTENSION.createDatabase(IDENTITY_HUB);
         };
-
-        @Order(2)
-        @RegisterExtension
-        static final IdentityHubExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
-                .id(IH_RUNTIME_ID)
-                .name(IH_RUNTIME_NAME)
-                .modules(IH_RUNTIME_SQL_MODULES)
-                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(IDENTITY_HUB))
-                .build();
 
 
     }
