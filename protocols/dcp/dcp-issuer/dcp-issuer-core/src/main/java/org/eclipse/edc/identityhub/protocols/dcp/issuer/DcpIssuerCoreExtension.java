@@ -115,7 +115,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     private boolean activateJtiCheck;
     @Inject(required = false)
     private JtiValidationStore jtiValidationStore;
-    @Setting(description = "Allow anonymous onboarding", defaultValue = "false", key = "edc.™¡.anonymous.allowed")
+    @Setting(description = "Allow anonymous onboarding", defaultValue = "false", key = "edc.issuance.anonymous.allowed")
     private boolean allowAnonymousCredentialRequest;
 
     @Override

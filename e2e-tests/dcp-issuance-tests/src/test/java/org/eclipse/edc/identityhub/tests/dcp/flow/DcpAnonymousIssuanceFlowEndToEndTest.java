@@ -21,7 +21,6 @@ import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubE
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerExtension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerRuntime;
-import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry;
@@ -205,12 +204,8 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
          * Setup the issuer with an attestation definition and a credential definition
          */
         private @NotNull AttestationDefinition setupIssuer(IssuerRuntime issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition) {
-            var holderService = issuer.getService(HolderService.class);
             var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
             var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
-
-//            holderService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId(PARTICIPANT_ID).build());
-
 
             var attestationDefinition = AttestationDefinition.Builder.newInstance()
                     .id("attestation-id")
@@ -285,7 +280,7 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
                 .id(IH_RUNTIME_ID)
                 .name(IH_RUNTIME_NAME)
                 .modules(IH_RUNTIME_SQL_MODULES)
-                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER).merge(ConfigFactory.fromMap(Map.of("edc.issuance.anonymous.allowed", "true"))))
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .build();
         private static final String IDENTITY_HUB = "identityhub";
         @Order(1) // must be the first extension to be evaluated since it starts the DB server

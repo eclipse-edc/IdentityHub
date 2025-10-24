@@ -37,7 +37,6 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.hamcrest.Matchers;
@@ -253,27 +252,6 @@ public class DcpIssuanceFlowEndToEndTest {
                 .id(ISSUER_RUNTIME_ID)
                 .name(ISSUER_RUNTIME_NAME)
                 .modules(ISSUER_RUNTIME_MEM_MODULES)
-                .build();
-
-    }
-
-    @Nested
-    @EndToEndTest
-    class AllowsAnonymousIssuance extends Tests {
-
-        @RegisterExtension
-        static final IdentityHubExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
-                .id(IH_RUNTIME_ID)
-                .name(IH_RUNTIME_NAME)
-                .modules(IH_RUNTIME_MEM_MODULES)
-                .build();
-
-        @RegisterExtension
-        static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
-                .id(ISSUER_RUNTIME_ID)
-                .name(ISSUER_RUNTIME_NAME)
-                .modules(ISSUER_RUNTIME_MEM_MODULES)
-                .configurationProvider(() -> ConfigFactory.fromMap(Map.of("edc.issuance.anonymous.allowed", "true")))
                 .build();
 
     }
