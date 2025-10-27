@@ -35,11 +35,12 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialOfferStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
-import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
+import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
+import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
@@ -70,10 +71,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObje
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_PROFILE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage.CREDENTIAL_ISSUER_TERM;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
-import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_ID;
-import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_MEM_MODULES;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
-import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_SQL_MODULES;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_DID;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_KEY;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.PROVIDER_DID;
@@ -97,9 +95,9 @@ public class CredentialOfferApiEndToEndTest {
         private static final String TEST_PARTICIPANT_CONTEXT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(TEST_PARTICIPANT_CONTEXT_ID.getBytes());
 
         @BeforeEach
-        void setup(IdentityHubRuntime identityHubRuntime) {
-            createParticipant(identityHubRuntime);
-            identityHubRuntime.storeHolderRequest(HolderCredentialRequest.Builder.newInstance()
+        void setup(IdentityHub identityHub) {
+            createParticipant(identityHub);
+            identityHub.storeHolderRequest(HolderCredentialRequest.Builder.newInstance()
                     .id("test-holder-id")
                     .issuerDid(PROVIDER_DID)
                     .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
@@ -132,11 +130,11 @@ public class CredentialOfferApiEndToEndTest {
 
         @DisplayName("Store CredentialOffer - success")
         @Test
-        void storeCredentialOffer(IdentityHubRuntime identityHubRuntime, CredentialOfferStore credentialOfferStore) throws JOSEException {
+        void storeCredentialOffer(IdentityHub identityHub, CredentialOfferStore credentialOfferStore) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             var offerMessage = createCredentialOfferMessage(createCredentialContainer());
-            identityHubRuntime.getCredentialsEndpoint().baseRequest()
+            identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(offerMessage)
@@ -152,10 +150,10 @@ public class CredentialOfferApiEndToEndTest {
 
         @DisplayName("Issuer's DID not resolvable, expect HTTP 401")
         @Test
-        void storeCredentialOffer_didNotResolved(IdentityHubRuntime identityHubRuntime) {
+        void storeCredentialOffer_didNotResolved(IdentityHub identityHub) {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.failure("not found"));
             var credentialMessage = createCredentialOfferMessage(createCredentialContainer());
-            identityHubRuntime.getCredentialsEndpoint().baseRequest()
+            identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
@@ -169,12 +167,12 @@ public class CredentialOfferApiEndToEndTest {
 
         @DisplayName("Issuer's auth token invalid, expect HTTP 401")
         @Test
-        void storeCredentialOffer_tokenSignedWithWrongKey(IdentityHubRuntime identityHubRuntime) throws JOSEException {
+        void storeCredentialOffer_tokenSignedWithWrongKey(IdentityHub identityHub) throws JOSEException {
             var wrongKey = new ECKeyGenerator(Curve.P_256).generate();
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(wrongKey.toPublicKey()));
 
             var credentialMessage = createCredentialOfferMessage(createCredentialContainer());
-            identityHubRuntime.getCredentialsEndpoint().baseRequest()
+            identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken(CONSUMER_DID, PROVIDER_DID))
                     .body(credentialMessage)
@@ -187,7 +185,7 @@ public class CredentialOfferApiEndToEndTest {
 
         @DisplayName("CredentialMessage contains an illegal format, expect HTTP 400")
         @Test
-        void storeCredentialOffer_wrongCredentialFormat(IdentityHubRuntime identityHubRuntime) throws JOSEException {
+        void storeCredentialOffer_wrongCredentialFormat(IdentityHub identityHub) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             var credentialObject = Json.createObjectBuilder()
@@ -198,7 +196,7 @@ public class CredentialOfferApiEndToEndTest {
                     .build();
 
             var credentialMessage = createCredentialOfferMessage(credentialObject);
-            identityHubRuntime.getCredentialsEndpoint().baseRequest()
+            identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
@@ -209,13 +207,13 @@ public class CredentialOfferApiEndToEndTest {
                     .body(containsString("Invalid format"));
         }
 
-        private void createParticipant(IdentityHubRuntime identityHubRuntime) {
-            createParticipant(identityHubRuntime, CONSUMER_KEY);
+        private void createParticipant(IdentityHub identityHub) {
+            createParticipant(identityHub, CONSUMER_KEY);
         }
 
-        private void createParticipant(IdentityHubRuntime identityHubRuntime, ECKey participantKey) {
-            var service = identityHubRuntime.getService(ParticipantContextService.class);
-            var vault = identityHubRuntime.getService(Vault.class);
+        private void createParticipant(IdentityHub identityHub, ECKey participantKey) {
+            var service = identityHub.getService(ParticipantContextService.class);
+            var vault = identityHub.getService(Vault.class);
 
             var privateKeyAlias = "%s-privatekey-alias".formatted(Tests.TEST_PARTICIPANT_CONTEXT_ID);
             vault.storeSecret(privateKeyAlias, participantKey.toJSONString());
@@ -260,10 +258,12 @@ public class CredentialOfferApiEndToEndTest {
     class InMemory extends Tests {
 
         @RegisterExtension
-        static final RuntimeExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
+        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name(IH_RUNTIME_NAME)
-                .id(IH_RUNTIME_ID)
-                .modules(IH_RUNTIME_MEM_MODULES)
+                .modules(DefaultRuntimes.IdentityHub.MODULES)
+                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build()
                 .registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER)
                 .registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
@@ -284,14 +284,15 @@ public class CredentialOfferApiEndToEndTest {
             POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
 
-
         @Order(2)
         @RegisterExtension
-        static final RuntimeExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
+        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name(IH_RUNTIME_NAME)
-                .id(IH_RUNTIME_ID)
-                .modules(IH_RUNTIME_SQL_MODULES)
+                .modules(DefaultRuntimes.IdentityHub.SQL_MODULES)
+                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.IdentityHub::config)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(DB_NAME))
+                .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build()
                 .registerServiceMock(DidPublicKeyResolver.class, DID_PUBLIC_KEY_RESOLVER)
                 .registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);

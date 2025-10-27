@@ -29,10 +29,11 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
-import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHubRuntime;
+import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
+import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -56,10 +57,7 @@ import java.util.UUID;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_ID;
-import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_MEM_MODULES;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
-import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_SQL_MODULES;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.createCredential;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.endsWith;
@@ -96,16 +94,16 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         @Test
-        void findById(IdentityHubRuntime runtime) {
-            var superUserKey = runtime.createSuperUser().apiKey();
+        void findById(IdentityHub identityHub) {
+            var superUserKey = identityHub.createSuperUser().apiKey();
             var user = "user1";
-            var token = runtime.createParticipant(user).apiKey();
+            var token = identityHub.createParticipant(user).apiKey();
 
             var credential = createCredential();
-            var resourceId = runtime.storeCredential(credential, user);
+            var resourceId = identityHub.storeCredential(credential, user);
 
             assertThat(Arrays.asList(token, superUserKey))
-                    .allSatisfy(t -> runtime.getIdentityEndpoint().baseRequest()
+                    .allSatisfy(t -> identityHub.getIdentityEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .get("/v1alpha/participants/%s/credentials/%s".formatted(toBase64(user), resourceId))
@@ -116,17 +114,17 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         @Test
-        void create(IdentityHubRuntime runtime) {
-            var superUserKey = runtime.createSuperUser().apiKey();
+        void create(IdentityHub identityHub) {
+            var superUserKey = identityHub.createSuperUser().apiKey();
             var user = "user1";
-            var token = runtime.createParticipant(user).apiKey();
+            var token = identityHub.createParticipant(user).apiKey();
 
             assertThat(Arrays.asList(token, superUserKey))
                     .allSatisfy(t -> {
                         var vc = createCredential();
                         var resourceId = UUID.randomUUID().toString();
                         var manifest = createManifest(user, vc).id(resourceId).build();
-                        runtime.getIdentityEndpoint().baseRequest()
+                        identityHub.getIdentityEndpoint().baseRequest()
                                 .contentType(JSON)
                                 .header(new Header("x-api-key", t))
                                 .body(manifest)
@@ -136,24 +134,24 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .statusCode(204)
                                 .body(notNullValue());
 
-                        var resource = runtime.getCredential(resourceId).orElseThrow(() -> new EdcException("Failed to credential with id %s".formatted(resourceId)));
+                        var resource = identityHub.getCredential(resourceId).orElseThrow(() -> new EdcException("Failed to credential with id %s".formatted(resourceId)));
                         assertThat(resource.getVerifiableCredential().credential()).usingRecursiveComparison().isEqualTo(vc);
                     });
         }
 
         @Test
-        void update(IdentityHubRuntime identityHubRuntime) {
-            var superUserKey = identityHubRuntime.createSuperUser().apiKey();
+        void update(IdentityHub identityHub) {
+            var superUserKey = identityHub.createSuperUser().apiKey();
             var user = "user1";
-            var token = identityHubRuntime.createParticipant(user).apiKey();
+            var token = identityHub.createParticipant(user).apiKey();
 
             assertThat(Arrays.asList(token, superUserKey))
                     .allSatisfy(t -> {
                         var credential1 = createCredential();
                         var credential2 = createCredential();
-                        var resourceId1 = identityHubRuntime.storeCredential(credential1, user);
+                        var resourceId1 = identityHub.storeCredential(credential1, user);
                         var manifest = createManifest(user, credential2).id(resourceId1).build();
-                        identityHubRuntime.getIdentityEndpoint().baseRequest()
+                        identityHub.getIdentityEndpoint().baseRequest()
                                 .contentType(JSON)
                                 .header(new Header("x-api-key", t))
                                 .body(manifest)
@@ -163,22 +161,22 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .statusCode(204)
                                 .body(notNullValue());
 
-                        var resource = identityHubRuntime.getCredential(resourceId1).orElseThrow(() -> new EdcException("Failed to retrieve credential with id %s".formatted(resourceId1)));
+                        var resource = identityHub.getCredential(resourceId1).orElseThrow(() -> new EdcException("Failed to retrieve credential with id %s".formatted(resourceId1)));
                         assertThat(resource.getVerifiableCredential().credential()).usingRecursiveComparison().isEqualTo(credential2);
                     });
         }
 
         @Test
-        void delete(IdentityHubRuntime runtime) {
-            var superUserKey = runtime.createSuperUser().apiKey();
+        void delete(IdentityHub identityHub) {
+            var superUserKey = identityHub.createSuperUser().apiKey();
             var user = "user1";
-            var token = runtime.createParticipant(user).apiKey();
+            var token = identityHub.createParticipant(user).apiKey();
 
             assertThat(Arrays.asList(token, superUserKey))
                     .allSatisfy(t -> {
                         var credential = createCredential();
-                        var resourceId = runtime.storeCredential(credential, user);
-                        runtime.getIdentityEndpoint().baseRequest()
+                        var resourceId = identityHub.storeCredential(credential, user);
+                        identityHub.getIdentityEndpoint().baseRequest()
                                 .contentType(JSON)
                                 .header(new Header("x-api-key", t))
                                 .delete("/v1alpha/participants/%s/credentials/%s".formatted(toBase64(user), resourceId))
@@ -187,22 +185,22 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .statusCode(204)
                                 .body(notNullValue());
 
-                        var resource = runtime.getCredential(resourceId);
+                        var resource = identityHub.getCredential(resourceId);
                         assertThat(resource.isEmpty()).isTrue();
                     });
         }
 
         @Test
-        void queryByType(IdentityHubRuntime runtime) {
-            var superUserKey = runtime.createSuperUser().apiKey();
+        void queryByType(IdentityHub identityHub) {
+            var superUserKey = identityHub.createSuperUser().apiKey();
             var user = "user1";
-            var token = runtime.createParticipant(user).apiKey();
+            var token = identityHub.createParticipant(user).apiKey();
 
             var credential = createCredential();
-            runtime.storeCredential(credential, user);
+            identityHub.storeCredential(credential, user);
 
             assertThat(Arrays.asList(token, superUserKey))
-                    .allSatisfy(t -> runtime.getIdentityEndpoint().baseRequest()
+                    .allSatisfy(t -> identityHub.getIdentityEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .get("/v1alpha/participants/%s/credentials?type=%s".formatted(toBase64(user), credential.getType().get(0)))
@@ -213,16 +211,16 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         @Test
-        void queryByType_noTypeSpecified(IdentityHubRuntime runtime) {
-            var superUserKey = runtime.createSuperUser().apiKey();
+        void queryByType_noTypeSpecified(IdentityHub identityHub) {
+            var superUserKey = identityHub.createSuperUser().apiKey();
             var user = "user1";
-            var token = runtime.createParticipant(user).apiKey();
+            var token = identityHub.createParticipant(user).apiKey();
 
             var credential = createCredential();
-            runtime.storeCredential(credential, user);
+            identityHub.storeCredential(credential, user);
 
             assertThat(Arrays.asList(token, superUserKey))
-                    .allSatisfy(t -> runtime.getIdentityEndpoint().baseRequest()
+                    .allSatisfy(t -> identityHub.getIdentityEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(new Header("x-api-key", t))
                             .get("/v1alpha/participants/%s/credentials".formatted(toBase64(user)))
@@ -233,7 +231,7 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         @Test
-        void createCredentialRequest(IdentityHubRuntime runtime, HolderCredentialRequestStore store) {
+        void createCredentialRequest(IdentityHub identityHub, HolderCredentialRequestStore store) {
             var port = getFreePort();
             try (var mockedIssuer = ClientAndServer.startClientAndServer(port)) {
                 var issuerPid = "dummy-issuance-id";
@@ -268,9 +266,9 @@ public class VerifiableCredentialApiEndToEndTest {
                                 .service(List.of(new Service(UUID.randomUUID().toString(),
                                         "IssuerService",
                                         "http://localhost:%s/api/issuance".formatted(port)))).build()));
-                runtime.createSuperUser();
+                identityHub.createSuperUser();
                 var user = "user1";
-                var token = runtime.createParticipant(user).apiKey();
+                var token = identityHub.createParticipant(user).apiKey();
                 var holderPid = UUID.randomUUID().toString();
                 var request =
                         """
@@ -280,7 +278,7 @@ public class VerifiableCredentialApiEndToEndTest {
                                   "credentials": [{ "format": "VC1_0_JWT", "id": "TestCredential-id"}]
                                 }
                                 """.formatted(holderPid);
-                runtime.getIdentityEndpoint().baseRequest()
+                identityHub.getIdentityEndpoint().baseRequest()
                         .contentType(JSON)
                         .header(new Header("x-api-key", token))
                         .body(request)
@@ -304,9 +302,9 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         @Test
-        void getRequest_success(IdentityHubRuntime runtime, TransactionContext trx, HolderCredentialRequestStore store) {
+        void getRequest_success(IdentityHub identityHub, TransactionContext trx, HolderCredentialRequestStore store) {
             var userId = "user1";
-            var token = runtime.createParticipant(userId).apiKey();
+            var token = identityHub.createParticipant(userId).apiKey();
 
             var holderPid = UUID.randomUUID().toString();
             var holderRequest = HolderCredentialRequest.Builder.newInstance()
@@ -319,7 +317,7 @@ public class VerifiableCredentialApiEndToEndTest {
 
             trx.execute(() -> store.save(holderRequest));
 
-            runtime.getIdentityEndpoint().baseRequest()
+            identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
                     .get("/v1alpha/participants/%s/credentials/request/%s".formatted(toBase64(userId), holderPid))
@@ -333,11 +331,11 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         @Test
-        void getRequest_notAuthorized_returns403(IdentityHubRuntime runtime, HolderCredentialRequestStore store, TransactionContext trx) {
+        void getRequest_notAuthorized_returns403(IdentityHub identityHub, HolderCredentialRequestStore store, TransactionContext trx) {
             var user1 = "user1";
             var user2 = "user2";
-            var token1 = runtime.createParticipant(user1);
-            var token2 = runtime.createParticipant(user2).apiKey();
+            var token1 = identityHub.createParticipant(user1);
+            var token2 = identityHub.createParticipant(user2).apiKey();
 
             var holderPid = UUID.randomUUID().toString();
             var holderRequest = HolderCredentialRequest.Builder.newInstance()
@@ -350,7 +348,7 @@ public class VerifiableCredentialApiEndToEndTest {
 
             trx.execute(() -> store.save(holderRequest));
 
-            runtime.getIdentityEndpoint().baseRequest()
+            identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token2)) // user 2 tries to access credential request status for user 1 -> not allowed!
                     .get("/v1alpha/participants/%s/credentials/request/%s".formatted(toBase64(user1), holderPid))
@@ -360,13 +358,13 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         @Test
-        void getRequest_whenNotFound_shouldReturn404(IdentityHubRuntime runtime, HolderCredentialRequestStore store, TransactionContext trx) {
+        void getRequest_whenNotFound_shouldReturn404(IdentityHub identityHub, HolderCredentialRequestStore store, TransactionContext trx) {
             var userId = "user1";
-            var token = runtime.createParticipant(userId).apiKey();
+            var token = identityHub.createParticipant(userId).apiKey();
 
             var holderPid = UUID.randomUUID().toString();
 
-            runtime.getIdentityEndpoint().baseRequest()
+            identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", token))
                     .get("/v1alpha/participants/%s/credentials/request/%s".formatted(toBase64(userId), holderPid))
@@ -392,10 +390,12 @@ public class VerifiableCredentialApiEndToEndTest {
     class InMemory extends Tests {
 
         @RegisterExtension
-        static final RuntimeExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
+        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name(IH_RUNTIME_NAME)
-                .id(IH_RUNTIME_ID)
-                .modules(IH_RUNTIME_MEM_MODULES)
+                .modules(DefaultRuntimes.IdentityHub.MODULES)
+                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build()
                 .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
     }
@@ -417,11 +417,13 @@ public class VerifiableCredentialApiEndToEndTest {
 
         @Order(2)
         @RegisterExtension
-        static final RuntimeExtension IDENTITY_HUB_EXTENSION = IdentityHubExtension.Builder.newInstance()
+        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
                 .name(IH_RUNTIME_NAME)
-                .id(IH_RUNTIME_ID)
-                .modules(IH_RUNTIME_SQL_MODULES)
+                .modules(DefaultRuntimes.IdentityHub.SQL_MODULES)
+                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.IdentityHub::config)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(DB_NAME))
+                .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build()
                 .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
 

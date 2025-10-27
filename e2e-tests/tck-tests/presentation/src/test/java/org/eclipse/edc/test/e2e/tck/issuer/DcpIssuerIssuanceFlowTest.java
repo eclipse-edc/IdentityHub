@@ -25,8 +25,8 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerExtension;
-import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerRuntime;
+import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
@@ -34,6 +34,8 @@ import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.Credentia
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
+import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
+import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.test.e2e.tck.TckTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,11 +60,16 @@ import static org.eclipse.edc.util.io.Ports.getFreePort;
 @TckTest
 public class DcpIssuerIssuanceFlowTest {
     @RegisterExtension
-    public static final IssuerExtension ISSUER_EXTENSION = IssuerExtension.Builder.newInstance()
-            .id("issuer-service")
+    public static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
             .name("issuerservice")
-            .modules(":dist:bom:issuerservice-bom", ":e2e-tests:tck-tests:test-attestations")
+            .modules(DefaultRuntimes.Issuer.MODULES)
+            .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+            .configurationProvider(DefaultRuntimes.Issuer::config)
+            .paramProvider(IssuerService.class, IssuerService::forContext)
+            .modules(DefaultRuntimes.Issuer.MODULES)
+            .modules(":e2e-tests:tck-tests:test-attestations")
             .build();
+    
     private static final int CALLBACK_PORT = getFreePort();
     private static final String ISSUANCE_CORRELATION_ID = "issuance-correlation-id";
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "issuer";
@@ -70,20 +77,20 @@ public class DcpIssuerIssuanceFlowTest {
     private ECKey issuerKey;
 
     @BeforeEach
-    void setup() {
-        issuerDid = ISSUER_EXTENSION.didFor(TEST_PARTICIPANT_CONTEXT_ID);
+    void setup(IssuerService issuer) {
+        issuerDid = issuer.didFor(TEST_PARTICIPANT_CONTEXT_ID);
         issuerKey = generateEcKey(issuerDid + "#key1");
     }
 
     @DisplayName("Run TCK Issuance tests targeting the Issuer")
     @Test
-    void runIssuanceFlowTests(IssuerRuntime runtime) {
+    void runIssuanceFlowTests(IssuerService issuer) {
         var monitor = new ConsoleMonitor(true, true);
 
-        var issuancePort = ISSUER_EXTENSION.getIssuerApiEndpoint().getUrl().getPort();
-        var issuancePath = ISSUER_EXTENSION.getIssuerApiEndpoint().getUrl().getPath();
-        var stsPort = ISSUER_EXTENSION.getStsEndpoint().getUrl().getPort();
-        var stsPath = ISSUER_EXTENSION.getStsEndpoint().getUrl().getPath();
+        var issuancePort = issuer.getIssuerApiEndpoint().getUrl().getPort();
+        var issuancePath = issuer.getIssuerApiEndpoint().getUrl().getPath();
+        var stsPort = issuer.getStsEndpoint().getUrl().getPort();
+        var stsPath = issuer.getStsEndpoint().getUrl().getPath();
 
         var holderDid = "did:web:localhost%%3A%s:holder".formatted(CALLBACK_PORT);
 
@@ -92,9 +99,9 @@ public class DcpIssuerIssuanceFlowTest {
         var baseCallbackUri = URI.create(baseCallbackUrl);
 
         // prepare the issuer service:
-        createHolder(runtime, holderDid);
-        var response = createParticipantContext(runtime, baseIssuerServiceUrl);
-        createDefinitions(runtime);
+        createHolder(issuer, holderDid);
+        var response = createParticipantContext(issuer, baseIssuerServiceUrl);
+        createDefinitions(issuer);
 
         var result = TckRuntime.Builder.newInstance()
                 .properties(Map.of(
@@ -121,15 +128,15 @@ public class DcpIssuerIssuanceFlowTest {
         }
     }
 
-    private void createDefinitions(IssuerRuntime runtime) {
-        var attestationDefinitionService = runtime.getService(AttestationDefinitionService.class);
+    private void createDefinitions(IssuerService issuer) {
+        var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
         attestationDefinitionService.createAttestation(AttestationDefinition.Builder.newInstance()
                         .id("tck-test-attestation")
                         .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                         .attestationType("tck-test").build())
                 .orElseThrow(f -> new AssertionError(f.getFailureDetail()));
 
-        var credentialDefinitionService = runtime.getService(CredentialDefinitionService.class);
+        var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
         var count = new AtomicInteger(1);
         Stream.of("MembershipCredential", "SensitiveDataCredential").forEach(type ->
                 credentialDefinitionService.createCredentialDefinition(CredentialDefinition.Builder.newInstance()
@@ -145,8 +152,8 @@ public class DcpIssuerIssuanceFlowTest {
                         .orElseThrow(f -> new AssertionError(f.getFailureDetail())));
     }
 
-    private void createHolder(IssuerRuntime runtime, String holderDid) {
-        var holderStore = runtime.getService(HolderStore.class);
+    private void createHolder(IssuerService issuer, String holderDid) {
+        var holderStore = issuer.getService(HolderStore.class);
         holderStore.create(Holder.Builder.newInstance()
                 .holderId(holderDid)
                 .participantContextId(holderDid)
@@ -155,9 +162,9 @@ public class DcpIssuerIssuanceFlowTest {
                 .build());
     }
 
-    private CreateParticipantContextResponse createParticipantContext(IssuerRuntime runtime, String issuerServiceUrl) {
-        var service = runtime.getService(ParticipantContextService.class);
-        var vault = runtime.getService(Vault.class);
+    private CreateParticipantContextResponse createParticipantContext(IssuerService issuer, String issuerServiceUrl) {
+        var service = issuer.getService(ParticipantContextService.class);
+        var vault = issuer.getService(Vault.class);
 
         var privateKeyAlias = "%s-privatekey-alias".formatted(TEST_PARTICIPANT_CONTEXT_ID);
         vault.storeSecret(privateKeyAlias, issuerKey.toJSONString());
