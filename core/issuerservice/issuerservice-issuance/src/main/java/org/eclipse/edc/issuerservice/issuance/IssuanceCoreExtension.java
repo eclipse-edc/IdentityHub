@@ -22,6 +22,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.Cre
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessPendingGuard;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.retry.IssuanceProcessRetryStrategy;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
@@ -87,6 +88,9 @@ public class IssuanceCoreExtension implements ServiceExtension {
     @Inject
     private CredentialStatusService credentialStatusService;
 
+    @Inject
+    IssuanceProcessPendingGuard issuanceProcessPendingGuard;
+
     @Provider
     public IssuanceProcessManager createIssuanceProcessManager() {
 
@@ -106,6 +110,7 @@ public class IssuanceCoreExtension implements ServiceExtension {
                     .credentialStorageClient(credentialStorageClient)
                     .credentialStatusService(credentialStatusService)
                     .entityRetryProcessConfiguration(stateMachineConfiguration.entityRetryProcessConfiguration())
+                    .pendingGuard(issuanceProcessPendingGuard)
                     .build();
         }
         return issuanceProcessManager;

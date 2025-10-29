@@ -30,6 +30,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessPendingGuard;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -57,6 +58,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     private CredentialStore credentialStore;
     private CredentialStorageClient credentialStorageClient;
     private CredentialStatusService credentialStatusService;
+    private IssuanceProcessPendingGuard issuanceProcessPendingGuard = ip -> false;
 
     private IssuanceProcessManagerImpl() {
     }
@@ -194,9 +196,17 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     private ProcessorImpl<IssuanceProcess> createProcessor(Function<IssuanceProcess, Boolean> function, Criterion[] filter) {
         return ProcessorImpl.Builder.newInstance(() -> store.nextNotLeased(batchSize, filter))
                 .process(telemetry.contextPropagationMiddleware(function))
+                .guard(issuanceProcessPendingGuard, this::setPending)
                 .onNotProcessed(this::breakLease)
                 .build();
     }
+
+    private boolean setPending(IssuanceProcess issuanceProcess) {
+        issuanceProcess.setPending(true);
+        update(issuanceProcess);
+        return true;
+    }
+
 
     public static class Builder
             extends AbstractStateEntityManager.Builder<IssuanceProcess, IssuanceProcessStore, IssuanceProcessManagerImpl, Builder> {
@@ -234,6 +244,12 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
             manager.credentialStatusService = credentialStatusService;
             return this;
         }
+
+        public Builder pendingGuard(IssuanceProcessPendingGuard issuanceProcessPendingGuard) {
+            manager.issuanceProcessPendingGuard = issuanceProcessPendingGuard;
+            return this;
+        }
+
 
         @Override
         public Builder self() {

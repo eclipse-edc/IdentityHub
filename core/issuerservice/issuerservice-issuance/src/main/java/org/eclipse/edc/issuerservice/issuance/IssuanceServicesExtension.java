@@ -37,6 +37,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.Credentia
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.mapping.IssuanceClaimsMapper;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessPendingGuard;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry;
@@ -155,6 +156,11 @@ public class IssuanceServicesExtension implements ServiceExtension {
             attestationDefinitionValidatorRegistry = new AttestationDefinitionValidatorRegistryImpl();
         }
         return attestationDefinitionValidatorRegistry;
+    }
+
+    @Provider(isDefault = true)
+    public IssuanceProcessPendingGuard issuanceProcessPendingGuard() {
+        return issuanceProcess -> false;
     }
 
     private AttestationPipelineImpl createAttestationPipelineImpl() {
