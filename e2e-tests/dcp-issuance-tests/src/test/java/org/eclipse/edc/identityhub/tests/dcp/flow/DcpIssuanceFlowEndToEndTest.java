@@ -33,6 +33,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessPendingGuard;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
@@ -70,6 +71,7 @@ public class DcpIssuanceFlowEndToEndTest {
 
 
     protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
+    protected static final IssuanceProcessPendingGuard ISSUANCE_PROCESS_PENDING_GUARD = mock(IssuanceProcessPendingGuard.class);
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(60);
     protected static final Duration INTERVAL = Duration.ofSeconds(1);
@@ -112,6 +114,9 @@ public class DcpIssuanceFlowEndToEndTest {
             when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
             when(attestationSource.execute(any()))
                     .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice"))));
+            when(ISSUANCE_PROCESS_PENDING_GUARD.test(any()))
+                    .thenReturn(true)
+                    .thenReturn(false);
 
             var request = """
                     {
@@ -136,9 +141,22 @@ public class DcpIssuanceFlowEndToEndTest {
                     .atMost(TIMEOUT)
                     .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
                             .allSatisfy(t -> {
-                                assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
+                                assertThat(t.getState()).isEqualTo(HolderRequestState.REQUESTED.code());
                                 assertThat(t.getHolderPid()).isEqualTo("test-request-id");
                             }));
+
+
+            // wait for the issuance process to be pending on the issuer side
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID)).hasSize(1)
+                            .allSatisfy(t -> {
+                                assertThat(t.isPending()).isEqualTo(true);
+                            }));
+
+            // get rid of the pending state
+            issuer.getIssuanceProcessesForParticipant(ISSUER_ID)
+                    .forEach(issuanceProcess -> issuanceProcess.setPending(false));
 
             // wait for the issuance process to be delivered on the issuer side
             await().pollInterval(INTERVAL)
@@ -252,7 +270,8 @@ public class DcpIssuanceFlowEndToEndTest {
                 .configurationProvider(DefaultRuntimes.Issuer::config)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .modules(DefaultRuntimes.Issuer.MODULES)
-                .build();
+                .build()
+                .registerServiceMock(IssuanceProcessPendingGuard.class, ISSUANCE_PROCESS_PENDING_GUARD);
 
     }
 
