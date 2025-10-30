@@ -21,7 +21,7 @@ plugins {
 dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
-    implementation(project(":extensions:api:identity-api:api-configuration"))
+    implementation(project(":extensions:api:identity-api:identity-api-configuration"))
     implementation(project(":extensions:api:identity-api:validators:participant-context-validators"))
     implementation(libs.edc.spi.validator)
     implementation(libs.edc.spi.web)

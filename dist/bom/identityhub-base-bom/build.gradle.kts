@@ -36,7 +36,7 @@ dependencies {
     runtimeOnly(project(":extensions:api:identity-api:participant-context-api"))
     runtimeOnly(project(":extensions:api:identity-api:verifiable-credentials-api"))
     runtimeOnly(project(":extensions:api:identity-api:keypair-api"))
-    runtimeOnly(project(":extensions:api:identity-api:api-configuration"))
+    runtimeOnly(project(":extensions:api:identity-api:identity-api-configuration"))
     runtimeOnly(project(":extensions:api:identityhub-api-authentication"))
     runtimeOnly(project(":extensions:api:identityhub-api-authorization"))
     runtimeOnly(libs.edc.identity.did.core)
