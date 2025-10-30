@@ -18,7 +18,7 @@ restAssured = "5.5.6"
 swagger = "2.2.37"
 rsApi = "4.0.0"
 testcontainers = "1.21.1"
-tink = "1.15.0"
+tink = "1.19.0"
 opentelemetry = "2.20.0"
 
 [libraries]
