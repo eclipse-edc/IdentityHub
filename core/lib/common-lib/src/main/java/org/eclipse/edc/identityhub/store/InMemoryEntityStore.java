@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Predicate;
 
 import static org.eclipse.edc.spi.result.StoreResult.alreadyExists;
 import static org.eclipse.edc.spi.result.StoreResult.notFound;
@@ -85,7 +84,7 @@ public abstract class InMemoryEntityStore<T> {
         lock.readLock().lock();
         try {
             // if no filter is present, we return true
-            var result = queryResolver.query(store.values().stream(), querySpec, Predicate::and, x -> true);
+            var result = queryResolver.query(store.values().stream(), querySpec);
             return success(result.toList());
         } finally {
             lock.readLock().unlock();
