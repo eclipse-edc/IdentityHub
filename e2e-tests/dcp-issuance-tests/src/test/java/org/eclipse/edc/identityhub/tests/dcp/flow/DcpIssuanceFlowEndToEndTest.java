@@ -34,6 +34,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessPendingGuard;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
@@ -156,7 +157,10 @@ public class DcpIssuanceFlowEndToEndTest {
 
             // get rid of the pending state
             issuer.getIssuanceProcessesForParticipant(ISSUER_ID)
-                    .forEach(issuanceProcess -> issuanceProcess.setPending(false));
+                    .forEach(issuanceProcess -> {
+                        issuanceProcess.setPending(false);
+                        issuer.getService(IssuanceProcessStore.class).save(issuanceProcess);
+                    });
 
             // wait for the issuance process to be delivered on the issuer side
             await().pollInterval(INTERVAL)
@@ -293,7 +297,8 @@ public class DcpIssuanceFlowEndToEndTest {
                 .configurationProvider(DefaultRuntimes.Issuer::config)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
-                .build();
+                .build()
+                .registerServiceMock(IssuanceProcessPendingGuard.class, ISSUANCE_PROCESS_PENDING_GUARD);
 
         private static final String IDENTITY_HUB = "identityhub";
         @Order(1) // must be the first extension to be evaluated since it starts the DB server
