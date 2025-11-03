@@ -882,7 +882,7 @@ paths:
       tags:
       - Key Pairs
       description: Finds all KeyPairResources for a particular ParticipantContext.
-      operationId: queryKeyPairByParticipantId
+      operationId: queryKeyPairByParticipantContextId
       parameters:
       - name: participantContextId
         in: path
@@ -1876,7 +1876,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/KeyDescriptor"
-        participantId:
+        participantContextId:
           type: string
         roles:
           type: array
