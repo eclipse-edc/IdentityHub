@@ -34,7 +34,7 @@ class ParticipantManifestTest {
         var manifest = ParticipantManifest.Builder.newInstance()
                 .serviceEndpoint(new Service("id", "type", "foobar"))
                 .active(true)
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .key(KeyDescriptor.Builder.newInstance()
                         .keyId("key-id")
                         .privateKeyAlias("alias")
@@ -64,7 +64,7 @@ class ParticipantManifestTest {
                         }
                     ],
                     "active": true,
-                    "participantId": "quizzquazz",
+                    "participantContextId": "quizzquazz",
                     "did": "did:web:quizzquazz",
                     "keys":{
                         "keyId": "key-1",
@@ -97,7 +97,7 @@ class ParticipantManifestTest {
                         }
                     ],
                     "active": true,
-                    "participantId": "quizzquazz",
+                    "participantContextId": "quizzquazz",
                     "did": "did:web:quizzquazz",
                     "keys":[{
                         "keyId": "key-1",

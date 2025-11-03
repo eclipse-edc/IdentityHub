@@ -67,7 +67,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     public CreateParticipantContextResponse createParticipant(ParticipantManifest manifest) {
         participantManifestValidator.validate(manifest).orElseThrow(ValidationFailureException::new);
         return participantContextService.createParticipantContext(manifest)
-                .orElseThrow(exceptionMapper(ParticipantManifest.class, manifest.getParticipantId()));
+                .orElseThrow(exceptionMapper(ParticipantManifest.class, manifest.getParticipantContextId()));
     }
 
     @Override

@@ -51,7 +51,7 @@ public interface KeyPairResourceApi {
     KeyPairResource getKeyPair(String participantContextId, String id, SecurityContext securityContext);
 
     @Operation(description = "Finds all KeyPairResources for a particular ParticipantContext.",
-            operationId = "queryKeyPairByParticipantId",
+            operationId = "queryKeyPairByParticipantContextId",
             responses = {
                     @ApiResponse(responseCode = "200", description = "The KeyPairResource.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = KeyPairResource.class)))),
@@ -63,7 +63,7 @@ public interface KeyPairResourceApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Collection<KeyPairResource> queryKeyPairByParticipantId(String participantContextId, SecurityContext securityContext);
+    Collection<KeyPairResource> queryKeyPairByParticipantContextId(String participantContextId, SecurityContext securityContext);
 
     @Operation(description = "Adds a new key pair to a ParticipantContext. Note that the key pair is either generated, or the private key is expected to be found in the vault.",
             operationId = "addKeyPair",

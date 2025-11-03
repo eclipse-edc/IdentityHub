@@ -27,6 +27,6 @@ public interface AttestationWriter {
     /**
      * Writes the attestation data for the participant.
      */
-    Result<Void> write(String participantId, Map<String, Object> data);
+    Result<Void> write(String participantContextId, Map<String, Object> data);
 
 }

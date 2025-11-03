@@ -66,12 +66,12 @@ public class DatabaseAttestationSource extends AbstractSqlStore implements Attes
 
     @Override
     public Result<Map<String, Object>> execute(AttestationContext context) {
-        var participantId = context.participantId();
+        var participantContextId = context.participantContextId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
 
                 var query = "SELECT * FROM %s where %s = ?".formatted(tableName, idColumn);
-                return Result.success(queryExecutor.single(connection, true, this::mapGenericResult, query, participantId));
+                return Result.success(queryExecutor.single(connection, true, this::mapGenericResult, query, participantContextId));
 
             } catch (SQLException e) {
                 throw new RuntimeException(e);

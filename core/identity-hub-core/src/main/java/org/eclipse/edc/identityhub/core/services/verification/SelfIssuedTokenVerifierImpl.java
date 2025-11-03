@@ -91,7 +91,7 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
         var accessTokenString = claimToken.getStringClaim(TOKEN_CLAIM);
         var subClaim = claimToken.getStringClaim(JwtRegisteredClaimNames.SUBJECT);
 
-        TokenValidationRule audMustMatchParticipantIdRule = (at, additional) -> {
+        TokenValidationRule audMustMatchParticipantContextIdRule = (at, additional) -> {
             var aud = at.getListClaim(JwtRegisteredClaimNames.AUDIENCE);
             if (aud == null || aud.isEmpty()) {
                 return Result.failure("Mandatory claim 'aud' on 'token' was null.");
@@ -114,7 +114,7 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
         // verify the correctness of the 'access_token'
         var rules = new ArrayList<>(tokenValidationRulesRegistry.getRules(DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT));
         rules.add(subClaimsMatch);
-        rules.add(audMustMatchParticipantIdRule);
+        rules.add(audMustMatchParticipantContextIdRule);
         // todo: verify that the resolved public key belongs to the participant ID
         var result = tokenValidationService.validate(accessTokenString, keyId -> localPublicKeyService.resolveKey(keyId, participantContextId), rules);
         if (result.failed()) {

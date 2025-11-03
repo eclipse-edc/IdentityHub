@@ -128,18 +128,6 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
     }
 
     @Override
-    public StoreResult<Collection<AttestationDefinition>> query(QuerySpec querySpec) {
-        return transactionContext.execute(() -> {
-            try (var connection = getConnection()) {
-                var query = statements.createQuery(querySpec);
-                return success(queryExecutor.query(connection, true, this::mapResultSet, query.getQueryAsString(), query.getParameters()).toList());
-            } catch (SQLException e) {
-                throw new EdcPersistenceException(e);
-            }
-        });
-    }
-
-    @Override
     public StoreResult<Void> deleteById(String id) {
         Objects.requireNonNull(id);
         return transactionContext.execute(() -> {
@@ -156,6 +144,18 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
         });
     }
 
+    @Override
+    public StoreResult<Collection<AttestationDefinition>> query(QuerySpec querySpec) {
+        return transactionContext.execute(() -> {
+            try (var connection = getConnection()) {
+                var query = statements.createQuery(querySpec);
+                return success(queryExecutor.query(connection, true, this::mapResultSet, query.getQueryAsString(), query.getParameters()).toList());
+            } catch (SQLException e) {
+                throw new EdcPersistenceException(e);
+            }
+        });
+    }
+
     private AttestationDefinition findByIdInternal(Connection connection, String id) {
         return transactionContext.execute(() -> {
             var stmt = statements.getFindByIdTemplate();
@@ -166,7 +166,7 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
     private AttestationDefinition mapResultSet(ResultSet resultSet) throws Exception {
 
         var id = resultSet.getString(statements.getIdColumn());
-        var participantContextId = resultSet.getString(statements.getParticipantIdColumn());
+        var participantContextId = resultSet.getString(statements.getParticipantContextIdColumn());
         var type = resultSet.getString(statements.getAttestationTypeColumn());
         var config = resultSet.getString(statements.getConfigurationColumn());
         return AttestationDefinition.Builder.newInstance()

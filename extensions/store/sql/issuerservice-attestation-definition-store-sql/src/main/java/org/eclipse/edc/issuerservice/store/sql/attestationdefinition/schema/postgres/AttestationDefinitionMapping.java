@@ -34,7 +34,7 @@ public class AttestationDefinitionMapping extends TranslationMapping {
 
     public AttestationDefinitionMapping(AttestationDefinitionStoreStatements statements) {
         add(FIELD_ID, statements.getIdColumn());
-        add(FIELD_PARTICIPANT_CONTEXT_ID, statements.getParticipantIdColumn());
+        add(FIELD_PARTICIPANT_CONTEXT_ID, statements.getParticipantContextIdColumn());
         add(FIELD_CREDENTIAL_TYPE, statements.getAttestationTypeColumn());
         add(FIELD_CONFIGURATION, new JsonFieldTranslator(statements.getConfigurationColumn()));
         add(FIELD_CREATE_TIMESTAMP, statements.getCreateTimestampColumn());

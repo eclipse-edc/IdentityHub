@@ -33,10 +33,10 @@ public interface StsAccountService {
     /**
      * Deletes an {@link StsAccount} by its ID.
      *
-     * @param participantId The (database) ID
+     * @param participantContextId The (database) ID
      * @return A successful result, or a failure indicating what went wrong.
      */
-    ServiceResult<Void> deleteAccount(String participantId);
+    ServiceResult<Void> deleteAccount(String participantContextId);
 
     /**
      * Updates an existing {@link StsAccount}, overwriting all values with the given new object.

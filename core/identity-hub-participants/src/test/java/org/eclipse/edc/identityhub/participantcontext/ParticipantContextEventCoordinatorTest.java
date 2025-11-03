@@ -166,7 +166,7 @@ class ParticipantContextEventCoordinatorTest {
                 .key(createKey().build())
                 .active(true)
                 .did("did:web:test-id")
-                .participantId("test-id");
+                .participantContextId("test-id");
     }
 
     @NotNull

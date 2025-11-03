@@ -78,7 +78,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @GET
     @Override
-    public Collection<KeyPairResource> queryKeyPairByParticipantId(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
+    public Collection<KeyPairResource> queryKeyPairByParticipantContextId(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
         return onEncoded(participantContextId).map(decoded -> {
             var query = queryByParticipantContextId(decoded).build();
             return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, decoded)).stream().filter(kpr -> authorizationService.isAuthorized(securityContext, kpr.getId(), KeyPairResource.class).succeeded()).toList();

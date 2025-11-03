@@ -38,7 +38,7 @@ public interface HolderCredentialRequestStoreStatements extends StatefulEntitySt
         return "ids_and_formats";
     }
 
-    default String getParticipantIdColumn() {
+    default String getParticipantContextIdColumn() {
         return "participant_context_id";
     }
 

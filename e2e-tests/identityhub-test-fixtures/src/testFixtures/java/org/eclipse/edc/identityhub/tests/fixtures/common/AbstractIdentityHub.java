@@ -142,7 +142,7 @@ public abstract class AbstractIdentityHub {
 
     public CreateParticipantContextResponse createParticipant(String participantContextId, String did, String keyId, List<String> roles, boolean isActive, List<Service> services) {
         var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId(participantContextId)
+                .participantContextId(participantContextId)
                 .active(isActive)
                 .roles(roles)
                 .serviceEndpoints(new HashSet<>(services))
@@ -256,12 +256,6 @@ public abstract class AbstractIdentityHub {
             this.instance = instance;
         }
 
-        @SuppressWarnings("unchecked")
-        protected B self() {
-            return (B) this;
-        }
-
-
         public B forContext(ComponentRuntimeContext ctx) {
             return stsEndpoint(ctx.getEndpoint(STS))
                     .credentialStore(ctx.getService(CredentialStore.class))
@@ -276,7 +270,6 @@ public abstract class AbstractIdentityHub {
                     .transactionContext(ctx.getService(TransactionContext.class))
                     .serviceLocator(ctx::getService);
         }
-
 
         public B stsEndpoint(LazySupplier<URI> stsEndpoint) {
             this.instance.stsEndpoint = new LazySupplier<>(() -> new Endpoint(stsEndpoint.get(), Map.of()));
@@ -361,6 +354,11 @@ public abstract class AbstractIdentityHub {
             Objects.requireNonNull(instance.vault, "vault");
             Objects.requireNonNull(instance.serviceLocator, "serviceLocator");
             return instance;
+        }
+
+        @SuppressWarnings("unchecked")
+        protected B self() {
+            return (B) this;
         }
     }
 }

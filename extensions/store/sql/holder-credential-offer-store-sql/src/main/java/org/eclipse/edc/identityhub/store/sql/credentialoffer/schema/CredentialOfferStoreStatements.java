@@ -38,7 +38,7 @@ public interface CredentialOfferStoreStatements extends StatefulEntityStatements
         return "credentials";
     }
 
-    default String getParticipantIdColumn() {
+    default String getParticipantContextIdColumn() {
         return "participant_context_id";
     }
 

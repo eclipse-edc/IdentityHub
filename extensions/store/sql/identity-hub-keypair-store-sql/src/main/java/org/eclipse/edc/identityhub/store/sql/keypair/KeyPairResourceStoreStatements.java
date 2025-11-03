@@ -31,7 +31,7 @@ public interface KeyPairResourceStoreStatements extends SqlStatements {
         return "id";
     }
 
-    default String getParticipantIdColumn() {
+    default String getParticipantContextIdColumn() {
         return "participant_context_id";
     }
 

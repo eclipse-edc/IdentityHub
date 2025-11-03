@@ -164,10 +164,10 @@ public class ParticipantContextApiEndToEndTest {
                     .body("apiKey", notNullValue())
                     .body("clientSecret", notNullValue());
 
-            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantId())));
+            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantContextId())));
 
-            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1);
-            assertThat(identityHub.getDidForParticipant(manifest.getParticipantId())).hasSize(1)
+            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantContextId())).hasSize(1);
+            assertThat(identityHub.getDidForParticipant(manifest.getParticipantContextId())).hasSize(1)
                     .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
         }
 
@@ -179,7 +179,7 @@ public class ParticipantContextApiEndToEndTest {
 
             var participantId = UUID.randomUUID().toString();
             var manifest = createNewParticipant()
-                    .participantId(participantId)
+                    .participantContextId(participantId)
                     .active(true)
                     .did("did:web:" + participantId)
                     .keys(Set.of(createKeyDescriptor().active(true).build()))
@@ -197,13 +197,13 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
                     .body(notNullValue());
 
-            verify(subscriber).on(argThat(env -> env.getPayload() instanceof ParticipantContextCreated created && created.getParticipantContextId().equals(manifest.getParticipantId())));
+            verify(subscriber).on(argThat(env -> env.getPayload() instanceof ParticipantContextCreated created && created.getParticipantContextId().equals(manifest.getParticipantContextId())));
             verify(subscriber, times(1)).on(argThat(evt -> evt.getPayload() instanceof DidDocumentPublished));
 
-            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantId()))
+            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantContextId()))
                     .hasSize(1)
                     .allSatisfy(kpr -> assertThat(kpr.getState()).isEqualTo(KeyPairState.ACTIVATED.code()));
-            assertThat(identityHub.getDidForParticipant(manifest.getParticipantId()))
+            assertThat(identityHub.getDidForParticipant(manifest.getParticipantContextId()))
                     .hasSize(1)
                     .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
 
@@ -215,7 +215,7 @@ public class ParticipantContextApiEndToEndTest {
 
             var participantId = UUID.randomUUID().toString();
             var manifest = createNewParticipant()
-                    .participantId(participantId)
+                    .participantContextId(participantId)
                     .active(true)
                     .did("did:web:" + participantId)
                     .key(createKeyDescriptor().active(true).build())
@@ -244,7 +244,7 @@ public class ParticipantContextApiEndToEndTest {
             var participantId = UUID.randomUUID().toString();
             var manifest = createNewParticipant()
                     .active(true)
-                    .participantId(participantId)
+                    .participantContextId(participantId)
                     .did("did:web:" + participantId)
                     .keys(Set.of(createKeyDescriptor().active(false).build()))
                     .build();
@@ -259,13 +259,13 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
                     .body(notNullValue());
 
-            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantId())));
+            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantContextId())));
 
-            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1)
+            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantContextId())).hasSize(1)
                     .allSatisfy(kpr -> assertThat(kpr.getState()).isEqualTo(KeyPairState.CREATED.code()));
 
             // inactive key-pairs don't get added to the DID Document
-            assertThat(identityHub.getDidForParticipant(manifest.getParticipantId()))
+            assertThat(identityHub.getDidForParticipant(manifest.getParticipantContextId()))
                     .hasSize(1)
                     .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).isEmpty());
 
@@ -296,7 +296,7 @@ public class ParticipantContextApiEndToEndTest {
                     .body(notNullValue());
             verifyNoInteractions(subscriber);
 
-            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantId())).isEmpty();
+            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantContextId())).isEmpty();
         }
 
         @Test
@@ -317,7 +317,7 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(401)
                     .body(notNullValue());
             verifyNoInteractions(subscriber);
-            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantId())).isEmpty();
+            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantContextId())).isEmpty();
         }
 
         @Test
@@ -339,7 +339,7 @@ public class ParticipantContextApiEndToEndTest {
                     .log().ifValidationFails()
                     .statusCode(409);
 
-            verify(subscriber, never()).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantId())));
+            verify(subscriber, never()).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantContextId())));
         }
 
         @Test
@@ -364,8 +364,8 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
                     .body(notNullValue());
 
-            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1).allMatch(KeyPairResource::isDefaultPair);
-            assertThat(identityHub.getDidForParticipant(manifest.getParticipantId())).hasSize(1)
+            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantContextId())).hasSize(1).allMatch(KeyPairResource::isDefaultPair);
+            assertThat(identityHub.getDidForParticipant(manifest.getParticipantContextId())).hasSize(1)
                     .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
             var storedDidResource = didResourceStore.findById(manifest.getDid());
             assertThat(storedDidResource.getState()).withFailMessage("Expected DID resource state %s, got %s", DidState.GENERATED, storedDidResource.getStateAsEnum()).isEqualTo(DidState.GENERATED.code());
@@ -390,8 +390,8 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
                     .body(notNullValue());
 
-            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantId())).hasSize(1).allMatch(KeyPairResource::isDefaultPair);
-            assertThat(identityHub.getDidForParticipant(manifest.getParticipantId())).hasSize(1)
+            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantContextId())).hasSize(1).allMatch(KeyPairResource::isDefaultPair);
+            assertThat(identityHub.getDidForParticipant(manifest.getParticipantContextId())).hasSize(1)
                     .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
             var storedDidResource = didResourceStore.findById(manifest.getDid());
             assertThat(storedDidResource.getState()).withFailMessage("Expected DID resource state %s, got %s", DidState.PUBLISHED, storedDidResource.getStateAsEnum()).isEqualTo(DidState.PUBLISHED.code());

@@ -44,8 +44,8 @@ public class ParticipantManifestValidator implements Validator<ParticipantManife
         if (input.getKeys().isEmpty()) {
             return failure(violation("key descriptor cannot be empty.", "keys"));
         }
-        if (StringUtils.isNullOrBlank(input.getParticipantId())) {
-            return failure(violation("participantId cannot be null or empty.", "participantId"));
+        if (StringUtils.isNullOrBlank(input.getParticipantContextId())) {
+            return failure(violation("participantContextId cannot be null or empty.", "participantContextId"));
         }
         if (StringUtils.isNullOrBlank(input.getDid())) {
             return failure(violation("DID cannot be null or empty.", "did"));

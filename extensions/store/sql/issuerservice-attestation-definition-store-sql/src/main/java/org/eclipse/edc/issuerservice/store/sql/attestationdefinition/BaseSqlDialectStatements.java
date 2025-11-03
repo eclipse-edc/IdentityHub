@@ -26,7 +26,7 @@ public class BaseSqlDialectStatements implements AttestationDefinitionStoreState
     public String getInsertTemplate() {
         return executeStatement()
                 .column(getIdColumn())
-                .column(getParticipantIdColumn())
+                .column(getParticipantContextIdColumn())
                 .column(getAttestationTypeColumn())
                 .jsonColumn(getConfigurationColumn())
                 .column(getCreateTimestampColumn())

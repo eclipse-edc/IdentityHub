@@ -26,14 +26,14 @@ public interface DidDocumentListener {
     /**
      * A DID document got published
      */
-    default void published(DidDocument document, String participantId) {
+    default void published(DidDocument document, String participantContextId) {
 
     }
 
     /**
      * A DID document got un-published
      */
-    default void unpublished(DidDocument document, String participantId) {
+    default void unpublished(DidDocument document, String participantContextId) {
 
     }
 }

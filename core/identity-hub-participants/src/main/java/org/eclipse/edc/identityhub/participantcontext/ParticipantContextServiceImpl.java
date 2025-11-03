@@ -173,10 +173,10 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
 
     private ParticipantContext convert(ParticipantManifest manifest) {
         return ParticipantContext.Builder.newInstance()
-                .participantContextId(manifest.getParticipantId())
+                .participantContextId(manifest.getParticipantContextId())
                 .roles(manifest.getRoles())
                 .did(manifest.getDid())
-                .apiTokenAlias("%s-%s".formatted(manifest.getParticipantId(), API_KEY_ALIAS_SUFFIX))
+                .apiTokenAlias("%s-%s".formatted(manifest.getParticipantContextId(), API_KEY_ALIAS_SUFFIX))
                 .state(ParticipantContextState.CREATED)
                 .properties(manifest.getAdditionalProperties())
                 .build();

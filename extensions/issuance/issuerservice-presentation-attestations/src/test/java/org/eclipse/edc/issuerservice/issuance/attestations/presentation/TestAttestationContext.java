@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
-public record TestAttestationContext(String participantId,
+public record TestAttestationContext(String participantContextId,
                                      Map<String, ClaimToken> claims) implements AttestationContext {
     @Override
     public @Nullable ClaimToken getClaimToken(String type) {

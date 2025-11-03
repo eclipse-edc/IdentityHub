@@ -218,7 +218,7 @@ public class CredentialOfferApiEndToEndTest {
             var privateKeyAlias = "%s-privatekey-alias".formatted(Tests.TEST_PARTICIPANT_CONTEXT_ID);
             vault.storeSecret(privateKeyAlias, participantKey.toJSONString());
             var manifest = ParticipantManifest.Builder.newInstance()
-                    .participantId(Tests.TEST_PARTICIPANT_CONTEXT_ID)
+                    .participantContextId(Tests.TEST_PARTICIPANT_CONTEXT_ID)
                     .did("did:web:%s".formatted(Tests.TEST_PARTICIPANT_CONTEXT_ID.replace("did:web:", "")))
                     .active(true)
                     .key(KeyDescriptor.Builder.newInstance()

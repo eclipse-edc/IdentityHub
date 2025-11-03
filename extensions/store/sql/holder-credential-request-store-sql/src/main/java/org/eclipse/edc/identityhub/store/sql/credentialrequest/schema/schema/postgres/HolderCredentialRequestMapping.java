@@ -34,7 +34,7 @@ public class HolderCredentialRequestMapping extends StatefulEntityMapping {
 
     public HolderCredentialRequestMapping(HolderCredentialRequestStoreStatements statements) {
         super(statements, state -> HolderRequestState.valueOf(state).code());
-        add(FIELD_PARTICIPANT_ID, statements.getParticipantIdColumn());
+        add(FIELD_PARTICIPANT_ID, statements.getParticipantContextIdColumn());
         add(FIELD_ISSUER_DID, statements.getIssuerDidColumn());
         add(FIELD_IDS_AND_FORMATS, new JsonFieldTranslator(FORMATS_ALIAS));
         add(FIELD_ISSUANCE_PROCESS, statements.getissuerPidColumn());

@@ -39,7 +39,7 @@ public class ParticipantManifest {
     private List<String> roles = new ArrayList<>();
     private Set<Service> serviceEndpoints = new HashSet<>();
     private boolean isActive;
-    private String participantId;
+    private String participantContextId;
     private String did;
 
     private ParticipantManifest() {
@@ -50,7 +50,7 @@ public class ParticipantManifest {
     }
 
     public String clientSecretAlias() {
-        return ofNullable(additionalProperties.get("clientSecret")).map(Object::toString).orElseGet(() -> participantId + "-sts-client-secret");
+        return ofNullable(additionalProperties.get("clientSecret")).map(Object::toString).orElseGet(() -> participantContextId + "-sts-client-secret");
     }
 
     /**
@@ -69,10 +69,10 @@ public class ParticipantManifest {
     }
 
     /**
-     * The DSP {@code participantId} of this participant. This must be a unique and stable ID.
+     * The ID of the participant context. It is different from the stable DSP - dataspace ID or a DID. This could be a random ID.
      */
-    public String getParticipantId() {
-        return participantId;
+    public String getParticipantContextId() {
+        return participantContextId;
     }
 
     /**
@@ -127,8 +127,8 @@ public class ParticipantManifest {
             return this;
         }
 
-        public Builder participantId(String participantId) {
-            manifest.participantId = participantId;
+        public Builder participantContextId(String participantContextId) {
+            manifest.participantContextId = participantContextId;
             return this;
         }
 

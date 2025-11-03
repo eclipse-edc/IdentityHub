@@ -48,7 +48,7 @@ public class BaseSqlDialectStatements implements CredentialOfferStoreStatements 
                 .column(getUpdatedAtColumn())
                 .jsonColumn(getTraceContextColumn())
                 .column(getErrorDetailColumn())
-                .column(getParticipantIdColumn())
+                .column(getParticipantContextIdColumn())
                 .column(getIssuerColumn())
                 .jsonColumn(getCredentialsColumn())
                 .insertInto(getCredentialOffersTable());
@@ -64,7 +64,7 @@ public class BaseSqlDialectStatements implements CredentialOfferStoreStatements 
                 .column(getUpdatedAtColumn())
                 .jsonColumn(getTraceContextColumn())
                 .column(getErrorDetailColumn())
-                .column(getParticipantIdColumn())
+                .column(getParticipantContextIdColumn())
                 .column(getIssuerColumn())
                 .jsonColumn(getCredentialsColumn())
                 .update(getCredentialOffersTable(), getIdColumn());
@@ -96,14 +96,14 @@ public class BaseSqlDialectStatements implements CredentialOfferStoreStatements 
                 .addWhereClause(getNotLeasedFilter(), clock.millis(), getCredentialOffersTable());
     }
 
-    private String getNotLeasedFilter() {
-        return format("(l.%s IS NULL OR (? > (%s + %s) AND ? = l.%s))",
-                leaseStatements.getResourceIdColumn(), leaseStatements.getLeasedAtColumn(), leaseStatements.getLeaseDurationColumn(), leaseStatements.getResourceKindColumn());
-    }
-
     @Override
     public String getSelectStatement() {
         return format("SELECT * FROM %s", getCredentialOffersTable());
+    }
+
+    private String getNotLeasedFilter() {
+        return format("(l.%s IS NULL OR (? > (%s + %s) AND ? = l.%s))",
+                leaseStatements.getResourceIdColumn(), leaseStatements.getLeasedAtColumn(), leaseStatements.getLeaseDurationColumn(), leaseStatements.getResourceKindColumn());
     }
 
 }
