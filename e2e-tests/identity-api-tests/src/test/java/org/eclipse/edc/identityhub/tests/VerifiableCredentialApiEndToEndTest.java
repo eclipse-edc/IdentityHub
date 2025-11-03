@@ -35,6 +35,7 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.policy.model.Policy;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
@@ -114,6 +115,32 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         @Test
+        void findById_doesNotBelongToParticipant(IdentityHub identityHub) {
+            var superUserKey = identityHub.createSuperUser().apiKey();
+            var user1 = "user1";
+            identityHub.createParticipant(user1);
+
+            var user2 = "user2";
+            identityHub.createParticipant(user2);
+
+            var credentialUser1 = createCredential();
+            var credentialUser2 = createCredential();
+            var resourceIdUser1 = identityHub.storeCredential(credentialUser1, user1);
+            identityHub.storeCredential(credentialUser2, user1);
+
+            // attempt to get credential1 for user2 -> should fail
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", superUserKey))
+                    .get("/v1alpha/participants/%s/credentials/%s".formatted(toBase64(user2), resourceIdUser1))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(404)
+                    .body(notNullValue());
+        }
+
+        @Test
         void create(IdentityHub identityHub) {
             var superUserKey = identityHub.createSuperUser().apiKey();
             var user = "user1";
@@ -164,6 +191,38 @@ public class VerifiableCredentialApiEndToEndTest {
                         var resource = identityHub.getCredential(resourceId1).orElseThrow(() -> new EdcException("Failed to retrieve credential with id %s".formatted(resourceId1)));
                         assertThat(resource.getVerifiableCredential().credential()).usingRecursiveComparison().isEqualTo(credential2);
                     });
+        }
+
+        @Test
+        void update_credentialDoesNotBelongToParticipant(IdentityHub identityHub) {
+            var superUserKey = identityHub.createSuperUser().apiKey();
+            var owner = "owner";
+            identityHub.createParticipant(owner);
+
+            var otherUser = "other-user";
+            identityHub.createParticipant(otherUser);
+
+            // store credential for "owner"
+            var credential = createCredential();
+            var resourceId = identityHub.storeCredential(credential, owner);
+
+            var updateManifest = createManifest(owner, credential)
+                    .id(resourceId)
+                    .reissuancePolicy(Policy.Builder.newInstance().build()) // update re-issuance policy
+                    .build();
+
+            // attempt to update the credential for "modifier", which actually belongs to "owner" -> should fail
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", superUserKey))
+                    .body(updateManifest)
+                    .put("/v1alpha/participants/%s/credentials".formatted(toBase64(otherUser)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(404)
+                    .body(notNullValue());
+
+            var resource = identityHub.getCredential(resourceId).orElseThrow(() -> new EdcException("Failed to retrieve credential with id %s".formatted(resourceId)));
         }
 
         @Test

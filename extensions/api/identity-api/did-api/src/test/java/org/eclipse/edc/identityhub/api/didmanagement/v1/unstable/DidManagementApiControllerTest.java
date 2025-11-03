@@ -55,7 +55,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
 
     @BeforeEach
     void setUp() {
-        when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(authService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
     }
 
     @Override
@@ -87,14 +87,14 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
 
         @Test
         void removeEndpoint_unauthorized403() {
-            when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
+            when(authService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
                     .delete("/%s/endpoints?serviceId=test-service-id".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
-            verify(authService).isAuthorized(any(), anyString(), eq(DidResource.class));
+            verify(authService).isAuthorized(any(), anyString(), anyString(), eq(DidResource.class));
             verifyNoMoreInteractions(didDocumentServiceMock, authService);
         }
 
@@ -172,14 +172,14 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
 
         @Test
         void replaceEndpoint_unauthorized403() {
-            when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
+            when(authService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
                     .patch("/%s/endpoints".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
-            verify(authService).isAuthorized(any(), anyString(), eq(DidResource.class));
+            verify(authService).isAuthorized(any(), anyString(), anyString(), eq(DidResource.class));
             verifyNoMoreInteractions(didDocumentServiceMock, authService);
         }
 
@@ -257,14 +257,14 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
 
         @Test
         void addEndpoint_unauthorized403() {
-            when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
+            when(authService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
                     .post("/%s/endpoints".formatted(Base64.getUrlEncoder().encodeToString(TEST_DID.getBytes())))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
-            verify(authService).isAuthorized(any(), anyString(), eq(DidResource.class));
+            verify(authService).isAuthorized(any(), anyString(), anyString(), eq(DidResource.class));
             verifyNoMoreInteractions(didDocumentServiceMock, authService);
         }
 
@@ -363,7 +363,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
         void query_unauthorized403() {
             var resultList = List.of(createDidDocument().build());
             when(didDocumentServiceMock.queryDocuments(any())).thenReturn(ServiceResult.success(resultList));
-            when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test-message"));
+            when(authService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test-message"));
             var q = QuerySpec.Builder.newInstance().build();
 
             var result = baseRequest()
@@ -376,7 +376,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
 
             assertThat(result).isEmpty();
 
-            verify(authService).isAuthorized(any(), anyString(), eq(DidResource.class));
+            verify(authService).isAuthorized(any(), anyString(), anyString(), eq(DidResource.class));
             verify(didDocumentServiceMock).queryDocuments(eq(q));
             verifyNoMoreInteractions(didDocumentServiceMock, authService);
         }
@@ -401,7 +401,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
 
         @Test
         void unpublish_unauthorized403() {
-            when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
+            when(authService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test message"));
 
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
@@ -410,7 +410,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
                     .log().ifValidationFails()
                     .statusCode(403);
 
-            verify(authService).isAuthorized(any(), anyString(), eq(DidResource.class));
+            verify(authService).isAuthorized(any(), anyString(), anyString(), eq(DidResource.class));
             verifyNoMoreInteractions(didDocumentServiceMock, authService);
         }
 
@@ -471,7 +471,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
 
         @Test
         void publish_unauthorized403() {
-            when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test-msg"));
+            when(authService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.unauthorized("test-msg"));
 
             baseRequest()
                     .body(new DidRequestPayload(TEST_DID))
@@ -479,7 +479,7 @@ class DidManagementApiControllerTest extends RestControllerTestBase {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
-            verify(authService).isAuthorized(any(), anyString(), eq(DidResource.class));
+            verify(authService).isAuthorized(any(), anyString(), anyString(), eq(DidResource.class));
             verifyNoMoreInteractions(didDocumentServiceMock, authService);
         }
 

@@ -339,7 +339,7 @@ public class CredentialDefinitionApiEndToEndTest {
         }
 
         @Test
-        void getById_whenNotAuthorized(IssuerService issuer, CredentialDefinitionService service) {
+        void getById_whenWrongOwner(IssuerService issuer, CredentialDefinitionService service) {
             var token = issuer.createParticipant(USER).apiKey();
 
             var definition = CredentialDefinition.Builder.newInstance()
@@ -357,6 +357,30 @@ public class CredentialDefinitionApiEndToEndTest {
                     .header(new Header("x-api-key", token))
                     .get("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(toBase64(USER)))
                     .then()
+                    .statusCode(404);
+
+        }
+
+        @Test
+        void getById_whenNotAuthorized(IssuerService issuer, CredentialDefinitionService service) {
+            var illegalToken = issuer.createParticipant("anotherUser").apiKey();
+            issuer.createParticipant(USER);
+
+            var definition = CredentialDefinition.Builder.newInstance()
+                    .id("test-credential-definition-id")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("http://example.com/schema")
+                    .credentialType("MembershipCredential")
+                    .participantContextId(USER)
+                    .formatFrom(VC1_0_JWT)
+                    .build();
+
+            service.createCredentialDefinition(definition);
+
+            issuer.getAdminEndpoint().baseRequest()
+                    .header(new Header("x-api-key", illegalToken))
+                    .get("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(toBase64(USER)))
+                    .then()
                     .statusCode(403);
 
         }
@@ -371,7 +395,6 @@ public class CredentialDefinitionApiEndToEndTest {
                     .get("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(toBase64(USER)))
                     .then()
                     .statusCode(404);
-
         }
 
 
@@ -421,7 +444,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .jsonSchema("{}")
                     .jsonSchemaUrl("http://example.com/schema")
                     .credentialType("MembershipCredential")
-                    .participantContextId("participantContextId")
+                    .participantContextId(USER)
                     .formatFrom(VC1_0_JWT)
                     .build();
 
@@ -437,7 +460,7 @@ public class CredentialDefinitionApiEndToEndTest {
         }
 
         @Test
-        void updateCredentialDefinition_whenNotAuthorized(IssuerService issuer, CredentialDefinitionService service) {
+        void updateCredentialDefinition_whenParticipantDoesNotOwnResource(IssuerService issuer, CredentialDefinitionService service) {
             var token = issuer.createParticipant(USER).apiKey();
 
             var definition = CredentialDefinition.Builder.newInstance()
@@ -463,6 +486,42 @@ public class CredentialDefinitionApiEndToEndTest {
             issuer.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(new Header("x-api-key", token))
+                    .body(definition)
+                    .put("/v1alpha/participants/%s/credentialdefinitions".formatted(toBase64(USER)))
+                    .then()
+                    .statusCode(404);
+
+        }
+
+
+        @Test
+        void updateCredentialDefinition_whenNotAuthorized(IssuerService issuer, CredentialDefinitionService service) {
+            var token = issuer.createParticipant(USER).apiKey();
+            var illegalToken = issuer.createParticipant("anotherUser").apiKey();
+
+            var definition = CredentialDefinition.Builder.newInstance()
+                    .id("test-credential-definition-id")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("http://example.com/schema")
+                    .credentialType("MembershipCredential")
+                    .participantContextId(USER)
+                    .formatFrom(VC1_0_JWT)
+                    .build();
+
+            service.createCredentialDefinition(definition);
+
+            definition = CredentialDefinition.Builder.newInstance()
+                    .id("test-credential-definition-id")
+                    .jsonSchema("{}")
+                    .jsonSchemaUrl("http://example.com/schema")
+                    .credentialType("MembershipCredential")
+                    .participantContextId(USER)
+                    .formatFrom(VC1_0_JWT)
+                    .build();
+
+            issuer.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(new Header("x-api-key", illegalToken))
                     .body(definition)
                     .put("/v1alpha/participants/%s/credentialdefinitions".formatted(toBase64(USER)))
                     .then()

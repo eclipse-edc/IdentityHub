@@ -19,14 +19,13 @@ import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.GetAllC
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.VerifiableCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.transformer.VerifiableCredentialManifestToVerifiableCredentialResourceTransformer;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
-import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -67,9 +66,13 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
         webService.registerResource(IdentityHubApiContext.IDENTITY, getAllController);
     }
 
-    private AbstractParticipantResource queryById(String credentialId) {
-        return credentialStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", credentialId)).build())
-                .map(list -> list.iterator().next())
-                .orElseThrow(f -> new EdcException(f.getFailureDetail()));
+    private ParticipantResource queryById(String owner, String id) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("id", "=", id))
+                .filter(new Criterion("participantContextId", "=", owner))
+                .build();
+        return credentialStore.query(query)
+                .map(list -> list.stream().findFirst().orElse(null))
+                .orElse(null);
     }
 }

@@ -478,7 +478,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", token2))
                     .body(keyDesc)
-                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(user1, keyId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(toBase64(user1), keyId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)

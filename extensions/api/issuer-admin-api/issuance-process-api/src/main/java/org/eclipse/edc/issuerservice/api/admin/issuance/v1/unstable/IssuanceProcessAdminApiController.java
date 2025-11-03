@@ -59,7 +59,7 @@ public class IssuanceProcessAdminApiController implements IssuanceProcessAdminAp
                                                      @PathParam("issuanceProcessId") String issuanceProcessId,
                                                      @Context SecurityContext securityContext) {
 
-        authorizationService.isAuthorized(securityContext, issuanceProcessId, IssuanceProcess.class)
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), issuanceProcessId, IssuanceProcess.class)
                 .orElseThrow(exceptionMapper(IssuanceProcess.class, issuanceProcessId));
 
         var issuanceProcess = issuanceProcessService.findById(issuanceProcessId);
@@ -79,7 +79,7 @@ public class IssuanceProcessAdminApiController implements IssuanceProcessAdminAp
             return issuanceProcessService.search(spec)
                     .orElseThrow(exceptionMapper(IssuanceProcess.class, null))
                     .stream()
-                    .filter(issuanceProcess -> authorizationService.isAuthorized(securityContext, issuanceProcess.getId(), IssuanceProcess.class).succeeded())
+                    .filter(issuanceProcess -> authorizationService.isAuthorized(securityContext, decoded, issuanceProcess.getId(), IssuanceProcess.class).succeeded())
                     .map(IssuanceProcessDto::fromIssuanceProcess)
                     .collect(toList());
         }).orElseThrow(InvalidRequestException::new);

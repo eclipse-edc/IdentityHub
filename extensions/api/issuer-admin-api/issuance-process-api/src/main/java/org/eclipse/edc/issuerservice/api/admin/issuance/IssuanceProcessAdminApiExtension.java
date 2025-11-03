@@ -15,12 +15,15 @@
 package org.eclipse.edc.issuerservice.api.admin.issuance;
 
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable.IssuanceProcessAdminApiController;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
@@ -46,9 +49,19 @@ public class IssuanceProcessAdminApiExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
 
-        authorizationService.addLookupFunction(IssuanceProcess.class, issuanceProcessService::findById);
+        authorizationService.addLookupFunction(IssuanceProcess.class, this::findById);
 
         var controller = new IssuanceProcessAdminApiController(issuanceProcessService, authorizationService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
+    }
+
+    private ParticipantResource findById(String owner, String id) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("id", "=", id))
+                .filter(new Criterion("participantContextId", "=", owner))
+                .build();
+        return issuanceProcessService.search(query)
+                .map(list -> list.stream().findFirst().orElse(null))
+                .orElse(null);
     }
 }

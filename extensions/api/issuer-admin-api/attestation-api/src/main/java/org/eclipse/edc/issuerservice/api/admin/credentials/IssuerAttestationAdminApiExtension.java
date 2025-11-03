@@ -15,12 +15,15 @@
 package org.eclipse.edc.issuerservice.api.admin.credentials;
 
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.IssuerAttestationAdminApiController;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
@@ -50,8 +53,14 @@ public class IssuerAttestationAdminApiExtension implements ServiceExtension {
         var controller = new IssuerAttestationAdminApiController(authorizationService, attestationDefinitionService);
         webService.registerResource(IdentityHubApiContext.ISSUERADMIN, controller);
     }
-    
-    private AttestationDefinition findById(String id) {
-        return attestationDefinitionService.getAttestationById(id).getContent();
+
+    private ParticipantResource findById(String owner, String id) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("id", "=", id))
+                .filter(new Criterion("participantContextId", "=", owner))
+                .build();
+        return attestationDefinitionService.queryAttestations(query)
+                .map(list -> list.stream().findFirst().orElse(null))
+                .orElse(null);
     }
 }

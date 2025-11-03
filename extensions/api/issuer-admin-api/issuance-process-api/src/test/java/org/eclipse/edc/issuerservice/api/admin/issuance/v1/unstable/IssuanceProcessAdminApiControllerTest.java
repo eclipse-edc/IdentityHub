@@ -47,7 +47,7 @@ class IssuanceProcessAdminApiControllerTest extends RestControllerTestBase {
 
     @BeforeEach
     void setUp() {
-        when(authService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(authService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
     }
 
     @Test

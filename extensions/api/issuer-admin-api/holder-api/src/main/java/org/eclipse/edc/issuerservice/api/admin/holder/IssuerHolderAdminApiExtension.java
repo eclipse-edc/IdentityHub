@@ -15,12 +15,15 @@
 package org.eclipse.edc.issuerservice.api.admin.holder;
 
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.IssuerHolderAdminApiController;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
@@ -52,5 +55,15 @@ public class IssuerHolderAdminApiExtension implements ServiceExtension {
 
     public Holder findById(String holderId) {
         return holderService.findById(holderId).getContent();
+    }
+
+    private ParticipantResource findById(String owner, String id) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("holderId", "=", id))
+                .filter(new Criterion("participantContextId", "=", owner))
+                .build();
+        return holderService.queryHolders(query)
+                .map(list -> list.stream().findFirst().orElse(null))
+                .orElse(null);
     }
 }

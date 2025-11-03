@@ -75,7 +75,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Path("/{participantContextId}")
     public ParticipantContext getParticipant(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
         return onEncoded(participantContextId)
-                .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
+                .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, decoded, ParticipantContext.class)
                         .compose(u -> participantContextService.getParticipantContext(decoded))
                         .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
                 .orElseThrow(InvalidRequestException::new);
@@ -86,7 +86,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Path("/{participantContextId}/token")
     public String regenerateParticipantToken(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
         return onEncoded(participantContextId)
-                .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
+                .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, decoded, ParticipantContext.class)
                         .compose(u -> participantContextService.regenerateApiToken(decoded))
                         .orElseThrow(exceptionMapper(ParticipantContext.class, decoded)))
                 .orElseThrow(InvalidRequestException::new);

@@ -20,12 +20,12 @@ import org.eclipse.edc.identityhub.api.keypair.validation.KeyDescriptorValidator
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
-import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
@@ -60,12 +60,13 @@ public class KeyPairResourceManagementApiExtension implements ServiceExtension {
         webService.registerResource(IdentityHubApiContext.IDENTITY, getAllApi);
     }
 
-    private AbstractParticipantResource findById(String keyPairId) {
-        var q = KeyPairResource.queryById(keyPairId).build();
-        return keyPairService.query(q)
-                .orElseThrow(f -> new EdcException(f.getFailureDetail()))
-                .stream()
-                .findFirst()
+    private ParticipantResource findById(String owner, String id) {
+        var query = KeyPairResource.queryById(id)
+                .filter(new Criterion("participantContextId", "=", owner))
+                .build();
+        return keyPairService.query(query)
+                .map(list -> list.stream().findFirst().orElse(null))
                 .orElse(null);
     }
+
 }

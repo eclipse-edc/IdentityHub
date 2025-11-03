@@ -23,36 +23,46 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 public class AuthorizationServiceImpl implements AuthorizationService {
-    private final Map<Class<?>, Function<String, ParticipantResource>> resourceLookupFunctions = new HashMap<>();
+    private final Map<Class<?>, BiFunction<String, String, ParticipantResource>> resourceLookupFunctions = new HashMap<>();
 
     @Override
-    public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<? extends ParticipantResource> resourceClass) {
+    public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceOwnerId, String resourceId, Class<? extends ParticipantResource> resourceClass) {
+        var securityPrincipalName = securityContext.getUserPrincipal().getName();
 
+        if (resourceOwnerId == null) {
+            return ServiceResult.unauthorized("resourceOwnerId is mandatory but was null when querying for object with ID '%s' of type '%s'. Security Principal: '%s'".formatted(resourceId, resourceClass, securityPrincipalName));
+        }
+
+        var function = resourceLookupFunctions.get(resourceClass);
+        if (function == null) {
+            return ServiceResult.unauthorized("User access for '%s' to resource ID '%s' of type '%s' cannot be verified".formatted(securityPrincipalName, resourceId, resourceClass));
+        }
+
+        var resource = function.apply(resourceOwnerId, resourceId);
+        if (resource == null) {
+            return ServiceResult.notFound("No Resource of type '%s' with ID '%s' was found for owner '%s'.".formatted(resourceClass, resourceId, resourceOwnerId));
+        }
+
+        // for admins, only the owner ID and the participantContextId must match
         if (securityContext.isUserInRole(ServicePrincipal.ROLE_ADMIN)) {
             return ServiceResult.success();
         }
 
-        var function = resourceLookupFunctions.get(resourceClass);
-        var name = securityContext.getUserPrincipal().getName();
-        if (function == null) {
-            return ServiceResult.unauthorized("User access for '%s' to resource ID '%s' of type '%s' cannot be verified".formatted(name, resourceClass, resourceClass));
+
+        // for all other users, the service principal, the resource owner and the participantContextID must be equal
+        if (!Objects.equals(securityPrincipalName, resourceOwnerId) || !Objects.equals(resource.getParticipantContextId(), resourceOwnerId)) {
+            return ServiceResult.unauthorized("User '%s' is not authorized to access this resource.".formatted(securityPrincipalName));
         }
 
-        var result = function.apply(resourceId);
-        if (result != null) {
-            return Objects.equals(result.getParticipantContextId(), name)
-                    ? ServiceResult.success()
-                    : ServiceResult.unauthorized("User '%s' is not authorized to access resource of type %s with ID '%s'.".formatted(name, resourceClass, resourceId));
-        }
+        return ServiceResult.success();
 
-        return ServiceResult.notFound("No Resource of type '%s' with ID '%s' was found.".formatted(resourceClass, resourceId));
     }
 
     @Override
-    public void addLookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> lookupFunction) {
+    public void addLookupFunction(Class<?> resourceClass, BiFunction<String, String, ParticipantResource> lookupFunction) {
         resourceLookupFunctions.put(resourceClass, lookupFunction);
     }
 }

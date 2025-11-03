@@ -2,6 +2,7 @@ rootProject.name = "identity-hub"
 
 pluginManagement {
     repositories {
+        mavenLocal()
         gradlePluginPortal()
         mavenCentral()
         maven {

@@ -15,7 +15,9 @@
 package org.eclipse.edc.identityhub.api.authorization;
 
 import jakarta.ws.rs.core.SecurityContext;
+import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.spi.result.ServiceFailure;
 import org.junit.jupiter.api.Test;
 
 import java.security.Principal;
@@ -33,7 +35,7 @@ class AuthorizationServiceImplTest {
 
     @Test
     void isAuthorized_whenAuthorized() {
-        authorizationService.addLookupFunction(TestResource.class, s -> new AbstractParticipantResource() {
+        authorizationService.addLookupFunction(TestResource.class, (owner, id) -> new AbstractParticipantResource() {
             @Override
             public String getParticipantContextId() {
                 return "test-id";
@@ -44,7 +46,7 @@ class AuthorizationServiceImplTest {
         when(principal.getName()).thenReturn("test-id");
         var securityContext = mock(SecurityContext.class);
         when(securityContext.getUserPrincipal()).thenReturn(principal);
-        assertThat(authorizationService.isAuthorized(securityContext, "test-resource-id", TestResource.class))
+        assertThat(authorizationService.isAuthorized(securityContext, "test-id", "test-resource-id", TestResource.class))
                 .isSucceeded();
     }
 
@@ -54,13 +56,13 @@ class AuthorizationServiceImplTest {
         when(principal.getName()).thenReturn("test-id");
         var securityContext = mock(SecurityContext.class);
         when(securityContext.getUserPrincipal()).thenReturn(principal);
-        assertThat(authorizationService.isAuthorized(securityContext, "test-resource-id", TestResource.class))
+        assertThat(authorizationService.isAuthorized(securityContext, "test-id", "test-resource-id", TestResource.class))
                 .isFailed();
     }
 
     @Test
     void isAuthorized_whenNotAuthorized() {
-        authorizationService.addLookupFunction(TestResource.class, s -> new AbstractParticipantResource() {
+        authorizationService.addLookupFunction(TestResource.class, (owner, id) -> new AbstractParticipantResource() {
             @Override
             public String getParticipantContextId() {
                 return "another-test-id";
@@ -70,22 +72,51 @@ class AuthorizationServiceImplTest {
         when(principal.getName()).thenReturn("test-id");
         var securityContext = mock(SecurityContext.class);
         when(securityContext.getUserPrincipal()).thenReturn(principal);
-        assertThat(authorizationService.isAuthorized(securityContext, "test-resource-id", TestResource.class))
+        assertThat(authorizationService.isAuthorized(securityContext, "test-id", "test-resource-id", TestResource.class))
                 .isFailed();
     }
 
     @Test
     void isAuthorized_whenSuperUser() {
-
+        authorizationService.addLookupFunction(TestResource.class, (owner, id) -> new AbstractParticipantResource() {
+            @Override
+            public String getParticipantContextId() {
+                return "test-id";
+            }
+        });
+        var principal = mock(Principal.class);
+        when(principal.getName()).thenReturn("test-id");
         var securityContext = mock(SecurityContext.class);
+        when(securityContext.getUserPrincipal()).thenReturn(principal);
+
         when(securityContext.isUserInRole(eq("admin"))).thenReturn(true);
 
-        assertThat(authorizationService.isAuthorized(securityContext, "test-resource-id", TestResource.class))
+        assertThat(authorizationService.isAuthorized(securityContext, "test-id", "test-resource-id", TestResource.class))
                 .isSucceeded();
 
         verify(securityContext).isUserInRole(eq("admin"));
+        verify(securityContext).getUserPrincipal();
         verifyNoMoreInteractions(securityContext);
     }
+
+    @Test
+    void isAuthorized_whenNoOwner() {
+        authorizationService.addLookupFunction(TestResource.class, (owner, id) -> new AbstractParticipantResource() {
+            @Override
+            public String getParticipantContextId() {
+                return "test-id";
+            }
+        });
+        var principal = mock(Principal.class);
+        when(principal.getName()).thenReturn("test-id");
+        var securityContext = mock(SecurityContext.class);
+        when(securityContext.getUserPrincipal()).thenReturn(principal);
+
+        assertThat(authorizationService.isAuthorized(securityContext, null, "test-resource-id", TestResource.class))
+                .isFailed()
+                .satisfies(f -> Assertions.assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.UNAUTHORIZED));
+    }
+
 
     private static class TestResource extends AbstractParticipantResource {
 

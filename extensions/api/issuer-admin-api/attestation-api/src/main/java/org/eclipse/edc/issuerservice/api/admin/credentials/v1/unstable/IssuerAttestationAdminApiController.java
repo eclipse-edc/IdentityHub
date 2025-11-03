@@ -60,7 +60,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
 
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        return authorizationService.isAuthorized(securityContext, decodedParticipantContextId, ParticipantContext.class)
+        return authorizationService.isAuthorized(securityContext, decodedParticipantContextId, decodedParticipantContextId, ParticipantContext.class)
                 .compose(u -> attestationDefinitionService.createAttestation(createAttestationDefinition(decodedParticipantContextId, attestationRequest)))
                 .map(u -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/attestations/%s".formatted(participantContextId, attestationRequest.id()))).build())
                 .orElseThrow(AuthorizationResultHandler.exceptionMapper(AttestationDefinition.class));
@@ -70,7 +70,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     @Path("/{attestationDefinitionId}")
     @Override
     public void deleteAttestationDefinition(@PathParam("participantContextId") String participantContextId, @PathParam("attestationDefinitionId") String attestationDefinitionId, @Context SecurityContext context) {
-        authorizationService.isAuthorized(context, attestationDefinitionId, AttestationDefinition.class)
+        authorizationService.isAuthorized(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), attestationDefinitionId, AttestationDefinition.class)
                 .compose(u -> attestationDefinitionService.deleteAttestation(attestationDefinitionId))
                 .orElseThrow(exceptionMapper(AttestationDefinition.class, attestationDefinitionId));
     }
@@ -86,7 +86,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
                 .orElseThrow(exceptionMapper(AttestationDefinition.class, null));
 
         return attestations.stream()
-                .filter(attestation -> authorizationService.isAuthorized(context, attestation.getId(), AttestationDefinition.class).succeeded())
+                .filter(attestation -> authorizationService.isAuthorized(context, decodedParticipantContextId, attestation.getId(), AttestationDefinition.class).succeeded())
                 .toList();
     }
 

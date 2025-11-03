@@ -50,7 +50,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
     @BeforeEach
     void setUp() {
-        when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(authorizationService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
     }
 
     @Test
@@ -165,6 +165,11 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
         assertThat(dto).isEmpty();
     }
 
+    @Override
+    protected Object controller() {
+        return new IssuerHolderAdminApiController(authorizationService, holderService);
+    }
+
     private Holder createHolder(String id, String did, String name) {
         return Holder.Builder.newInstance()
                 .participantContextId(PARTICIPANT_ID)
@@ -172,11 +177,6 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
                 .did(did)
                 .holderName(name)
                 .build();
-    }
-
-    @Override
-    protected Object controller() {
-        return new IssuerHolderAdminApiController(authorizationService, holderService);
     }
 
     private RequestSpecification baseRequest() {
