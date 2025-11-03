@@ -17,6 +17,7 @@ package org.eclipse.edc.issuerservice.api.admin.credentials;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialOfferMessageTransformer;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.IssuerCredentialsAdminApiController;
@@ -24,6 +25,8 @@ import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
@@ -63,8 +66,14 @@ public class IssuerCredentialsAdminApiExtension implements ServiceExtension {
         typeTransformerRegistry.forContext(DcpConstants.DCP_SCOPE_V_1_0).register(new JsonObjectFromCredentialOfferMessageTransformer(DSPACE_DCP_NAMESPACE_V_1_0));
     }
 
-
-    public VerifiableCredentialResource findById(String id) {
-        return credentialService.getCredentialById(id).getContent();
+    private ParticipantResource findById(String owner, String id) {
+        var query = QuerySpec.Builder.newInstance()
+                .filter(new Criterion("id", "=", id))
+                .filter(new Criterion("participantContextId", "=", owner))
+                .build();
+        return credentialService.queryCredentials(query)
+                .map(list -> list.stream().findFirst().orElse(null))
+                .orElse(null);
     }
+
 }

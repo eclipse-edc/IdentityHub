@@ -20,7 +20,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResou
 import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.security.Principal;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 /**
  * This service takes a {@link Principal}, that is typically obtained from the {@link jakarta.ws.rs.core.SecurityContext} of an incoming
@@ -30,16 +30,18 @@ public interface AuthorizationService {
     /**
      * Checks whether the principal is authorized to access a particular resource.
      *
-     * @param securityContext The {@link SecurityContext} that was obtained during the authentication phase of the request. Not null.
+     * @param securityContext The {@link SecurityContext} that was obtained during the authentication phase of the request.
+     *                        This represents the user to whom the auth token belongs. Not null.
+     * @param resourceOwnerId The ID of the resource owner. This is typically the ID of the participant context. Not null.
      * @param resourceId      The ID of the resource. The resource must be of type {@link AbstractParticipantResource}.
      * @param resourceClass   The concrete type of the resource.
-     * @return success if authorized, {@link ServiceResult#unauthorized(String)} if not authorized
+     * @return success if authorized, {@link ServiceResult#unauthorized(String)} if the principal is not authorized, or {@link ServiceResult#notFound(String)} if the resource owner does not own the resource.
      */
-    ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<? extends ParticipantResource> resourceClass);
+    ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceOwnerId, String resourceId, Class<? extends ParticipantResource> resourceClass);
 
     /**
-     * Register a function, that can lookup a particular resource type by ID. Typically, every resource that should be protected with
-     * authorization, registers a lookup function for the type of resource.
+     * Register a function that can look up a particular resource type by ID. Typically, every resource that should be protected with
+     * authorization registers a lookup function for the type of resource.
      */
-    void addLookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> checkFunction);
+    void addLookupFunction(Class<?> resourceClass, BiFunction<String, String, ParticipantResource> checkFunction);
 }

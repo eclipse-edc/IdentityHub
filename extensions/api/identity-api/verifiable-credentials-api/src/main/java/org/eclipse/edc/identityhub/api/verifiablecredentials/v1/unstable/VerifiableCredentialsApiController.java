@@ -41,6 +41,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.util.string.StringUtils;
@@ -86,7 +87,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @Path("/{credentialId}")
     @Override
     public VerifiableCredentialResource getCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String id, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext, id, VerifiableCredentialResource.class)
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), id, VerifiableCredentialResource.class)
                 .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
 
         var result = credentialStore.query(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", id)).build())
@@ -100,7 +101,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         validator.validate(manifest).orElseThrow(ValidationFailureException::new);
 
         var decoded = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
+        authorizationService.isAuthorized(securityContext, decoded, decoded, ParticipantContext.class)
                 .compose(u -> typeTransformerRegistry.transform(manifest, VerifiableCredentialResource.class)
                         .map(ServiceResult::success)
                         .orElse(failure -> badRequest(failure.getFailureDetail())))
@@ -113,7 +114,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     public void updateCredential(@PathParam("participantContextId") String participantContextId, VerifiableCredentialManifest manifest, @Context SecurityContext securityContext) {
         validator.validate(manifest).orElseThrow(ValidationFailureException::new);
 
-        authorizationService.isAuthorized(securityContext, manifest.getId(), VerifiableCredentialResource.class)
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), manifest.getId(), VerifiableCredentialResource.class)
                 .compose(u -> typeTransformerRegistry.transform(manifest, VerifiableCredentialResource.class)
                         .map(ServiceResult::success)
                         .orElse(failure -> badRequest(failure.getFailureDetail())))
@@ -133,7 +134,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         return credentialStore.query(query.build())
                 .orElseThrow(InvalidRequestException::new)
                 .stream()
-                .filter(vcr -> authorizationService.isAuthorized(securityContext, vcr.getId(), VerifiableCredentialResource.class).succeeded())
+                .filter(vcr -> authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), vcr.getId(), VerifiableCredentialResource.class).succeeded())
                 .toList();
     }
 
@@ -141,7 +142,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @Path("/{credentialId}")
     @Override
     public void deleteCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String id, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext, id, VerifiableCredentialResource.class)
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), id, VerifiableCredentialResource.class)
                 .orElseThrow(exceptionMapper(VerifiableCredentialResource.class, id));
         var res = credentialStore.deleteById(id);
         if (res.failed()) {
@@ -154,7 +155,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @Override
     public Response requestCredential(@PathParam("participantContextId") String participantContextId, CredentialRequestDto credentialRequestDto, @Context SecurityContext securityContext) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        authorizationService.isAuthorized(securityContext, decodedParticipantContextId, ParticipantContext.class)
+        authorizationService.isAuthorized(securityContext, decodedParticipantContextId, decodedParticipantContextId, ParticipantContext.class)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, decodedParticipantContextId));
 
         var holderPid = ofNullable(credentialRequestDto.holderPid()).orElseGet(() -> UUID.randomUUID().toString());
@@ -173,7 +174,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                                                            @Context SecurityContext securityContext) {
 
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        authorizationService.isAuthorized(securityContext, decodedParticipantContextId, ParticipantContext.class)
+        authorizationService.isAuthorized(securityContext, decodedParticipantContextId, decodedParticipantContextId, ParticipantContext.class)
                 .orElseThrow(exceptionMapper(ParticipantContext.class, decodedParticipantContextId));
 
         return ofNullable(credentialRequestService.findById(holderPid))
@@ -181,4 +182,8 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .orElseThrow(() -> new ObjectNotFoundException(HolderCredentialRequest.class, holderPid));
     }
 
+    private Result<Criterion> filterByParticipantContext(String participantContext) {
+        return onEncoded(participantContext)
+                .map(pc -> new Criterion("participantContextId", "=", pc));
+    }
 }

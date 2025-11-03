@@ -42,6 +42,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 import static io.restassured.http.ContentType.JSON;
@@ -104,7 +105,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:user1"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/dids/publish".formatted(user1))
+                    .post("/v1alpha/participants/%s/dids/publish".formatted(toBase64(user1)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -133,7 +134,7 @@ public class DidManagementApiEndToEndTest {
                                            "did": "did:web:test-user"
                                         }
                                         """)
-                                .post("/v1alpha/participants/%s/dids/publish".formatted(user))
+                                .post("/v1alpha/participants/%s/dids/publish".formatted(toBase64(user)))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(204)
@@ -172,7 +173,7 @@ public class DidManagementApiEndToEndTest {
                                            "did": "did:web:test-user"
                                         }
                                         """)
-                                .post("/v1alpha/participants/%s/dids/publish".formatted(user))
+                                .post("/v1alpha/participants/%s/dids/publish".formatted(toBase64(user)))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(400)
@@ -212,7 +213,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:user1"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(user1))
+                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(toBase64(user1)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -241,7 +242,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:test-user"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
+                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(toBase64(user)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -271,7 +272,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:test-user"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
+                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(toBase64(user)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -298,7 +299,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:test-user"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
+                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(toBase64(user)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
@@ -324,7 +325,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:user1"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/dids/state".formatted(user1))
+                    .post("/v1alpha/participants/%s/dids/state".formatted(toBase64(user1)))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -393,6 +394,10 @@ public class DidManagementApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
+        }
+
+        private String toBase64(String s) {
+            return Base64.getUrlEncoder().encodeToString(s.getBytes());
         }
 
     }

@@ -58,7 +58,9 @@ public class DidManagementApiController implements DidManagementApi {
     @POST
     @Path("/publish")
     public void publishDid(@PathParam("participantContextId") String participantContextId, DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext, didRequestPayload.did(), DidResource.class)
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+
+        authorizationService.isAuthorized(securityContext, decodedParticipantContextId, didRequestPayload.did(), DidResource.class)
                 .compose(u -> documentService.publish(didRequestPayload.did()))
                 .orElseThrow(exceptionMapper(DidResource.class, didRequestPayload.did()));
     }
@@ -67,7 +69,9 @@ public class DidManagementApiController implements DidManagementApi {
     @POST
     @Path("/unpublish")
     public void unpublishDid(@PathParam("participantContextId") String participantContextId, DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext, didRequestPayload.did(), DidResource.class)
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+
+        authorizationService.isAuthorized(securityContext, decodedParticipantContextId, didRequestPayload.did(), DidResource.class)
                 .compose(u -> documentService.unpublish(didRequestPayload.did()))
                 .orElseThrow(exceptionMapper(DidDocument.class, didRequestPayload.did()));
     }
@@ -79,7 +83,7 @@ public class DidManagementApiController implements DidManagementApi {
     public Collection<DidDocument> queryDids(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext securityContext) {
         return documentService.queryDocuments(querySpec)
                 .orElseThrow(exceptionMapper(DidDocument.class, null))
-                .stream().filter(dd -> authorizationService.isAuthorized(securityContext, dd.getId(), DidResource.class).succeeded())
+                .stream().filter(dd -> authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), dd.getId(), DidResource.class).succeeded())
                 .toList();
     }
 
@@ -87,7 +91,7 @@ public class DidManagementApiController implements DidManagementApi {
     @POST
     @Path("/state")
     public String getDidState(@PathParam("participantContextId") String participantContextId, DidRequestPayload request, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext, request.did(), DidResource.class)
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), request.did(), DidResource.class)
                 .orElseThrow(exceptionMapper(DidResource.class, request.did()));
         var byId = documentService.findById(request.did());
         return byId != null ? DidState.from(byId.getState()).toString() : null;
@@ -101,7 +105,7 @@ public class DidManagementApiController implements DidManagementApi {
                                @QueryParam("autoPublish") boolean autoPublish,
                                @Context SecurityContext securityContext) {
         var decodedDid = onEncoded(did).orElseThrow(InvalidRequestException::new);
-        authorizationService.isAuthorized(securityContext, decodedDid, DidResource.class)
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), decodedDid, DidResource.class)
                 .compose(u -> documentService.addService(decodedDid, service))
                 .compose(v -> autoPublish ? documentService.publish(decodedDid) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, decodedDid));
@@ -117,7 +121,7 @@ public class DidManagementApiController implements DidManagementApi {
                                    @Context SecurityContext securityContext) {
         var decodedDid = onEncoded(did).orElseThrow(InvalidRequestException::new);
 
-        authorizationService.isAuthorized(securityContext, decodedDid, DidResource.class)
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), decodedDid, DidResource.class)
                 .compose(u -> documentService.replaceService(decodedDid, service))
                 .compose(v -> autoPublish ? documentService.publish(decodedDid) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, decodedDid));
@@ -133,7 +137,7 @@ public class DidManagementApiController implements DidManagementApi {
                                   @Context SecurityContext securityContext) {
         var decodedDid = onEncoded(did).orElseThrow(InvalidRequestException::new);
 
-        authorizationService.isAuthorized(securityContext, decodedDid, DidResource.class)
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), decodedDid, DidResource.class)
                 .compose(u -> documentService.removeService(decodedDid, serviceId))
                 .compose(v -> autoPublish ? documentService.publish(decodedDid) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, decodedDid));

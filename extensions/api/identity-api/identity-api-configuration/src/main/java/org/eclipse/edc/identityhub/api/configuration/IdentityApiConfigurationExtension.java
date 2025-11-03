@@ -36,7 +36,7 @@ import org.eclipse.edc.web.spi.configuration.PortMapping;
 import org.eclipse.edc.web.spi.configuration.PortMappingRegistry;
 
 import java.io.IOException;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import static org.eclipse.edc.identityhub.api.configuration.IdentityApiConfigurationExtension.NAME;
@@ -102,14 +102,15 @@ public class IdentityApiConfigurationExtension implements ServiceExtension {
     private static class AllowAllAuthorizationService implements AuthorizationService {
 
         @Override
-        public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceId, Class<? extends ParticipantResource> resourceClass) {
+        public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceOwnerId, String resourceId, Class<? extends ParticipantResource> resourceClass) {
             return ServiceResult.success();
         }
 
         @Override
-        public void addLookupFunction(Class<?> resourceClass, Function<String, ParticipantResource> checkFunction) {
+        public void addLookupFunction(Class<?> resourceClass, BiFunction<String, String, ParticipantResource> checkFunction) {
 
         }
+
 
     }
 }

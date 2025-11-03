@@ -60,7 +60,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Override
     public Response createCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto definitionDto, @Context SecurityContext context) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.isAuthorized(context, decodedParticipantContextId, ParticipantContext.class)
+        return authorizationService.isAuthorized(context, decodedParticipantContextId, decodedParticipantContextId, ParticipantContext.class)
                 .compose(u -> credentialDefinitionService.createCredentialDefinition(definitionDto.toCredentialDefinition(decodedParticipantContextId)))
                 .map(v -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/credentialdefinitions/%s".formatted(participantContextId, definitionDto.getId()))).build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, definitionDto.getId()));
@@ -70,7 +70,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Override
     public Response updateCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto credentialDefinition, @Context SecurityContext context) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.isAuthorized(context, credentialDefinition.getId(), CredentialDefinition.class)
+        return authorizationService.isAuthorized(context, decodedParticipantContextId, credentialDefinition.getId(), CredentialDefinition.class)
                 .compose(u -> credentialDefinitionService.updateCredentialDefinition(credentialDefinition.toCredentialDefinition(decodedParticipantContextId)))
                 .map(v -> Response.ok().build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinition.getId()));
@@ -80,7 +80,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Path("/{credentialDefinitionId}")
     @Override
     public CredentialDefinition getCredentialDefinitionById(@PathParam("participantContextId") String participantContextId, @PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
-        return authorizationService.isAuthorized(context, credentialDefinitionId, CredentialDefinition.class)
+        return authorizationService.isAuthorized(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), credentialDefinitionId, CredentialDefinition.class)
                 .compose(u -> credentialDefinitionService.findCredentialDefinitionById(credentialDefinitionId))
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinitionId));
     }
@@ -95,7 +95,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, null));
 
         return definitions.stream()
-                .filter(definition -> authorizationService.isAuthorized(context, definition.getId(), CredentialDefinition.class).succeeded())
+                .filter(definition -> authorizationService.isAuthorized(context, decodedParticipantContextId, definition.getId(), CredentialDefinition.class).succeeded())
                 .toList();
     }
 
@@ -103,7 +103,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Path("/{credentialDefinitionId}")
     @Override
     public void deleteCredentialDefinitionById(@PathParam("participantContextId") String participantContextId, @PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
-        authorizationService.isAuthorized(context, credentialDefinitionId, CredentialDefinition.class)
+        authorizationService.isAuthorized(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), credentialDefinitionId, CredentialDefinition.class)
                 .compose(u -> credentialDefinitionService.deleteCredentialDefinition(credentialDefinitionId))
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinitionId));
     }

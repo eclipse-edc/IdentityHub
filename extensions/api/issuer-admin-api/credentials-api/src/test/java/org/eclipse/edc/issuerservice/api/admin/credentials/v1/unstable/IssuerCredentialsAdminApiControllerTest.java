@@ -67,7 +67,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @BeforeEach
     void setUp() {
-        when(authorizationService.isAuthorized(any(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(authorizationService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
         when(credentialOfferService.sendCredentialOffer(anyString(), anyString(), anyCollection())).thenReturn(ServiceResult.success());
     }
 
@@ -196,23 +196,23 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void sendCredentialOffer_whenHolderNotFound() {
-        when(authorizationService.isAuthorized(any(), anyString(), any()))
+        when(authorizationService.isAuthorized(any(), anyString(), anyString(), any()))
                 .thenReturn(ServiceResult.notFound("holder"));
         baseRequest()
                 .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
                 .post("/offer")
                 .then()
                 .log().ifValidationFails()
-                .statusCode(400)
-                .body(containsString("Holder not found"));
+                .statusCode(404)
+                .body(containsString("Object of type Holder with ID=holder was not found"));
 
-        verify(authorizationService).isAuthorized(any(), anyString(), any());
+        verify(authorizationService).isAuthorized(any(), anyString(), anyString(), any());
         verifyNoMoreInteractions(authorizationService, credentialOfferService);
     }
 
     @Test
     void sendCredentialOffer_whenNotAuthorized() {
-        when(authorizationService.isAuthorized(any(), anyString(), any()))
+        when(authorizationService.isAuthorized(any(), anyString(), anyString(), any()))
                 .thenReturn(ServiceResult.unauthorized("barbaz"));
         baseRequest()
                 .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
@@ -222,7 +222,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .statusCode(403)
                 .body(containsString("barbaz"));
 
-        verify(authorizationService).isAuthorized(any(), anyString(), any());
+        verify(authorizationService).isAuthorized(any(), anyString(), anyString(), any());
         verifyNoMoreInteractions(authorizationService, credentialOfferService);
     }
 

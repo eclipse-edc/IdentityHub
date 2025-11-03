@@ -63,7 +63,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Path("/{keyPairId}")
     @Override
     public KeyPairResource getKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String id, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext, id, KeyPairResource.class).orElseThrow(exceptionMapper(KeyPairResource.class, id));
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), id, KeyPairResource.class).orElseThrow(exceptionMapper(KeyPairResource.class, id));
 
         var result = keyPairService.query(KeyPairResource.queryById(id).build())
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));
@@ -81,7 +81,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     public Collection<KeyPairResource> queryKeyPairByParticipantContextId(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
         return onEncoded(participantContextId).map(decoded -> {
             var query = queryByParticipantContextId(decoded).build();
-            return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, decoded)).stream().filter(kpr -> authorizationService.isAuthorized(securityContext, kpr.getId(), KeyPairResource.class).succeeded()).toList();
+            return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, decoded)).stream().filter(kpr -> authorizationService.isAuthorized(securityContext, decoded, kpr.getId(), KeyPairResource.class).succeeded()).toList();
         }).orElseThrow(InvalidRequestException::new);
     }
 
@@ -91,7 +91,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
         keyDescriptorValidator.validate(keyDescriptor).orElseThrow(ValidationFailureException::new);
         onEncoded(participantContextId)
                 .onSuccess(decoded ->
-                        authorizationService.isAuthorized(securityContext, decoded, ParticipantContext.class)
+                        authorizationService.isAuthorized(securityContext, decoded, decoded, ParticipantContext.class)
                                 .compose(u -> keyPairService.addKeyPair(decoded, keyDescriptor, makeDefault))
                                 .orElseThrow(exceptionMapper(KeyPairResource.class)))
                 .orElseThrow(InvalidRequestException::new);
@@ -101,7 +101,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @Path("/{keyPairId}/activate")
     @Override
     public void activateKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String keyPairResourceId, @Context SecurityContext context) {
-        authorizationService.isAuthorized(context, keyPairResourceId, KeyPairResource.class)
+        authorizationService.isAuthorized(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), keyPairResourceId, KeyPairResource.class)
                 .compose(u -> keyPairService.activate(keyPairResourceId)).orElseThrow(exceptionMapper(KeyPairResource.class, keyPairResourceId));
 
     }
@@ -113,7 +113,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
         if (newKey != null) {
             keyDescriptorValidator.validate(newKey).orElseThrow(ValidationFailureException::new);
         }
-        authorizationService.isAuthorized(securityContext, keyPairId, KeyPairResource.class).compose(u -> keyPairService.rotateKeyPair(keyPairId, newKey, duration)).orElseThrow(exceptionMapper(KeyPairResource.class, keyPairId));
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), keyPairId, KeyPairResource.class)
+                .compose(u -> keyPairService.rotateKeyPair(keyPairId, newKey, duration)).orElseThrow(exceptionMapper(KeyPairResource.class, keyPairId));
     }
 
     @POST
@@ -123,6 +124,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
         if (newKey != null) {
             keyDescriptorValidator.validate(newKey).orElseThrow(ValidationFailureException::new);
         }
-        authorizationService.isAuthorized(securityContext, id, KeyPairResource.class).compose(u -> keyPairService.revokeKey(id, newKey)).orElseThrow(exceptionMapper(KeyPairResource.class, id));
+        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), id, KeyPairResource.class)
+                .compose(u -> keyPairService.revokeKey(id, newKey)).orElseThrow(exceptionMapper(KeyPairResource.class, id));
     }
 }

@@ -34,7 +34,6 @@ import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.util.Collection;
@@ -66,7 +65,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
         var spec = query.toBuilder().filter(filterByParticipantContextId(decodedParticipantContextId)).build();
         return credentialStatusService.queryCredentials(spec).map(coll -> coll.stream()
-                        .filter(resource -> authorizationService.isAuthorized(context, resource.getId(), VerifiableCredentialResource.class).succeeded())
+                        .filter(resource -> authorizationService.isAuthorized(context, decodedParticipantContextId, resource.getId(), VerifiableCredentialResource.class).succeeded())
                         .map(resource -> new VerifiableCredentialDto(resource.getParticipantContextId(), resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, null));
     }
@@ -75,7 +74,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Path("/{credentialId}/revoke")
     @Override
     public void revokeCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
-        authorizationService.isAuthorized(context, credentialId, VerifiableCredentialResource.class)
+        authorizationService.isAuthorized(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), credentialId, VerifiableCredentialResource.class)
                 .compose(u -> credentialStatusService.revokeCredential(credentialId))
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
     }
@@ -98,7 +97,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Path("/{credentialId}/status")
     @Override
     public CredentialStatusResponse checkRevocationStatus(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
-        return authorizationService.isAuthorized(context, credentialId, VerifiableCredentialResource.class)
+        return authorizationService.isAuthorized(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), credentialId, VerifiableCredentialResource.class)
                 .compose(u -> credentialStatusService.getCredentialStatus(credentialId))
                 .map(status -> new CredentialStatusResponse(credentialId, status, null))
                 .orElseThrow(exceptionMapper(VerifiableCredential.class, credentialId));
@@ -111,10 +110,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
 
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
         var holderId = credentialOffer.holderId();
-        var result = authorizationService.isAuthorized(context, holderId, Holder.class);
-        if (result.failed() && result.reason() == ServiceFailure.Reason.NOT_FOUND) { // do not map to 404
-            throw new InvalidRequestException("Holder not found");
-        }
+        var result = authorizationService.isAuthorized(context, decodedParticipantContextId, holderId, Holder.class);
         result.orElseThrow(exceptionMapper(Holder.class, holderId));
 
         credentialOfferService.sendCredentialOffer(decodedParticipantContextId, holderId, credentialOffer.credentials())

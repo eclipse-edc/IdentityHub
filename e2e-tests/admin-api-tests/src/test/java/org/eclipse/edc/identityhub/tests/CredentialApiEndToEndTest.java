@@ -544,14 +544,36 @@ public class CredentialApiEndToEndTest {
                     .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(400)
-                    .body(containsString("Holder not found"));
+                    .statusCode(404)
+                    .body(containsString("Object of type Holder with ID=test-holder-id was not found"));
         }
 
         @Test
         void sendCredentialOffer_participantNotAuthorized(IssuerService issuer, HolderStore holderStore) {
             var token = issuer.createParticipant(USER).apiKey();
-            var token2 = issuer.createParticipant("another-issuer");
+            var token2 = issuer.createParticipant("another-issuer").apiKey();
+
+            holderStore.create(Holder.Builder.newInstance()
+                    .holderId("test-holder-id")
+                    .participantContextId(USER)
+                    .did("did:web:holder")
+                    .build());
+
+            issuer.getAdminEndpoint()
+                    .baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", token2))
+                    .body(getOfferRequestBody())
+                    .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+        }
+
+        @Test
+        void sendCredentialOffer_participantDoesNotOwnResource(IssuerService issuer, HolderStore holderStore) {
+            var token = issuer.createParticipant(USER).apiKey();
+            var token2 = issuer.createParticipant("another-issuer").apiKey();
 
             holderStore.create(Holder.Builder.newInstance()
                     .holderId("test-holder-id")
@@ -567,8 +589,9 @@ public class CredentialApiEndToEndTest {
                     .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(403);
+                    .statusCode(404);
         }
+
 
         private String toBase64(String input) {
             return Base64.getUrlEncoder().encodeToString(input.getBytes());
