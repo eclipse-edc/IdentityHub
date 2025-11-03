@@ -31,6 +31,6 @@ public interface AttestationContext {
     /**
      * Returns the participant ID associated with the current request.
      */
-    String participantId();
+    String participantContextId();
 
 }

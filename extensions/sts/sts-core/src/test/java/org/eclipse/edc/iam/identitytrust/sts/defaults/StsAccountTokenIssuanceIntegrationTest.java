@@ -121,7 +121,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         vault.storeSecret(privateKeyAlias, loadResourceFile("ec-privatekey.pem"));
 
         var createResult = clientService.createAccount(ParticipantManifest.Builder.newInstance()
-                .participantId(participantId)
+                .participantContextId(participantId)
                 .did(did)
                 .key(KeyDescriptor.Builder.newInstance()
                         .keyId("public-key")
@@ -165,7 +165,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         vault.storeSecret(privateKeyAlias, loadResourceFile("ec-privatekey.pem"));
 
         var createResult = clientService.createAccount(ParticipantManifest.Builder.newInstance()
-                .participantId(participantId)
+                .participantContextId(participantId)
                 .did(did)
                 .key(KeyDescriptor.Builder.newInstance()
                         .keyId("public-key")
@@ -207,7 +207,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         vault.storeSecret(privateKeyAlias, loadResourceFile("ec-privatekey.pem"));
 
         var createResult = clientService.createAccount(ParticipantManifest.Builder.newInstance()
-                .participantId(participantId)
+                .participantContextId(participantId)
                 .did(did)
                 .key(KeyDescriptor.Builder.newInstance()
                         .keyId("public-key")

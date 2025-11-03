@@ -75,11 +75,11 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
                         "This will result in a DID Document without Verification Methods, and thus, an unusable ParticipantContext.");
             }
 
-            didDocumentService.store(doc, manifest.getParticipantId())
+            didDocumentService.store(doc, manifest.getParticipantContextId())
                     // adding the keypair event will cause the DidDocumentService to update the DID
                     .compose(u -> storeKeyPairs(createdEvent))
                     .compose(u -> manifest.isActive()
-                            ? participantContextService.updateParticipant(manifest.getParticipantId(), ParticipantContext::activate) //implicitly publishes the did document
+                            ? participantContextService.updateParticipant(manifest.getParticipantContextId(), ParticipantContext::activate) //implicitly publishes the did document
                             : success())
                     .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
 

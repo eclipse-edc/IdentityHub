@@ -61,8 +61,8 @@ public class StsAccountServiceImpl implements StsAccountService {
         return transactionContext.execute(() -> {
 
             var client = StsAccount.Builder.newInstance()
-                    .id(manifest.getParticipantId())
-                    .name(manifest.getParticipantId())
+                    .id(manifest.getParticipantContextId())
+                    .name(manifest.getParticipantContextId())
                     .clientId(manifest.getDid())
                     .did(manifest.getDid())
                     .secretAlias(secretAlias)
@@ -73,8 +73,8 @@ public class StsAccountServiceImpl implements StsAccountService {
     }
 
     @Override
-    public ServiceResult<Void> deleteAccount(String id) {
-        return transactionContext.execute(() -> from(stsAccountStore.deleteById(id)).compose(acct -> from(vault.deleteSecret(acct.getSecretAlias()))));
+    public ServiceResult<Void> deleteAccount(String participantContextId) {
+        return transactionContext.execute(() -> from(stsAccountStore.deleteById(participantContextId)).compose(acct -> from(vault.deleteSecret(acct.getSecretAlias()))));
     }
 
     @Override

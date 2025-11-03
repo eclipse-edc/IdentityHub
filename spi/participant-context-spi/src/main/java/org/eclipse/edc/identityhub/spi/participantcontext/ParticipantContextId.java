@@ -25,7 +25,7 @@ public class ParticipantContextId {
     }
 
     /**
-     * Decode a base64-url encoded participantId.
+     * Decode a base64-url encoded participantContextId.
      *
      * @param encoded base64-url encoded participantContextId.
      * @return human-readable participantContextId.

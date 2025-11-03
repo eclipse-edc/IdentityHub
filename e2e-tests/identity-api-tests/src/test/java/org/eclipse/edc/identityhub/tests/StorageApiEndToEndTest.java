@@ -312,7 +312,7 @@ public class StorageApiEndToEndTest {
             var privateKeyAlias = "%s-privatekey-alias".formatted(participantContextId);
             vault.storeSecret(privateKeyAlias, participantKey.toJSONString());
             var manifest = ParticipantManifest.Builder.newInstance()
-                    .participantId(participantContextId)
+                    .participantContextId(participantContextId)
                     .did("did:web:%s".formatted(participantContextId.replace("did:web:", "")))
                     .active(true)
                     .key(KeyDescriptor.Builder.newInstance()

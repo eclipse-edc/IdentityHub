@@ -58,10 +58,10 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     @Override
     public Response createAttestationDefinition(@PathParam("participantContextId") String participantContextId, AttestationDefinitionRequest attestationRequest, @Context SecurityContext securityContext) {
 
-        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        return authorizationService.isAuthorized(securityContext, decodedParticipantId, ParticipantContext.class)
-                .compose(u -> attestationDefinitionService.createAttestation(createAttestationDefinition(decodedParticipantId, attestationRequest)))
+        return authorizationService.isAuthorized(securityContext, decodedParticipantContextId, ParticipantContext.class)
+                .compose(u -> attestationDefinitionService.createAttestation(createAttestationDefinition(decodedParticipantContextId, attestationRequest)))
                 .map(u -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/attestations/%s".formatted(participantContextId, attestationRequest.id()))).build())
                 .orElseThrow(AuthorizationResultHandler.exceptionMapper(AttestationDefinition.class));
     }
@@ -79,8 +79,8 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     @Path("/query")
     @Override
     public Collection<AttestationDefinition> queryAttestationDefinitions(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext context) {
-        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        var spec = query.toBuilder().filter(filterByParticipantContextId(decodedParticipantId)).build();
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var spec = query.toBuilder().filter(filterByParticipantContextId(decodedParticipantContextId)).build();
 
         var attestations = attestationDefinitionService.queryAttestations(spec)
                 .orElseThrow(exceptionMapper(AttestationDefinition.class, null));

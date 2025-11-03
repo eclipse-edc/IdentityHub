@@ -31,7 +31,7 @@ public class TestFunctions {
 
     public static ParticipantManifest.Builder createNewParticipant() {
         return ParticipantManifest.Builder.newInstance()
-                .participantId("another-participant")
+                .participantContextId("another-participant")
                 .active(false)
                 .did("did:web:another:participant:" + UUID.randomUUID())
                 .serviceEndpoint(new Service("test-service", "test-service-type", "https://test.com"))

@@ -31,7 +31,7 @@ public class CredentialOfferMapping extends StatefulEntityMapping {
 
     public CredentialOfferMapping(CredentialOfferStoreStatements statements) {
         super(statements, state -> CredentialOfferStatus.valueOf(state).code());
-        add(FIELD_PARTICIPANT_ID, statements.getParticipantIdColumn());
+        add(FIELD_PARTICIPANT_ID, statements.getParticipantContextIdColumn());
         add(FIELD_ISSUER_DID, statements.getIssuerColumn());
         add(FIELD_CREDENTIAL_TYPES, new JsonFieldTranslator(statements.getCredentialsColumn()));
     }

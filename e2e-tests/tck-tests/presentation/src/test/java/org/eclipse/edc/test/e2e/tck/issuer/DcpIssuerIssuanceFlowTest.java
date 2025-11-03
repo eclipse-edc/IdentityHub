@@ -69,7 +69,7 @@ public class DcpIssuerIssuanceFlowTest {
             .modules(DefaultRuntimes.Issuer.MODULES)
             .modules(":e2e-tests:tck-tests:test-attestations")
             .build();
-    
+
     private static final int CALLBACK_PORT = getFreePort();
     private static final String ISSUANCE_CORRELATION_ID = "issuance-correlation-id";
     private static final String TEST_PARTICIPANT_CONTEXT_ID = "issuer";
@@ -169,7 +169,7 @@ public class DcpIssuerIssuanceFlowTest {
         var privateKeyAlias = "%s-privatekey-alias".formatted(TEST_PARTICIPANT_CONTEXT_ID);
         vault.storeSecret(privateKeyAlias, issuerKey.toJSONString());
         var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(issuerDid)
                 .roles(List.of("admin"))
                 .active(true)

@@ -40,7 +40,7 @@ class ParticipantManifestValidatorTest {
                 .serviceEndpoint(new Service("id", "type", "foobar"))
                 .active(true)
                 .did("did:web:test-did")
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .key(createKeyDescriptor().build());
     }
 
@@ -94,9 +94,9 @@ class ParticipantManifestValidatorTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "  ", "\n"})
     @NullAndEmptySource
-    void validate_participantIdNull(String participantId) {
-        var manifest = createManifest().participantId(participantId).build();
+    void validate_participantContextIdNull(String participantId) {
+        var manifest = createManifest().participantContextId(participantId).build();
         assertThat(validator.validate(manifest)).isFailed()
-                .detail().isEqualTo("participantId cannot be null or empty.");
+                .detail().isEqualTo("participantContextId cannot be null or empty.");
     }
 }

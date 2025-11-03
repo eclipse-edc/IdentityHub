@@ -29,7 +29,7 @@ import java.util.UUID;
 @JsonDeserialize(builder = VerifiableCredentialManifest.Builder.class)
 public class VerifiableCredentialManifest {
     private String id;
-    private String participantId;
+    private String participantContextId;
     private VerifiableCredentialContainer verifiableCredentialContainer;
     private Policy issuancePolicy;
     private Policy reissuancePolicy;
@@ -45,10 +45,10 @@ public class VerifiableCredentialManifest {
     }
 
     /**
-     * The participant id.
+     * The participant context id.
      */
     public String getParticipantContextId() {
-        return participantId;
+        return participantContextId;
     }
 
     /**
@@ -93,8 +93,8 @@ public class VerifiableCredentialManifest {
             return this;
         }
 
-        public Builder participantContextId(String participantId) {
-            manifest.participantId = participantId;
+        public Builder participantContextId(String participantContextId) {
+            manifest.participantContextId = participantContextId;
             return this;
         }
 

@@ -155,7 +155,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
 
         return KeyPairResource.Builder.newPresentationSigning()
                 .id(resultSet.getString(statements.getIdColumn()))
-                .participantContextId(resultSet.getString(statements.getParticipantIdColumn()))
+                .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .timestamp(resultSet.getLong(statements.getTimestampColumn()))
                 .keyId(resultSet.getString(statements.getKeyIdColumn()))
                 .groupName(resultSet.getString(statements.getGroupNameColumn()))

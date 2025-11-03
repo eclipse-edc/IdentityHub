@@ -103,7 +103,7 @@ class ParticipantContextServiceImplTest {
         });
 
         verify(participantContextStore).create(any());
-        verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
+        verify(vault).storeSecret(eq(ctx.getParticipantContextId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
         verify(observableMock).invokeForEach(any());
     }
@@ -151,7 +151,7 @@ class ParticipantContextServiceImplTest {
 
         verify(participantContextStore).create(argThat(pc -> pc.getDid() != null &&
                 pc.getParticipantContextId().equalsIgnoreCase("test-id")));
-        verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
+        verify(vault).storeSecret(eq(ctx.getParticipantContextId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
         verify(observableMock).invokeForEach(any());
     }
@@ -171,7 +171,7 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
-        verify(vault).storeSecret(eq(ctx.getParticipantId() + "-apikey"), anyString());
+        verify(vault).storeSecret(eq(ctx.getParticipantContextId() + "-apikey"), anyString());
 
         verify(observableMock).invokeForEach(any());
         verifyNoMoreInteractions(vault, participantContextStore);
@@ -380,7 +380,7 @@ class ParticipantContextServiceImplTest {
                 .key(createKey().build())
                 .active(true)
                 .did("did:web:test-id")
-                .participantId("test-id");
+                .participantContextId("test-id");
     }
 
     @NotNull

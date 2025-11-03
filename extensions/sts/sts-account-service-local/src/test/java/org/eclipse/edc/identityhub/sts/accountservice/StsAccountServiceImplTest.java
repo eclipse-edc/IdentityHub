@@ -295,7 +295,7 @@ class StsAccountServiceImplTest {
 
     private ParticipantManifest.Builder createManifest() {
         return ParticipantManifest.Builder.newInstance()
-                .participantId(PARTICIPANT_CONTEXT_ID)
+                .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .active(true)
                 .did(PARTICIPANT_DID)
                 .key(KeyDescriptor.Builder.newInstance()

@@ -197,7 +197,7 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
         var privateKeyAlias = "%s-privatekey-alias".formatted(TEST_PARTICIPANT_CONTEXT_ID);
         vault.storeSecret(privateKeyAlias, issuerKey.toJSONString());
         var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(issuerDid)
                 .roles(List.of("admin"))
                 .active(true)

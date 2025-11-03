@@ -193,7 +193,7 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
                 .requestedCredentials(fromJson(resultSet.getString(statements.getCredentialFormatsColumn()), LIST_REF))
                 .issuerDid(resultSet.getString(statements.getIssuerDidColumn()))
                 .issuerPid(resultSet.getString(statements.getissuerPidColumn()))
-                .participantContextId(resultSet.getString(statements.getParticipantIdColumn()))
+                .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .build();
     }
 }

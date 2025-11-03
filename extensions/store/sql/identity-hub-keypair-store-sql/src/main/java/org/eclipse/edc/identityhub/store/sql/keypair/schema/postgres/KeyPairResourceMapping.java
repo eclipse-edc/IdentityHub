@@ -20,7 +20,7 @@ import org.eclipse.edc.sql.translation.TranslationMapping;
 public class KeyPairResourceMapping extends TranslationMapping {
     public KeyPairResourceMapping(BaseSqlDialectStatements stmt) {
         add("id", stmt.getIdColumn());
-        add("participantContextId", stmt.getParticipantIdColumn());
+        add("participantContextId", stmt.getParticipantContextIdColumn());
         add("timestamp", stmt.getTimestampColumn());
         add("keyId", stmt.getKeyIdColumn());
         add("groupName", stmt.getGroupNameColumn());

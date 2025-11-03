@@ -151,7 +151,7 @@ public class DcpPresentationFlowTest {
         var privateKeyAlias = "%s-privatekey-alias".formatted(TEST_PARTICIPANT_CONTEXT_ID);
         vault.storeSecret(privateKeyAlias, holderKey.toJSONString());
         var manifest = ParticipantManifest.Builder.newInstance()
-                .participantId(TEST_PARTICIPANT_CONTEXT_ID)
+                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(holderDid)
                 .active(true)
                 .serviceEndpoint(new Service(UUID.randomUUID().toString(), "CredentialService", credentialServiceUrl))

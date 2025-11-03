@@ -35,18 +35,18 @@ public class DidDocumentListenerImpl implements DidDocumentListener {
     }
 
     @Override
-    public void published(DidDocument document, String participantId) {
+    public void published(DidDocument document, String participantContextId) {
         var event = DidDocumentPublished.Builder.newInstance()
-                .participantContextId(participantId)
+                .participantContextId(participantContextId)
                 .did(document.getId())
                 .build();
         publish(event);
     }
 
     @Override
-    public void unpublished(DidDocument document, String participantId) {
+    public void unpublished(DidDocument document, String participantContextId) {
         var event = DidDocumentUnpublished.Builder.newInstance()
-                .participantContextId(participantId)
+                .participantContextId(participantContextId)
                 .did(document.getId())
                 .build();
         publish(event);

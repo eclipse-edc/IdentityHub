@@ -33,9 +33,9 @@ public interface SelfIssuedTokenVerifier {
      *     <li>that the access_token contains >1 scope strings</li>
      * </ul>
      *
-     * @param token         The token to be verified. Must be a JWT in base64 encoding.
-     * @param participantId The ID of the {@link ParticipantContext} who is supposed to present their credentials
+     * @param token                The token to be verified. Must be a JWT in base64 encoding.
+     * @param participantContextId The ID of the {@link ParticipantContext} who is supposed to present their credentials
      * @return A {@code Result} containing a {@code List} of scope strings.
      */
-    Result<List<String>> verify(String token, String participantId);
+    Result<List<String>> verify(String token, String participantContextId);
 }

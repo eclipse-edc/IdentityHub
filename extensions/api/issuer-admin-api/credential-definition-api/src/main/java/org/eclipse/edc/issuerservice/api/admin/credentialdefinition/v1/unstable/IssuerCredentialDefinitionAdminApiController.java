@@ -59,9 +59,9 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @POST
     @Override
     public Response createCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto definitionDto, @Context SecurityContext context) {
-        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.isAuthorized(context, decodedParticipantId, ParticipantContext.class)
-                .compose(u -> credentialDefinitionService.createCredentialDefinition(definitionDto.toCredentialDefinition(decodedParticipantId)))
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        return authorizationService.isAuthorized(context, decodedParticipantContextId, ParticipantContext.class)
+                .compose(u -> credentialDefinitionService.createCredentialDefinition(definitionDto.toCredentialDefinition(decodedParticipantContextId)))
                 .map(v -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/credentialdefinitions/%s".formatted(participantContextId, definitionDto.getId()))).build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, definitionDto.getId()));
     }
@@ -69,9 +69,9 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @PUT
     @Override
     public Response updateCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto credentialDefinition, @Context SecurityContext context) {
-        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
         return authorizationService.isAuthorized(context, credentialDefinition.getId(), CredentialDefinition.class)
-                .compose(u -> credentialDefinitionService.updateCredentialDefinition(credentialDefinition.toCredentialDefinition(decodedParticipantId)))
+                .compose(u -> credentialDefinitionService.updateCredentialDefinition(credentialDefinition.toCredentialDefinition(decodedParticipantContextId)))
                 .map(v -> Response.ok().build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinition.getId()));
     }
@@ -89,8 +89,8 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Path("/query")
     @Override
     public Collection<CredentialDefinition> queryCredentialDefinitions(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext context) {
-        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        var spec = querySpec.toBuilder().filter(filterByParticipantContextId(decodedParticipantId)).build();
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var spec = querySpec.toBuilder().filter(filterByParticipantContextId(decodedParticipantContextId)).build();
         var definitions = credentialDefinitionService.queryCredentialDefinitions(spec)
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, null));
 

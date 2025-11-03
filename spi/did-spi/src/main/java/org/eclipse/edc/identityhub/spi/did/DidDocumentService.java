@@ -32,7 +32,7 @@ public interface DidDocumentService {
      *
      * @return a {@link ServiceResult} to indicate success or failure.
      */
-    ServiceResult<Void> store(DidDocument document, String participantId);
+    ServiceResult<Void> store(DidDocument document, String participantContextId);
 
     /**
      * Deletes a DID document if found. * * @param did The ID of the DID document to delete.

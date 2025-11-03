@@ -48,7 +48,7 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
                 .column(getUpdatedAtColumn())
                 .jsonColumn(getTraceContextColumn())
                 .column(getErrorDetailColumn())
-                .column(getParticipantIdColumn())
+                .column(getParticipantContextIdColumn())
                 .column(getIssuerDidColumn())
                 .column(getissuerPidColumn())
                 .jsonColumn(getCredentialFormatsColumn())
@@ -95,14 +95,14 @@ public class BaseSqlDialectStatements implements HolderCredentialRequestStoreSta
                 .addWhereClause(getNotLeasedFilter(), clock.millis(), getHolderCredentialRequestTable());
     }
 
-    private String getNotLeasedFilter() {
-        return format("(l.%s IS NULL OR (? > (%s + %s) AND ? = l.%s))",
-                leaseStatements.getResourceIdColumn(), leaseStatements.getLeasedAtColumn(), leaseStatements.getLeaseDurationColumn(), leaseStatements.getResourceKindColumn());
-    }
-
     @Override
     public String getSelectStatement() {
         return format("SELECT * FROM %s", getHolderCredentialRequestTable());
+    }
+
+    private String getNotLeasedFilter() {
+        return format("(l.%s IS NULL OR (? > (%s + %s) AND ? = l.%s))",
+                leaseStatements.getResourceIdColumn(), leaseStatements.getLeasedAtColumn(), leaseStatements.getLeaseDurationColumn(), leaseStatements.getResourceKindColumn());
     }
 
 }

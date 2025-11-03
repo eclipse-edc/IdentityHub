@@ -214,7 +214,7 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
                 .traceContext(fromJson(resultSet.getString(statements.getTraceContextColumn()), getTypeRef()))
                 .errorDetail(resultSet.getString(statements.getErrorDetailColumn()))
                 .issuer(resultSet.getString(statements.getIssuerColumn()))
-                .participantContextId(resultSet.getString(statements.getParticipantIdColumn()))
+                .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .credentialObjects(fromJson(resultSet.getString(statements.getCredentialsColumn()), LIST_TYPE_REF))
                 .build();
 

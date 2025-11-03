@@ -63,8 +63,8 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Path("/query")
     @Override
     public Collection<VerifiableCredentialDto> queryCredentials(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext context) {
-        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        var spec = query.toBuilder().filter(filterByParticipantContextId(decodedParticipantId)).build();
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var spec = query.toBuilder().filter(filterByParticipantContextId(decodedParticipantContextId)).build();
         return credentialStatusService.queryCredentials(spec).map(coll -> coll.stream()
                         .filter(resource -> authorizationService.isAuthorized(context, resource.getId(), VerifiableCredentialResource.class).succeeded())
                         .map(resource -> new VerifiableCredentialDto(resource.getParticipantContextId(), resource.getVerifiableCredential().format(), resource.getVerifiableCredential().credential())).toList())
@@ -109,7 +109,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @Override
     public void sendCredentialOffer(@PathParam("participantContextId") String participantContextId, CredentialOfferDto credentialOffer, @Context SecurityContext context) {
 
-        var decodedParticipantId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
         var holderId = credentialOffer.holderId();
         var result = authorizationService.isAuthorized(context, holderId, Holder.class);
         if (result.failed() && result.reason() == ServiceFailure.Reason.NOT_FOUND) { // do not map to 404
@@ -117,7 +117,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
         }
         result.orElseThrow(exceptionMapper(Holder.class, holderId));
 
-        credentialOfferService.sendCredentialOffer(decodedParticipantId, holderId, credentialOffer.credentials())
+        credentialOfferService.sendCredentialOffer(decodedParticipantContextId, holderId, credentialOffer.credentials())
                 .orElseThrow(InvalidRequestException::new);
     }
 }

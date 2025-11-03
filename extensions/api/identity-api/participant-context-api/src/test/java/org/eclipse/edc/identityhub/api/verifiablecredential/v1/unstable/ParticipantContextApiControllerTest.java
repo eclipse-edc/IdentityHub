@@ -233,7 +233,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
         return ParticipantManifest.Builder.newInstance()
                 .key(createKey().build())
                 .active(true)
-                .participantId("test-id")
+                .participantContextId("test-id")
                 .did("did:web:test-id");
     }
 
@@ -280,7 +280,7 @@ class ParticipantContextApiControllerTest extends RestControllerTestBase {
         @Test
         void shouldReturnBadRequest_whenValidationFails() {
             var manifest = createManifest()
-                    .participantId(null)
+                    .participantContextId(null)
                     .build();
             when(participantManifestValidator.validate(any())).thenReturn(ValidationResult.failure(emptyList()));
 
