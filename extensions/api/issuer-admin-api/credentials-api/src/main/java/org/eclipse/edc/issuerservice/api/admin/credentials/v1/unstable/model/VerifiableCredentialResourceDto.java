@@ -21,11 +21,16 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 /**
  * Returns metadata about a verifiable credential
  *
+ * @param id                   The credential resource id
+ * @param participantContextId The participant context id related to the credential resource
  * @param format               The {@link CredentialFormat} of the credential
  * @param verifiableCredential Structured metadata about the VC, not the actual VC. This will not contain the proof!
  */
-public record VerifiableCredentialDto(@JsonProperty("participantContextId") String participantContextId,
-                                      @JsonProperty("format") CredentialFormat format,
-                                      @JsonProperty("credential") VerifiableCredential verifiableCredential) {
+public record VerifiableCredentialResourceDto(
+        String id,
+        String participantContextId,
+        CredentialFormat format,
+        @JsonProperty("credential") VerifiableCredential verifiableCredential
+) {
 
 }
