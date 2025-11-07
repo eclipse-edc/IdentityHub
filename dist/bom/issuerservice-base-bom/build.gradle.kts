@@ -35,7 +35,6 @@ dependencies {
     runtimeOnly(project(":extensions:api:identityhub-api-authentication"))
     runtimeOnly(project(":extensions:api:identityhub-api-authorization"))
 
-    runtimeOnly(project(":extensions:issuance:issuerservice-presentation-attestations"))
     runtimeOnly(project(":extensions:issuance:issuerservice-issuance-rules"))
 
     runtimeOnly(project(":extensions:sts:sts-account-provisioner"))
