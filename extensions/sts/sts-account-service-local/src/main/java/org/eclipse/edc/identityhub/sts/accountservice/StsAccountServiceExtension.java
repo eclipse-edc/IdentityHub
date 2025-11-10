@@ -14,9 +14,9 @@
 
 package org.eclipse.edc.identityhub.sts.accountservice;
 
-import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
-import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientSecretGenerator;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientSecretGenerator;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;

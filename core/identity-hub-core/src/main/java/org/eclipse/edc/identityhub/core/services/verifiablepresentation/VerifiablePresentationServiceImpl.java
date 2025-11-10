@@ -16,7 +16,7 @@
 package org.eclipse.edc.identityhub.core.services.verifiablepresentation;
 
 import jakarta.json.JsonObject;
-import org.eclipse.edc.iam.identitytrust.spi.model.PresentationResponseMessage;
+import org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationResponseMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
