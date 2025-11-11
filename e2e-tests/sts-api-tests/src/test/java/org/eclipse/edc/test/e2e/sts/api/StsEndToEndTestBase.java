@@ -15,8 +15,8 @@
 package org.eclipse.edc.test.e2e.sts.api;
 
 import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccount;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.model.StsAccount;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import static org.eclipse.edc.iam.identitytrust.sts.spi.store.fixtures.TestFunctions.createClient;
+import static org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.fixtures.TestFunctions.createClient;
 
 /**
  * Base class for STS E2E tests

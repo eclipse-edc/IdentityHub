@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.Header;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identityhub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identityhub.spi.did.events.DidDocumentUnpublished;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;

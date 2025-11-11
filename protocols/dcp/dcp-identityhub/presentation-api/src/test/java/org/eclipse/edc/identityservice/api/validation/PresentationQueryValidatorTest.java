@@ -19,7 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.iam.identitytrust.spi.DcpConstants;
+import org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.Constraints;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.Field;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.InputDescriptor;
@@ -37,8 +37,8 @@ import java.util.UUID;
 
 import static jakarta.json.Json.createArrayBuilder;
 import static jakarta.json.Json.createObjectBuilder;
-import static org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_DEFINITION_TERM;
-import static org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_SCOPE_TERM;
+import static org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_DEFINITION_TERM;
+import static org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_SCOPE_TERM;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.Mockito.mock;
 

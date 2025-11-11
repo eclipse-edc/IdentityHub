@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators;
 
-import org.eclipse.edc.iam.identitytrust.spi.DcpConstants;
+import org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;

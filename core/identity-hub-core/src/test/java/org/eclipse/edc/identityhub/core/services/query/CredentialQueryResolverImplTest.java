@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.core.services.query;
 
-import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
+import org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;

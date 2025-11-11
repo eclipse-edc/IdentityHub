@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.defaults.store;
 
 
 import com.apicatalog.vc.suite.SignatureSuite;
-import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
+import org.eclipse.edc.iam.decentralizedclaims.spi.verification.SignatureSuiteRegistry;
 
 import java.util.Collection;
 import java.util.HashMap;

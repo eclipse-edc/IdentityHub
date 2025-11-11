@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
+import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata.ISSUER_METADATA_CREDENTIALS_SUPPORTED_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata.ISSUER_METADATA_ISSUER_IRI;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata.ISSUER_METADATA_TERM;

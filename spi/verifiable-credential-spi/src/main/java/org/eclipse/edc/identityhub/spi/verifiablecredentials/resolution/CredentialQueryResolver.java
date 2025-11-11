@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution;
 
 
-import org.eclipse.edc.iam.identitytrust.spi.model.PresentationQueryMessage;
+import org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 
 import java.util.List;

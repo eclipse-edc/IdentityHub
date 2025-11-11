@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.sts.accountservice;
 
-import org.eclipse.edc.iam.identitytrust.sts.spi.model.StsAccount;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.model.StsAccount;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.query.QuerySpec;

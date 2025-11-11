@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.common.provisioner;
 
-import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsAccountService;
-import org.eclipse.edc.iam.identitytrust.sts.spi.service.StsClientSecretGenerator;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientSecretGenerator;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;

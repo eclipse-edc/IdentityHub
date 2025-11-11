@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub;
 
 import org.eclipse.edc.http.spi.EdcHttpClient;
-import org.eclipse.edc.iam.identitytrust.spi.verification.SignatureSuiteRegistry;
+import org.eclipse.edc.iam.decentralizedclaims.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.revocation.RevocationServiceRegistryImpl;
 import org.eclipse.edc.iam.verifiablecredentials.revocation.bitstring.BitstringStatusListRevocationService;
 import org.eclipse.edc.iam.verifiablecredentials.revocation.statuslist2021.StatusList2021RevocationService;
@@ -58,8 +58,8 @@ import java.net.URISyntaxException;
 import java.time.Clock;
 import java.util.List;
 
-import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DCP_CONTEXT_URL;
-import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
+import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DCP_CONTEXT_URL;
+import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.DID_CONTEXT_URL;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.JWS_2020_URL;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.PRESENTATION_EXCHANGE_URL;

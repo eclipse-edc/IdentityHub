@@ -10,7 +10,6 @@ dependencies {
     api(libs.edc.spi.jwt.signer)
 
     implementation(libs.edc.spi.keys)
-//    implementation(project(":extensions:common:iam:identity-trust:identity-trust-sts:identity-trust-sts-embedded"))
     implementation(project(":extensions:sts:sts-account-service-local"))
     implementation(libs.edc.lib.token)
     implementation(libs.edc.lib.store)

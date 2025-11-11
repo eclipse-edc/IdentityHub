@@ -15,7 +15,7 @@
 package org.eclipse.edc.issuerservice.credentials;
 
 import org.eclipse.edc.http.spi.EdcHttpClient;
-import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
+import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;

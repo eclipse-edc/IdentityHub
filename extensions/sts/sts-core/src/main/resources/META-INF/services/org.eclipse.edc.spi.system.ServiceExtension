@@ -12,5 +12,5 @@
 #
 #
 
-org.eclipse.edc.iam.identitytrust.sts.defaults.StsDefaultServicesExtension
-org.eclipse.edc.iam.identitytrust.sts.EmbeddedStsServiceExtension
+org.eclipse.edc.iam.decentralizedclaims.sts.defaults.StsDefaultServicesExtension
+org.eclipse.edc.iam.decentralizedclaims.sts.EmbeddedStsServiceExtension
