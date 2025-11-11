@@ -294,14 +294,13 @@ maven/mavencentral/org.eclipse.edc/crypto-common-lib/0.15.0-SNAPSHOT, Apache-2.0
 maven/mavencentral/org.eclipse.edc/data-plane-selector-spi/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/data-plane-spi/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/decentralized-claims-spi/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
+maven/mavencentral/org.eclipse.edc/decentralized-claims-transform/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/http-lib/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/http-spi/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/http/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/identity-did-core/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/identity-did-spi/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/identity-did-web/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
-maven/mavencentral/org.eclipse.edc/identity-trust-spi/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
-maven/mavencentral/org.eclipse.edc/identity-trust-transform/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jersey-core/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jersey-providers-lib/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/jetty-core/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
