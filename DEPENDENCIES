@@ -138,12 +138,12 @@ maven/mavencentral/io.netty/netty-tcnative-boringssl-static/2.0.56.Final, Apache
 maven/mavencentral/io.netty/netty-tcnative-classes/2.0.56.Final, Apache-2.0, approved, #23398
 maven/mavencentral/io.netty/netty-transport-native-unix-common/4.1.86.Final, Apache-2.0 AND BSD-3-Clause AND MIT, approved, CQ20926
 maven/mavencentral/io.netty/netty-transport/4.1.86.Final, Apache-2.0 AND BSD-3-Clause AND MIT, approved, CQ20926
-maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.20.0, , restricted, clearlydefined
+maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.21.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.32.0, Apache-2.0, approved, #11682
-maven/mavencentral/io.opentelemetry/opentelemetry-api/1.54.0, Apache-2.0, approved, clearlydefined
-maven/mavencentral/io.opentelemetry/opentelemetry-common/1.54.0, Apache-2.0, approved, clearlydefined
+maven/mavencentral/io.opentelemetry/opentelemetry-api/1.55.0, Apache-2.0, approved, clearlydefined
+maven/mavencentral/io.opentelemetry/opentelemetry-common/1.55.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/io.opentelemetry/opentelemetry-context/1.32.0, Apache-2.0, approved, #11683
-maven/mavencentral/io.opentelemetry/opentelemetry-context/1.54.0, , restricted, clearlydefined
+maven/mavencentral/io.opentelemetry/opentelemetry-context/1.55.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/io.prometheus/simpleclient/0.16.0, Apache-2.0 AND CC0-1.0, approved, #19721
 maven/mavencentral/io.prometheus/simpleclient_common/0.16.0, Apache-2.0, approved, #19730
 maven/mavencentral/io.prometheus/simpleclient_httpserver/0.16.0, Apache-2.0, approved, #20015
@@ -292,6 +292,7 @@ maven/mavencentral/org.eclipse.edc/core-spi/0.15.0-SNAPSHOT, Apache-2.0, approve
 maven/mavencentral/org.eclipse.edc/crypto-common-lib/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/data-plane-selector-spi/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/data-plane-spi/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
+maven/mavencentral/org.eclipse.edc/decentralized-claims-spi/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/http-lib/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/http-spi/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/http/0.15.0-SNAPSHOT, Apache-2.0, approved, technology.edc
