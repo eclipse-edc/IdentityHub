@@ -886,7 +886,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/VerifiableCredentialDto"
+                  $ref: "#/components/schemas/VerifiableCredentialResourceDto"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1181,7 +1181,7 @@ components:
             type: string
         holderId:
           type: string
-    VerifiableCredentialDto:
+    VerifiableCredentialResourceDto:
       type: object
       properties:
         credential:
@@ -1194,6 +1194,8 @@ components:
           - VC2_0_JOSE
           - VC2_0_SD_JWT
           - VC2_0_COSE
+        id:
+          type: string
         participantContextId:
           type: string
     VerifiableCredential:
