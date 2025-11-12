@@ -25,7 +25,7 @@ import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialOfferDto;
-import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
+import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialResourceDto;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -82,11 +82,10 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifError()
                 .statusCode(200)
-                .extract().body().as(VerifiableCredentialDto[].class);
+                .extract().body().as(VerifiableCredentialResourceDto[].class);
 
-        assertThat(credentials).hasSize(2);
+        assertThat(credentials).hasSize(2).allMatch(it -> it.id() != null);
     }
-
 
     @Test
     void queryCredentials_whenNoResult() {
@@ -98,7 +97,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .post("/query")
                 .then()
                 .statusCode(200)
-                .extract().body().as(VerifiableCredentialDto[].class);
+                .extract().body().as(VerifiableCredentialResourceDto[].class);
 
         assertThat(credentials).isEmpty();
     }

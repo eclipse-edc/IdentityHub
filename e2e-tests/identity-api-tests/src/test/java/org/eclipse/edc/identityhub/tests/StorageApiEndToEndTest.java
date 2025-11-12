@@ -22,8 +22,8 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import io.restassured.http.ContentType;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.edc.iam.identitytrust.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
@@ -60,7 +60,7 @@ import java.util.Base64;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
+import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;

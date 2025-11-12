@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.spi.verifiablecredentials.generator;
 
 
-import org.eclipse.edc.iam.identitytrust.spi.model.PresentationResponseMessage;
+import org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationResponseMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.spi.result.Result;

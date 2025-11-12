@@ -20,7 +20,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
-import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
+import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;

@@ -27,7 +27,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialOfferDto;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialStatusResponse;
-import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialDto;
+import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.VerifiableCredentialResourceDto;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
@@ -43,15 +43,14 @@ public interface IssuerCredentialsAdminApi {
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class), mediaType = "application/json")),
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of verifiable credential metadata. Note that these are not actual VerifiableCredentials.",
-                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = VerifiableCredentialDto.class)), mediaType = "application/json")),
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = VerifiableCredentialResourceDto.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    Collection<VerifiableCredentialDto> queryCredentials(String participantContextId, QuerySpec query, SecurityContext context);
-
+    Collection<VerifiableCredentialResourceDto> queryCredentials(String participantContextId, QuerySpec query, SecurityContext context);
 
     @Operation(description = "Revokes a credential with the given ID for the given participant. Revoked credentials will be added to the Revocation List",
             operationId = "revokeCredential",
@@ -66,7 +65,6 @@ public interface IssuerCredentialsAdminApi {
             }
     )
     void revokeCredential(String participantContextId, String credentialId, SecurityContext context);
-
 
     @Operation(description = "Suspends a credential with the given ID for the given participant. Suspended credentials will be added to the Revocation List. Suspension is reversible.",
             operationId = "suspendCredential",

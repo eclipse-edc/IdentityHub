@@ -20,7 +20,7 @@ import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import org.eclipse.edc.http.spi.EdcHttpClient;
-import org.eclipse.edc.iam.identitytrust.spi.CredentialServiceUrlResolver;
+import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
@@ -44,7 +44,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import static jakarta.json.stream.JsonCollectors.toJsonArray;
-import static org.eclipse.edc.iam.identitytrust.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
+import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIAL_MESSAGE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
