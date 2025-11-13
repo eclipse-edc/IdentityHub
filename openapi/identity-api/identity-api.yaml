@@ -1869,6 +1869,8 @@ components:
           type: object
           additionalProperties:
             type: object
+        apiKeyAlias:
+          type: string
         did:
           type: string
         keys:
