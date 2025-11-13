@@ -217,9 +217,10 @@ public class ParticipantContextApiEndToEndTest {
             var manifest = createNewParticipant()
                     .participantContextId(participantId)
                     .active(true)
+                    .apiKeyAlias("test-apikey-alias")
                     .did("did:web:" + participantId)
-                    .key(createKeyDescriptor().active(true).build())
-                    .property(CLIENT_SECRET_PROPERTY, "test-alias")
+                    .keys(Set.of(createKeyDescriptor().privateKeyAlias("test-privatekey-alias").active(true).build()))
+                    .property(CLIENT_SECRET_PROPERTY, "test-clientsecret-alias")
                     .build();
 
             identityHub.getIdentityEndpoint().baseRequest()
@@ -232,7 +233,9 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
                     .body(notNullValue());
 
-            assertThat(vault.resolveSecret("test-alias")).isNotNull();
+            assertThat(vault.resolveSecret("test-clientsecret-alias")).isNotNull();
+            assertThat(vault.resolveSecret("test-apikey-alias")).isNotNull();
+            assertThat(vault.resolveSecret("test-privatekey-alias")).isNotNull();
         }
 
         @Test

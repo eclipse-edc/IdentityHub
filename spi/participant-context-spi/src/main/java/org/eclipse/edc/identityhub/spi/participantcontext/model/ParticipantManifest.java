@@ -41,6 +41,7 @@ public class ParticipantManifest {
     private boolean isActive;
     private String participantContextId;
     private String did;
+    private String apiKeyAlias;
 
     private ParticipantManifest() {
     }
@@ -96,6 +97,10 @@ public class ParticipantManifest {
 
     public Object getProperty(String key) {
         return additionalProperties.get(key);
+    }
+
+    public String getApiKeyAlias() {
+        return apiKeyAlias;
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -160,6 +165,11 @@ public class ParticipantManifest {
 
         public Builder additionalProperties(Map<String, Object> properties) {
             manifest.additionalProperties = properties;
+            return this;
+        }
+
+        public Builder apiKeyAlias(String apiKeyAlias) {
+            manifest.apiKeyAlias = apiKeyAlias;
             return this;
         }
 

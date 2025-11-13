@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.ServiceResult.conflict;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
 import static org.eclipse.edc.spi.result.ServiceResult.notFound;
@@ -172,11 +173,12 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
 
 
     private ParticipantContext convert(ParticipantManifest manifest) {
+        var apiKeyAlias = ofNullable(manifest.getApiKeyAlias()).orElse("%s-%s".formatted(manifest.getParticipantContextId(), API_KEY_ALIAS_SUFFIX));
         return ParticipantContext.Builder.newInstance()
                 .participantContextId(manifest.getParticipantContextId())
                 .roles(manifest.getRoles())
                 .did(manifest.getDid())
-                .apiTokenAlias("%s-%s".formatted(manifest.getParticipantContextId(), API_KEY_ALIAS_SUFFIX))
+                .apiTokenAlias(apiKeyAlias)
                 .state(ParticipantContextState.CREATED)
                 .properties(manifest.getAdditionalProperties())
                 .build();

@@ -216,6 +216,37 @@ class ParticipantContextServiceImplTest {
     }
 
     @Test
+    void createParticipantContext_withApiKeyAlias() {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success(new AccountCredentials("clientId", "clientSecret")));
+
+        var pem = """
+                -----BEGIN PUBLIC KEY-----
+                MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE25DvKuU5+gvMdKkyiDDIsx3tcuPX
+                jgVyAjs1JcfFtvi9I0FemuqymDTu3WWdYmdaJQMJJx3qwEJGTVTxcKGtEg==
+                -----END PUBLIC KEY-----
+                """;
+
+        var ctx = createManifest()
+                .active(true)
+                .apiKeyAlias("test-alias")
+                .key(createKey()
+                        .publicKeyJwk(null)
+                        .publicKeyPem(pem)
+                        .build()).build();
+
+        var result = participantContextService.createParticipantContext(ctx);
+
+        assertThat(result).isSucceeded().satisfies(response -> {
+            assertThat(response.apiKey()).isNotBlank();
+            assertThat(response.clientId()).isEqualTo("clientId");
+            assertThat(response.clientSecret()).isEqualTo("clientSecret");
+        });
+        verify(vault).storeSecret(eq("test-alias"), anyString());
+    }
+
+    @Test
     void getParticipantContext() {
         var ctx = createContext();
         when(participantContextStore.findById(any())).thenReturn(StoreResult.success(ctx));

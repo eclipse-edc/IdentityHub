@@ -34,6 +34,7 @@ class ParticipantManifestTest {
         var manifest = ParticipantManifest.Builder.newInstance()
                 .serviceEndpoint(new Service("id", "type", "foobar"))
                 .active(true)
+                .apiKeyAlias("test-alias")
                 .participantContextId("test-id")
                 .key(KeyDescriptor.Builder.newInstance()
                         .keyId("key-id")
@@ -66,6 +67,7 @@ class ParticipantManifestTest {
                     "active": true,
                     "participantContextId": "quizzquazz",
                     "did": "did:web:quizzquazz",
+                    "apiKeyAlias": "test-alias",
                     "keys":{
                         "keyId": "key-1",
                         "privateKeyAlias": "key-1-alias",
@@ -82,6 +84,7 @@ class ParticipantManifestTest {
         assertThat(manifest.getServiceEndpoints()).hasSize(1);
         assertThat(manifest.getKeys()).hasSize(1)
                 .allSatisfy(kd -> assertThat(kd.getKeyId()).isEqualTo("key-1"));
+        assertThat(manifest.getApiKeyAlias()).isEqualTo("test-alias");
     }
 
     @Test
