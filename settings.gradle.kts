@@ -106,6 +106,7 @@ include(":extensions:api:identity-api:validators:verifiable-credential-validator
 
 // issuance modules
 include(":extensions:issuance:issuerservice-database-attestations")
+include(":extensions:issuance:issuerservice-holder-attestations")
 include(":extensions:issuance:issuerservice-issuance-rules")
 include(":extensions:issuance:local-statuslist-publisher")
 

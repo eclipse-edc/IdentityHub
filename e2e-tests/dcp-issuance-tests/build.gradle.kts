@@ -31,6 +31,9 @@ dependencies {
     testImplementation(libs.awaitility)
     testImplementation(testFixtures(project(":e2e-tests:identityhub-test-fixtures")))
     testImplementation(libs.mockserver.netty)
+
+    testCompileOnly(project(":dist:bom:identityhub-bom"))
+    testCompileOnly(project(":dist:bom:issuerservice-bom"))
 }
 
 edcBuild {

@@ -18,10 +18,10 @@ plugins {
 
 dependencies {
     api(project(":dist:bom:identityhub-base-bom"))
-    runtimeOnly(project(":extensions:sts:sts-account-service-local"))
+    implementation(project(":extensions:sts:sts-account-service-local"))
+    implementation(project(":extensions:sts:sts-core"))
+    implementation(project(":extensions:sts:sts-api"))
     runtimeOnly(libs.edc.core.api)
-    runtimeOnly(project(":extensions:sts:sts-core"))
-    runtimeOnly(project(":extensions:sts:sts-api"))
 }
 
 edcBuild {

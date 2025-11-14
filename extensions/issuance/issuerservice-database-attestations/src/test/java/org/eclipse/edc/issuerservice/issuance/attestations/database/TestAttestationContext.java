@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.issuance.attestations.database;
 
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationContext;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.jetbrains.annotations.Nullable;
@@ -25,5 +26,10 @@ public record TestAttestationContext(String participantContextId,
     @Override
     public @Nullable ClaimToken getClaimToken(String type) {
         return claims.get(type);
+    }
+
+    @Override
+    public Holder holder() {
+        return null;
     }
 }

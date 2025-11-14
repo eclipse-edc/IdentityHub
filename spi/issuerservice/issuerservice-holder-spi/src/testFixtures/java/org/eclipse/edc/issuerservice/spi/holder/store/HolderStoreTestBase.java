@@ -29,12 +29,21 @@ public abstract class HolderStoreTestBase {
 
     @Test
     void create() {
-        var holder = createHolder();
+        var id = UUID.randomUUID().toString();
+        var holder = Holder.Builder.newInstance()
+                .holderId(id)
+                .participantContextId(UUID.randomUUID().toString())
+                .did(UUID.randomUUID().toString())
+                .holderName(UUID.randomUUID().toString())
+                .isAnonymous(false)
+                .property("key", "value")
+                .build();
+
         var result = getStore().create(holder);
         assertThat(result).isSucceeded();
-        var query = getStore().query(QuerySpec.max());
-        assertThat(query).isSucceeded();
-        assertThat(query.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(holder);
+
+        var query = getStore().findById(id);
+        assertThat(query).isSucceeded().usingRecursiveComparison().isEqualTo(holder);
     }
 
     @Test
@@ -145,13 +154,24 @@ public abstract class HolderStoreTestBase {
 
     @Test
     void update() {
-        var holder = createHolder();
+        var id = UUID.randomUUID().toString();
+        var holder = createHolder(id, "did:web:participant", "participant display name");
         var result = getStore().create(holder);
         assertThat(result).isSucceeded();
 
-        var updated = createHolder("p-id", "did:web:participant-changed", "participant-changed");
+        var updated = Holder.Builder.newInstance()
+                .participantContextId(holder.getParticipantContextId())
+                .holderId(id)
+                .did("did:web:participant-changed")
+                .holderName("participant-changed")
+                .isAnonymous(false)
+                .property("key", "value")
+                .build();
         var updateRes = getStore().update(updated);
         assertThat(updateRes).isSucceeded();
+
+        var query = getStore().findById(id);
+        assertThat(query).isSucceeded().usingRecursiveComparison().isEqualTo(updated);
     }
 
     @Test

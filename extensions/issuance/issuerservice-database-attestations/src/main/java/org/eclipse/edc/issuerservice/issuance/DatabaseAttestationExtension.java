@@ -20,7 +20,6 @@ import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinit
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
-import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.sql.QueryExecutor;
@@ -37,11 +36,8 @@ public class DatabaseAttestationExtension implements ServiceExtension {
 
     @Inject
     private AttestationSourceFactoryRegistry registry;
-
     @Inject
     private AttestationDefinitionValidatorRegistry validatorRegistry;
-    @Inject
-    private Vault vault;
     @Inject
     private TransactionContext transactionContext;
     @Inject

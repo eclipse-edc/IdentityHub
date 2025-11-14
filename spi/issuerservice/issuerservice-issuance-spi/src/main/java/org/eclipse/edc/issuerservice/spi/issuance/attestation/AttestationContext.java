@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.attestation;
 
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,5 +33,12 @@ public interface AttestationContext {
      * Returns the participant ID associated with the current request.
      */
     String participantContextId();
+
+    /**
+     * Returns the holder associated with the current request
+     *
+     * @return the holder
+     */
+    Holder holder();
 
 }

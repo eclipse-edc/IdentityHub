@@ -19,21 +19,21 @@ plugins {
 dependencies {
 
     // sql modules
-    api(project(":extensions:store:sql:identity-hub-credentials-store-sql"))
-    api(project(":extensions:store:sql:identity-hub-did-store-sql"))
-    api(project(":extensions:store:sql:identity-hub-keypair-store-sql"))
-    api(project(":extensions:store:sql:identity-hub-participantcontext-store-sql"))
-    api(project(":extensions:store:sql:holder-credential-request-store-sql"))
-    api(project(":extensions:store:sql:holder-credential-offer-store-sql"))
+    implementation(project(":extensions:store:sql:identity-hub-credentials-store-sql"))
+    implementation(project(":extensions:store:sql:identity-hub-did-store-sql"))
+    implementation(project(":extensions:store:sql:identity-hub-keypair-store-sql"))
+    implementation(project(":extensions:store:sql:identity-hub-participantcontext-store-sql"))
+    implementation(project(":extensions:store:sql:holder-credential-request-store-sql"))
+    implementation(project(":extensions:store:sql:holder-credential-offer-store-sql"))
+    implementation(project(":extensions:store:sql:sts-client-store-sql"))
 
-    api(libs.edc.sql.core)
-    api(libs.edc.transaction.local)
-    api(libs.edc.sql.pool)
-    api(libs.edc.sql.bootstrapper)
-    api(libs.edc.sql.jtivdalidation)
-    api(libs.edc.sql.lease.core)
-    api(project(":extensions:store:sql:sts-client-store-sql"))
+    runtimeOnly(libs.edc.sql.core)
+    runtimeOnly(libs.edc.transaction.local)
+    runtimeOnly(libs.edc.sql.pool)
+    runtimeOnly(libs.edc.sql.bootstrapper)
+    runtimeOnly(libs.edc.sql.jtivdalidation)
+    runtimeOnly(libs.edc.sql.lease.core)
 
     // third-party deps
-    api(libs.postgres)
+    runtimeOnly(libs.postgres)
 }

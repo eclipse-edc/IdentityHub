@@ -18,6 +18,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -30,6 +32,7 @@ public class Holder extends AbstractParticipantResource {
     private String did;
     private String holderName;
     private boolean anonymous;
+    private Map<String, Object> properties = new HashMap<>();
 
     private Holder() {
     }
@@ -52,6 +55,10 @@ public class Holder extends AbstractParticipantResource {
      */
     public boolean isAnonymous() {
         return anonymous;
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
     }
 
 
@@ -79,6 +86,16 @@ public class Holder extends AbstractParticipantResource {
 
         public Builder holderName(String holderName) {
             entity.holderName = holderName;
+            return this;
+        }
+
+        public Builder properties(Map<String, Object> properties) {
+            entity.properties = properties;
+            return this;
+        }
+
+        public Builder property(String key, Object value) {
+            entity.properties.put(key, value);
             return this;
         }
 
