@@ -65,6 +65,7 @@ import static org.eclipse.edc.spi.result.ServiceFailure.Reason.UNEXPECTED;
 import static org.eclipse.edc.spi.result.StoreResult.notFound;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -93,7 +94,7 @@ class CredentialStatusServiceImplTest {
     void setUp() throws JOSEException {
         signingKey = new ECKeyGenerator(Curve.P_256).generate();
         tokenGenerationService = mock(TokenGenerationService.class);
-        when(tokenGenerationService.generate(any(), any())).thenReturn(Result.success(TokenRepresentation.Builder.newInstance().token("new-token").build()));
+        when(tokenGenerationService.generate(anyString(), any(), any())).thenReturn(Result.success(TokenRepresentation.Builder.newInstance().token("new-token").build()));
         monitor = mock();
         var reg = new StatusListInfoFactoryRegistryImpl();
         reg.register("BitstringStatusListEntry", new BitstringStatusListFactory(credentialStore));
@@ -125,6 +126,7 @@ class CredentialStatusServiceImplTest {
         try {
             var credential = objectMapper.readValue(credentialJson, VerifiableCredential.class);
             return VerifiableCredentialResource.Builder.newStatusList()
+                    .participantContextId("test-participant")
                     .state(VcStatus.ISSUED)
                     .credential(new VerifiableCredentialContainer(rawVc, CredentialFormat.VC1_0_JWT, credential))
                     .issuerId(credential.getIssuer().id())
@@ -145,7 +147,7 @@ class CredentialStatusServiceImplTest {
 
             var result = revocationService.revokeCredential(CREDENTIAL_ID);
             assertThat(result).isSucceeded();
-            verify(tokenGenerationService).generate(any(), any());
+            verify(tokenGenerationService).generate(anyString(), any(), any());
             verify(credentialStore, times(2)).update(any());
         }
 

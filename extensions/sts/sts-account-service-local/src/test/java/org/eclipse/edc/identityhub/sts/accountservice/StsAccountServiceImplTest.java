@@ -21,7 +21,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +46,7 @@ class StsAccountServiceImplTest {
     private static final String PARTICIPANT_DID = "did:web:" + PARTICIPANT_CONTEXT_ID;
     private static final String KEY_ID = "test-key-id";
     private final StsAccountStore stsAccountStore = mock();
-    private final Vault vault = mock();
+    private final ParticipantVault vault = mock();
     private final StsAccountServiceImpl stsAccountService = new StsAccountServiceImpl(stsAccountStore, new NoopTransactionContext(), vault, new RandomStringGenerator());
 
     @Test
@@ -120,12 +120,12 @@ class StsAccountServiceImplTest {
         var clientId = "clientId";
         var secret = "secret";
         var client = createClient(clientId);
-        when(vault.resolveSecret(client.getSecretAlias())).thenReturn(secret);
+        when(vault.resolveSecret(anyString(), eq(client.getSecretAlias()))).thenReturn(secret);
 
         var inserted = stsAccountService.authenticate(client, secret);
 
         assertThat(inserted).isSucceeded();
-        verify(vault).resolveSecret(client.getSecretAlias());
+        verify(vault).resolveSecret(anyString(), eq(client.getSecretAlias()));
     }
 
     @Test
@@ -155,15 +155,15 @@ class StsAccountServiceImplTest {
         var oldAlias = client.getSecretAlias();
         when(stsAccountStore.findById(any())).thenReturn(StoreResult.success(client));
         when(stsAccountStore.update(any())).thenReturn(StoreResult.success());
-        when(vault.deleteSecret(eq(oldAlias))).thenReturn(Result.success());
-        when(vault.storeSecret(eq("new-alias"), eq("new-secret"))).thenReturn(Result.success());
+        when(vault.deleteSecret(anyString(), eq(oldAlias))).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), eq("new-alias"), eq("new-secret"))).thenReturn(Result.success());
 
-        assertThat(stsAccountService.updateSecret(client.getId(), "new-alias", "new-secret")).isSucceeded();
+        assertThat(stsAccountService.updateSecret(client.getParticipantContextId(), client.getId(), "new-alias", "new-secret")).isSucceeded();
 
 
         verify(stsAccountStore).findById(client.getId());
-        verify(vault).deleteSecret(oldAlias);
-        verify(vault).storeSecret("new-alias", "new-secret");
+        verify(vault).deleteSecret(anyString(), eq(oldAlias));
+        verify(vault).storeSecret(anyString(), eq("new-alias"), eq("new-secret"));
         verify(stsAccountStore).update(any());
         verifyNoMoreInteractions(stsAccountStore, vault);
     }
@@ -172,7 +172,7 @@ class StsAccountServiceImplTest {
     void updateSecret_aliasNull() {
         var client = createClient("clientId");
 
-        assertThatThrownBy(() -> stsAccountService.updateSecret(client.getId(), null, "some-secret"))
+        assertThatThrownBy(() -> stsAccountService.updateSecret(client.getParticipantContextId(), client.getId(), null, "some-secret"))
                 .isInstanceOf(NullPointerException.class);
         verifyNoInteractions(stsAccountStore, vault);
     }
@@ -183,14 +183,14 @@ class StsAccountServiceImplTest {
         var oldAlias = client.getSecretAlias();
         when(stsAccountStore.findById(any())).thenReturn(StoreResult.success(client));
         when(stsAccountStore.update(any())).thenReturn(StoreResult.success());
-        when(vault.deleteSecret(eq(oldAlias))).thenReturn(Result.success());
-        when(vault.storeSecret(eq("new-alias"), anyString())).thenReturn(Result.success());
+        when(vault.deleteSecret(anyString(), eq(oldAlias))).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), eq("new-alias"), anyString())).thenReturn(Result.success());
 
-        assertThat(stsAccountService.updateSecret(client.getId(), "new-alias")).isSucceeded();
+        assertThat(stsAccountService.updateSecret(client.getParticipantContextId(), client.getId(), "new-alias")).isSucceeded();
 
         verify(stsAccountStore).findById(client.getId());
-        verify(vault).deleteSecret(oldAlias);
-        verify(vault).storeSecret(eq("new-alias"), anyString());
+        verify(vault).deleteSecret(anyString(), eq(oldAlias));
+        verify(vault).storeSecret(anyString(), eq("new-alias"), anyString());
         verify(stsAccountStore).update(any());
         verifyNoMoreInteractions(stsAccountStore, vault);
     }
@@ -200,7 +200,7 @@ class StsAccountServiceImplTest {
         var client = createClient("clientId");
         when(stsAccountStore.findById(any())).thenReturn(StoreResult.notFound("foo"));
 
-        assertThat(stsAccountService.updateSecret(client.getId(), "new-alias")).isFailed().detail()
+        assertThat(stsAccountService.updateSecret(client.getParticipantContextId(), client.getId(), "new-alias")).isFailed().detail()
                 .isEqualTo("foo");
 
         verify(stsAccountStore).findById(client.getId());
@@ -213,12 +213,12 @@ class StsAccountServiceImplTest {
         var oldAlias = client.getSecretAlias();
         when(stsAccountStore.findById(any())).thenReturn(StoreResult.success(client));
         when(stsAccountStore.update(any())).thenReturn(StoreResult.success());
-        when(vault.deleteSecret(eq(oldAlias))).thenReturn(Result.failure("foo"));
+        when(vault.deleteSecret(anyString(), eq(oldAlias))).thenReturn(Result.failure("foo"));
 
-        assertThat(stsAccountService.updateSecret(client.getId(), "new-alias")).isFailed();
+        assertThat(stsAccountService.updateSecret(client.getParticipantContextId(), client.getId(), "new-alias")).isFailed();
 
         verify(stsAccountStore).findById(client.getId());
-        verify(vault).deleteSecret(oldAlias);
+        verify(vault).deleteSecret(anyString(), eq(oldAlias));
         verify(stsAccountStore).update(any());
         verifyNoMoreInteractions(stsAccountStore, vault);
     }
@@ -226,10 +226,10 @@ class StsAccountServiceImplTest {
     @Test
     void deleteById() {
         when(stsAccountStore.deleteById(any())).thenReturn(StoreResult.success(createClient("test-id")));
-        when(vault.deleteSecret(any())).thenReturn(Result.success());
+        when(vault.deleteSecret(anyString(), any())).thenReturn(Result.success());
         assertThat(stsAccountService.deleteAccount("test-id")).isSucceeded();
         verify(stsAccountStore).deleteById("test-id");
-        verify(vault).deleteSecret(any());
+        verify(vault).deleteSecret(anyString(), any());
         verifyNoMoreInteractions(stsAccountStore, vault);
     }
 
@@ -280,6 +280,7 @@ class StsAccountServiceImplTest {
                 .name("test-name")
                 .did("did:web:" + PARTICIPANT_CONTEXT_ID)
                 .secretAlias("test-secret")
+                .participantContextId("test-participant-context")
                 .clientId("client-id");
     }
 
@@ -290,6 +291,7 @@ class StsAccountServiceImplTest {
                 .did("did:web:" + PARTICIPANT_CONTEXT_ID)
                 .secretAlias("test-secret")
                 .clientId(clientId)
+                .participantContextId("test-participant-context")
                 .build();
     }
 

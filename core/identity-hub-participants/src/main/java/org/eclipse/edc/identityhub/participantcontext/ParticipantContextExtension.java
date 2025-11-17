@@ -19,11 +19,12 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.event.EventRouter;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
@@ -38,7 +39,7 @@ public class ParticipantContextExtension implements ServiceExtension {
     @Inject
     private ParticipantContextStore participantContextStore;
     @Inject
-    private Vault vault;
+    private ParticipantVault vault;
     @Inject
     private TransactionContext transactionContext;
     @Inject
@@ -52,6 +53,8 @@ public class ParticipantContextExtension implements ServiceExtension {
     private StsAccountProvisioner stsAccountProvisioner;
 
     private ParticipantContextObservable participantContextObservable;
+    @Inject
+    private ParticipantContextConfigService configService;
 
     @Override
     public String name() {
@@ -60,7 +63,7 @@ public class ParticipantContextExtension implements ServiceExtension {
 
     @Provider
     public ParticipantContextService createParticipantService() {
-        return new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, participantContextObservable(), stsAccountProvisioner);
+        return new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, participantContextObservable(), stsAccountProvisioner, configService);
     }
 
     @Provider

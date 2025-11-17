@@ -80,7 +80,7 @@ public class CredentialGeneratorRegistryImplTest {
         when(participantContextService.getParticipantContext("participantContextId")).thenReturn(success(participantContext));
         when(holderService.findById("holderId")).thenReturn(success(participant));
         when(keyPairService.getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING))).thenReturn(success(key));
-        when(generator.generateCredential(eq(definition), eq(key.getPrivateKeyAlias()), eq(key.getKeyId()), eq("issuerDid"), eq("participantDid"), any())).thenReturn(Result.success(mock()));
+        when(generator.generateCredential(anyString(), eq(definition), eq(key.getPrivateKeyAlias()), eq(key.getKeyId()), eq("issuerDid"), eq("participantDid"), any())).thenReturn(Result.success(mock()));
         var request = new CredentialGenerationRequest(definition, VC1_0_JWT);
         var result = credentialGeneratorRegistry.generateCredential("participantContextId", "holderId", request, Map.of());
 
@@ -171,7 +171,7 @@ public class CredentialGeneratorRegistryImplTest {
         var now = Instant.now();
         var credential = createCredential(now).build();
         var generator = mock(CredentialGenerator.class);
-        when(generator.signCredential(any(), any(), any())).thenReturn(Result.success("some-token"));
+        when(generator.signCredential(anyString(), any(), any(), any())).thenReturn(Result.success("some-token"));
         credentialGeneratorRegistry.addGenerator(CredentialFormat.VC2_0_JOSE, generator);
 
         var key = KeyPairResource.Builder.newCredentialSigning().id("keyId").keyId("keyId").privateKeyAlias("keyAlias").build();
@@ -186,7 +186,7 @@ public class CredentialGeneratorRegistryImplTest {
                     assertThat(vc.rawVc()).isEqualTo("some-token");
                 });
 
-        verify(generator).signCredential(any(), any(), any());
+        verify(generator).signCredential(anyString(), any(), any(), any());
         verify(keyPairService).getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING));
         verifyNoMoreInteractions(participantContextService, keyPairService, generator, holderService, claimsMapper);
     }
@@ -197,7 +197,7 @@ public class CredentialGeneratorRegistryImplTest {
         var credential = createCredential(now)
                 .build();
         var generator = mock(CredentialGenerator.class);
-        when(generator.signCredential(any(), any(), any())).thenReturn(Result.success("some-token"));
+        when(generator.signCredential(anyString(), any(), any(), any())).thenReturn(Result.success("some-token"));
         credentialGeneratorRegistry.addGenerator(CredentialFormat.VC2_0_JOSE, generator);
 
         when(keyPairService.getActiveKeyPairForUsage(anyString(), eq(CREDENTIAL_SIGNING))).thenReturn(ServiceResult.notFound("foobar"));

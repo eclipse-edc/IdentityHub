@@ -29,7 +29,7 @@ import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -55,7 +55,7 @@ class StsAccountProvisionerImplTest {
     private static final String KEY_ID = "test-key-id";
     private final KeyPairService keyPairService = mock();
     private final DidDocumentService didDocumentService = mock();
-    private final Vault vault = mock();
+    private final ParticipantVault vault = mock();
     private final Monitor monitor = mock();
     private final StsClientSecretGenerator stsClientSecretGenerator = parameters -> UUID.randomUUID().toString();
     private final StsAccountService accountServiceMock = mock();
@@ -64,12 +64,12 @@ class StsAccountProvisionerImplTest {
     @Test
     void create() {
         when(accountServiceMock.createAccount(any(), anyString())).thenReturn(ServiceResult.success());
-        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
 
         assertThat(accountProvisioner.create(createManifest().build())).isSucceeded();
 
         verify(accountServiceMock).createAccount(any(), anyString());
-        verify(vault).storeSecret(anyString(), argThat(secret -> {
+        verify(vault).storeSecret(anyString(), anyString(), argThat(secret -> {
             UUID.fromString(secret);
             return true;
         }));
@@ -79,14 +79,14 @@ class StsAccountProvisionerImplTest {
     @Test
     void create_withCustomSecretAlias() {
         when(accountServiceMock.createAccount(any(), anyString())).thenReturn(ServiceResult.success());
-        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
 
         assertThat(accountProvisioner.create(createManifest()
                 .property(StsAccountProvisioner.CLIENT_SECRET_PROPERTY, "test-alias")
                 .build())).isSucceeded();
 
         verify(accountServiceMock).createAccount(any(), anyString());
-        verify(vault).storeSecret(eq("test-alias"), anyString());
+        verify(vault).storeSecret(anyString(), eq("test-alias"), anyString());
         verifyNoInteractions(keyPairService, didDocumentService);
         verifyNoMoreInteractions(vault);
     }

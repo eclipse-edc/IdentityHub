@@ -86,23 +86,23 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
             var selfIssuedClaims = new HashMap<>(claims);
 
             return ofNullable(bearerAccessScope)
-                    .map(scope -> createAndAcceptAccessToken(claims, scope, selfIssuedClaims::put, keyId, privateKeyAlias))
+                    .map(scope -> createAndAcceptAccessToken(participantContextId, claims, scope, selfIssuedClaims::put, keyId, privateKeyAlias))
                     .orElse(success())
                     .compose(v -> {
                         var keyIdDecorator = new KeyIdDecorator(keyId);
-                        return tokenGenerationService.generate(privateKeyAlias, keyIdDecorator, new SelfIssuedTokenDecorator(selfIssuedClaims, clock, tokenValiditySeconds));
+                        return tokenGenerationService.generate(participantContextId, privateKeyAlias, keyIdDecorator, new SelfIssuedTokenDecorator(selfIssuedClaims, clock, tokenValiditySeconds));
                     });
         });
     }
 
-    private Result<Void> createAndAcceptAccessToken(Map<String, String> claims, String scope, BiConsumer<String, String> consumer, String keyId, String privateKeyAlias) {
-        return createAccessToken(claims, scope, keyId, privateKeyAlias)
+    private Result<Void> createAndAcceptAccessToken(String participantContextId, Map<String, String> claims, String scope, BiConsumer<String, String> consumer, String keyId, String privateKeyAlias) {
+        return createAccessToken(participantContextId, claims, scope, keyId, privateKeyAlias)
                 .compose(tokenRepresentation -> success(tokenRepresentation.getToken()))
                 .onSuccess(withClaim(PRESENTATION_TOKEN_CLAIM, consumer))
                 .mapEmpty();
     }
 
-    private Result<TokenRepresentation> createAccessToken(Map<String, String> claims, String bearerAccessScope, String keyId, String privateKeyAlias) {
+    private Result<TokenRepresentation> createAccessToken(String participantContextId, Map<String, String> claims, String bearerAccessScope, String keyId, String privateKeyAlias) {
         var accessTokenClaims = new HashMap<>(accessTokenInheritedClaims(claims));
         var now = clock.instant();
         var exp = now.plusSeconds(tokenValiditySeconds);
@@ -114,7 +114,7 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
                 .compose(v -> addClaim(claims, AUDIENCE, withClaim(SUBJECT, accessTokenClaims::put)))
                 .compose(v -> {
                     var keyIdDecorator = new KeyIdDecorator(keyId);
-                    return tokenGenerationService.generate(privateKeyAlias, keyIdDecorator, new AccessTokenDecorator(jti, now, exp, accessTokenClaims));
+                    return tokenGenerationService.generate(participantContextId, privateKeyAlias, keyIdDecorator, new AccessTokenDecorator(jti, now, exp, accessTokenClaims));
                 });
 
     }

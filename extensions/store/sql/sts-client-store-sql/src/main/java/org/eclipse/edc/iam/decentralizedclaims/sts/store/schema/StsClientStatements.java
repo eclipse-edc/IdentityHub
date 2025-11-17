@@ -52,6 +52,10 @@ public interface StsClientStatements extends SqlStatements {
         return "created_at";
     }
 
+    default String getParticipantContextIdColumn() {
+        return "participant_context_id";
+    }
+
     String getDeleteByIdTemplate();
 
     String getFindByTemplate();
@@ -63,5 +67,6 @@ public interface StsClientStatements extends SqlStatements {
     String getUpdateTemplate();
 
     SqlQueryStatement createQuery(QuerySpec querySpec);
+
 
 }

@@ -77,7 +77,7 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
     public Result<VerifiableCredentialContainer> signCredential(String participantContextId, VerifiableCredential credential, CredentialFormat format) {
         return ofNullable(generators.get(format))
                 .map(generator -> fetchActiveKeyPair(participantContextId)
-                        .compose(keyPairResource -> generator.signCredential(credential, keyPairResource.getPrivateKeyAlias(), keyPairResource.getKeyId()))
+                        .compose(keyPairResource -> generator.signCredential(participantContextId, credential, keyPairResource.getPrivateKeyAlias(), keyPairResource.getKeyId()))
                         .compose(token -> success(new VerifiableCredentialContainer(token, format, credential))))
                 .orElseGet(noCredentialFoundError(format));
     }
@@ -108,7 +108,7 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
                     .orElse(issuerDid);
 
             return fetchActiveKeyPair(participantContextId)
-                    .compose(keyPair -> generator.generateCredential(definition, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), issuerDid, participantDid, mappedClaims));
+                    .compose(keyPair -> generator.generateCredential(participantContextId, definition, keyPair.getPrivateKeyAlias(), keyPair.getKeyId(), issuerDid, participantDid, mappedClaims));
         } catch (EdcException e) {
             return Result.failure(e.getMessage());
         }

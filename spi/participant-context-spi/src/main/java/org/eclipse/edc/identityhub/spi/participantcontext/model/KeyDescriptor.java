@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.iam.did.spi.document.DidConstants;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +29,7 @@ import java.util.UUID;
  * Container object to describe, what security keys should be used when creating a {@link ParticipantContext}.
  * There are two basic options:
  * <ol>
- *     <li>Keys already exist - the public key can be specified using PEM or JWK format. The private key is expected to exist in the {@link Vault} under the alias {@link KeyDescriptor#getPrivateKeyAlias()}</li>
+ *     <li>Keys already exist - the public key can be specified using PEM or JWK format. The private key is expected to exist in the {@link ParticipantVault} under the alias {@link KeyDescriptor#getPrivateKeyAlias()}</li>
  *     <li>Keys don't exist - keys are to be generated, in which case the the {@link KeyDescriptor#getKeyGeneratorParams()} have to be specified.</li>
  * </ol>
  * Specifying both options - or neither - is an error.

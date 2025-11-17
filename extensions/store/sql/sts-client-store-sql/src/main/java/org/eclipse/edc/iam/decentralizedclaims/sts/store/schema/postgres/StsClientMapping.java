@@ -30,5 +30,6 @@ public class StsClientMapping extends TranslationMapping {
         add("did", statements.getDidColumn());
         add("secretAlias", statements.getSecretAliasColumn());
         add("createdAt", statements.getCreatedAtColumn());
+        add("participantContextId", statements.getParticipantContextIdColumn());
     }
 }

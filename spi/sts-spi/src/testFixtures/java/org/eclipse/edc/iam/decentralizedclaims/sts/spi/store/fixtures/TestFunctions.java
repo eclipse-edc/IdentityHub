@@ -32,6 +32,7 @@ public class TestFunctions {
     public static StsAccount createClient(String id, String secretAlias, String clientId, String did) {
         return createClientBuilder(id)
                 .clientId(clientId)
+                .participantContextId("test-participant-context")
                 .name(UUID.randomUUID().toString())
                 .secretAlias(secretAlias)
                 .did(did).build();
@@ -40,6 +41,7 @@ public class TestFunctions {
     public static StsAccount.Builder createClientBuilder(String id) {
         return StsAccount.Builder.newInstance()
                 .id(id)
+                .participantContextId("test-participant-context")
                 .name(UUID.randomUUID().toString());
     }
 

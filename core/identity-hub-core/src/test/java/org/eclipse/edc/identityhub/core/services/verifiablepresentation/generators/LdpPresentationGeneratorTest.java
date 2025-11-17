@@ -60,6 +60,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
 
     private final PrivateKeyResolver privateKeyResolver = mock();
     private final TypeManager typeManager = mock();
+    private final String participantContextId = "test-participant";
     private LdpPresentationGenerator creator;
 
     @BeforeEach
@@ -68,8 +69,8 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
                 .generateKeyPair()
                 .getPrivate();
 
-        when(privateKeyResolver.resolvePrivateKey(any())).thenReturn(Result.failure("no key found"));
-        when(privateKeyResolver.resolvePrivateKey(eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(vpSigningKey));
+        when(privateKeyResolver.resolvePrivateKey(eq(participantContextId), any())).thenReturn(Result.failure("no key found"));
+        when(privateKeyResolver.resolvePrivateKey(eq(participantContextId), eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(vpSigningKey));
         var signatureSuiteRegistryMock = mock(SignatureSuiteRegistry.class);
         var suite = new Jws2020SignatureSuite(new ObjectMapper());
         when(signatureSuiteRegistryMock.getForId(IdentityHubConstants.JWS_2020_SIGNATURE_SUITE)).thenReturn(suite);
@@ -91,7 +92,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.VC1_0_LD, createDummyCredential());
 
-        var result = creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+        var result = creator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }
@@ -106,7 +107,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, Map.of("vc", TestConstants.VC_CONTENT_DEGREE_EXAMPLE));
         var vcc2 = new VerifiableCredentialContainer(jwtVc, CredentialFormat.VC1_0_JWT, createDummyCredential());
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc, vcc2), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
+        assertThatThrownBy(() -> creator.generatePresentation(participantContextId, List.of(vcc, vcc2), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("One or more VerifiableCredentials cannot be represented in the desired format %s".formatted(CredentialFormat.VC1_0_LD));
     }
@@ -117,7 +118,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var ldpVc = TestData.LDP_VC_WITH_PROOF;
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.VC1_0_LD, createDummyCredential());
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), "not-exists", PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
+        assertThatThrownBy(() -> creator.generatePresentation(participantContextId, List.of(vcc), "not-exists", PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -129,11 +130,11 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID)).isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Must provide additional data: 'types' and 'controller'");
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, Map.of("some-key", "some-value")))
+        assertThatThrownBy(() -> creator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, Map.of("some-key", "some-value")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Must provide additional data: 'types'");
 
-        assertThatThrownBy(() -> creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, Map.of("types", "some-value")))
+        assertThatThrownBy(() -> creator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, Map.of("types", "some-value")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Must provide additional data: 'controller'");
     }
@@ -143,14 +144,14 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
     @Override
     void create_whenEmptyCredentialsList() {
 
-        var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+        var result = creator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }
 
     @Test
     public void create_whenVcsEmpty_shouldReturnEmptyVp() {
-        var result = creator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+        var result = creator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
     }
 
@@ -160,7 +161,7 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         var vcc = new VerifiableCredentialContainer(ldpVc, CredentialFormat.VC1_0_LD, createDummyCredential());
         var publicKeyIdWithController = ADDITIONAL_DATA.get("controller").toString() + "#" + PUBLIC_KEY_ID;
 
-        var result = creator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, publicKeyIdWithController, issuerId, ADDITIONAL_DATA);
+        var result = creator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, publicKeyIdWithController, issuerId, ADDITIONAL_DATA);
         assertThat(result).isNotNull();
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }

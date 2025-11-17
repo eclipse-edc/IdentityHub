@@ -20,7 +20,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
@@ -36,7 +36,7 @@ public class ApiAuthenticationExtension implements ServiceExtension {
     @Inject
     private ParticipantContextService participantContextService;
     @Inject
-    private Vault vault;
+    private ParticipantVault vault;
 
     @Override
     public String name() {

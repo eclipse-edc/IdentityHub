@@ -60,7 +60,8 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
                         client.getClientId(),
                         client.getDid(),
                         client.getSecretAlias(),
-                        client.getCreatedAt()
+                        client.getCreatedAt(),
+                        client.getParticipantContextId()
                 );
 
                 return StoreResult.success(client);
@@ -156,6 +157,7 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
                 stsAccount.getDid(),
                 stsAccount.getSecretAlias(),
                 stsAccount.getCreatedAt(),
+                stsAccount.getParticipantContextId(),
                 stsAccount.getId());
     }
 
@@ -177,6 +179,7 @@ public class SqlStsAccountStore extends AbstractSqlStore implements StsAccountSt
                 .clientId(resultSet.getString(statements.getClientIdColumn()))
                 .secretAlias(resultSet.getString(statements.getSecretAliasColumn()))
                 .createdAt(resultSet.getLong(statements.getCreatedAtColumn()))
+                .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .build();
     }
 }

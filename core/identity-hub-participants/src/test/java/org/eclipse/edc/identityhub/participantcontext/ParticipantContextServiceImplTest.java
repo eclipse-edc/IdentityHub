@@ -30,12 +30,13 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.keyparsers.PemParser;
+import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,26 +62,28 @@ import static org.mockito.Mockito.when;
 
 class ParticipantContextServiceImplTest {
 
-    private final Vault vault = mock();
+    private final ParticipantVault vault = mock();
     private final ParticipantContextStore participantContextStore = mock();
     private final ParticipantContextObservable observableMock = mock();
     private final DidResourceStore didResourceStore = mock();
     private final StsAccountProvisioner stsAccountProvisioner = mock();
+    private final ParticipantContextConfigService configService = mock();
     private ParticipantContextServiceImpl participantContextService;
 
     @BeforeEach
     void setUp() {
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock, stsAccountProvisioner);
+        participantContextService = new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock, stsAccountProvisioner, configService);
         when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success());
+        when(configService.save(anyString(), any())).thenReturn(ServiceResult.success());
     }
 
     @ParameterizedTest(name = "isActive: {0}")
     @ValueSource(booleans = {true, false})
     void createParticipantContext_withPublicKeyPem(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
-        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
 
         var pem = """
                 -----BEGIN PUBLIC KEY-----
@@ -103,7 +106,7 @@ class ParticipantContextServiceImplTest {
         });
 
         verify(participantContextStore).create(any());
-        verify(vault).storeSecret(eq(ctx.getParticipantContextId() + "-apikey"), anyString());
+        verify(vault).storeSecret(anyString(), eq(ctx.getParticipantContextId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
         verify(observableMock).invokeForEach(any());
     }
@@ -112,7 +115,7 @@ class ParticipantContextServiceImplTest {
     @ValueSource(booleans = {true, false})
     void shouldCreateParticipantContext_withAccountInfo(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
-        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
         when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success(new AccountCredentials("clientId", "clientSecret")));
 
         var pem = """
@@ -142,7 +145,7 @@ class ParticipantContextServiceImplTest {
     @ValueSource(booleans = {true, false})
     void createParticipantContext_withPublicKeyJwk(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
-        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
 
         var ctx = createManifest().active(isActive)
                 .build();
@@ -151,7 +154,7 @@ class ParticipantContextServiceImplTest {
 
         verify(participantContextStore).create(argThat(pc -> pc.getDid() != null &&
                 pc.getParticipantContextId().equalsIgnoreCase("test-id")));
-        verify(vault).storeSecret(eq(ctx.getParticipantContextId() + "-apikey"), anyString());
+        verify(vault).storeSecret(anyString(), eq(ctx.getParticipantContextId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
         verify(observableMock).invokeForEach(any());
     }
@@ -160,7 +163,7 @@ class ParticipantContextServiceImplTest {
     @ValueSource(booleans = {true, false})
     void createParticipantContext_withKeyGenParams(boolean isActive) {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
-        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
         var ctx = createManifest()
                 .active(isActive)
                 .key(createKey().publicKeyPem(null).publicKeyJwk(null)
@@ -171,7 +174,7 @@ class ParticipantContextServiceImplTest {
                 .isSucceeded();
 
         verify(participantContextStore).create(any());
-        verify(vault).storeSecret(eq(ctx.getParticipantContextId() + "-apikey"), anyString());
+        verify(vault).storeSecret(anyString(), eq(ctx.getParticipantContextId() + "-apikey"), anyString());
 
         verify(observableMock).invokeForEach(any());
         verifyNoMoreInteractions(vault, participantContextStore);
@@ -180,7 +183,7 @@ class ParticipantContextServiceImplTest {
     @Test
     void createParticipantContext_storageFails() {
         when(participantContextStore.create(any())).thenReturn(StoreResult.duplicateKeys("foobar"));
-        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
 
         var ctx = createManifest().build();
         assertThat(participantContextService.createParticipantContext(ctx))
@@ -218,7 +221,7 @@ class ParticipantContextServiceImplTest {
     @Test
     void createParticipantContext_withApiKeyAlias() {
         when(participantContextStore.create(any())).thenReturn(StoreResult.success());
-        when(vault.storeSecret(anyString(), anyString())).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
         when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success(new AccountCredentials("clientId", "clientSecret")));
 
         var pem = """
@@ -243,7 +246,7 @@ class ParticipantContextServiceImplTest {
             assertThat(response.clientId()).isEqualTo("clientId");
             assertThat(response.clientSecret()).isEqualTo("clientSecret");
         });
-        verify(vault).storeSecret(eq("test-alias"), anyString());
+        verify(vault).storeSecret(anyString(), eq("test-alias"), anyString());
     }
 
     @Test
@@ -297,7 +300,7 @@ class ParticipantContextServiceImplTest {
 
         verify(participantContextStore).deleteById(anyString());
         verify(observableMock, times(3)).invokeForEach(any());
-        verify(vault).deleteSecret(anyString());
+        verify(vault).deleteSecret(anyString(), anyString());
         verifyNoMoreInteractions(vault, observableMock);
     }
 
@@ -317,30 +320,30 @@ class ParticipantContextServiceImplTest {
 
         verify(observableMock, times(2)).invokeForEach(any()); //deleting
         verify(participantContextStore).deleteById(anyString());
-        verify(vault).deleteSecret(anyString());
+        verify(vault).deleteSecret(anyString(), anyString());
         verifyNoMoreInteractions(vault, observableMock);
     }
 
     @Test
     void regenerateApiToken() {
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(createContext()));
-        when(vault.storeSecret(eq("test-alias"), anyString())).thenReturn(Result.success());
+        when(vault.storeSecret(anyString(), eq("test-alias"), anyString())).thenReturn(Result.success());
 
         assertThat(participantContextService.regenerateApiToken("test-id")).isSucceeded().isNotNull();
 
         verify(participantContextStore).findById(anyString());
-        verify(vault).storeSecret(eq("test-alias"), argThat(s -> s.length() >= 64));
+        verify(vault).storeSecret(anyString(), eq("test-alias"), argThat(s -> s.length() >= 64));
     }
 
     @Test
     void regenerateApiToken_vaultFails() {
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(createContext()));
-        when(vault.storeSecret(eq("test-alias"), anyString())).thenReturn(Result.failure("test failure"));
+        when(vault.storeSecret(anyString(), eq("test-alias"), anyString())).thenReturn(Result.failure("test failure"));
 
         assertThat(participantContextService.regenerateApiToken("test-id")).isFailed().detail().isEqualTo("Could not store new API token: test failure.");
 
         verify(participantContextStore).findById(anyString());
-        verify(vault).storeSecret(eq("test-alias"), anyString());
+        verify(vault).storeSecret(anyString(), eq("test-alias"), anyString());
     }
 
     @Test

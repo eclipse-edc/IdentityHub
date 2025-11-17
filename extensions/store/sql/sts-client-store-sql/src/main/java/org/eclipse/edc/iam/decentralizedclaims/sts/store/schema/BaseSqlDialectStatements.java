@@ -53,6 +53,7 @@ public class BaseSqlDialectStatements implements StsClientStatements {
                 .column(getDidColumn())
                 .column(getSecretAliasColumn())
                 .column(getCreatedAtColumn())
+                .column(getParticipantContextIdColumn())
                 .insertInto(getStsClientTable());
     }
 
@@ -66,6 +67,7 @@ public class BaseSqlDialectStatements implements StsClientStatements {
                 .column(getDidColumn())
                 .column(getSecretAliasColumn())
                 .column(getCreatedAtColumn())
+                .column(getParticipantContextIdColumn())
                 .update(getStsClientTable(), getIdColumn());
 
     }

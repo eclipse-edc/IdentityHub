@@ -23,7 +23,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.event.EventRouter;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -37,7 +37,7 @@ public class KeyPairServiceExtension implements ServiceExtension {
     public static final String NAME = "KeyPair Service Extension";
 
     @Inject
-    private Vault vault;
+    private ParticipantVault vault;
     @Inject
     private KeyPairResourceStore keyPairResourceStore;
     @Inject
