@@ -17,34 +17,34 @@ plugins {
 }
 
 dependencies {
-    runtimeOnly(project(":extensions:api:issuer-admin-api"))
-    runtimeOnly(project(":core:common-core"))
-    runtimeOnly(project(":core:identity-hub-did"))
-    runtimeOnly(project(":core:identity-hub-participants"))
-    runtimeOnly(project(":core:identity-hub-keypairs"))
-    runtimeOnly(project(":core:issuerservice:issuerservice-core"))
-    runtimeOnly(project(":core:issuerservice:issuerservice-holders"))
-    runtimeOnly(project(":core:issuerservice:issuerservice-credentials"))
-    runtimeOnly(project(":core:issuerservice:issuerservice-issuance"))
-    runtimeOnly(project(":extensions:did:local-did-publisher"))
-    // API modules
-    runtimeOnly(project(":protocols:dcp:dcp-core"))
-    runtimeOnly(project(":protocols:dcp:dcp-issuer:dcp-issuer-core"))
-    runtimeOnly(project(":protocols:dcp:dcp-issuer:dcp-issuer-api"))
-    runtimeOnly(project(":extensions:api:identity-api:participant-context-api"))
-    runtimeOnly(project(":extensions:api:identityhub-api-authentication"))
-    runtimeOnly(project(":extensions:api:identityhub-api-authorization"))
+    implementation(project(":extensions:api:issuer-admin-api"))
+    implementation(project(":core:common-core"))
+    implementation(project(":core:identity-hub-did"))
+    implementation(project(":core:identity-hub-participants"))
+    implementation(project(":core:identity-hub-keypairs"))
+    implementation(project(":core:issuerservice:issuerservice-core"))
+    implementation(project(":core:issuerservice:issuerservice-holders"))
+    implementation(project(":core:issuerservice:issuerservice-credentials"))
+    implementation(project(":core:issuerservice:issuerservice-issuance"))
+    implementation(project(":extensions:did:local-did-publisher"))
 
-    runtimeOnly(project(":extensions:issuance:issuerservice-issuance-rules"))
+    implementation(project(":protocols:dcp:dcp-core"))
+    implementation(project(":protocols:dcp:dcp-issuer:dcp-issuer-core"))
+    implementation(project(":protocols:dcp:dcp-issuer:dcp-issuer-api"))
+    implementation(project(":extensions:api:identity-api:participant-context-api"))
+    implementation(project(":extensions:api:identityhub-api-authentication"))
+    implementation(project(":extensions:api:identityhub-api-authorization"))
 
-    runtimeOnly(project(":extensions:sts:sts-account-provisioner"))
-    runtimeOnly(project(":extensions:api:identityhub-api-authorization"))
-    runtimeOnly(project(":extensions:api:issuer-admin-api:issuer-admin-api-authentication"))
+    implementation(project(":extensions:issuance:issuerservice-issuance-rules"))
+    implementation(project(":extensions:issuance:issuerservice-holder-attestations"))
+
+    implementation(project(":extensions:sts:sts-account-provisioner"))
+    implementation(project(":extensions:api:identityhub-api-authorization"))
+    implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-authentication"))
 
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
     runtimeOnly(libs.edc.api.version)
-
     runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.bundles.connector)
 }

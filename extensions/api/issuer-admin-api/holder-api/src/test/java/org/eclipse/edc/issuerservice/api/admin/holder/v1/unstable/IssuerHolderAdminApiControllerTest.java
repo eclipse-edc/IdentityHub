@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Base64;
+import java.util.Map;
 import java.util.Set;
 
 import static io.restassured.RestAssured.given;
@@ -58,7 +59,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
         when(holderService.createHolder(any())).thenReturn(ServiceResult.success());
 
         baseRequest()
-                .body(new HolderDto("test-id", "did:web:test", "test name"))
+                .body(Map.of("holderId", "test-id", "did", "did:web:test", "name", "test name"))
                 .post()
                 .then()
                 .log().ifValidationFails()
@@ -72,7 +73,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
         when(holderService.createHolder(any())).thenReturn(ServiceResult.conflict("already exists"));
 
         baseRequest()
-                .body(new HolderDto("test-id", "did:web:test", "test name"))
+                .body(Map.of("holderId", "test-id", "did", "did:web:test", "name", "test name"))
                 .post()
                 .then()
                 .log().ifValidationFails()
@@ -85,7 +86,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
         when(holderService.updateHolder(any())).thenReturn(ServiceResult.success());
 
         baseRequest()
-                .body(new HolderDto("test-id", "did:web:test", "test name"))
+                .body(Map.of("holderId", "test-id", "did", "did:web:test", "name", "test name"))
                 .put()
                 .then()
                 .log().ifValidationFails()
@@ -98,7 +99,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
         when(holderService.updateHolder(any())).thenReturn(ServiceResult.notFound("not found"));
 
         baseRequest()
-                .body(new HolderDto("test-id", "did:web:test", "test name"))
+                .body(Map.of("holderId", "test-id", "did", "did:web:test", "name", "test name"))
                 .put()
                 .then()
                 .log().ifValidationFails()

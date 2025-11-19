@@ -30,7 +30,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static java.util.Optional.ofNullable;
@@ -43,9 +43,6 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
  */
 public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
 
-
-    private static final TypeReference<List<String>> LIST_REF = new TypeReference<>() {
-    };
     private final HolderStoreStatements statements;
 
     public SqlHolderStore(DataSourceRegistry dataSourceRegistry,
@@ -86,9 +83,10 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                         holder.getParticipantContextId(),
                         holder.getDid(),
                         holder.getHolderName(),
-                        0, //participant.createdAt(),
-                        0,  //participant.lastModifiedAt());
-                        holder.isAnonymous()
+                        0, // TODO: participant.createdAt(),
+                        0,  // TODO: participant.lastModifiedAt());
+                        holder.isAnonymous(),
+                        toJson(holder.getProperties())
                 );
                 return success();
 
@@ -112,9 +110,10 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                             holder.getHolderId(),
                             holder.getDid(),
                             holder.getHolderName(),
-                            0, //participant.createdAt(),
-                            0, //participant.lastModifiedAt());
+                            0, // TODO: participant.createdAt(),
+                            0, // TODO: participant.lastModifiedAt());
                             holder.isAnonymous(),
+                            toJson(holder.getProperties()),
                             holder.getHolderId()
                     );
                     return StoreResult.success();
@@ -163,19 +162,20 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
     }
 
     private Holder mapResultSet(ResultSet resultSet) throws Exception {
-
         var id = resultSet.getString(statements.getIdColumn());
         var did = resultSet.getString(statements.getDidColumn());
         var name = resultSet.getString(statements.getHolderNameColumn());
         var participantContextId = resultSet.getString(statements.getParticipantContextIdColumn());
         var created = resultSet.getLong(statements.getCreateTimestampColumn());
         var lastmodified = resultSet.getLong(statements.getLastModifiedTimestampColumn());
+        var properties = fromJson(resultSet.getString(statements.getPropertiesColumn()), new TypeReference<Map<String, Object>>() {});
         return Holder.Builder.newInstance()
                 .holderId(id)
                 .did(did)
                 .holderName(name)
                 .participantContextId(participantContextId)
                 .isAnonymous(resultSet.getBoolean(statements.getAnonymousColumn()))
+                .properties(properties)
                 .build();
     }
 }

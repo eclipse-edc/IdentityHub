@@ -24,7 +24,6 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.validator.spi.ValidationResult;
 
 import java.util.Collection;
-import java.util.Objects;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
@@ -45,7 +44,8 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
 
     @Override
     public ServiceResult<Void> createAttestation(AttestationDefinition attestationDefinition) {
-        return transactionContext.execute(() -> validateAttestationDefinition(attestationDefinition)
+        return transactionContext.execute(() -> definitionValidatorRegistry.validateDefinition(attestationDefinition)
+                .flatMap(this::toServiceResult)
                 .compose(v -> from(attestationDefinitionStore.create(attestationDefinition))));
     }
 
@@ -67,16 +67,8 @@ public class AttestationDefinitionServiceImpl implements AttestationDefinitionSe
     }
 
 
-    private ServiceResult<Void> validateAttestationDefinition(AttestationDefinition attestationDefinition) {
-        return definitionValidatorRegistry.validateDefinition(attestationDefinition)
-                .flatMap(this::toServiceResult);
-    }
-
     private ServiceResult<Void> toServiceResult(ValidationResult validationResult) {
         return validationResult.failed() ? ServiceResult.badRequest(validationResult.getFailureDetail()) : ServiceResult.success();
     }
 
-    private Collection<AttestationDefinition> findForIds(Collection<String> ids) {
-        return ids.stream().map(attestationDefinitionStore::resolveDefinition).filter(Objects::nonNull).toList();
-    }
 }

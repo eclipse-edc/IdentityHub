@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS holders
     holder_name            VARCHAR,                                   -- the display name of the holder
     anonymous              BOOLEAN             NOT NULL DEFAULT FALSE,-- indicates whether the holder was created during a credential request
     created_date           BIGINT              NOT NULL,              -- POSIX timestamp of the creation of the PC
-    last_modified_date     BIGINT                                     -- POSIX timestamp of the last modified date
+    last_modified_date     BIGINT,                                    -- POSIX timestamp of the last modified date
+    properties             JSON DEFAULT '{}'                          -- JSON serialization of the properties
 );
 CREATE UNIQUE INDEX IF NOT EXISTS holders_holder_id_uindex ON holders USING btree (holder_id);
 

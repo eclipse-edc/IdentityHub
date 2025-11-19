@@ -18,16 +18,25 @@ package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 
+import java.util.Map;
+
 public record HolderDto(@JsonProperty(value = "holderId", required = true) String id,
                         @JsonProperty(value = "did", required = true) String did,
-                        @JsonProperty("name") String name) {
+                        @JsonProperty("name") String name,
+                        @JsonProperty("properties") Map<String, Object> properties) {
 
     public static HolderDto from(Holder holder) {
-        return new HolderDto(holder.getHolderId(), holder.getDid(), holder.getHolderName());
+        return new HolderDto(holder.getHolderId(), holder.getDid(), holder.getHolderName(), holder.getProperties());
     }
 
     public Holder toHolder(String participantContextId) {
-        return Holder.Builder.newInstance().holderId(id).did(did).holderName(name).participantContextId(participantContextId).build();
+        return Holder.Builder.newInstance()
+                .holderId(id)
+                .did(did)
+                .holderName(name)
+                .participantContextId(participantContextId)
+                .properties(properties)
+                .build();
     }
 }
 

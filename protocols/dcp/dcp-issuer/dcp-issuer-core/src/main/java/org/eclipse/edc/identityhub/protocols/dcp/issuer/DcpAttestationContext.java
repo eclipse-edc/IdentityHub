@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationContext;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.jetbrains.annotations.Nullable;
@@ -32,5 +33,10 @@ public record DcpAttestationContext(DcpRequestContext context) implements Attest
     @Override
     public String participantContextId() {
         return context.holder().getHolderId();
+    }
+
+    @Override
+    public Holder holder() {
+        return context.holder();
     }
 }

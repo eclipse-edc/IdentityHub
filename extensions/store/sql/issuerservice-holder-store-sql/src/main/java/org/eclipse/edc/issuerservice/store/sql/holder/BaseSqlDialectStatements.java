@@ -32,6 +32,7 @@ public class BaseSqlDialectStatements implements HolderStoreStatements {
                 .column(getCreateTimestampColumn())
                 .column(getLastModifiedTimestampColumn())
                 .column(getAnonymousColumn())
+                .jsonColumn(getPropertiesColumn())
                 .insertInto(getHoldersTable());
     }
 
@@ -44,6 +45,7 @@ public class BaseSqlDialectStatements implements HolderStoreStatements {
                 .column(getCreateTimestampColumn())
                 .column(getLastModifiedTimestampColumn())
                 .column(getAnonymousColumn())
+                .jsonColumn(getPropertiesColumn())
                 .update(getHoldersTable(), getIdColumn());
     }
 

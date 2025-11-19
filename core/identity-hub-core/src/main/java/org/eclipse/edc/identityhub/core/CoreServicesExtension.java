@@ -168,6 +168,11 @@ public class CoreServicesExtension implements ServiceExtension {
         credentialRequestService.start();
     }
 
+    @Override
+    public void shutdown() {
+        credentialRequestService.stop();
+    }
+
     @Provider
     public SelfIssuedTokenVerifier createAccessTokenVerifier(ServiceExtensionContext context) {
         var keyResolver = new KeyPairResourcePublicKeyResolver(store, keyParserRegistry, context.getMonitor(), fallbackService);

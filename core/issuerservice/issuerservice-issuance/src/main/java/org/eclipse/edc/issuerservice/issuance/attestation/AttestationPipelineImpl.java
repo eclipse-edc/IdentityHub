@@ -19,11 +19,11 @@ import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinit
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
-import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.spi.result.Result;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
@@ -53,9 +53,10 @@ public class AttestationPipelineImpl implements AttestationPipeline, Attestation
     public Result<Map<String, Object>> evaluate(Set<String> attestations, AttestationContext context) {
         var collated = new HashMap<String, Object>();
         for (var attestationId : attestations) {
-            // if the attestation is not found it is a programming error
             var definition = requireNonNull(store.resolveDefinition(attestationId), "Unknown attestation: " + attestationId);
-            var result = execute(definition, context);
+            var factory = requireNonNull(factories.get(definition.getAttestationType()), "Unknown attestation type: " + definition.getAttestationType());
+
+            var result = Objects.requireNonNull(factory.createSource(definition), "Invalid definition for type: " + definition.getAttestationType()).execute(context);
             if (result.failed()) {
                 return result;
             }
@@ -64,10 +65,6 @@ public class AttestationPipelineImpl implements AttestationPipeline, Attestation
         return Result.success(collated);
     }
 
-    private Result<Map<String, Object>> execute(AttestationDefinition definition, AttestationContext context) {
-        var factory = requireNonNull(factories.get(definition.getAttestationType()), "Unknown attestation type: " + definition.getAttestationType());
-        return requireNonNull(factory.createSource(definition), "Invalid definition for type: " + definition.getAttestationType()).execute(context);
-    }
 }
 
 

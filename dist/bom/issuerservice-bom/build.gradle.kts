@@ -18,11 +18,11 @@ plugins {
 }
 
 dependencies {
-    api(project(":dist:bom:issuerservice-base-bom"))
+    implementation(project(":dist:bom:issuerservice-base-bom"))
     // needed for interaction with the embedded STS
-    runtimeOnly(project(":extensions:sts:sts-core"))
-    runtimeOnly(project(":extensions:sts:sts-account-service-local"))
-    runtimeOnly(project(":extensions:sts:sts-api"))
+    implementation(project(":extensions:sts:sts-core"))
+    implementation(project(":extensions:sts:sts-account-service-local"))
+    implementation(project(":extensions:sts:sts-api"))
 }
 
 edcBuild {

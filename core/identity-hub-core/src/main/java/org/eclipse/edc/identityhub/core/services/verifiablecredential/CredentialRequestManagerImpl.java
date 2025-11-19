@@ -204,16 +204,17 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * maps a {@link Response} to a result containing the response body
      */
     private Result<String> mapResponseAsString(Response response) {
-        if (response.isSuccessful()) {
-            if (response.body() != null) {
-                try {
-                    return success(response.body().string());
-                } catch (IOException e) {
-                    return failure(e.getMessage());
-                }
+        try (var body = response.body()) {
+            if (response.isSuccessful()) {
+                return Result.success(body.string());
+            } else {
+                return failure("Error sending DCP Credential Request: code: '%s', message: '%s', body: '%s'"
+                        .formatted(response.code(), response.message(), body.string()));
             }
+        } catch (IOException e) {
+            return failure("Error sending DCP Credential Request: code: '%s', message: '%s'"
+                    .formatted(response.code(), response.message()));
         }
-        return failure("Error sending DCP Credential Request: code: '%s', message: '%s'".formatted(response.code(), response.message()));
     }
 
     /**
