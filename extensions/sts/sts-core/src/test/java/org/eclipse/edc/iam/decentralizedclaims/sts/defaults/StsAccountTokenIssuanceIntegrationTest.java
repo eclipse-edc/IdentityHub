@@ -39,7 +39,7 @@ import org.eclipse.edc.query.CriterionOperatorRegistryImpl;
 import org.eclipse.edc.security.token.jwt.DefaultJwsSignerProvider;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
-import org.eclipse.edc.spi.security.DelegatingVault;
+import org.eclipse.edc.spi.security.DefaultParticipantVaultImpl;
 import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.token.JwtGenerationService;
@@ -75,7 +75,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
 
     private final InMemoryStsAccountStore clientStore = new InMemoryStsAccountStore(CriterionOperatorRegistryImpl.ofDefaults());
     private final Vault vault = new InMemoryVault(mock());
-    private final ParticipantVault participantVault = new DelegatingVault(vault, mock());
+    private final ParticipantVault participantVault = new DefaultParticipantVaultImpl(vault, mock());
     private final KeyParserRegistry keyParserRegistry = new KeyParserRegistryImpl();
     private final JtiValidationStore jtiValidationStore = mock();
     private final KeyPairService keyPairService = mock();
@@ -88,7 +88,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
 
         keyParserRegistry.register(new PemParser(mock()));
         keyParserRegistry.register(new JwkParser(new ObjectMapper(), mock()));
-        var privateKeyResolver = new VaultPrivateKeyResolver(keyParserRegistry, participantVault, mock(), mock(), vault);
+        var privateKeyResolver = new VaultPrivateKeyResolver(keyParserRegistry, participantVault, mock(), mock());
 
         when(jtiValidationStore.storeEntry(any())).thenReturn(StoreResult.success());
 

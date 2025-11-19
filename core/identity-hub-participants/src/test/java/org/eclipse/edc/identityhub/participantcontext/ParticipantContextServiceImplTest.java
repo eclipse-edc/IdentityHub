@@ -30,6 +30,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.keyparsers.PemParser;
+import org.eclipse.edc.participantcontext.spi.config.model.ParticipantContextConfiguration;
 import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
@@ -76,7 +77,7 @@ class ParticipantContextServiceImplTest {
         keyParserRegistry.register(new PemParser(mock()));
         participantContextService = new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock, stsAccountProvisioner, configService);
         when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success());
-        when(configService.save(anyString(), any())).thenReturn(ServiceResult.success());
+        when(configService.save(any(ParticipantContextConfiguration.class))).thenReturn(ServiceResult.success());
     }
 
     @ParameterizedTest(name = "isActive: {0}")

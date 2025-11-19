@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
@@ -23,12 +25,12 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantConte
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.config.model.ParticipantContextConfiguration;
 import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.spi.security.Vault;
-import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.Collection;
@@ -60,6 +62,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private final ParticipantContextObservable observable;
     private final StsAccountProvisioner stsAccountProvisioner;
     private final ParticipantContextConfigService configService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore,
                                          DidResourceStore didResourceStore,
@@ -173,9 +176,22 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         var result = participantContextStore.create(context);
 
         var config = context.getProperties().entrySet().stream()
-                .collect(toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue())));
-        
-        var configResult = configService.save(context.getParticipantContextId(), ConfigFactory.fromMap(config));
+                .collect(toMap(Map.Entry::getKey, e -> {
+                    if (e.getValue() instanceof String v) {
+                        return v;
+                    }
+                    try {
+                        return objectMapper.writeValueAsString(e.getValue());
+                    } catch (JsonProcessingException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }));
+
+        var cfg = ParticipantContextConfiguration.Builder.newInstance()
+                .participantContextId(context.getParticipantContextId())
+                .entries(config)
+                .build();
+        var configResult = configService.save(cfg);
         return configResult.compose(u -> ServiceResult.from(result).map(it -> context));
     }
 
