@@ -1038,6 +1038,10 @@ components:
           type: string
         name:
           type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: object
     Holder:
       type: object
       properties:
@@ -1051,6 +1055,10 @@ components:
           type: string
         participantContextId:
           type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: object
     QuerySpec:
       type: object
       properties:
