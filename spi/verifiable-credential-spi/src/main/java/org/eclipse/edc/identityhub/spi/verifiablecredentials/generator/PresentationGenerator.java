@@ -57,7 +57,7 @@ public interface PresentationGenerator<T> {
      * The concrete return type of the VP depends on the implementation, for example JWT VPs are represented as String, LDP VPs are represented
      * as {@link jakarta.json.JsonObject}.
      *
-     * @param participantContextId
+     * @param participantContextId The ID of the participant context for which the presentation is being generated.
      * @param credentials          The list of Verifiable Credential Containers to include in the presentation.
      * @param privateKeyAlias      The alias of the private key to be used for generating the presentation.
      * @param publicKeyId          The ID used by the counterparty to resolve the public key for verifying the VP.

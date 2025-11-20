@@ -93,7 +93,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
      * Creates a presentation with the given credentials, key ID, and additional data. Note that JWT-VCs cannot be represented in LDP-VPs - while the spec would allow that
      * the JSON schema does not.
      *
-     * @param participantContextId
+     * @param participantContextId The ID of the participant context for which the presentation is being generated.
      * @param credentials          The list of Verifiable Credential Containers to include in the presentation.
      * @param privateKeyAlias      The alias of the private key to be used for generating the presentation.
      * @param publicKeyId          The ID used by the counterparty to resolve the public key for verifying the VP.

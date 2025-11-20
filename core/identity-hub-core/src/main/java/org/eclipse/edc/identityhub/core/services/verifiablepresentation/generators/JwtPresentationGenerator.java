@@ -70,7 +70,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
     /**
      * Creates a presentation using the given Verifiable Credential Containers and additional data.
      *
-     * @param participantContextId
+     * @param participantContextId The ID of the participant context for which the presentation is being generated.
      * @param credentials          The list of Verifiable Credential Containers to include in the presentation.
      * @param privateKeyAlias      The alias of the private key to be used for generating the presentation.
      * @param publicKeyId          The ID used by the counterparty to resolve the public key for verifying the VP.

@@ -76,7 +76,7 @@ public interface StsAccountService {
      * Updates the client secret associated with this {@link StsAccount}. The old secret is removed from the {@link org.eclipse.edc.spi.security.ParticipantVault},
      * and the new secret is stored using the given alias. If the new secret is {@code null}, one is generated at random.
      *
-     * @param participantContextId
+     * @param participantContextId The ID of the participant context for which the presentation is being generated.
      * @param id                   the ID of the {@link StsAccount} to update
      * @param secretAlias          The alias under which the new secret is stored in the {@link org.eclipse.edc.spi.security.ParticipantVault}
      * @param newSecret            The new client secret. If null, a new one is generated.
