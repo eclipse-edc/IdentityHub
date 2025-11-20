@@ -29,6 +29,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorR
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessPendingGuard;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
@@ -59,6 +60,7 @@ import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,6 +75,7 @@ public class IssuanceProcessManagerImplTest {
     private final CredentialStore credentialStore = mock();
     private final CredentialStorageClient credentialStorageClient = mock();
     private final CredentialStatusService credentialStatusService = mock();
+    private final IssuanceProcessPendingGuard pendingGuard = mock();
     private IssuanceProcessManager issuanceProcessManager;
 
     @BeforeEach
@@ -87,6 +90,7 @@ public class IssuanceProcessManagerImplTest {
                 .credentialStore(credentialStore)
                 .credentialStorageClient(credentialStorageClient)
                 .credentialStatusService(credentialStatusService)
+                .pendingGuard(pendingGuard)
                 .monitor(monitor)
                 .clock(clock)
                 .build();
@@ -150,6 +154,30 @@ public class IssuanceProcessManagerImplTest {
 
             verify(issuanceProcessStore).save(argThat(p -> p.getState() == DELIVERED.code()));
         });
+    }
+
+    @Test
+    void pendingGuard_shouldSetPending_whenGuardMatches() {
+        when(pendingGuard.test(any())).thenReturn(true);
+        var process = IssuanceProcess.Builder.newInstance()
+                .state(APPROVED.code())
+                .holderId("holderId")
+                .participantContextId("participantContextId")
+                .holderPid("holderPid")
+                .build();
+        when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(APPROVED.code()))).thenReturn(List.of(process)).thenReturn(emptyList());
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> {
+            var captor = ArgumentCaptor.forClass(IssuanceProcess.class);
+            verify(issuanceProcessStore, atLeastOnce()).save(captor.capture());
+            var saved = captor.getValue();
+            assertThat(saved.getState()).isEqualTo(APPROVED.code());
+            assertThat(saved.isPending()).isTrue();
+        });
+
+        verify(pendingGuard).test(process);
     }
 
     @Test
