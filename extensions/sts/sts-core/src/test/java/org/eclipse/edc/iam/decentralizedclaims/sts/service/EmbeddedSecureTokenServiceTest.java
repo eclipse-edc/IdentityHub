@@ -43,9 +43,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class EmbeddedSecureTokenServiceTest {
@@ -64,6 +64,7 @@ class EmbeddedSecureTokenServiceTest {
                         .clientId(TEST_PRIVATEKEY_ID)
                         .secretAlias(TEST_PARTICIPANT + "-alias")
                         .name(TEST_PARTICIPANT)
+                        .participantContextId(TEST_PARTICIPANT)
                         .did("did:web:" + TEST_PARTICIPANT)
                         .build()));
 
@@ -79,13 +80,14 @@ class EmbeddedSecureTokenServiceTest {
     void createToken_withoutBearerAccessScope() {
         var token = TokenRepresentation.Builder.newInstance().token("test").build();
 
-        when(tokenGenerationService.generate(eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class))).thenReturn(Result.success(token));
+        when(tokenGenerationService.generate(eq(TEST_PARTICIPANT), eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class))).thenReturn(Result.success(token));
         var result = sts.createToken(TEST_PARTICIPANT, Map.of(), null);
 
         assertThat(result.succeeded()).isTrue();
         var captor = ArgumentCaptor.forClass(TokenDecorator[].class);
 
-        verify(tokenGenerationService).generate(any(), captor.capture());
+        verify(tokenGenerationService).generate(eq(TEST_PARTICIPANT), any(), captor.capture());
+        verifyNoMoreInteractions(tokenGenerationService);
 
         assertThat(captor.getAllValues()).hasSize(1)
                 .allSatisfy(decorators -> {
@@ -101,7 +103,7 @@ class EmbeddedSecureTokenServiceTest {
         var claims = Map.of(ISSUER, "testIssuer", AUDIENCE, "aud");
         var token = TokenRepresentation.Builder.newInstance().token("test").build();
 
-        when(tokenGenerationService.generate(eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class)))
+        when(tokenGenerationService.generate(eq(TEST_PARTICIPANT), eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class)))
                 .thenReturn(Result.success(token))
                 .thenReturn(Result.success(token));
 
@@ -111,7 +113,7 @@ class EmbeddedSecureTokenServiceTest {
         assertThat(result.succeeded()).isTrue();
         var captor = ArgumentCaptor.forClass(TokenDecorator[].class);
 
-        verify(tokenGenerationService, times(2)).generate(any(), captor.capture());
+        verify(tokenGenerationService, times(2)).generate(eq(TEST_PARTICIPANT), any(), captor.capture());
 
         assertThat(captor.getAllValues()).hasSize(2)
                 .satisfies(decorators -> {
@@ -123,7 +125,7 @@ class EmbeddedSecureTokenServiceTest {
                             .hasSize(2)
                             .hasOnlyElementsOfTypes(KeyIdDecorator.class, AccessTokenDecorator.class, SelfIssuedTokenDecorator.class);
                 });
-
+        verifyNoMoreInteractions(tokenGenerationService);
     }
 
     @Test
@@ -133,7 +135,7 @@ class EmbeddedSecureTokenServiceTest {
 
         var token = TokenRepresentation.Builder.newInstance().token("test").build();
 
-        when(tokenGenerationService.generate(eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class)))
+        when(tokenGenerationService.generate(eq(TEST_PARTICIPANT), eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class)))
                 .thenReturn(Result.failure("Failed to create access token"))
                 .thenReturn(Result.success(token));
 
@@ -142,7 +144,8 @@ class EmbeddedSecureTokenServiceTest {
         assertThat(result.failed()).isTrue();
         var captor = ArgumentCaptor.forClass(TokenDecorator[].class);
 
-        verify(tokenGenerationService, times(1)).generate(any(), captor.capture());
+        verify(tokenGenerationService, times(1)).generate(eq(TEST_PARTICIPANT), any(), captor.capture());
+        verifyNoMoreInteractions(tokenGenerationService);
 
         assertThat(captor.getValue())
                 .hasSize(2)
@@ -156,7 +159,7 @@ class EmbeddedSecureTokenServiceTest {
 
         var token = TokenRepresentation.Builder.newInstance().token("test").build();
 
-        when(tokenGenerationService.generate(eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class)))
+        when(tokenGenerationService.generate(eq(TEST_PARTICIPANT), eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class)))
                 .thenReturn(Result.success(token))
                 .thenReturn(Result.failure("Failed to create access token"));
 
@@ -165,8 +168,8 @@ class EmbeddedSecureTokenServiceTest {
 
         assertThat(result.failed()).isTrue();
 
-        verify(tokenGenerationService, times(2)).generate(eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class));
-
+        verify(tokenGenerationService, times(2)).generate(eq(TEST_PARTICIPANT), eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class));
+        verifyNoMoreInteractions(tokenGenerationService);
     }
 
     @Test
@@ -185,13 +188,14 @@ class EmbeddedSecureTokenServiceTest {
         when(keyPairService.getActiveKeyPairForUsage(eq(TEST_PARTICIPANT), eq(KeyPairUsage.TOKEN_SIGNING)))
                 .thenReturn(ServiceResult.notFound("foobar"));
 
-        when(tokenGenerationService.generate(eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class))).thenReturn(Result.success(token));
+        when(tokenGenerationService.generate(eq(TEST_PARTICIPANT), eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class))).thenReturn(Result.success(token));
         var result = sts.createToken(TEST_PARTICIPANT, Map.of(), null);
 
         assertThat(result).isFailed()
                 .detail().isEqualTo("foobar");
 
-        verify(tokenGenerationService, never()).generate(any(), any());
+        verifyNoMoreInteractions(tokenGenerationService);
+
     }
 
     private KeyPairResource createKeyPair() {

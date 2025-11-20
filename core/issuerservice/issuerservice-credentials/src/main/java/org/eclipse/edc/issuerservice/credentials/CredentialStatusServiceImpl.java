@@ -187,7 +187,7 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
         var credential = credentialResource.getVerifiableCredential().credential();
 
         var claims = objectMapper.convertValue(credential, MAP_REF);
-        var token = tokenGenerationService.generate(privateKeyAlias.get(), tokenParameters -> tokenParameters.claims(claims));
+        var token = tokenGenerationService.generate(credentialResource.getParticipantContextId(), privateKeyAlias.get(), tokenParameters -> tokenParameters.claims(claims));
 
         var newJwt = token.getContent().getToken();
 

@@ -15,7 +15,7 @@
 package org.eclipse.edc.iam.decentralizedclaims.sts.spi.model;
 
 import org.eclipse.edc.spi.entity.Entity;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 
 import java.util.Objects;
 
@@ -27,12 +27,13 @@ public class StsAccount extends Entity {
     private String did;
     private String name;
     private String secretAlias;
+    private String participantContextId;
 
     private StsAccount() {
     }
 
     /**
-     * The alias of the {@link StsAccount} secret stored in the {@link Vault}
+     * The alias of the {@link StsAccount} secret stored in the {@link ParticipantVault}
      *
      * @return The secret alias
      */
@@ -72,6 +73,10 @@ public class StsAccount extends Entity {
         this.secretAlias = secretAlias;
     }
 
+    public String getParticipantContextId() {
+        return participantContextId;
+    }
+
     public static class Builder extends Entity.Builder<StsAccount, Builder> {
 
 
@@ -101,11 +106,17 @@ public class StsAccount extends Entity {
             Objects.requireNonNull(entity.name, "Client name");
             Objects.requireNonNull(entity.did, "Client DID");
             Objects.requireNonNull(entity.secretAlias, "Client secret alias");
+            Objects.requireNonNull(entity.participantContextId, "ParticipantContext ID is mandatory");
             return super.build();
         }
 
         public Builder clientId(String clientId) {
             entity.clientId = clientId;
+            return this;
+        }
+
+        public Builder participantContextId(String participantContextId) {
+            entity.participantContextId = participantContextId;
             return this;
         }
 

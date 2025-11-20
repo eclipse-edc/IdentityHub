@@ -34,7 +34,7 @@ import static org.eclipse.edc.identityhub.store.sql.participantcontext.SqlPartic
 public class SqlParticipantContextStoreExtension implements ServiceExtension {
     public static final String NAME = "ParticipantContext SQL Store Extension";
 
-    @Setting(value = "The datasource to be used", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE, key = "edc.sql.store.participantcontext.datasource")
+    @Setting(description = "The datasource to be used", defaultValue = DataSourceRegistry.DEFAULT_DATASOURCE, key = "edc.sql.store.participantcontext.datasource")
     private String dataSourceName;
 
     @Inject

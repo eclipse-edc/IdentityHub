@@ -22,7 +22,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,10 +46,10 @@ public class StsAccountServiceImpl implements StsAccountService {
 
     private final StsAccountStore stsAccountStore;
     private final TransactionContext transactionContext;
-    private final Vault vault;
+    private final ParticipantVault vault;
     private final StsClientSecretGenerator secretGenerator;
 
-    public StsAccountServiceImpl(StsAccountStore accountStore, TransactionContext transactionContext, Vault vault, StsClientSecretGenerator secretGenerator) {
+    public StsAccountServiceImpl(StsAccountStore accountStore, TransactionContext transactionContext, ParticipantVault vault, StsClientSecretGenerator secretGenerator) {
         this.stsAccountStore = accountStore;
         this.transactionContext = transactionContext;
         this.vault = vault;
@@ -66,6 +66,7 @@ public class StsAccountServiceImpl implements StsAccountService {
                     .clientId(manifest.getDid())
                     .did(manifest.getDid())
                     .secretAlias(secretAlias)
+                    .participantContextId(manifest.getParticipantContextId())
                     .build();
 
             return from(stsAccountStore.create(client).mapEmpty());
@@ -74,7 +75,7 @@ public class StsAccountServiceImpl implements StsAccountService {
 
     @Override
     public ServiceResult<Void> deleteAccount(String participantContextId) {
-        return transactionContext.execute(() -> from(stsAccountStore.deleteById(participantContextId)).compose(acct -> from(vault.deleteSecret(acct.getSecretAlias()))));
+        return transactionContext.execute(() -> from(stsAccountStore.deleteById(participantContextId)).compose(acct -> from(vault.deleteSecret(participantContextId, acct.getSecretAlias()))));
     }
 
     @Override
@@ -94,14 +95,14 @@ public class StsAccountServiceImpl implements StsAccountService {
 
     @Override
     public ServiceResult<StsAccount> authenticate(StsAccount client, String secret) {
-        return ofNullable(vault.resolveSecret(client.getSecretAlias()))
+        return ofNullable(vault.resolveSecret(client.getParticipantContextId(), client.getSecretAlias()))
                 .filter(vaultSecret -> vaultSecret.equals(secret))
                 .map(s -> success(client))
                 .orElseGet(() -> unauthorized(format("Failed to authenticate client with id %s", client.getId())));
     }
 
     @Override
-    public ServiceResult<String> updateSecret(String id, String newSecretAlias, @Nullable String newSecret) {
+    public ServiceResult<String> updateSecret(String participantContextId, String id, String newSecretAlias, @Nullable String newSecret) {
 
         Objects.requireNonNull(newSecretAlias, "Secret alias cannot be null");
 
@@ -121,11 +122,11 @@ public class StsAccountServiceImpl implements StsAccountService {
             Result<Void> vaultInteractionResult = Result.success();
 
             if (!oldSecretAlias.equals(newSecretAlias)) {
-                vaultInteractionResult = vaultInteractionResult.merge(vault.deleteSecret(oldSecretAlias));
+                vaultInteractionResult = vaultInteractionResult.merge(vault.deleteSecret(participantContextId, oldSecretAlias));
             }
 
             var finalNewSecret = newSecret;
-            vaultInteractionResult = vaultInteractionResult.compose(v -> vault.storeSecret(newSecretAlias, finalNewSecret));
+            vaultInteractionResult = vaultInteractionResult.compose(v -> vault.storeSecret(participantContextId, newSecretAlias, finalNewSecret));
             return vaultInteractionResult.succeeded()
                     ? success(newSecretAlias)
                     : unexpected(vaultInteractionResult.getFailureDetail());

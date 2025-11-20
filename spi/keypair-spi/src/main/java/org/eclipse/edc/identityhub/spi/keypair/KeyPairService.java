@@ -20,7 +20,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -54,7 +54,7 @@ public interface KeyPairService {
     ServiceResult<Void> rotateKeyPair(String oldId, KeyDescriptor newKeySpec, long duration);
 
     /**
-     * Immediately deactivates a key pair and bars it from further use by deleting the private key from the {@link Vault} and removing the public key from
+     * Immediately deactivates a key pair and bars it from further use by deleting the private key from the {@link ParticipantVault} and removing the public key from
      * the DID document.
      * <ul>
      * <li>If a new key is specified, it'll get added to the DID document.</li>

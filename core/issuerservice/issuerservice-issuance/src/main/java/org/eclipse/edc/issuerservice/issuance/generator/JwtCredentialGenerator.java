@@ -57,7 +57,7 @@ public class JwtCredentialGenerator implements CredentialGenerator {
     }
 
     @Override
-    public Result<VerifiableCredentialContainer> generateCredential(CredentialDefinition definition, String privateKeyAlias, String publicKeyId, String issuerId, String holderDid, Map<String, Object> claims) {
+    public Result<VerifiableCredentialContainer> generateCredential(String participantContextId, CredentialDefinition definition, String privateKeyAlias, String publicKeyId, String issuerId, String holderDid, Map<String, Object> claims) {
 
         var subjectResult = getCredentialSubject(claims);
         if (subjectResult.failed()) {
@@ -71,27 +71,27 @@ public class JwtCredentialGenerator implements CredentialGenerator {
         statusResult.onSuccess(credentialBuilder::credentialStatus);
 
         var credential = credentialBuilder.build();
-        return signCredentialInternal(credential, privateKeyAlias, publicKeyId, issuerId, holderDid, VERIFIABLE_CREDENTIAL, definition.getCredentialType())
+        return signCredentialInternal(participantContextId, credential, privateKeyAlias, publicKeyId, issuerId, holderDid, VERIFIABLE_CREDENTIAL, definition.getCredentialType())
                 .map(token -> new VerifiableCredentialContainer(token, CredentialFormat.VC1_0_JWT, credential));
     }
 
     @Override
-    public Result<String> signCredential(VerifiableCredential credential, String privateKeyAlias, String publicKeyId) {
+    public Result<String> signCredential(String participantContextId, VerifiableCredential credential, String privateKeyAlias, String publicKeyId) {
         var issuerId = credential.getIssuer().id();
         var type = credential.getType().toArray(new String[0]);
         var holderDid = credential.getCredentialSubject().iterator().next().getId();
 
-        return signCredentialInternal(credential, privateKeyAlias, publicKeyId, issuerId, holderDid, type);
+        return signCredentialInternal(participantContextId, credential, privateKeyAlias, publicKeyId, issuerId, holderDid, type);
     }
 
 
-    private Result<String> signCredentialInternal(VerifiableCredential credential, String privateKeyAlias, String publicKeyId, String issuerId, String holderDid, String... types) {
+    private Result<String> signCredentialInternal(String participantContextId, VerifiableCredential credential, String privateKeyAlias, String publicKeyId, String issuerId, String holderDid, String... types) {
         var composedKeyId = publicKeyId;
         if (!publicKeyId.startsWith(issuerId)) {
             composedKeyId = issuerId + "#" + publicKeyId;
         }
 
-        return tokenGenerationService.generate(privateKeyAlias, vcDecorator(holderDid, credential, types), new KeyIdDecorator(composedKeyId))
+        return tokenGenerationService.generate(participantContextId, privateKeyAlias, vcDecorator(holderDid, credential, types), new KeyIdDecorator(composedKeyId))
                 .map(TokenRepresentation::getToken);
     }
 

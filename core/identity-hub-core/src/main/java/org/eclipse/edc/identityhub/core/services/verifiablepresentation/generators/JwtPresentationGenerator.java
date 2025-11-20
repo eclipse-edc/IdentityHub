@@ -60,7 +60,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
 
     /**
      * Will always throw an {@link UnsupportedOperationException}.
-     * Please use {@link PresentationGenerator#generatePresentation(List, String, String, String, Map)} instead.
+     * Please use {@link PresentationGenerator#generatePresentation(String, List, String, String, String, Map)} instead.
      */
     @Override
     public String generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId) {
@@ -70,18 +70,19 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
     /**
      * Creates a presentation using the given Verifiable Credential Containers and additional data.
      *
-     * @param credentials     The list of Verifiable Credential Containers to include in the presentation.
-     * @param privateKeyAlias The alias of the private key to be used for generating the presentation.
-     * @param publicKeyId     The ID used by the counterparty to resolve the public key for verifying the VP.
-     * @param issuerId        The ID of this issuer. Usually a DID.
-     * @param additionalData  Additional data to include in the presentation. Must contain an entry 'aud'. Every entry in the map is added as a claim to the token.
+     * @param participantContextId The ID of the participant context for which the presentation is being generated.
+     * @param credentials          The list of Verifiable Credential Containers to include in the presentation.
+     * @param privateKeyAlias      The alias of the private key to be used for generating the presentation.
+     * @param publicKeyId          The ID used by the counterparty to resolve the public key for verifying the VP.
+     * @param issuerId             The ID of this issuer. Usually a DID.
+     * @param additionalData       Additional data to include in the presentation. Must contain an entry 'aud'. Every entry in the map is added as a claim to the token.
      * @return The serialized JWT presentation.
      * @throws IllegalArgumentException      If the additional data does not contain the required 'aud' value or if no private key could be resolved for the key ID.
      * @throws UnsupportedOperationException If the private key does not provide any supported JWS algorithms.
      * @throws EdcException                  If signing the JWT fails.
      */
     @Override
-    public String generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, String issuerId, Map<String, Object> additionalData) {
+    public String generatePresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, String issuerId, Map<String, Object> additionalData) {
 
         // check if expected data is there
         if (!additionalData.containsKey(JwtRegisteredClaimNames.AUDIENCE)) {
@@ -101,7 +102,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
         var rawVcs = credentials.stream()
                 .map(VerifiableCredentialContainer::rawVc)
                 .toList();
-        var tokenResult = tokenGenerationService.generate(privateKeyAlias, vpDecorator(rawVcs, issuerId), tp -> {
+        var tokenResult = tokenGenerationService.generate(participantContextId, privateKeyAlias, vpDecorator(rawVcs, issuerId), tp -> {
             additionalData.forEach(tp::claims);
             return tp;
         }, new KeyIdDecorator(composedKeyId));

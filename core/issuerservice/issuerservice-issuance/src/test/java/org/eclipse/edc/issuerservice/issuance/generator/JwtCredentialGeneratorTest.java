@@ -57,8 +57,8 @@ public class JwtCredentialGeneratorTest {
 
     public static final String PRIVATE_KEY_ALIAS = "private-key";
     public static final String PUBLIC_KEY_ID = "key-1";
-
     public static final List<String> REQUIRED_CLAIMS = asList("exp", "iss", "nbf", "jti", "sub", VERIFIABLE_CREDENTIAL_CLAIM);
+    private static final String TEST_PARTICIPANT = "test-participant";
     private final JwsSignerProvider signerProvider = mock();
     private final TokenGenerationService tokenGenerationService = new JwtGenerationService(signerProvider);
     private final JwtCredentialGenerator jwtCredentialGenerator = new JwtCredentialGenerator(tokenGenerationService, Clock.systemUTC());
@@ -66,9 +66,10 @@ public class JwtCredentialGeneratorTest {
     @BeforeEach
     void setup() throws JOSEException {
         var vpSigningKey = createKey(Curve.P_384, "vc-key");
-        when(signerProvider.createJwsSigner(anyString())).thenReturn(Result.failure("not found"));
-        when(signerProvider.createJwsSigner(eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(new ECDSASigner(vpSigningKey)));
+        when(signerProvider.createJwsSigner(eq(TEST_PARTICIPANT), anyString())).thenReturn(Result.failure("not found"));
+        when(signerProvider.createJwsSigner(eq(TEST_PARTICIPANT), eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(new ECDSASigner(vpSigningKey)));
 
+        when(signerProvider.createJwsSigner(anyString())).thenThrow(new AssertionError("This method is deprecated and not to be used anymore"));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -83,7 +84,7 @@ public class JwtCredentialGeneratorTest {
                 "statusCredential", "https://foo.bar/baz.json");
         Map<String, Object> claims = Map.of("credentialSubject", subjectClaims, "credentialStatus", statusClaims);
 
-        var result = jwtCredentialGenerator.generateCredential(createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
+        var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
 
         assertThat(result).isSucceeded();
 
@@ -121,7 +122,7 @@ public class JwtCredentialGeneratorTest {
         var subjectClaims = Map.of("name", "Foo Bar");
         Map<String, Object> claims = Map.of("credentialSubject", subjectClaims);
 
-        var result = jwtCredentialGenerator.generateCredential(createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
+        var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
 
         assertThat(result).isSucceeded();
 
@@ -158,7 +159,7 @@ public class JwtCredentialGeneratorTest {
         var subjectClaims = Map.of("name", "Foo Bar");
         Map<String, Object> claims = Map.of("credentialSubject", subjectClaims);
 
-        var result = jwtCredentialGenerator.generateCredential(createCredentialDefinition(), "not_found", PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
+        var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), "not_found", PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
 
         assertThat(result).isFailed();
 
@@ -170,7 +171,7 @@ public class JwtCredentialGeneratorTest {
 
         Map<String, Object> claims = Map.of();
 
-        var result = jwtCredentialGenerator.generateCredential(createCredentialDefinition(), "not_found", PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
+        var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), "not_found", PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
 
         assertThat(result).isFailed().detail().contains("Missing credentialSubject in claims");
 
@@ -193,7 +194,7 @@ public class JwtCredentialGeneratorTest {
                         .claim("foo", "bar")
                         .build())
                 .build();
-        var res = jwtCredentialGenerator.signCredential(credential, PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID);
+        var res = jwtCredentialGenerator.signCredential(TEST_PARTICIPANT, credential, PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID);
 
         assertThat(res).isSucceeded().satisfies(jwt -> {
             assertThatNoException().isThrownBy(() -> SignedJWT.parse(jwt));
@@ -216,7 +217,7 @@ public class JwtCredentialGeneratorTest {
                         .claim("foo", "bar")
                         .build())
                 .build();
-        var res = jwtCredentialGenerator.signCredential(credential, PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID);
+        var res = jwtCredentialGenerator.signCredential(TEST_PARTICIPANT, credential, PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID);
 
         assertThat(res).isSucceeded().satisfies(jwt -> {
             assertThatNoException().isThrownBy(() -> SignedJWT.parse(jwt));
@@ -239,14 +240,14 @@ public class JwtCredentialGeneratorTest {
                         .claim("foo", "bar")
                         .build())
                 .build();
-        var res = jwtCredentialGenerator.signCredential(credential, "non-exist", PUBLIC_KEY_ID);
+        var res = jwtCredentialGenerator.signCredential(TEST_PARTICIPANT, credential, "non-exist", PUBLIC_KEY_ID);
 
         assertThat(res).isFailed().detail().contains("not found");
     }
 
-    protected ECKey createKey(Curve p256, String centralIssuerKeyId) {
+    protected ECKey createKey(Curve curve, String centralIssuerKeyId) {
         try {
-            return new ECKeyGenerator(p256)
+            return new ECKeyGenerator(curve)
                     .keyID(centralIssuerKeyId)
                     .generate();
         } catch (JOSEException e) {

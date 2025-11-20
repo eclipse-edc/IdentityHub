@@ -56,12 +56,14 @@ class SecureServiceTokenApiControllerTest extends RestControllerTestBase {
         var token = "token";
         var name = "Name";
         var expiresIn = 3600;
+        var participant = "participant";
 
         var client = StsAccount.Builder.newInstance()
                 .id(id)
                 .clientId(clientId)
                 .name(name)
                 .secretAlias(clientKeyAlias)
+                .participantContextId(participant)
                 .did(did)
                 .build();
 

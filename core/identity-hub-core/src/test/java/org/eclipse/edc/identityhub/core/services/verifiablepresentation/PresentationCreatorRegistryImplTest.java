@@ -69,7 +69,7 @@ class PresentationCreatorRegistryImplTest {
         var generator = mock(PresentationGenerator.class);
         registry.addCreator(generator, CredentialFormat.VC1_0_JWT);
         assertThatNoException().isThrownBy(() -> registry.createPresentation(TEST_PARTICIPANT, List.of(), CredentialFormat.VC1_0_JWT, Map.of()));
-        verify(generator).generatePresentation(anyList(), eq(keyPair.getPrivateKeyAlias()), eq(keyPair.getKeyId()), eq(ISSUER_ID), argThat(additional -> ISSUER_ID.equals(additional.get("controller"))));
+        verify(generator).generatePresentation(eq(TEST_PARTICIPANT), anyList(), eq(keyPair.getPrivateKeyAlias()), eq(keyPair.getKeyId()), eq(ISSUER_ID), argThat(additional -> ISSUER_ID.equals(additional.get("controller"))));
     }
 
     @Test

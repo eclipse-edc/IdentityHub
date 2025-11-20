@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
@@ -23,16 +25,21 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantConte
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.config.model.ParticipantContextConfiguration;
+import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toMap;
 import static org.eclipse.edc.spi.result.ServiceResult.conflict;
 import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
 import static org.eclipse.edc.spi.result.ServiceResult.notFound;
@@ -49,24 +56,28 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private static final String API_KEY_ALIAS_SUFFIX = "apikey";
     private final ParticipantContextStore participantContextStore;
     private final DidResourceStore didResourceStore;
-    private final Vault vault;
+    private final ParticipantVault vault;
     private final TransactionContext transactionContext;
     private final ApiTokenGenerator tokenGenerator;
     private final ParticipantContextObservable observable;
     private final StsAccountProvisioner stsAccountProvisioner;
+    private final ParticipantContextConfigService configService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore,
                                          DidResourceStore didResourceStore,
-                                         Vault vault,
+                                         ParticipantVault vault,
                                          TransactionContext transactionContext,
                                          ParticipantContextObservable observable,
-                                         StsAccountProvisioner stsAccountProvisioner) {
+                                         StsAccountProvisioner stsAccountProvisioner,
+                                         ParticipantContextConfigService configService) {
         this.participantContextStore = participantContextStore;
         this.didResourceStore = didResourceStore;
         this.vault = vault;
         this.transactionContext = transactionContext;
         this.observable = observable;
         this.stsAccountProvisioner = stsAccountProvisioner;
+        this.configService = configService;
         this.tokenGenerator = new ApiTokenGenerator();
     }
 
@@ -110,7 +121,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                     .compose(v -> {
                         observable.invokeForEach(l -> l.deleting(participantContext));
                         var res = participantContextStore.deleteById(participantContextId);
-                        vault.deleteSecret(participantContext.getApiTokenAlias());
+                        vault.deleteSecret(participantContext.getParticipantContextId(), participantContext.getApiTokenAlias());
                         if (res.failed()) {
                             return fromFailure(res);
                         }
@@ -155,7 +166,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private ServiceResult<String> createTokenAndStoreInVault(ParticipantContext participantContext) {
         var alias = participantContext.getApiTokenAlias();
         var newToken = tokenGenerator.generate(participantContext.getParticipantContextId());
-        return vault.storeSecret(alias, newToken)
+        return vault.storeSecret(participantContext.getParticipantContextId(), alias, newToken)
                 .map(unused -> success(newToken))
                 .orElse(f -> conflict("Could not store new API token: %s.".formatted(f.getFailureDetail())));
     }
@@ -163,7 +174,25 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
 
     private ServiceResult<ParticipantContext> createParticipantContext(ParticipantContext context) {
         var result = participantContextStore.create(context);
-        return ServiceResult.from(result).map(it -> context);
+
+        var config = context.getProperties().entrySet().stream()
+                .collect(toMap(Map.Entry::getKey, e -> {
+                    if (e.getValue() instanceof String v) {
+                        return v;
+                    }
+                    try {
+                        return objectMapper.writeValueAsString(e.getValue());
+                    } catch (JsonProcessingException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }));
+
+        var cfg = ParticipantContextConfiguration.Builder.newInstance()
+                .participantContextId(context.getParticipantContextId())
+                .entries(config)
+                .build();
+        var configResult = configService.save(cfg);
+        return configResult.compose(u -> ServiceResult.from(result).map(it -> context));
     }
 
     private ParticipantContext findByIdInternal(String participantContextId) {

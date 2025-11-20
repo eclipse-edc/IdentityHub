@@ -26,7 +26,7 @@ import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 
 /**
  * AccountProvisioner, that synchronizes the {@link org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext} object
@@ -37,12 +37,12 @@ import org.eclipse.edc.spi.security.Vault;
 public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountProvisioner {
 
     private final Monitor monitor;
-    private final Vault vault;
+    private final ParticipantVault vault;
     private final StsClientSecretGenerator stsClientSecretGenerator;
     private final StsAccountService stsAccountService;
 
     public StsAccountProvisionerImpl(Monitor monitor,
-                                     Vault vault,
+                                     ParticipantVault vault,
                                      StsClientSecretGenerator stsClientSecretGenerator,
                                      StsAccountService stsAccountService) {
         this.monitor = monitor;
@@ -74,7 +74,7 @@ public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountPro
                 .onSuccess(accountCredentials -> {
                     // the vault's result does not influence the service result, since that may cause the transaction to roll back,
                     // but vaults aren't transactional resources
-                    vault.storeSecret(secretAlias, accountCredentials.clientSecret())
+                    vault.storeSecret(manifest.getParticipantContextId(), secretAlias, accountCredentials.clientSecret())
                             .onFailure(e -> monitor.severe(e.getFailureDetail()));
                 });
 

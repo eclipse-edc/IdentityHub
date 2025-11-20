@@ -52,7 +52,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
             "controller", "did:web:test"
     );
     private final JwsSignerProvider signerProvider = mock();
-
+    private final String participantContextId = "test-participant";
     private final TokenGenerationService tokenGenerator = new JwtGenerationService(signerProvider);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final TypeReference<Map<String, Object>> mapRef = new TypeReference<>() {
@@ -62,8 +62,8 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
     @BeforeEach
     void setUp() throws JOSEException {
         var vpSigningKey = createKey(Curve.P_384, "vp-key");
-        when(signerProvider.createJwsSigner(anyString())).thenReturn(Result.failure("not found"));
-        when(signerProvider.createJwsSigner(eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(new ECDSASigner(vpSigningKey)));
+        when(signerProvider.createJwsSigner(eq(participantContextId), anyString())).thenReturn(Result.failure("not found"));
+        when(signerProvider.createJwsSigner(eq(participantContextId), eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(new ECDSASigner(vpSigningKey)));
 
         generator = new JwtEnvelopedPresentationGenerator(mock(), tokenGenerator);
     }
@@ -76,7 +76,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, getCredential(ENVELOPED_CREDENTIAL_JSON));
         var vcc = new VerifiableCredentialContainer(jwtVc, CredentialFormat.VC2_0_JOSE, createDummyCredential());
 
-        var vpJwt = generator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+        var vpJwt = generator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(vpJwt).isNotNull();
 
         var header = extractJwtHeader(vpJwt);
@@ -122,7 +122,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, getCredential(ENVELOPED_CREDENTIAL_JSON));
         var vcc = new VerifiableCredentialContainer(jwtVc, CredentialFormat.VC1_0_JWT, createDummyCredential());
 
-        assertThatThrownBy(() -> generator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
+        assertThatThrownBy(() -> generator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("can only handle credentials that are in VC2_0_JOSE format");
     }
@@ -134,7 +134,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, getCredential(ENVELOPED_CREDENTIAL_JSON));
         var vcc = new VerifiableCredentialContainer(jwtVc, CredentialFormat.VC2_0_JOSE, createDummyCredential());
 
-        assertThatThrownBy(() -> generator.generatePresentation(List.of(vcc), "some-nonexistent-key", PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
+        assertThatThrownBy(() -> generator.generatePresentation(participantContextId, List.of(vcc), "some-nonexistent-key", PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA))
                 .isInstanceOf(EdcException.class)
                 .hasMessage("JWSSigner cannot be generated for private key 'some-nonexistent-key': not found");
     }
@@ -146,7 +146,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
         var jwtVc = JwtCreationUtils.createJwt(vcSigningKey, TestConstants.CENTRAL_ISSUER_DID, "degreeSub", TestConstants.VP_HOLDER_ID, getCredential(ENVELOPED_CREDENTIAL_JSON));
         var vcc = new VerifiableCredentialContainer(jwtVc, CredentialFormat.VC2_0_JOSE, createDummyCredential());
 
-        assertThatThrownBy(() -> generator.generatePresentation(List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, Map.of()))
+        assertThatThrownBy(() -> generator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, Map.of()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Must provide additional data: 'controller'");
     }
@@ -154,7 +154,7 @@ class JwtEnvelopedPresentationGeneratorTest extends PresentationGeneratorTest {
     @Test
     @Override
     void create_whenEmptyCredentialsList() {
-        var vpJwt = generator.generatePresentation(List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+        var vpJwt = generator.generatePresentation(participantContextId, List.of(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
         assertThat(vpJwt).isNotNull();
         var header = extractJwtHeader(vpJwt);
         assertThat(header.getKeyID()).isEqualTo("did:web:test#" + PUBLIC_KEY_ID);

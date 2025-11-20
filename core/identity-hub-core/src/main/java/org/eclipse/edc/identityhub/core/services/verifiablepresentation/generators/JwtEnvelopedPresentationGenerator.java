@@ -62,7 +62,7 @@ public class JwtEnvelopedPresentationGenerator implements PresentationGenerator<
     }
 
     @Override
-    public String generatePresentation(List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, String issuerId, Map<String, Object> additionalData) {
+    public String generatePresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, String issuerId, Map<String, Object> additionalData) {
         var violatingCredentials = credentials.stream().filter(vc -> vc.format() != CredentialFormat.VC2_0_JOSE).toList();
 
         if (!violatingCredentials.isEmpty()) {
@@ -99,14 +99,14 @@ public class JwtEnvelopedPresentationGenerator implements PresentationGenerator<
                 .claims(VERIFIABLE_CREDENTIAL_PROPERTY, credentialArray);
 
         // create the enveloped VP as JWT, signed again with the private key
-        return tokenGenerationService.generate(privateKeyAlias, presentationTokenGenerator, keyIdDecorator)
+        return tokenGenerationService.generate(participantContextId, privateKeyAlias, presentationTokenGenerator, keyIdDecorator)
                 .compose(tr -> {
                     // create the enveloped presentation structure
                     TokenDecorator envelopedPresentationDecorator = builder -> builder.claims(ID_PROPERTY, "data:application/vp+jwt,%s".formatted(tr.getToken()))
                             .claims(TYPE_PROPERTY, ENVELOPED_VERIFIABLE_PRESENTATION)
                             .claims(CONTEXT_PROPERTY, List.of(VC_PREFIX_V2));
                     // ... and create a JWT out of it
-                    return tokenGenerationService.generate(privateKeyAlias, envelopedPresentationDecorator, keyIdDecorator);
+                    return tokenGenerationService.generate(participantContextId, privateKeyAlias, envelopedPresentationDecorator, keyIdDecorator);
                 })
                 .map(TokenRepresentation::getToken)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));

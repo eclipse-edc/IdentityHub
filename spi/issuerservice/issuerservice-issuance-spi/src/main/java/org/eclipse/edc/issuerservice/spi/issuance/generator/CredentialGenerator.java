@@ -33,25 +33,27 @@ public interface CredentialGenerator {
     /**
      * Generates (and signs) a credential based on the given definition and claims
      *
-     * @param definition      the definition of the credential
-     * @param privateKeyAlias the alias of the private key to use for signing
-     * @param publicKeyId     the ID of the public key to use for signing
-     * @param issuerId        the ID of the issuer
-     * @param participantId   the ID of the participant
-     * @param claims          the claims to include in the credential
+     * @param participantContextId the ID of the issuer tenant to use. Relevant for selecting the correct vault path.
+     * @param definition           the definition of the credential
+     * @param privateKeyAlias      the alias of the private key to use for signing
+     * @param publicKeyId          the ID of the public key to use for signing
+     * @param issuerId             the ID of the issuer
+     * @param participantId        the ID of the participant
+     * @param claims               the claims to include in the credential
      * @return the generated {@link VerifiableCredentialContainer} including the original credential, its serialized and signed form and the format
      */
-    Result<VerifiableCredentialContainer> generateCredential(CredentialDefinition definition, String privateKeyAlias, String publicKeyId, String issuerId, String participantId, Map<String, Object> claims);
+    Result<VerifiableCredentialContainer> generateCredential(String participantContextId, CredentialDefinition definition, String privateKeyAlias, String publicKeyId, String issuerId, String participantId, Map<String, Object> claims);
 
 
     /**
      * Signs an input {@link VerifiableCredential} with the given private key.
      *
-     * @param credential      the input credential
-     * @param privateKeyAlias The alias of the private they that is expected to be found in the {@link org.eclipse.edc.spi.security.Vault}
-     * @param publicKeyId     the ID of the public key. Relevant for adding verification material to the signed representation.
-     * @return a String representing the serialized and signed credential, for example a JWT token, a Json-LD structure, etc.
+     * @param participantContextId the ID of the issuer tenant to use. Relevant for selecting the correct vault path.
+     * @param credential           the input credential
+     * @param privateKeyAlias      The alias of the private they that is expected to be found in the {@link org.eclipse.edc.spi.security.ParticipantVault}
+     * @param publicKeyId          the ID of the public key. Relevant for adding verification material to the signed representation.
+     * @return a String representing the serialized and signed credential, for example, a JWT token, a Json-LD structure, etc.
      */
-    Result<String> signCredential(VerifiableCredential credential, String privateKeyAlias, String publicKeyId);
+    Result<String> signCredential(String participantContextId, VerifiableCredential credential, String privateKeyAlias, String publicKeyId);
 
 }

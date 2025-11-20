@@ -68,7 +68,7 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
             var additionalDataWithController = new HashMap<>(additionalData);
             additionalDataWithController.put(CONTROLLER_ADDITIONAL_DATA, did);
 
-            return (T) creator.generatePresentation(credentials, signingKeyPair.getPrivateKeyAlias(), signingKeyPair.getKeyId(), did, additionalDataWithController);
+            return (T) creator.generatePresentation(participantContextId, credentials, signingKeyPair.getPrivateKeyAlias(), signingKeyPair.getKeyId(), did, additionalDataWithController);
         });
     }
 }

@@ -20,7 +20,7 @@ import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
-import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -37,7 +37,7 @@ public class StsAccountServiceExtension implements ServiceExtension {
     @Inject
     private TransactionContext transactionContext;
     @Inject
-    private Vault vault;
+    private ParticipantVault vault;
     @Inject(required = false)
     private StsClientSecretGenerator secretGenerator;
 
