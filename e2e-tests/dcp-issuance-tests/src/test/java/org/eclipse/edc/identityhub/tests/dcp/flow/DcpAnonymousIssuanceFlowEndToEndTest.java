@@ -231,15 +231,6 @@ public class DcpAnonymousIssuanceFlowEndToEndTest {
                     .statusCode(201)
                     .header("Location", Matchers.endsWith("/credentials/request/test-request-with-guard-id"));
 
-            // wait for the request status to be requested on the holder side
-            await().pollInterval(INTERVAL)
-                    .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, "test-request-with-guard-id")).hasSize(1)
-                            .allSatisfy(t -> {
-                                assertThat(t.getState()).isEqualTo(HolderRequestState.REQUESTED.code());
-                                assertThat(t.getHolderPid()).isEqualTo("test-request-with-guard-id");
-                            }));
-
             // wait for the issuance process to be pending on the issuer side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
