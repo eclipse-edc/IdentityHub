@@ -132,5 +132,5 @@ connector = [
 ]
 
 [plugins]
-edc-build = { id = "org.eclipse.edc.edc-build", version = "1.1.2" }
+edc-build = { id = "org.eclipse.edc.edc-build", version = "1.1.3" }
 shadow = { id = "com.gradleup.shadow", version = "9.2.2" }
