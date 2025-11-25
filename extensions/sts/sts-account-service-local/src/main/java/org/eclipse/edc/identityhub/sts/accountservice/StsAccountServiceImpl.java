@@ -22,7 +22,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,10 +46,10 @@ public class StsAccountServiceImpl implements StsAccountService {
 
     private final StsAccountStore stsAccountStore;
     private final TransactionContext transactionContext;
-    private final ParticipantVault vault;
+    private final Vault vault;
     private final StsClientSecretGenerator secretGenerator;
 
-    public StsAccountServiceImpl(StsAccountStore accountStore, TransactionContext transactionContext, ParticipantVault vault, StsClientSecretGenerator secretGenerator) {
+    public StsAccountServiceImpl(StsAccountStore accountStore, TransactionContext transactionContext, Vault vault, StsClientSecretGenerator secretGenerator) {
         this.stsAccountStore = accountStore;
         this.transactionContext = transactionContext;
         this.vault = vault;

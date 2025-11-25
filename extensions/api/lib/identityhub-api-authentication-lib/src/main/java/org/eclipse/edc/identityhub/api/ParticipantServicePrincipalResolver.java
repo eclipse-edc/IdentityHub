@@ -19,7 +19,7 @@ import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 
@@ -33,9 +33,9 @@ import java.util.List;
  */
 class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
     private final ParticipantContextService participantContextService;
-    private final ParticipantVault vault;
+    private final Vault vault;
 
-    ParticipantServicePrincipalResolver(ParticipantContextService participantContextService, ParticipantVault vault) {
+    ParticipantServicePrincipalResolver(ParticipantContextService participantContextService, Vault vault) {
         this.participantContextService = participantContextService;
         this.vault = vault;
     }

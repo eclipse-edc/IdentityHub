@@ -77,7 +77,7 @@ public class ParticipantContext extends AbstractParticipantResource {
     }
 
     /**
-     * Get the alias, under which the API token for this {@link ParticipantContext} is stored in the {@link org.eclipse.edc.spi.security.ParticipantVault}.
+     * Get the alias, under which the API token for this {@link ParticipantContext} is stored in the {@link org.eclipse.edc.spi.security.Vault}.
      * Note that API tokens should <strong>never</strong> be stored in the database, much less so unencrypted.
      */
     public String getApiTokenAlias() {

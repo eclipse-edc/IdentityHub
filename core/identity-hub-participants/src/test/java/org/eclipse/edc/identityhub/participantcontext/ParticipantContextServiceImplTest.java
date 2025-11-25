@@ -37,7 +37,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +63,7 @@ import static org.mockito.Mockito.when;
 
 class ParticipantContextServiceImplTest {
 
-    private final ParticipantVault vault = mock();
+    private final Vault vault = mock();
     private final ParticipantContextStore participantContextStore = mock();
     private final ParticipantContextObservable observableMock = mock();
     private final DidResourceStore didResourceStore = mock();

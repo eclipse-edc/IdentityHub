@@ -27,7 +27,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantConte
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +63,7 @@ class KeyPairServiceImplTest {
 
     public static final String PARTICIPANT_ID = "test-participant";
     private final KeyPairResourceStore keyPairResourceStore = mock(i -> StoreResult.success());
-    private final ParticipantVault vault = mock();
+    private final Vault vault = mock();
     private final KeyPairObservable observableMock = mock();
     private final ParticipantContextStore participantContextServiceMock = mock();
     private final KeyPairServiceImpl keyPairService = new KeyPairServiceImpl(keyPairResourceStore, vault, mock(), observableMock, new NoopTransactionContext(), participantContextServiceMock);

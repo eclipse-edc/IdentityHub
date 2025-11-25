@@ -24,7 +24,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.event.EventRouter;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 
@@ -38,7 +38,7 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
     @Inject
     private EventRouter eventRouter;
     @Inject
-    private ParticipantVault vault;
+    private Vault vault;
     @Inject(required = false)
     private StsClientSecretGenerator stsClientSecretGenerator;
     @Inject

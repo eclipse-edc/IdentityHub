@@ -50,7 +50,7 @@ public interface CredentialGenerator {
      *
      * @param participantContextId the ID of the issuer tenant to use. Relevant for selecting the correct vault path.
      * @param credential           the input credential
-     * @param privateKeyAlias      The alias of the private they that is expected to be found in the {@link org.eclipse.edc.spi.security.ParticipantVault}
+     * @param privateKeyAlias      The alias of the private they that is expected to be found in the {@link org.eclipse.edc.spi.security.Vault}
      * @param publicKeyId          the ID of the public key. Relevant for adding verification material to the signed representation.
      * @return a String representing the serialized and signed credential, for example, a JWT token, a Json-LD structure, etc.
      */
