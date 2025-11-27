@@ -31,7 +31,7 @@ import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.verifiablecredential.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -52,10 +52,10 @@ import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantCont
 public class ParticipantContextApiController implements ParticipantContextApi {
 
     private final ParticipantManifestValidator participantManifestValidator;
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
     private final AuthorizationService authorizationService;
 
-    public ParticipantContextApiController(ParticipantManifestValidator participantManifestValidator, ParticipantContextService participantContextService, AuthorizationService authorizationService) {
+    public ParticipantContextApiController(ParticipantManifestValidator participantManifestValidator, IdentityHubParticipantContextService participantContextService, AuthorizationService authorizationService) {
         this.participantManifestValidator = participantManifestValidator;
         this.participantContextService = participantContextService;
         this.authorizationService = authorizationService;

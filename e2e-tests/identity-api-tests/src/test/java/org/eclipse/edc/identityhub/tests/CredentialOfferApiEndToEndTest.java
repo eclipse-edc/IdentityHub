@@ -29,7 +29,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessag
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -109,7 +109,7 @@ public class CredentialOfferApiEndToEndTest {
         }
 
         @AfterEach
-        void teardown(ParticipantContextService contextService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, CredentialOfferStore store, StsAccountStore accountStore) {
+        void teardown(IdentityHubParticipantContextService contextService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, CredentialOfferStore store, StsAccountStore accountStore) {
             // purge all participant contexts
 
             contextService.query(QuerySpec.max()).getContent()
@@ -212,7 +212,7 @@ public class CredentialOfferApiEndToEndTest {
         }
 
         private void createParticipant(IdentityHub identityHub, ECKey participantKey) {
-            var service = identityHub.getService(ParticipantContextService.class);
+            var service = identityHub.getService(IdentityHubParticipantContextService.class);
             var vault = identityHub.getService(Vault.class);
 
             var privateKeyAlias = "%s-privatekey-alias".formatted(Tests.TEST_PARTICIPANT_CONTEXT_ID);

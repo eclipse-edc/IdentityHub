@@ -18,7 +18,7 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.util.Base64;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -191,7 +191,7 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
     }
 
     private CreateParticipantContextResponse createParticipantContext(IssuerService issuer, String issuerServiceUrl) {
-        var service = issuer.getService(ParticipantContextService.class);
+        var service = issuer.getService(IdentityHubParticipantContextService.class);
         var vault = issuer.getService(Vault.class);
 
         var privateKeyAlias = "%s-privatekey-alias".formatted(TEST_PARTICIPANT_CONTEXT_ID);

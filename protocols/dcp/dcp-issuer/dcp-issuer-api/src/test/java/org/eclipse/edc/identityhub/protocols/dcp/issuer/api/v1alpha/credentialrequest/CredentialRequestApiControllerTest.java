@@ -21,7 +21,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
@@ -71,7 +71,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
     private final DcpIssuerService dcpIssuerService = mock();
     private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = mock();
     private final JsonLdNamespace namespace = DSPACE_DCP_NAMESPACE_V_1_0;
-    private final ParticipantContextService participantContextService = mock();
+    private final IdentityHubParticipantContextService participantContextService = mock();
     private final String participantContextId = "participantContextId";
     private final String participantContextIdEncoded = Base64.getEncoder().encodeToString(participantContextId.getBytes());
 

@@ -25,7 +25,7 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
@@ -47,14 +47,14 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 @Path("/v1alpha/participants/{participantContextId}/credentials")
 public class CredentialRequestApiController implements CredentialRequestApi {
 
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
     private final DcpIssuerService dcpIssuerService;
     private final DcpHolderTokenVerifier tokenValidator;
     private final JsonObjectValidatorRegistry validatorRegistry;
     private final TypeTransformerRegistry dcpTransformerRegistry;
     private final JsonLdNamespace namespace;
 
-    public CredentialRequestApiController(ParticipantContextService participantContextService, DcpIssuerService dcpIssuerService,
+    public CredentialRequestApiController(IdentityHubParticipantContextService participantContextService, DcpIssuerService dcpIssuerService,
                                           DcpHolderTokenVerifier tokenValidator,
                                           JsonObjectValidatorRegistry validatorRegistry,
                                           TypeTransformerRegistry dcpTransformerRegistry,

@@ -23,7 +23,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationEntry;
@@ -62,7 +62,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
     public static final String STS_PUBLIC_KEY_ID = "did:web:test_participant#sts-key-123";
     public static final String PARTICIPANT_CONTEXT_ID = "test_participant";
     public static final String PARTICIPANT_DID = "did:web:test_participant";
-    private final ParticipantContextService participantContextService = mock();
+    private final IdentityHubParticipantContextService participantContextService = mock();
     private SelfIssuedTokenVerifierImpl verifier;
     private KeyPair stsKeyPair; // this is used to sign the access token
     private KeyPair providerKeyPair; // this is used to sign the incoming SI token

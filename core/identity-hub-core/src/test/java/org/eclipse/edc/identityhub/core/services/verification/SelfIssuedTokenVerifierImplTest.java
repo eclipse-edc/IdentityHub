@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.core.services.verification;
 
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil;
@@ -52,7 +52,7 @@ class SelfIssuedTokenVerifierImplTest {
             .claim("scope", "org.eclipse.edc.vc.type:AlumniCredential:read")
             .build();
     private final KeyPairResourcePublicKeyResolver localPublicKeyResolver = mock();
-    private final ParticipantContextService participantContextService = mock();
+    private final IdentityHubParticipantContextService participantContextService = mock();
     private final SelfIssuedTokenVerifierImpl verifier = new SelfIssuedTokenVerifierImpl(tokenValidationSerivce, localPublicKeyResolver, tokenValidationRulesRegistry, pkResolver, participantContextService);
 
     @BeforeEach

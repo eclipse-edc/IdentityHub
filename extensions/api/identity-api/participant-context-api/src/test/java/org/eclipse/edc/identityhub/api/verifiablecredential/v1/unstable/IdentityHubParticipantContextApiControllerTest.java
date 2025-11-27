@@ -21,7 +21,7 @@ import io.restassured.specification.RequestSpecification;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.verifiablecredential.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -63,7 +63,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     private static final String PARTICIPANT_ID = "test-participant";
     private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
 
-    private final ParticipantContextService participantContextServiceMock = mock();
+    private final IdentityHubParticipantContextService participantContextServiceMock = mock();
     private final AuthorizationService authService = mock();
     private final ParticipantManifestValidator participantManifestValidator = mock();
 

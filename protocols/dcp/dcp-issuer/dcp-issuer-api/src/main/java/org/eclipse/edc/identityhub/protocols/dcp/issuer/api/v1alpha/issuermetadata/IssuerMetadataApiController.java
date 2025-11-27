@@ -22,7 +22,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
@@ -37,12 +37,12 @@ import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantCont
 @Path("/v1alpha/participants/{participantContextId}/metadata")
 public class IssuerMetadataApiController implements IssuerMetadataApi {
 
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
     private final DcpIssuerMetadataService issuerMetadataService;
     private final TypeTransformerRegistry dcpRegistry;
 
 
-    public IssuerMetadataApiController(ParticipantContextService participantContextService, DcpIssuerMetadataService issuerMetadataService, TypeTransformerRegistry dcpRegistry) {
+    public IssuerMetadataApiController(IdentityHubParticipantContextService participantContextService, DcpIssuerMetadataService issuerMetadataService, TypeTransformerRegistry dcpRegistry) {
         this.participantContextService = participantContextService;
         this.issuerMetadataService = issuerMetadataService;
         this.dcpRegistry = dcpRegistry;

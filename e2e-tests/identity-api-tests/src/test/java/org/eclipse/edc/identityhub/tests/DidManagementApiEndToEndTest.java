@@ -21,7 +21,7 @@ import org.eclipse.edc.identityhub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identityhub.spi.did.events.DidDocumentUnpublished;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
@@ -61,7 +61,7 @@ public class DidManagementApiEndToEndTest {
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore stsAccountStore) {
+        void tearDown(IdentityHubParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore stsAccountStore) {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
@@ -222,7 +222,7 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void unpublishDid_withSuperUserToken(IdentityHub identityHub, EventRouter router, ParticipantContextService participantContextService) {
+        void unpublishDid_withSuperUserToken(IdentityHub identityHub, EventRouter router, IdentityHubParticipantContextService participantContextService) {
             var superUserKey = identityHub.createSuperUser().apiKey();
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentUnpublished.class, subscriber);
@@ -252,7 +252,7 @@ public class DidManagementApiEndToEndTest {
         }
 
         @Test
-        void unpublishDid_withUserToken(IdentityHub identityHub, EventRouter router, ParticipantContextService participantContextService) {
+        void unpublishDid_withUserToken(IdentityHub identityHub, EventRouter router, IdentityHubParticipantContextService participantContextService) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(DidDocumentUnpublished.class, subscriber);
 

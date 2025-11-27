@@ -20,7 +20,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.BitString;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -59,13 +59,13 @@ public class BitstringStatusListManager implements StatusListManager {
     private final CredentialStore store;
     private final TransactionContext transactionContext;
     private final CredentialGeneratorRegistry credentialGenerator;
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
     private final StatusListCredentialPublisher publisher;
 
     public BitstringStatusListManager(CredentialStore store,
                                       TransactionContext transactionContext,
                                       CredentialGeneratorRegistry credentialGenerator,
-                                      ParticipantContextService participantContextService,
+                                      IdentityHubParticipantContextService participantContextService,
                                       StatusListCredentialPublisher publisher) {
         this.store = store;
         this.transactionContext = transactionContext;

@@ -17,7 +17,7 @@ package org.eclipse.edc.identityhub.participantcontext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
@@ -47,12 +47,12 @@ import static org.eclipse.edc.spi.result.ServiceResult.notFound;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 /**
- * Default implementation of the {@link ParticipantContextService}. Uses a {@link Vault} to store API tokens and a {@link ApiTokenGenerator}
+ * Default implementation of the {@link IdentityHubParticipantContextService}. Uses a {@link Vault} to store API tokens and a {@link ApiTokenGenerator}
  * to generate API tokens. Please use a generator that produces Strings of a reasonable length.
  * <p>
  * This service is transactional.
  */
-public class ParticipantContextServiceImpl implements ParticipantContextService {
+public class IdentityHubParticipantContextServiceImpl implements IdentityHubParticipantContextService {
 
     private static final String API_KEY_ALIAS_SUFFIX = "apikey";
     private final ParticipantContextStore participantContextStore;
@@ -65,13 +65,13 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private final ParticipantContextConfigService configService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore,
-                                         DidResourceStore didResourceStore,
-                                         Vault vault,
-                                         TransactionContext transactionContext,
-                                         ParticipantContextObservable observable,
-                                         StsAccountProvisioner stsAccountProvisioner,
-                                         ParticipantContextConfigService configService) {
+    public IdentityHubParticipantContextServiceImpl(ParticipantContextStore participantContextStore,
+                                                    DidResourceStore didResourceStore,
+                                                    Vault vault,
+                                                    TransactionContext transactionContext,
+                                                    ParticipantContextObservable observable,
+                                                    StsAccountProvisioner stsAccountProvisioner,
+                                                    ParticipantContextConfigService configService) {
         this.participantContextStore = participantContextStore;
         this.didResourceStore = didResourceStore;
         this.vault = vault;

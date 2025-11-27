@@ -20,7 +20,7 @@ import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
@@ -61,7 +61,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final IssuanceProcessService issuerService = mock();
     private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = mock();
-    private final ParticipantContextService participantContextService = mock();
+    private final IdentityHubParticipantContextService participantContextService = mock();
     private final String participantContextId = "participantContextId";
     private final String participantContextIdEncoded = Base64.getEncoder().encodeToString(participantContextId.getBytes());
 

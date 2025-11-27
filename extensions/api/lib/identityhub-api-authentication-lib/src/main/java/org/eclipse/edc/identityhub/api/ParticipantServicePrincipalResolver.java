@@ -17,7 +17,7 @@ package org.eclipse.edc.identityhub.api;
 import org.eclipse.edc.identityhub.api.authentication.filter.ServicePrincipalAuthenticationFilter;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
@@ -32,10 +32,10 @@ import java.util.List;
  * a bridge. Other authentication backends like Apache Shiro would call this a _realm_.
  */
 class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
     private final Vault vault;
 
-    ParticipantServicePrincipalResolver(ParticipantContextService participantContextService, Vault vault) {
+    ParticipantServicePrincipalResolver(IdentityHubParticipantContextService participantContextService, Vault vault) {
         this.participantContextService = participantContextService;
         this.vault = vault;
     }

@@ -30,7 +30,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -161,7 +161,7 @@ public class CredentialApiEndToEndTest {
         }
 
         @AfterEach
-        void teardown(CredentialStore credentialStore, ParticipantContextService pcService, HolderStore holderStore) {
+        void teardown(CredentialStore credentialStore, IdentityHubParticipantContextService pcService, HolderStore holderStore) {
             credentialStore.query(QuerySpec.max()).getContent()
                     .forEach(vcr -> credentialStore.deleteById(vcr.getId()));
 

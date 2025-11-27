@@ -21,7 +21,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataSer
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.junit.annotations.ApiTest;
@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 @ApiTest
 public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
 
-    private final ParticipantContextService participantContextService = mock();
+    private final IdentityHubParticipantContextService participantContextService = mock();
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = mock();
     private final DcpIssuerMetadataService issuerMetadataService = mock();

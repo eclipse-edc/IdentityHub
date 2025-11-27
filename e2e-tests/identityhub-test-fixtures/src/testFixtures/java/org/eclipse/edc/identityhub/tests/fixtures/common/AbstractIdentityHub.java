@@ -26,7 +26,7 @@ import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -76,7 +76,7 @@ public abstract class AbstractIdentityHub {
     protected LazySupplier<Endpoint> stsEndpoint;
     protected LazySupplier<Endpoint> didEndpoint;
 
-    protected ParticipantContextService participantContextService;
+    protected IdentityHubParticipantContextService participantContextService;
     protected ParticipantContextStore participantContextStore;
     protected DidDocumentService didDocumentService;
     protected CredentialStore credentialStore;
@@ -261,7 +261,7 @@ public abstract class AbstractIdentityHub {
                     .credentialStore(ctx.getService(CredentialStore.class))
                     .identityEndpoint(ctx.getEndpoint(IDENTITY))
                     .didEndpoint(ctx.getEndpoint(IH_DID))
-                    .participantContextService(ctx.getService(ParticipantContextService.class))
+                    .participantContextService(ctx.getService(IdentityHubParticipantContextService.class))
                     .participantContextStore(ctx.getService(ParticipantContextStore.class))
                     .didDocumentService(ctx.getService(DidDocumentService.class))
                     .keyPairService(ctx.getService(KeyPairService.class))
@@ -296,7 +296,7 @@ public abstract class AbstractIdentityHub {
             return self();
         }
 
-        public B participantContextService(ParticipantContextService participantContextService) {
+        public B participantContextService(IdentityHubParticipantContextService participantContextService) {
             this.instance.participantContextService = participantContextService;
             return self();
         }

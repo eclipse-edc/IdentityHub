@@ -61,7 +61,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class IdentityHubParticipantContextServiceImplTest {
+class IdentityHubIdentityHubParticipantContextServiceImplTest {
 
     private final Vault vault = mock();
     private final ParticipantContextStore participantContextStore = mock();
@@ -69,13 +69,13 @@ class IdentityHubParticipantContextServiceImplTest {
     private final DidResourceStore didResourceStore = mock();
     private final StsAccountProvisioner stsAccountProvisioner = mock();
     private final ParticipantContextConfigService configService = mock();
-    private ParticipantContextServiceImpl participantContextService;
+    private IdentityHubParticipantContextServiceImpl participantContextService;
 
     @BeforeEach
     void setUp() {
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock, stsAccountProvisioner, configService);
+        participantContextService = new IdentityHubParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock, stsAccountProvisioner, configService);
         when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success());
         when(configService.save(any(ParticipantContextConfiguration.class))).thenReturn(ServiceResult.success());
     }

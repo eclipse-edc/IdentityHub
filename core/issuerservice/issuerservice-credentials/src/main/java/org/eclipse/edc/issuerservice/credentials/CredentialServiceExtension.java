@@ -18,7 +18,7 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.credentials.offers.IssuerCredentialOfferServiceImpl;
 import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
@@ -70,7 +70,7 @@ public class CredentialServiceExtension implements ServiceExtension {
     @Inject
     private ParticipantSecureTokenService sts;
     @Inject
-    private ParticipantContextService participantContextService;
+    private IdentityHubParticipantContextService participantContextService;
     @Inject
     private EdcHttpClient httpClient;
 
@@ -82,7 +82,7 @@ public class CredentialServiceExtension implements ServiceExtension {
 
     private StatusListInfoFactoryRegistry factory;
     @Inject
-    private ParticipantContextService particpantContextService;
+    private IdentityHubParticipantContextService particpantContextService;
     @Inject
     private StatusListCredentialPublisher credentialPublisher;
     @Inject

@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 /**
  * Handles {@link IdentityHubParticipantContext} objects, their lifecycle and their authentication tokens.
  */
-public interface ParticipantContextService {
+public interface IdentityHubParticipantContextService {
 
     /**
      * Creates a new participant context from a manifest. If one with the same ID exists, a failure is returned.

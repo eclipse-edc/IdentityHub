@@ -28,7 +28,7 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
@@ -88,7 +88,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore accountStore) {
+        void tearDown(IdentityHubParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore accountStore) {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
@@ -401,7 +401,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
         }
 
         @Test
-        void activateParticipant_principalIsSuperser(IdentityHub identityHub, ParticipantContextService participantContextService, EventRouter router) {
+        void activateParticipant_principalIsSuperser(IdentityHub identityHub, IdentityHubParticipantContextService participantContextService, EventRouter router) {
             var superUserKey = identityHub.createSuperUser().apiKey();
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(ParticipantContextUpdated.class, subscriber);
@@ -432,7 +432,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
         }
 
         @Test
-        void deactivateParticipant_shouldUnpublishDid(IdentityHub identityHub, ParticipantContextService participantContextService, EventRouter router) {
+        void deactivateParticipant_shouldUnpublishDid(IdentityHub identityHub, IdentityHubParticipantContextService participantContextService, EventRouter router) {
             var superUserKey = identityHub.createSuperUser().apiKey();
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(ParticipantContextUpdated.class, subscriber);

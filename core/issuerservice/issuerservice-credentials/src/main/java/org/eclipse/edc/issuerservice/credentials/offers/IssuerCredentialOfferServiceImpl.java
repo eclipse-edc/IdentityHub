@@ -25,7 +25,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataSer
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -56,7 +56,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
     private final HolderStore holderStore;
     private final CredentialServiceUrlResolver credentialServiceUrlResolver;
     private final ParticipantSecureTokenService secureTokenService;
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
     private final Monitor monitor;
     private final EdcHttpClient httpClient;
     private final TypeTransformerRegistry dcpTransformerRegistry;
@@ -66,7 +66,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
                                             HolderStore holderStore,
                                             CredentialServiceUrlResolver credentialServiceUrlResolver,
                                             ParticipantSecureTokenService secureTokenService,
-                                            ParticipantContextService participantContextService,
+                                            IdentityHubParticipantContextService participantContextService,
                                             EdcHttpClient httpClient, Monitor monitor,
                                             TypeTransformerRegistry dcpTransformerRegistry, DcpIssuerMetadataService dcpIssuerMetadataService) {
         this.transactionContext = transactionContext;
