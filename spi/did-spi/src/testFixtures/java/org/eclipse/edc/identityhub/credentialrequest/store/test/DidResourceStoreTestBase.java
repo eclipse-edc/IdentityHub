@@ -32,8 +32,8 @@ import java.util.Comparator;
 import java.util.List;
 
 import static java.util.stream.IntStream.range;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 /**
  * Base test class for DidResourceStore implementations.

@@ -19,8 +19,8 @@ import org.eclipse.edc.identityhub.api.verifiablecredential.validation.Participa
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.monitor.Monitor;

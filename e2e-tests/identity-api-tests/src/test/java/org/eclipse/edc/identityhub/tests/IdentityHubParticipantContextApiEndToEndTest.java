@@ -32,13 +32,13 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
@@ -421,7 +421,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .statusCode(204);
 
             var updatedParticipant = participantContextService.getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
-            assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.ACTIVATED.ordinal());
+            assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.ACTIVATED.code());
             assertThat(identityHub.getDidResourceForParticipant(did).getState()).isEqualTo(DidState.PUBLISHED.code());
 
             // verify the correct event was emitted

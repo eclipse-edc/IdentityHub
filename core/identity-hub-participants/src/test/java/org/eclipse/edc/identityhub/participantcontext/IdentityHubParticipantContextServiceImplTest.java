@@ -25,13 +25,13 @@ import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantCont
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.keyparsers.PemParser;
 import org.eclipse.edc.participantcontext.spi.config.model.ParticipantContextConfiguration;
 import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
+import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
@@ -153,7 +153,7 @@ class IdentityHubParticipantContextServiceImplTest {
         assertThat(participantContextService.createParticipantContext(ctx))
                 .isSucceeded();
 
-        verify(participantContextStore).create(argThat(pc -> pc.getDid() != null &&
+        verify(participantContextStore).create(argThat(pc -> pc.getIdentity() != null &&
                 pc.getParticipantContextId().equalsIgnoreCase("test-id")));
         verify(vault).storeSecret(anyString(), eq(ctx.getParticipantContextId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);

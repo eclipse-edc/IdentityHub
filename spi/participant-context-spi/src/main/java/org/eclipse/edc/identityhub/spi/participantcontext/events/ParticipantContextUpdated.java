@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 
 /**
  * Event that signals that a {@link IdentityHubParticipantContext} was updated

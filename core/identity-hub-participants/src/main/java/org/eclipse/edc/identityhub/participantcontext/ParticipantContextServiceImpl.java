@@ -22,11 +22,12 @@ import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.config.model.ParticipantContextConfiguration;
 import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
+import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
@@ -36,6 +37,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
@@ -104,7 +106,8 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
 
     @Override
     public ServiceResult<IdentityHubParticipantContext> getParticipantContext(String participantContextId) {
-        return transactionContext.execute(() -> ServiceResult.from(participantContextStore.findById(participantContextId)));
+        return transactionContext.execute(() -> ServiceResult.from(participantContextStore.findById(participantContextId))
+                .map(this::convert));
     }
 
     @Override
@@ -159,7 +162,9 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
 
     @Override
     public ServiceResult<Collection<IdentityHubParticipantContext>> query(QuerySpec querySpec) {
-        return transactionContext.execute(() -> ServiceResult.from(participantContextStore.query(querySpec)));
+        return transactionContext.execute(() -> ServiceResult.from(participantContextStore.query(querySpec))
+                .map(participantContexts -> participantContexts.stream().map(this::convert)
+                        .collect(Collectors.toList())));
     }
 
     private ServiceResult<String> createTokenAndStoreInVault(IdentityHubParticipantContext participantContext) {
@@ -195,7 +200,8 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     private IdentityHubParticipantContext findByIdInternal(String participantContextId) {
-        var resultStream = participantContextStore.findById(participantContextId);
+        var resultStream = participantContextStore.findById(participantContextId)
+                .map(this::convert);
         return resultStream.orElse(f -> null);
     }
 
@@ -209,6 +215,15 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
                 .apiTokenAlias(apiKeyAlias)
                 .state(ParticipantContextState.CREATED)
                 .properties(manifest.getAdditionalProperties())
+                .build();
+    }
+
+    private IdentityHubParticipantContext convert(ParticipantContext participantContext) {
+        return IdentityHubParticipantContext.Builder.newInstance()
+                .participantContextId(participantContext.getParticipantContextId())
+                .id(participantContext.getIdentity())
+                .state(participantContext.getStateAsEnum())
+                .properties(participantContext.getProperties())
                 .build();
     }
 }

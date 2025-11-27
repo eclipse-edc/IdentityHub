@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 
 import java.util.ArrayList;
 import java.util.Collection;

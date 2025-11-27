@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.tests.fixtures.issuerservice;
 
 import org.eclipse.edc.iam.did.spi.document.Service;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentityHub;
 import org.eclipse.edc.identityhub.tests.fixtures.common.Endpoint;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
@@ -39,6 +38,7 @@ import static java.lang.String.format;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.ISSUANCE_API;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.ISSUERADMIN;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 /**
  * Test fixture with Issuer Service capabilities.
@@ -99,7 +99,7 @@ public class IssuerService extends AbstractIdentityHub {
     }
 
     public List<IssuanceProcess> getIssuanceProcessesForParticipant(String participantContextId, String holderPid) {
-        var query = ParticipantResource.queryByParticipantContextId(participantContextId);
+        var query = queryByParticipantContextId(participantContextId);
         if (holderPid != null) {
             query.filter(new org.eclipse.edc.spi.query.Criterion("holderPid", "=", holderPid));
         }

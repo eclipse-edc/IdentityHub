@@ -25,10 +25,10 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
-import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
+import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
@@ -45,7 +45,7 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 /**
@@ -113,7 +113,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             }
             var participantContextId = existingResource.getParticipantContextId();
             return ServiceResult.from(participantContextStore.findById(participantContextId))
-                    .map(IdentityHubParticipantContext::getStateAsEnum)
+                    .map(ParticipantContext::getStateAsEnum)
                     .compose(state -> {
                         var canPublish = state.equals(ParticipantContextState.ACTIVATED);
                         if (canPublish) {
@@ -143,7 +143,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
             var participantContextId = existingResource.getParticipantContextId();
             return ServiceResult.from(participantContextStore.findById(participantContextId))
-                    .map(IdentityHubParticipantContext::getStateAsEnum)
+                    .map(ParticipantContext::getStateAsEnum)
                     .compose(state -> {
                         var canUnpublish = state.equals(ParticipantContextState.DEACTIVATED);
                         if (canUnpublish) {

@@ -29,7 +29,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
+
 
 public class DcpIssuerMetadataServiceImpl implements DcpIssuerMetadataService {
 

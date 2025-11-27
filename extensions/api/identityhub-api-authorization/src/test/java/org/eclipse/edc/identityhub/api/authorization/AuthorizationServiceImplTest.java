@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.api.authorization;
 
 import jakarta.ws.rs.core.SecurityContext;
 import org.assertj.core.api.Assertions;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.junit.jupiter.api.Test;
 

@@ -15,11 +15,11 @@
 package org.eclipse.edc.issuerservice.api.admin.issuance;
 
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable.IssuanceProcessAdminApiController;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.query.Criterion;

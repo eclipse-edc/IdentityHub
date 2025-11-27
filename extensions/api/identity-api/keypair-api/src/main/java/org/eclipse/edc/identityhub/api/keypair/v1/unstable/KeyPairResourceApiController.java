@@ -42,7 +42,7 @@ import java.util.Collection;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)

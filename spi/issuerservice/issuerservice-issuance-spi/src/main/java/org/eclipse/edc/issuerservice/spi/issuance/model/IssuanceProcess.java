@@ -15,7 +15,7 @@
 package org.eclipse.edc.issuerservice.spi.issuance.model;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.spi.entity.StatefulEntity;
 
 import java.util.ArrayList;

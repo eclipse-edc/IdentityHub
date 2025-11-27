@@ -14,7 +14,8 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.model;
 
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+
+import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 
 import java.util.HashMap;
 import java.util.Map;

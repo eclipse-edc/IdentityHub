@@ -15,14 +15,14 @@
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,15 +33,10 @@ import static java.util.Optional.ofNullable;
  * Representation of a participant in Identity Hub.
  */
 @JsonDeserialize(builder = IdentityHubParticipantContext.Builder.class)
-public class IdentityHubParticipantContext extends AbstractParticipantResource {
-    private Map<String, Object> properties = new HashMap<>();
-    private List<String> roles = new ArrayList<>();
-    private String did;
-    private long createdAt;
-    private long lastModified;
-    private int state; // CREATED, ACTIVATED, DEACTIVATED
-    private String apiTokenAlias;
+public class IdentityHubParticipantContext extends ParticipantContext {
 
+    public static final String API_TOKEN_ALIAS = "apiTokenAlias";
+    public static final String ROLES = "roles";
 
     private IdentityHubParticipantContext() {
     }
@@ -50,75 +45,27 @@ public class IdentityHubParticipantContext extends AbstractParticipantResource {
         return ofNullable(properties.get("clientSecret")).map(Object::toString).orElseGet(() -> participantContextId + "-sts-client-secret");
     }
 
-    /**
-     * The POSIX timestamp in ms when this entry was created. Immutable
-     */
-    public long getCreatedAt() {
-        return createdAt;
-    }
-
-    /**
-     * The POSIX timestamp in ms when this entry was last modified.
-     */
-    public long getLastModified() {
-        return lastModified;
-    }
-
-    /**
-     * The ParticipantContext's state. 0 = CREATED, 1 = ACTIVATED, 2 = DEACTIVATED
-     */
-    public int getState() {
-        return state;
-    }
-
-    @JsonIgnore
-    public ParticipantContextState getStateAsEnum() {
-        return ParticipantContextState.values()[state];
-    }
 
     /**
      * Get the alias, under which the API token for this {@link IdentityHubParticipantContext} is stored in the {@link org.eclipse.edc.spi.security.Vault}.
      * Note that API tokens should <strong>never</strong> be stored in the database, much less so unencrypted.
      */
     public String getApiTokenAlias() {
-        return apiTokenAlias;
+        return (String) properties.get(API_TOKEN_ALIAS);
     }
 
-    /**
-     * Updates the last-modified field.
-     */
-    public void updateLastModified() {
-        this.lastModified = Instant.now().toEpochMilli();
-    }
-
-    /**
-     * Transitions this participant context to the {@link ParticipantContextState#ACTIVATED} state.
-     */
-    public void activate() {
-        this.state = ParticipantContextState.ACTIVATED.ordinal();
-    }
-
-    /**
-     * Transitions this participant context to the {@link ParticipantContextState#DEACTIVATED} state.
-     */
-    public void deactivate() {
-        this.state = ParticipantContextState.DEACTIVATED.ordinal();
-    }
 
     public String getDid() {
-        return did;
+        return getIdentity();
     }
 
+    @SuppressWarnings("unchecked")
     public List<String> getRoles() {
-        return Collections.unmodifiableList(roles);
+        return Collections.unmodifiableList((List<? extends String>) properties.get(ROLES));
     }
 
     public void setRoles(List<String> roles) {
-        this.roles = roles;
-    }
-
-    public Map<String, Object> getProperties() {
-        return properties;
+        properties.put(ROLES, roles);
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -158,7 +105,7 @@ public class IdentityHubParticipantContext extends AbstractParticipantResource {
         @Override
         public IdentityHubParticipantContext build() {
             Objects.requireNonNull(entity.participantContextId, "Participant ID cannot be null");
-            Objects.requireNonNull(entity.apiTokenAlias, "API Token Alias cannot be null");
+            Objects.requireNonNull(entity.getApiTokenAlias(), "API Token Alias cannot be null");
 
             if (entity.getLastModified() == 0L) {
                 entity.lastModified = entity.getCreatedAt();
@@ -172,12 +119,12 @@ public class IdentityHubParticipantContext extends AbstractParticipantResource {
         }
 
         public Builder roles(List<String> roles) {
-            this.entity.roles = roles;
+            this.entity.properties.put(ROLES, roles);
             return this;
         }
 
         public Builder apiTokenAlias(String apiToken) {
-            this.entity.apiTokenAlias = apiToken;
+            this.entity.properties.put(API_TOKEN_ALIAS, apiToken);
             return this;
         }
 
@@ -192,7 +139,7 @@ public class IdentityHubParticipantContext extends AbstractParticipantResource {
         }
 
         public Builder did(String did) {
-            this.entity.did = did;
+            this.entity.identity = did;
             return this;
         }
     }

@@ -21,10 +21,10 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
-import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext.API_TOKEN_ALIAS;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.CREDENTIAL_SIGNING;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.PRESENTATION_SIGNING;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.TOKEN_SIGNING;
@@ -72,7 +73,9 @@ class KeyPairServiceImplTest {
     @BeforeEach
     void setup() {
         when(participantContextServiceMock.query(any(QuerySpec.class)))
-                .thenReturn(StoreResult.success(List.of(IdentityHubParticipantContext.Builder.newInstance().participantContextId(PARTICIPANT_ID).apiTokenAlias("apitoken-alias").build())));
+                .thenReturn(StoreResult.success(List.of(ParticipantContext.Builder.newInstance()
+                        .participantContextId(PARTICIPANT_ID)
+                        .property(API_TOKEN_ALIAS, "apitoken-alias").build())));
     }
 
     @ParameterizedTest(name = "make default: {0}")
@@ -172,9 +175,9 @@ class KeyPairServiceImplTest {
 
     @Test
     void addKeyPair_whenParticipantDeactivated_shouldFail() {
-        var pc = IdentityHubParticipantContext.Builder.newInstance()
+        var pc = ParticipantContext.Builder.newInstance()
                 .participantContextId(PARTICIPANT_ID)
-                .apiTokenAlias("apitoken-alias")
+                .property(API_TOKEN_ALIAS, "apitoken-alias")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build();
         when(participantContextServiceMock.query(any(QuerySpec.class))).thenReturn(StoreResult.success(List.of(pc)));

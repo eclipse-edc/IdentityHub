@@ -15,9 +15,9 @@
 package org.eclipse.edc.identityhub.spi.keypair.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
+import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;

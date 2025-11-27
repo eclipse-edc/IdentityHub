@@ -30,7 +30,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.stream.Stream;
 
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 /**

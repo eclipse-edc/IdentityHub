@@ -28,7 +28,6 @@ dependencies {
 
     implementation(project(":extensions:store:sql:identity-hub-did-store-sql"))
     implementation(project(":extensions:store:sql:identity-hub-keypair-store-sql"))
-    implementation(project(":extensions:store:sql:identity-hub-participantcontext-store-sql"))
     implementation(project(":extensions:store:sql:sts-client-store-sql"))
 
     runtimeOnly(libs.edc.sql.core)
@@ -37,6 +36,7 @@ dependencies {
     runtimeOnly(libs.edc.sql.bootstrapper)
     runtimeOnly(libs.edc.sql.jtivdalidation)
     runtimeOnly(libs.edc.sql.lease.core)
+    runtimeOnly(libs.edc.sql.participantcontext)
 
     // third-party deps
     runtimeOnly(libs.postgres)

@@ -16,7 +16,7 @@ package org.eclipse.edc.issuerservice.spi.holder.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 
 import java.util.HashMap;
 import java.util.Map;

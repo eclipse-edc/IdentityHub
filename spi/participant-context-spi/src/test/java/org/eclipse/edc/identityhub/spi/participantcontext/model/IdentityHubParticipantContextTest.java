@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

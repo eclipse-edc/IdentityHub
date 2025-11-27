@@ -24,7 +24,8 @@ import org.eclipse.edc.spi.result.Result;
 
 import java.security.PublicKey;
 
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
+
 
 /**
  * This {@link org.eclipse.edc.keys.spi.LocalPublicKeyService} resolves this IdentityHub's own public keys by querying the {@link KeyPairResourceStore}.

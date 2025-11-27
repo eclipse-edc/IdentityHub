@@ -38,8 +38,8 @@ import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)

@@ -16,10 +16,10 @@ package org.eclipse.edc.issuerservice.spi.issuance.process.store;
 
 import org.awaitility.Awaitility;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.junit.assertions.AbstractResultAssert;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
