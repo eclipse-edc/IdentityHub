@@ -20,7 +20,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -28,7 +28,7 @@ import java.util.Set;
 
 /**
  * A {@link KeyPairResource} contains key material for a particular {@link ParticipantContext}. The public key is stored in the database in serialized form (JWK or PEM) and the private
- * key is referenced via an alias, it is actually stored in a {@link ParticipantVault}.
+ * key is referenced via an alias, it is actually stored in a {@link Vault}.
  */
 public class KeyPairResource extends AbstractParticipantResource {
     private String id;

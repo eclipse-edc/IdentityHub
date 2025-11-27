@@ -21,7 +21,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +46,7 @@ class StsAccountServiceImplTest {
     private static final String PARTICIPANT_DID = "did:web:" + PARTICIPANT_CONTEXT_ID;
     private static final String KEY_ID = "test-key-id";
     private final StsAccountStore stsAccountStore = mock();
-    private final ParticipantVault vault = mock();
+    private final Vault vault = mock();
     private final StsAccountServiceImpl stsAccountService = new StsAccountServiceImpl(stsAccountStore, new NoopTransactionContext(), vault, new RandomStringGenerator());
 
     @Test

@@ -29,7 +29,7 @@ import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -55,7 +55,7 @@ class StsAccountProvisionerImplTest {
     private static final String KEY_ID = "test-key-id";
     private final KeyPairService keyPairService = mock();
     private final DidDocumentService didDocumentService = mock();
-    private final ParticipantVault vault = mock();
+    private final Vault vault = mock();
     private final Monitor monitor = mock();
     private final StsClientSecretGenerator stsClientSecretGenerator = parameters -> UUID.randomUUID().toString();
     private final StsAccountService accountServiceMock = mock();

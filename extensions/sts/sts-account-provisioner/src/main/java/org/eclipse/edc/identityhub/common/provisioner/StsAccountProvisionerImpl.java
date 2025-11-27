@@ -26,7 +26,7 @@ import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 
 /**
  * AccountProvisioner, that synchronizes the {@link org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext} object
@@ -37,12 +37,12 @@ import org.eclipse.edc.spi.security.ParticipantVault;
 public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountProvisioner {
 
     private final Monitor monitor;
-    private final ParticipantVault vault;
+    private final Vault vault;
     private final StsClientSecretGenerator stsClientSecretGenerator;
     private final StsAccountService stsAccountService;
 
     public StsAccountProvisionerImpl(Monitor monitor,
-                                     ParticipantVault vault,
+                                     Vault vault,
                                      StsClientSecretGenerator stsClientSecretGenerator,
                                      StsAccountService stsAccountService) {
         this.monitor = monitor;

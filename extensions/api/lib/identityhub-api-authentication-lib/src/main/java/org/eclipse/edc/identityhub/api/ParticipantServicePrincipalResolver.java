@@ -19,7 +19,6 @@ import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 
@@ -27,15 +26,16 @@ import java.util.Base64;
 import java.util.List;
 
 /**
- * For the purposes of the Identity API of the IdentityHub, a {@link ServicePrincipal} is represented by a {@link ParticipantContext}. However, the request filter chain ({@link ServicePrincipalAuthenticationFilter}
- * etc.)
- * do not need to know about that, they only know about {@link ServicePrincipal} and {@link ServicePrincipalResolver}. Thus, this implementation acts as bridge. Other authentication backends like Apache Shiro would call this a _realm_.
+ * For the Identity API of the IdentityHub, a {@link ServicePrincipal} is represented by a {@link ParticipantContext}.
+ * However, the request filter chain ({@link ServicePrincipalAuthenticationFilter} etc.) do not need to know about that;
+ * they only know about {@link ServicePrincipal} and {@link ServicePrincipalResolver}. Thus, this implementation acts as
+ * a bridge. Other authentication backends like Apache Shiro would call this a _realm_.
  */
 class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
     private final ParticipantContextService participantContextService;
-    private final ParticipantVault vault;
+    private final Vault vault;
 
-    ParticipantServicePrincipalResolver(ParticipantContextService participantContextService, ParticipantVault vault) {
+    ParticipantServicePrincipalResolver(ParticipantContextService participantContextService, Vault vault) {
         this.participantContextService = participantContextService;
         this.vault = vault;
     }

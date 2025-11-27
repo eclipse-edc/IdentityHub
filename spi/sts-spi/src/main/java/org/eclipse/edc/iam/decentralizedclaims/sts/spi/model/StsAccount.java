@@ -15,7 +15,7 @@
 package org.eclipse.edc.iam.decentralizedclaims.sts.spi.model;
 
 import org.eclipse.edc.spi.entity.Entity;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 
 import java.util.Objects;
 
@@ -33,7 +33,7 @@ public class StsAccount extends Entity {
     }
 
     /**
-     * The alias of the {@link StsAccount} secret stored in the {@link ParticipantVault}
+     * The alias of the {@link StsAccount} secret stored in the {@link Vault}
      *
      * @return The secret alias
      */

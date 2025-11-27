@@ -36,7 +36,7 @@ import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
-import org.eclipse.edc.spi.security.ParticipantVault;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -56,13 +56,13 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     private final KeyPairResourceStore keyPairResourceStore;
-    private final ParticipantVault vault;
+    private final Vault vault;
     private final Monitor monitor;
     private final KeyPairObservable observable;
     private final TransactionContext transactionContext;
     private final ParticipantContextStore participantContextService;
 
-    public KeyPairServiceImpl(KeyPairResourceStore keyPairResourceStore, ParticipantVault vault, Monitor monitor, KeyPairObservable observable, TransactionContext transactionContext, ParticipantContextStore participantContextService) {
+    public KeyPairServiceImpl(KeyPairResourceStore keyPairResourceStore, Vault vault, Monitor monitor, KeyPairObservable observable, TransactionContext transactionContext, ParticipantContextStore participantContextService) {
         this.keyPairResourceStore = keyPairResourceStore;
         this.vault = vault;
         this.monitor = monitor;

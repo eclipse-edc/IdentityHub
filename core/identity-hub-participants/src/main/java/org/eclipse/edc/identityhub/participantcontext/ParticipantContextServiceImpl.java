@@ -29,7 +29,6 @@ import org.eclipse.edc.participantcontext.spi.config.model.ParticipantContextCon
 import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.security.ParticipantVault;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
@@ -56,7 +55,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     private static final String API_KEY_ALIAS_SUFFIX = "apikey";
     private final ParticipantContextStore participantContextStore;
     private final DidResourceStore didResourceStore;
-    private final ParticipantVault vault;
+    private final Vault vault;
     private final TransactionContext transactionContext;
     private final ApiTokenGenerator tokenGenerator;
     private final ParticipantContextObservable observable;
@@ -66,7 +65,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
 
     public ParticipantContextServiceImpl(ParticipantContextStore participantContextStore,
                                          DidResourceStore didResourceStore,
-                                         ParticipantVault vault,
+                                         Vault vault,
                                          TransactionContext transactionContext,
                                          ParticipantContextObservable observable,
                                          StsAccountProvisioner stsAccountProvisioner,
