@@ -23,7 +23,7 @@ jobs:
   Checkstyle:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
       - name: Run Checkstyle
         run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures
@@ -31,7 +31,7 @@ jobs:
   Javadoc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
       - name: Run Javadoc
         run: ./gradlew javadoc
@@ -39,7 +39,7 @@ jobs:
   Test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
       - name: Unit tests
         run: ./gradlew test
@@ -47,7 +47,7 @@ jobs:
   Integration-Tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: Component Tests
@@ -56,7 +56,7 @@ jobs:
   Postgresql-Integration-Tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: Postgresql Tests
@@ -65,7 +65,7 @@ jobs:
   TCK-Tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: eclipse-edc/.github/.github/actions/setup-build@main
 
       - name: TCK Tests
