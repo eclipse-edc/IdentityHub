@@ -17,11 +17,11 @@ package org.eclipse.edc.identityhub.spi.participantcontext.events;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 
 /**
- * Event that signals that a {@link ParticipantContext} was created
+ * Event that signals that a {@link IdentityHubParticipantContext} was created
  */
 @JsonDeserialize(builder = ParticipantContextCreated.Builder.class)
 public class ParticipantContextCreated extends ParticipantContextEvent {

@@ -22,7 +22,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMess
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
 import org.eclipse.edc.junit.annotations.ApiTest;
@@ -199,8 +199,8 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         return CredentialRequestMessage.Builder.newInstance();
     }
 
-    private ParticipantContext createParticipantContext() {
-        return ParticipantContext.Builder.newInstance()
+    private IdentityHubParticipantContext createParticipantContext() {
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(participantContextId)
                 .did("did")
                 .apiTokenAlias("apiTokenAlias")

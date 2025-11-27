@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.store.sql.credentials;
 
-import org.eclipse.edc.identityhub.participantcontext.store.ParticipantContextStoreTestBase;
+import org.eclipse.edc.identityhub.participantcontext.store.IdentityHubParticipantContextStoreTestBase;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.store.sql.participantcontext.ParticipantContextStoreStatements;
 import org.eclipse.edc.identityhub.store.sql.participantcontext.SqlParticipantContextStore;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ComponentTest
 @ExtendWith(PostgresqlStoreSetupExtension.class)
-class SqlParticipantContextStoreTest extends ParticipantContextStoreTestBase {
+class SqlIdentityHubParticipantContextStoreTest extends IdentityHubParticipantContextStoreTestBase {
 
     private final ParticipantContextStoreStatements statements = new PostgresDialectStatements();
     private SqlParticipantContextStore store;

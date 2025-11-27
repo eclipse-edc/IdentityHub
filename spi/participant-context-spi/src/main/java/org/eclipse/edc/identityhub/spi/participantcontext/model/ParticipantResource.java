@@ -18,7 +18,7 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 
 /**
- * Represents a participant resource for all resources that are owned by a {@link ParticipantContext}.
+ * Represents a participant resource for all resources that are owned by a {@link IdentityHubParticipantContext}.
  */
 public interface ParticipantResource {
 
@@ -31,7 +31,7 @@ public interface ParticipantResource {
     }
 
     /**
-     * The {@link ParticipantContext} that this resource belongs to.
+     * The {@link IdentityHubParticipantContext} that this resource belongs to.
      */
     String getParticipantContextId();
 }

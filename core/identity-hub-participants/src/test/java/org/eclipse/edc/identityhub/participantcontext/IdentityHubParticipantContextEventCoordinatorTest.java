@@ -44,7 +44,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class ParticipantContextEventCoordinatorTest {
+class IdentityHubParticipantContextEventCoordinatorTest {
     private final Monitor monitor = mock();
     private final DidDocumentService didDocumentService = mock();
     private final KeyPairService keyPairService = mock();

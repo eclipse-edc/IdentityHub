@@ -26,7 +26,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
@@ -124,7 +124,7 @@ public class PresentationApiController implements PresentationApi {
 
         // verify that the participant actually exists
         participantContextService.getParticipantContext(participantContextId)
-                .orElseThrow(exceptionMapper(ParticipantContext.class, participantContextId));
+                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
 
 
         // verify and validate the requestor's SI token

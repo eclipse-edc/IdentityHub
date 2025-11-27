@@ -30,7 +30,7 @@ import java.util.Set;
 import static java.util.Optional.ofNullable;
 
 /**
- * Manifest (=recipe) for creating the {@link ParticipantContext}.
+ * Manifest (=recipe) for creating the {@link IdentityHubParticipantContext}.
  */
 @JsonDeserialize(builder = ParticipantManifest.Builder.class)
 public class ParticipantManifest {

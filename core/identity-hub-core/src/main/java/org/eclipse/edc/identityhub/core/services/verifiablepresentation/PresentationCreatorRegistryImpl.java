@@ -19,7 +19,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationCreatorRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
 import org.eclipse.edc.spi.EdcException;
@@ -62,7 +62,7 @@ public class PresentationCreatorRegistryImpl implements PresentationCreatorRegis
 
 
             var did = participantContextService.getParticipantContext(participantContextId)
-                    .map(ParticipantContext::getDid)
+                    .map(IdentityHubParticipantContext::getDid)
                     .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
             var additionalDataWithController = new HashMap<>(additionalData);

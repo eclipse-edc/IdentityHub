@@ -21,8 +21,8 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -72,7 +72,7 @@ class KeyPairServiceImplTest {
     @BeforeEach
     void setup() {
         when(participantContextServiceMock.query(any(QuerySpec.class)))
-                .thenReturn(StoreResult.success(List.of(ParticipantContext.Builder.newInstance().participantContextId(PARTICIPANT_ID).apiTokenAlias("apitoken-alias").build())));
+                .thenReturn(StoreResult.success(List.of(IdentityHubParticipantContext.Builder.newInstance().participantContextId(PARTICIPANT_ID).apiTokenAlias("apitoken-alias").build())));
     }
 
     @ParameterizedTest(name = "make default: {0}")
@@ -172,7 +172,7 @@ class KeyPairServiceImplTest {
 
     @Test
     void addKeyPair_whenParticipantDeactivated_shouldFail() {
-        var pc = ParticipantContext.Builder.newInstance()
+        var pc = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(PARTICIPANT_ID)
                 .apiTokenAlias("apitoken-alias")
                 .state(ParticipantContextState.DEACTIVATED)

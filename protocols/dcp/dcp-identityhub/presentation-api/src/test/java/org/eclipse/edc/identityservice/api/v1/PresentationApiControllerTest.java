@@ -24,7 +24,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.credentialservice.Pre
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
 import org.eclipse.edc.identityhub.api.verifiablecredential.PresentationApiController;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.VerifiablePresentationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.CredentialQueryResolver;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.QueryResult;
@@ -90,7 +90,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     private final SelfIssuedTokenVerifier selfIssuedTokenVerifier = mock();
     private final VerifiablePresentationService generator = mock();
     private final JsonLd jsonLd = mock();
-    private final ParticipantContextService participantContextService = mock(a -> ServiceResult.success(ParticipantContext.Builder.newInstance()
+    private final ParticipantContextService participantContextService = mock(a -> ServiceResult.success(IdentityHubParticipantContext.Builder.newInstance()
             .participantContextId(a.getArgument(0).toString())
             .apiTokenAlias("test-alias")
             .build()));

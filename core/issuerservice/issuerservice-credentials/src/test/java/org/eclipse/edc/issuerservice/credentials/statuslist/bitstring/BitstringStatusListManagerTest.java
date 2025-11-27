@@ -17,7 +17,7 @@ package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
@@ -60,7 +60,7 @@ class BitstringStatusListManagerTest {
     void setUp() {
         when(publisher.publish(any())).thenReturn(Result.success(CREDENTIAL_URL));
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID)))
-                .thenReturn(success(ParticipantContext.Builder.newInstance()
+                .thenReturn(success(IdentityHubParticipantContext.Builder.newInstance()
                         .participantContextId(PARTICIPANT_CONTEXT_ID)
                         .apiTokenAlias("api-token-alias")
                         .did("did:web:" + PARTICIPANT_CONTEXT_ID)

@@ -15,14 +15,14 @@
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
 /**
- * This is the base class for all resources that are owned by a {@link ParticipantContext}.
+ * This is the base class for all resources that are owned by a {@link IdentityHubParticipantContext}.
  */
 public abstract class AbstractParticipantResource implements ParticipantResource {
     protected String participantContextId;
 
 
     /**
-     * The {@link ParticipantContext} that this resource belongs to.
+     * The {@link IdentityHubParticipantContext} that this resource belongs to.
      */
     @Override
     public String getParticipantContextId() {

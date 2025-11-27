@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.participantcontext.store;
 
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -31,7 +31,7 @@ import static org.eclipse.edc.identityhub.spi.participantcontext.model.Participa
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
-public abstract class ParticipantContextStoreTestBase {
+public abstract class IdentityHubParticipantContextStoreTestBase {
 
     @Test
     void create() {
@@ -94,7 +94,7 @@ public abstract class ParticipantContextStoreTestBase {
         assertThat(res).isSucceeded();
         assertThat(res.getContent())
                 .usingRecursiveFieldByFieldElementComparator()
-                .containsExactlyInAnyOrder(resources.toArray(new ParticipantContext[0]));
+                .containsExactlyInAnyOrder(resources.toArray(new IdentityHubParticipantContext[0]));
     }
 
     @Test
@@ -175,8 +175,8 @@ public abstract class ParticipantContextStoreTestBase {
 
     protected abstract ParticipantContextStore getStore();
 
-    private ParticipantContext createParticipantContext() {
-        return ParticipantContext.Builder.newInstance()
+    private IdentityHubParticipantContext createParticipantContext() {
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-participant")
                 .roles(List.of("role1", "role2"))
                 .state(CREATED)
@@ -185,8 +185,8 @@ public abstract class ParticipantContextStoreTestBase {
                 .build();
     }
 
-    private ParticipantContext.Builder createParticipantContextBuilder() {
-        return ParticipantContext.Builder.newInstance()
+    private IdentityHubParticipantContext.Builder createParticipantContextBuilder() {
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-participant")
                 .state(CREATED)
                 .roles(List.of("role1", "role2"))

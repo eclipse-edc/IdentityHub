@@ -26,7 +26,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -58,7 +58,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @Override
     public Response addHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.isAuthorized(context, decodedParticipantContextId, decodedParticipantContextId, ParticipantContext.class)
+        return authorizationService.isAuthorized(context, decodedParticipantContextId, decodedParticipantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> holderService.createHolder(holder.toHolder(decodedParticipantContextId)))
                 .map(v -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/holders/%s".formatted(participantContextId, holder.id()))).build())
                 .orElseThrow(exceptionMapper(Holder.class, holder.id()));

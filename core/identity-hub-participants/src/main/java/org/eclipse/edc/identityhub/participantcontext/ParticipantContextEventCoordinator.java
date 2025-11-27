@@ -20,8 +20,8 @@ import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleting;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
@@ -79,7 +79,7 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
                     // adding the keypair event will cause the DidDocumentService to update the DID
                     .compose(u -> storeKeyPairs(createdEvent))
                     .compose(u -> manifest.isActive()
-                            ? participantContextService.updateParticipant(manifest.getParticipantContextId(), ParticipantContext::activate) //implicitly publishes the did document
+                            ? participantContextService.updateParticipant(manifest.getParticipantContextId(), IdentityHubParticipantContext::activate) //implicitly publishes the did document
                             : success())
                     .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
 

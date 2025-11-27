@@ -22,7 +22,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialContainer;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.junit.annotations.ApiTest;
@@ -220,8 +220,8 @@ class StorageApiControllerTest extends RestControllerTestBase {
         return ClaimToken.Builder.newInstance().build();
     }
 
-    private ParticipantContext participantContext() {
-        return ParticipantContext.Builder.newInstance()
+    private IdentityHubParticipantContext participantContext() {
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("participantId")
                 .did("did:web:test")
                 .apiTokenAlias("alias")

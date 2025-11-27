@@ -21,7 +21,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
@@ -141,8 +141,8 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     }
 
 
-    private ParticipantContext createParticipantContext() {
-        return ParticipantContext.Builder.newInstance()
+    private IdentityHubParticipantContext createParticipantContext() {
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(participantContextId)
                 .did("did")
                 .apiTokenAlias("apiTokenAlias")

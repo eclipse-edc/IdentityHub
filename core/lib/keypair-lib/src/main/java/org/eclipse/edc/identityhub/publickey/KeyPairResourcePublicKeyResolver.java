@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.publickey;
 
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -49,7 +50,7 @@ public class KeyPairResourcePublicKeyResolver {
 
     /**
      * Resolves a {@link PublicKey} with a given key-ID from the internal {@link KeyPairResourceStore}. Note that this only works for public keys
-     * that are known to this runtime, i.e. this only works for public keys that belong to one of the {@link org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext} objects
+     * that are known to this runtime, i.e. this only works for public keys that belong to one of the {@link IdentityHubParticipantContext} objects
      * that are managed by this IdentityHub!
      * <p>
      * As a fallback, if the PublicKey is not found in storage, the resolver falls back to the {@link LocalPublicKeyService}.

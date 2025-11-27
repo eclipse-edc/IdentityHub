@@ -25,7 +25,7 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
@@ -113,7 +113,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             }
             var participantContextId = existingResource.getParticipantContextId();
             return ServiceResult.from(participantContextStore.findById(participantContextId))
-                    .map(ParticipantContext::getStateAsEnum)
+                    .map(IdentityHubParticipantContext::getStateAsEnum)
                     .compose(state -> {
                         var canPublish = state.equals(ParticipantContextState.ACTIVATED);
                         if (canPublish) {
@@ -143,7 +143,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
             var participantContextId = existingResource.getParticipantContextId();
             return ServiceResult.from(participantContextStore.findById(participantContextId))
-                    .map(ParticipantContext::getStateAsEnum)
+                    .map(IdentityHubParticipantContext::getStateAsEnum)
                     .compose(state -> {
                         var canUnpublish = state.equals(ParticipantContextState.DEACTIVATED);
                         if (canUnpublish) {

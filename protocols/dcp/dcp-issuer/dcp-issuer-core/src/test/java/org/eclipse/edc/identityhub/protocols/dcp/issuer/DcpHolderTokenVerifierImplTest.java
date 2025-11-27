@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import com.nimbusds.jose.jwk.ECKey;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
@@ -57,7 +57,7 @@ public class DcpHolderTokenVerifierImplTest {
     private final HolderStore holderStore = mock();
     private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = new DcpHolderTokenVerifierImpl(rulesRegistry, tokenValidationService, publicKeyResolver, holderStore, false);
 
-    private final ParticipantContext participantContext = ParticipantContext.Builder.newInstance().participantContextId("holderId")
+    private final IdentityHubParticipantContext participantContext = IdentityHubParticipantContext.Builder.newInstance().participantContextId("holderId")
             .did(PARTICIPANT_DID)
             .apiTokenAlias("apiAlias")
             .build();

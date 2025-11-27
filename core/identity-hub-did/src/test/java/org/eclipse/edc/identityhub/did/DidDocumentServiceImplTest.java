@@ -30,7 +30,7 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
@@ -83,7 +83,7 @@ class DidDocumentServiceImplTest {
         monitorMock = mock();
         service = new DidDocumentServiceImpl(trx, didResourceStoreMock, publisherRegistry, participantContextServiceMock, monitorMock, registry);
 
-        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
+        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.ACTIVATED)
@@ -212,7 +212,7 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
         when(publisherMock.unpublish(did)).thenReturn(Result.success());
-        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
+        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)
@@ -243,7 +243,7 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         when(publisherRegistry.getPublisher(any())).thenReturn(null);
         when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
-        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
+        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)
@@ -263,7 +263,7 @@ class DidDocumentServiceImplTest {
         var did = doc.getId();
         when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
         when(publisherMock.unpublish(did)).thenReturn(Result.failure("test-failure"));
-        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
+        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)
@@ -435,7 +435,7 @@ class DidDocumentServiceImplTest {
         when(didResourceStoreMock.query(any())).thenReturn(List.of(didResource));
         when(publisherMock.unpublish(anyString())).thenReturn(Result.success());
 
-        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
+        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)
@@ -487,7 +487,7 @@ class DidDocumentServiceImplTest {
         when(didResourceStoreMock.query(any())).thenReturn(List.of(didResource));
         when(publisherMock.unpublish(anyString())).thenReturn(Result.success());
 
-        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
+        when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
                 .apiTokenAlias("token")
                 .state(ParticipantContextState.DEACTIVATED)

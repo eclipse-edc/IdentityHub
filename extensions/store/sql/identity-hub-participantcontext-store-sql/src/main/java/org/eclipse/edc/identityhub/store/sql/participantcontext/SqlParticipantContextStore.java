@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.store.sql.participantcontext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
@@ -39,7 +39,7 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
 
 
 /**
- * SQL-based {@link ParticipantContext} store intended for use with PostgreSQL
+ * SQL-based {@link IdentityHubParticipantContext} store intended for use with PostgreSQL
  */
 public class SqlParticipantContextStore extends AbstractSqlStore implements ParticipantContextStore {
 
@@ -56,7 +56,7 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
     }
 
     @Override
-    public StoreResult<Void> create(ParticipantContext participantContext) {
+    public StoreResult<Void> create(IdentityHubParticipantContext participantContext) {
         var id = participantContext.getParticipantContextId();
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
@@ -84,7 +84,7 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
     }
 
     @Override
-    public StoreResult<Collection<ParticipantContext>> query(QuerySpec querySpec) {
+    public StoreResult<Collection<IdentityHubParticipantContext>> query(QuerySpec querySpec) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
                 var query = statements.createQuery(querySpec);
@@ -96,7 +96,7 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
     }
 
     @Override
-    public StoreResult<Void> update(ParticipantContext participantContext) {
+    public StoreResult<Void> update(IdentityHubParticipantContext participantContext) {
         var id = participantContext.getParticipantContextId();
 
         Objects.requireNonNull(participantContext);
@@ -141,14 +141,14 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
         });
     }
 
-    private ParticipantContext findByIdInternal(Connection connection, String id) {
+    private IdentityHubParticipantContext findByIdInternal(Connection connection, String id) {
         return transactionContext.execute(() -> {
             var stmt = statements.getFindByIdTemplate();
             return queryExecutor.single(connection, false, this::mapResultSet, stmt, id);
         });
     }
 
-    private ParticipantContext mapResultSet(ResultSet resultSet) throws Exception {
+    private IdentityHubParticipantContext mapResultSet(ResultSet resultSet) throws Exception {
 
         var id = resultSet.getString(statements.getIdColumn());
         var created = resultSet.getLong(statements.getCreateTimestampColumn());
@@ -159,7 +159,7 @@ public class SqlParticipantContextStore extends AbstractSqlStore implements Part
         List<String> roles = fromJson(resultSet.getString(statements.getRolesRolumn()), getTypeRef());
         Map<String, Object> props = fromJson(resultSet.getString(statements.getPropertiesColumn()), getTypeRef());
 
-        return ParticipantContext.Builder.newInstance()
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(id)
                 .createdAt(created)
                 .lastModified(lastmodified)

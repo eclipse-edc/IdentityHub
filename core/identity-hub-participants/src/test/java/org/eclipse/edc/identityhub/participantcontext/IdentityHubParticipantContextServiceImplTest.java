@@ -22,9 +22,9 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.AccountCredentials;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
@@ -61,7 +61,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class ParticipantContextServiceImplTest {
+class IdentityHubParticipantContextServiceImplTest {
 
     private final Vault vault = mock();
     private final ParticipantContextStore participantContextStore = mock();
@@ -362,7 +362,7 @@ class ParticipantContextServiceImplTest {
         var context = createContext();
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(context));
         when(participantContextStore.update(any())).thenReturn(StoreResult.success());
-        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), ParticipantContext::deactivate)).isSucceeded();
+        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), IdentityHubParticipantContext::deactivate)).isSucceeded();
 
         verify(participantContextStore).findById(anyString());
         verify(participantContextStore).update(any());
@@ -373,7 +373,7 @@ class ParticipantContextServiceImplTest {
     void update_whenNotFound() {
         var context = createContext();
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.notFound("foobar"));
-        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), ParticipantContext::deactivate)).isFailed()
+        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), IdentityHubParticipantContext::deactivate)).isFailed()
                 .detail().isEqualTo("ParticipantContext with ID 'test-id' not found.");
 
         verify(participantContextStore).findById(anyString());
@@ -386,7 +386,7 @@ class ParticipantContextServiceImplTest {
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(context));
         when(participantContextStore.update(any())).thenReturn(StoreResult.alreadyExists("test-msg"));
 
-        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), ParticipantContext::deactivate)).isFailed()
+        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), IdentityHubParticipantContext::deactivate)).isFailed()
                 .detail().isEqualTo("test-msg");
 
         verify(participantContextStore).findById(anyString());
@@ -426,8 +426,8 @@ class ParticipantContextServiceImplTest {
                 .publicKeyJwk(createJwk());
     }
 
-    private ParticipantContext createContext() {
-        return ParticipantContext.Builder.newInstance()
+    private IdentityHubParticipantContext createContext() {
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .did("did:web:test-id")
                 .state(ParticipantContextState.CREATED)

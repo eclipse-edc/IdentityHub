@@ -26,7 +26,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
@@ -112,7 +112,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
      * <p>
      * If no credential objects are found with the provided IDs, an error is returned.
      */
-    private Result<Collection<CredentialObject>> getCredentialObjects(ParticipantContext participantContext, Collection<String> credentialObjectIds) {
+    private Result<Collection<CredentialObject>> getCredentialObjects(IdentityHubParticipantContext participantContext, Collection<String> credentialObjectIds) {
         var metadata = dcpIssuerMetadataService.getIssuerMetadata(participantContext);
         if (metadata.failed()) {
             return Result.failure(metadata.getFailureDetail());

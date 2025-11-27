@@ -17,7 +17,7 @@ package org.eclipse.edc.identityhub.core.services.verification;
 import org.assertj.core.api.Assertions;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil;
 import org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil;
 import org.eclipse.edc.junit.assertions.AbstractResultAssert;
@@ -114,15 +114,15 @@ class SelfIssuedTokenVerifierImplTest {
     }
 
 
-    private ParticipantContext createParticipantContext(String did) {
-        return ParticipantContext.Builder.newInstance()
+    private IdentityHubParticipantContext createParticipantContext(String did) {
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .apiTokenAlias("token-alias")
                 .participantContextId(did)
                 .did(did)
                 .build();
     }
 
-    private ParticipantContext createParticipantContext() {
+    private IdentityHubParticipantContext createParticipantContext() {
         return createParticipantContext(PARTICIPANT_CONTEXT_ID);
     }
 }

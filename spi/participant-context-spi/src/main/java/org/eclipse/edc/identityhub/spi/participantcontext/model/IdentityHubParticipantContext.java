@@ -32,8 +32,8 @@ import static java.util.Optional.ofNullable;
 /**
  * Representation of a participant in Identity Hub.
  */
-@JsonDeserialize(builder = ParticipantContext.Builder.class)
-public class ParticipantContext extends AbstractParticipantResource {
+@JsonDeserialize(builder = IdentityHubParticipantContext.Builder.class)
+public class IdentityHubParticipantContext extends AbstractParticipantResource {
     private Map<String, Object> properties = new HashMap<>();
     private List<String> roles = new ArrayList<>();
     private String did;
@@ -43,7 +43,7 @@ public class ParticipantContext extends AbstractParticipantResource {
     private String apiTokenAlias;
 
 
-    private ParticipantContext() {
+    private IdentityHubParticipantContext() {
     }
 
     public String clientSecretAlias() {
@@ -77,7 +77,7 @@ public class ParticipantContext extends AbstractParticipantResource {
     }
 
     /**
-     * Get the alias, under which the API token for this {@link ParticipantContext} is stored in the {@link org.eclipse.edc.spi.security.Vault}.
+     * Get the alias, under which the API token for this {@link IdentityHubParticipantContext} is stored in the {@link org.eclipse.edc.spi.security.Vault}.
      * Note that API tokens should <strong>never</strong> be stored in the database, much less so unencrypted.
      */
     public String getApiTokenAlias() {
@@ -122,10 +122,10 @@ public class ParticipantContext extends AbstractParticipantResource {
     }
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static final class Builder extends AbstractParticipantResource.Builder<ParticipantContext, Builder> {
+    public static final class Builder extends AbstractParticipantResource.Builder<IdentityHubParticipantContext, Builder> {
 
         private Builder() {
-            super(new ParticipantContext());
+            super(new IdentityHubParticipantContext());
             entity.createdAt = Instant.now().toEpochMilli();
         }
 
@@ -156,7 +156,7 @@ public class ParticipantContext extends AbstractParticipantResource {
         }
 
         @Override
-        public ParticipantContext build() {
+        public IdentityHubParticipantContext build() {
             Objects.requireNonNull(entity.participantContextId, "Participant ID cannot be null");
             Objects.requireNonNull(entity.apiTokenAlias, "API Token Alias cannot be null");
 

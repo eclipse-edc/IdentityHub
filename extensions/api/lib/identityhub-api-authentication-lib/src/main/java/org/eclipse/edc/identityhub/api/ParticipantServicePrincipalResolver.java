@@ -18,7 +18,7 @@ import org.eclipse.edc.identityhub.api.authentication.filter.ServicePrincipalAut
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 
@@ -26,7 +26,7 @@ import java.util.Base64;
 import java.util.List;
 
 /**
- * For the Identity API of the IdentityHub, a {@link ServicePrincipal} is represented by a {@link ParticipantContext}.
+ * For the Identity API of the IdentityHub, a {@link ServicePrincipal} is represented by a {@link IdentityHubParticipantContext}.
  * However, the request filter chain ({@link ServicePrincipalAuthenticationFilter} etc.) do not need to know about that;
  * they only know about {@link ServicePrincipal} and {@link ServicePrincipalResolver}. Thus, this implementation acts as
  * a bridge. Other authentication backends like Apache Shiro would call this a _realm_.
@@ -69,7 +69,7 @@ class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
                 .orElseThrow(f -> new AuthenticationFailedException("Invalid Authentication '%s': %s".formatted(principal, f.getFailureDetail())));
     }
 
-    private ServicePrincipal toUser(ParticipantContext participantContext) {
+    private ServicePrincipal toUser(IdentityHubParticipantContext participantContext) {
         var credential = vault.resolveSecret(participantContext.getParticipantContextId(), participantContext.getApiTokenAlias());
         var participantContextId = participantContext.getParticipantContextId();
         return new ServicePrincipal() {

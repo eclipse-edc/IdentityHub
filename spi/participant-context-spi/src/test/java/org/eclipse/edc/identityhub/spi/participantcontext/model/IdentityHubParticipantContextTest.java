@@ -20,18 +20,18 @@ import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ParticipantContextTest {
+class IdentityHubParticipantContextTest {
 
     @Test
     void verifyCreateTimestamp() {
-        var context = ParticipantContext.Builder.newInstance()
+        var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .build();
 
         assertThat(context.getCreatedAt()).isNotZero().isLessThanOrEqualTo(Instant.now().toEpochMilli());
 
-        var context2 = ParticipantContext.Builder.newInstance()
+        var context2 = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .createdAt(42)
@@ -42,14 +42,14 @@ class ParticipantContextTest {
 
     @Test
     void verifyLastModifiedTimestamp() {
-        var context = ParticipantContext.Builder.newInstance()
+        var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .build();
 
         assertThat(context.getLastModified()).isNotZero().isEqualTo(context.getCreatedAt());
 
-        var context2 = ParticipantContext.Builder.newInstance()
+        var context2 = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .lastModified(42)
@@ -60,7 +60,7 @@ class ParticipantContextTest {
 
     @Test
     void verifyState() {
-        var context = ParticipantContext.Builder.newInstance()
+        var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .state(ParticipantContextState.CREATED);

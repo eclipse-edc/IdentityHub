@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.spi.participantcontext;
 
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.function.Consumer;
 
 /**
- * Handles {@link ParticipantContext} objects, their lifecycle and their authentication tokens.
+ * Handles {@link IdentityHubParticipantContext} objects, their lifecycle and their authentication tokens.
  */
 public interface ParticipantContextService {
 
@@ -37,15 +37,15 @@ public interface ParticipantContextService {
     ServiceResult<CreateParticipantContextResponse> createParticipantContext(ParticipantManifest manifest);
 
     /**
-     * Fetches the {@link ParticipantContext} by ID.
+     * Fetches the {@link IdentityHubParticipantContext} by ID.
      *
      * @param participantContextId the ID to look for.
      * @return The participant context, or a failure if not found.
      */
-    ServiceResult<ParticipantContext> getParticipantContext(String participantContextId);
+    ServiceResult<IdentityHubParticipantContext> getParticipantContext(String participantContextId);
 
     /**
-     * Deletes the {@link ParticipantContext} by ID.
+     * Deletes the {@link IdentityHubParticipantContext} by ID.
      *
      * @param participantContextId the ID to delete.
      * @return Success if deleted, or a failure if not found.
@@ -63,16 +63,16 @@ public interface ParticipantContextService {
     ServiceResult<String> regenerateApiToken(String participantContextId);
 
     /**
-     * Applies a modification function to the {@link ParticipantContext} and persists the changed object in the database.
+     * Applies a modification function to the {@link IdentityHubParticipantContext} and persists the changed object in the database.
      *
      * @param participantContextId The ID of the participant to modify
      * @param modificationFunction A modification function that is applied to the participant context
      * @return success if the update could be performed, a failure otherwise
      */
-    ServiceResult<Void> updateParticipant(String participantContextId, Consumer<ParticipantContext> modificationFunction);
+    ServiceResult<Void> updateParticipant(String participantContextId, Consumer<IdentityHubParticipantContext> modificationFunction);
 
     /**
-     * Returns a collection of {@link ParticipantContext} objects that match the specified query.
+     * Returns a collection of {@link IdentityHubParticipantContext} objects that match the specified query.
      */
-    ServiceResult<Collection<ParticipantContext>> query(QuerySpec querySpec);
+    ServiceResult<Collection<IdentityHubParticipantContext>> query(QuerySpec querySpec);
 }

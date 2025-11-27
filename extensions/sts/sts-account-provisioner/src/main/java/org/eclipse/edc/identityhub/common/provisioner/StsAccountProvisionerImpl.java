@@ -20,6 +20,7 @@ import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientSecretGe
 import org.eclipse.edc.identityhub.spi.participantcontext.AccountCredentials;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
@@ -29,7 +30,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
 
 /**
- * AccountProvisioner, that synchronizes the {@link org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext} object
+ * AccountProvisioner, that synchronizes the {@link IdentityHubParticipantContext} object
  * to {@link StsAccount} entries. That means, when a participant is created, this provisioner takes care of creating a corresponding
  * {@link StsAccount}, if the embedded STS is used.
  * When key pairs are revoked or rotated, the corresponding {@link StsAccount} entry is updated.

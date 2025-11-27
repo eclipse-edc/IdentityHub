@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer.spi;
 
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.spi.result.ServiceResult;
 
 public interface DcpIssuerMetadataService {
@@ -26,5 +26,5 @@ public interface DcpIssuerMetadataService {
      * @param participantContext the participant context
      * @return the metadata of the issuer
      */
-    ServiceResult<IssuerMetadata> getIssuerMetadata(ParticipantContext participantContext);
+    ServiceResult<IssuerMetadata> getIssuerMetadata(IdentityHubParticipantContext participantContext);
 }

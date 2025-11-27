@@ -20,7 +20,7 @@ import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.jsonld.TitaniumJsonLd;
@@ -80,7 +80,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .thenReturn(Result.success(CredentialOfferMessage.Builder.newInstance().issuer("test-issuer").build()));
 
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(
-                ParticipantContext.Builder.newInstance()
+                IdentityHubParticipantContext.Builder.newInstance()
                         .participantContextId("test-id")
                         .did("did:web:test-id")
                         .state(ParticipantContextState.CREATED)

@@ -26,7 +26,7 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.AttestationDefinitionRequest;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
@@ -60,7 +60,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
 
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        return authorizationService.isAuthorized(securityContext, decodedParticipantContextId, decodedParticipantContextId, ParticipantContext.class)
+        return authorizationService.isAuthorized(securityContext, decodedParticipantContextId, decodedParticipantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> attestationDefinitionService.createAttestation(createAttestationDefinition(decodedParticipantContextId, attestationRequest)))
                 .map(u -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/attestations/%s".formatted(participantContextId, attestationRequest.id()))).build())
                 .orElseThrow(AuthorizationResultHandler.exceptionMapper(AttestationDefinition.class));

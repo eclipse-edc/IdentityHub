@@ -21,7 +21,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextServ
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
@@ -103,7 +103,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     @Override
-    public ServiceResult<ParticipantContext> getParticipantContext(String participantContextId) {
+    public ServiceResult<IdentityHubParticipantContext> getParticipantContext(String participantContextId) {
         return transactionContext.execute(() -> ServiceResult.from(participantContextStore.findById(participantContextId)));
     }
 
@@ -116,7 +116,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
             }
             // deactivating the PC must be the first step, because unpublishing DIDs requires the PC to be in the DEACTIVATED state.
             // Unpublishing DIDs happens in callback of the "-Deleting" Event
-            return updateParticipant(participantContextId, ParticipantContext::deactivate)
+            return updateParticipant(participantContextId, IdentityHubParticipantContext::deactivate)
                     .compose(v -> {
                         observable.invokeForEach(l -> l.deleting(participantContext));
                         var res = participantContextStore.deleteById(participantContextId);
@@ -143,7 +143,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     @Override
-    public ServiceResult<Void> updateParticipant(String participantContextId, Consumer<ParticipantContext> modificationFunction) {
+    public ServiceResult<Void> updateParticipant(String participantContextId, Consumer<IdentityHubParticipantContext> modificationFunction) {
         return transactionContext.execute(() -> {
             var participant = findByIdInternal(participantContextId);
             if (participant == null) {
@@ -158,11 +158,11 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
     @Override
-    public ServiceResult<Collection<ParticipantContext>> query(QuerySpec querySpec) {
+    public ServiceResult<Collection<IdentityHubParticipantContext>> query(QuerySpec querySpec) {
         return transactionContext.execute(() -> ServiceResult.from(participantContextStore.query(querySpec)));
     }
 
-    private ServiceResult<String> createTokenAndStoreInVault(ParticipantContext participantContext) {
+    private ServiceResult<String> createTokenAndStoreInVault(IdentityHubParticipantContext participantContext) {
         var alias = participantContext.getApiTokenAlias();
         var newToken = tokenGenerator.generate(participantContext.getParticipantContextId());
         return vault.storeSecret(participantContext.getParticipantContextId(), alias, newToken)
@@ -171,7 +171,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
     }
 
 
-    private ServiceResult<ParticipantContext> createParticipantContext(ParticipantContext context) {
+    private ServiceResult<IdentityHubParticipantContext> createParticipantContext(IdentityHubParticipantContext context) {
         var result = participantContextStore.create(context);
 
         var config = context.getProperties().entrySet().stream()
@@ -194,15 +194,15 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
         return configResult.compose(u -> ServiceResult.from(result).map(it -> context));
     }
 
-    private ParticipantContext findByIdInternal(String participantContextId) {
+    private IdentityHubParticipantContext findByIdInternal(String participantContextId) {
         var resultStream = participantContextStore.findById(participantContextId);
         return resultStream.orElse(f -> null);
     }
 
 
-    private ParticipantContext convert(ParticipantManifest manifest) {
+    private IdentityHubParticipantContext convert(ParticipantManifest manifest) {
         var apiKeyAlias = ofNullable(manifest.getApiKeyAlias()).orElse("%s-%s".formatted(manifest.getParticipantContextId(), API_KEY_ALIAS_SUFFIX));
-        return ParticipantContext.Builder.newInstance()
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(manifest.getParticipantContextId())
                 .roles(manifest.getRoles())
                 .did(manifest.getDid())

@@ -28,9 +28,9 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
@@ -159,7 +159,7 @@ public abstract class AbstractIdentityHub {
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 
-    public ParticipantContext getParticipant(String participantContextId) {
+    public IdentityHubParticipantContext getParticipant(String participantContextId) {
         return participantContextService
                 .getParticipantContext(participantContextId)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
@@ -185,8 +185,9 @@ public abstract class AbstractIdentityHub {
                 .stream()
                 .toList();
     }
+    
+    public String storeParticipant(IdentityHubParticipantContext pc) {
 
-    public String storeParticipant(ParticipantContext pc) {
         var token = createTokenFor(pc.getParticipantContextId());
         vault.storeSecret(pc.getParticipantContextId(), pc.getApiTokenAlias(), token);
         participantContextStore.create(pc).orElseThrow(f -> new RuntimeException(f.getFailureDetail()));

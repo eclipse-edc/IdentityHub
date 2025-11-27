@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext.store;
 
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 
@@ -23,7 +23,7 @@ import java.util.Collection;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 
 /**
- * Stores {@link ParticipantContext} objects and provides basic CRUD operations.
+ * Stores {@link IdentityHubParticipantContext} objects and provides basic CRUD operations.
  */
 public interface ParticipantContextStore {
     /**
@@ -32,15 +32,15 @@ public interface ParticipantContextStore {
      * @param context The ParticipantContext resource to create.
      * @return success if not exists, a failure if already exists
      */
-    StoreResult<Void> create(ParticipantContext context);
+    StoreResult<Void> create(IdentityHubParticipantContext context);
 
     /**
      * Queries the store for ParticipantContexts based on the given query specification.
      *
      * @param querySpec The {@link QuerySpec} indicating the criteria for the query.
-     * @return A {@link StoreResult} object containing a list of {@link ParticipantContext} objects that match the query. If none are found, returns an empty stream.
+     * @return A {@link StoreResult} object containing a list of {@link IdentityHubParticipantContext} objects that match the query. If none are found, returns an empty stream.
      */
-    StoreResult<Collection<ParticipantContext>> query(QuerySpec querySpec);
+    StoreResult<Collection<IdentityHubParticipantContext>> query(QuerySpec querySpec);
 
     /**
      * Updates a ParticipantContext resource in the store.
@@ -48,7 +48,7 @@ public interface ParticipantContextStore {
      * @param participantContext The ParticipantContext resource to update. Note that <em>all fields</em> are overwritten.
      * @return success if participant context exists, failure otherwise
      */
-    StoreResult<Void> update(ParticipantContext participantContext);
+    StoreResult<Void> update(IdentityHubParticipantContext participantContext);
 
     /**
      * Deletes a ParticipantContext resource from the store based on the given ID.
@@ -66,7 +66,7 @@ public interface ParticipantContextStore {
         return "A ParticipantContext with ID '%s' does not exist.".formatted(id);
     }
 
-    default StoreResult<ParticipantContext> findById(String participantContextId) {
+    default StoreResult<IdentityHubParticipantContext> findById(String participantContextId) {
         var res = query(queryByParticipantContextId(participantContextId).build());
         if (res.succeeded()) {
             return res.getContent().stream().findFirst()

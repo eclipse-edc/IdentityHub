@@ -16,8 +16,8 @@ package org.eclipse.edc.identityhub.spi.keypair.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * A {@link KeyPairResource} contains key material for a particular {@link ParticipantContext}. The public key is stored in the database in serialized form (JWK or PEM) and the private
+ * A {@link KeyPairResource} contains key material for a particular {@link IdentityHubParticipantContext}. The public key is stored in the database in serialized form (JWK or PEM) and the private
  * key is referenced via an alias, it is actually stored in a {@link Vault}.
  */
 public class KeyPairResource extends AbstractParticipantResource {
@@ -67,7 +67,7 @@ public class KeyPairResource extends AbstractParticipantResource {
     }
 
     /**
-     * Whether this KeyPair is the default for a {@link ParticipantContext}.
+     * Whether this KeyPair is the default for a {@link IdentityHubParticipantContext}.
      */
     public boolean isDefaultPair() {
         return defaultPair;

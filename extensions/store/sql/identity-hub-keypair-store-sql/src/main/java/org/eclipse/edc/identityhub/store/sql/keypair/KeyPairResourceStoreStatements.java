@@ -14,13 +14,13 @@
 
 package org.eclipse.edc.identityhub.store.sql.keypair;
 
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.sql.statement.SqlStatements;
 import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 /**
- * Defines SQL-statements and column names for use with a SQL-based {@link ParticipantContext}
+ * Defines SQL-statements and column names for use with a SQL-based {@link IdentityHubParticipantContext}
  */
 public interface KeyPairResourceStoreStatements extends SqlStatements {
     default String getTableName() {

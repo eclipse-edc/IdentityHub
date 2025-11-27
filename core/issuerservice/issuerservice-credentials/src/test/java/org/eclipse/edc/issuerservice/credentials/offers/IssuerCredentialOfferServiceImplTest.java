@@ -24,7 +24,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -200,8 +200,8 @@ class IssuerCredentialOfferServiceImplTest {
         verifyNoMoreInteractions(holderStore, participantContextService, sts, httpClient);
     }
 
-    private ParticipantContext issuerParticipant() {
-        return ParticipantContext.Builder.newInstance()
+    private IdentityHubParticipantContext issuerParticipant() {
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .apiTokenAlias("test-token")
                 .did("did:web:" + PARTICIPANT_CONTEXT_ID)

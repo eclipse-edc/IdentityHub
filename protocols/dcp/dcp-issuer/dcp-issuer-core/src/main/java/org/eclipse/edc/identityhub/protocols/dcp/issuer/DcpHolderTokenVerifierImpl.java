@@ -17,7 +17,7 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
@@ -57,7 +57,7 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
 
 
     @Override
-    public ServiceResult<DcpRequestContext> verify(ParticipantContext issuerContext, TokenRepresentation tokenRepresentation) {
+    public ServiceResult<DcpRequestContext> verify(IdentityHubParticipantContext issuerContext, TokenRepresentation tokenRepresentation) {
         return getTokenIssuer(tokenRepresentation.getToken())
                 .compose(token -> getParticipant(issuerContext.getParticipantContextId(), token))
                 .compose(participant ->
@@ -108,7 +108,7 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
         return holders.stream().findFirst().map(ServiceResult::success).orElseGet(() -> ServiceResult.unauthorized("Participant not found"));
     }
 
-    private ServiceResult<DcpRequestContext> validateToken(ParticipantContext issuerContext, TokenRepresentation token, Holder holder, String kid) {
+    private ServiceResult<DcpRequestContext> validateToken(IdentityHubParticipantContext issuerContext, TokenRepresentation token, Holder holder, String kid) {
 
         var rules = rulesRegistry.getRules(DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT);
         var newRules = new ArrayList<>(rules);

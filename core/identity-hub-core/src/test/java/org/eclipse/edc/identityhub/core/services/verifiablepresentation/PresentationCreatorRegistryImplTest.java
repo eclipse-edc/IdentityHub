@@ -19,7 +19,7 @@ import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -55,7 +55,7 @@ class PresentationCreatorRegistryImplTest {
     @BeforeEach
     void setup() {
         when(participantContextService.getParticipantContext(anyString()))
-                .thenReturn(ServiceResult.success(ParticipantContext.Builder.newInstance()
+                .thenReturn(ServiceResult.success(IdentityHubParticipantContext.Builder.newInstance()
                         .participantContextId("test-participant")
                         .apiTokenAlias("test-token")
                         .did(ISSUER_ID).build()));
