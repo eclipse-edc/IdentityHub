@@ -151,12 +151,15 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         @AfterEach
-        void teardown(HolderService holderService, CredentialDefinitionService credentialDefinitionService) {
+        void teardown(HolderService holderService, CredentialDefinitionService credentialDefinitionService, AttestationDefinitionService attestationDefinitionService) {
             holderService.queryHolders(QuerySpec.max()).getContent()
                     .forEach(p -> holderService.deleteHolder(p.getHolderId()).getContent());
 
             credentialDefinitionService.queryCredentialDefinitions(QuerySpec.max()).getContent()
                     .forEach(c -> credentialDefinitionService.deleteCredentialDefinition(c.getId()).getContent());
+
+            attestationDefinitionService.queryAttestations(QuerySpec.max()).getContent()
+                    .forEach(a -> attestationDefinitionService.deleteAttestation(a.getId()).getContent());
         }
 
         @Test

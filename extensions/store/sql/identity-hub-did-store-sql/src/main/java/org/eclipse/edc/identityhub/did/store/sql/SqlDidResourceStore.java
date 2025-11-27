@@ -141,6 +141,7 @@ public class SqlDidResourceStore extends AbstractSqlStore implements DidResource
         return DidResource.Builder.newInstance()
                 .did(resultSet.getString(statements.getIdColumn()))
                 .createTimestamp(resultSet.getLong(statements.getCreateTimestampColumn()))
+                .createdAt(resultSet.getLong(statements.getCreateTimestampColumn()))
                 .stateTimeStamp(resultSet.getLong(statements.getStateTimestampColumn()))
                 .document(fromJson(resultSet.getString(statements.getDidDocumentColumn()), DidDocument.class))
                 .state(resultSet.getInt(statements.getStateColumn()))

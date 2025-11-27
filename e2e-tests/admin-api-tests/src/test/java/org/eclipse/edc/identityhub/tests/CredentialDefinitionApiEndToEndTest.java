@@ -99,6 +99,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             assertThat(service.findCredentialDefinitionById(definition.getId())).isSucceeded()
                     .usingRecursiveComparison()
+                    .ignoringFields("createdAt")
                     .isEqualTo(definition);
         }
 
@@ -432,7 +433,9 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var updatedDefinition = service.findCredentialDefinitionById(definition.getId()).getContent();
 
-            assertThat(updatedDefinition).usingRecursiveComparison().isEqualTo(definition);
+            assertThat(updatedDefinition).usingRecursiveComparison()
+                    .ignoringFields("createdAt")
+                    .isEqualTo(definition);
         }
 
         @Test

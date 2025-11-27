@@ -452,7 +452,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .statusCode(204);
 
             var updatedParticipant = participantContextService.getParticipantContext(participantContextId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
-            assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.DEACTIVATED.ordinal());
+            assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.DEACTIVATED.code());
             assertThat(identityHub.getDidResourceForParticipant(did).getState()).isEqualTo(DidState.UNPUBLISHED.code());
 
             // verify the correct event was emitted

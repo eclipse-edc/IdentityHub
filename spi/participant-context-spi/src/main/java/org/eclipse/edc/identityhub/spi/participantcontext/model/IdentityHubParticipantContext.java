@@ -15,6 +15,8 @@
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
@@ -26,8 +28,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
+import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantContextState.CREATED;
 
 /**
  * Representation of a participant in Identity Hub.
@@ -59,9 +64,17 @@ public class IdentityHubParticipantContext extends ParticipantContext {
         return getIdentity();
     }
 
+    @JsonIgnore
+    @Override
+    public String getIdentity() {
+        return super.getIdentity();
+    }
+
     @SuppressWarnings("unchecked")
     public List<String> getRoles() {
-        return Collections.unmodifiableList((List<? extends String>) properties.get(ROLES));
+        return Optional.ofNullable(properties.get(ROLES)).map(item -> (List<String>) item)
+                .map(Collections::unmodifiableList)
+                .orElse(Collections.emptyList());
     }
 
     public void setRoles(List<String> roles) {
@@ -69,6 +82,9 @@ public class IdentityHubParticipantContext extends ParticipantContext {
     }
 
     @JsonPOJOBuilder(withPrefix = "")
+    // TODO we currently ignore identity during deserialization to maintain backward compatibility with existing did.
+    // We might think about removing the did and use only the identity
+    @JsonIgnoreProperties(value = {"identity"})
     public static final class Builder extends AbstractParticipantResource.Builder<IdentityHubParticipantContext, Builder> {
 
         private Builder() {
@@ -104,19 +120,30 @@ public class IdentityHubParticipantContext extends ParticipantContext {
 
         @Override
         public IdentityHubParticipantContext build() {
+            super.build();
             Objects.requireNonNull(entity.participantContextId, "Participant ID cannot be null");
             Objects.requireNonNull(entity.getApiTokenAlias(), "API Token Alias cannot be null");
 
             if (entity.getLastModified() == 0L) {
-                entity.lastModified = entity.getCreatedAt();
+                entity.lastModified = entity.clock.millis();
             }
-            return super.build();
+            if (entity.state == 0) {
+                entity.state = CREATED.code();
+            }
+            return entity;
         }
 
         public Builder state(ParticipantContextState state) {
             this.entity.state = state.code();
             return this;
         }
+
+        public Builder state(int state) {
+            Objects.requireNonNull(ParticipantContextState.from(state), format("%s not a valid state", state)); // validate state
+            this.entity.state = state;
+            return this;
+        }
+
 
         public Builder roles(List<String> roles) {
             this.entity.properties.put(ROLES, roles);

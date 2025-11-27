@@ -55,7 +55,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
     @Test
     void createAttestationDefinition_expect201() {
         var def = createAttestationDefinition("test-id", "test-type", Map.of());
-        when(attestationDefinitionService.createAttestation(refEq(def)))
+        when(attestationDefinitionService.createAttestation(refEq(def, "createdAt", "lastModifiedAt")))
                 .thenReturn(ServiceResult.success());
 
         baseRequest()
@@ -69,7 +69,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
     @Test
     void createAttestationDefinition_whenExists_expectConflict() {
         var def = createAttestationDefinition("test-id", "test-type", Map.of());
-        when(attestationDefinitionService.createAttestation(refEq(def)))
+        when(attestationDefinitionService.createAttestation(refEq(def, "createdAt", "lastModifiedAt")))
                 .thenReturn(ServiceResult.conflict("foo"));
 
         baseRequest()

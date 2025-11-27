@@ -39,6 +39,7 @@ class KeyPairRotatedTest {
         var json = typeManager.writeValueAsString(evt);
         assertThat(json).isNotNull();
 
-        assertThat(typeManager.readValue(json, KeyPairRotated.class)).usingRecursiveComparison().isEqualTo(evt);
+        assertThat(typeManager.readValue(json, KeyPairRotated.class)).usingRecursiveComparison()
+                .isEqualTo(evt);
     }
 }

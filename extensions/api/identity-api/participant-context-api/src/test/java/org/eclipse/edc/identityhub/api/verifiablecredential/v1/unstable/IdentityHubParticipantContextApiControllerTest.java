@@ -219,6 +219,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
                 .participantContextId("test-id")
                 .createdAt(Instant.now().toEpochMilli())
                 .state(ParticipantContextState.ACTIVATED)
+                .roles(List.of())
                 .apiTokenAlias("test-alias");
     }
 

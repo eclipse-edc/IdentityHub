@@ -101,7 +101,6 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                 }
 
                 var stmt = statements.getInsertTemplate();
-                var timestamp = clock.millis();
                 queryExecutor.execute(connection, stmt,
                         credentialDefinition.getId(),
                         credentialDefinition.getParticipantContextId(),
@@ -113,8 +112,8 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                         credentialDefinition.getJsonSchemaUrl(),
                         credentialDefinition.getValidity(),
                         credentialDefinition.getFormat(),
-                        timestamp,
-                        timestamp
+                        credentialDefinition.getCreatedAt(),
+                        credentialDefinition.getCreatedAt()
                 );
                 return success();
 
@@ -217,6 +216,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                 .jsonSchemaUrl(resultSet.getString(statements.getJsonSchemaUrlColumn()))
                 .validity(resultSet.getLong(statements.getValidityColumn()))
                 .format(resultSet.getString(statements.getFormatsColumn()))
+                .createdAt(resultSet.getLong(statements.getCreateTimestampColumn()))
                 .build();
     }
 }

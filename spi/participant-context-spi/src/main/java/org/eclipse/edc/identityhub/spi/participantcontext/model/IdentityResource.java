@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 
 import java.time.Clock;
@@ -30,6 +31,7 @@ public abstract class IdentityResource extends AbstractParticipantResource {
     protected String issuerId;
     protected String holderId;
 
+    @JsonIgnore
     public Clock getClock() {
         return clock;
     }
