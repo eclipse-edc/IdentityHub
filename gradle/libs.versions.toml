@@ -51,6 +51,7 @@ edc-core-jersey = { module = "org.eclipse.edc:jersey-core", version.ref = "edc" 
 edc-core-api = { module = "org.eclipse.edc:api-core", version.ref = "edc" }
 edc-core-runtime = { module = "org.eclipse.edc:runtime-core", version.ref = "edc" }
 edc-core-participantcontext-config = { module = "org.eclipse.edc:participant-context-config-core", version.ref = "edc" }
+edc-core-participantcontext = { module = "org.eclipse.edc:participant-context-core", version.ref = "edc" }
 edc-identity-did-core = { module = "org.eclipse.edc:identity-did-core", version.ref = "edc" }
 edc-identity-did-web = { module = "org.eclipse.edc:identity-did-web", version.ref = "edc" }
 edc-dcp-transform = { module = "org.eclipse.edc:decentralized-claims-transform", version.ref = "edc" }

@@ -114,7 +114,7 @@ public class IdentityHubParticipantContext extends ParticipantContext {
         }
 
         public Builder state(ParticipantContextState state) {
-            this.entity.state = state.ordinal();
+            this.entity.state = state.code();
             return this;
         }
 
@@ -134,7 +134,7 @@ public class IdentityHubParticipantContext extends ParticipantContext {
         }
 
         public Builder properties(Map<String, Object> properties) {
-            entity.properties = properties;
+            entity.properties.putAll(properties);
             return this;
         }
 

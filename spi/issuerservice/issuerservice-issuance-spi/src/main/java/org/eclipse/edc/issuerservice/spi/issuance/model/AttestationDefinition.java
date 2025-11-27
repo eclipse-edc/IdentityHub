@@ -26,15 +26,10 @@ import java.util.Objects;
  */
 public class AttestationDefinition extends AbstractParticipantResource {
 
-    private String id;
     private String attestationType;
     private Map<String, Object> configuration = new HashMap<>();
 
     private AttestationDefinition() {
-    }
-
-    public String getId() {
-        return id;
     }
 
     public String getAttestationType() {
@@ -53,11 +48,6 @@ public class AttestationDefinition extends AbstractParticipantResource {
 
         public static Builder newInstance() {
             return new Builder();
-        }
-
-        public Builder id(String id) {
-            this.entity.id = id;
-            return this;
         }
 
         public Builder attestationType(String attestationType) {

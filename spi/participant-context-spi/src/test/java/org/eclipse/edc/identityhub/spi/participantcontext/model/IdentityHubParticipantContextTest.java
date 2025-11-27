@@ -66,9 +66,9 @@ class IdentityHubParticipantContextTest {
                 .apiTokenAlias("foo-token")
                 .state(ParticipantContextState.CREATED);
 
-        assertThat(context.build().getState()).isEqualTo(0);
-        assertThat(context.state(ParticipantContextState.ACTIVATED).build().getState()).isEqualTo(1);
-        assertThat(context.state(ParticipantContextState.DEACTIVATED).build().getState()).isEqualTo(2);
+        assertThat(context.build().getState()).isEqualTo(ParticipantContextState.CREATED.code());
+        assertThat(context.state(ParticipantContextState.ACTIVATED).build().getState()).isEqualTo(ParticipantContextState.ACTIVATED.code());
+        assertThat(context.state(ParticipantContextState.DEACTIVATED).build().getState()).isEqualTo(ParticipantContextState.DEACTIVATED.code());
 
     }
 

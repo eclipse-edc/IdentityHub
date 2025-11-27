@@ -221,8 +221,10 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
     private IdentityHubParticipantContext convert(ParticipantContext participantContext) {
         return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(participantContext.getParticipantContextId())
-                .id(participantContext.getIdentity())
+                .did(participantContext.getIdentity())
                 .state(participantContext.getStateAsEnum())
+                .createdAt(participantContext.getCreatedAt())
+                .lastModified(participantContext.getLastModified())
                 .properties(participantContext.getProperties())
                 .build();
     }

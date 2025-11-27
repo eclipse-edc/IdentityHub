@@ -86,6 +86,7 @@ class DidDocumentServiceImplTest {
 
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
+                .identity("did:web:testdid")
                 .property(API_TOKEN_ALIAS, "token")
                 .state(ParticipantContextState.ACTIVATED)
                 .build()));
@@ -215,6 +216,7 @@ class DidDocumentServiceImplTest {
         when(publisherMock.unpublish(did)).thenReturn(Result.success());
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
+                .identity("did:web:testdid")
                 .property(API_TOKEN_ALIAS, "token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));
@@ -246,6 +248,7 @@ class DidDocumentServiceImplTest {
         when(didResourceStoreMock.findById(eq(did))).thenReturn(DidResource.Builder.newInstance().did(did).state(DidState.PUBLISHED).document(doc).build());
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
+                .identity("did:web:testdid")
                 .property(API_TOKEN_ALIAS, "token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));
@@ -266,6 +269,7 @@ class DidDocumentServiceImplTest {
         when(publisherMock.unpublish(did)).thenReturn(Result.failure("test-failure"));
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
+                .identity("did:web:testdid")
                 .property(API_TOKEN_ALIAS, "token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));
@@ -438,6 +442,7 @@ class DidDocumentServiceImplTest {
 
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
+                .identity("did:web:testdid")
                 .property(API_TOKEN_ALIAS, "token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));
@@ -490,6 +495,7 @@ class DidDocumentServiceImplTest {
 
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)
+                .identity("did:web:testdid")
                 .property(API_TOKEN_ALIAS, "token")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build()));

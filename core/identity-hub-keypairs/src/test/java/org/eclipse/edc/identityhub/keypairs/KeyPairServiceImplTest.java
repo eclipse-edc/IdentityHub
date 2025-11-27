@@ -75,6 +75,7 @@ class KeyPairServiceImplTest {
         when(participantContextServiceMock.query(any(QuerySpec.class)))
                 .thenReturn(StoreResult.success(List.of(ParticipantContext.Builder.newInstance()
                         .participantContextId(PARTICIPANT_ID)
+                        .identity("did:example:123")
                         .property(API_TOKEN_ALIAS, "apitoken-alias").build())));
     }
 
@@ -177,6 +178,7 @@ class KeyPairServiceImplTest {
     void addKeyPair_whenParticipantDeactivated_shouldFail() {
         var pc = ParticipantContext.Builder.newInstance()
                 .participantContextId(PARTICIPANT_ID)
+                .identity("did:example:123")
                 .property(API_TOKEN_ALIAS, "apitoken-alias")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build();

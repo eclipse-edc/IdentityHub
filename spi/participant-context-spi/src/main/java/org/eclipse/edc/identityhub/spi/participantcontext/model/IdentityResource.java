@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 
 import java.time.Clock;
@@ -27,19 +26,12 @@ import java.util.UUID;
  * They can be extended with custom properties and behaviors.
  */
 public abstract class IdentityResource extends AbstractParticipantResource {
-    protected String id;
     protected long timestamp;
     protected String issuerId;
     protected String holderId;
-    @JsonIgnore
-    protected Clock clock;
 
     public Clock getClock() {
         return clock;
-    }
-
-    public String getId() {
-        return id;
     }
 
     public long getTimestamp() {
@@ -60,11 +52,6 @@ public abstract class IdentityResource extends AbstractParticipantResource {
             super(entity);
         }
 
-        public B id(String id) {
-            entity.id = id;
-            return self();
-        }
-
         public B timestamp(long timestamp) {
             entity.timestamp = timestamp;
             return self();
@@ -75,11 +62,6 @@ public abstract class IdentityResource extends AbstractParticipantResource {
             return self();
         }
 
-        public B clock(Clock clock) {
-            entity.clock = clock;
-            return self();
-        }
-
         public B holderId(String holderId) {
             entity.holderId = holderId;
             return self();
@@ -87,9 +69,9 @@ public abstract class IdentityResource extends AbstractParticipantResource {
 
         @Override
         protected T build() {
+            super.build();
             Objects.requireNonNull(entity.issuerId, "Must have an issuer.");
             Objects.requireNonNull(entity.holderId, "Must have a holder.");
-            entity.clock = Objects.requireNonNullElse(entity.clock, Clock.systemUTC());
 
             if (entity.id == null) {
                 entity.id = UUID.randomUUID().toString();
@@ -98,7 +80,7 @@ public abstract class IdentityResource extends AbstractParticipantResource {
             if (entity.timestamp == 0) {
                 entity.timestamp = entity.clock.millis();
             }
-            return super.build();
+            return entity;
         }
     }
 }

@@ -31,7 +31,6 @@ import java.util.Set;
  * key is referenced via an alias, it is actually stored in a {@link Vault}.
  */
 public class KeyPairResource extends AbstractParticipantResource {
-    private String id;
     private long timestamp;
     private String keyId;
     private String groupName;
@@ -57,13 +56,6 @@ public class KeyPairResource extends AbstractParticipantResource {
 
     public String getGroupName() {
         return groupName;
-    }
-
-    /**
-     * The database ID of this KeyPairResource.
-     */
-    public String getId() {
-        return id;
     }
 
     /**
@@ -172,11 +164,6 @@ public class KeyPairResource extends AbstractParticipantResource {
             return this;
         }
 
-        public Builder id(String id) {
-            entity.id = id;
-            return this;
-        }
-
         @Override
         public Builder self() {
             return this;
@@ -184,6 +171,7 @@ public class KeyPairResource extends AbstractParticipantResource {
 
         @Override
         public KeyPairResource build() {
+            super.build();
             Objects.requireNonNull(entity.id);
             if (entity.usage == null || entity.usage.isEmpty()) {
                 throw new IllegalStateException("KeyPair must have at least one usage"); // backwards compatibility should be handled elsewhere
@@ -191,7 +179,7 @@ public class KeyPairResource extends AbstractParticipantResource {
             if (entity.useDuration == 0) {
                 entity.useDuration = Duration.ofDays(6 * 30).toMillis();
             }
-            return super.build();
+            return entity;
         }
 
         public Builder timestamp(long timestamp) {
