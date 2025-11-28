@@ -173,7 +173,7 @@ public class DcpPresentationFlowWithDockerTest {
         var vault = identityHub.getService(Vault.class);
 
         var privateKeyAlias = "%s-privatekey-alias".formatted(TEST_PARTICIPANT_CONTEXT_ID);
-        vault.storeSecret(privateKeyAlias, holderKey.toJSONString());
+        vault.storeSecret(TEST_PARTICIPANT_CONTEXT_ID, privateKeyAlias, holderKey.toJSONString());
         var manifest = ParticipantManifest.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(holderDid)

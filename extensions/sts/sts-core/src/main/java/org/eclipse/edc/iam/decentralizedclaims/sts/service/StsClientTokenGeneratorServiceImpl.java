@@ -60,7 +60,7 @@ public class StsClientTokenGeneratorServiceImpl implements StsClientTokenGenerat
                                 .map(enrichClaimsWith(accumulator, entity.getKey()))
                                 .orElse(accumulator), (a, b) -> b);
 
-        var tokenResult = tokenGenerator.createToken(client.getId(), claims, additionalParams.getBearerAccessScope())
+        var tokenResult = tokenGenerator.createToken(client.getParticipantContextId(), claims, additionalParams.getBearerAccessScope())
                 .map(this::enrichWithExpiration);
 
         if (tokenResult.failed()) {

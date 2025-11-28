@@ -233,9 +233,9 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(anyOf(equalTo(200), equalTo(204)))
                     .body(notNullValue());
 
-            assertThat(vault.resolveSecret("test-clientsecret-alias")).isNotNull();
-            assertThat(vault.resolveSecret("test-apikey-alias")).isNotNull();
-            assertThat(vault.resolveSecret("test-privatekey-alias")).isNotNull();
+            assertThat(vault.resolveSecret(participantId, "test-clientsecret-alias")).isNotNull();
+            assertThat(vault.resolveSecret(participantId, "test-apikey-alias")).isNotNull();
+            assertThat(vault.resolveSecret(participantId, "test-privatekey-alias")).isNotNull();
         }
 
         @Test

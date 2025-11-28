@@ -28,7 +28,6 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManif
 import org.eclipse.edc.identityhub.sts.accountservice.RandomStringGenerator;
 import org.eclipse.edc.identityhub.sts.accountservice.StsAccountServiceImpl;
 import org.eclipse.edc.junit.annotations.ComponentTest;
-import org.eclipse.edc.junit.assertions.AbstractResultAssert;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.VaultPrivateKeyResolver;
@@ -61,6 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.SelfIssuedTokenConstants.PRESENTATION_TOKEN_CLAIM;
 import static org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.fixtures.TestFunctions.createClientBuilder;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.TOKEN_SIGNING;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.CLIENT_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -113,6 +113,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         var client = createClientBuilder(participantId)
                 .clientId(clientId)
                 .secretAlias(secretAlias)
+                .participantContextId(participantId)
                 .did(did)
                 .build();
 
@@ -132,7 +133,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
 
         var tokenResult = tokenGeneratorService.tokenFor(client, additional);
 
-        AbstractResultAssert.assertThat(tokenResult).isSucceeded();
+        assertThat(tokenResult).isSucceeded();
 
         var jwt = SignedJWT.parse(tokenResult.getContent().getToken());
 
@@ -157,6 +158,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         var client = createClientBuilder(participantId)
                 .clientId(clientId)
                 .secretAlias(secretAlias)
+                .participantContextId(participantId)
                 .did(did)
                 .build();
 
@@ -199,6 +201,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
         var client = createClientBuilder(participantId)
                 .clientId(clientId)
                 .secretAlias(secretAlias)
+                .participantContextId(participantId)
                 .did(did)
                 .build();
 

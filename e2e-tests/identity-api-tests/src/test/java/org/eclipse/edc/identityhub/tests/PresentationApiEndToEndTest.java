@@ -690,7 +690,7 @@ public class PresentationApiEndToEndTest {
             var vault = identityHub.getService(Vault.class);
 
             var privateKeyAlias = "%s-privatekey-alias".formatted(participantContextId);
-            vault.storeSecret(privateKeyAlias, participantKey.toJSONString());
+            vault.storeSecret(participantContextId, privateKeyAlias, participantKey.toJSONString());
             var manifest = ParticipantManifest.Builder.newInstance()
                     .participantContextId(participantContextId)
                     .did("did:web:%s".formatted(participantContextId.replace("did:web:", "")))

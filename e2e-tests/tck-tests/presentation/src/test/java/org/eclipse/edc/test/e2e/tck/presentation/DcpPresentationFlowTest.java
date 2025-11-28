@@ -16,7 +16,6 @@ package org.eclipse.edc.test.e2e.tck.presentation;
 
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.util.Base64;
-import org.assertj.core.api.Assertions;
 import org.eclipse.dataspacetck.core.system.ConsoleMonitor;
 import org.eclipse.dataspacetck.runtime.TckRuntime;
 import org.eclipse.edc.iam.did.spi.document.Service;
@@ -47,6 +46,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.fail;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.PRESENTATION_SIGNING;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.TOKEN_SIGNING;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
@@ -140,7 +140,7 @@ public class DcpPresentationFlowTest {
             var failures = result.getFailures().stream()
                     .map(f -> "- " + f.getTestIdentifier().getDisplayName() + " (" + f.getException() + ")")
                     .collect(Collectors.joining("\n"));
-            Assertions.fail(result.getTotalFailureCount() + " TCK test cases failed:\n" + failures);
+            fail(result.getTotalFailureCount() + " TCK test cases failed:\n" + failures);
         }
     }
 
@@ -149,7 +149,7 @@ public class DcpPresentationFlowTest {
         var vault = identityHub.getService(Vault.class);
 
         var privateKeyAlias = "%s-privatekey-alias".formatted(TEST_PARTICIPANT_CONTEXT_ID);
-        vault.storeSecret(privateKeyAlias, holderKey.toJSONString());
+        vault.storeSecret(TEST_PARTICIPANT_CONTEXT_ID, privateKeyAlias, holderKey.toJSONString());
         var manifest = ParticipantManifest.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(holderDid)

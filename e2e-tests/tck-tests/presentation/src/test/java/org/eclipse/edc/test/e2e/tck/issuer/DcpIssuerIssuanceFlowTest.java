@@ -167,7 +167,7 @@ public class DcpIssuerIssuanceFlowTest {
         var vault = issuer.getService(Vault.class);
 
         var privateKeyAlias = "%s-privatekey-alias".formatted(TEST_PARTICIPANT_CONTEXT_ID);
-        vault.storeSecret(privateKeyAlias, issuerKey.toJSONString());
+        vault.storeSecret(TEST_PARTICIPANT_CONTEXT_ID, privateKeyAlias, issuerKey.toJSONString());
         var manifest = ParticipantManifest.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(issuerDid)

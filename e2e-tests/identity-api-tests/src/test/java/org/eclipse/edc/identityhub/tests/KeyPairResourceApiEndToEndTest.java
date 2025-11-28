@@ -531,8 +531,8 @@ public class KeyPairResourceApiEndToEndTest {
                             .anyMatch(vm -> vm.getId().equals(newKeyId))); // the new key
             assertThat(identityHub.getKeyPairsForParticipant(participantId).stream().filter(kpr -> kpr.getKeyId().equals(originalKeyId)))
                     .allMatch(kpr -> kpr.getState() == KeyPairState.ROTATED.code());
-            assertThat(vault.resolveSecret(originalAlias)).isNull();
-            assertThat(vault.resolveSecret(newPrivateKeyAlias)).isNotNull();
+            assertThat(vault.resolveSecret(participantId, originalAlias)).isNull();
+            assertThat(vault.resolveSecret(participantId, newPrivateKeyAlias)).isNotNull();
 
         }
 

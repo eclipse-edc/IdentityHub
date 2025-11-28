@@ -187,16 +187,15 @@ public abstract class AbstractIdentityHub {
     }
 
     public String storeParticipant(ParticipantContext pc) {
-
         var token = createTokenFor(pc.getParticipantContextId());
-        vault.storeSecret(pc.getApiTokenAlias(), token);
+        vault.storeSecret(pc.getParticipantContextId(), pc.getApiTokenAlias(), token);
         participantContextStore.create(pc).orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
         return token;
     }
 
     public String createTokenFor(String userId) {
-        SecureRandom secureRandom = new SecureRandom();
-        byte[] array = new byte[64];
+        var secureRandom = new SecureRandom();
+        var array = new byte[64];
         secureRandom.nextBytes(array);
         var enc = Base64.getEncoder();
         return enc.encodeToString(userId.getBytes()) + "." + enc.encodeToString(array);

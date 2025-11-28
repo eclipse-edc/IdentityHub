@@ -400,11 +400,10 @@ public class DcpIssuanceFlowAllInOneTest {
                             }));
 
             // create token, for that we need the provider's private key
-            var providerJwk = issuer.getService(Vault.class).resolveSecret(PARTICIPANT_ID + "-alias");
+            var providerJwk = issuer.getService(Vault.class).resolveSecret("issuer", PARTICIPANT_ID + "-alias");
             assertThat(providerJwk).isNotNull();
             var accessToken = generateJwt(participantDid, participantDid, consumerDid, Map.of("scope", "org.eclipse.edc.vc.type:MembershipCredential:read"), ECKey.parse(providerJwk));
             var token = generateJwt(participantDid, consumerDid, consumerDid, Map.of("client_id", consumerDid, "token", accessToken), consumerKey);
-
 
             var response = identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)

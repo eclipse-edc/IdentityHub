@@ -21,6 +21,7 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
@@ -40,7 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -58,8 +59,8 @@ class EmbeddedSecureTokenServiceTest {
 
     @BeforeEach
     void setup() {
-        when(stsAccountService.findById(anyString())).thenReturn(
-                success(StsAccount.Builder.newInstance()
+        when(stsAccountService.queryAccounts(any(QuerySpec.class))).thenReturn(
+                List.of(StsAccount.Builder.newInstance()
                         .id("key-pair-id")
                         .clientId(TEST_PRIVATEKEY_ID)
                         .secretAlias(TEST_PARTICIPANT + "-alias")
@@ -110,7 +111,7 @@ class EmbeddedSecureTokenServiceTest {
 
         var result = sts.createToken(TEST_PARTICIPANT, claims, "scope:test");
 
-        assertThat(result.succeeded()).isTrue();
+        assertThat(result.succeeded()).withFailMessage(result::getFailureDetail).isTrue();
         var captor = ArgumentCaptor.forClass(TokenDecorator[].class);
 
         verify(tokenGenerationService, times(2)).generate(eq(TEST_PARTICIPANT), any(), captor.capture());
@@ -174,12 +175,12 @@ class EmbeddedSecureTokenServiceTest {
 
     @Test
     void createToken_whenStsAccountNotfound_expectFailure() {
-        when(stsAccountService.findById(anyString())).thenReturn(ServiceResult.notFound("foobar"));
+        when(stsAccountService.queryAccounts(any(QuerySpec.class))).thenReturn(List.of());
 
         var result = sts.createToken(TEST_PARTICIPANT, Map.of(), null);
         assertThat(result).isFailed()
                 .detail()
-                .isEqualTo("foobar");
+                .isEqualTo("No account found for participantContextId 'test-participant'");
     }
 
     @Test
