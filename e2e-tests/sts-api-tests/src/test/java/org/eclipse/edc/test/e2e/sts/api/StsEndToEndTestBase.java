@@ -46,18 +46,18 @@ public abstract class StsEndToEndTestBase {
         var client = createClient(clientId, clientSecretAlias, clientId, did);
 
         var pem = loadResourceFile("ec-privatekey.pem");
-        vault.storeSecret(keyAlias, pem);
+        vault.storeSecret(client.getParticipantContextId(), keyAlias, pem);
         keyPairStore.create(KeyPairResource.Builder.newTokenSigning()
                 .id(UUID.randomUUID().toString())
                 .keyId("key1")
-                .participantContextId(clientId)
+                .participantContextId(client.getParticipantContextId())
                 .privateKeyAlias(keyAlias)
                 .serializedPublicKey(pem)
                 .isDefaultPair(true)
                 .state(KeyPairState.ACTIVATED.code())
                 .build()).orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
-        vault.storeSecret(clientSecretAlias, clientSecret);
+        vault.storeSecret(client.getParticipantContextId(), clientSecretAlias, clientSecret);
         store.create(client);
 
         return client;

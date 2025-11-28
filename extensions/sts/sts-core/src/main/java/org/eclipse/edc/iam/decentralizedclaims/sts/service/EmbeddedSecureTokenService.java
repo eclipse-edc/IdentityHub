@@ -18,6 +18,8 @@ import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
 import org.eclipse.edc.token.spi.TokenGenerationService;
@@ -71,9 +73,11 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
     @Override
     public Result<TokenRepresentation> createToken(String participantContextId, Map<String, String> claims, @Nullable String bearerAccessScope) {
         return transactionContext.execute(() -> {
-            var result = stsAccountService.findById(participantContextId);
-            if (result.failed()) {
-                return Result.failure(result.getFailureDetail());
+            var result = stsAccountService.queryAccounts(QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("participantContextId", "=", participantContextId))
+                    .build());
+            if (result == null || result.isEmpty()) {
+                return Result.failure("No account found for participantContextId '%s'".formatted(participantContextId));
             }
 
             var tokenSigningKey = keyPairService.getActiveKeyPairForUsage(participantContextId, TOKEN_SIGNING);
