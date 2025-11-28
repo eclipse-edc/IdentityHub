@@ -188,7 +188,7 @@ public class ParticipantContextServiceImpl implements ParticipantContextService 
 
         var cfg = ParticipantContextConfiguration.Builder.newInstance()
                 .participantContextId(context.getParticipantContextId())
-                .entries(config)
+                .privateEntries(config)
                 .build();
         var configResult = configService.save(cfg);
         return configResult.compose(u -> ServiceResult.from(result).map(it -> context));
