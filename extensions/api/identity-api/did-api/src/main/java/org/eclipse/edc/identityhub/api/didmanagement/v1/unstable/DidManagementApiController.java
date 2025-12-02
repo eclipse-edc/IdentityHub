@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.didmanagement.v1.unstable;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.PATCH;
@@ -25,6 +26,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
+import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.api.Versions;
@@ -56,6 +59,8 @@ public class DidManagementApiController implements DidManagementApi {
 
     @Override
     @POST
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
     @Path("/publish")
     public void publishDid(@PathParam("participantContextId") String participantContextId, DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
@@ -67,6 +72,8 @@ public class DidManagementApiController implements DidManagementApi {
 
     @Override
     @POST
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
     @Path("/unpublish")
     public void unpublishDid(@PathParam("participantContextId") String participantContextId, DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
@@ -79,6 +86,8 @@ public class DidManagementApiController implements DidManagementApi {
 
     @POST
     @Path("/query")
+    @RequiredScope("identity-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
     @Override
     public Collection<DidDocument> queryDids(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext securityContext) {
         return documentService.queryDocuments(querySpec)
@@ -89,6 +98,8 @@ public class DidManagementApiController implements DidManagementApi {
 
     @Override
     @POST
+    @RequiredScope("identity-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/state")
     public String getDidState(@PathParam("participantContextId") String participantContextId, DidRequestPayload request, @Context SecurityContext securityContext) {
         authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), request.did(), DidResource.class)
@@ -99,6 +110,8 @@ public class DidManagementApiController implements DidManagementApi {
 
     @Override
     @POST
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{did}/endpoints")
     public void addDidEndpoint(@PathParam("participantContextId") String participantContextId,
                                @PathParam("did") String did, Service service,
@@ -113,6 +126,8 @@ public class DidManagementApiController implements DidManagementApi {
 
     @Override
     @PATCH
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{did}/endpoints")
     public void replaceDidEndpoint(@PathParam("participantContextId") String participantContextId,
                                    @PathParam("did") String did,
@@ -129,6 +144,8 @@ public class DidManagementApiController implements DidManagementApi {
 
     @Override
     @DELETE
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{did}/endpoints")
     public void deleteDidEndpoint(@PathParam("participantContextId") String participantContextId,
                                   @PathParam("did") String did,

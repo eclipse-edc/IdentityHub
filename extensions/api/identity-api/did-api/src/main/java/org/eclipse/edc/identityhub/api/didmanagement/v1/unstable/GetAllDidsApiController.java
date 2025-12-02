@@ -22,9 +22,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
+import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
@@ -45,7 +46,8 @@ public class GetAllDidsApiController implements GetAllDidsApi {
 
     @Override
     @GET
-    @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
+    @RequiredScope("identity-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     public Collection<DidDocument> getAllDids(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                               @DefaultValue("50") @QueryParam("limit") Integer limit) {
         if (offset < 0 || limit < 0) {

@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.keypair.v1.unstable;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -25,6 +26,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
+import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.keypair.validation.KeyDescriptorValidator;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -61,6 +64,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @GET
     @Path("/{keyPairId}")
+    @RequiredScope("identity-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
     @Override
     public KeyPairResource getKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String id, @Context SecurityContext securityContext) {
         authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), id, KeyPairResource.class).orElseThrow(exceptionMapper(KeyPairResource.class, id));
@@ -77,6 +82,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     }
 
     @GET
+    @RequiredScope("identity-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
     @Override
     public Collection<KeyPairResource> queryKeyPairByParticipantContextId(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
         return onEncoded(participantContextId).map(decoded -> {
@@ -86,6 +93,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     }
 
     @PUT
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Override
     public void addKeyPair(@PathParam("participantContextId") String participantContextId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault, @Context SecurityContext securityContext) {
         keyDescriptorValidator.validate(keyDescriptor).orElseThrow(ValidationFailureException::new);
@@ -99,6 +108,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @POST
     @Path("/{keyPairId}/activate")
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Override
     public void activateKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String keyPairResourceId, @Context SecurityContext context) {
         authorizationService.authorize(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), keyPairResourceId, KeyPairResource.class)
@@ -108,6 +119,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @POST
     @Path("/{keyPairId}/rotate")
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Override
     public void rotateKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String keyPairId, @Nullable KeyDescriptor newKey, @QueryParam("duration") long duration, @Context SecurityContext securityContext) {
         if (newKey != null) {
@@ -119,6 +132,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @POST
     @Path("/{keyPairId}/revoke")
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Override
     public void revokeKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String id, KeyDescriptor newKey, @Context SecurityContext securityContext) {
         if (newKey != null) {

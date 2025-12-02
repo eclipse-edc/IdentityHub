@@ -21,8 +21,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
+import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -44,7 +45,8 @@ public class GetAllKeyPairsApiController implements GetAllKeyPairsApi {
     }
 
     @GET
-    @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
+    @RequiredScope("identity-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN})
     @Override
     public Collection<KeyPairResource> getAllKeyPairs(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                                       @DefaultValue("50") @QueryParam("limit") Integer limit) {
