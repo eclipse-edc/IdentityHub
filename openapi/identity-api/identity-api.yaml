@@ -282,7 +282,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ParticipantContext"
+                $ref: "#/components/schemas/IdentityHubParticipantContext"
         "400":
           description: "Request body was malformed, or the request could not be processed"
           content:
@@ -1312,7 +1312,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ParticipantContext"
+                  $ref: "#/components/schemas/IdentityHubParticipantContext"
         "400":
           description: The query was malformed or was not understood by the server.
           content:
@@ -1549,6 +1549,9 @@ components:
     VerifiableCredentialResource:
       type: object
       properties:
+        createdAt:
+          type: integer
+          format: int64
         credentialStatus:
           type: string
           writeOnly: true
@@ -1921,7 +1924,7 @@ components:
             - sign_credentials
             - sign_presentation
             - sign_token
-    ParticipantContext:
+    IdentityHubParticipantContext:
       type: object
       properties:
         apiTokenAlias:
@@ -1930,6 +1933,8 @@ components:
           type: integer
           format: int64
         did:
+          type: string
+        id:
           type: string
         lastModified:
           type: integer
@@ -1991,6 +1996,9 @@ components:
     KeyPairResource:
       type: object
       properties:
+        createdAt:
+          type: integer
+          format: int64
         defaultPair:
           type: boolean
         groupName:

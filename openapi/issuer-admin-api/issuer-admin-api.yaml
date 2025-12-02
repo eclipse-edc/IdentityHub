@@ -1047,12 +1047,20 @@ components:
       properties:
         anonymous:
           type: boolean
+        createdAt:
+          type: integer
+          format: int64
         did:
           type: string
         holderId:
           type: string
         holderName:
           type: string
+        id:
+          type: string
+        lastModifiedAt:
+          type: integer
+          format: int64
         participantContextId:
           type: string
         properties:
@@ -1097,8 +1105,14 @@ components:
           type: object
           additionalProperties:
             type: object
+        createdAt:
+          type: integer
+          format: int64
         id:
           type: string
+        lastModifiedAt:
+          type: integer
+          format: int64
         participantContextId:
           type: string
     CredentialDefinitionDto:
@@ -1154,6 +1168,9 @@ components:
           type: array
           items:
             type: string
+        createdAt:
+          type: integer
+          format: int64
         credentialType:
           type: string
         format:
