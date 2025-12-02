@@ -17,22 +17,22 @@ package org.eclipse.edc.identityhub.spi.participantcontext.events;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 
 /**
- * Event that signals that a {@link ParticipantContext} is in the process of being deleted. This event is emitted <em>before</em>
+ * Event that signals that a {@link IdentityHubParticipantContext} is in the process of being deleted. This event is emitted <em>before</em>
  * any storage interaction (= deletion) occurs.
  */
 @JsonDeserialize(builder = ParticipantContextDeleting.Builder.class)
 public class ParticipantContextDeleting extends ParticipantContextEvent {
-    private ParticipantContext participantContext;
+    private IdentityHubParticipantContext participantContext;
 
     @Override
     public String name() {
         return "participantcontext.deleting";
     }
 
-    public ParticipantContext getParticipantContext() {
+    public IdentityHubParticipantContext getParticipantContext() {
         return participantContext;
     }
 
@@ -53,7 +53,7 @@ public class ParticipantContextDeleting extends ParticipantContextEvent {
             return this;
         }
 
-        public Builder participant(ParticipantContext deletedContext) {
+        public Builder participant(IdentityHubParticipantContext deletedContext) {
             this.event.participantContext = deletedContext;
             return self();
         }

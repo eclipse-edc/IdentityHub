@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
@@ -56,7 +56,7 @@ public class CredentialDefinitionApiEndToEndTest {
         public static final String USER = "user";
 
         @AfterEach
-        void teardown(CredentialDefinitionService service, ParticipantContextService pcService) {
+        void teardown(CredentialDefinitionService service, IdentityHubParticipantContextService pcService) {
             service.queryCredentialDefinitions(QuerySpec.max()).getContent()
                     .forEach(p -> service.deleteCredentialDefinition(p.getId()).getContent());
 
@@ -99,6 +99,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             assertThat(service.findCredentialDefinitionById(definition.getId())).isSucceeded()
                     .usingRecursiveComparison()
+                    .ignoringFields("createdAt")
                     .isEqualTo(definition);
         }
 
@@ -432,7 +433,9 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var updatedDefinition = service.findCredentialDefinitionById(definition.getId()).getContent();
 
-            assertThat(updatedDefinition).usingRecursiveComparison().isEqualTo(definition);
+            assertThat(updatedDefinition).usingRecursiveComparison()
+                    .ignoringFields("createdAt")
+                    .isEqualTo(definition);
         }
 
         @Test

@@ -26,7 +26,7 @@ import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.C
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -133,7 +133,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
             var manifest = createManifest(credential);
             var resource = mock(VerifiableCredentialResource.class);
             when(validator.validate(any())).thenReturn(ValidationResult.success());
-            when(authorizationService.isAuthorized(any(), anyString(), eq(PARTICIPANT_ID), eq(ParticipantContext.class))).thenReturn(ServiceResult.success());
+            when(authorizationService.isAuthorized(any(), anyString(), eq(PARTICIPANT_ID), eq(IdentityHubParticipantContext.class))).thenReturn(ServiceResult.success());
             when(typeTransformerRegistry.transform(any(), eq(VerifiableCredentialResource.class))).thenReturn(Result.success(resource));
             when(credentialStore.create(resource)).thenReturn(StoreResult.success());
 
@@ -162,7 +162,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         @Test
         void notAuthorized_returns403() {
             when(validator.validate(any())).thenReturn(ValidationResult.success());
-            when(authorizationService.isAuthorized(any(), anyString(), eq(PARTICIPANT_ID), eq(ParticipantContext.class))).thenReturn(unauthorized("test-message"));
+            when(authorizationService.isAuthorized(any(), anyString(), eq(PARTICIPANT_ID), eq(IdentityHubParticipantContext.class))).thenReturn(unauthorized("test-message"));
 
             baseRequest()
                     .contentType(JSON)
@@ -176,7 +176,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         @Test
         void transformFails_returns400() {
             when(validator.validate(any())).thenReturn(ValidationResult.success());
-            when(authorizationService.isAuthorized(any(), anyString(), eq(PARTICIPANT_ID), eq(ParticipantContext.class))).thenReturn(ServiceResult.success());
+            when(authorizationService.isAuthorized(any(), anyString(), eq(PARTICIPANT_ID), eq(IdentityHubParticipantContext.class))).thenReturn(ServiceResult.success());
             when(typeTransformerRegistry.transform(any(), eq(VerifiableCredentialResource.class))).thenReturn(failure("transform-failure"));
 
             baseRequest()
@@ -191,7 +191,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
         @Test
         void vcAlreadyExists_returns() {
             when(validator.validate(any())).thenReturn(ValidationResult.success());
-            when(authorizationService.isAuthorized(any(), anyString(), eq(PARTICIPANT_ID), eq(ParticipantContext.class))).thenReturn(ServiceResult.success());
+            when(authorizationService.isAuthorized(any(), anyString(), eq(PARTICIPANT_ID), eq(IdentityHubParticipantContext.class))).thenReturn(ServiceResult.success());
             when(typeTransformerRegistry.transform(any(), eq(VerifiableCredentialResource.class))).thenReturn(Result.success(mock(VerifiableCredentialResource.class)));
             when(credentialStore.create(any())).thenReturn(alreadyExists("already-exists"));
 

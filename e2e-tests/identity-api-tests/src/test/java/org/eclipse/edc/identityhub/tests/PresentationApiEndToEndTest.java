@@ -36,7 +36,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -141,7 +141,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @AfterEach
-        void teardown(ParticipantContextService contextService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, CredentialStore store, StsAccountStore accountStore) {
+        void teardown(IdentityHubParticipantContextService contextService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, CredentialStore store, StsAccountStore accountStore) {
             // purge all participant contexts
 
             contextService.query(QuerySpec.max()).getContent()
@@ -686,7 +686,7 @@ public class PresentationApiEndToEndTest {
         }
 
         private void createParticipant(IdentityHub identityHub, String participantContextId, ECKey participantKey) {
-            var service = identityHub.getService(ParticipantContextService.class);
+            var service = identityHub.getService(IdentityHubParticipantContextService.class);
             var vault = identityHub.getService(Vault.class);
 
             var privateKeyAlias = "%s-privatekey-alias".formatted(participantContextId);

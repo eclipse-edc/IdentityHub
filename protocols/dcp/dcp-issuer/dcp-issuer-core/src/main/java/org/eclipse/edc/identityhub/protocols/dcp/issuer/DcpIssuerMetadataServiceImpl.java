@@ -20,7 +20,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpProfile;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -29,7 +29,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
+
 
 public class DcpIssuerMetadataServiceImpl implements DcpIssuerMetadataService {
 
@@ -43,12 +44,12 @@ public class DcpIssuerMetadataServiceImpl implements DcpIssuerMetadataService {
     }
 
     @Override
-    public ServiceResult<IssuerMetadata> getIssuerMetadata(ParticipantContext participantContext) {
+    public ServiceResult<IssuerMetadata> getIssuerMetadata(IdentityHubParticipantContext participantContext) {
         return credentialDefinitionService.queryCredentialDefinitions(queryByParticipantContextId(participantContext.getParticipantContextId()).build())
                 .compose(credentialDefinitions -> createIssuerMetadata(participantContext, credentialDefinitions));
     }
 
-    public ServiceResult<IssuerMetadata> createIssuerMetadata(ParticipantContext participantContext, Collection<CredentialDefinition> credentialDefinitions) {
+    public ServiceResult<IssuerMetadata> createIssuerMetadata(IdentityHubParticipantContext participantContext, Collection<CredentialDefinition> credentialDefinitions) {
         var issuerMetadata = IssuerMetadata.Builder.newInstance().issuer(participantContext.getDid());
         for (var credentialDefinition : credentialDefinitions) {
             var credentialObject = toCredentialObject(credentialDefinition);

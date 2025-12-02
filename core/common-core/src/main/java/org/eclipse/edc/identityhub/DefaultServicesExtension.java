@@ -28,11 +28,9 @@ import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialOfferStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryHolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryKeyPairResourceStore;
-import org.eclipse.edc.identityhub.defaults.store.InMemoryParticipantContextStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemorySignatureSuiteRegistry;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -143,11 +141,6 @@ public class DefaultServicesExtension implements ServiceExtension {
     @Provider(isDefault = true)
     public CredentialStore createDefaultCredentialStore() {
         return new InMemoryCredentialStore();
-    }
-
-    @Provider(isDefault = true)
-    public ParticipantContextStore createDefaultParticipantContextStore() {
-        return new InMemoryParticipantContextStore();
     }
 
     @Provider(isDefault = true)

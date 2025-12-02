@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.spi.keypair.events;
 
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.observe.Observable;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 public interface KeyPairEventListener {
 
     /**
-     * A {@link KeyPairResource} was added to a particular {@link ParticipantContext}. This could happen either
+     * A {@link KeyPairResource} was added to a particular {@link IdentityHubParticipantContext}. This could happen either
      * by simply adding a keypair, or after a keypair was revoked, and a successor was specified.
      *
      * @param keypair The new (added) key pair

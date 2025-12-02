@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,15 +44,10 @@ public class CredentialDefinition extends AbstractParticipantResource {
     private String jsonSchema;
     private String jsonSchemaUrl;
     private long validity;
-    private String id;
 
     private CredentialDefinition() {
     }
-
-    public String getId() {
-        return id;
-    }
-
+    
     public String getCredentialType() {
         return credentialType;
     }
@@ -101,11 +96,6 @@ public class CredentialDefinition extends AbstractParticipantResource {
         @JsonCreator
         public static Builder newInstance() {
             return new Builder();
-        }
-
-        public Builder id(String id) {
-            this.entity.id = id;
-            return this;
         }
 
         public Builder credentialType(String credentialType) {
@@ -179,6 +169,7 @@ public class CredentialDefinition extends AbstractParticipantResource {
 
         @Override
         public CredentialDefinition build() {
+            super.build();
             if (entity.id == null) {
                 entity.id = UUID.randomUUID().toString();
             }
@@ -192,7 +183,7 @@ public class CredentialDefinition extends AbstractParticipantResource {
                 throw new IllegalStateException("Credential format cannot be null");
             }
             Objects.requireNonNull(entity.participantContextId, "Must have an participantContextId");
-            return super.build();
+            return entity;
         }
 
     }

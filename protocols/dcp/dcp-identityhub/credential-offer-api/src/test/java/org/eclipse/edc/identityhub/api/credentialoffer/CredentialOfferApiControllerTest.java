@@ -19,12 +19,12 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialOfferMessage;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
 import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.junit.annotations.ApiTest;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -60,7 +60,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     private final JsonObjectValidatorRegistry validatorRegistry = mock();
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final DcpIssuerTokenVerifier tokenVerifier = mock();
-    private final ParticipantContextService participantContextService = mock();
+    private final IdentityHubParticipantContextService participantContextService = mock();
     private final CredentialOfferService offerService = mock();
     private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, tokenVerifier, participantContextService, offerService, new TitaniumJsonLd(mock()));
 
@@ -80,7 +80,7 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .thenReturn(Result.success(CredentialOfferMessage.Builder.newInstance().issuer("test-issuer").build()));
 
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(
-                ParticipantContext.Builder.newInstance()
+                IdentityHubParticipantContext.Builder.newInstance()
                         .participantContextId("test-id")
                         .did("did:web:test-id")
                         .state(ParticipantContextState.CREATED)

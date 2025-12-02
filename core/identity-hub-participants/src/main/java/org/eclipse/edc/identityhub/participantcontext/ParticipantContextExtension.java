@@ -15,11 +15,11 @@
 package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
-import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
+import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -62,8 +62,8 @@ public class ParticipantContextExtension implements ServiceExtension {
     }
 
     @Provider
-    public ParticipantContextService createParticipantService() {
-        return new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, participantContextObservable(), stsAccountProvisioner, configService);
+    public IdentityHubParticipantContextService createParticipantService() {
+        return new IdentityHubParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, transactionContext, participantContextObservable(), stsAccountProvisioner, configService);
     }
 
     @Provider

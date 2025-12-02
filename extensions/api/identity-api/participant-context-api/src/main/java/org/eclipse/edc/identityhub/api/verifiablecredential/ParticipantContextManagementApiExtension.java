@@ -17,10 +17,10 @@ package org.eclipse.edc.identityhub.api.verifiablecredential;
 import org.eclipse.edc.identityhub.api.verifiablecredential.v1.unstable.ParticipantContextApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredential.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -38,7 +38,7 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
     @Inject
     private WebService webService;
     @Inject
-    private ParticipantContextService participantContextService;
+    private IdentityHubParticipantContextService participantContextService;
     @Inject
     private AuthorizationService authorizationService;
     @Inject
@@ -51,12 +51,12 @@ public class ParticipantContextManagementApiExtension implements ServiceExtensio
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        authorizationService.addLookupFunction(ParticipantContext.class, this::findByOwnerAndId);
+        authorizationService.addLookupFunction(IdentityHubParticipantContext.class, this::findByOwnerAndId);
         var controller = new ParticipantContextApiController(new ParticipantManifestValidator(monitor), participantContextService, authorizationService);
         webService.registerResource(IdentityHubApiContext.IDENTITY, controller);
     }
 
     private ParticipantResource findByOwnerAndId(String owner, String participantContextId) {
-        return participantContextService.getParticipantContext(participantContextId).orElseThrow(exceptionMapper(ParticipantContext.class, participantContextId));
+        return participantContextService.getParticipantContext(participantContextId).orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
     }
 }

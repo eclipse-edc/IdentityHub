@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.spi.keypair.events;
 
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.spi.event.Event;
 
 import java.util.Objects;
@@ -43,7 +43,7 @@ public abstract class KeyPairEvent extends Event {
     }
 
     /**
-     * The ID of the {@link ParticipantContext} that owns the KeyPair resource.
+     * The ID of the {@link IdentityHubParticipantContext} that owns the KeyPair resource.
      */
     public String getParticipantContextId() {
         return participantContextId;

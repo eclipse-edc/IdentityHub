@@ -23,7 +23,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
@@ -38,8 +38,8 @@ import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -47,11 +47,11 @@ import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessSt
 public class CredentialRequestStatusApiController implements CredentialRequestStatusApi {
 
     private final TypeTransformerRegistry dcpRegistry;
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
     private final DcpHolderTokenVerifier tokenValidator;
     private final IssuanceProcessService issuanceProcessService;
 
-    public CredentialRequestStatusApiController(ParticipantContextService participantContextService, DcpHolderTokenVerifier tokenValidator, IssuanceProcessService issuanceProcessService, TypeTransformerRegistry dcpRegistry) {
+    public CredentialRequestStatusApiController(IdentityHubParticipantContextService participantContextService, DcpHolderTokenVerifier tokenValidator, IssuanceProcessService issuanceProcessService, TypeTransformerRegistry dcpRegistry) {
         this.dcpRegistry = dcpRegistry;
         this.participantContextService = participantContextService;
         this.tokenValidator = tokenValidator;

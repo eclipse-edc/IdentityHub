@@ -14,27 +14,30 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ParticipantContextTest {
+class IdentityHubParticipantContextTest {
 
     @Test
     void verifyCreateTimestamp() {
-        var context = ParticipantContext.Builder.newInstance()
+        var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
+                .did("did:example:123")
                 .build();
 
         assertThat(context.getCreatedAt()).isNotZero().isLessThanOrEqualTo(Instant.now().toEpochMilli());
 
-        var context2 = ParticipantContext.Builder.newInstance()
+        var context2 = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .createdAt(42)
+                .did("did:example:123")
                 .build();
 
         assertThat(context2.getCreatedAt()).isEqualTo(42);
@@ -42,17 +45,19 @@ class ParticipantContextTest {
 
     @Test
     void verifyLastModifiedTimestamp() {
-        var context = ParticipantContext.Builder.newInstance()
+        var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
+                .did("did:example:123")
                 .build();
 
         assertThat(context.getLastModified()).isNotZero().isEqualTo(context.getCreatedAt());
 
-        var context2 = ParticipantContext.Builder.newInstance()
+        var context2 = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .lastModified(42)
+                .did("did:example:123")
                 .build();
 
         assertThat(context2.getLastModified()).isEqualTo(42);
@@ -60,14 +65,15 @@ class ParticipantContextTest {
 
     @Test
     void verifyState() {
-        var context = ParticipantContext.Builder.newInstance()
+        var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
+                .did("did:example:123")
                 .state(ParticipantContextState.CREATED);
 
-        assertThat(context.build().getState()).isEqualTo(0);
-        assertThat(context.state(ParticipantContextState.ACTIVATED).build().getState()).isEqualTo(1);
-        assertThat(context.state(ParticipantContextState.DEACTIVATED).build().getState()).isEqualTo(2);
+        assertThat(context.build().getState()).isEqualTo(ParticipantContextState.CREATED.code());
+        assertThat(context.state(ParticipantContextState.ACTIVATED).build().getState()).isEqualTo(ParticipantContextState.ACTIVATED.code());
+        assertThat(context.state(ParticipantContextState.DEACTIVATED).build().getState()).isEqualTo(ParticipantContextState.DEACTIVATED.code());
 
     }
 

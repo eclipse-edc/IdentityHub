@@ -14,13 +14,13 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext.events;
 
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.spi.event.Event;
 
 import java.util.Objects;
 
 /**
- * Base class for all events related to state changes and actions of {@link ParticipantContext}s
+ * Base class for all events related to state changes and actions of {@link IdentityHubParticipantContext}s
  */
 public abstract class ParticipantContextEvent extends Event {
     protected String participantContextId;

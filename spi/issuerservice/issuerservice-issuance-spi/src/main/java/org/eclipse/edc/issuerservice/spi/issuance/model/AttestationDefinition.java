@@ -14,7 +14,8 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.model;
 
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+
+import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,15 +26,11 @@ import java.util.Objects;
  */
 public class AttestationDefinition extends AbstractParticipantResource {
 
-    private String id;
     private String attestationType;
     private Map<String, Object> configuration = new HashMap<>();
+    private long lastModifiedAt;
 
     private AttestationDefinition() {
-    }
-
-    public String getId() {
-        return id;
     }
 
     public String getAttestationType() {
@@ -42,6 +39,10 @@ public class AttestationDefinition extends AbstractParticipantResource {
 
     public Map<String, Object> getConfiguration() {
         return configuration;
+    }
+
+    public long getLastModifiedAt() {
+        return lastModifiedAt;
     }
 
     public static final class Builder extends AbstractParticipantResource.Builder<AttestationDefinition, Builder> {
@@ -54,13 +55,13 @@ public class AttestationDefinition extends AbstractParticipantResource {
             return new Builder();
         }
 
-        public Builder id(String id) {
-            this.entity.id = id;
+        public Builder attestationType(String attestationType) {
+            this.entity.attestationType = attestationType;
             return this;
         }
 
-        public Builder attestationType(String attestationType) {
-            this.entity.attestationType = attestationType;
+        public Builder lastModifiedAt(long lastModifiedAt) {
+            this.entity.lastModifiedAt = lastModifiedAt;
             return this;
         }
 
@@ -76,11 +77,15 @@ public class AttestationDefinition extends AbstractParticipantResource {
 
         @Override
         public AttestationDefinition build() {
+            super.build();
             Objects.requireNonNull(entity.id, "Must have an ID");
             Objects.requireNonNull(entity.attestationType, "Must have an attestation type");
             Objects.requireNonNull(entity.configuration, "Must have an configuration");
             Objects.requireNonNull(entity.participantContextId, "Must have an participantContextId");
-            return super.build();
+            if (entity.getLastModifiedAt() == 0L) {
+                entity.lastModifiedAt = entity.clock.millis();
+            }
+            return entity;
         }
 
     }

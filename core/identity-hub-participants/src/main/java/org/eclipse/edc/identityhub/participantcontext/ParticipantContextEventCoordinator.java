@@ -17,11 +17,11 @@ package org.eclipse.edc.identityhub.participantcontext;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleting;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
@@ -30,7 +30,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.stream.Stream;
 
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 /**
@@ -50,9 +50,9 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
     private final Monitor monitor;
     private final DidDocumentService didDocumentService;
     private final KeyPairService keyPairService;
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
 
-    ParticipantContextEventCoordinator(Monitor monitor, DidDocumentService didDocumentService, KeyPairService keyPairService, ParticipantContextService participantContextService) {
+    ParticipantContextEventCoordinator(Monitor monitor, DidDocumentService didDocumentService, KeyPairService keyPairService, IdentityHubParticipantContextService participantContextService) {
         this.monitor = monitor;
         this.didDocumentService = didDocumentService;
         this.keyPairService = keyPairService;
@@ -79,7 +79,7 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
                     // adding the keypair event will cause the DidDocumentService to update the DID
                     .compose(u -> storeKeyPairs(createdEvent))
                     .compose(u -> manifest.isActive()
-                            ? participantContextService.updateParticipant(manifest.getParticipantContextId(), ParticipantContext::activate) //implicitly publishes the did document
+                            ? participantContextService.updateParticipant(manifest.getParticipantContextId(), IdentityHubParticipantContext::activate) //implicitly publishes the did document
                             : success())
                     .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
 

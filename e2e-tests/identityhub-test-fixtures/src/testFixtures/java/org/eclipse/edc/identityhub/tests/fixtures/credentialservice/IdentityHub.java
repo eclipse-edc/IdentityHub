@@ -34,9 +34,9 @@ import java.util.Objects;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.CREDENTIALS;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 /**
  * Test fixture with Credential Service capabilities.

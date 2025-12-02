@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.core.services.verification;
 
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.identityhub.publickey.KeyPairResourcePublicKeyResolver;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenVerifier;
 import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
@@ -51,13 +51,13 @@ public class SelfIssuedTokenVerifierImpl implements SelfIssuedTokenVerifier {
     private final KeyPairResourcePublicKeyResolver localPublicKeyService;
     private final TokenValidationRulesRegistry tokenValidationRulesRegistry;
     private final PublicKeyResolver publicKeyResolver;
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
 
     public SelfIssuedTokenVerifierImpl(TokenValidationService tokenValidationService,
                                        KeyPairResourcePublicKeyResolver localPublicKeyService,
                                        TokenValidationRulesRegistry tokenValidationRulesRegistry,
                                        PublicKeyResolver publicKeyResolver,
-                                       ParticipantContextService participantContextService) {
+                                       IdentityHubParticipantContextService participantContextService) {
         this.tokenValidationService = tokenValidationService;
         this.localPublicKeyService = localPublicKeyService;
         this.tokenValidationRulesRegistry = tokenValidationRulesRegistry;

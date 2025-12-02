@@ -31,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Clock;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -49,18 +48,15 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
     };
 
     private final AttestationDefinitionStoreStatements statements;
-    private final Clock clock;
 
     public SqlAttestationDefinitionStore(DataSourceRegistry dataSourceRegistry,
                                          String dataSourceName,
                                          TransactionContext transactionContext,
                                          ObjectMapper objectMapper,
                                          QueryExecutor queryExecutor,
-                                         AttestationDefinitionStoreStatements statements,
-                                         Clock clock) {
+                                         AttestationDefinitionStoreStatements statements) {
         super(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, queryExecutor);
         this.statements = statements;
-        this.clock = clock;
     }
 
     @Override
@@ -84,14 +80,13 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
                 }
 
                 var stmt = statements.getInsertTemplate();
-                var timestamp = clock.millis();
                 queryExecutor.execute(connection, stmt,
                         id,
                         attestationDefinition.getParticipantContextId(),
                         attestationDefinition.getAttestationType(),
                         toJson(attestationDefinition.getConfiguration()),
-                        timestamp,
-                        timestamp
+                        attestationDefinition.getCreatedAt(),
+                        attestationDefinition.getLastModifiedAt()
                 );
                 return success();
 
@@ -115,7 +110,7 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
                             statements.getUpdateTemplate(),
                             attestationDefinition.getAttestationType(),
                             toJson(attestationDefinition.getConfiguration()),
-                            clock.millis(),
+                            attestationDefinition.getLastModifiedAt(),
                             id
                     );
                     return StoreResult.success();
@@ -169,11 +164,15 @@ public class SqlAttestationDefinitionStore extends AbstractSqlStore implements A
         var participantContextId = resultSet.getString(statements.getParticipantContextIdColumn());
         var type = resultSet.getString(statements.getAttestationTypeColumn());
         var config = resultSet.getString(statements.getConfigurationColumn());
+        var createdAt = resultSet.getLong(statements.getCreateTimestampColumn());
+        var lastModifiedAt = resultSet.getLong(statements.getLastModifiedTimestampColumn());
         return AttestationDefinition.Builder.newInstance()
                 .id(id)
                 .participantContextId(participantContextId)
                 .attestationType(type)
                 .configuration(fromJson(config, CONFIG_REF))
+                .createdAt(createdAt)
+                .lastModifiedAt(lastModifiedAt)
                 .build();
     }
 }

@@ -28,17 +28,17 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
@@ -83,12 +83,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
-public class ParticipantContextApiEndToEndTest {
+public class IdentityHubParticipantContextApiEndToEndTest {
 
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore accountStore) {
+        void tearDown(IdentityHubParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore accountStore) {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
@@ -112,14 +112,14 @@ public class ParticipantContextApiEndToEndTest {
                     .get("/v1alpha/participants/" + toBase64(SUPER_USER))
                     .then()
                     .statusCode(200)
-                    .extract().body().as(ParticipantContext.class);
+                    .extract().body().as(IdentityHubParticipantContext.class);
             assertThat(su.getParticipantContextId()).isEqualTo(SUPER_USER);
         }
 
         @Test
         void getUserById_notOwner_expect403(IdentityHub identityHub) {
             var user1 = "user1";
-            var user1Context = ParticipantContext.Builder.newInstance()
+            var user1Context = IdentityHubParticipantContext.Builder.newInstance()
                     .participantContextId(user1)
                     .did("did:web:" + user1)
                     .apiTokenAlias(user1 + "-alias")
@@ -127,7 +127,7 @@ public class ParticipantContextApiEndToEndTest {
             var apiToken1 = identityHub.storeParticipant(user1Context);
 
             var user2 = "user2";
-            var user2Context = ParticipantContext.Builder.newInstance()
+            var user2Context = IdentityHubParticipantContext.Builder.newInstance()
                     .participantContextId(user2)
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
@@ -280,7 +280,7 @@ public class ParticipantContextApiEndToEndTest {
             router.registerSync(ParticipantContextCreated.class, subscriber);
 
             var principal = "another-user";
-            var anotherUser = ParticipantContext.Builder.newInstance()
+            var anotherUser = IdentityHubParticipantContext.Builder.newInstance()
                     .participantContextId(principal)
                     .did("did:web:" + principal)
                     .apiTokenAlias(principal + "-alias")
@@ -401,7 +401,7 @@ public class ParticipantContextApiEndToEndTest {
         }
 
         @Test
-        void activateParticipant_principalIsSuperser(IdentityHub identityHub, ParticipantContextService participantContextService, EventRouter router) {
+        void activateParticipant_principalIsSuperser(IdentityHub identityHub, IdentityHubParticipantContextService participantContextService, EventRouter router) {
             var superUserKey = identityHub.createSuperUser().apiKey();
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(ParticipantContextUpdated.class, subscriber);
@@ -421,7 +421,7 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(204);
 
             var updatedParticipant = participantContextService.getParticipantContext(participantId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
-            assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.ACTIVATED.ordinal());
+            assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.ACTIVATED.code());
             assertThat(identityHub.getDidResourceForParticipant(did).getState()).isEqualTo(DidState.PUBLISHED.code());
 
             // verify the correct event was emitted
@@ -432,7 +432,7 @@ public class ParticipantContextApiEndToEndTest {
         }
 
         @Test
-        void deactivateParticipant_shouldUnpublishDid(IdentityHub identityHub, ParticipantContextService participantContextService, EventRouter router) {
+        void deactivateParticipant_shouldUnpublishDid(IdentityHub identityHub, IdentityHubParticipantContextService participantContextService, EventRouter router) {
             var superUserKey = identityHub.createSuperUser().apiKey();
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(ParticipantContextUpdated.class, subscriber);
@@ -452,7 +452,7 @@ public class ParticipantContextApiEndToEndTest {
                     .statusCode(204);
 
             var updatedParticipant = participantContextService.getParticipantContext(participantContextId).orElseThrow(f -> new EdcException(f.getFailureDetail()));
-            assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.DEACTIVATED.ordinal());
+            assertThat(updatedParticipant.getState()).isEqualTo(ParticipantContextState.DEACTIVATED.code());
             assertThat(identityHub.getDidResourceForParticipant(did).getState()).isEqualTo(DidState.UNPUBLISHED.code());
 
             // verify the correct event was emitted
@@ -554,7 +554,7 @@ public class ParticipantContextApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
-                    .extract().body().as(ParticipantContext[].class);
+                    .extract().body().as(IdentityHubParticipantContext[].class);
             assertThat(found).hasSize(11); //10 + 1 for the super user
         }
 
@@ -573,7 +573,7 @@ public class ParticipantContextApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
-                    .extract().body().as(ParticipantContext[].class);
+                    .extract().body().as(IdentityHubParticipantContext[].class);
             assertThat(found).hasSize(4);
         }
 
@@ -592,7 +592,7 @@ public class ParticipantContextApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
-                    .extract().body().as(ParticipantContext[].class);
+                    .extract().body().as(IdentityHubParticipantContext[].class);
             assertThat(found).hasSize(50);
         }
 

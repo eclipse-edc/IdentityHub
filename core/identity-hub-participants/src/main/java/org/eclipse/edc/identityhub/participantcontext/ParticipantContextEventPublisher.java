@@ -20,7 +20,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantCont
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextEvent;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextListener;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventRouter;
@@ -37,7 +37,7 @@ public class ParticipantContextEventPublisher implements ParticipantContextListe
     }
 
     @Override
-    public void created(ParticipantContext newContext, ParticipantManifest manifest) {
+    public void created(IdentityHubParticipantContext newContext, ParticipantManifest manifest) {
         var event = ParticipantContextCreated.Builder.newInstance()
                 .participantContextId(newContext.getParticipantContextId())
                 .manifest(manifest)
@@ -46,7 +46,7 @@ public class ParticipantContextEventPublisher implements ParticipantContextListe
     }
 
     @Override
-    public void updated(ParticipantContext updatedContext) {
+    public void updated(IdentityHubParticipantContext updatedContext) {
         var event = ParticipantContextUpdated.Builder.newInstance()
                 .participantContextId(updatedContext.getParticipantContextId())
                 .newState(updatedContext.getStateAsEnum())
@@ -55,7 +55,7 @@ public class ParticipantContextEventPublisher implements ParticipantContextListe
     }
 
     @Override
-    public void deleting(ParticipantContext deletedContext) {
+    public void deleting(IdentityHubParticipantContext deletedContext) {
         var event = ParticipantContextDeleting.Builder.newInstance()
                 .participantContextId(deletedContext.getParticipantContextId())
                 .participant(deletedContext)
@@ -64,7 +64,7 @@ public class ParticipantContextEventPublisher implements ParticipantContextListe
     }
 
     @Override
-    public void deleted(ParticipantContext deletedContext) {
+    public void deleted(IdentityHubParticipantContext deletedContext) {
         var event = ParticipantContextDeleted.Builder.newInstance()
                 .participantContextId(deletedContext.getParticipantContextId())
                 .build();

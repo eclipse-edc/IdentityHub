@@ -41,6 +41,7 @@ dependencies {
     implementation(project(":extensions:api:identityhub-api-authorization"))
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
+    runtimeOnly(libs.edc.core.participantcontext)
     runtimeOnly(libs.edc.api.version)
     runtimeOnly(libs.edc.transaction.local) // needed by the PresentationCreatorRegistry
 

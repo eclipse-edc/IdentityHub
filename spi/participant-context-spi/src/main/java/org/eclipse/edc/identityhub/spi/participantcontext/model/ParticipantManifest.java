@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.edc.iam.did.spi.document.Service;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +31,7 @@ import java.util.Set;
 import static java.util.Optional.ofNullable;
 
 /**
- * Manifest (=recipe) for creating the {@link ParticipantContext}.
+ * Manifest (=recipe) for creating the {@link IdentityHubParticipantContext}.
  */
 @JsonDeserialize(builder = ParticipantManifest.Builder.class)
 public class ParticipantManifest {

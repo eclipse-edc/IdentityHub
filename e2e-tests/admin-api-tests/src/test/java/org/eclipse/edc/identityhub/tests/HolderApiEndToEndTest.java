@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
@@ -50,7 +50,7 @@ public class HolderApiEndToEndTest {
         public static final String USER = "user";
 
         @AfterEach
-        void teardown(HolderService holderService, ParticipantContextService pcService) {
+        void teardown(HolderService holderService, IdentityHubParticipantContextService pcService) {
             holderService.queryHolders(QuerySpec.max()).getContent()
                     .forEach(p -> holderService.deleteHolder(p.getHolderId()).getContent());
 

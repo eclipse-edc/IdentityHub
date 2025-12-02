@@ -28,8 +28,6 @@ import org.eclipse.edc.sql.bootstrapper.SqlSchemaBootstrapper;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
-import java.time.Clock;
-
 import static org.eclipse.edc.issuerservice.store.sql.attestationdefinition.SqlAttestationDefinitionStoreExtension.NAME;
 
 @Extension(value = NAME)
@@ -52,9 +50,6 @@ public class SqlAttestationDefinitionStoreExtension implements ServiceExtension 
     @Inject
     private SqlSchemaBootstrapper sqlSchemaBootstrapper;
 
-    @Inject
-    private Clock clock;
-
     @Override
     public void initialize(ServiceExtensionContext context) {
         sqlSchemaBootstrapper.addStatementFromResource(dataSourceName, "attestation-definition-schema.sql");
@@ -63,7 +58,7 @@ public class SqlAttestationDefinitionStoreExtension implements ServiceExtension 
     @Provider
     public AttestationDefinitionStore createSqlStore() {
         return new SqlAttestationDefinitionStore(dataSourceRegistry, dataSourceName, transactionContext, typemanager.getMapper(),
-                queryExecutor, getStatementImpl(), clock);
+                queryExecutor, getStatementImpl());
     }
 
     private AttestationDefinitionStoreStatements getStatementImpl() {

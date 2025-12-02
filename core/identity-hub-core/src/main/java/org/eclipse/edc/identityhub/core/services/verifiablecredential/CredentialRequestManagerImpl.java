@@ -28,8 +28,8 @@ import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredential
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -74,7 +74,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private EdcHttpClient httpClient;
     private ParticipantSecureTokenService secureTokenService;
     private TransactionContext transactionContext;
-    private ParticipantContextService participantContextService;
+    private IdentityHubParticipantContextService participantContextService;
 
     private CredentialRequestManagerImpl() {
 
@@ -237,7 +237,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 });
     }
 
-    private Result<ParticipantContext> getParticipantContext(String participantContextId) {
+    private Result<IdentityHubParticipantContext> getParticipantContext(String participantContextId) {
         var result = participantContextService.getParticipantContext(participantContextId);
         if (result.failed()) {
             return failure("Invalid participant");
@@ -292,7 +292,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             return this;
         }
 
-        public Builder participantContextService(ParticipantContextService participantContextService) {
+        public Builder participantContextService(IdentityHubParticipantContextService participantContextService) {
             manager.participantContextService = participantContextService;
             return this;
         }

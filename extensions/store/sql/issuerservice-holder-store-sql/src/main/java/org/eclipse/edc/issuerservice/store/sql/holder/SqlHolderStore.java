@@ -83,8 +83,8 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                         holder.getParticipantContextId(),
                         holder.getDid(),
                         holder.getHolderName(),
-                        0, // TODO: participant.createdAt(),
-                        0,  // TODO: participant.lastModifiedAt());
+                        holder.getCreatedAt(),
+                        holder.getCreatedAt(),
                         holder.isAnonymous(),
                         toJson(holder.getProperties())
                 );
@@ -110,8 +110,8 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
                             holder.getHolderId(),
                             holder.getDid(),
                             holder.getHolderName(),
-                            0, // TODO: participant.createdAt(),
-                            0, // TODO: participant.lastModifiedAt());
+                            holder.getCreatedAt(),
+                            holder.getLastModifiedAt(),
                             holder.isAnonymous(),
                             toJson(holder.getProperties()),
                             holder.getHolderId()
@@ -167,14 +167,17 @@ public class SqlHolderStore extends AbstractSqlStore implements HolderStore {
         var name = resultSet.getString(statements.getHolderNameColumn());
         var participantContextId = resultSet.getString(statements.getParticipantContextIdColumn());
         var created = resultSet.getLong(statements.getCreateTimestampColumn());
-        var lastmodified = resultSet.getLong(statements.getLastModifiedTimestampColumn());
-        var properties = fromJson(resultSet.getString(statements.getPropertiesColumn()), new TypeReference<Map<String, Object>>() {});
+        var lastModifiedAt = resultSet.getLong(statements.getLastModifiedTimestampColumn());
+        var properties = fromJson(resultSet.getString(statements.getPropertiesColumn()), new TypeReference<Map<String, Object>>() {
+        });
         return Holder.Builder.newInstance()
                 .holderId(id)
                 .did(did)
                 .holderName(name)
                 .participantContextId(participantContextId)
                 .isAnonymous(resultSet.getBoolean(statements.getAnonymousColumn()))
+                .createdAt(created)
+                .lastModifiedAt(lastModifiedAt)
                 .properties(properties)
                 .build();
     }

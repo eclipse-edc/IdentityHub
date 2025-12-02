@@ -20,11 +20,11 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
-import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
@@ -49,9 +49,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.ACTIVATED;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState.CREATED;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantContextState.ACTIVATED;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantContextState.CREATED;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
@@ -238,7 +238,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     }
 
     /**
-     * checks if the participant exists, and that its {@link ParticipantContext#getState()} flag matches either of the given states
+     * checks if the participant exists, and that its {@link IdentityHubParticipantContext#getState()} flag matches either of the given states
      *
      * @param participantContextId the ParticipantContext ID of the participant context
      * @param allowedStates        a (possible empty) list of allowed states a participant may be in for a particular operation.

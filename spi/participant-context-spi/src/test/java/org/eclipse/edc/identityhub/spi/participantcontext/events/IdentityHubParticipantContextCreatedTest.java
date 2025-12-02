@@ -21,12 +21,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ParticipantContextUpdatedTest {
+class IdentityHubParticipantContextCreatedTest {
+
     private final TypeManager manager = new JacksonTypeManager();
 
     @Test
     void verify_serDes() throws JsonProcessingException {
-        var evt = ParticipantContextUpdated.Builder.newInstance()
+        var evt = ParticipantContextCreated.Builder.newInstance()
                 .participantContextId("test-participantId")
                 .build();
 
@@ -34,6 +35,6 @@ class ParticipantContextUpdatedTest {
 
         assertThat(json).isNotNull();
 
-        assertThat(manager.readValue(json, ParticipantContextUpdated.class)).usingRecursiveComparison().isEqualTo(evt);
+        assertThat(manager.readValue(json, ParticipantContextCreated.class)).usingRecursiveComparison().isEqualTo(evt);
     }
 }

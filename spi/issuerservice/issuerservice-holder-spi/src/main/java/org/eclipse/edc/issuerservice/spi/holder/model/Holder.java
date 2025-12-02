@@ -15,8 +15,10 @@
 package org.eclipse.edc.issuerservice.spi.holder.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.AbstractParticipantResource;
+import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +28,7 @@ import java.util.Objects;
  * Represents a single user account in the issuer service. Members of a dataspace that would like this issuer service to issue them
  * credentials, will need such an account with an issuer service.
  */
+@JsonDeserialize(builder = Holder.Builder.class)
 public class Holder extends AbstractParticipantResource {
 
     private String holderId;
@@ -33,6 +36,7 @@ public class Holder extends AbstractParticipantResource {
     private String holderName;
     private boolean anonymous;
     private Map<String, Object> properties = new HashMap<>();
+    private long lastModifiedAt;
 
     private Holder() {
     }
@@ -47,6 +51,10 @@ public class Holder extends AbstractParticipantResource {
 
     public String getHolderName() {
         return holderName;
+    }
+
+    public long getLastModifiedAt() {
+        return lastModifiedAt;
     }
 
     /**
@@ -99,6 +107,11 @@ public class Holder extends AbstractParticipantResource {
             return this;
         }
 
+        public Builder lastModifiedAt(long lastModified) {
+            entity.lastModifiedAt = lastModified;
+            return this;
+        }
+
         @Override
         public Builder self() {
             return this;
@@ -106,12 +119,18 @@ public class Holder extends AbstractParticipantResource {
 
         @Override
         public Holder build() {
+            super.build();
             Objects.requireNonNull(entity.holderId, "Holder ID must not be null");
             Objects.requireNonNull(entity.did, "DID must not be null");
             Objects.requireNonNull(entity.participantContextId, "Participant context ID must not be null");
-            return super.build();
+
+            if (entity.getLastModifiedAt() == 0L) {
+                entity.lastModifiedAt = entity.clock.millis();
+            }
+            return entity;
         }
 
+        @JsonProperty("anonymous")
         public Builder isAnonymous(boolean anonymous) {
             entity.anonymous = anonymous;
             return this;

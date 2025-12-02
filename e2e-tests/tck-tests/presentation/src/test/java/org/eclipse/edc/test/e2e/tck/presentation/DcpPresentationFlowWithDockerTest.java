@@ -21,7 +21,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegi
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
@@ -169,7 +169,7 @@ public class DcpPresentationFlowWithDockerTest {
     }
 
     private CreateParticipantContextResponse createParticipant(IdentityHub identityHub, String credentialServiceUrl) {
-        var service = identityHub.getService(ParticipantContextService.class);
+        var service = identityHub.getService(IdentityHubParticipantContextService.class);
         var vault = identityHub.getService(Vault.class);
 
         var privateKeyAlias = "%s-privatekey-alias".formatted(TEST_PARTICIPANT_CONTEXT_ID);

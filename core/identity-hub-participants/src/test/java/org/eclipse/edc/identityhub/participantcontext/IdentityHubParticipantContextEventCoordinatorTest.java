@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
@@ -44,11 +44,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class ParticipantContextEventCoordinatorTest {
+class IdentityHubParticipantContextEventCoordinatorTest {
     private final Monitor monitor = mock();
     private final DidDocumentService didDocumentService = mock();
     private final KeyPairService keyPairService = mock();
-    private final ParticipantContextService participantContextService = mock();
+    private final IdentityHubParticipantContextService participantContextService = mock();
     private final ParticipantContextEventCoordinator coordinator = new ParticipantContextEventCoordinator(monitor, didDocumentService, keyPairService, participantContextService);
 
     @BeforeEach

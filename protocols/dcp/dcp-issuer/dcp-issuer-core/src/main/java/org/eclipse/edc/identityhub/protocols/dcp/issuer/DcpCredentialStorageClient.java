@@ -23,13 +23,13 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
+import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
@@ -86,7 +86,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
     public Result<Void> deliverCredentials(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> credentials) {
 
         try {
-            var issuerDid = participantContextStore.findById(issuanceProcess.getParticipantContextId()).map(ParticipantContext::getDid)
+            var issuerDid = participantContextStore.findById(issuanceProcess.getParticipantContextId()).map(ParticipantContext::getIdentity)
                     .orElseThrow(failure -> new EdcException("Participant context not found"));
             var participantDid = holderStore.findById(issuanceProcess.getHolderId()).map(Holder::getDid)
                     .orElseThrow(failure -> new EdcException("Participant not found"));

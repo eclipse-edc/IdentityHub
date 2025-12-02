@@ -27,7 +27,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable.model.CredentialDefinitionDto;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
@@ -39,7 +39,7 @@ import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.filterByParticipantContextId;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
@@ -60,7 +60,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Override
     public Response createCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto definitionDto, @Context SecurityContext context) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.isAuthorized(context, decodedParticipantContextId, decodedParticipantContextId, ParticipantContext.class)
+        return authorizationService.isAuthorized(context, decodedParticipantContextId, decodedParticipantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> credentialDefinitionService.createCredentialDefinition(definitionDto.toCredentialDefinition(decodedParticipantContextId)))
                 .map(v -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/credentialdefinitions/%s".formatted(participantContextId, definitionDto.getId()))).build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, definitionDto.getId()));

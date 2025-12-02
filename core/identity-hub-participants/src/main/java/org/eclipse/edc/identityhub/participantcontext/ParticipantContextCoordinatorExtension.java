@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.participantcontext;
 
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextCreated;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleting;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
@@ -42,7 +42,7 @@ public class ParticipantContextCoordinatorExtension implements ServiceExtension 
     @Inject
     private EventRouter eventRouter;
     @Inject
-    private ParticipantContextService participantContextService;
+    private IdentityHubParticipantContextService participantContextService;
 
     @Override
     public String name() {

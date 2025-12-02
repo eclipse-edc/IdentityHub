@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.spi.participantcontext.model;
 
 /**
- * Response representation for the {@link ParticipantContext} creation
+ * Response representation for the {@link IdentityHubParticipantContext} creation
  */
 public record CreateParticipantContextResponse(String apiKey, String clientId, String clientSecret) {
 }

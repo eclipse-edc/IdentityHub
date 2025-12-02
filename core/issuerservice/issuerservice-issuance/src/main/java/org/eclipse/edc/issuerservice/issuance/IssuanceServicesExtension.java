@@ -16,7 +16,7 @@ package org.eclipse.edc.issuerservice.issuance;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationDefinitionServiceImpl;
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationDefinitionValidatorRegistryImpl;
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationPipelineImpl;
@@ -77,7 +77,7 @@ public class IssuanceServicesExtension implements ServiceExtension {
     private Clock clock;
 
     @Inject
-    private ParticipantContextService participantContextService;
+    private IdentityHubParticipantContextService participantContextService;
 
     private AttestationPipelineImpl attestationPipeline;
 

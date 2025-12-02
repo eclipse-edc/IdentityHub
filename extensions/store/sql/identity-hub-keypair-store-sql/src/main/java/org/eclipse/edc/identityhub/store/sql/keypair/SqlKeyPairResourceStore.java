@@ -157,6 +157,7 @@ public class SqlKeyPairResourceStore extends AbstractSqlStore implements KeyPair
                 .id(resultSet.getString(statements.getIdColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .timestamp(resultSet.getLong(statements.getTimestampColumn()))
+                .createdAt(resultSet.getLong(statements.getTimestampColumn()))
                 .keyId(resultSet.getString(statements.getKeyIdColumn()))
                 .groupName(resultSet.getString(statements.getGroupNameColumn()))
                 .isDefaultPair(resultSet.getBoolean(statements.getIsDefaultKeyPairColumn()))

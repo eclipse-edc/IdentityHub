@@ -47,7 +47,6 @@ include(":core:lib:issuerservice-common-lib")
 // extension modules
 include(":extensions:store:sql:identity-hub-did-store-sql")
 include(":extensions:store:sql:identity-hub-credentials-store-sql")
-include(":extensions:store:sql:identity-hub-participantcontext-store-sql")
 include(":extensions:store:sql:identity-hub-keypair-store-sql")
 include(":extensions:store:sql:holder-credential-request-store-sql")
 include(":extensions:store:sql:holder-credential-offer-store-sql")

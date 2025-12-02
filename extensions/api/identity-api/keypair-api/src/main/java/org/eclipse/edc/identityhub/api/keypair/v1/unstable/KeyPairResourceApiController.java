@@ -29,8 +29,8 @@ import org.eclipse.edc.identityhub.api.keypair.validation.KeyDescriptorValidator
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
@@ -42,7 +42,7 @@ import java.util.Collection;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
 import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -91,7 +91,7 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
         keyDescriptorValidator.validate(keyDescriptor).orElseThrow(ValidationFailureException::new);
         onEncoded(participantContextId)
                 .onSuccess(decoded ->
-                        authorizationService.isAuthorized(securityContext, decoded, decoded, ParticipantContext.class)
+                        authorizationService.isAuthorized(securityContext, decoded, decoded, IdentityHubParticipantContext.class)
                                 .compose(u -> keyPairService.addKeyPair(decoded, keyDescriptor, makeDefault))
                                 .orElseThrow(exceptionMapper(KeyPairResource.class)))
                 .orElseThrow(InvalidRequestException::new);

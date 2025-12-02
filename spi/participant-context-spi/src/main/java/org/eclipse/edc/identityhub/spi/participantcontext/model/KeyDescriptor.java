@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Container object to describe, what security keys should be used when creating a {@link ParticipantContext}.
+ * Container object to describe, what security keys should be used when creating a {@link IdentityHubParticipantContext}.
  * There are two basic options:
  * <ol>
  *     <li>Keys already exist - the public key can be specified using PEM or JWK format. The private key is expected to exist in the {@link Vault} under the alias {@link KeyDescriptor#getPrivateKeyAlias()}</li>

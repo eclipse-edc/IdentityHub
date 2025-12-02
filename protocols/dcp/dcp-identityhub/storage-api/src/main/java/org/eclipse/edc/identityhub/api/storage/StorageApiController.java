@@ -25,7 +25,7 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.spi.JsonLd;
@@ -55,7 +55,7 @@ public class StorageApiController implements StorageApi {
     private final CredentialWriter credentialWriter;
     private final Monitor monitor;
     private final DcpIssuerTokenVerifier issuerTokenVerifier;
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
 
     public StorageApiController(JsonObjectValidatorRegistry validatorRegistry,
                                 TypeTransformerRegistry transformerRegistry,
@@ -63,7 +63,7 @@ public class StorageApiController implements StorageApi {
                                 CredentialWriter credentialWriter,
                                 Monitor monitor,
                                 DcpIssuerTokenVerifier issuerTokenVerifier,
-                                ParticipantContextService participantContextService) {
+                                IdentityHubParticipantContextService participantContextService) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
         this.jsonLd = jsonLd;

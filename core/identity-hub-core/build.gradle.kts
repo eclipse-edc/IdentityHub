@@ -37,7 +37,6 @@ dependencies {
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(project(":spi:keypair-spi")))
-    testImplementation(testFixtures(project(":spi:participant-context-spi")))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(testFixtures(project(":spi:holder-credential-request-spi")))
     testImplementation(testFixtures(libs.edc.vc.jwt)) // JWT generator

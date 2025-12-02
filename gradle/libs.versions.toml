@@ -44,12 +44,14 @@ edc-spi-dcp = { module = "org.eclipse.edc:decentralized-claims-spi", version.ref
 edc-spi-vc = { module = "org.eclipse.edc:verifiable-credentials-spi", version.ref = "edc" }
 edc-spi-oauth2 = { module = "org.eclipse.edc:oauth2-spi", version.ref = "edc" }
 edc-spi-did = { module = "org.eclipse.edc:identity-did-spi", version.ref = "edc" }
+edc-spi-participantcontext = { module = "org.eclipse.edc:connector-participant-context-spi", version.ref = "edc" }
 edc-core-connector = { module = "org.eclipse.edc:connector-core", version.ref = "edc" }
 edc-core-token = { module = "org.eclipse.edc:token-core", version.ref = "edc" }
 edc-core-jersey = { module = "org.eclipse.edc:jersey-core", version.ref = "edc" }
 edc-core-api = { module = "org.eclipse.edc:api-core", version.ref = "edc" }
 edc-core-runtime = { module = "org.eclipse.edc:runtime-core", version.ref = "edc" }
 edc-core-participantcontext-config = { module = "org.eclipse.edc:participant-context-config-core", version.ref = "edc" }
+edc-core-participantcontext = { module = "org.eclipse.edc:participant-context-core", version.ref = "edc" }
 edc-identity-did-core = { module = "org.eclipse.edc:identity-did-core", version.ref = "edc" }
 edc-identity-did-web = { module = "org.eclipse.edc:identity-did-web", version.ref = "edc" }
 edc-dcp-transform = { module = "org.eclipse.edc:decentralized-claims-transform", version.ref = "edc" }
@@ -89,6 +91,7 @@ edc-sql-lease-core = { module = "org.eclipse.edc:sql-lease-core", version.ref = 
 edc-sql-jtivdalidation = { module = "org.eclipse.edc:jti-validation-store-sql", version.ref = "edc" }
 edc-sql-pool = { module = "org.eclipse.edc:sql-pool-apache-commons", version.ref = "edc" }
 edc-sql-test-fixtures = { module = "org.eclipse.edc:sql-test-fixtures", version.ref = "edc" }
+edc-sql-participantcontext = { module = "org.eclipse.edc:participantcontext-store-sql", version.ref = "edc" }
 
 # Third party libs
 awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitility" }

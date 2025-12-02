@@ -19,8 +19,8 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerationRequest;
@@ -44,13 +44,13 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
 
     private final Map<CredentialFormat, CredentialGenerator> generators = new HashMap<>();
     private final IssuanceClaimsMapper issuanceClaimsMapper;
-    private final ParticipantContextService participantContextService;
+    private final IdentityHubParticipantContextService participantContextService;
     private final HolderService holderService;
 
     private final KeyPairService keyPairService;
 
 
-    public CredentialGeneratorRegistryImpl(IssuanceClaimsMapper issuanceClaimsMapper, ParticipantContextService participantContextService, HolderService holderService, KeyPairService keyPairService) {
+    public CredentialGeneratorRegistryImpl(IssuanceClaimsMapper issuanceClaimsMapper, IdentityHubParticipantContextService participantContextService, HolderService holderService, KeyPairService keyPairService) {
         this.issuanceClaimsMapper = issuanceClaimsMapper;
         this.participantContextService = participantContextService;
         this.holderService = holderService;
@@ -99,7 +99,7 @@ public class CredentialGeneratorRegistryImpl implements CredentialGeneratorRegis
 
         try {
             var issuerDid = participantContextService.getParticipantContext(participantContextId)
-                    .map(ParticipantContext::getDid)
+                    .map(IdentityHubParticipantContext::getDid)
                     .orElseThrow(f -> new EdcException(f.getFailureDetail()));
 
             var participantDid = ofNullable(participantId)

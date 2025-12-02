@@ -22,16 +22,16 @@ import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.AccountCredentials;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContextState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
 import org.eclipse.edc.keys.keyparsers.PemParser;
 import org.eclipse.edc.participantcontext.spi.config.model.ParticipantContextConfiguration;
 import org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService;
+import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
+import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
@@ -61,7 +61,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class ParticipantContextServiceImplTest {
+class IdentityHubIdentityHubParticipantContextServiceImplTest {
 
     private final Vault vault = mock();
     private final ParticipantContextStore participantContextStore = mock();
@@ -69,13 +69,13 @@ class ParticipantContextServiceImplTest {
     private final DidResourceStore didResourceStore = mock();
     private final StsAccountProvisioner stsAccountProvisioner = mock();
     private final ParticipantContextConfigService configService = mock();
-    private ParticipantContextServiceImpl participantContextService;
+    private IdentityHubParticipantContextServiceImpl participantContextService;
 
     @BeforeEach
     void setUp() {
         var keyParserRegistry = new KeyParserRegistryImpl();
         keyParserRegistry.register(new PemParser(mock()));
-        participantContextService = new ParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock, stsAccountProvisioner, configService);
+        participantContextService = new IdentityHubParticipantContextServiceImpl(participantContextStore, didResourceStore, vault, new NoopTransactionContext(), observableMock, stsAccountProvisioner, configService);
         when(stsAccountProvisioner.create(any())).thenReturn(ServiceResult.success());
         when(configService.save(any(ParticipantContextConfiguration.class))).thenReturn(ServiceResult.success());
     }
@@ -153,7 +153,7 @@ class ParticipantContextServiceImplTest {
         assertThat(participantContextService.createParticipantContext(ctx))
                 .isSucceeded();
 
-        verify(participantContextStore).create(argThat(pc -> pc.getDid() != null &&
+        verify(participantContextStore).create(argThat(pc -> pc.getIdentity() != null &&
                 pc.getParticipantContextId().equalsIgnoreCase("test-id")));
         verify(vault).storeSecret(anyString(), eq(ctx.getParticipantContextId() + "-apikey"), anyString());
         verifyNoMoreInteractions(vault, participantContextStore);
@@ -362,7 +362,7 @@ class ParticipantContextServiceImplTest {
         var context = createContext();
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(context));
         when(participantContextStore.update(any())).thenReturn(StoreResult.success());
-        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), ParticipantContext::deactivate)).isSucceeded();
+        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), IdentityHubParticipantContext::deactivate)).isSucceeded();
 
         verify(participantContextStore).findById(anyString());
         verify(participantContextStore).update(any());
@@ -373,7 +373,7 @@ class ParticipantContextServiceImplTest {
     void update_whenNotFound() {
         var context = createContext();
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.notFound("foobar"));
-        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), ParticipantContext::deactivate)).isFailed()
+        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), IdentityHubParticipantContext::deactivate)).isFailed()
                 .detail().isEqualTo("ParticipantContext with ID 'test-id' not found.");
 
         verify(participantContextStore).findById(anyString());
@@ -386,7 +386,7 @@ class ParticipantContextServiceImplTest {
         when(participantContextStore.findById(anyString())).thenReturn(StoreResult.success(context));
         when(participantContextStore.update(any())).thenReturn(StoreResult.alreadyExists("test-msg"));
 
-        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), ParticipantContext::deactivate)).isFailed()
+        assertThat(participantContextService.updateParticipant(context.getParticipantContextId(), IdentityHubParticipantContext::deactivate)).isFailed()
                 .detail().isEqualTo("test-msg");
 
         verify(participantContextStore).findById(anyString());
@@ -426,8 +426,8 @@ class ParticipantContextServiceImplTest {
                 .publicKeyJwk(createJwk());
     }
 
-    private ParticipantContext createContext() {
-        return ParticipantContext.Builder.newInstance()
+    private IdentityHubParticipantContext createContext() {
+        return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .did("did:web:test-id")
                 .state(ParticipantContextState.CREATED)

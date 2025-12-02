@@ -181,6 +181,7 @@ public class SqlCredentialStore extends AbstractSqlStore implements CredentialSt
                 .usage(CredentialUsage.valueOf(resultSet.getString(statements.getUsageColumn())))
                 .id(resultSet.getString(statements.getIdColumn()))
                 .timestamp(resultSet.getLong(statements.getCreateTimestampColumn()))
+                .createdAt(resultSet.getLong(statements.getCreateTimestampColumn()))
                 .issuerId(resultSet.getString(statements.getIssuerIdColumn()))
                 .holderId(resultSet.getString(statements.getHolderIdColumn()))
                 .state(VcStatus.from(resultSet.getInt(statements.getVcStateColumn())))

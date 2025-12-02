@@ -28,7 +28,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCr
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromIssuerMetadataTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialRequestMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.validation.CredentialRequestMessageValidator;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.jsonld.spi.JsonLdNamespace;
@@ -97,7 +97,7 @@ public class IssuerApiExtension implements ServiceExtension {
     private JsonObjectValidatorRegistry validatorRegistry;
 
     @Inject
-    private ParticipantContextService participantContextService;
+    private IdentityHubParticipantContextService participantContextService;
 
     @Inject
     private IssuanceProcessService issuanceProcessService;

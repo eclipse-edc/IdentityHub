@@ -26,18 +26,18 @@ import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.spi.participantcontext.store.ParticipantContextStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeContext;
 import org.eclipse.edc.junit.utils.LazySupplier;
+import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -59,10 +59,10 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import static java.lang.String.format;
-import static org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.IDENTITY;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.IH_DID;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.STS;
+import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 /**
  * Base utility class for identity components such as Identity Hub, Issuer service.
@@ -76,7 +76,7 @@ public abstract class AbstractIdentityHub {
     protected LazySupplier<Endpoint> stsEndpoint;
     protected LazySupplier<Endpoint> didEndpoint;
 
-    protected ParticipantContextService participantContextService;
+    protected IdentityHubParticipantContextService participantContextService;
     protected ParticipantContextStore participantContextStore;
     protected DidDocumentService didDocumentService;
     protected CredentialStore credentialStore;
@@ -159,7 +159,7 @@ public abstract class AbstractIdentityHub {
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
     }
 
-    public ParticipantContext getParticipant(String participantContextId) {
+    public IdentityHubParticipantContext getParticipant(String participantContextId) {
         return participantContextService
                 .getParticipantContext(participantContextId)
                 .orElseThrow(f -> new EdcException(f.getFailureDetail()));
@@ -185,8 +185,9 @@ public abstract class AbstractIdentityHub {
                 .stream()
                 .toList();
     }
+    
+    public String storeParticipant(IdentityHubParticipantContext pc) {
 
-    public String storeParticipant(ParticipantContext pc) {
         var token = createTokenFor(pc.getParticipantContextId());
         vault.storeSecret(pc.getParticipantContextId(), pc.getApiTokenAlias(), token);
         participantContextStore.create(pc).orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
@@ -260,7 +261,7 @@ public abstract class AbstractIdentityHub {
                     .credentialStore(ctx.getService(CredentialStore.class))
                     .identityEndpoint(ctx.getEndpoint(IDENTITY))
                     .didEndpoint(ctx.getEndpoint(IH_DID))
-                    .participantContextService(ctx.getService(ParticipantContextService.class))
+                    .participantContextService(ctx.getService(IdentityHubParticipantContextService.class))
                     .participantContextStore(ctx.getService(ParticipantContextStore.class))
                     .didDocumentService(ctx.getService(DidDocumentService.class))
                     .keyPairService(ctx.getService(KeyPairService.class))
@@ -295,7 +296,7 @@ public abstract class AbstractIdentityHub {
             return self();
         }
 
-        public B participantContextService(ParticipantContextService participantContextService) {
+        public B participantContextService(IdentityHubParticipantContextService participantContextService) {
             this.instance.participantContextService = participantContextService;
             return self();
         }

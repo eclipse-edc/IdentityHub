@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.Header;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -65,7 +65,7 @@ public class AttestationApiEndToEndTest {
         }
 
         @AfterEach
-        void teardown(AttestationDefinitionStore store, HolderStore holderStore, ParticipantContextService pcService) {
+        void teardown(AttestationDefinitionStore store, HolderStore holderStore, IdentityHubParticipantContextService pcService) {
             store.query(QuerySpec.max()).getContent()
                     .forEach(att -> store.deleteById(att.getId()));
 

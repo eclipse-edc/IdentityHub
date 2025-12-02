@@ -27,8 +27,8 @@ import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRotated;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextService;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -74,7 +74,7 @@ public class KeyPairResourceApiEndToEndTest {
     abstract static class Tests {
 
         @AfterEach
-        void tearDown(ParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore accountStore) {
+        void tearDown(IdentityHubParticipantContextService pcService, DidResourceStore didResourceStore, KeyPairResourceStore keyPairResourceStore, StsAccountStore accountStore) {
             // purge all users, dids, keypairs
 
             pcService.query(QuerySpec.max()).getContent()
@@ -96,7 +96,7 @@ public class KeyPairResourceApiEndToEndTest {
 
             // create second user
             var user2 = "user2";
-            var user2Context = ParticipantContext.Builder.newInstance()
+            var user2Context = IdentityHubParticipantContext.Builder.newInstance()
                     .participantContextId(user2)
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
@@ -142,7 +142,7 @@ public class KeyPairResourceApiEndToEndTest {
 
             // create second user
             var user2 = "user2";
-            var user2Context = ParticipantContext.Builder.newInstance()
+            var user2Context = IdentityHubParticipantContext.Builder.newInstance()
                     .participantContextId(user2)
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")

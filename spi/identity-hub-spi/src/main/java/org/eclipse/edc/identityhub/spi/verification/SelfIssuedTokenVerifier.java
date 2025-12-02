@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.spi.verification;
 
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantContext;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.spi.result.Result;
 
 import java.util.List;
@@ -34,7 +34,7 @@ public interface SelfIssuedTokenVerifier {
      * </ul>
      *
      * @param token                The token to be verified. Must be a JWT in base64 encoding.
-     * @param participantContextId The ID of the {@link ParticipantContext} who is supposed to present their credentials
+     * @param participantContextId The ID of the {@link IdentityHubParticipantContext} who is supposed to present their credentials
      * @return A {@code Result} containing a {@code List} of scope strings.
      */
     Result<List<String>> verify(String token, String participantContextId);
