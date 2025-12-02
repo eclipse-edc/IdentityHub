@@ -85,6 +85,41 @@ public class BomSmokeTests {
 
     @Nested
     @EndToEndTest
+    class IdentityHubOauth2 extends SmokeTest {
+
+        @RegisterExtension
+        protected RuntimeExtension runtime =
+                new RuntimePerMethodExtension(new EmbeddedRuntime("identityhub-oauth2-bom", ":dist:bom:identityhub-oauth2-bom")
+                        .configurationProvider(() -> ConfigFactory.fromMap(new HashMap<>() {
+                            {
+                                put("web.http.port", DEFAULT_PORT);
+                                put("web.http.path", DEFAULT_PATH);
+                                put("edc.ih.iam.publickey.path", "/some/path/to/key.pem");
+                                put("web.http.credentials.port", valueOf(getFreePort()));
+                                put("web.http.credentials.path", "/api/credentials");
+                                put("web.http.identity.port", valueOf(getFreePort()));
+                                put("web.http.identity.path", "/api/identity");
+                                put("web.http.accounts.port", valueOf(getFreePort()));
+                                put("web.http.accounts.path", "/api/accounts");
+                                put("web.http.version.port", valueOf(getFreePort()));
+                                put("web.http.version.path", "/api/version");
+                                put("web.http.sts.port", valueOf(getFreePort()));
+                                put("web.http.sts.path", "/api/sts");
+                                put("web.http.did.port", valueOf(getFreePort()));
+                                put("web.http.did.path", "/api/did");
+                                // interaction with embedded STS
+                                put("edc.iam.sts.publickey.id", "test-public-key");
+                                put("edc.iam.sts.privatekey.alias", "test-private-key");
+
+                                //this is specific to the oauth2-bom
+                                put("edc.iam.oauth2.issuer", "your-expected-issuer");
+                                put("edc.iam.oauth2.jwks.url", "https://example.com/jwks.json");
+                            }
+                        })));
+    }
+
+    @Nested
+    @EndToEndTest
     class IssuerService extends SmokeTest {
         @RegisterExtension
         protected RuntimeExtension runtime =

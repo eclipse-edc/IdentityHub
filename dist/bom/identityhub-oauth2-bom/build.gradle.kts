@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
+ *  Copyright (c) 2025 Metaform Systems Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,7 +8,7 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
+ *       Metaform Systems Inc. - initial API and implementation
  *
  */
 
@@ -18,8 +18,8 @@ plugins {
 
 dependencies {
     api(project(":dist:bom:identityhub-base-bom"))
-    implementation(project(":extensions:api:identityhub-api-authentication"))
-    implementation(project(":extensions:api:identityhub-api-authorization"))
+    implementation(project(":extensions:api:identityhub-api-authentication-oauth2"))
+    implementation(project(":extensions:api:identityhub-api-authorization-oauth2"))
     implementation(project(":extensions:sts:sts-account-service-local"))
     implementation(project(":extensions:sts:sts-core"))
     implementation(project(":extensions:sts:sts-api"))
