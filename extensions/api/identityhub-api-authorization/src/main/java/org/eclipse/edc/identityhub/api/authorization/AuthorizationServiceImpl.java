@@ -15,8 +15,8 @@
 package org.eclipse.edc.identityhub.api.authorization;
 
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.spi.result.ServiceResult;
 
@@ -29,7 +29,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
     private final Map<Class<?>, BiFunction<String, String, ParticipantResource>> resourceLookupFunctions = new HashMap<>();
 
     @Override
-    public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceOwnerId, String resourceId, Class<? extends ParticipantResource> resourceClass) {
+    public ServiceResult<Void> authorize(SecurityContext securityContext, String resourceOwnerId, String resourceId, Class<? extends ParticipantResource> resourceClass) {
         var securityPrincipalName = securityContext.getUserPrincipal().getName();
 
         if (resourceOwnerId == null) {
@@ -60,6 +60,7 @@ public class AuthorizationServiceImpl implements AuthorizationService {
         return ServiceResult.success();
 
     }
+
 
     @Override
     public void addLookupFunction(Class<?> resourceClass, BiFunction<String, String, ParticipantResource> lookupFunction) {

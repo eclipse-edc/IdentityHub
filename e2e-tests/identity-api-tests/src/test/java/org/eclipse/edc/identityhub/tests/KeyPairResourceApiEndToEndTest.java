@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.tests;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identityhub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identityhub.spi.did.model.DidState;
@@ -144,6 +145,7 @@ public class KeyPairResourceApiEndToEndTest {
             var user2 = "user2";
             var user2Context = IdentityHubParticipantContext.Builder.newInstance()
                     .participantContextId(user2)
+                    .roles(List.of(ParticipantPrincipal.ROLE_PARTICIPANT))
                     .did("did:web:" + user2)
                     .apiTokenAlias(user2 + "-alias")
                     .build();

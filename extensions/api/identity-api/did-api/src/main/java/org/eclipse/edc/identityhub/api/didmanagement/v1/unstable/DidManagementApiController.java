@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.api.didmanagement.v1.unstable;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.PATCH;
@@ -24,10 +25,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
+import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.did.model.DidState;
@@ -56,22 +59,26 @@ public class DidManagementApiController implements DidManagementApi {
 
     @Override
     @POST
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
     @Path("/publish")
     public void publishDid(@PathParam("participantContextId") String participantContextId, DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        authorizationService.isAuthorized(securityContext, decodedParticipantContextId, didRequestPayload.did(), DidResource.class)
+        authorizationService.authorize(securityContext, decodedParticipantContextId, didRequestPayload.did(), DidResource.class)
                 .compose(u -> documentService.publish(didRequestPayload.did()))
                 .orElseThrow(exceptionMapper(DidResource.class, didRequestPayload.did()));
     }
 
     @Override
     @POST
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
     @Path("/unpublish")
     public void unpublishDid(@PathParam("participantContextId") String participantContextId, DidRequestPayload didRequestPayload, @Context SecurityContext securityContext) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        authorizationService.isAuthorized(securityContext, decodedParticipantContextId, didRequestPayload.did(), DidResource.class)
+        authorizationService.authorize(securityContext, decodedParticipantContextId, didRequestPayload.did(), DidResource.class)
                 .compose(u -> documentService.unpublish(didRequestPayload.did()))
                 .orElseThrow(exceptionMapper(DidDocument.class, didRequestPayload.did()));
     }
@@ -79,19 +86,23 @@ public class DidManagementApiController implements DidManagementApi {
 
     @POST
     @Path("/query")
+    @RequiredScope("identity-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
     @Override
     public Collection<DidDocument> queryDids(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext securityContext) {
         return documentService.queryDocuments(querySpec)
                 .orElseThrow(exceptionMapper(DidDocument.class, null))
-                .stream().filter(dd -> authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), dd.getId(), DidResource.class).succeeded())
+                .stream().filter(dd -> authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), dd.getId(), DidResource.class).succeeded())
                 .toList();
     }
 
     @Override
     @POST
+    @RequiredScope("identity-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/state")
     public String getDidState(@PathParam("participantContextId") String participantContextId, DidRequestPayload request, @Context SecurityContext securityContext) {
-        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), request.did(), DidResource.class)
+        authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), request.did(), DidResource.class)
                 .orElseThrow(exceptionMapper(DidResource.class, request.did()));
         var byId = documentService.findById(request.did());
         return byId != null ? DidState.from(byId.getState()).toString() : null;
@@ -99,13 +110,15 @@ public class DidManagementApiController implements DidManagementApi {
 
     @Override
     @POST
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{did}/endpoints")
     public void addDidEndpoint(@PathParam("participantContextId") String participantContextId,
                                @PathParam("did") String did, Service service,
                                @QueryParam("autoPublish") boolean autoPublish,
                                @Context SecurityContext securityContext) {
         var decodedDid = onEncoded(did).orElseThrow(InvalidRequestException::new);
-        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), decodedDid, DidResource.class)
+        authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), decodedDid, DidResource.class)
                 .compose(u -> documentService.addService(decodedDid, service))
                 .compose(v -> autoPublish ? documentService.publish(decodedDid) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, decodedDid));
@@ -113,6 +126,8 @@ public class DidManagementApiController implements DidManagementApi {
 
     @Override
     @PATCH
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{did}/endpoints")
     public void replaceDidEndpoint(@PathParam("participantContextId") String participantContextId,
                                    @PathParam("did") String did,
@@ -121,7 +136,7 @@ public class DidManagementApiController implements DidManagementApi {
                                    @Context SecurityContext securityContext) {
         var decodedDid = onEncoded(did).orElseThrow(InvalidRequestException::new);
 
-        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), decodedDid, DidResource.class)
+        authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), decodedDid, DidResource.class)
                 .compose(u -> documentService.replaceService(decodedDid, service))
                 .compose(v -> autoPublish ? documentService.publish(decodedDid) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, decodedDid));
@@ -129,6 +144,8 @@ public class DidManagementApiController implements DidManagementApi {
 
     @Override
     @DELETE
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{did}/endpoints")
     public void deleteDidEndpoint(@PathParam("participantContextId") String participantContextId,
                                   @PathParam("did") String did,
@@ -137,7 +154,7 @@ public class DidManagementApiController implements DidManagementApi {
                                   @Context SecurityContext securityContext) {
         var decodedDid = onEncoded(did).orElseThrow(InvalidRequestException::new);
 
-        authorizationService.isAuthorized(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), decodedDid, DidResource.class)
+        authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), decodedDid, DidResource.class)
                 .compose(u -> documentService.removeService(decodedDid, serviceId))
                 .compose(v -> autoPublish ? documentService.publish(decodedDid) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, decodedDid));

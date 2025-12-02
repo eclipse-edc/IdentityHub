@@ -16,9 +16,9 @@ package org.eclipse.edc.identityhub.api.keypair.v1.unstable;
 
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.keypair.validation.KeyDescriptorValidator;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -71,7 +71,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
 
     @BeforeEach
     void setUp() {
-        when(authService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(authService.authorize(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
     }
 
     @Test

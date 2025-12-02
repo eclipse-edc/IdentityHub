@@ -82,8 +82,10 @@ include(":protocols:dcp:dcp-identityhub:dcp-identityhub-core")
 include(":extensions:api:identity-api")
 include(":extensions:api:identity-api:identity-api-configuration")
 include(":extensions:api:identityhub-api-authentication")
+include(":extensions:api:identityhub-api-authentication-oauth2")
 include(":extensions:api:lib:identityhub-api-authentication-lib")
 include(":extensions:api:identityhub-api-authorization")
+include(":extensions:api:identityhub-api-authorization-oauth2")
 include(":extensions:api:identity-api:participant-context-api")
 include(":extensions:api:identity-api:verifiable-credentials-api")
 include(":extensions:api:identity-api:did-api")
@@ -111,6 +113,7 @@ include(":extensions:issuance:local-statuslist-publisher")
 
 // other modules
 include(":launcher:identityhub")
+include(":launcher:identityhub-oauth2")
 include(":launcher:issuer-service")
 
 // test modules
@@ -129,6 +132,7 @@ include(":e2e-tests:tck-tests:test-attestations")
 // BOM modules
 include(":dist:bom:identityhub-base-bom")
 include(":dist:bom:identityhub-bom")
+include(":dist:bom:identityhub-oauth2-bom")
 include(":dist:bom:identityhub-feature-sql-bom")
 include(":dist:bom:issuerservice-base-bom")
 include(":dist:bom:issuerservice-bom")

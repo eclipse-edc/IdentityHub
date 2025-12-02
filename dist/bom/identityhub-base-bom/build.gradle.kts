@@ -37,8 +37,6 @@ dependencies {
     implementation(project(":extensions:api:identity-api:verifiable-credentials-api"))
     implementation(project(":extensions:api:identity-api:keypair-api"))
     implementation(project(":extensions:api:identity-api:identity-api-configuration"))
-    implementation(project(":extensions:api:identityhub-api-authentication"))
-    implementation(project(":extensions:api:identityhub-api-authorization"))
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
     runtimeOnly(libs.edc.core.participantcontext)
@@ -50,6 +48,3 @@ dependencies {
     runtimeOnly(libs.bundles.connector)
 }
 
-edcBuild {
-
-}

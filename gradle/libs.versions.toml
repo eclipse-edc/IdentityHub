@@ -43,6 +43,7 @@ edc-spi-token = { module = "org.eclipse.edc:token-spi", version.ref = "edc" }
 edc-spi-dcp = { module = "org.eclipse.edc:decentralized-claims-spi", version.ref = "edc" }
 edc-spi-vc = { module = "org.eclipse.edc:verifiable-credentials-spi", version.ref = "edc" }
 edc-spi-oauth2 = { module = "org.eclipse.edc:oauth2-spi", version.ref = "edc" }
+edc-spi-auth = { module = "org.eclipse.edc:auth-spi", version.ref = "edc" }
 edc-spi-did = { module = "org.eclipse.edc:identity-did-spi", version.ref = "edc" }
 edc-spi-participantcontext = { module = "org.eclipse.edc:connector-participant-context-spi", version.ref = "edc" }
 edc-core-connector = { module = "org.eclipse.edc:connector-core", version.ref = "edc" }
@@ -75,13 +76,15 @@ edc-lib-json = { module = "org.eclipse.edc:json-lib", version.ref = "edc" }
 edc-lib-jsonld = { "module" = "org.eclipse.edc:json-ld-lib", version.ref = "edc" }
 edc-lib-jws2020 = { module = "org.eclipse.edc:jws2020-lib", version.ref = "edc" }
 edc-lib-keys = { "module" = "org.eclipse.edc:keys-lib", version.ref = "edc" }
+edc-lib-oauth2-authn = { module = "org.eclipse.edc:auth-authentication-oauth2-lib", version.ref = "edc" }
+edc-lib-oauth2-authz = { module = "org.eclipse.edc:auth-authorization-oauth2-lib", version.ref = "edc" }
 edc-lib-query = { "module" = "org.eclipse.edc:query-lib", version.ref = "edc" }
 edc-lib-sql = { "module" = "org.eclipse.edc:sql-lib", version.ref = "edc" }
+edc-lib-statemachine = { module = "org.eclipse.edc:state-machine-lib", version.ref = "edc" }
 edc-lib-store = { "module" = "org.eclipse.edc:store-lib", version.ref = "edc" }
 edc-lib-token = { module = "org.eclipse.edc:token-lib", version.ref = "edc" }
 edc-lib-transform = { module = "org.eclipse.edc:transform-lib", version.ref = "edc" }
 edc-lib-util = { module = "org.eclipse.edc:util-lib", version.ref = "edc" }
-edc-lib-statemachine = { module = "org.eclipse.edc:state-machine-lib", version.ref = "edc" }
 edc-lib-validator = { module = "org.eclipse.edc:validator-lib", version.ref = "edc" }
 # SQL dependencies
 edc-sql-bootstrapper = { module = "org.eclipse.edc:sql-bootstrapper", version.ref = "edc" }

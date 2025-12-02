@@ -141,7 +141,7 @@ the `AuthorizationService` in the controller method, for example:
 @Override
 public KeyPairResource findById(@PathParam("keyPairId") String id, @Context SecurityContext securityContext) {
 
-    authorizationService.isAuthorized(securityContext, id, KeyPairResource.class)
+    authorizationService.authorize(securityContext, id, KeyPairResource.class)
             .orElseThrow(exceptionMapper(KeyPairResource.class, id));
 
     //  DB operation

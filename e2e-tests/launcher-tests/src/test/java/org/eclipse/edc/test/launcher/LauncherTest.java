@@ -34,10 +34,10 @@ import static org.testcontainers.containers.wait.strategy.Wait.forHealthcheck;
 public class LauncherTest {
 
     @ParameterizedTest
-    @ValueSource(strings = { "identityhub", "issuer-service" })
+    @ValueSource(strings = {"identityhub", "identityhub-oauth2", "issuer-service"})
     void shouldBuildAndRun(String launcherName) throws IOException, InterruptedException {
         var file = new File(TestUtils.findBuildRoot(), TestUtils.GRADLE_WRAPPER);
-        var command = new String[] { file.getCanonicalPath(), ":launcher:" + launcherName + ":shadowJar"};
+        var command = new String[]{file.getCanonicalPath(), ":launcher:" + launcherName + ":shadowJar"};
 
         var exec = Runtime.getRuntime().exec(command).waitFor(1, MINUTES);
         assertThat(exec).isTrue();
@@ -45,6 +45,7 @@ public class LauncherTest {
         var dockerfile = findBuildRoot().toPath().resolve("launcher").resolve(launcherName).resolve("Dockerfile");
         var runtime = new GenericContainer<>(new ImageFromDockerfile().withDockerfile(dockerfile))
                 .withEnv("edc.issuer.statuslist.signing.key.alias", "any")
+                .withEnv("edc.iam.oauth2.jwks.url", "https://example.com/jwks.jsons") // oauth2 launcher uses this
                 .waitingFor(forHealthcheck())
                 .withLogConsumer(f -> System.out.println(f.getUtf8StringWithoutLineEnding()));
 

@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.participantcontext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
@@ -34,6 +35,7 @@ import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -208,14 +210,18 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
 
     private IdentityHubParticipantContext convert(ParticipantManifest manifest) {
         var apiKeyAlias = ofNullable(manifest.getApiKeyAlias()).orElse("%s-%s".formatted(manifest.getParticipantContextId(), API_KEY_ALIAS_SUFFIX));
-        return IdentityHubParticipantContext.Builder.newInstance()
+        var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(manifest.getParticipantContextId())
                 .roles(manifest.getRoles())
                 .did(manifest.getDid())
                 .apiTokenAlias(apiKeyAlias)
                 .state(ParticipantContextState.CREATED)
-                .properties(manifest.getAdditionalProperties())
-                .build();
+                .properties(manifest.getAdditionalProperties());
+        if (manifest.getRoles().isEmpty()) {
+            context.roles(List.of(ParticipantPrincipal.ROLE_PARTICIPANT));
+        }
+
+        return context.build();
     }
 
     private IdentityHubParticipantContext convert(ParticipantContext participantContext) {

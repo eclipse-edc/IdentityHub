@@ -15,8 +15,8 @@
 package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable;
 
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDto;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
@@ -51,7 +51,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
     @BeforeEach
     void setUp() {
-        when(authorizationService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(authorizationService.authorize(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
     }
 
     @Test

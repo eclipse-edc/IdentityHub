@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.api.configuration;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import jakarta.ws.rs.core.SecurityContext;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
@@ -102,8 +102,9 @@ public class IdentityApiConfigurationExtension implements ServiceExtension {
     private static class AllowAllAuthorizationService implements AuthorizationService {
 
         @Override
-        public ServiceResult<Void> isAuthorized(SecurityContext securityContext, String resourceOwnerId, String resourceId, Class<? extends ParticipantResource> resourceClass) {
+        public ServiceResult<Void> authorize(SecurityContext securityContext, String resourceOwnerId, String resourceId, Class<? extends ParticipantResource> resourceClass) {
             return ServiceResult.success();
+
         }
 
         @Override

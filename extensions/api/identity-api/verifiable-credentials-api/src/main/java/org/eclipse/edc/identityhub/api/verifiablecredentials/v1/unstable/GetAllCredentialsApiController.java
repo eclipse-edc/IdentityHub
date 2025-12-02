@@ -21,8 +21,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
+import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.query.QuerySpec;
@@ -44,7 +45,8 @@ public class GetAllCredentialsApiController implements GetAllCredentialsApi {
     }
 
     @GET
-    @RolesAllowed(ServicePrincipal.ROLE_ADMIN)
+    @RequiredScope("identity-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Override
     public Collection<VerifiableCredentialResource> getAllCredentials(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                                                       @DefaultValue("50") @QueryParam("limit") Integer limit) {
