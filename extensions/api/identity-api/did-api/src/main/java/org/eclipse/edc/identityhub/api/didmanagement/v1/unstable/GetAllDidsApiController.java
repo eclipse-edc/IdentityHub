@@ -47,7 +47,7 @@ public class GetAllDidsApiController implements GetAllDidsApi {
     @Override
     @GET
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
     public Collection<DidDocument> getAllDids(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                               @DefaultValue("50") @QueryParam("limit") Integer limit) {
         if (offset < 0 || limit < 0) {

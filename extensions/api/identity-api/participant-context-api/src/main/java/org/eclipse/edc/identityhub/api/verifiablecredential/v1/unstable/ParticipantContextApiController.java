@@ -125,7 +125,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @PUT
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{participantContextId}/roles")
     public void updateParticipantRoles(@PathParam("participantContextId") String participantContextId, List<String> roles) {
         onEncoded(participantContextId)
@@ -136,7 +136,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
 
     @GET
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
     @Override
     public Collection<IdentityHubParticipantContext> getAllParticipants(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                                                         @DefaultValue("50") @QueryParam("limit") Integer limit) {
