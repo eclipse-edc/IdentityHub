@@ -28,6 +28,7 @@ class IdentityHubParticipantContextTest {
         var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
+                .did("did:example:123")
                 .build();
 
         assertThat(context.getCreatedAt()).isNotZero().isLessThanOrEqualTo(Instant.now().toEpochMilli());
@@ -36,6 +37,7 @@ class IdentityHubParticipantContextTest {
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .createdAt(42)
+                .did("did:example:123")
                 .build();
 
         assertThat(context2.getCreatedAt()).isEqualTo(42);
@@ -46,6 +48,7 @@ class IdentityHubParticipantContextTest {
         var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
+                .did("did:example:123")
                 .build();
 
         assertThat(context.getLastModified()).isNotZero().isEqualTo(context.getCreatedAt());
@@ -54,6 +57,7 @@ class IdentityHubParticipantContextTest {
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
                 .lastModified(42)
+                .did("did:example:123")
                 .build();
 
         assertThat(context2.getLastModified()).isEqualTo(42);
@@ -64,6 +68,7 @@ class IdentityHubParticipantContextTest {
         var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
                 .apiTokenAlias("foo-token")
+                .did("did:example:123")
                 .state(ParticipantContextState.CREATED);
 
         assertThat(context.build().getState()).isEqualTo(ParticipantContextState.CREATED.code());

@@ -93,6 +93,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
     private final IdentityHubParticipantContextService participantContextService = mock(a -> ServiceResult.success(IdentityHubParticipantContext.Builder.newInstance()
             .participantContextId(a.getArgument(0).toString())
             .apiTokenAlias("test-alias")
+            .did("did:example:123")
             .build()));
 
     @Test

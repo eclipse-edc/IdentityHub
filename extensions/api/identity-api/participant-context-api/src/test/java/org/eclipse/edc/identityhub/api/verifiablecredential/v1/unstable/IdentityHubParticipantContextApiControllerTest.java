@@ -217,6 +217,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     private IdentityHubParticipantContext.Builder createParticipantContext() {
         return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId("test-id")
+                .did("did:web:test-id")
                 .createdAt(Instant.now().toEpochMilli())
                 .state(ParticipantContextState.ACTIVATED)
                 .roles(List.of())

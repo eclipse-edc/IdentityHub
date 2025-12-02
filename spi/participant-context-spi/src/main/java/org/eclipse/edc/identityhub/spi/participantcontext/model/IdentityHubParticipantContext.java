@@ -123,6 +123,7 @@ public class IdentityHubParticipantContext extends ParticipantContext {
             super.build();
             Objects.requireNonNull(entity.participantContextId, "Participant ID cannot be null");
             Objects.requireNonNull(entity.getApiTokenAlias(), "API Token Alias cannot be null");
+            Objects.requireNonNull(entity.getDid(), "DID cannot be null");
 
             if (entity.getLastModified() == 0L) {
                 entity.lastModified = entity.clock.millis();
