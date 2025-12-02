@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.api.admin.issuance;
 
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable.IssuanceProcessAdminApiController;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;

@@ -27,10 +27,10 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.api.verifiablecredential.validation.ParticipantManifestValidator;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
@@ -75,7 +75,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Path("/{participantContextId}")
     public IdentityHubParticipantContext getParticipant(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
         return onEncoded(participantContextId)
-                .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, decoded, IdentityHubParticipantContext.class)
+                .map(decoded -> authorizationService.authorize(securityContext, decoded, decoded, IdentityHubParticipantContext.class)
                         .compose(u -> participantContextService.getParticipantContext(decoded))
                         .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, decoded)))
                 .orElseThrow(InvalidRequestException::new);
@@ -86,7 +86,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Path("/{participantContextId}/token")
     public String regenerateParticipantToken(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
         return onEncoded(participantContextId)
-                .map(decoded -> authorizationService.isAuthorized(securityContext, decoded, decoded, IdentityHubParticipantContext.class)
+                .map(decoded -> authorizationService.authorize(securityContext, decoded, decoded, IdentityHubParticipantContext.class)
                         .compose(u -> participantContextService.regenerateApiToken(decoded))
                         .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, decoded)))
                 .orElseThrow(InvalidRequestException::new);

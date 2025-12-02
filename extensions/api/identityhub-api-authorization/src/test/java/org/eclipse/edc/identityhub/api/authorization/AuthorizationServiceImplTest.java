@@ -46,7 +46,7 @@ class AuthorizationServiceImplTest {
         when(principal.getName()).thenReturn("test-id");
         var securityContext = mock(SecurityContext.class);
         when(securityContext.getUserPrincipal()).thenReturn(principal);
-        assertThat(authorizationService.isAuthorized(securityContext, "test-id", "test-resource-id", TestResource.class))
+        assertThat(authorizationService.authorize(securityContext, "test-id", "test-resource-id", TestResource.class))
                 .isSucceeded();
     }
 
@@ -56,7 +56,7 @@ class AuthorizationServiceImplTest {
         when(principal.getName()).thenReturn("test-id");
         var securityContext = mock(SecurityContext.class);
         when(securityContext.getUserPrincipal()).thenReturn(principal);
-        assertThat(authorizationService.isAuthorized(securityContext, "test-id", "test-resource-id", TestResource.class))
+        assertThat(authorizationService.authorize(securityContext, "test-id", "test-resource-id", TestResource.class))
                 .isFailed();
     }
 
@@ -72,7 +72,7 @@ class AuthorizationServiceImplTest {
         when(principal.getName()).thenReturn("test-id");
         var securityContext = mock(SecurityContext.class);
         when(securityContext.getUserPrincipal()).thenReturn(principal);
-        assertThat(authorizationService.isAuthorized(securityContext, "test-id", "test-resource-id", TestResource.class))
+        assertThat(authorizationService.authorize(securityContext, "test-id", "test-resource-id", TestResource.class))
                 .isFailed();
     }
 
@@ -91,7 +91,7 @@ class AuthorizationServiceImplTest {
 
         when(securityContext.isUserInRole(eq("admin"))).thenReturn(true);
 
-        assertThat(authorizationService.isAuthorized(securityContext, "test-id", "test-resource-id", TestResource.class))
+        assertThat(authorizationService.authorize(securityContext, "test-id", "test-resource-id", TestResource.class))
                 .isSucceeded();
 
         verify(securityContext).isUserInRole(eq("admin"));
@@ -112,7 +112,7 @@ class AuthorizationServiceImplTest {
         var securityContext = mock(SecurityContext.class);
         when(securityContext.getUserPrincipal()).thenReturn(principal);
 
-        assertThat(authorizationService.isAuthorized(securityContext, null, "test-resource-id", TestResource.class))
+        assertThat(authorizationService.authorize(securityContext, null, "test-resource-id", TestResource.class))
                 .isFailed()
                 .satisfies(f -> Assertions.assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.UNAUTHORIZED));
     }

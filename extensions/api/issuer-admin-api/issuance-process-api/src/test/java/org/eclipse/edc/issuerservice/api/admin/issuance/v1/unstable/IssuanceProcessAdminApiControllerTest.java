@@ -15,9 +15,9 @@
 package org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable;
 
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable.model.IssuanceProcessDto;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
@@ -47,7 +47,7 @@ class IssuanceProcessAdminApiControllerTest extends RestControllerTestBase {
 
     @BeforeEach
     void setUp() {
-        when(authService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(authService.authorize(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
     }
 
     @Test

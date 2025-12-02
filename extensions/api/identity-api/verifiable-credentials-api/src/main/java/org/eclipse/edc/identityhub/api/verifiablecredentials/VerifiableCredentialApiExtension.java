@@ -14,11 +14,11 @@
 
 package org.eclipse.edc.identityhub.api.verifiablecredentials;
 
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.api.verifiablecredential.validation.VerifiableCredentialManifestValidator;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.GetAllCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.VerifiableCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.transformer.VerifiableCredentialManifestToVerifiableCredentialResourceTransformer;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;

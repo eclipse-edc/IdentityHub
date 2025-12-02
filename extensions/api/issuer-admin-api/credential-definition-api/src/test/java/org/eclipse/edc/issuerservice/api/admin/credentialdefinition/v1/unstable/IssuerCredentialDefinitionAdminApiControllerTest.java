@@ -15,8 +15,8 @@
 package org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable;
 
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.junit.annotations.ComponentTest;
@@ -51,7 +51,7 @@ class IssuerCredentialDefinitionAdminApiControllerTest extends RestControllerTes
 
     @BeforeEach
     void setUp() {
-        when(authorizationService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(authorizationService.authorize(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
     }
 
     @Test

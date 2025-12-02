@@ -23,9 +23,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.AttestationDefinitionRequest;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
@@ -60,7 +60,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
 
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        return authorizationService.isAuthorized(securityContext, decodedParticipantContextId, decodedParticipantContextId, IdentityHubParticipantContext.class)
+        return authorizationService.authorize(securityContext, decodedParticipantContextId, decodedParticipantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> attestationDefinitionService.createAttestation(createAttestationDefinition(decodedParticipantContextId, attestationRequest)))
                 .map(u -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/attestations/%s".formatted(participantContextId, attestationRequest.id()))).build())
                 .orElseThrow(AuthorizationResultHandler.exceptionMapper(AttestationDefinition.class));
@@ -70,7 +70,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     @Path("/{attestationDefinitionId}")
     @Override
     public void deleteAttestationDefinition(@PathParam("participantContextId") String participantContextId, @PathParam("attestationDefinitionId") String attestationDefinitionId, @Context SecurityContext context) {
-        authorizationService.isAuthorized(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), attestationDefinitionId, AttestationDefinition.class)
+        authorizationService.authorize(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), attestationDefinitionId, AttestationDefinition.class)
                 .compose(u -> attestationDefinitionService.deleteAttestation(attestationDefinitionId))
                 .orElseThrow(exceptionMapper(AttestationDefinition.class, attestationDefinitionId));
     }
@@ -86,7 +86,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
                 .orElseThrow(exceptionMapper(AttestationDefinition.class, null));
 
         return attestations.stream()
-                .filter(attestation -> authorizationService.isAuthorized(context, decodedParticipantContextId, attestation.getId(), AttestationDefinition.class).succeeded())
+                .filter(attestation -> authorizationService.authorize(context, decodedParticipantContextId, attestation.getId(), AttestationDefinition.class).succeeded())
                 .toList();
     }
 

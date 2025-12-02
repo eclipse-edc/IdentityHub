@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.api;
 
+import org.eclipse.edc.api.authentication.filter.JwtValidatorFilter;
+import org.eclipse.edc.api.authentication.filter.ServicePrincipalAuthenticationFilter;
 import org.eclipse.edc.boot.system.injection.ObjectFactory;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
@@ -21,8 +23,6 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.configuration.Config;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
-import org.eclipse.edc.virtualized.api.authentication.filter.JwtValidatorFilter;
-import org.eclipse.edc.virtualized.api.authentication.filter.ServicePrincipalAuthenticationFilter;
 import org.eclipse.edc.web.spi.WebService;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;

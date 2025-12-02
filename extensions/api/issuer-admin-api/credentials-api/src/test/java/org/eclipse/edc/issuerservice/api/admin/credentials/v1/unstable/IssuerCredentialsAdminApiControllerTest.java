@@ -15,13 +15,13 @@
 package org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable;
 
 import io.restassured.specification.RequestSpecification;
+import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.api.Versions;
-import org.eclipse.edc.identityhub.spi.authorization.AuthorizationService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.CredentialOfferDto;
@@ -67,7 +67,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @BeforeEach
     void setUp() {
-        when(authorizationService.isAuthorized(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
+        when(authorizationService.authorize(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
         when(credentialOfferService.sendCredentialOffer(anyString(), anyString(), anyCollection())).thenReturn(ServiceResult.success());
     }
 
@@ -195,7 +195,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void sendCredentialOffer_whenHolderNotFound() {
-        when(authorizationService.isAuthorized(any(), anyString(), anyString(), any()))
+        when(authorizationService.authorize(any(), anyString(), anyString(), any()))
                 .thenReturn(ServiceResult.notFound("holder"));
         baseRequest()
                 .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
@@ -205,13 +205,13 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .statusCode(404)
                 .body(containsString("Object of type Holder with ID=holder was not found"));
 
-        verify(authorizationService).isAuthorized(any(), anyString(), anyString(), any());
+        verify(authorizationService).authorize(any(), anyString(), anyString(), any());
         verifyNoMoreInteractions(authorizationService, credentialOfferService);
     }
 
     @Test
     void sendCredentialOffer_whenNotAuthorized() {
-        when(authorizationService.isAuthorized(any(), anyString(), anyString(), any()))
+        when(authorizationService.authorize(any(), anyString(), anyString(), any()))
                 .thenReturn(ServiceResult.unauthorized("barbaz"));
         baseRequest()
                 .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
@@ -221,7 +221,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
                 .statusCode(403)
                 .body(containsString("barbaz"));
 
-        verify(authorizationService).isAuthorized(any(), anyString(), anyString(), any());
+        verify(authorizationService).authorize(any(), anyString(), anyString(), any());
         verifyNoMoreInteractions(authorizationService, credentialOfferService);
     }
 
