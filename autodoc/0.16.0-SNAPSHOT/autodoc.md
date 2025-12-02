@@ -22,7 +22,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService` (required)
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
+- `org.eclipse.edc.api.auth.spi.AuthorizationService` (required)
 
 Module `common-core`
 --------------------
@@ -93,7 +93,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService` (required)
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
+- `org.eclipse.edc.api.auth.spi.AuthorizationService` (required)
 
 Module `credential-offer-api`
 -----------------------------
@@ -214,7 +214,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService` (required)
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
+- `org.eclipse.edc.api.auth.spi.AuthorizationService` (required)
 - `org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService` (required)
 - `org.eclipse.edc.transform.spi.TypeTransformerRegistry` (required)
 
@@ -419,7 +419,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identityhub.spi.did.DidDocumentService` (required)
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
+- `org.eclipse.edc.api.auth.spi.AuthorizationService` (required)
 
 Module `did-spi`
 ----------------
@@ -458,7 +458,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.issuerservice.spi.holder.HolderService` (required)
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
+- `org.eclipse.edc.api.auth.spi.AuthorizationService` (required)
 
 Module `holder-credential-offer-store-sql`
 ------------------------------------------
@@ -554,7 +554,7 @@ _None_
 | `web.http.identity.path` | `*`      | `string` | `/api/identity` |         |     |     | Path for identity api context |
 
 #### Provided services
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService`
+- `org.eclipse.edc.api.auth.spi.AuthorizationService`
 
 #### Referenced (injected) services
 - `org.eclipse.edc.spi.types.TypeManager` (required)
@@ -803,24 +803,6 @@ Module `identity-hub-participants`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension`
-**Name:** "ParticipantContext Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-_None_
-
-#### Referenced (injected) services
-- `org.eclipse.edc.identityhub.spi.did.DidDocumentService` (required)
-- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
-- `java.time.Clock` (required)
-- `org.eclipse.edc.spi.event.EventRouter` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService` (required)
-
 #### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextExtension`
 **Name:** "ParticipantContext Extension"
 
@@ -842,6 +824,24 @@ _None_
 - `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner` (required)
 - `org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService` (required)
+
+#### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension`
+**Name:** "ParticipantContext Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.identityhub.spi.did.DidDocumentService` (required)
+- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
+- `java.time.Clock` (required)
+- `org.eclipse.edc.spi.event.EventRouter` (required)
+- `org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService` (required)
 
 Module `identityhub-api-authentication`
 ---------------------------------------
@@ -869,6 +869,42 @@ _None_
 - `org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService` (required)
 - `org.eclipse.edc.spi.security.Vault` (required)
 
+Module `identityhub-api-authentication-oauth2`
+----------------------------------------------
+**Artifact:** org.eclipse.edc:identityhub-api-authentication-oauth2:0.16.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.identityhub.api.Oauth2JwtAuthenticationExtension`
+**Name:** "Identity API OAuth2/JWT Authentication Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                  | Required | Type     | Default  | Pattern | Min | Max | Description                                                                                                                       |
+| ------------------------------------ | -------- | -------- | -------- | ------- | --- | --- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `edc.iam.oauth2.issuer`              |          | `string` | ``       |         |     |     | Expected value for the 'iss' claim for tokens coming from the OAuth2 server. If this is omitted, the 'iss' claim is not validated |
+| `edc.iam.oauth2.jwks.url`            | `*`      | `string` | ``       |         |     |     | Absolute URL where the JWKS of the OAuth2 server is hosted                                                                        |
+| `edc.iam.oauth2.jwks.cache.validity` | `*`      | `string` | `300000` |         |     |     | Time (in ms) that cached JWKS are cached                                                                                          |
+| `edc.iam.oauth2.validity.leeway`     | `*`      | `string` | `5`      |         |     |     | Leeway (in sec) to allow when validating token time-based claims                                                                  |
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.web.spi.WebService` (required)
+- `org.eclipse.edc.participantcontext.spi.service.ParticipantContextService` (required)
+- `java.time.Clock` (required)
+- `org.eclipse.edc.token.spi.TokenValidationService` (required)
+- `org.eclipse.edc.keys.spi.KeyParserRegistry` (required)
+- `org.eclipse.edc.spi.monitor.Monitor` (required)
+
 Module `identityhub-api-authorization`
 --------------------------------------
 **Artifact:** org.eclipse.edc:identityhub-api-authorization:0.16.0-SNAPSHOT
@@ -888,10 +924,34 @@ _None_
 ### Configuration_None_
 
 #### Provided services
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService`
+- `org.eclipse.edc.api.auth.spi.AuthorizationService`
 
 #### Referenced (injected) services
 _None_
+
+Module `identityhub-api-authorization-oauth2`
+---------------------------------------------
+**Artifact:** org.eclipse.edc:identityhub-api-authorization-oauth2:0.16.0-SNAPSHOT
+
+**Categories:** _None_
+
+### Extension points
+_None_
+
+### Extensions
+#### Class: `org.eclipse.edc.identityhub.api.Oauth2AuthorizationExtension`
+**Name:** "Identity API OAuth2 Authorization Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.api.auth.spi.AuthorizationService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.web.spi.WebService` (required)
 
 Module `issuance-process-api`
 -----------------------------
@@ -917,7 +977,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService` (required)
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
+- `org.eclipse.edc.api.auth.spi.AuthorizationService` (required)
 
 Module `issuance-process-store-sql`
 -----------------------------------
@@ -1004,7 +1064,7 @@ _None_
 | `web.http.issueradmin.path` | `*`      | `string` | `/api/issuer` |         |     |     | Path for issueradmin api context |
 
 #### Provided services
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService`
+- `org.eclipse.edc.api.auth.spi.AuthorizationService`
 
 #### Referenced (injected) services
 - `org.eclipse.edc.spi.types.TypeManager` (required)
@@ -1271,6 +1331,36 @@ Module `issuerservice-issuance`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceServicesExtension`
+**Name:** "IssuerService Issuance Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService`
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService`
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline`
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry`
+- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator`
+- `org.eclipse.edc.issuerservice.spi.issuance.mapping.IssuanceClaimsMapper`
+- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry`
+- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry`
+- `org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry`
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore` (required)
+- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
+- `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider` (required)
+- `org.eclipse.edc.issuerservice.spi.holder.HolderService` (required)
+- `java.time.Clock` (required)
+- `org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService` (required)
+
 #### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceCoreExtension`
 **Name:** "Issuance Core Extension"
 
@@ -1303,36 +1393,6 @@ _None_
 - `java.time.Clock` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService` (required)
-
-#### Class: `org.eclipse.edc.issuerservice.issuance.IssuanceServicesExtension`
-**Name:** "IssuerService Issuance Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService`
-- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService`
-- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline`
-- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry`
-- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator`
-- `org.eclipse.edc.issuerservice.spi.issuance.mapping.IssuanceClaimsMapper`
-- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactoryRegistry`
-- `org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionValidatorRegistry`
-- `org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry`
-- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionValidatorRegistry`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-- `org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore` (required)
-- `org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore` (required)
-- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
-- `org.eclipse.edc.jwt.signer.spi.JwsSignerProvider` (required)
-- `org.eclipse.edc.issuerservice.spi.holder.HolderService` (required)
-- `java.time.Clock` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService` (required)
 
 Module `issuerservice-issuance-rules`
 -------------------------------------
@@ -1383,7 +1443,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
+- `org.eclipse.edc.api.auth.spi.AuthorizationService` (required)
 - `org.eclipse.edc.spi.monitor.Monitor` (required)
 
 Module `local-did-publisher`
@@ -1480,7 +1540,7 @@ _None_
 #### Referenced (injected) services
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService` (required)
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
+- `org.eclipse.edc.api.auth.spi.AuthorizationService` (required)
 - `org.eclipse.edc.spi.monitor.Monitor` (required)
 
 Module `presentation-api`
@@ -1611,6 +1671,22 @@ Module `sts-api`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.api.iam.decentralizedclaims.sts.SecureTokenServiceApiExtension`
+**Name:** "Secure Token Service API"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService` (required)
+- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientTokenGeneratorService` (required)
+- `org.eclipse.edc.web.spi.WebService` (required)
+
 #### Class: `org.eclipse.edc.api.iam.decentralizedclaims.sts.StsApiConfigurationExtension`
 **Name:** "Secure Token Service API configuration"
 
@@ -1631,22 +1707,6 @@ _None_
 - `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
 - `org.eclipse.edc.spi.system.apiversion.ApiVersionService` (required)
-
-#### Class: `org.eclipse.edc.api.iam.decentralizedclaims.sts.SecureTokenServiceApiExtension`
-**Name:** "Secure Token Service API"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-_None_
-
-#### Referenced (injected) services
-- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService` (required)
-- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientTokenGeneratorService` (required)
-- `org.eclipse.edc.web.spi.WebService` (required)
 
 Module `sts-client-store-sql`
 -----------------------------
@@ -1691,20 +1751,6 @@ Module `sts-core`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.iam.decentralizedclaims.sts.defaults.StsDefaultServicesExtension`
-**Name:** "Secure Token Service Default Services"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
-
 #### Class: `org.eclipse.edc.iam.decentralizedclaims.sts.EmbeddedStsServiceExtension`
 **Name:** "Local (embedded) STS Account Service Extension"
 
@@ -1727,6 +1773,20 @@ _None_
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService` (required)
 - `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
+
+#### Class: `org.eclipse.edc.iam.decentralizedclaims.sts.defaults.StsDefaultServicesExtension`
+**Name:** "Secure Token Service Default Services"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `test-attestations`
 --------------------------
@@ -1778,6 +1838,6 @@ _None_
 - `org.eclipse.edc.transform.spi.TypeTransformerRegistry` (required)
 - `org.eclipse.edc.web.spi.WebService` (required)
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore` (required)
-- `org.eclipse.edc.identityhub.spi.authorization.AuthorizationService` (required)
+- `org.eclipse.edc.api.auth.spi.AuthorizationService` (required)
 - `org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager` (required)
 
