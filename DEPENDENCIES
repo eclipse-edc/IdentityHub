@@ -163,6 +163,7 @@ maven/mavencentral/io.rest-assured/xml-path/5.5.6, Apache-2.0, approved, #19523
 maven/mavencentral/io.setl/rdf-urdna/1.1, Apache-2.0, approved, clearlydefined
 maven/mavencentral/io.swagger.core.v3/swagger-annotations-jakarta/2.2.26, Apache-2.0, approved, #5947
 maven/mavencentral/io.swagger.core.v3/swagger-annotations-jakarta/2.2.40, Apache-2.0, approved, #5947
+maven/mavencentral/io.swagger.core.v3/swagger-annotations-jakarta/2.2.41, Apache-2.0, approved, #5947
 maven/mavencentral/io.swagger.core.v3/swagger-annotations/2.2.26, Apache-2.0, approved, #11362
 maven/mavencentral/io.swagger.core.v3/swagger-annotations/2.2.8, Apache-2.0, approved, #11362
 maven/mavencentral/io.swagger.core.v3/swagger-core-jakarta/2.2.26, Apache-2.0, approved, #5929
@@ -285,6 +286,8 @@ maven/mavencentral/org.eclipse.edc/api-core/0.16.0-SNAPSHOT, Apache-2.0, approve
 maven/mavencentral/org.eclipse.edc/api-lib/0.16.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/api-observability/0.16.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/asset-spi/0.16.0-SNAPSHOT, Apache-2.0, approved, technology.edc
+maven/mavencentral/org.eclipse.edc/auth-authentication-oauth2-lib/0.16.0-SNAPSHOT, Apache-2.0, approved, technology.edc
+maven/mavencentral/org.eclipse.edc/auth-authorization-oauth2-lib/0.16.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/auth-spi/0.16.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/autodoc-processor/0.16.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/boot-lib/0.16.0-SNAPSHOT, Apache-2.0, approved, technology.edc
