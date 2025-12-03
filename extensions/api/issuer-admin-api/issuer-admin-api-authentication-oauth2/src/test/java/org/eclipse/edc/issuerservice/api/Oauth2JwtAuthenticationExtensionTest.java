@@ -71,8 +71,8 @@ class Oauth2JwtAuthenticationExtensionTest {
         var extension = factory.constructInstance(Oauth2JwtAuthenticationExtension.class);
         extension.initialize(context);
 
-        verify(webService).registerResource(eq(IdentityHubApiContext.IDENTITY), isA(ServicePrincipalAuthenticationFilter.class));
-        verify(webService).registerResource(eq(IdentityHubApiContext.IDENTITY), isA(JwtValidatorFilter.class));
+        verify(webService).registerResource(eq(IdentityHubApiContext.ISSUERADMIN), isA(ServicePrincipalAuthenticationFilter.class));
+        verify(webService).registerResource(eq(IdentityHubApiContext.ISSUERADMIN), isA(JwtValidatorFilter.class));
     }
 
     @ParameterizedTest(name = "{0}")

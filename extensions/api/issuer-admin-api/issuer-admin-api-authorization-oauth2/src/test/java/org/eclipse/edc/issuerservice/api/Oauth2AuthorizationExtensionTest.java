@@ -40,7 +40,7 @@ class Oauth2AuthorizationExtensionTest {
         var ext = factory.constructInstance(Oauth2AuthorizationExtension.class);
         ext.initialize(context);
 
-        verify(webService).registerResource(eq(IdentityHubApiContext.IDENTITY), isA(RoleBasedAccessFeature.class));
-        verify(webService).registerResource(eq(IdentityHubApiContext.IDENTITY), isA(ScopeBasedAccessFeature.class));
+        verify(webService).registerResource(eq(IdentityHubApiContext.ISSUERADMIN), isA(RoleBasedAccessFeature.class));
+        verify(webService).registerResource(eq(IdentityHubApiContext.ISSUERADMIN), isA(ScopeBasedAccessFeature.class));
     }
 }
