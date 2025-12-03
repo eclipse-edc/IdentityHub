@@ -102,6 +102,16 @@ public abstract class IssuanceProcessStoreTestBase {
             assertThat(retrieved).isNotNull().usingRecursiveComparison().isEqualTo(issuanceProcess);
             assertThat(retrieved.getCreatedAt()).isNotEqualTo(0L);
         }
+
+        @Test
+        void insert_shouldPersistPendingFlag() {
+            var issuanceProcess = createIssuanceProcess();
+            issuanceProcess.setPending(true);
+            getStore().save(issuanceProcess);
+
+            var stored = getStore().findById(issuanceProcess.getId());
+            assertThat(stored).isNotNull().satisfies(actual -> assertThat(actual.isPending()).isTrue());
+        }
     }
 
     @Nested
@@ -361,6 +371,21 @@ public abstract class IssuanceProcessStoreTestBase {
             AbstractResultAssert.assertThat(getStore().save(updatedIssuanceProcess)).isFailed()
                     .extracting(StoreFailure::getReason)
                     .isEqualTo(StoreFailure.Reason.ALREADY_LEASED);
+        }
+
+        @Test
+        void update_shouldPersistPendingFlag() {
+            var issuanceProcess = createIssuanceProcess();
+            getStore().save(issuanceProcess);
+
+            var stored = getStore().findById(issuanceProcess.getId());
+            assertThat(stored).isNotNull().satisfies(actual -> assertThat(actual.isPending()).isFalse());
+
+            stored.setPending(true);
+            getStore().save(stored);
+
+            var updatedIssuanceProcess = getStore().findById(issuanceProcess.getId());
+            assertThat(updatedIssuanceProcess).isNotNull().satisfies(actual -> assertThat(actual.isPending()).isTrue());
         }
 
     }
