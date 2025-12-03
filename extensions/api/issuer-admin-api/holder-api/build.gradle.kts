@@ -24,6 +24,7 @@ dependencies {
     implementation(libs.edc.spi.web)
     implementation(libs.edc.lib.util)
     implementation(libs.jakarta.rsApi)
+    implementation(libs.jakarta.annotation)
 
 
     testImplementation(libs.edc.junit)

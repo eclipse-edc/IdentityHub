@@ -115,6 +115,7 @@ include(":extensions:issuance:local-statuslist-publisher")
 include(":launcher:identityhub")
 include(":launcher:identityhub-oauth2")
 include(":launcher:issuer-service")
+include(":launcher:issuer-service-oauth2")
 
 // test modules
 include(":e2e-tests")
@@ -136,4 +137,5 @@ include(":dist:bom:identityhub-oauth2-bom")
 include(":dist:bom:identityhub-feature-sql-bom")
 include(":dist:bom:issuerservice-base-bom")
 include(":dist:bom:issuerservice-bom")
+include(":dist:bom:issuerservice-oauth2-bom")
 include(":dist:bom:issuerservice-feature-sql-bom")

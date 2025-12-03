@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -24,6 +25,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
+import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -61,6 +64,8 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
 
     @POST
     @Path("/query")
+    @RequiredScope("issuer-admin-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
     @Override
     public Collection<VerifiableCredentialResourceDto> queryCredentials(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext context) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
@@ -76,6 +81,8 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     }
 
     @POST
+    @RequiredScope("issuer-admin-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
     @Path("/{credentialId}/revoke")
     @Override
     public void revokeCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
@@ -85,6 +92,8 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     }
 
     @POST
+    @RequiredScope("issuer-admin-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
     @Path("/{credentialId}/suspend")
     @Override
     public Response suspendCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId) {
@@ -92,6 +101,8 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     }
 
     @POST
+    @RequiredScope("issuer-admin-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
     @Path("/{credentialId}/resume")
     @Override
     public Response resumeCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId) {
@@ -99,6 +110,8 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     }
 
     @GET
+    @RequiredScope("issuer-admin-api:read")
+    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{credentialId}/status")
     @Override
     public CredentialStatusResponse checkRevocationStatus(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
@@ -109,6 +122,8 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     }
 
     @POST
+    @RequiredScope("issuer-admin-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
     @Path("/offer")
     @Override
     public void sendCredentialOffer(@PathParam("participantContextId") String participantContextId, CredentialOfferDto credentialOffer, @Context SecurityContext context) {

@@ -34,7 +34,7 @@ import static org.testcontainers.containers.wait.strategy.Wait.forHealthcheck;
 public class LauncherTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {"identityhub", "identityhub-oauth2", "issuer-service"})
+    @ValueSource(strings = {"identityhub", "identityhub-oauth2", "issuer-service", "issuer-service-oauth2"})
     void shouldBuildAndRun(String launcherName) throws IOException, InterruptedException {
         var file = new File(TestUtils.findBuildRoot(), TestUtils.GRADLE_WRAPPER);
         var command = new String[]{file.getCanonicalPath(), ":launcher:" + launcherName + ":shadowJar"};
