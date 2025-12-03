@@ -59,7 +59,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
 
     @POST
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
     @Override
     public Response addHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);

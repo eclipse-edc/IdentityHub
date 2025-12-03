@@ -18,8 +18,8 @@ plugins {
 
 dependencies {
     api(project(":dist:bom:identityhub-base-bom"))
-    implementation(project(":extensions:api:identityhub-api-authentication-oauth2"))
-    implementation(project(":extensions:api:identityhub-api-authorization-oauth2"))
+    implementation(project(":extensions:api:identity-api:identity-api-authentication-oauth2"))
+    implementation(project(":extensions:api:identity-api:identity-api-authorization-oauth2"))
     implementation(project(":extensions:sts:sts-account-service-local"))
     implementation(project(":extensions:sts:sts-core"))
     implementation(project(":extensions:sts:sts-api"))
