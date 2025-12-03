@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2025 Cofinity-X
+ *  Copyright (c) 2025 Metaform Systems Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,7 +8,7 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Cofinity-X - initial API and implementation
+ *       Metaform Systems Inc. - initial API and implementation
  *
  */
 
@@ -19,11 +19,16 @@ plugins {
 
 dependencies {
     implementation(project(":dist:bom:issuerservice-base-bom"))
-    implementation(project(":extensions:api:identityhub-api-authentication"))
-    implementation(project(":extensions:api:identityhub-api-authorization"))
-    implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-authentication"))
+    implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-authentication-oauth2"))
+    implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-authorization-oauth2"))
+    implementation(project(":extensions:api:identity-api:identity-api-authentication-oauth2"))
+    implementation(project(":extensions:api:identity-api:identity-api-authorization-oauth2"))
     // needed for interaction with the embedded STS
     implementation(project(":extensions:sts:sts-core"))
     implementation(project(":extensions:sts:sts-account-service-local"))
     implementation(project(":extensions:sts:sts-api"))
+}
+
+edcBuild {
+
 }

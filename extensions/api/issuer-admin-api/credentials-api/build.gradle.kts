@@ -26,6 +26,7 @@ dependencies {
     implementation(project(":protocols:dcp:dcp-transform-lib"))
     implementation(libs.edc.spi.web)
     implementation(libs.jakarta.rsApi)
+    implementation(libs.jakarta.annotation)
 
 
     testImplementation(libs.edc.junit)

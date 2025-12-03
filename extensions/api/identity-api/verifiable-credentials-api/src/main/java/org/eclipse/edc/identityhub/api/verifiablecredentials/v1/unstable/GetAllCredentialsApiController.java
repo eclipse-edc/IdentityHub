@@ -46,7 +46,7 @@ public class GetAllCredentialsApiController implements GetAllCredentialsApi {
 
     @GET
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
     @Override
     public Collection<VerifiableCredentialResource> getAllCredentials(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                                                       @DefaultValue("50") @QueryParam("limit") Integer limit) {

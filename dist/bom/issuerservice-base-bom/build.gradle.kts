@@ -32,15 +32,11 @@ dependencies {
     implementation(project(":protocols:dcp:dcp-issuer:dcp-issuer-core"))
     implementation(project(":protocols:dcp:dcp-issuer:dcp-issuer-api"))
     implementation(project(":extensions:api:identity-api:participant-context-api"))
-    implementation(project(":extensions:api:identityhub-api-authentication"))
-    implementation(project(":extensions:api:identityhub-api-authorization"))
 
     implementation(project(":extensions:issuance:issuerservice-issuance-rules"))
     implementation(project(":extensions:issuance:issuerservice-holder-attestations"))
 
     implementation(project(":extensions:sts:sts-account-provisioner"))
-    implementation(project(":extensions:api:identityhub-api-authorization"))
-    implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-authentication"))
 
     runtimeOnly(libs.edc.identity.did.core)
     runtimeOnly(libs.edc.core.token)
