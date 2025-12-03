@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api;
+package org.eclipse.edc.issuerservice.api;
 
 import org.eclipse.edc.api.authentication.filter.JwtValidatorFilter;
 import org.eclipse.edc.api.authentication.filter.ServicePrincipalAuthenticationFilter;
@@ -39,10 +39,10 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.edc.identityhub.api.Oauth2JwtAuthenticationExtension.CONFIG_CACHE_VALIDITY;
-import static org.eclipse.edc.identityhub.api.Oauth2JwtAuthenticationExtension.CONFIG_ISSUER;
-import static org.eclipse.edc.identityhub.api.Oauth2JwtAuthenticationExtension.CONFIG_JWKS_URL;
-import static org.eclipse.edc.identityhub.api.Oauth2JwtAuthenticationExtension.CONFIG_VALIDITY_LEEWAY;
+import static org.eclipse.edc.issuerservice.api.Oauth2JwtAuthenticationExtension.CONFIG_CACHE_VALIDITY;
+import static org.eclipse.edc.issuerservice.api.Oauth2JwtAuthenticationExtension.CONFIG_ISSUER;
+import static org.eclipse.edc.issuerservice.api.Oauth2JwtAuthenticationExtension.CONFIG_JWKS_URL;
+import static org.eclipse.edc.issuerservice.api.Oauth2JwtAuthenticationExtension.CONFIG_VALIDITY_LEEWAY;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2024 Metaform Systems, Inc.
+ *  Copyright (c) 2025 Metaform Systems Inc.
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,11 +8,11 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Metaform Systems, Inc. - initial API and implementation
+ *       Metaform Systems Inc. - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityhub.api;
+package org.eclipse.edc.issuerservice.api;
 
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
 import org.eclipse.edc.api.authorization.filter.RoleBasedAccessFeature;
@@ -26,12 +26,12 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.web.spi.WebService;
 
-import static org.eclipse.edc.identityhub.api.Oauth2AuthorizationExtension.NAME;
+import static org.eclipse.edc.issuerservice.api.Oauth2AuthorizationExtension.NAME;
 
 @Extension(NAME)
 public class Oauth2AuthorizationExtension implements ServiceExtension {
 
-    public static final String NAME = "Identity API OAuth2 Authorization Extension";
+    public static final String NAME = "Issuer Admin API OAuth2 Authorization Extension";
     @Inject
     private WebService webService;
 

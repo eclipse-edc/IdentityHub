@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.api;
+package org.eclipse.edc.issuerservice.api;
 
 import org.eclipse.edc.api.authorization.filter.RoleBasedAccessFeature;
 import org.eclipse.edc.api.authorization.filter.ScopeBasedAccessFeature;

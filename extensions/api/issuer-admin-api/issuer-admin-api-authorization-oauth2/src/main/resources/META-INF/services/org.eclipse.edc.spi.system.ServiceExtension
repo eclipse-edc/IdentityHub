@@ -12,4 +12,4 @@
 #
 #
 
-org.eclipse.edc.identityhub.api.Oauth2AuthorizationExtension
+org.eclipse.edc.issuerservice.api.Oauth2AuthorizationExtension
