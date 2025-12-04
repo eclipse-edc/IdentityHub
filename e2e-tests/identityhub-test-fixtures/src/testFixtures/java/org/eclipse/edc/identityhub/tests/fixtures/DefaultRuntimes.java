@@ -61,6 +61,7 @@ public interface DefaultRuntimes {
 
     interface IdentityHub {
         String[] MODULES = new String[]{":dist:bom:identityhub-bom"};
+        String[] MODULES_OAUTH2 = new String[]{":dist:bom:identityhub-oauth2-bom"};
         String[] SQL_MODULES = new String[]{":dist:bom:identityhub-bom", ":dist:bom:identityhub-feature-sql-bom"};
 
         Endpoints.Builder ENDPOINTS = Endpoints.Builder.newInstance()
