@@ -50,7 +50,7 @@ import static org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentity
  * can be retrieved. This is important for token verification. In addition, it offers methods to create OAuth2 tokens that
  * are signed with that same key.
  */
-public class Oauth2Extension implements BeforeAllCallback, BeforeEachCallback {
+public class Oauth2Extension implements BeforeAllCallback, BeforeEachCallback, Oauth2TokenProvider {
     private final WireMockExtension mockJwksServer;
     private final String signingKeyId;
     private final String someIssuer;
@@ -106,22 +106,12 @@ public class Oauth2Extension implements BeforeAllCallback, BeforeEachCallback {
         return jwt.serialize();
     }
 
-    public String createAdminToken() {
-        var claims = new HashMap<String, Object>(Map.of(
-                "sub", "test-subject",
-                "iss", someIssuer,
-                "iat", Instant.now().getEpochSecond(),
-                "exp", Instant.now().plusSeconds(3600).getEpochSecond(),
-                "jti", UUID.randomUUID().toString(),
-                "role", ParticipantPrincipal.ROLE_ADMIN,
-                "scope", "management-api:read management-api:write identity-api:read identity-api:write",
-                "participant_context_id", SUPER_USER
-        ));
-        return signClaims(claims);
-    }
-
     @NotNull
     public String createToken(String participantContextId) {
+        var role = ParticipantPrincipal.ROLE_PARTICIPANT;
+        if (SUPER_USER.equals(participantContextId)) {
+            role = ParticipantPrincipal.ROLE_ADMIN;
+        }
         var claims = new HashMap<String, Object>(Map.of(
                 "sub", "test-subject",
                 "iss", someIssuer,
@@ -129,7 +119,7 @@ public class Oauth2Extension implements BeforeAllCallback, BeforeEachCallback {
                 "exp", Instant.now().plusSeconds(3600).getEpochSecond(),
                 "jti", UUID.randomUUID().toString(),
                 "scope", "management-api:read management-api:write identity-api:read identity-api:write",
-                "role", ParticipantPrincipal.ROLE_PARTICIPANT,
+                "role", role,
                 "participant_context_id", participantContextId
         ));
 

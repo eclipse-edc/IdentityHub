@@ -29,6 +29,7 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.TestFunctions;
 import org.eclipse.edc.identityhub.tests.fixtures.common.Oauth2Extension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
@@ -62,6 +63,8 @@ import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeOauth2;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeTokenBased;
 import static org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentityHub.SUPER_USER;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
@@ -933,10 +936,40 @@ public class KeyPairResourceApiEndToEndTest {
 
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
-            if (SUPER_USER.equals(participantContextId)) {
-                return new Header("x-api-key", identityHub.createSuperUser().apiKey());
-            }
-            return new Header("x-api-key", identityHub.createParticipant(participantContextId).apiKey());
+            return authorizeTokenBased(participantContextId, identityHub);
+        }
+    }
+
+
+    @Nested
+    @PostgresqlIntegrationTest
+    class Postgres extends Tests {
+
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        private static final String DB_NAME = "runtime";
+
+        @Order(1)
+        @RegisterExtension
+        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
+            POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
+        };
+
+        @Order(2)
+        @RegisterExtension
+        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
+                .name(IH_RUNTIME_NAME)
+                .modules(DefaultRuntimes.IdentityHub.SQL_MODULES)
+                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(DB_NAME))
+                .paramProvider(IdentityHub.class, IdentityHub::forContext)
+                .build();
+
+        @Override
+        protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
+            return authorizeTokenBased(participantContextId, identityHub);
         }
     }
 
@@ -969,48 +1002,7 @@ public class KeyPairResourceApiEndToEndTest {
 
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
-            if (SUPER_USER.equals(participantContextId)) {
-                identityHub.createSuperUser();
-                return new Header("Authorization", "Bearer " + OAUTH_2_EXTENSION.createAdminToken());
-            }
-            identityHub.createParticipant(participantContextId);
-            return new Header("Authorization", "Bearer " + OAUTH_2_EXTENSION.createToken(participantContextId));
-
-        }
-    }
-
-    @Nested
-    @PostgresqlIntegrationTest
-    class Postgres extends Tests {
-
-        @Order(0)
-        @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String DB_NAME = "runtime";
-
-        @Order(1)
-        @RegisterExtension
-        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
-            POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
-        };
-
-        @Order(2)
-        @RegisterExtension
-        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
-                .name(IH_RUNTIME_NAME)
-                .modules(DefaultRuntimes.IdentityHub.SQL_MODULES)
-                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
-                .configurationProvider(DefaultRuntimes.IdentityHub::config)
-                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(DB_NAME))
-                .paramProvider(IdentityHub.class, IdentityHub::forContext)
-                .build();
-
-        @Override
-        protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
-            if (SUPER_USER.equals(participantContextId)) {
-                return new Header("x-api-key", identityHub.createSuperUser().apiKey());
-            }
-            return new Header("x-api-key", identityHub.createParticipant(participantContextId).apiKey());
+            return TestFunctions.authorizeOauth2(participantContextId, identityHub, OAUTH_2_EXTENSION);
         }
     }
 
@@ -1050,13 +1042,7 @@ public class KeyPairResourceApiEndToEndTest {
 
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
-            if (SUPER_USER.equals(participantContextId)) {
-                identityHub.createSuperUser();
-                return new Header("Authorization", "Bearer " + OAUTH_2_EXTENSION.createAdminToken());
-            }
-            identityHub.createParticipant(participantContextId);
-            return new Header("Authorization", "Bearer " + OAUTH_2_EXTENSION.createToken(participantContextId));
-
+            return authorizeOauth2(participantContextId, identityHub, OAUTH_2_EXTENSION);
         }
     }
 }
