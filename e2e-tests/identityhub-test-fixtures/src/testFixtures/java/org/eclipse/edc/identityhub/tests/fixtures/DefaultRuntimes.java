@@ -38,6 +38,8 @@ public interface DefaultRuntimes {
 
         String[] MODULES = new String[]{":dist:bom:issuerservice-bom"};
         String[] SQL_MODULES = new String[]{":dist:bom:issuerservice-bom", ":dist:bom:issuerservice-feature-sql-bom"};
+        String[] MODULES_OAUTH2 = new String[]{":dist:bom:issuerservice-oauth2-bom"};
+        String[] SQL_OAUTH2_MODULES = new String[]{":dist:bom:issuerservice-oauth2-bom", ":dist:bom:issuerservice-feature-sql-bom"};
 
         Endpoints.Builder ENDPOINTS = Endpoints.Builder.newInstance()
                 .endpoint(ISSUERADMIN, () -> URI.create("http://localhost:" + getFreePort() + "/api/admin"))
@@ -61,7 +63,9 @@ public interface DefaultRuntimes {
 
     interface IdentityHub {
         String[] MODULES = new String[]{":dist:bom:identityhub-bom"};
+        String[] MODULES_OAUTH2 = new String[]{":dist:bom:identityhub-oauth2-bom"};
         String[] SQL_MODULES = new String[]{":dist:bom:identityhub-bom", ":dist:bom:identityhub-feature-sql-bom"};
+        String[] SQL_OAUTH2_MODULES = new String[]{":dist:bom:identityhub-oauth2-bom", ":dist:bom:identityhub-feature-sql-bom"};
 
         Endpoints.Builder ENDPOINTS = Endpoints.Builder.newInstance()
                 .endpoint(CREDENTIALS, () -> URI.create("http://localhost:" + getFreePort() + "/api/credentials"))

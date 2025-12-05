@@ -65,7 +65,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @POST
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
     public CreateParticipantContextResponse createParticipant(ParticipantManifest manifest) {
         participantManifestValidator.validate(manifest).orElseThrow(ValidationFailureException::new);
         return participantContextService.createParticipantContext(manifest)

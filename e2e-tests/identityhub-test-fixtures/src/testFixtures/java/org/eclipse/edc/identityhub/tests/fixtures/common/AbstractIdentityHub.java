@@ -141,22 +141,36 @@ public abstract class AbstractIdentityHub {
     }
 
     public CreateParticipantContextResponse createParticipant(String participantContextId, String did, String keyId, List<String> roles, boolean isActive, List<Service> services) {
-        var manifest = ParticipantManifest.Builder.newInstance()
-                .participantContextId(participantContextId)
+        var exists = participantContextService.getParticipantContext(participantContextId);
+        // don't create if exists
+        if (exists.succeeded() && exists.getContent() != null) {
+            var c = exists.getContent();
+            var apiKey = vault.resolveSecret(participantContextId, c.getApiTokenAlias());
+            return new CreateParticipantContextResponse(apiKey, null, null);
+        }
+
+        var manifest = buildParticipantManifest(participantContextId, keyId)
                 .active(isActive)
                 .roles(roles)
                 .serviceEndpoints(new HashSet<>(services))
                 .did(did)
+                .build();
+
+
+        return participantContextService.createParticipantContext(manifest)
+                .orElseThrow(f -> new EdcException(f.getFailureDetail()));
+    }
+
+    public ParticipantManifest.Builder buildParticipantManifest(String participantContextId, String keyId) {
+        return ParticipantManifest.Builder.newInstance()
+                .participantContextId(participantContextId)
                 .key(KeyDescriptor.Builder.newInstance()
                         .privateKeyAlias(participantContextId + "-alias")
                         .resourceId(participantContextId + "-resource")
                         .keyId(keyId)
-                        .keyGeneratorParams(Map.of("algorithm", "EC", "curve", "secp256r1"))
+                        .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_256.getStdName()))
                         .usage(Set.of(KeyPairUsage.values()))
-                        .build())
-                .build();
-        return participantContextService.createParticipantContext(manifest)
-                .orElseThrow(f -> new EdcException(f.getFailureDetail()));
+                        .build());
     }
 
     public IdentityHubParticipantContext getParticipant(String participantContextId) {
@@ -185,7 +199,7 @@ public abstract class AbstractIdentityHub {
                 .stream()
                 .toList();
     }
-    
+
     public String storeParticipant(IdentityHubParticipantContext pc) {
 
         var token = createTokenFor(pc.getParticipantContextId());
