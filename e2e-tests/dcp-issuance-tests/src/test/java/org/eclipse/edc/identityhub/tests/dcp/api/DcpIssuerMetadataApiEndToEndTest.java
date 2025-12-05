@@ -131,7 +131,6 @@ public class DcpIssuerMetadataApiEndToEndTest {
 
     @Nested
     @EndToEndTest
-    @Order(1)
     class InMemory extends Tests {
 
         @RegisterExtension

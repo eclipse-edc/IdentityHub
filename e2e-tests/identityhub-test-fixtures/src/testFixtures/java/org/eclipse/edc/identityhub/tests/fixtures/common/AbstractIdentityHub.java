@@ -168,7 +168,7 @@ public abstract class AbstractIdentityHub {
                         .privateKeyAlias(participantContextId + "-alias")
                         .resourceId(participantContextId + "-resource")
                         .keyId(keyId)
-                        .keyGeneratorParams(Map.of("algorithm", "EDDSA", "curve", "Ed25519"))
+                        .keyGeneratorParams(Map.of("algorithm", "EC", "curve", Curve.P_256.getStdName()))
                         .usage(Set.of(KeyPairUsage.values()))
                         .build());
     }

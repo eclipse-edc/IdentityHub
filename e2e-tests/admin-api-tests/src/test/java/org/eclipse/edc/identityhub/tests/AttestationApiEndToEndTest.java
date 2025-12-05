@@ -14,9 +14,11 @@
 
 package org.eclipse.edc.identityhub.tests;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.restassured.http.Header;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.common.Oauth2Extension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -30,6 +32,7 @@ import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Violation;
@@ -44,9 +47,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.Base64;
 import java.util.Map;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeOauth2;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeTokenBased;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -56,6 +62,7 @@ public class AttestationApiEndToEndTest {
     abstract static class Tests {
 
         public static final String USER = "user";
+        public static final String USER_BASE64 = Base64.getUrlEncoder().encodeToString(USER.getBytes());
 
         @BeforeAll
         static void setup(IssuerService issuer) {
@@ -77,13 +84,12 @@ public class AttestationApiEndToEndTest {
         }
 
         @Test
-        void createAttestationDefinition(IssuerService issuer, AttestationDefinitionStore store) {
-            var token = issuer.createParticipant(USER).apiKey();
+        void createAttestationDefinition(IssuerService issuer, AttestationDefinitionStore store, IssuerService issuerService) {
             issuer.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuerService))
                     .body(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
-                    .post("/v1alpha/participants/%s/attestations".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/attestations".formatted(USER_BASE64))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -94,12 +100,11 @@ public class AttestationApiEndToEndTest {
         @Test
         void createAttestationDefinition_notAuthorized(IssuerService issuer) {
             issuer.createParticipant(USER);
-            var token = issuer.createParticipant("anotherUser").apiKey();
             issuer.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser("anotherUser", issuer))
                     .body(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
-                    .post("/v1alpha/participants/%s/attestations".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/attestations".formatted(USER_BASE64))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -108,13 +113,12 @@ public class AttestationApiEndToEndTest {
 
         @Test
         void createAttestationDefinition_shouldReturn400_whenValidationFails(IssuerService issuer) {
-            var token = issuer.createParticipant(USER).apiKey();
 
             issuer.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .body(createAttestationDefinition("test-id", "test-failure-type", Map.of("foo", "bar")))
-                    .post("/v1alpha/participants/%s/attestations".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/attestations".formatted(USER_BASE64))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -123,7 +127,6 @@ public class AttestationApiEndToEndTest {
 
         @Test
         void queryAttestations(IssuerService issuer, AttestationDefinitionStore store, HolderStore holderStore) {
-            var token = issuer.createParticipant(USER).apiKey();
 
             var p1 = createHolder("p1", "did:web:foobar", "Foo Bar");
             var p2 = createHolder("p2", "did:web:barbaz", "Bar Baz");
@@ -142,13 +145,13 @@ public class AttestationApiEndToEndTest {
             //query by attestation type
             issuer.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance()
                             .sortField("id")
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("attestationType", "=", "test-type"))
                             .build())
-                    .post("/v1alpha/participants/%s/attestations/query".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/attestations/query".formatted(USER_BASE64))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -161,7 +164,6 @@ public class AttestationApiEndToEndTest {
         @Test
         void queryAttestations_notAuthorized(IssuerService issuer, AttestationDefinitionStore store) {
             issuer.createParticipant(USER);
-            var token = issuer.createParticipant("anotherUser").apiKey();
 
             var attestation1 = createAttestationDefinition("att1", "test-type", Map.of("key1", "val1"));
 
@@ -170,13 +172,13 @@ public class AttestationApiEndToEndTest {
             //query by attestation type
             issuer.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser("anotherUser", issuer))
                     .body(QuerySpec.Builder.newInstance()
                             .sortField("id")
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("attestationType", "=", "test-type"))
                             .build())
-                    .post("/v1alpha/participants/%s/attestations/query".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/attestations/query".formatted(USER_BASE64))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -184,9 +186,7 @@ public class AttestationApiEndToEndTest {
 
         }
 
-        private String toBase64(String s) {
-            return Base64.getUrlEncoder().encodeToString(s.getBytes());
-        }
+        protected abstract Header authorizeUser(String participantContextId, IssuerService issuerService);
 
         private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {
             return createAttestationDefinition(id, type, configuration, USER);
@@ -224,6 +224,10 @@ public class AttestationApiEndToEndTest {
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
 
+        @Override
+        protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
+            return authorizeTokenBased(participantContextId, issuerService);
+        }
     }
 
     @Nested
@@ -252,5 +256,82 @@ public class AttestationApiEndToEndTest {
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
+
+        @Override
+        protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
+            return authorizeTokenBased(participantContextId, issuerService);
+        }
+    }
+
+
+    @Nested
+    @EndToEndTest
+    class InMemoryOauth2 extends Tests {
+        @Order(0)
+        @RegisterExtension
+        static WireMockExtension mockJwksServer = WireMockExtension.newInstance()
+                .options(wireMockConfig().dynamicPort())
+                .build();
+
+        @RegisterExtension
+        static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(DefaultRuntimes.Issuer.MODULES_OAUTH2)
+                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.Issuer::config)
+                .configurationProvider(() -> ConfigFactory.fromMap(Map.of(
+                        "edc.iam.oauth2.issuer", "someIssuer",
+                        "edc.iam.oauth2.jwks.url", mockJwksServer.baseUrl() + "/.well-known/jwks.json")))
+                .paramProvider(IssuerService.class, IssuerService::forContext)
+                .build();
+
+        @Order(100)
+        @RegisterExtension
+        static final Oauth2Extension OAUTH_2_EXTENSION = new Oauth2Extension(mockJwksServer, "signing-key-id", "someIssuer");
+
+        @Override
+        protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
+            return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION);
+        }
+    }
+
+    @Nested
+    @PostgresqlIntegrationTest
+    class PostgresOauth2 extends Tests {
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        private static final String ISSUER = "issuer";
+        @Order(1)
+        @RegisterExtension
+        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
+            POSTGRESQL_EXTENSION.createDatabase(ISSUER);
+        };
+        @Order(0)
+        @RegisterExtension
+        static WireMockExtension mockJwksServer = WireMockExtension.newInstance()
+                .options(wireMockConfig().dynamicPort())
+                .build();
+        @Order(2)
+        @RegisterExtension
+        static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(DefaultRuntimes.Issuer.SQL_OAUTH2_MODULES)
+                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.Issuer::config)
+                .configurationProvider(() -> ConfigFactory.fromMap(Map.of(
+                        "edc.iam.oauth2.issuer", ISSUER,
+                        "edc.iam.oauth2.jwks.url", mockJwksServer.baseUrl() + "/.well-known/jwks.json")))
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
+                .paramProvider(IssuerService.class, IssuerService::forContext)
+                .build();
+        @Order(100)
+        @RegisterExtension
+        static final Oauth2Extension OAUTH_2_EXTENSION = new Oauth2Extension(mockJwksServer, "signing-key-id", ISSUER);
+
+        @Override
+        protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
+            return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION);
+        }
     }
 }

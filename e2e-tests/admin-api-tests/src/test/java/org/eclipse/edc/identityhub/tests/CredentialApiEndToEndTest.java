@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.tests;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
@@ -35,6 +36,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
+import org.eclipse.edc.identityhub.tests.fixtures.common.Oauth2Extension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
@@ -49,6 +51,7 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
@@ -67,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL;
@@ -74,6 +78,8 @@ import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CRED
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET;
 import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeOauth2;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeTokenBased;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -174,7 +180,6 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenNotYetRevoked(IssuerService issuer, CredentialStore credentialStore) {
-            var token = issuer.createParticipant(USER).apiKey();
 
             // create revocation credential
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -188,7 +193,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
@@ -202,7 +207,6 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenAlreadyRevoked(IssuerService issuer, CredentialStore credentialStore) {
-            var token = issuer.createParticipant(USER).apiKey();
 
             // create a statuslist credential which has the "revocation" bit set
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
@@ -216,7 +220,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
@@ -230,7 +234,6 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenCredentialNotFound(IssuerService issuer, CredentialStore credentialStore) {
-            var token = issuer.createParticipant(USER).apiKey();
 
             // create a statuslist credential which has the "revocation" bit set
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
@@ -243,7 +246,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
@@ -266,7 +269,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser("anotherUser", issuer))
                     .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
@@ -275,8 +278,6 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenStatusListCredentialNotFound(IssuerService issuer, CredentialStore credentialStore) {
-            var token = issuer.createParticipant(USER).apiKey();
-
             //missing: create status list credential
 
             credentialStore.create(createCredential("test-cred"));
@@ -284,7 +285,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
@@ -294,7 +295,6 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenWrongStatusListType(IssuerService issuer, CredentialStore credentialStore) {
-            var token = issuer.createParticipant(USER).apiKey();
 
             // create a statuslist credential which has the "revocation" bit set
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -316,7 +316,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
@@ -327,7 +327,6 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void queryCredentials(IssuerService issuer, CredentialStore credentialStore) {
-            var token = issuer.createParticipant(USER).apiKey();
 
             credentialStore.create(createCredential("test-cred"));
             credentialStore.create(createCredential("test-cred-1", "another-user"));
@@ -335,7 +334,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance()
                             .filter(new Criterion("issuerId", "=", "issuer-id"))
                             .build())
@@ -350,14 +349,13 @@ public class CredentialApiEndToEndTest {
         @Test
         void queryCredentials_notAuthorized(IssuerService issuer, CredentialStore credentialStore) {
             issuer.createParticipant(USER);
-            var token = issuer.createParticipant("anotherUser").apiKey();
 
             credentialStore.create(createCredential("test-cred"));
 
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser("anotherUser", issuer))
                     .body(QuerySpec.Builder.newInstance()
                             .filter(new Criterion("issuerId", "=", "issuer-id"))
                             .build())
@@ -371,7 +369,6 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void checkStatus(IssuerService issuer, CredentialStore credentialStore) {
-            var token = issuer.createParticipant(USER).apiKey();
 
             // create revocation credential
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -382,7 +379,7 @@ public class CredentialApiEndToEndTest {
 
             issuer.getAdminEndpoint()
                     .baseRequest()
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .get("/v1alpha/participants/%s/credentials/test-cred/status".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
@@ -393,7 +390,6 @@ public class CredentialApiEndToEndTest {
         @Test
         void checkStatus_notAuthorized(IssuerService issuer, CredentialStore credentialStore) {
             issuer.createParticipant(USER);
-            var token = issuer.createParticipant("anotherUser").apiKey();
 
             // create revocation credential
             var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
@@ -404,7 +400,7 @@ public class CredentialApiEndToEndTest {
 
             issuer.getAdminEndpoint()
                     .baseRequest()
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser("anotherUser", issuer))
                     .get("/v1alpha/participants/%s/credentials/test-cred/status".formatted(toBase64(USER)))
                     .then()
                     .log().ifValidationFails()
@@ -413,7 +409,7 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void sendCredentialOffer(IssuerService issuer, HolderStore holderStore, CredentialDefinitionStore definitionStore) {
-            var token = issuer.createParticipant(USER).apiKey();
+            issuer.createParticipant(USER);
             definitionStore.create(CredentialDefinition.Builder.newInstance()
                             .id("test-credential-id")
                             .credentialType("TestCredential")
@@ -450,7 +446,7 @@ public class CredentialApiEndToEndTest {
                 issuer.getAdminEndpoint()
                         .baseRequest()
                         .contentType(JSON)
-                        .header(new Header("x-api-key", token))
+                        .header(authorizeUser(USER, issuer))
                         .body(getOfferRequestBody())
                         .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
                         .then()
@@ -468,7 +464,6 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void sendCredentialOffer_offerMessageFailure(IssuerService issuer, HolderStore holderStore) {
-            var token = issuer.createParticipant(USER).apiKey();
 
             var port = getFreePort();
             try (var mockedHolderDidServer = ClientAndServer.startClientAndServer(port)) {
@@ -496,7 +491,7 @@ public class CredentialApiEndToEndTest {
                 issuer.getAdminEndpoint()
                         .baseRequest()
                         .contentType(JSON)
-                        .header(new Header("x-api-key", token))
+                        .header(authorizeUser(USER, issuer))
                         .body(getOfferRequestBody())
                         .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
                         .then()
@@ -507,7 +502,6 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void sendCredentialOffer_holderDidResolutionFailure(IssuerService issuer, HolderStore holderStore) {
-            var token = issuer.createParticipant(USER).apiKey();
 
             var port = getFreePort();
             when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:holder")))
@@ -522,7 +516,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .body(getOfferRequestBody())
                     .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
                     .then()
@@ -532,14 +526,12 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void sendCredentialOffer_holderNotFound(IssuerService issuer) {
-            var token = issuer.createParticipant(USER).apiKey();
-
             // missing: holder
 
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser(USER, issuer))
                     .body(getOfferRequestBody())
                     .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
                     .then()
@@ -550,8 +542,7 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void sendCredentialOffer_participantNotAuthorized(IssuerService issuer, HolderStore holderStore) {
-            var token = issuer.createParticipant(USER).apiKey();
-            var token2 = issuer.createParticipant("another-issuer").apiKey();
+            issuer.createParticipant(USER);
 
             holderStore.create(Holder.Builder.newInstance()
                     .holderId("test-holder-id")
@@ -562,7 +553,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token2))
+                    .header(authorizeUser("another-issuer", issuer))
                     .body(getOfferRequestBody())
                     .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
                     .then()
@@ -572,8 +563,7 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void sendCredentialOffer_participantDoesNotOwnResource(IssuerService issuer, HolderStore holderStore) {
-            var token = issuer.createParticipant(USER).apiKey();
-            var token2 = issuer.createParticipant("another-issuer").apiKey();
+            issuer.createParticipant(USER);
 
             holderStore.create(Holder.Builder.newInstance()
                     .holderId("test-holder-id")
@@ -584,7 +574,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", token))
+                    .header(authorizeUser("anotherIssuer", issuer))
                     .body(getOfferRequestBody())
                     .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
                     .then()
@@ -592,6 +582,7 @@ public class CredentialApiEndToEndTest {
                     .statusCode(404);
         }
 
+        protected abstract Header authorizeUser(String participantContextId, IssuerService issuerService);
 
         private String toBase64(String input) {
             return Base64.getUrlEncoder().encodeToString(input.getBytes());
@@ -612,6 +603,10 @@ public class CredentialApiEndToEndTest {
                 .build()
                 .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
 
+        @Override
+        protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
+            return authorizeTokenBased(participantContextId, issuerService);
+        }
     }
 
     @Nested
@@ -640,6 +635,85 @@ public class CredentialApiEndToEndTest {
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build()
                 .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
+
+        @Override
+        protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
+            return authorizeTokenBased(participantContextId, issuerService);
+        }
     }
 
+    @Nested
+    @EndToEndTest
+    class InMemoryOauth2 extends Tests {
+        @Order(0)
+        @RegisterExtension
+        static WireMockExtension mockJwksServer = WireMockExtension.newInstance()
+                .options(wireMockConfig().dynamicPort())
+                .build();
+
+        @RegisterExtension
+        static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(DefaultRuntimes.Issuer.MODULES_OAUTH2)
+                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.Issuer::config)
+                .configurationProvider(() -> ConfigFactory.fromMap(Map.of(
+                        "edc.iam.oauth2.issuer", "someIssuer",
+                        "edc.iam.oauth2.jwks.url", mockJwksServer.baseUrl() + "/.well-known/jwks.json")))
+                .paramProvider(IssuerService.class, IssuerService::forContext)
+                .build()
+                .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
+
+
+        @Order(100)
+        @RegisterExtension
+        static final Oauth2Extension OAUTH_2_EXTENSION = new Oauth2Extension(mockJwksServer, "signing-key-id", "someIssuer");
+
+        @Override
+        protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
+            return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION);
+        }
+    }
+
+    @Nested
+    @PostgresqlIntegrationTest
+    class PostgresOauth2 extends Tests {
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        private static final String ISSUER = "issuer";
+        @Order(1)
+        @RegisterExtension
+        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
+            POSTGRESQL_EXTENSION.createDatabase(ISSUER);
+        };
+        @Order(0)
+        @RegisterExtension
+        static WireMockExtension mockJwksServer = WireMockExtension.newInstance()
+                .options(wireMockConfig().dynamicPort())
+                .build();
+        @Order(2)
+        @RegisterExtension
+        static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(DefaultRuntimes.Issuer.SQL_OAUTH2_MODULES)
+                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.Issuer::config)
+                .configurationProvider(() -> ConfigFactory.fromMap(Map.of(
+                        "edc.iam.oauth2.issuer", ISSUER,
+                        "edc.iam.oauth2.jwks.url", mockJwksServer.baseUrl() + "/.well-known/jwks.json")))
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
+                .paramProvider(IssuerService.class, IssuerService::forContext)
+                .build()
+                .registerServiceMock(DidResolverRegistry.class, DID_RESOLVER_REGISTRY);
+
+        @Order(100)
+        @RegisterExtension
+        static final Oauth2Extension OAUTH_2_EXTENSION = new Oauth2Extension(mockJwksServer, "signing-key-id", ISSUER);
+
+        @Override
+        protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
+            return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION);
+        }
+    }
 }

@@ -118,7 +118,7 @@ public class Oauth2Extension implements BeforeAllCallback, BeforeEachCallback, O
                 "iat", Instant.now().getEpochSecond(),
                 "exp", Instant.now().plusSeconds(3600).getEpochSecond(),
                 "jti", UUID.randomUUID().toString(),
-                "scope", "management-api:read management-api:write identity-api:read identity-api:write",
+                "scope", "management-api:read management-api:write identity-api:read identity-api:write issuer-admin-api:read issuer-admin-api:write",
                 "role", role,
                 "participant_context_id", participantContextId
         ));
