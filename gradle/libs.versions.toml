@@ -20,7 +20,7 @@ rsApi = "4.0.0"
 testcontainers = "1.21.1"
 tink = "1.19.0"
 opentelemetry = "2.22.0"
-wiremock = "3.13.1"
+wiremock = "3.13.2"
 
 [libraries]
 
