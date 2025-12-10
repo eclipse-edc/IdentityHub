@@ -14,12 +14,11 @@
 
 package org.eclipse.edc.identityhub.tests;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
+import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
-import org.eclipse.edc.identityhub.tests.fixtures.common.Oauth2Extension;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
@@ -33,7 +32,6 @@ import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -46,7 +44,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.Base64;
 import java.util.Map;
 
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
@@ -657,10 +654,13 @@ public class CredentialDefinitionApiEndToEndTest {
     @Nested
     @EndToEndTest
     class InMemoryOauth2 extends Tests {
+        private static final String ISSUER = "issuer";
+
         @Order(0)
         @RegisterExtension
-        static WireMockExtension mockJwksServer = WireMockExtension.newInstance()
-                .options(wireMockConfig().dynamicPort())
+        static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
+                .issuer(ISSUER)
+                .signingKeyId("signing-key-id")
                 .build();
 
         @RegisterExtension
@@ -669,20 +669,14 @@ public class CredentialDefinitionApiEndToEndTest {
                 .modules(DefaultRuntimes.Issuer.MODULES_OAUTH2)
                 .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
                 .configurationProvider(DefaultRuntimes.Issuer::config)
-                .configurationProvider(() -> ConfigFactory.fromMap(Map.of(
-                        "edc.iam.oauth2.issuer", "someIssuer",
-                        "edc.iam.oauth2.jwks.url", mockJwksServer.baseUrl() + "/.well-known/jwks.json")))
+                .configurationProvider(OAUTH_2_EXTENSION::getConfig)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
 
 
-        @Order(100)
-        @RegisterExtension
-        static final Oauth2Extension OAUTH_2_EXTENSION = new Oauth2Extension(mockJwksServer, "signing-key-id", "someIssuer");
-
         @Override
         protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
-            return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION);
+            return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION.getAuthServer());
         }
     }
 
@@ -693,16 +687,14 @@ public class CredentialDefinitionApiEndToEndTest {
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
         private static final String ISSUER = "issuer";
-        @Order(1)
-        @RegisterExtension
-        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
-            POSTGRESQL_EXTENSION.createDatabase(ISSUER);
-        };
+
         @Order(0)
         @RegisterExtension
-        static WireMockExtension mockJwksServer = WireMockExtension.newInstance()
-                .options(wireMockConfig().dynamicPort())
+        static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
+                .issuer(ISSUER)
+                .signingKeyId("signing-key-id")
                 .build();
+
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -710,20 +702,20 @@ public class CredentialDefinitionApiEndToEndTest {
                 .modules(DefaultRuntimes.Issuer.SQL_OAUTH2_MODULES)
                 .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
                 .configurationProvider(DefaultRuntimes.Issuer::config)
-                .configurationProvider(() -> ConfigFactory.fromMap(Map.of(
-                        "edc.iam.oauth2.issuer", ISSUER,
-                        "edc.iam.oauth2.jwks.url", mockJwksServer.baseUrl() + "/.well-known/jwks.json")))
+                .configurationProvider(OAUTH_2_EXTENSION::getConfig)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
 
-        @Order(100)
+        @Order(1)
         @RegisterExtension
-        static final Oauth2Extension OAUTH_2_EXTENSION = new Oauth2Extension(mockJwksServer, "signing-key-id", ISSUER);
+        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
+            POSTGRESQL_EXTENSION.createDatabase(ISSUER);
+        };
 
         @Override
         protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
-            return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION);
+            return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION.getAuthServer());
         }
     }
 }

@@ -15,6 +15,8 @@
 package org.eclipse.edc.identityhub.tests.fixtures;
 
 import io.restassured.http.Header;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
+import org.eclipse.edc.api.authentication.OauthServer;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
@@ -22,7 +24,6 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.tests.fixtures.common.Oauth2TokenProvider;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 
 import java.time.Instant;
@@ -49,13 +50,17 @@ public class TestFunctions {
      * Create an OAuth2 authorization header for the given participant context id. The participant context is created if it
      * does not yet exist.
      */
-    public static Header authorizeOauth2(String participantContextId, IdentityHub identityHub, Oauth2TokenProvider tokenProvider) {
+    public static Header authorizeOauth2(String participantContextId, IdentityHub identityHub, OauthServer server) {
+        var role = ParticipantPrincipal.ROLE_PARTICIPANT;
         if (SUPER_USER.equals(participantContextId)) {
             identityHub.createSuperUser();
+            role = ParticipantPrincipal.ROLE_ADMIN;
         } else {
             identityHub.createParticipant(participantContextId);
         }
-        return new Header("Authorization", "Bearer " + tokenProvider.createToken(participantContextId));
+        var scopes = "management-api:read management-api:write identity-api:read identity-api:write issuer-admin-api:read issuer-admin-api:write";
+
+        return new Header("Authorization", "Bearer " + server.createToken(participantContextId, scopes, role));
 
     }
 

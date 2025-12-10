@@ -14,8 +14,8 @@
 
 package org.eclipse.edc.identityhub.tests;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.restassured.http.Header;
+import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
 import org.eclipse.edc.identityhub.spi.did.events.DidDocumentPublished;
 import org.eclipse.edc.identityhub.spi.did.model.DidState;
@@ -29,8 +29,6 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
-import org.eclipse.edc.identityhub.tests.fixtures.TestFunctions;
-import org.eclipse.edc.identityhub.tests.fixtures.common.Oauth2Extension;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
@@ -41,7 +39,6 @@ import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
-import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
@@ -55,10 +52,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Map;
 import java.util.UUID;
 
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -977,12 +972,13 @@ public class KeyPairResourceApiEndToEndTest {
     @EndToEndTest
     class InMemoryOauth2 extends Tests {
 
-        private static final String SOMEISSUER = "someissuer";
+        private static final String ISSUER = "issuer";
         @Order(0)
         @RegisterExtension
-        static WireMockExtension mockJwksServer = WireMockExtension.newInstance()
-                .options(wireMockConfig().dynamicPort())
+        static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
+                .issuer(ISSUER)
                 .build();
+
         @Order(1)
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -990,42 +986,37 @@ public class KeyPairResourceApiEndToEndTest {
                 .modules(DefaultRuntimes.IdentityHub.MODULES_OAUTH2)
                 .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
-                .configurationProvider(() -> ConfigFactory.fromMap(Map.of(
-                        "edc.iam.oauth2.issuer", SOMEISSUER,
-                        "edc.iam.oauth2.jwks.url", mockJwksServer.baseUrl() + "/.well-known/jwks.json")))
+                .configurationProvider(OAUTH_2_EXTENSION::getConfig)
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build();
 
-        @Order(100)
-        @RegisterExtension
-        static final Oauth2Extension OAUTH_2_EXTENSION = new Oauth2Extension(mockJwksServer);
-
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
-            return TestFunctions.authorizeOauth2(participantContextId, identityHub, OAUTH_2_EXTENSION);
+            return authorizeOauth2(participantContextId, identityHub, OAUTH_2_EXTENSION.getAuthServer());
         }
     }
 
     @Nested
     @EndToEndTest
     class PostgresOauth2 extends Tests {
+
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+
+        private static final String ISSUER = "issuer";
+        @Order(0)
+        @RegisterExtension
+        static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
+                .issuer(ISSUER)
+                .build();
         private static final String DB_NAME = "runtime";
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
-        @Order(0)
-        @RegisterExtension
-        static WireMockExtension mockJwksServer = WireMockExtension.newInstance()
-                .options(wireMockConfig().dynamicPort())
-                .build();
-        @Order(100)
-        @RegisterExtension
-        static final Oauth2Extension OAUTH_2_EXTENSION = new Oauth2Extension(mockJwksServer);
+
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -1034,15 +1025,13 @@ public class KeyPairResourceApiEndToEndTest {
                 .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(DB_NAME))
-                .configurationProvider(() -> ConfigFactory.fromMap(Map.of(
-                        "edc.iam.oauth2.issuer", "someissuer",
-                        "edc.iam.oauth2.jwks.url", mockJwksServer.baseUrl() + "/.well-known/jwks.json")))
+                .configurationProvider(OAUTH_2_EXTENSION::getConfig)
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build();
 
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
-            return authorizeOauth2(participantContextId, identityHub, OAUTH_2_EXTENSION);
+            return authorizeOauth2(participantContextId, identityHub, OAUTH_2_EXTENSION.getAuthServer());
         }
     }
 }
