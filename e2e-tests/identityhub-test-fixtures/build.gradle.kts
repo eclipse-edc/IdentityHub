@@ -36,7 +36,4 @@ dependencies {
     testFixturesApi(libs.testcontainers.junit)
     testFixturesApi(libs.testcontainers.postgres)
     testFixturesApi(testFixtures(libs.edc.sql.test.fixtures))
-    testFixturesApi(libs.wiremock)
-
-
 }

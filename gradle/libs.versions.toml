@@ -20,7 +20,6 @@ rsApi = "4.0.0"
 testcontainers = "1.21.1"
 tink = "1.19.0"
 opentelemetry = "2.22.0"
-wiremock = "3.13.1"
 
 [libraries]
 
@@ -116,7 +115,6 @@ jakarta-annotation = { module = "jakarta.annotation:jakarta.annotation-api", ver
 jersey-common = { module = "org.glassfish.jersey.core:jersey-common", version.ref = "jersey" }
 tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
 opentelemetry-instrumentation-annotations = { module = "io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations", version.ref = "opentelemetry" }
-wiremock = { module = "org.wiremock:wiremock-jetty12", version.ref = "wiremock" }
 
 # DCP-TCK libraries
 dcp-testcases = { module = "org.eclipse.dataspacetck.dcp:dcp-testcases", version.ref = "dcp-tck" }

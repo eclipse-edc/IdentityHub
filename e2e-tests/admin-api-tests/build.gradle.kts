@@ -37,6 +37,8 @@ dependencies {
     testImplementation(project(":spi:sts-spi"))
     testImplementation(testFixtures(project(":e2e-tests:identityhub-test-fixtures")))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
+    testImplementation(testFixtures(libs.edc.lib.oauth2.authn))
+
 }
 
 edcBuild {
