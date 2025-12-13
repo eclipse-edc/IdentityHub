@@ -33,6 +33,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessPendingGuard;
 import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
@@ -70,6 +71,7 @@ public class DcpIssuanceFlowEndToEndTest {
 
 
     protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
+    protected static final IssuanceProcessPendingGuard ISSUANCE_PROCESS_PENDING_GUARD = mock(IssuanceProcessPendingGuard.class);
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(60);
     protected static final Duration INTERVAL = Duration.ofSeconds(1);
@@ -112,6 +114,7 @@ public class DcpIssuanceFlowEndToEndTest {
             when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
             when(attestationSource.execute(any()))
                     .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice"))));
+            when(ISSUANCE_PROCESS_PENDING_GUARD.test(any())).thenReturn(false);
 
             var request = """
                     {
@@ -134,16 +137,17 @@ public class DcpIssuanceFlowEndToEndTest {
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, "test-request-id")).hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
                                 assertThat(t.getHolderPid()).isEqualTo("test-request-id");
                             }));
 
+
             // wait for the issuance process to be delivered on the issuer side
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID)).hasSize(1)
+                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID, "test-request-id")).hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getHolderPid()).isEqualTo("test-request-id");
                                 assertThat(t.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
@@ -190,6 +194,50 @@ public class DcpIssuanceFlowEndToEndTest {
                                 .body(Matchers.notNullValue());
                     });
         }
+
+        @Test
+        void issuanceFlow_withGuard(IssuerService issuer, IdentityHub identityHub) {
+
+            var mappingDefinition = new MappingDefinition("participant.name", "credentialSubject.name", true);
+            var attestationDefinition = setupIssuer(issuer, Map.of(
+                    "claim", "onboarding.signedDocuments",
+                    "operator", "eq",
+                    "value", true), mappingDefinition);
+
+            var attestationSource = mock(AttestationSource.class);
+            when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
+            when(attestationSource.execute(any()))
+                    .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice"))));
+            when(ISSUANCE_PROCESS_PENDING_GUARD.test(any())).thenReturn(true);
+
+            var request = """
+                    {
+                      "issuerDid": "%s",
+                      "holderPid": "test-request-with-guard-id",
+                      "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id", "type": "MembershipCredential" }]
+                    }
+                    """.formatted(issuerDid);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(request)
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201)
+                    .header("Location", Matchers.endsWith("/credentials/request/test-request-with-guard-id"));
+
+            // wait for the issuance process to be pending on the issuer side
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID, "test-request-with-guard-id")).hasSize(1)
+                            .allSatisfy(t -> {
+                                assertThat(t.isPending()).isTrue();
+                                assertThat(t.getHolderPid()).isEqualTo("test-request-with-guard-id");
+                            }));
+        }
+
 
         /**
          * Setup the issuer with an attestation definition and a credential definition
@@ -252,7 +300,8 @@ public class DcpIssuanceFlowEndToEndTest {
                 .configurationProvider(DefaultRuntimes.Issuer::config)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .modules(DefaultRuntimes.Issuer.MODULES)
-                .build();
+                .build()
+                .registerServiceMock(IssuanceProcessPendingGuard.class, ISSUANCE_PROCESS_PENDING_GUARD);
 
     }
 
@@ -274,7 +323,8 @@ public class DcpIssuanceFlowEndToEndTest {
                 .configurationProvider(DefaultRuntimes.Issuer::config)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
-                .build();
+                .build()
+                .registerServiceMock(IssuanceProcessPendingGuard.class, ISSUANCE_PROCESS_PENDING_GUARD);
 
         private static final String IDENTITY_HUB = "identityhub";
         @Order(1) // must be the first extension to be evaluated since it starts the DB server

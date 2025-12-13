@@ -157,6 +157,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 process.getUpdatedAt(),
                 toJson(process.getTraceContext()),
                 process.getErrorDetail(),
+                process.isPending(),
                 process.getHolderId(),
                 process.getParticipantContextId(),
                 process.getHolderPid(),
@@ -175,6 +176,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 process.getUpdatedAt(),
                 toJson(process.getTraceContext()),
                 process.getErrorDetail(),
+                process.isPending(),
                 toJson(process.getClaims()),
                 toJson(process.getCredentialDefinitions()),
                 toJson(process.getCredentialFormats()),
@@ -200,6 +202,7 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
                 .stateCount(resultSet.getInt(statements.getStateCountColumn()))
                 .traceContext(fromJson(resultSet.getString(statements.getTraceContextColumn()), getTypeRef()))
                 .errorDetail(resultSet.getString(statements.getErrorDetailColumn()))
+                .pending(resultSet.getBoolean(statements.getPendingColumn()))
                 .holderId(resultSet.getString(statements.getHolderIdColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .holderPid(resultSet.getString(statements.getHolderPidColumn()))
