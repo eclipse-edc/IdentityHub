@@ -72,7 +72,7 @@ import static org.mockito.Mockito.when;
 public class StsAccountTokenIssuanceIntegrationTest {
 
     private final InMemoryStsAccountStore clientStore = new InMemoryStsAccountStore(CriterionOperatorRegistryImpl.ofDefaults());
-    private final Vault vault = new InMemoryVault(mock());
+    private final Vault vault = new InMemoryVault(mock(), null);
     private final KeyParserRegistry keyParserRegistry = new KeyParserRegistryImpl();
     private final JtiValidationStore jtiValidationStore = mock();
     private final KeyPairService keyPairService = mock();
