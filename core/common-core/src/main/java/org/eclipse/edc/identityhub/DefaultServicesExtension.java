@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub;
 
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.decentralizedclaims.spi.verification.SignatureSuiteRegistry;
+import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.verifiablecredentials.revocation.RevocationServiceRegistryImpl;
 import org.eclipse.edc.iam.verifiablecredentials.revocation.bitstring.BitstringStatusListRevocationService;
 import org.eclipse.edc.iam.verifiablecredentials.revocation.statuslist2021.StatusList2021RevocationService;
@@ -50,6 +51,7 @@ import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
 import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
+import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 
 import java.net.URISyntaxException;
@@ -110,6 +112,10 @@ public class DefaultServicesExtension implements ServiceExtension {
     private JtiValidationStore jtiValidationStore;
     @Inject
     private EdcHttpClient httpClient;
+    @Inject
+    private TokenValidationService tokenValidationService;
+    @Inject
+    private DidPublicKeyResolver didPublicKeyResolver;
 
     @Override
     public String name() {
@@ -160,8 +166,8 @@ public class DefaultServicesExtension implements ServiceExtension {
         if (revocationService == null) {
             revocationService = new RevocationServiceRegistryImpl(context.getMonitor());
             var acceptedContentTypes = List.of(contentTypes.split(","));
-            revocationService.addService(StatusList2021Status.TYPE, new StatusList2021RevocationService(typeManager.getMapper(), revocationCacheValidity, acceptedContentTypes, httpClient));
-            revocationService.addService(BitstringStatusListStatus.TYPE, new BitstringStatusListRevocationService(typeManager.getMapper(), revocationCacheValidity, acceptedContentTypes, httpClient));
+            revocationService.addService(StatusList2021Status.TYPE, new StatusList2021RevocationService(typeManager.getMapper(), revocationCacheValidity, acceptedContentTypes, httpClient, tokenValidationService, didPublicKeyResolver));
+            revocationService.addService(BitstringStatusListStatus.TYPE, new BitstringStatusListRevocationService(typeManager.getMapper(), revocationCacheValidity, acceptedContentTypes, httpClient, tokenValidationService, didPublicKeyResolver));
         }
         return revocationService;
     }
