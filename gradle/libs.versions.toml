@@ -64,6 +64,7 @@ edc-transaction-local = { module = "org.eclipse.edc:transaction-local", version.
 edc-testfixtures-managementapi = { module = "org.eclipse.edc:management-api-test-fixtures", version.ref = "edc" }
 edc-api-version = { module = "org.eclipse.edc:version-api", version.ref = "edc" }
 edc-oauth2-client = { module = "org.eclipse.edc:oauth2-client", version.ref = "edc" }
+edc-encryption-aes = { module = "org.eclipse.edc:aes-encryption", version.ref = "edc" }
 
 # EDC libs
 edc-lib-boot = { module = "org.eclipse.edc:boot-lib", version.ref = "edc" }

@@ -46,5 +46,6 @@ dependencies {
     runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.edc.jsonld)
     runtimeOnly(libs.bundles.connector)
+    runtimeOnly(libs.edc.encryption.aes)
 }
 
