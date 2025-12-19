@@ -59,7 +59,7 @@ maven/mavencentral/com.github.cliftonlabs/json-simple/3.0.2, Apache-2.0, approve
 maven/mavencentral/com.github.docker-java/docker-java-api/3.4.2, Apache-2.0, approved, #20872
 maven/mavencentral/com.github.docker-java/docker-java-api/3.7.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/com.github.docker-java/docker-java-transport-zerodep/3.4.2, Apache-2.0 AND (Apache-2.0 AND BSD-3-Clause), approved, #15745
-maven/mavencentral/com.github.docker-java/docker-java-transport-zerodep/3.7.0, Apache-2.0 AND MIT, restricted, clearlydefined
+maven/mavencentral/com.github.docker-java/docker-java-transport-zerodep/3.7.0, Apache-2.0 AND MPL-2.0, approved, #25269
 maven/mavencentral/com.github.docker-java/docker-java-transport/3.4.2, Apache-2.0, approved, #20873
 maven/mavencentral/com.github.docker-java/docker-java-transport/3.7.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/com.github.java-json-tools/btf/1.3, Apache-2.0 OR LGPL-3.0-only, approved, #15201
@@ -496,12 +496,12 @@ maven/mavencentral/org.testcontainers/database-commons/1.21.1, Apache-2.0, appro
 maven/mavencentral/org.testcontainers/jdbc/1.21.1, Apache-2.0, approved, #20877
 maven/mavencentral/org.testcontainers/junit-jupiter/1.21.1, MIT, approved, clearlydefined
 maven/mavencentral/org.testcontainers/postgresql/1.21.1, MIT, approved, #20876
-maven/mavencentral/org.testcontainers/testcontainers-database-commons/2.0.2, , restricted, clearlydefined
-maven/mavencentral/org.testcontainers/testcontainers-jdbc/2.0.2, , restricted, clearlydefined
+maven/mavencentral/org.testcontainers/testcontainers-database-commons/2.0.2, Apache-2.0, approved, #25271
+maven/mavencentral/org.testcontainers/testcontainers-jdbc/2.0.2, Apache-2.0, approved, #25272
 maven/mavencentral/org.testcontainers/testcontainers-junit-jupiter/2.0.2, MIT, approved, clearlydefined
-maven/mavencentral/org.testcontainers/testcontainers-postgresql/2.0.2, , restricted, clearlydefined
+maven/mavencentral/org.testcontainers/testcontainers-postgresql/2.0.2, None, restricted, #25273
 maven/mavencentral/org.testcontainers/testcontainers/1.21.1, MIT, approved, #20874
-maven/mavencentral/org.testcontainers/testcontainers/2.0.2, , restricted, clearlydefined
+maven/mavencentral/org.testcontainers/testcontainers/2.0.2, None, restricted, #25274
 maven/mavencentral/org.wiremock/wiremock-jetty12/3.13.2, Apache-2.0, approved, #21027
 maven/mavencentral/org.wiremock/wiremock/3.13.2, MIT AND Apache-2.0, approved, #21025
 maven/mavencentral/org.xmlresolver/xmlresolver/5.3.3, Apache-2.0, approved, clearlydefined
