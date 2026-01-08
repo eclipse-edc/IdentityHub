@@ -40,9 +40,12 @@ import java.net.URI;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_LD;
@@ -130,9 +133,13 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         var pk = privateKeyResolver.resolvePrivateKey(participantContextId, privateKeyAlias)
                 .orElseThrow(f -> new IllegalArgumentException(f.getFailureDetail()));
 
+        // Extract contexts from credentials and merge with base contexts
+        var credentialContexts = extractContextsFromCredentials(credentials);
+        var mergedContexts = mergeContexts(credentialContexts);
+
         var types = (List) additionalData.get(TYPE_ADDITIONAL_DATA);
         var presentationObject = Json.createObjectBuilder()
-                .add(JsonLdKeywords.CONTEXT, stringArray(List.of(VcConstants.W3C_CREDENTIALS_URL, VcConstants.PRESENTATION_EXCHANGE_URL)))
+                .add(JsonLdKeywords.CONTEXT, stringArray(mergedContexts))
                 .add(ID_PROPERTY, DcpConstants.DCP_CONTEXT_URL + "/id/" + UUID.randomUUID())
                 .add(VP_TYPE_PROPERTY, stringArray(types))
                 .add(HOLDER_PROPERTY, issuerId)
@@ -156,6 +163,71 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
                 })
                 .forEach(array::add);
         return array.build();
+    }
+
+    /**
+     * Extracts @context values from all credentials.
+     * Handles both string and array context formats.
+     *
+     * @param credentials The list of credential containers
+     * @return Set of context URLs found in the credentials
+     */
+    private Set<String> extractContextsFromCredentials(List<VerifiableCredentialContainer> credentials) {
+        Set<String> contexts = new LinkedHashSet<>();
+        
+        for (var credential : credentials) {
+            try {
+                var credentialJson = typeManager.getMapper(typeContext)
+                        .readValue(credential.rawVc(), JsonObject.class);
+                
+                if (credentialJson.containsKey(JsonLdKeywords.CONTEXT)) {
+                    var contextValue = credentialJson.get(JsonLdKeywords.CONTEXT);
+                    
+                    // Handle array of contexts
+                    if (contextValue instanceof JsonArray) {
+                        var contextArray = (JsonArray) contextValue;
+                        for (int i = 0; i < contextArray.size(); i++) {
+                            var value = contextArray.get(i);
+                            if (value instanceof jakarta.json.JsonString) {
+                                contexts.add(((jakarta.json.JsonString) value).getString());
+                            }
+                        }
+                    } else if (contextValue instanceof jakarta.json.JsonString) {
+                        // Handle single context string
+                        contexts.add(((jakarta.json.JsonString) contextValue).getString());
+                    }
+                }
+            } catch (JsonProcessingException e) {
+                // Skip credentials with invalid JSON - they will fail later in toJsonArray
+            }
+        }
+        
+        return contexts;
+    }
+
+    /**
+     * Merges base VP contexts with contexts extracted from credentials.
+     * Ensures W3C_CREDENTIALS_URL is first, PRESENTATION_EXCHANGE_URL is second,
+     * followed by credential-specific contexts. Duplicates are avoided.
+     *
+     * @param credentialContexts Contexts extracted from credentials
+     * @return Merged list of context URLs
+     */
+    private List<String> mergeContexts(Set<String> credentialContexts) {
+        List<String> merged = new ArrayList<>();
+        
+        // Always add base contexts first
+        merged.add(VcConstants.W3C_CREDENTIALS_URL);
+        merged.add(VcConstants.PRESENTATION_EXCHANGE_URL);
+        
+        // Add credential contexts, avoiding duplicates
+        for (String context : credentialContexts) {
+            if (!merged.contains(context)) {
+                merged.add(context);
+            }
+        }
+        
+        return merged;
     }
 
     private JsonObject signPresentation(JsonObject presentationObject, SignatureSuite suite, String suiteIdentifier, PrivateKey pk, String publicKeyId, String controller) {

@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@protected": true,
+    "customField": {
+      "@id": "https://example.com/custom/v1/customField",
+      "@type": "http://www.w3.org/2001/XMLSchema#string"
+    }
+  }
+}

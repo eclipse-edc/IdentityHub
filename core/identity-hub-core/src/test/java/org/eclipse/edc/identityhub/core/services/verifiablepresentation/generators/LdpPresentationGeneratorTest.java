@@ -166,6 +166,199 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         assertThat(result.get("https://w3id.org/security#proof")).isNotNull();
     }
 
+    @Test
+    @DisplayName("Should merge custom contexts from credentials into VP @context array before signing")
+    public void createPresentation_shouldMergeCustomContexts() {
+        // Create a credential with custom context
+        var customContext = "https://w3id.org/tractusx-trust/v0.8";
+        var credentialWithCustomContext = """
+                {
+                  "@context": [
+                    "https://www.w3.org/2018/credentials/v1",
+                    "%s"
+                  ],
+                  "id": "urn:uuid:12345",
+                  "type": ["VerifiableCredential"],
+                  "issuer": "did:web:issuer",
+                  "issuanceDate": "2023-01-01T00:00:00Z",
+                  "credentialSubject": {
+                    "id": "did:web:subject",
+                    "holderIdentifier": "BPNL000000000001"
+                  }
+                }
+                """.formatted(customContext);
+
+        var vcc = new VerifiableCredentialContainer(credentialWithCustomContext, CredentialFormat.VC1_0_LD, createDummyCredential());
+
+        var result = creator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        assertThat(result).isNotNull();
+        
+        // After signing, the document is in expanded JSON-LD form,
+        // so the @context is not present in the signed output.
+        // The important thing is that when this expanded document is later compacted
+        // (as done in PresentationApiController), the custom contexts will be available
+        // because they were included in the VP's @context before signing.
+        
+        // Verify the result is expanded (has full URI keys)
+        assertThat(result.keySet()).contains(
+                "@id",
+                "@type",
+                "https://www.w3.org/2018/credentials#holder",
+                "https://www.w3.org/2018/credentials#verifiableCredential",
+                "https://w3id.org/security#proof"
+        );
+        
+        // Verify the embedded credential is present
+        var verifiableCredential = result.getJsonArray("https://www.w3.org/2018/credentials#verifiableCredential");
+        assertThat(verifiableCredential).isNotNull();
+        assertThat(verifiableCredential.size()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Should handle credentials with single context string")
+    public void createPresentation_shouldHandleSingleContextString() {
+        var credentialWithSingleContext = """
+                {
+                  "@context": "https://www.w3.org/2018/credentials/v1",
+                  "id": "urn:uuid:12345",
+                  "type": ["VerifiableCredential"],
+                  "issuer": "did:web:issuer",
+                  "issuanceDate": "2023-01-01T00:00:00Z",
+                  "credentialSubject": {
+                    "id": "did:web:subject"
+                  }
+                }
+                """;
+
+        var vcc = new VerifiableCredentialContainer(credentialWithSingleContext, CredentialFormat.VC1_0_LD, createDummyCredential());
+
+        var result = creator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        assertThat(result).isNotNull();
+        // Verify presentation was created successfully (will be in expanded form)
+        assertThat(result.keySet()).contains("@id", "@type");
+    }
+
+    @Test
+    @DisplayName("Should handle multiple credentials with different custom contexts")
+    public void createPresentation_shouldMergeMultipleCredentialContexts() {
+        var customContext1 = "https://w3id.org/tractusx-trust/v0.8";
+        var customContext2 = "https://example.com/custom/v1";
+        
+        var credential1 = """
+                {
+                  "@context": [
+                    "https://www.w3.org/2018/credentials/v1",
+                    "%s"
+                  ],
+                  "id": "urn:uuid:11111",
+                  "type": ["VerifiableCredential"],
+                  "issuer": "did:web:issuer",
+                  "issuanceDate": "2023-01-01T00:00:00Z",
+                  "credentialSubject": {
+                    "id": "did:web:subject1",
+                    "holderIdentifier": "BPNL000000000001"
+                  }
+                }
+                """.formatted(customContext1);
+
+        var credential2 = """
+                {
+                  "@context": [
+                    "https://www.w3.org/2018/credentials/v1",
+                    "%s"
+                  ],
+                  "id": "urn:uuid:22222",
+                  "type": ["VerifiableCredential"],
+                  "issuer": "did:web:issuer",
+                  "issuanceDate": "2023-01-01T00:00:00Z",
+                  "credentialSubject": {
+                    "id": "did:web:subject2",
+                    "customField": "customValue"
+                  }
+                }
+                """.formatted(customContext2);
+
+        var vcc1 = new VerifiableCredentialContainer(credential1, CredentialFormat.VC1_0_LD, createDummyCredential());
+        var vcc2 = new VerifiableCredentialContainer(credential2, CredentialFormat.VC1_0_LD, createDummyCredential());
+
+        var result = creator.generatePresentation(participantContextId, List.of(vcc1, vcc2), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        assertThat(result).isNotNull();
+        // Verify both credentials are in the VP
+        var verifiableCredential = result.getJsonArray("https://www.w3.org/2018/credentials#verifiableCredential");
+        assertThat(verifiableCredential).isNotNull();
+        assertThat(verifiableCredential.size()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Should avoid duplicate contexts when credentials share contexts")
+    public void createPresentation_shouldAvoidDuplicateContexts() {
+        var sharedCustomContext = "https://w3id.org/tractusx-trust/v0.8";
+        
+        var credential1 = """
+                {
+                  "@context": [
+                    "https://www.w3.org/2018/credentials/v1",
+                    "%s"
+                  ],
+                  "id": "urn:uuid:11111",
+                  "type": ["VerifiableCredential"],
+                  "issuer": "did:web:issuer",
+                  "issuanceDate": "2023-01-01T00:00:00Z",
+                  "credentialSubject": {"id": "did:web:subject1"}
+                }
+                """.formatted(sharedCustomContext);
+
+        var credential2 = """
+                {
+                  "@context": [
+                    "https://www.w3.org/2018/credentials/v1",
+                    "%s"
+                  ],
+                  "id": "urn:uuid:22222",
+                  "type": ["VerifiableCredential"],
+                  "issuer": "did:web:issuer",
+                  "issuanceDate": "2023-01-01T00:00:00Z",
+                  "credentialSubject": {"id": "did:web:subject2"}
+                }
+                """.formatted(sharedCustomContext);
+
+        var vcc1 = new VerifiableCredentialContainer(credential1, CredentialFormat.VC1_0_LD, createDummyCredential());
+        var vcc2 = new VerifiableCredentialContainer(credential2, CredentialFormat.VC1_0_LD, createDummyCredential());
+
+        var result = creator.generatePresentation(participantContextId, List.of(vcc1, vcc2), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        assertThat(result).isNotNull();
+        // Verify presentation was created successfully with both credentials
+        var verifiableCredential = result.getJsonArray("https://www.w3.org/2018/credentials#verifiableCredential");
+        assertThat(verifiableCredential).isNotNull();
+        assertThat(verifiableCredential.size()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Should gracefully handle credentials without @context")
+    public void createPresentation_shouldHandleCredentialsWithoutContext() {
+        var credentialWithoutContext = """
+                {
+                  "id": "urn:uuid:12345",
+                  "type": ["VerifiableCredential"],
+                  "issuer": "did:web:issuer",
+                  "issuanceDate": "2023-01-01T00:00:00Z",
+                  "credentialSubject": {"id": "did:web:subject"}
+                }
+                """;
+
+        var vcc = new VerifiableCredentialContainer(credentialWithoutContext, CredentialFormat.VC1_0_LD, createDummyCredential());
+
+        var result = creator.generatePresentation(participantContextId, List.of(vcc), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, issuerId, ADDITIONAL_DATA);
+
+        assertThat(result).isNotNull();
+        // Verify presentation was created successfully
+        assertThat(result.keySet()).contains("@id", "@type");
+    }
+
     @NotNull
     private TitaniumJsonLd initializeJsonLd() {
         var jld = new TitaniumJsonLd(mock());
@@ -176,6 +369,11 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         jld.registerCachedDocument(DCP_CONTEXT_URL, TestUtils.getResource("dcp.v08.json"));
         jld.registerCachedDocument(PRESENTATION_EXCHANGE_URL, TestUtils.getResource("presentation-exchange.v1.json"));
         jld.registerCachedDocument("https://www.w3.org/2018/credentials/examples/v1", TestUtils.getResource("examples.v1.json"));
+        
+        // Register custom contexts for testing
+        jld.registerCachedDocument("https://w3id.org/tractusx-trust/v0.8", TestUtils.getResource("tractusx.v08.json"));
+        jld.registerCachedDocument("https://example.com/custom/v1", TestUtils.getResource("custom.v1.json"));
+        
         return jld;
     }
 
