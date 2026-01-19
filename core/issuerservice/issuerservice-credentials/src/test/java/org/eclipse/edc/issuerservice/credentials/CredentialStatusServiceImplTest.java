@@ -35,10 +35,12 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListFactory;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.spi.TokenGenerationService;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +49,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
-import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,7 +62,6 @@ import static org.eclipse.edc.issuerservice.credentials.statuslist.TestData.EXAM
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.ServiceFailure.Reason.BAD_REQUEST;
 import static org.eclipse.edc.spi.result.ServiceFailure.Reason.NOT_FOUND;
-import static org.eclipse.edc.spi.result.ServiceFailure.Reason.UNEXPECTED;
 import static org.eclipse.edc.spi.result.StoreResult.notFound;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
@@ -69,12 +69,12 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings("unchecked")
 class CredentialStatusServiceImplTest {
 
     public static final TypeReference<Map<String, Object>> MAP_REF = new TypeReference<>() {
@@ -85,10 +85,12 @@ class CredentialStatusServiceImplTest {
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     private final CredentialStore credentialStore = mock();
+    private final BitstringStatusListFactory bitstringStatusListFactory = mock();
     private CredentialStatusServiceImpl revocationService;
     private TokenGenerationService tokenGenerationService;
     private Monitor monitor;
     private ECKey signingKey;
+    private final TestStatusListInfo statusListInfo = spy(new TestStatusListInfo());
 
     @BeforeEach
     void setUp() throws JOSEException {
@@ -97,43 +99,10 @@ class CredentialStatusServiceImplTest {
         when(tokenGenerationService.generate(anyString(), any(), any())).thenReturn(Result.success(TokenRepresentation.Builder.newInstance().token("new-token").build()));
         monitor = mock();
         var reg = new StatusListInfoFactoryRegistryImpl();
-        reg.register("BitstringStatusListEntry", new BitstringStatusListFactory(credentialStore));
+        reg.register("BitstringStatusListEntry", bitstringStatusListFactory);
         revocationService = new CredentialStatusServiceImpl(credentialStore, new NoopTransactionContext(), objectMapper,
                 monitor, tokenGenerationService, () -> "some-private-key", reg, mock());
-    }
-
-    private SignedJWT sign(Map<String, Object> claims) {
-
-
-        var jwsHeader = new JWSHeader(JWSAlgorithm.ES256);
-        var claimsSet = new JWTClaimsSet.Builder();
-        claims.forEach(claimsSet::claim);
-        var signedJwt = new SignedJWT(jwsHeader, claimsSet.build());
-        try {
-            signedJwt.sign(new ECDSASigner(signingKey));
-            return signedJwt;
-        } catch (JOSEException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private VerifiableCredentialResource createCredential(String credentialJson, @Nullable String rawVc) {
-        return createCredentialBuilder(credentialJson, rawVc)
-                .build();
-    }
-
-    private VerifiableCredentialResource.Builder createCredentialBuilder(String credentialJson, @Nullable String rawVc) {
-        try {
-            var credential = objectMapper.readValue(credentialJson, VerifiableCredential.class);
-            return VerifiableCredentialResource.Builder.newStatusList()
-                    .participantContextId("test-participant")
-                    .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(rawVc, CredentialFormat.VC1_0_JWT, credential))
-                    .issuerId(credential.getIssuer().id())
-                    .holderId("did:web:testholder");
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        when(bitstringStatusListFactory.create(any())).thenReturn(ServiceResult.success(statusListInfo));
     }
 
     @Nested
@@ -141,11 +110,13 @@ class CredentialStatusServiceImplTest {
 
         @Test
         void revokeCredential() {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
+            when(statusListInfo.getStatus()).thenReturn(Result.success("any"));
+            when(statusListInfo.statusListCredential()).thenReturn(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", "")));
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(success());
 
             var result = revocationService.revokeCredential(CREDENTIAL_ID);
+
             assertThat(result).isSucceeded();
             verify(tokenGenerationService).generate(anyString(), any(), any());
             verify(credentialStore, times(2)).update(any());
@@ -158,9 +129,9 @@ class CredentialStatusServiceImplTest {
             when(credentialStore.update(any())).thenReturn(success());
 
             var result = revocationService.revokeCredential(CREDENTIAL_ID);
+
             assertThat(result).isFailed().detail().isEqualTo("foo");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
-
             verifyNoInteractions(tokenGenerationService);
             verify(credentialStore, never()).update(any());
         }
@@ -172,6 +143,7 @@ class CredentialStatusServiceImplTest {
             when(credentialStore.update(any())).thenReturn(success());
 
             var result = revocationService.revokeCredential(CREDENTIAL_ID);
+
             assertThat(result).isSucceeded();
             verifyNoInteractions(tokenGenerationService);
             verify(credentialStore, never()).update(any());
@@ -183,17 +155,15 @@ class CredentialStatusServiceImplTest {
             when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID)))
                     .thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
 
-
             var claims = objectMapper.readValue(EXAMPLE_CREDENTIAL, MAP_REF);
             claims.remove("credentialStatus");
             var jwt = sign(claims);
 
-
             when(credentialStore.findById(eq(CREDENTIAL_ID)))
                     .thenReturn(success(createCredential(objectMapper.writeValueAsString(jwt.getJWTClaimsSet().getClaims()), jwt.serialize())));
 
-
             var result = revocationService.revokeCredential(CREDENTIAL_ID);
+
             assertThat(result).isFailed();
             assertThat(result.getFailure().getReason()).isEqualTo(BAD_REQUEST);
             verifyNoInteractions(tokenGenerationService);
@@ -201,58 +171,13 @@ class CredentialStatusServiceImplTest {
         }
 
         @Test
-        void revokeCredential_noRevocationCredentialUrl() throws JsonProcessingException, ParseException {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
-
-
-            var claims = objectMapper.readValue(EXAMPLE_CREDENTIAL, MAP_REF);
-            // remove statusListCredential, which is the revocation credential URL
-            ((List<Map<String, Object>>) claims.get("credentialStatus")).get(0).remove("statusListCredential");
-            var jwt = sign(claims);
-
-
-            when(credentialStore.findById(eq(CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(objectMapper.writeValueAsString(jwt.getJWTClaimsSet().getClaims()), jwt.serialize())));
-
-            var result = revocationService.revokeCredential(CREDENTIAL_ID);
-            assertThat(result).isFailed()
-                    .detail().containsSequence("is invalid, the 'statusListCredential' field is missing");
-            assertThat(result.getFailure().getReason()).isEqualTo(UNEXPECTED);
-            verifyNoInteractions(tokenGenerationService);
-            verify(credentialStore, never()).update(any());
-        }
-
-        @Test
-        void revokeCredential_noStatusIndex() throws ParseException, JsonProcessingException {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
-
-
-            var claims = objectMapper.readValue(EXAMPLE_CREDENTIAL, MAP_REF);
-
-            ((List<Map<String, Object>>) claims.get("credentialStatus")).get(0).remove("statusListIndex");
-            var jwt = sign(claims);
-
-
-            when(credentialStore.findById(eq(CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(objectMapper.writeValueAsString(jwt.getJWTClaimsSet().getClaims()), jwt.serialize())));
-
-            var result = revocationService.revokeCredential(CREDENTIAL_ID);
-            assertThat(result).isFailed()
-                    .detail().containsSequence("is invalid, the 'statusListIndex' field is missing");
-            assertThat(result.getFailure().getReason()).isEqualTo(UNEXPECTED);
-            verifyNoInteractions(tokenGenerationService);
-            verify(credentialStore, never()).update(any());
-        }
-
-        @Test
         void revokeCredential_noRevocationCredentialFound() {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID))).thenReturn(notFound("foo"));
+            when(bitstringStatusListFactory.create(any())).thenReturn(ServiceResult.notFound("foo"));
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.update(any())).thenReturn(success());
 
             var result = revocationService.revokeCredential(CREDENTIAL_ID);
+
             assertThat(result).isFailed().detail().isEqualTo("foo");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
 
@@ -284,118 +209,88 @@ class CredentialStatusServiceImplTest {
     class GetCredentialStatus {
         @Test
         void getCredentialStatus() {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.findById(eq(CREDENTIAL_ID)))
                     .thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
 
             var result = revocationService.getCredentialStatus(CREDENTIAL_ID);
-            assertThat(result).isSucceeded().isNull();
-            verifyNoInteractions(tokenGenerationService);
-        }
 
-        @Test
-        void getCredentialStatus_whenRevoked() {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET.replace("\n", ""))));
-            when(credentialStore.findById(eq(CREDENTIAL_ID)))
-                    .thenReturn(success(createCredentialBuilder(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))
-                            .state(VcStatus.REVOKED)
-                            .build()));
-
-            var result = revocationService.getCredentialStatus(CREDENTIAL_ID);
             assertThat(result).isSucceeded().isEqualTo("revocation");
             verifyNoInteractions(tokenGenerationService);
         }
 
         @Test
         void getCredentialStatus_credentialNotFound() {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(notFound("foo"));
 
             var result = revocationService.getCredentialStatus(CREDENTIAL_ID);
+
             assertThat(result).isFailed().detail().isEqualTo("foo");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
-
             verifyNoInteractions(tokenGenerationService);
         }
 
         @Test
         void getCredentialStatus_noRevocationCredentialFound() {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID))).thenReturn(notFound("foo"));
+            when(bitstringStatusListFactory.create(any())).thenReturn(ServiceResult.notFound("foo"));
             when(credentialStore.findById(eq(CREDENTIAL_ID))).thenReturn(success(createCredential(EXAMPLE_CREDENTIAL, EXAMPLE_CREDENTIAL_JWT.replace("\n", ""))));
 
             var result = revocationService.getCredentialStatus(CREDENTIAL_ID);
+
             assertThat(result).isFailed().detail().isEqualTo("foo");
             assertThat(result.getFailure().getReason()).isEqualTo(NOT_FOUND);
-
             verifyNoInteractions(tokenGenerationService);
         }
 
-        @Test
-        void getCredentialStatus_noCredentialStatus() throws ParseException, JsonProcessingException {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
+    }
 
+    private SignedJWT sign(Map<String, Object> claims) {
+        var jwsHeader = new JWSHeader(JWSAlgorithm.ES256);
+        var claimsSet = new JWTClaimsSet.Builder();
+        claims.forEach(claimsSet::claim);
+        var signedJwt = new SignedJWT(jwsHeader, claimsSet.build());
+        try {
+            signedJwt.sign(new ECDSASigner(signingKey));
+            return signedJwt;
+        } catch (JOSEException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-            var claims = objectMapper.readValue(EXAMPLE_CREDENTIAL, MAP_REF);
-            claims.remove("credentialStatus");
-            var jwt = sign(claims);
+    private VerifiableCredentialResource createCredential(String credentialJson, @Nullable String rawVc) {
+        return createCredentialBuilder(credentialJson, rawVc)
+                .build();
+    }
 
-            when(credentialStore.findById(eq(CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(objectMapper.writeValueAsString(jwt.getJWTClaimsSet().getClaims()), jwt.serialize())));
+    private VerifiableCredentialResource.Builder createCredentialBuilder(String credentialJson, @Nullable String rawVc) {
+        try {
+            var credential = objectMapper.readValue(credentialJson, VerifiableCredential.class);
+            return VerifiableCredentialResource.Builder.newStatusList()
+                    .participantContextId("test-participant")
+                    .state(VcStatus.ISSUED)
+                    .credential(new VerifiableCredentialContainer(rawVc, CredentialFormat.VC1_0_JWT, credential))
+                    .issuerId(credential.getIssuer().id())
+                    .holderId("did:web:testholder");
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    private static class TestStatusListInfo implements StatusListInfo {
 
-            var result = revocationService.getCredentialStatus(CREDENTIAL_ID);
-            assertThat(result).isFailed();
-            assertThat(result.getFailure().getReason()).isEqualTo(BAD_REQUEST);
-            verifyNoInteractions(tokenGenerationService);
+        @Override
+        public Result<String> getStatus() {
+            return Result.success("revocation");
         }
 
-        @Test
-        void getCredentialStatus_noCredentialUrl() throws ParseException, JsonProcessingException {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
-
-
-            var claims = objectMapper.readValue(EXAMPLE_CREDENTIAL, MAP_REF);
-            // remove statusListCredential, which is the revocation credential URL
-            ((List<Map<String, Object>>) claims.get("credentialStatus")).get(0).remove("statusListCredential");
-            var jwt = sign(claims);
-
-
-            when(credentialStore.findById(eq(CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(objectMapper.writeValueAsString(jwt.getJWTClaimsSet().getClaims()), jwt.serialize())));
-
-            var result = revocationService.getCredentialStatus(CREDENTIAL_ID);
-            assertThat(result).isFailed()
-                    .detail().containsSequence("is invalid, the 'statusListCredential' field is missing");
-            assertThat(result.getFailure().getReason()).isEqualTo(UNEXPECTED);
-            verifyNoInteractions(tokenGenerationService);
+        @Override
+        public Result<Void> setStatus(boolean status) {
+            return Result.success();
         }
 
-        @Test
-        void getCredentialStatus_noStatusIndex() throws ParseException, JsonProcessingException {
-            when(credentialStore.findById(eq(REVOCATION_CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT.replace("\n", ""))));
-
-
-            var claims = objectMapper.readValue(EXAMPLE_CREDENTIAL, MAP_REF);
-
-            ((List<Map<String, Object>>) claims.get("credentialStatus")).get(0).remove("statusListIndex");
-            var jwt = sign(claims);
-
-
-            when(credentialStore.findById(eq(CREDENTIAL_ID)))
-                    .thenReturn(success(createCredential(objectMapper.writeValueAsString(jwt.getJWTClaimsSet().getClaims()), jwt.serialize())));
-
-            var result = revocationService.getCredentialStatus(CREDENTIAL_ID);
-            assertThat(result).isFailed()
-                    .detail().containsSequence("is invalid, the 'statusListIndex' field is missing");
-            assertThat(result.getFailure().getReason()).isEqualTo(UNEXPECTED);
-            verifyNoInteractions(tokenGenerationService);
+        @Override
+        public VerifiableCredentialResource statusListCredential() {
+            return null;
         }
-
     }
 
 }

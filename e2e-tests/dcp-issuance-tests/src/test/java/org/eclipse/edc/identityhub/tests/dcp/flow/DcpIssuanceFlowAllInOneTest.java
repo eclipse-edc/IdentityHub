@@ -21,6 +21,7 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
+import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
@@ -61,10 +62,12 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -177,14 +180,12 @@ public class DcpIssuanceFlowAllInOneTest {
 
             participantService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId("participantContextId").build());
 
-
             var attestationDefinition = AttestationDefinition.Builder.newInstance().id("attestation-id")
                     .attestationType("Attestation")
                     .participantContextId("participantContextId")
                     .configuration(Map.of())
                     .build();
             attestationDefinitionService.createAttestation(attestationDefinition);
-
 
             var credentialDefinition = CredentialDefinition.Builder.newInstance()
                     .id("membershipCredential-id")
@@ -205,20 +206,12 @@ public class DcpIssuanceFlowAllInOneTest {
 
         @Test
         void testCredentialIssuance(IssuerService issuer, IdentityHub identityHub) {
-
             var holderRequestId = UUID.randomUUID().toString();
-            var issuanceRequest = """
-                    {
-                      "issuerDid": "%s",
-                      "holderPid": "%s",
-                      "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id", "type": "MembershipCredential" }]
-                    }
-                    """.formatted(issuerDid, holderRequestId);
 
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
-                    .body(issuanceRequest)
+                    .body(createIssuanceRequest(holderRequestId))
                     .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
                     .then()
                     .log().ifValidationFails()
@@ -294,18 +287,11 @@ public class DcpIssuanceFlowAllInOneTest {
         @Test
         void testRenewal(IssuerService issuer, IdentityHub identityHub) {
             var holderRequestId = UUID.randomUUID().toString();
-            var issuanceRequest = """
-                    {
-                      "issuerDid": "%s",
-                      "holderPid": "%s",
-                      "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id", "type": "MembershipCredential" }]
-                    }
-                    """.formatted(issuerDid, holderRequestId);
 
             issuer.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
-                    .body(issuanceRequest)
+                    .body(createIssuanceRequest(holderRequestId))
                     .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
                     .then()
                     .log().ifValidationFails()
@@ -352,6 +338,59 @@ public class DcpIssuanceFlowAllInOneTest {
         }
 
         @Test
+        void testRevoke(IssuerService issuer, IdentityHub identityHub) {
+            var holderRequestId = UUID.randomUUID().toString();
+
+            issuer.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(createIssuanceRequest(holderRequestId))
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201);
+
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, holderRequestId))
+                            .hasSize(1)
+                            .allSatisfy(t -> {
+                                assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
+                                assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
+                            }));
+
+            var credentials = issuer.getAdminEndpoint().baseRequest()
+                    .header("x-api-key", participantToken)
+                    .contentType(JSON)
+                    .body(Map.of(
+                            "filterExpression", List.of(
+                                    Map.of("operandLeft", "holderId", "operator", "=", "operandRight", participantDid),
+                                    Map.of("operandLeft", "usage", "operator", "=", "operandRight", "Holder")
+                            )
+                    ))
+                    .post("/v1alpha/participants/{participantContextId}/credentials/query", base64Encode(PARTICIPANT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .extract()
+                    .body();
+
+            var credentialId = credentials.jsonPath().getString("[0].id");
+            issuer.getAdminEndpoint().baseRequest()
+                    .header("x-api-key", participantToken)
+                    .contentType(ContentType.JSON)
+                    .post("/v1alpha/participants/{participantContextId}/credentials/{credentialId}/revoke",
+                            base64Encode(PARTICIPANT_ID), credentialId)
+                    .then()
+                    .log().ifValidationFails().statusCode(204);
+
+
+            assertThat(identityHub.getCredential(credentialId)).isPresent().get().satisfies(credential -> {
+                assertThat(credential.getStateAsEnum()).isEqualTo(VcStatus.REVOKED);
+            });
+        }
+
+        @Test
         void testPresentationQuery(IssuerService issuer, IdentityHub identityHub) throws JOSEException, ParseException {
             // set up consumer DID
             var consumerDid = "did:example:consumer";
@@ -370,20 +409,12 @@ public class DcpIssuanceFlowAllInOneTest {
             issuer.getService(DidResolverRegistry.class).register(exampleResolverMock);
 
             // issue credential to holder
-
             var holderRequestId = UUID.randomUUID().toString();
-            var issuanceRequest = """
-                    {
-                      "issuerDid": "%s",
-                      "holderPid": "%s",
-                      "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id", "type": "MembershipCredential" }]
-                    }
-                    """.formatted(issuerDid, holderRequestId);
 
             issuer.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
-                    .body(issuanceRequest)
+                    .body(createIssuanceRequest(holderRequestId))
                     .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
                     .then()
                     .log().ifValidationFails()
@@ -440,6 +471,18 @@ public class DcpIssuanceFlowAllInOneTest {
 
         }
 
+        private @NonNull Map<String, Object> createIssuanceRequest(String holderRequestId) {
+            return Map.of(
+                    "issuerDid", issuerDid,
+                    "holderPid", holderRequestId,
+                    "credentials", List.of(Map.of(
+                            "id", "membershipCredential-id",
+                            "format", VC1_0_JWT.name(),
+                            "type", "MembershipCredential"
+                    ))
+            );
+        }
+
         private List<String> vpTokensExtractor(JsonValue jsonValue) {
             if (jsonValue.getValueType() == JsonValue.ValueType.ARRAY) {
                 return ((JsonArray) jsonValue).stream()
@@ -483,7 +526,8 @@ public class DcpIssuanceFlowAllInOneTest {
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
-                .build();
+                .build()
+                .registerSystemExtension(ServiceExtension.class, DefaultRuntimes.Issuer.seedSigningKeyFor(PARTICIPANT_ID));
     }
 
     @Nested
@@ -507,7 +551,8 @@ public class DcpIssuanceFlowAllInOneTest {
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
-                .build();
+                .build()
+                .registerSystemExtension(ServiceExtension.class, DefaultRuntimes.Issuer.seedSigningKeyFor(PARTICIPANT_ID));
 
         @Order(1) // must be the first extension to be evaluated since it starts the DB server
         @RegisterExtension

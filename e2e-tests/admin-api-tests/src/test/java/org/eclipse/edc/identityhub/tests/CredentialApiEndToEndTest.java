@@ -70,11 +70,11 @@ import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET;
-import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET;
 import static org.eclipse.edc.identityhub.tests.TestData.ISSUER_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.TestData.exampleRevocationCredential;
+import static org.eclipse.edc.identityhub.tests.TestData.exampleRevocationCredentialWithStatusBitSet;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeOauth2;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestFunctions.authorizeTokenBased;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
@@ -94,7 +94,8 @@ public class CredentialApiEndToEndTest {
     public static final int STATUS_LIST_INDEX = 94567;
     public static final String USER = "user";
     protected static final DidResolverRegistry DID_RESOLVER_REGISTRY = mock();
-    private static final String STATUS_LIST_CREDENTIAL_ID = "https://example.com/credentials/status/3";
+    private static final String STATUS_LIST_CREDENTIAL_ID = UUID.randomUUID().toString();
+    private static final String STATUS_LIST_CREDENTIAL_URL = "https://example.com/credentials/status/" + STATUS_LIST_CREDENTIAL_ID;
     private final ObjectMapper objectMapper = new JacksonTypeManager().getMapper()
             .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -112,7 +113,7 @@ public class CredentialApiEndToEndTest {
                 .credentialStatus(new CredentialStatus(credentialId + "#status", "BitstringStatusListEntry", Map.of(
                         "statusListIndex", STATUS_LIST_INDEX,
                         "statusPurpose", "revocation",
-                        "statusListCredential", STATUS_LIST_CREDENTIAL_ID
+                        "statusListCredential", STATUS_LIST_CREDENTIAL_URL
                 )))
                 .issuer(new Issuer(UUID.randomUUID().toString()))
                 .build();
@@ -133,7 +134,7 @@ public class CredentialApiEndToEndTest {
                     .state(VcStatus.ISSUED)
                     .issuerId("issuer-id")
                     .holderId("holder-id")
-                    .id(STATUS_LIST_CREDENTIAL_ID)
+                    .id(UUID.randomUUID().toString())
                     .credential(new VerifiableCredentialContainer(credentialJwt, CredentialFormat.VC1_0_JWT, credential))
                     .build();
         } catch (JsonProcessingException e) {
@@ -142,19 +143,6 @@ public class CredentialApiEndToEndTest {
     }
 
     abstract class Tests {
-
-
-        private static @NotNull String getOfferRequestBody() {
-            return """
-                    
-                        {
-                      "holderId": "test-holder-id",
-                      "credentials": [
-                        "test-credential-id"
-                      ]
-                    }
-                    """;
-        }
 
         @BeforeEach
         void prepare(Vault vault) throws JOSEException {
@@ -177,14 +165,10 @@ public class CredentialApiEndToEndTest {
 
         @Test
         void revoke_whenNotYetRevoked(IssuerService issuer, CredentialStore credentialStore) {
-
-            // create revocation credential
-            var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
-
+            var statusListCredential = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
             // track the original bitstring
-            var originalBitstring = res.getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
-            credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
-
+            var originalBitstring = statusListCredential.getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
+            credentialStore.create(statusListCredential).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
             credentialStore.create(createCredential("test-cred"));
 
             issuer.getAdminEndpoint()
@@ -197,21 +181,17 @@ public class CredentialApiEndToEndTest {
                     .statusCode(204);
 
             // verify that the status list credential's bitstring has changed
-            var updatedBitstring = credentialStore.findById(STATUS_LIST_CREDENTIAL_ID).getContent()
+            var updatedBitstring = credentialStore.findById(statusListCredential.getId()).getContent()
                     .getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
             assertThat(updatedBitstring).isNotEqualTo(originalBitstring);
         }
 
         @Test
         void revoke_whenAlreadyRevoked(IssuerService issuer, CredentialStore credentialStore) {
-
-            // create a statuslist credential which has the "revocation" bit set
-            var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
-
+            var statusListCredential = createRevocationCredential(exampleRevocationCredentialWithStatusBitSet(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
             // track the original bitstring
-            var originalBitstring = res.getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
-            credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
-
+            var originalBitstring = statusListCredential.getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
+            credentialStore.create(statusListCredential).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
             credentialStore.create(createCredential("test-cred"));
 
             issuer.getAdminEndpoint()
@@ -224,22 +204,13 @@ public class CredentialApiEndToEndTest {
                     .statusCode(204);
 
             // verify that the status list credential's bitstring has NOT changed
-            var updatedBitstring = credentialStore.findById(STATUS_LIST_CREDENTIAL_ID).getContent()
+            var updatedBitstring = credentialStore.findById(statusListCredential.getId()).getContent()
                     .getVerifiableCredential().credential().getCredentialSubject().get(0).getClaim("", "encodedList");
             assertThat(updatedBitstring).isEqualTo(originalBitstring);
         }
 
         @Test
-        void revoke_whenCredentialNotFound(IssuerService issuer, CredentialStore credentialStore) {
-
-            // create a statuslist credential which has the "revocation" bit set
-            var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET, EXAMPLE_REVOCATION_CREDENTIAL_JWT_WITH_STATUS_BIT_SET);
-
-            // track the original bitstring
-            credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
-
-            // missing: creation of the holder credential
-
+        void revoke_whenCredentialNotFound(IssuerService issuer) {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .contentType(JSON)
@@ -257,7 +228,7 @@ public class CredentialApiEndToEndTest {
             var token = issuer.createParticipant("anotherUser").apiKey();
 
             // create revocation credential
-            var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
 
             credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
 
@@ -294,7 +265,7 @@ public class CredentialApiEndToEndTest {
         void revoke_whenWrongStatusListType(IssuerService issuer, CredentialStore credentialStore) {
 
             // create a statuslist credential which has the "revocation" bit set
-            var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
 
             // track the original bitstring
             credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
@@ -306,7 +277,7 @@ public class CredentialApiEndToEndTest {
             status.add(new CredentialStatus("test-cred#status", "InvalidStatusListType", Map.of(
                     "statusListIndex", STATUS_LIST_INDEX,
                     "statusPurpose", "revocation",
-                    "statusListCredential", STATUS_LIST_CREDENTIAL_ID
+                    "statusListCredential", STATUS_LIST_CREDENTIAL_URL
             )));
             credentialStore.create(credential);
 
@@ -368,7 +339,7 @@ public class CredentialApiEndToEndTest {
         void checkStatus(IssuerService issuer, CredentialStore credentialStore) {
 
             // create revocation credential
-            var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
 
             credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
 
@@ -389,7 +360,7 @@ public class CredentialApiEndToEndTest {
             issuer.createParticipant(USER);
 
             // create revocation credential
-            var res = createRevocationCredential(EXAMPLE_REVOCATION_CREDENTIAL, EXAMPLE_REVOCATION_CREDENTIAL_JWT);
+            var res = createRevocationCredential(exampleRevocationCredential(STATUS_LIST_CREDENTIAL_ID), EXAMPLE_REVOCATION_CREDENTIAL_JWT);
 
             credentialStore.create(res).orElseThrow(f -> new RuntimeException("Failed to create credential: " + f.getFailureDetail()));
 
@@ -580,6 +551,17 @@ public class CredentialApiEndToEndTest {
         }
 
         protected abstract Header authorizeUser(String participantContextId, IssuerService issuerService);
+
+        private @NotNull String getOfferRequestBody() {
+            return """
+                    {
+                      "holderId": "test-holder-id",
+                      "credentials": [
+                        "test-credential-id"
+                      ]
+                    }
+                    """;
+        }
 
         private String toBase64(String input) {
             return Base64.getUrlEncoder().encodeToString(input.getBytes());

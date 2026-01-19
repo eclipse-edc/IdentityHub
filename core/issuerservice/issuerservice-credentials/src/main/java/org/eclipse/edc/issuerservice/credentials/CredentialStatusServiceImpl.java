@@ -96,8 +96,8 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
     public ServiceResult<Void> revokeCredential(String holderCredentialId) {
         return transactionContext.execute(() -> {
 
-            var credentialResult = getCredential(holderCredentialId);
-            var result = credentialResult.compose(this::getRevocationInfo);
+            var result = getCredential(holderCredentialId)
+                    .compose(this::getRevocationInfo);
 
             if (result.failed()) {
                 return result.mapFailure();
@@ -124,7 +124,7 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
                 var updatedRevocationCredential = updateStatusCredential(revocationInfo.statusListCredential());
 
                 // update user credential
-                var cred = credentialResult.getContent();
+                var cred = getCredential(holderCredentialId).getContent();
                 cred.revoke();
 
                 var merged = credentialStore.update(updatedRevocationCredential)
@@ -199,15 +199,10 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
     }
 
     private ServiceResult<StatusListInfo> getRevocationInfo(VerifiableCredentialResource resource) {
-        return getStatusInfo(resource, BitstringConstants.REVOCATION);
-    }
-
-    private ServiceResult<StatusListInfo> getStatusInfo(VerifiableCredentialResource holderCredential, String statusPurpose) {
-
-        var statusObjects = holderCredential.getVerifiableCredential().credential().getCredentialStatus();
+        var statusObjects = resource.getVerifiableCredential().credential().getCredentialStatus();
 
         var revocationStatus = statusObjects.stream()
-                .filter(st -> st.additionalProperties().values().stream().anyMatch(v -> v.toString().endsWith(statusPurpose)))
+                .filter(st -> st.additionalProperties().values().stream().anyMatch(v -> v.toString().endsWith(BitstringConstants.REVOCATION)))
                 .findFirst();
 
         if (revocationStatus.isEmpty()) {
@@ -215,11 +210,10 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
         }
 
         var status = revocationStatus.get();
-        var revocationInfo = ofNullable(statusListInfoFactoryRegistry.getInfoFactory(status.type()))
-                .map(cred -> cred.create(status));
 
-        return revocationInfo.orElseGet(() -> badRequest("No StatusList implementation for type '%s' found.".formatted(status.type())));
-
+        return ofNullable(statusListInfoFactoryRegistry.getInfoFactory(status.type()))
+                .map(cred -> cred.create(status))
+                .orElseGet(() -> badRequest("No StatusList implementation for type '%s' found.".formatted(status.type())));
     }
 
 }
