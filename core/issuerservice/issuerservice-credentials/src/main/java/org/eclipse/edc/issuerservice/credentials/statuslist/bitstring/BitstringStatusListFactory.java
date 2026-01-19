@@ -16,16 +16,21 @@ package org.eclipse.edc.issuerservice.credentials.statuslist.bitstring;
 
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialUrl;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactory;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
+
+import java.net.URI;
 
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.BITSTRING_STATUS_LIST_PREFIX;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus.BITSTRING_STATUS_LIST_CREDENTIAL_LITERAL;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus.BITSTRING_STATUS_LIST_INDEX_LITERAL;
-import static org.eclipse.edc.spi.result.ServiceResult.success;
+import static org.eclipse.edc.spi.query.Criterion.criterion;
 
 public class BitstringStatusListFactory implements StatusListInfoFactory {
+
     private final CredentialStore credentialStore;
 
     public BitstringStatusListFactory(CredentialStore credentialStore) {
@@ -40,17 +45,22 @@ public class BitstringStatusListFactory implements StatusListInfoFactory {
 
         if (statusListCredentialId == null) {
             return ServiceResult.unexpected("The credential status with ID '%s' is invalid, the '%s' field is missing".formatted(credentialStatus.id(), BITSTRING_STATUS_LIST_CREDENTIAL_LITERAL));
-
         }
+
         if (index == null) {
             return ServiceResult.unexpected("The credential status with ID '%s' is invalid, the '%s' field is missing".formatted(credentialStatus.id(), BITSTRING_STATUS_LIST_INDEX_LITERAL));
         }
 
         var ix = Integer.parseInt(index.toString());
 
-        var result = credentialStore.findById(statusListCredentialId.toString());
-        return result.succeeded()
-                ? success(new BitstringStatusInfo(ix, result.getContent()))
-                : ServiceResult.fromFailure(result);
+        var credentialId = StatusListCredentialUrl.extractIdFromUrl(URI.create(statusListCredentialId.toString()));
+
+        var query = QuerySpec.Builder.newInstance().filter(criterion("verifiableCredential.credential.id", "=", credentialId)).build();
+
+        return credentialStore.query(query).flatMap(ServiceResult::from)
+                .compose(resources -> resources.size() == 1
+                        ? ServiceResult.success(resources.iterator().next())
+                        : ServiceResult.notFound("Cannot find the StatusList credential with id " + credentialId))
+                .map(credential -> new BitstringStatusInfo(ix, credential));
     }
 }

@@ -14,7 +14,14 @@
 
 package org.eclipse.edc.identityhub.tests.fixtures;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.eclipse.edc.junit.utils.Endpoints;
+import org.eclipse.edc.runtime.metamodel.annotation.Inject;
+import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.system.ServiceExtension;
+import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.configuration.Config;
 import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 
@@ -49,16 +56,38 @@ public interface DefaultRuntimes {
                 .endpoint(IH_DID, () -> URI.create("http://localhost:" + getFreePort() + "/"))
                 .endpoint("statuslist", () -> URI.create("http://localhost:" + getFreePort() + "/statuslist"));
 
+        String SIGNING_KEY_ALIAS = "signing-key";
 
         static Config config() {
             return ConfigFactory.fromMap(new HashMap<>() {
                 {
                     put("edc.iam.accesstoken.jti.validation", String.valueOf(true));
-                    put("edc.issuer.statuslist.signing.key.alias", "signing-key");
+                    put("edc.issuer.statuslist.signing.key.alias", SIGNING_KEY_ALIAS);
                     put("edc.iam.did.web.use.https", "false");
                     put("edc.encryption.strict", "false");
                 }
             });
+        }
+
+        static ServiceExtension seedSigningKeyFor(String participantContextId) {
+            return new ServiceExtension() {
+                @Inject
+                private Vault vault;
+
+                @Override
+                public String name() {
+                    return "Seed signing key for participantContextId " + participantContextId;
+                }
+
+                @Override
+                public void initialize(ServiceExtensionContext context) {
+                    try {
+                        vault.storeSecret(participantContextId, SIGNING_KEY_ALIAS, new ECKeyGenerator(Curve.P_256).generate().toJSONString());
+                    } catch (JOSEException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            };
         }
     }
 

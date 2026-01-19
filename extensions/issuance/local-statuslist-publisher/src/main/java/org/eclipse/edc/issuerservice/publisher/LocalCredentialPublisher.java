@@ -18,17 +18,18 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.spi.result.Result;
 
+import static org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialUrl.createUrl;
+
 public class LocalCredentialPublisher implements StatusListCredentialPublisher {
     private final String baseUrl;
 
     public LocalCredentialPublisher(String baseUrl) {
-        this.baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+        this.baseUrl = baseUrl;
     }
 
     @Override
     public Result<String> publish(VerifiableCredentialResource verifiableCredentialResource) {
-        var url = baseUrl + verifiableCredentialResource.getVerifiableCredential().credential().getId();
-        return Result.success(url);
+        return Result.success(createUrl(baseUrl, verifiableCredentialResource));
     }
 
 }

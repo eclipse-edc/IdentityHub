@@ -145,7 +145,7 @@ public class BitstringStatusListManager implements StatusListManager {
                 .issuanceDate(now)
                 .expirationDate(now.plus(365, ChronoUnit.DAYS)) //todo: make configurable
                 .issuer(new Issuer(participantDid))
-                .type(BITSTRING_STATUS_LIST)
+                .type("BitstringStatusListCredential")
                 .build();
 
         // sign and package in resource

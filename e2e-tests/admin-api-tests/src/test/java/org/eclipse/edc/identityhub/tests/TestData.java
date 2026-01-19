@@ -15,12 +15,14 @@
 package org.eclipse.edc.identityhub.tests;
 
 public class TestData {
-    public static final String EXAMPLE_REVOCATION_CREDENTIAL = """
+
+    public static String exampleRevocationCredential(String credentialId) {
+        return """
             {
               "@context": [
                 "https://www.w3.org/ns/credentials/v2"
               ],
-              "id": "https://example.com/credentials/status/3",
+              "id": "%s",
               "type": ["VerifiableCredential", "BitstringStatusListCredential"],
               "issuer": "did:example:12345",
               "validFrom": "2021-04-05T14:27:40Z",
@@ -31,13 +33,16 @@ public class TestData {
                 "encodedList": "uH4sIAAAAAAAAA-3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAIC3AYbSVKsAQAAA"
               }
             }
-            """;
-    public static final String EXAMPLE_REVOCATION_CREDENTIAL_WITH_STATUS_BIT_SET = """
+            """.formatted(credentialId);
+    }
+
+    public static String exampleRevocationCredentialWithStatusBitSet(String credentialId) {
+        return """
             {
               "@context": [
                 "https://www.w3.org/ns/credentials/v2"
               ],
-              "id": "https://example.com/credentials/status/3",
+              "id": "%s",
               "type": ["VerifiableCredential", "BitstringStatusListCredential"],
               "issuer": "did:example:12345",
               "validFrom": "2021-04-05T14:27:40Z",
@@ -48,7 +53,8 @@ public class TestData {
                 "encodedList": "H4sIAAAAAAAA/+3OMQ0AAAgDsOHfNBp2kZBWQRMAAAAAAAAAAAAAAL6Z6wAAAAAAtQVQdb5gAEAAAA=="
               }
             }
-            """;
+            """.formatted(credentialId);
+    }
 
     public static final String EXAMPLE_REVOCATION_CREDENTIAL_JWT = """
             eyJraWQiOiJFeEhrQk1XOWZtYmt2VjI2Nm1ScHVQMnNVWV9OX0VXSU4xbGFwVXpPOHJvIiwiYWxnIjoiRVMyNTYifQ.eyJAY29udGV4dCI6W
@@ -73,8 +79,4 @@ public class TestData {
             """;
 
     public static final String ISSUER_RUNTIME_NAME = "issuerservice";
-    public static final String ISSUER_RUNTIME_ID = "issuerservice";
-
-    public static final String[] ISSUER_RUNTIME_SQL_MODULES = new String[]{":dist:bom:issuerservice-bom", ":dist:bom:issuerservice-feature-sql-bom"};
-    public static final String[] ISSUER_RUNTIME_MEM_MODULES = new String[]{":dist:bom:issuerservice-bom"};
 }

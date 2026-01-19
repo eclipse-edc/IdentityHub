@@ -26,6 +26,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialUrl;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
@@ -55,15 +56,14 @@ public class StatusListCredentialController {
     public Response resolveStatusListCredential(@HeaderParam("Accept") @DefaultValue(MediaType.WILDCARD) String acceptHeader,
                                                 @Context ContainerRequestContext context) {
 
-        var httpUrl = context.getUriInfo().getAbsolutePath();
         if (!SUPPORTED_TYPES.contains(acceptHeader)) {
             return Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE)
                     .entity("Supported media types are: %s".formatted(SUPPORTED_TYPES))
                     .build();
         }
 
-        var split = httpUrl.getPath().split("/");
-        var credentialId = split[split.length - 1];
+        var httpUrl = context.getUriInfo().getAbsolutePath();
+        var credentialId = StatusListCredentialUrl.extractIdFromUrl(httpUrl);
 
         var query = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("verifiableCredential.credential.id", "=", credentialId))
