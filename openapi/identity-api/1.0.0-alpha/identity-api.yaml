@@ -1641,6 +1641,10 @@ components:
       properties:
         action:
           $ref: "#/components/schemas/Action"
+        consequences:
+          type: array
+          items:
+            $ref: "#/components/schemas/Duty"
         constraints:
           type: array
           items:
