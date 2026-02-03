@@ -420,7 +420,6 @@ maven/mavencentral/org.glassfish.hk2/osgi-resource-locator/3.0.0, EPL-2.0 OR GPL
 maven/mavencentral/org.glassfish.jersey.containers/jersey-container-servlet/4.0.0, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.jersey
 maven/mavencentral/org.glassfish.jersey.core/jersey-client/4.0.0, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.jersey
 maven/mavencentral/org.glassfish.jersey.core/jersey-common/4.0.0, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.jersey
-maven/mavencentral/org.glassfish.jersey.core/jersey-common/4.0.2, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.jersey
 maven/mavencentral/org.glassfish.jersey.core/jersey-server/4.0.0, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.jersey
 maven/mavencentral/org.glassfish.jersey.ext/jersey-entity-filtering/4.0.0, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.jersey
 maven/mavencentral/org.glassfish.jersey.inject/jersey-hk2/4.0.0, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.jersey
