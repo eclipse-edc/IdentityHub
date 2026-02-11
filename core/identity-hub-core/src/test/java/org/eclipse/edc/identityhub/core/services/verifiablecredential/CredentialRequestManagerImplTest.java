@@ -35,6 +35,7 @@ import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -101,6 +102,7 @@ class CredentialRequestManagerImplTest {
                 .thenReturn(success(Json.createObjectBuilder().build()));
         when(sts.createToken(anyString(), anyMap(), ArgumentMatchers.isNull())).thenReturn(success(TokenRepresentation.Builder.newInstance().build()));
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
+        when(store.save(any())).thenReturn(StoreResult.success());
     }
 
     private IdentityHubParticipantContext participantContext() {

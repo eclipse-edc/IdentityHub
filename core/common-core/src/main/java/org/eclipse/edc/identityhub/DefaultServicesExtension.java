@@ -14,15 +14,7 @@
 
 package org.eclipse.edc.identityhub;
 
-import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.decentralizedclaims.spi.verification.SignatureSuiteRegistry;
-import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
-import org.eclipse.edc.iam.verifiablecredentials.revocation.RevocationServiceRegistryImpl;
-import org.eclipse.edc.iam.verifiablecredentials.revocation.bitstring.BitstringStatusListRevocationService;
-import org.eclipse.edc.iam.verifiablecredentials.revocation.statuslist2021.StatusList2021RevocationService;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.bitstringstatuslist.BitstringStatusListStatus;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.revocation.statuslist2021.StatusList2021Status;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialOfferStore;
@@ -47,16 +39,13 @@ import org.eclipse.edc.security.token.jwt.DefaultJwsSignerProvider;
 import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
 import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
-import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 
 import java.net.URISyntaxException;
 import java.time.Clock;
-import java.util.List;
 
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DCP_CONTEXT_URL;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
@@ -65,7 +54,6 @@ import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.JWS_2020
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.PRESENTATION_EXCHANGE_URL;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.PRESENTATION_SUBMISSION_URL;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.W3C_CREDENTIALS_URL;
-import static org.eclipse.edc.iam.verifiablecredentials.spi.validation.TrustedIssuerRegistry.WILDCARD;
 import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.ACCESS_TOKEN_SCOPE_CLAIM;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.DCP_PRESENTATION_ACCESS_TOKEN_CONTEXT;
@@ -74,6 +62,7 @@ import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConsta
 
 @Extension(NAME)
 public class DefaultServicesExtension implements ServiceExtension {
+
     public static final String PRESENTATION_EXCHANGE_V_1_JSON = "presentation-exchange.v1.json";
     public static final String PRESENTATION_QUERY_V_08_JSON = "dcp.v08.json";
     public static final String DSPACE_DCP_V_1_0_JSON_LD = "dcp.v1.0.jsonld";
@@ -81,23 +70,14 @@ public class DefaultServicesExtension implements ServiceExtension {
     public static final String DID_JSON = "did.json";
     public static final String JWS_2020_JSON = "jws2020.json";
     public static final String CREDENTIALS_V_1_JSON = "credentials.v1.json";
-
-
     public static final String NAME = "IdentityHub Default Services Extension";
-    public static final long DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS = 15 * 60 * 1000L;
+
     static final String ACCESSTOKEN_JTI_VALIDATION_ACTIVATE = "edc.iam.accesstoken.jti.validation";
-    @Setting(description = "Activates the JTI check: access tokens can only be used once to guard against replay attacks", defaultValue = "false", key = ACCESSTOKEN_JTI_VALIDATION_ACTIVATE)
+    @Setting(key = ACCESSTOKEN_JTI_VALIDATION_ACTIVATE, description = "Activates the JTI check: access tokens can only be used once to guard against replay attacks", defaultValue = "false")
     private boolean activateJtiCheck;
-    @Setting(description = "Validity period of cached StatusList2021 credential entries in milliseconds.", defaultValue = DEFAULT_REVOCATION_CACHE_VALIDITY_MILLIS + "", key = "edc.iam.credential.revocation.cache.validity")
-    private long revocationCacheValidity;
-    @Setting(key = "edc.iam.credential.revocation.mimetype", description = "A comma-separated list of accepted content types of the revocation list credential.", defaultValue = WILDCARD)
-    private String contentTypes;
 
     @Inject
     private TokenValidationRulesRegistry registry;
-    @Inject
-    private TypeManager typeManager;
-    private RevocationServiceRegistry revocationService;
     @Inject
     private PrivateKeyResolver privateKeyResolver;
     @Inject
@@ -110,18 +90,11 @@ public class DefaultServicesExtension implements ServiceExtension {
     private JsonLd jsonLd;
     @Inject
     private JtiValidationStore jtiValidationStore;
-    @Inject
-    private EdcHttpClient httpClient;
-    @Inject
-    private TokenValidationService tokenValidationService;
-    @Inject
-    private DidPublicKeyResolver didPublicKeyResolver;
 
     @Override
     public String name() {
         return NAME;
     }
-
 
     @Override
     public void initialize(ServiceExtensionContext context) {
@@ -159,17 +132,6 @@ public class DefaultServicesExtension implements ServiceExtension {
         context.getMonitor().warning("Using the default EdcScopeToCriterionTransformer. This is not intended for production use and should be replaced " +
                 "with a specialized implementation for your dataspace");
         return new EdcScopeToCriterionTransformer();
-    }
-
-    @Provider(isDefault = true)
-    public RevocationServiceRegistry createRevocationListService(ServiceExtensionContext context) {
-        if (revocationService == null) {
-            revocationService = new RevocationServiceRegistryImpl(context.getMonitor());
-            var acceptedContentTypes = List.of(contentTypes.split(","));
-            revocationService.addService(StatusList2021Status.TYPE, new StatusList2021RevocationService(typeManager.getMapper(), revocationCacheValidity, acceptedContentTypes, httpClient, tokenValidationService, didPublicKeyResolver));
-            revocationService.addService(BitstringStatusListStatus.TYPE, new BitstringStatusListRevocationService(typeManager.getMapper(), revocationCacheValidity, acceptedContentTypes, httpClient, tokenValidationService, didPublicKeyResolver));
-        }
-        return revocationService;
     }
 
     @Provider(isDefault = true)
