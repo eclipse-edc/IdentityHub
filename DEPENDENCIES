@@ -482,7 +482,7 @@ maven/mavencentral/org.testcontainers/junit-jupiter/1.21.4, MIT, approved, clear
 maven/mavencentral/org.testcontainers/postgresql/1.21.4, MIT, approved, #20876
 maven/mavencentral/org.testcontainers/testcontainers-database-commons/2.0.3, Apache-2.0, approved, #25271
 maven/mavencentral/org.testcontainers/testcontainers-jdbc/2.0.3, Apache-2.0, approved, #25272
-maven/mavencentral/org.testcontainers/testcontainers-junit-jupiter/2.0.3, , restricted, clearlydefined
+maven/mavencentral/org.testcontainers/testcontainers-junit-jupiter/2.0.3, MIT, approved, #26032
 maven/mavencentral/org.testcontainers/testcontainers-postgresql/2.0.3, MIT, approved, #25273
 maven/mavencentral/org.testcontainers/testcontainers/1.21.4, MIT, approved, #20874
 maven/mavencentral/org.testcontainers/testcontainers/2.0.3, MIT, approved, #25274
