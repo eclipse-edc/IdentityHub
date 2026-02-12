@@ -111,6 +111,7 @@ public interface DefaultRuntimes {
                     put("edc.iam.sts.privatekey.alias", "user1-alias"); //this must be "username"-alias
                     put("edc.iam.did.web.use.https", "false");
                     put("edc.encryption.strict", "false");
+                    put("edc.iam.credential.revocation.mimetype", "*/*");
                 }
             });
         }
