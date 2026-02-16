@@ -19,7 +19,7 @@ swagger = "2.2.42"
 rsApi = "4.0.0"
 testcontainers = "1.21.4"
 tink = "1.20.0"
-opentelemetry = "2.24.0"
+opentelemetry = "2.25.0"
 
 [libraries]
 
