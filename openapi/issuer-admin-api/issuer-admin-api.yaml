@@ -361,6 +361,51 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/participants/{participantContextId}/attestations/query:
+    post:
+      tags:
+      - Issuer Service Attestation Admin API
+      description: Query attestation definitions
+      operationId: queryAttestations
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuerySpec"
+      responses:
+        "200":
+          description: A list of attestation metadata.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttestationDefinition"
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantContextId}/holders/query:
     post:
       tags:
@@ -408,51 +453,6 @@ paths:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: The holder was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantContextId}/attestations/query:
-    post:
-      tags:
-      - Issuer Service Attestation Admin API
-      description: Query attestation definitions
-      operationId: queryAttestations
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/QuerySpec"
-      responses:
-        "200":
-          description: A list of attestation metadata.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AttestationDefinition"
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
           content:
             application/json:
               schema:
@@ -1042,20 +1042,18 @@ components:
           type: object
           additionalProperties:
             type: object
-    Holder:
+    AttestationDefinition:
       type: object
       properties:
-        anonymous:
-          type: boolean
+        attestationType:
+          type: string
+        configuration:
+          type: object
+          additionalProperties:
+            type: object
         createdAt:
           type: integer
           format: int64
-        did:
-          type: string
-        holderId:
-          type: string
-        holderName:
-          type: string
         id:
           type: string
         lastModifiedAt:
@@ -1063,10 +1061,6 @@ components:
           format: int64
         participantContextId:
           type: string
-        properties:
-          type: object
-          additionalProperties:
-            type: object
     QuerySpec:
       type: object
       properties:
@@ -1096,18 +1090,20 @@ components:
           type: object
         operator:
           type: string
-    AttestationDefinition:
+    Holder:
       type: object
       properties:
-        attestationType:
-          type: string
-        configuration:
-          type: object
-          additionalProperties:
-            type: object
+        anonymous:
+          type: boolean
         createdAt:
           type: integer
           format: int64
+        did:
+          type: string
+        holderId:
+          type: string
+        holderName:
+          type: string
         id:
           type: string
         lastModifiedAt:
@@ -1115,6 +1111,10 @@ components:
           format: int64
         participantContextId:
           type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: object
     CredentialDefinitionDto:
       type: object
       properties:
