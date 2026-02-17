@@ -135,6 +135,7 @@ public class CredentialApiEndToEndTest {
                     .issuerId("issuer-id")
                     .holderId("holder-id")
                     .id(UUID.randomUUID().toString())
+                    .participantContextId(USER)
                     .credential(new VerifiableCredentialContainer(credentialJwt, CredentialFormat.VC1_0_JWT, credential))
                     .build();
         } catch (JsonProcessingException e) {
@@ -471,7 +472,6 @@ public class CredentialApiEndToEndTest {
         @Test
         void sendCredentialOffer_holderDidResolutionFailure(IssuerService issuer, HolderStore holderStore) {
 
-            var port = getFreePort();
             when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:holder")))
                     .thenReturn(Result.failure("did not found"));
 

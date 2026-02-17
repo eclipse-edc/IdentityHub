@@ -11,4 +11,5 @@
 #       Cofinity-X - initial API and implementation
 #
 #
+org.eclipse.edc.issuerservice.credentials.CredentialDefaultServiceExtension
 org.eclipse.edc.issuerservice.credentials.CredentialServiceExtension

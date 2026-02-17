@@ -62,7 +62,6 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
-import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
 import org.hamcrest.Matchers;
@@ -237,51 +236,50 @@ public class DcpIssuanceFlowAllInOneTest {
                                 assertThat(t.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
                             }));
 
+            await().pollInterval(INTERVAL).atMost(TIMEOUT).untilAsserted(() -> {
+                // checks that the credential was issued correctly: we expect 1 status list credential, 1 "holder" credential and 1 tracked issuance
+                var credentials = issuer.getCredentialsForParticipant(ISSUER_ID);
+                assertThat(credentials).hasSizeGreaterThanOrEqualTo(3);
+                assertThat(credentials).anySatisfy(vc -> {
+                    assertThat(vc.getUsage()).isEqualTo(CredentialUsage.Holder);
+                    assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+                    assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
+                    assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                    assertThat(vc.getVerifiableCredential().credential().getCredentialStatus())
+                            .hasSize(1)
+                            .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
+                });
+                assertThat(credentials).anySatisfy(vc -> {
+                    assertThat(vc.getUsage()).isEqualTo(CredentialUsage.IssuanceTracking);
+                    assertThat(vc.getVerifiableCredential().rawVc()).isNull();
+                });
+                assertThat(credentials).anySatisfy(vc -> {
+                    assertThat(vc.getUsage()).isEqualTo(CredentialUsage.StatusList);
+                    assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
+                    assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                    assertThat(vc.getVerifiableCredential().credential().getCredentialSubject()).isNotEmpty()
+                            .anySatisfy(t -> {
+                                assertThat(t.getClaim("", "statusPurpose").toString()).isEqualTo("revocation");
+                            });
+                });
+                // verify that the status credential on the issuer side is accessible
+                assertThat(credentials)
+                        .anySatisfy(vc -> {
+                            assertThat(vc.getUsage()).isEqualTo(CredentialUsage.StatusList);
+                            assertThat(vc.getMetadata()).isNotNull().isNotEmpty().containsKey("publicUrl");
 
-            // checks that the credential was issued correctly: we expect 1 status list credential, 1 "holder" credential and 1 tracked issuance
-            var credentials = issuer.getCredentialsForParticipant(ISSUER_ID);
-            assertThat(credentials)
-                    .hasSizeGreaterThanOrEqualTo(3);
-            assertThat(credentials).anySatisfy(vc -> {
-                assertThat(vc.getUsage()).isEqualTo(CredentialUsage.Holder);
-                assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
-                assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
-                assertThat(vc.getHolderId()).isEqualTo(participantDid);
-                assertThat(vc.getVerifiableCredential().credential().getCredentialStatus())
-                        .hasSize(1)
-                        .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
-            });
-            assertThat(credentials).anySatisfy(vc -> {
-                assertThat(vc.getUsage()).isEqualTo(CredentialUsage.IssuanceTracking);
-                assertThat(vc.getVerifiableCredential().rawVc()).isNull();
-            });
-            assertThat(credentials).anySatisfy(vc -> {
-                assertThat(vc.getUsage()).isEqualTo(CredentialUsage.StatusList);
-                assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
-                assertThat(vc.getHolderId()).isEqualTo(participantDid);
-                assertThat(vc.getVerifiableCredential().credential().getCredentialSubject()).isNotEmpty()
-                        .anySatisfy(t -> {
-                            assertThat(t.getClaim("", "statusPurpose").toString()).isEqualTo("revocation");
+                            var url = vc.getMetadata().get("publicUrl");
+                            given()
+                                    .baseUri(url.toString())
+                                    .header("Accept", "application/vc+jwt")
+                                    .get()
+                                    .then()
+                                    .log().ifValidationFails()
+                                    .statusCode(200)
+                                    .header("Content-Type", "application/vc+jwt")
+                                    .body(Matchers.notNullValue());
                         });
             });
-            // verify that the status credential on the issuer side is accessible
-            assertThat(credentials)
-                    .anySatisfy(vc -> {
-                        assertThat(vc.getUsage()).isEqualTo(CredentialUsage.StatusList);
-                        assertThat(vc.getMetadata()).isNotNull().isNotEmpty().containsKey("publicUrl");
-
-                        var url = vc.getMetadata().get("publicUrl");
-                        given()
-                                .baseUri(url.toString())
-                                .header("Accept", "application/vc+jwt")
-                                .get()
-                                .then()
-                                .log().ifValidationFails()
-                                .statusCode(200)
-                                .header("Content-Type", "application/vc+jwt")
-                                .body(Matchers.notNullValue());
-                    });
-
         }
 
         @Test
@@ -338,7 +336,7 @@ public class DcpIssuanceFlowAllInOneTest {
         }
 
         @Test
-        void testRevoke(IssuerService issuer, IdentityHub identityHub) {
+        void testRevoke(IssuerService issuer, IdentityHub identityHub) throws ParseException {
             var holderRequestId = UUID.randomUUID().toString();
 
             issuer.getIdentityEndpoint().baseRequest()
@@ -359,23 +357,12 @@ public class DcpIssuanceFlowAllInOneTest {
                                 assertThat(t.getHolderPid()).isEqualTo(holderRequestId);
                             }));
 
-            var credentials = issuer.getAdminEndpoint().baseRequest()
-                    .header("x-api-key", participantToken)
-                    .contentType(JSON)
-                    .body(Map.of(
-                            "filterExpression", List.of(
-                                    Map.of("operandLeft", "holderId", "operator", "=", "operandRight", participantDid),
-                                    Map.of("operandLeft", "usage", "operator", "=", "operandRight", "Holder")
-                            )
-                    ))
-                    .post("/v1alpha/participants/{participantContextId}/credentials/query", base64Encode(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(200)
-                    .extract()
-                    .body();
+            var keyId = SignedJWT.parse(issuer.getStatusListCredential().getVerifiableCredential().rawVc()).getHeader().getKeyID();
+            assertThat(keyId).isNotNull();
 
-            var credentialId = credentials.jsonPath().getString("[0].id");
+            var credentials = issuer.getHolderCredentials(participantDid, PARTICIPANT_ID, participantToken);
+
+            var credentialId = credentials.getString("[0].id");
             issuer.getAdminEndpoint().baseRequest()
                     .header("x-api-key", participantToken)
                     .contentType(ContentType.JSON)
@@ -388,6 +375,9 @@ public class DcpIssuanceFlowAllInOneTest {
             assertThat(identityHub.getCredential(credentialId)).isPresent().get().satisfies(credential -> {
                 assertThat(credential.getStateAsEnum()).isEqualTo(VcStatus.REVOKED);
             });
+
+            var afterRevocationKeyId = SignedJWT.parse(issuer.getStatusListCredential().getVerifiableCredential().rawVc()).getHeader().getKeyID();
+            assertThat(afterRevocationKeyId).isEqualTo(keyId);
         }
 
         @Test
@@ -502,7 +492,7 @@ public class DcpIssuanceFlowAllInOneTest {
                 var vpClaim = jwt.getJWTClaimsSet().getClaim("vp");
                 if (vpClaim == null) return List.of();
 
-                Map<String, Object> map = (Map<String, Object>) OBJECT_MAPPER.convertValue(vpClaim, Map.class);
+                var map = (Map<String, Object>) OBJECT_MAPPER.convertValue(vpClaim, Map.class);
 
                 return (List<VerifiableCredential>) map.get("verifiableCredential");
 
@@ -526,8 +516,7 @@ public class DcpIssuanceFlowAllInOneTest {
                 .configurationProvider(DefaultRuntimes.IdentityHub::config)
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
-                .build()
-                .registerSystemExtension(ServiceExtension.class, DefaultRuntimes.Issuer.seedSigningKeyFor(PARTICIPANT_ID));
+                .build();
     }
 
     @Nested
@@ -551,8 +540,7 @@ public class DcpIssuanceFlowAllInOneTest {
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .paramProvider(IssuerService.class, IssuerService::forContext)
-                .build()
-                .registerSystemExtension(ServiceExtension.class, DefaultRuntimes.Issuer.seedSigningKeyFor(PARTICIPANT_ID));
+                .build();
 
         @Order(1) // must be the first extension to be evaluated since it starts the DB server
         @RegisterExtension

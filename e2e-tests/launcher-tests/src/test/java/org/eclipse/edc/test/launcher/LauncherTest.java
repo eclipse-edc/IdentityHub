@@ -44,7 +44,6 @@ public class LauncherTest {
 
         var dockerfile = findBuildRoot().toPath().resolve("launcher").resolve(launcherName).resolve("Dockerfile");
         var runtime = new GenericContainer<>(new ImageFromDockerfile().withDockerfile(dockerfile))
-                .withEnv("edc.issuer.statuslist.signing.key.alias", "any")
                 .withEnv("edc.iam.oauth2.jwks.url", "https://example.com/jwks.jsons") // oauth2 launcher uses this
                 .waitingFor(forHealthcheck())
                 .withLogConsumer(f -> System.out.println(f.getUtf8StringWithoutLineEnding()));
