@@ -14,12 +14,7 @@
 
 package org.eclipse.edc.issuerservice.credentials;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JOSEException;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants;
@@ -27,53 +22,40 @@ import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
+import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.token.spi.TokenGenerationService;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
-import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.spi.result.ServiceResult.badRequest;
 import static org.eclipse.edc.spi.result.ServiceResult.from;
-import static org.eclipse.edc.spi.result.ServiceResult.fromFailure;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 import static org.eclipse.edc.spi.result.ServiceResult.unexpected;
 
 public class CredentialStatusServiceImpl implements CredentialStatusService {
-    public static final TypeReference<Map<String, Object>> MAP_REF = new TypeReference<>() {
-    };
     private final CredentialStore credentialStore;
     private final TransactionContext transactionContext;
-    private final ObjectMapper objectMapper;
     private final Monitor monitor;
-    private final TokenGenerationService tokenGenerationService;
-    private final Supplier<String> privateKeyAlias;
     private final StatusListInfoFactoryRegistry statusListInfoFactoryRegistry;
     private final StatusListManager statusListManager;
+    private final CredentialGeneratorRegistry credentialGeneratorRegistry;
 
-    public CredentialStatusServiceImpl(CredentialStore credentialStore,
-                                       TransactionContext transactionContext,
-                                       ObjectMapper objectMapper,
-                                       Monitor monitor,
-                                       TokenGenerationService tokenGenerationService,
-                                       Supplier<String> privateKeyAlias,
-                                       StatusListInfoFactoryRegistry statusListInfoFactoryRegistry, StatusListManager statusListManager) {
+    public CredentialStatusServiceImpl(CredentialStore credentialStore, TransactionContext transactionContext, Monitor monitor,
+                                       StatusListInfoFactoryRegistry statusListInfoFactoryRegistry, StatusListManager statusListManager,
+                                       CredentialGeneratorRegistry credentialGeneratorRegistry) {
         this.credentialStore = credentialStore;
         this.transactionContext = transactionContext;
-        this.objectMapper = objectMapper.copy()
-                .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY) // technically, credential subjects and credential status can be objects AND Arrays
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES); // e.g. @context
         this.monitor = monitor;
-        this.tokenGenerationService = tokenGenerationService;
-        this.privateKeyAlias = privateKeyAlias;
         this.statusListInfoFactoryRegistry = statusListInfoFactoryRegistry;
         this.statusListManager = statusListManager;
+        this.credentialGeneratorRegistry = credentialGeneratorRegistry;
     }
 
     @Override
@@ -119,23 +101,11 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
                 return unexpected(setStatusResult.getFailureDetail());
             }
 
-            try {
-                // update status credential
-                var updatedRevocationCredential = updateStatusCredential(revocationInfo.statusListCredential());
-
-                // update user credential
-                var cred = getCredential(holderCredentialId).getContent();
-                cred.revoke();
-
-                var merged = credentialStore.update(updatedRevocationCredential)
-                        .compose(v -> credentialStore.update(cred));
-
-                return from(merged);
-            } catch (JOSEException e) {
-                var msg = "Error signing BitstringStatusListCredential:  %s".formatted(e.getMessage());
-                monitor.warning(msg, e);
-                return unexpected(msg);
-            }
+            return updateStatusCredential(revocationInfo.statusListCredential())
+                    .compose(updatedStatusListCredential -> getCredential(holderCredentialId)
+                            .onSuccess(VerifiableCredentialResource::revoke)
+                            .compose(userCredential -> update(updatedStatusListCredential, userCredential))
+                    );
         });
     }
 
@@ -166,36 +136,28 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
         return getCredential(credentialId);
     }
 
+    private ServiceResult<Void> update(VerifiableCredentialResource... credentials) {
+        return Arrays.stream(credentials).map(credentialStore::update)
+                .reduce(StoreResult.success(), (a, b) -> a.compose(i -> b))
+                .flatMap(ServiceResult::from);
+    }
+
     private ServiceResult<VerifiableCredentialResource> getCredential(String credentialId) {
-        // credential not found -> error
-        var credentialResult = credentialStore.findById(credentialId);
-        if (credentialResult.failed()) {
-            return fromFailure(credentialResult);
-        }
-        // obtain the ID of the revocation list credential and the status index by reading the credential's status object, specifically
-        // the one with "statusPurpose = revocation"
-        var credential = credentialResult.getContent();
-        return success(credential);
+        return credentialStore.findById(credentialId).flatMap(ServiceResult::from);
     }
 
     /**
      * updates the status list credential with the new bitstring. For this, the status list credential is converted into
      * a JWT and signed with the private key.
      */
-    private VerifiableCredentialResource updateStatusCredential(VerifiableCredentialResource credentialResource) throws JOSEException {
-        // encode credential as JWT
-        var credential = credentialResource.getVerifiableCredential().credential();
+    private ServiceResult<VerifiableCredentialResource> updateStatusCredential(VerifiableCredentialResource credentialResource) {
+        var verifiableCredential = credentialResource.getVerifiableCredential();
 
-        var claims = objectMapper.convertValue(credential, MAP_REF);
-        var token = tokenGenerationService.generate(credentialResource.getParticipantContextId(), privateKeyAlias.get(), tokenParameters -> tokenParameters.claims(claims));
-
-        var newJwt = token.getContent().getToken();
-
-        var container = new VerifiableCredentialContainer(newJwt, credentialResource.getVerifiableCredential().format(), credential);
-
-        return credentialResource.toBuilder()
-                .credential(container)
-                .build();
+        return credentialGeneratorRegistry.signCredential(credentialResource.getParticipantContextId(), verifiableCredential.credential(), verifiableCredential.format())
+                .flatMap(ServiceResult::from)
+                .map(container -> credentialResource.toBuilder()
+                        .credential(container)
+                        .build());
     }
 
     private ServiceResult<StatusListInfo> getRevocationInfo(VerifiableCredentialResource resource) {
@@ -212,7 +174,7 @@ public class CredentialStatusServiceImpl implements CredentialStatusService {
         var status = revocationStatus.get();
 
         return ofNullable(statusListInfoFactoryRegistry.getInfoFactory(status.type()))
-                .map(cred -> cred.create(status))
+                .map(statusListInfoServiceResult -> statusListInfoServiceResult.create(status))
                 .orElseGet(() -> badRequest("No StatusList implementation for type '%s' found.".formatted(status.type())));
     }
 

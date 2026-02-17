@@ -154,13 +154,10 @@ in the next step.
 
 #### 4. re-encode status list credential
 
-After the status bit is updated, the status list credential object is encoded as JWT and signed with the given private
-key.
-> this private key is configured using the `edc.issuer.statuslist.signing.key.alias` config property
+After the status bit is updated, the status list credential object is encoded as JWT and signed.
 
 Technically speaking, this updates the `VerifiableCredentialResource#verifiableCredential#rawVc` value with the signed
-and
-serialized JWT.
+and serialized JWT.
 
 #### 5. update status list credential and holder credential
 

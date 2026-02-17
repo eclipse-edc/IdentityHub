@@ -44,7 +44,6 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.util.string.StringUtils;
@@ -199,8 +198,4 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .orElseThrow(() -> new ObjectNotFoundException(HolderCredentialRequest.class, holderPid));
     }
 
-    private Result<Criterion> filterByParticipantContext(String participantContext) {
-        return onEncoded(participantContext)
-                .map(pc -> new Criterion("participantContextId", "=", pc));
-    }
 }

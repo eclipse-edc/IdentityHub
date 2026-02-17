@@ -23,7 +23,6 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.jwk.Curve;
-import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -36,8 +35,8 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialSto
 import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListFactory;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfo;
+import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.json.JacksonTypeManager;
-import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -86,23 +85,25 @@ class CredentialStatusServiceImplTest {
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     private final CredentialStore credentialStore = mock();
     private final BitstringStatusListFactory bitstringStatusListFactory = mock();
-    private CredentialStatusServiceImpl revocationService;
-    private TokenGenerationService tokenGenerationService;
-    private Monitor monitor;
-    private ECKey signingKey;
+    private final TokenGenerationService tokenGenerationService = mock(TokenGenerationService.class);
+    private final Monitor monitor = mock();
     private final TestStatusListInfo statusListInfo = spy(new TestStatusListInfo());
+    private final CredentialGeneratorRegistry credentialGeneratorRegistry = mock();
+    private CredentialStatusServiceImpl revocationService;
 
     @BeforeEach
-    void setUp() throws JOSEException {
-        signingKey = new ECKeyGenerator(Curve.P_256).generate();
-        tokenGenerationService = mock(TokenGenerationService.class);
-        when(tokenGenerationService.generate(anyString(), any(), any())).thenReturn(Result.success(TokenRepresentation.Builder.newInstance().token("new-token").build()));
-        monitor = mock();
-        var reg = new StatusListInfoFactoryRegistryImpl();
-        reg.register("BitstringStatusListEntry", bitstringStatusListFactory);
-        revocationService = new CredentialStatusServiceImpl(credentialStore, new NoopTransactionContext(), objectMapper,
-                monitor, tokenGenerationService, () -> "some-private-key", reg, mock());
+    void setUp() {
+        when(credentialGeneratorRegistry.signCredential(any(), any(), any())).thenAnswer(i -> {
+            VerifiableCredential credential = i.getArgument(1);
+            CredentialFormat format = i.getArgument(2);
+            return Result.success(new VerifiableCredentialContainer("rawVc", format, credential));
+        });
+        var statusListInfoFactoryRegistry = new StatusListInfoFactoryRegistryImpl();
+        statusListInfoFactoryRegistry.register("BitstringStatusListEntry", bitstringStatusListFactory);
         when(bitstringStatusListFactory.create(any())).thenReturn(ServiceResult.success(statusListInfo));
+
+        revocationService = new CredentialStatusServiceImpl(credentialStore, new NoopTransactionContext(),
+                monitor, statusListInfoFactoryRegistry, mock(), credentialGeneratorRegistry);
     }
 
     @Nested
@@ -118,7 +119,7 @@ class CredentialStatusServiceImplTest {
             var result = revocationService.revokeCredential(CREDENTIAL_ID);
 
             assertThat(result).isSucceeded();
-            verify(tokenGenerationService).generate(anyString(), any(), any());
+            verify(credentialGeneratorRegistry).signCredential(anyString(), any(), any());
             verify(credentialStore, times(2)).update(any());
         }
 
@@ -249,6 +250,7 @@ class CredentialStatusServiceImplTest {
         claims.forEach(claimsSet::claim);
         var signedJwt = new SignedJWT(jwsHeader, claimsSet.build());
         try {
+            var signingKey = new ECKeyGenerator(Curve.P_256).generate();
             signedJwt.sign(new ECDSASigner(signingKey));
             return signedJwt;
         } catch (JOSEException e) {

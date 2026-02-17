@@ -25,7 +25,6 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerator;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
-import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
@@ -40,6 +39,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.JWT_ID;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.NOT_BEFORE;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.SUBJECT;
 
 public class JwtCredentialGenerator implements CredentialGenerator {
 
@@ -84,14 +90,26 @@ public class JwtCredentialGenerator implements CredentialGenerator {
         return signCredentialInternal(participantContextId, credential, privateKeyAlias, publicKeyId, issuerId, holderDid, type);
     }
 
-
     private Result<String> signCredentialInternal(String participantContextId, VerifiableCredential credential, String privateKeyAlias, String publicKeyId, String issuerId, String holderDid, String... types) {
-        var composedKeyId = publicKeyId;
-        if (!publicKeyId.startsWith(issuerId)) {
-            composedKeyId = issuerId + "#" + publicKeyId;
-        }
+        var composedKeyId = publicKeyId.startsWith(issuerId) ? publicKeyId : issuerId + "#" + publicKeyId;
 
-        return tokenGenerationService.generate(participantContextId, privateKeyAlias, vcDecorator(holderDid, credential, types), new KeyIdDecorator(composedKeyId))
+        TokenDecorator tokenDecorator = tokenBuilder -> {
+            var builder = tokenBuilder
+                    .claims(ISSUER, credential.getIssuer().id())
+                    .claims(ISSUED_AT, Date.from(clock.instant()))
+                    .claims(NOT_BEFORE, Date.from(credential.getIssuanceDate()))
+                    .claims(JWT_ID, UUID.randomUUID().toString())
+                    .claims(SUBJECT, holderDid)
+                    .claims(VERIFIABLE_CREDENTIAL_CLAIM, createVcClaim(credential, types));
+
+            if (credential.getExpirationDate() != null) {
+                tokenBuilder.claims(EXPIRATION_TIME, Date.from(credential.getExpirationDate()));
+            }
+
+            return builder;
+        };
+
+        return tokenGenerationService.generate(participantContextId, privateKeyAlias, tokenDecorator, new KeyIdDecorator(composedKeyId))
                 .map(TokenRepresentation::getToken);
     }
 
@@ -128,17 +146,6 @@ public class JwtCredentialGenerator implements CredentialGenerator {
         return Result.success(new CredentialStatus((String) statusClaims.get("id"),
                 (String) statusClaims.get("type"),
                 statusClaims));
-    }
-
-    private TokenDecorator vcDecorator(String participantId, VerifiableCredential credential, String... type) {
-        var now = Date.from(clock.instant());
-        return tp -> tp.claims(JwtRegisteredClaimNames.ISSUER, credential.getIssuer().id())
-                .claims(JwtRegisteredClaimNames.ISSUED_AT, now)
-                .claims(JwtRegisteredClaimNames.NOT_BEFORE, Date.from(credential.getIssuanceDate()))
-                .claims(JwtRegisteredClaimNames.JWT_ID, UUID.randomUUID().toString())
-                .claims(JwtRegisteredClaimNames.SUBJECT, participantId)
-                .claims(VERIFIABLE_CREDENTIAL_CLAIM, createVcClaim(credential, type))
-                .claims(JwtRegisteredClaimNames.EXPIRATION_TIME, Date.from(credential.getExpirationDate())); //todo: this will fail for credentials that don't have an expiration date
     }
 
     private Map<String, Object> createVcClaim(VerifiableCredential verifiableCredential, String... type) {

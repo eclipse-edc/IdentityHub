@@ -120,6 +120,19 @@ public class VerifiableCredentialResource extends IdentityResource {
         return usage;
     }
 
+    @Override
+    public String toString() {
+        return "VerifiableCredentialResource{" +
+                "usage=" + usage +
+                ", state=" + state +
+                ", timeOfLastStatusUpdate=" + timeOfLastStatusUpdate +
+                ", issuancePolicy=" + issuancePolicy +
+                ", reissuancePolicy=" + reissuancePolicy +
+                ", verifiableCredential=" + verifiableCredential +
+                ", metadata=" + metadata +
+                '}';
+    }
+
     public static class Builder extends IdentityResource.Builder<VerifiableCredentialResource, Builder> {
 
         protected Builder(VerifiableCredentialResource resource) {

@@ -21,48 +21,34 @@ import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenServ
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
 import org.eclipse.edc.issuerservice.credentials.offers.IssuerCredentialOfferServiceImpl;
-import org.eclipse.edc.issuerservice.credentials.statuslist.StatusListInfoFactoryRegistryImpl;
 import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListFactory;
-import org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringStatusListManager;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
-import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
-import org.eclipse.edc.jwt.signer.spi.JwsSignerProvider;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
-import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 
-import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.issuerservice.credentials.CredentialServiceExtension.NAME;
 import static org.eclipse.edc.issuerservice.credentials.statuslist.bitstring.BitstringConstants.BITSTRING_STATUS_LIST_ENTRY;
-import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
 @Extension(value = NAME)
 public class CredentialServiceExtension implements ServiceExtension {
-    public static final String NAME = "Issuer Service Credential Service Extension";
 
-    @Setting(description = "Alias for the private key that is intended for signing status list credentials", key = "edc.issuer.statuslist.signing.key.alias")
-    private String privateKeyAlias;
+    public static final String NAME = "Issuer Service Credential Service";
+
     @Inject
     private TransactionContext transactionContext;
     @Inject
     private CredentialStore store;
-    @Inject
-    private TypeManager typeManager;
-    @Inject
-    private JwsSignerProvider jwsSignerProvider;
     @Inject
     private HolderStore holderStore;
     @Inject
@@ -73,35 +59,27 @@ public class CredentialServiceExtension implements ServiceExtension {
     private IdentityHubParticipantContextService participantContextService;
     @Inject
     private EdcHttpClient httpClient;
-
-    @Inject(required = false)
-    private StatusListManager externalTracker;
-
     @Inject
     private CredentialGeneratorRegistry registry;
-
-    private StatusListInfoFactoryRegistry factory;
-    @Inject
-    private IdentityHubParticipantContextService particpantContextService;
-    @Inject
-    private StatusListCredentialPublisher credentialPublisher;
     @Inject
     private TypeTransformerRegistry transformerRegistry;
     @Inject
     private DcpIssuerMetadataService issuerMetadataService;
+    @Inject
+    private StatusListInfoFactoryRegistry statusListInfoFactoryRegistry;
+    @Inject
+    private StatusListManager statusListManager;
+
+    @Override
+    public String name() {
+        return NAME;
+    }
 
     @Provider
     public CredentialStatusService getStatusListService(ServiceExtensionContext context) {
-        var fact = getFactory();
+        statusListInfoFactoryRegistry.register(BITSTRING_STATUS_LIST_ENTRY, new BitstringStatusListFactory(store));
 
-        // Bitstring StatusList is provided by default. others can be added via extensions
-        fact.register(BITSTRING_STATUS_LIST_ENTRY, new BitstringStatusListFactory(store));
-
-        var manager = ofNullable(externalTracker).orElseGet(() -> new BitstringStatusListManager(store, transactionContext, registry, particpantContextService, credentialPublisher));
-
-        var tokenGenerationService = new JwtGenerationService(jwsSignerProvider);
-        return new CredentialStatusServiceImpl(store, transactionContext, typeManager.getMapper(JSON_LD), context.getMonitor(), tokenGenerationService,
-                () -> privateKeyAlias, fact, manager);
+        return new CredentialStatusServiceImpl(store, transactionContext, context.getMonitor(), statusListInfoFactoryRegistry, statusListManager, registry);
     }
 
     @Provider
@@ -111,11 +89,4 @@ public class CredentialServiceExtension implements ServiceExtension {
                 issuerMetadataService);
     }
 
-    @Provider
-    public StatusListInfoFactoryRegistry getFactory() {
-        if (factory == null) {
-            factory = new StatusListInfoFactoryRegistryImpl();
-        }
-        return factory;
-    }
 }
