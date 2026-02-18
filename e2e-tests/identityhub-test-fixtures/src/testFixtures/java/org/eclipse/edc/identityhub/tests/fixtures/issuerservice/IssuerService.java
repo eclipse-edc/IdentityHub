@@ -21,8 +21,10 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialSto
 import org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentityHub;
 import org.eclipse.edc.identityhub.tests.fixtures.common.Endpoint;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
+import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
+import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
@@ -74,6 +76,11 @@ public class IssuerService extends AbstractIdentityHub {
         return issuerApiEndpoint.get();
     }
 
+    public void createAttestationDefinition(AttestationDefinition definition) {
+        attestationDefinitionService.createAttestation(definition)
+                .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
+    }
+
     public void createCredentialDefinition(CredentialDefinition definition) {
         credentialDefinitionService.createCredentialDefinition(definition)
                 .orElseThrow(f -> new RuntimeException(f.getFailureDetail()));
@@ -109,6 +116,19 @@ public class IssuerService extends AbstractIdentityHub {
                 .statusCode(200)
                 .extract()
                 .body().jsonPath();
+    }
+
+    public void createHolder(String participantContextId, String holderId, String holderDid, String holderName) {
+        var holder = Holder.Builder.newInstance()
+                .holderId(holderId)
+                .did(holderDid)
+                .holderName(holderName)
+                .participantContextId(participantContextId)
+                .build();
+
+        holderService.createHolder(holder)
+                .orElseThrow((f) -> new RuntimeException(f.getFailureDetail()));
+
     }
 
     public List<IssuanceProcess> getIssuanceProcessesForParticipant(String participantContextId) {
