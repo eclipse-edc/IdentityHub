@@ -33,6 +33,7 @@ dependencies {
     runtimeOnly(libs.edc.sql.jtivdalidation)
     runtimeOnly(libs.edc.sql.lease.core)
     runtimeOnly(libs.edc.sql.participantcontext)
+    runtimeOnly(libs.edc.sql.participantcontext.config)
 
     // third-party deps
     runtimeOnly(libs.postgres)
