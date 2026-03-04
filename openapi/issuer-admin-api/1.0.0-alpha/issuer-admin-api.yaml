@@ -513,6 +513,47 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+    delete:
+      tags:
+      - Issuer Service Holder Admin API
+      description: Delete a holder.
+      operationId: deleteHolder
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: holderId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: The holder was deleted successfully.
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "409":
+          description: "Can't add the holder, because a object with the same ID already\
+            \ exists"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantContextId}/credentials/{credentialId}/revoke:
     post:
       tags:
