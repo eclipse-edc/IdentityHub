@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -67,6 +68,19 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
                 .compose(u -> holderService.createHolder(holder.toHolder(decodedParticipantContextId)))
                 .map(v -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/holders/%s".formatted(participantContextId, holder.id()))).build())
                 .orElseThrow(exceptionMapper(Holder.class, holder.id()));
+    }
+
+    @DELETE
+    @Path("/{holderId}")
+    @RequiredScope("issuer-admin-api:write")
+    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
+    @Override
+    public Response deleteHolder(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, @Context SecurityContext context) {
+        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
+        return authorizationService.authorize(context, decodedParticipantContextId, holderId, Holder.class)
+                .compose(u -> holderService.deleteHolder(holderId))
+                .map(v -> Response.noContent().build())
+                .orElseThrow(exceptionMapper(Holder.class,holderId));
     }
 
     @PUT

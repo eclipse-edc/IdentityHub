@@ -52,6 +52,18 @@ public interface IssuerHolderAdminApi {
     )
     Response addHolder(String participantContextId, HolderDto holder, SecurityContext context);
 
+    @Operation(description = "Delete a holder.",
+            operationId = "deleteHolder",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "The holder was deleted successfully."),
+                    @ApiResponse(responseCode = "401", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "409", description = "Can't add the holder, because a object with the same ID already exists",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
+            }
+    )
+    Response deleteHolder(String participantContextId, String holderId, SecurityContext context);
+
     @Operation(description = "Updates holder data.",
             operationId = "updateHolder",
             requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = HolderDto.class), mediaType = "application/json")),
