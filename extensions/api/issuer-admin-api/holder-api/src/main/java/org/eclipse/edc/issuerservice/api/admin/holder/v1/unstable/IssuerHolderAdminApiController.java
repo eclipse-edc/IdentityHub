@@ -60,7 +60,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
 
     @POST
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER })
     @Override
     public Response addHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
@@ -73,19 +73,19 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @DELETE
     @Path("/{holderId}")
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER })
     @Override
     public Response deleteHolder(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, @Context SecurityContext context) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
         return authorizationService.authorize(context, decodedParticipantContextId, holderId, Holder.class)
                 .compose(u -> holderService.deleteHolder(holderId))
                 .map(v -> Response.noContent().build())
-                .orElseThrow(exceptionMapper(Holder.class,holderId));
+                .orElseThrow(exceptionMapper(Holder.class, holderId));
     }
 
     @PUT
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Override
     public Response updateHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
         var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
@@ -97,7 +97,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
 
     @GET
     @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/{holderId}")
     @Override
     public Holder getHolderById(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, @Context SecurityContext context) {
@@ -110,7 +110,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
 
     @POST
     @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/query")
     @Override
     public Collection<Holder> queryHolders(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext context) {
