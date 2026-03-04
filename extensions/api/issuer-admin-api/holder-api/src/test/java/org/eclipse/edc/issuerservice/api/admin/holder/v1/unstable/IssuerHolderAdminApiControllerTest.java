@@ -150,7 +150,6 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
                 .allSatisfy(d -> assertThat(d).usingRecursiveComparison().isEqualTo(test));
     }
 
-
     @Test
     void queryHolders_noneFound() {
         when(holderService.queryHolders(any())).thenReturn(ServiceResult.success(Set.of()));
@@ -165,6 +164,43 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
 
         assertThat(dto).isEmpty();
     }
+
+    @Test
+    void deleteHolder_success() {
+        when(holderService.deleteHolder(any())).thenReturn(ServiceResult.success());
+
+        baseRequest()
+                .delete("/test-id")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(204)
+                .body(emptyString());
+    }
+
+    @Test
+    void deleteHolder_notFound() {
+        when(holderService.deleteHolder(any())).thenReturn(ServiceResult.notFound("not found"));
+
+        baseRequest()
+                .delete("/test-id")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(404)
+                .body(notNullValue());
+    }
+
+    @Test
+    void deleteHolder_whenHasCredentials() {
+        when(holderService.deleteHolder(any())).thenReturn(ServiceResult.conflict("holder has associated credentials"));
+
+        baseRequest()
+                .delete("/test-id")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(409)
+                .body(notNullValue());
+    }
+
 
     @Override
     protected Object controller() {

@@ -247,6 +247,44 @@ public class HolderApiEndToEndTest {
 
         }
 
+        @Test
+        void deleteHolder(IssuerService issuerService, HolderService service) {
+            var holder = createHolder("test-participant-id", "did:web:foo", "foobar");
+            service.createHolder(holder);
+
+            issuerService.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(authorizeUser(USER, issuerService))
+                    .delete("/v1alpha/participants/%s/holders/%s".formatted(toBase64(USER), "test-participant-id"))
+                    .then()
+                    .statusCode(204);
+        }
+
+        @Test
+        void deleteHolder_notFound(IssuerService issuerService, HolderService service) {
+
+            issuerService.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(authorizeUser(USER, issuerService))
+                    .delete("/v1alpha/participants/%s/holders/%s".formatted(toBase64(USER), "test-participant-id"))
+                    .then()
+                    .statusCode(404);
+        }
+
+        @Test
+        void deleteHolder_notAuthorized(IssuerService issuerService, HolderService service) {
+            issuerService.createParticipant(USER);
+            var holder = createHolder("test-participant-id", "did:web:foo", "foobar");
+            service.createHolder(holder);
+
+            issuerService.getAdminEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header(authorizeUser("anotherUser", issuerService))
+                    .delete("/v1alpha/participants/%s/holders/%s".formatted(toBase64(USER), "test-participant-id"))
+                    .then()
+                    .statusCode(403);
+        }
+
         protected abstract Header authorizeUser(String participantContextId, IssuerService issuerService);
 
         private Holder createHolder(String id, String did, String name) {
