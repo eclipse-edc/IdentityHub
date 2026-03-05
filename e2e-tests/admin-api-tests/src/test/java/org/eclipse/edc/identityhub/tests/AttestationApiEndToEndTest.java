@@ -59,7 +59,6 @@ public class AttestationApiEndToEndTest {
     abstract static class Tests {
 
         public static final String USER = "user";
-        public static final String USER_BASE64 = Base64.getUrlEncoder().encodeToString(USER.getBytes());
 
         @BeforeAll
         static void setup(IssuerService issuer) {
@@ -86,7 +85,7 @@ public class AttestationApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuerService))
                     .body(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
-                    .post("/v1alpha/participants/%s/attestations".formatted(USER_BASE64))
+                    .post("/v1alpha/participants/%s/attestations".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -101,7 +100,7 @@ public class AttestationApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser("anotherUser", issuer))
                     .body(createAttestationDefinition("test-id", "test-type", Map.of("foo", "bar")))
-                    .post("/v1alpha/participants/%s/attestations".formatted(USER_BASE64))
+                    .post("/v1alpha/participants/%s/attestations".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -115,7 +114,7 @@ public class AttestationApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(createAttestationDefinition("test-id", "test-failure-type", Map.of("foo", "bar")))
-                    .post("/v1alpha/participants/%s/attestations".formatted(USER_BASE64))
+                    .post("/v1alpha/participants/%s/attestations".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -148,7 +147,7 @@ public class AttestationApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("attestationType", "=", "test-type"))
                             .build())
-                    .post("/v1alpha/participants/%s/attestations/query".formatted(USER_BASE64))
+                    .post("/v1alpha/participants/%s/attestations/query".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -175,7 +174,7 @@ public class AttestationApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("attestationType", "=", "test-type"))
                             .build())
-                    .post("/v1alpha/participants/%s/attestations/query".formatted(USER_BASE64))
+                    .post("/v1alpha/participants/%s/attestations/query".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)

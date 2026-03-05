@@ -35,7 +35,6 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.CREDENTIALS;
-import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 /**
@@ -59,7 +58,7 @@ public class IdentityHub extends AbstractIdentityHub {
     }
 
     private @NotNull String storageApiBasePath(String participantContextId) {
-        return "v1/participants/%s".formatted(base64Encode(participantContextId));
+        return "v1/participants/%s".formatted((participantContextId));
     }
 
     public void waitForCredentialIssuer(String requestId, String participantContext) {

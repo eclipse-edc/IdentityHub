@@ -45,7 +45,6 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
-import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
@@ -78,11 +77,10 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{participantContextId}")
     public IdentityHubParticipantContext getParticipant(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
-        return onEncoded(participantContextId)
-                .map(decoded -> authorizationService.authorize(securityContext, decoded, decoded, IdentityHubParticipantContext.class)
-                        .compose(u -> participantContextService.getParticipantContext(decoded))
-                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, decoded)))
-                .orElseThrow(InvalidRequestException::new);
+        return authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
+                .compose(u -> participantContextService.getParticipantContext(participantContextId))
+                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
+
     }
 
     @Override
@@ -91,11 +89,9 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{participantContextId}/token")
     public String regenerateParticipantToken(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
-        return onEncoded(participantContextId)
-                .map(decoded -> authorizationService.authorize(securityContext, decoded, decoded, IdentityHubParticipantContext.class)
-                        .compose(u -> participantContextService.regenerateApiToken(decoded))
-                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, decoded)))
-                .orElseThrow(InvalidRequestException::new);
+        return authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
+                        .compose(u -> participantContextService.regenerateApiToken(participantContextId))
+                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
     }
 
     @Override
@@ -104,10 +100,8 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{participantContextId}/state")
     public void activateParticipant(@PathParam("participantContextId") String participantContextId, @QueryParam("isActive") boolean isActive) {
-        onEncoded(participantContextId)
-                .onSuccess(decoded -> participantContextService.updateParticipant(decoded, isActive ? IdentityHubParticipantContext::activate : IdentityHubParticipantContext::deactivate)
-                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, decoded)))
-                .orElseThrow(InvalidRequestException::new);
+      participantContextService.updateParticipant(participantContextId, isActive ? IdentityHubParticipantContext::activate : IdentityHubParticipantContext::deactivate)
+                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
     }
 
     @Override
@@ -116,10 +110,8 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @RequiredScope("identity-api:write")
     @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
     public void deleteParticipant(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
-        onEncoded(participantContextId)
-                .onSuccess(decoded -> participantContextService.deleteParticipantContext(decoded)
-                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, decoded)))
-                .orElseThrow(InvalidRequestException::new);
+     participantContextService.deleteParticipantContext(participantContextId)
+                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
     }
 
     @Override
@@ -128,10 +120,8 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
     @Path("/{participantContextId}/roles")
     public void updateParticipantRoles(@PathParam("participantContextId") String participantContextId, List<String> roles) {
-        onEncoded(participantContextId)
-                .onSuccess(decoded -> participantContextService.updateParticipant(decoded, participantContext -> participantContext.setRoles(roles))
-                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, decoded)))
-                .orElseThrow(InvalidRequestException::new);
+       participantContextService.updateParticipant(participantContextId, participantContext -> participantContext.setRoles(roles))
+                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
     }
 
     @GET

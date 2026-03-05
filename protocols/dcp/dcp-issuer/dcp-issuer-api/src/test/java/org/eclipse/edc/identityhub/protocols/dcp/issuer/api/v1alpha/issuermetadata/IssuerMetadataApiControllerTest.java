@@ -60,7 +60,6 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
     private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = mock();
     private final DcpIssuerMetadataService issuerMetadataService = mock();
     private final String participantContextId = "participantContextId";
-    private final String participantContextIdEncoded = Base64.getEncoder().encodeToString(participantContextId.getBytes());
 
     @ParameterizedTest
     @NullSource
@@ -75,7 +74,7 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
         when(issuerMetadataService.getIssuerMetadata(argThat(p -> p.getParticipantContextId().equals(participantContextId)))).thenReturn(ServiceResult.success(metadata));
         when(typeTransformerRegistry.transform(eq(metadata), eq(JsonObject.class))).thenReturn(Result.success(object));
-        var response = controller().getIssuerMetadata(participantContextIdEncoded, emptyAuthHeader);
+        var response = controller().getIssuerMetadata(participantContextId, emptyAuthHeader);
 
         assertThat(response).isEqualTo(object);
     }
@@ -84,7 +83,7 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
     void issuerMetadata_participantNotFound_shouldReturn401() {
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.notFound("not found"));
 
-        assertThatThrownBy(() -> controller().getIssuerMetadata(participantContextIdEncoded, generateJwt()))
+        assertThatThrownBy(() -> controller().getIssuerMetadata(participantContextId, generateJwt()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessageContaining("Invalid issuer");
 
@@ -103,7 +102,7 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
         when(issuerMetadataService.getIssuerMetadata(argThat(p -> p.getParticipantContextId().equals(participantContextId)))).thenReturn(ServiceResult.success(metadata));
         when(typeTransformerRegistry.transform(eq(metadata), eq(JsonObject.class))).thenReturn(Result.success(object));
-        var response = controller().getIssuerMetadata(participantContextIdEncoded, generateJwt());
+        var response = controller().getIssuerMetadata(participantContextId, generateJwt());
 
         assertThat(response).isEqualTo(object);
 

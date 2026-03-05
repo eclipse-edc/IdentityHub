@@ -118,7 +118,7 @@ public class DcpIssuanceFlowWithDockerTest {
         var stsPath = identityHub.getStsEndpoint().getUrl().getPath();
 
         var baseCallbackAddress = "http://0.0.0.0:%s".formatted(CALLBACK_PORT);
-        var baseCredentialServiceUrl = "http://host.docker.internal:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
+        var baseCredentialServiceUrl = "http://host.docker.internal:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, TEST_PARTICIPANT_CONTEXT_ID);
         var baseCallbackUri = URI.create(baseCallbackAddress);
 
         var response = createParticipant(identityHub, baseCredentialServiceUrl);

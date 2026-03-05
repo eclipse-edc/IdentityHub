@@ -95,7 +95,7 @@ public class DcpIssuerIssuanceFlowTest {
         var holderDid = "did:web:localhost%%3A%s:holder".formatted(CALLBACK_PORT);
 
         var baseCallbackUrl = "http://localhost:%s".formatted(CALLBACK_PORT);
-        var baseIssuerServiceUrl = "http://localhost:%s%s/v1alpha/participants/%s".formatted(issuancePort, issuancePath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
+        var baseIssuerServiceUrl = "http://localhost:%s%s/v1alpha/participants/%s".formatted(issuancePort, issuancePath, TEST_PARTICIPANT_CONTEXT_ID);
         var baseCallbackUri = URI.create(baseCallbackUrl);
 
         // prepare the issuer service:

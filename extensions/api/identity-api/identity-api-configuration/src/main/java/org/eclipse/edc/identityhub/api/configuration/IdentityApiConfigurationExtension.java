@@ -17,7 +17,6 @@ package org.eclipse.edc.identityhub.api.configuration;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
-import org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
@@ -66,7 +65,6 @@ public class IdentityApiConfigurationExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        ParticipantContextId.setMonitor(context.getMonitor());
         portMappingRegistry.register(new PortMapping(IDENTITY, apiConfiguration.port(), apiConfiguration.path()));
 
         registerVersionInfo(getClass().getClassLoader());

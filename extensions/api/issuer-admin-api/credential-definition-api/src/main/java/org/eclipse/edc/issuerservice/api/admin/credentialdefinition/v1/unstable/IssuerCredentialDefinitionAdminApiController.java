@@ -41,7 +41,6 @@ import java.net.URI;
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
@@ -64,9 +63,8 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
     @Override
     public Response createCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto definitionDto, @Context SecurityContext context) {
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.authorize(context, decodedParticipantContextId, decodedParticipantContextId, IdentityHubParticipantContext.class)
-                .compose(u -> credentialDefinitionService.createCredentialDefinition(definitionDto.toCredentialDefinition(decodedParticipantContextId)))
+        return authorizationService.authorize(context, participantContextId, participantContextId, IdentityHubParticipantContext.class)
+                .compose(u -> credentialDefinitionService.createCredentialDefinition(definitionDto.toCredentialDefinition(participantContextId)))
                 .map(v -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/credentialdefinitions/%s".formatted(participantContextId, definitionDto.getId()))).build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, definitionDto.getId()));
     }
@@ -76,9 +74,8 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
     @Override
     public Response updateCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto credentialDefinition, @Context SecurityContext context) {
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.authorize(context, decodedParticipantContextId, credentialDefinition.getId(), CredentialDefinition.class)
-                .compose(u -> credentialDefinitionService.updateCredentialDefinition(credentialDefinition.toCredentialDefinition(decodedParticipantContextId)))
+        return authorizationService.authorize(context, participantContextId, credentialDefinition.getId(), CredentialDefinition.class)
+                .compose(u -> credentialDefinitionService.updateCredentialDefinition(credentialDefinition.toCredentialDefinition(participantContextId)))
                 .map(v -> Response.ok().build())
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinition.getId()));
     }
@@ -89,7 +86,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Path("/{credentialDefinitionId}")
     @Override
     public CredentialDefinition getCredentialDefinitionById(@PathParam("participantContextId") String participantContextId, @PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
-        return authorizationService.authorize(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), credentialDefinitionId, CredentialDefinition.class)
+        return authorizationService.authorize(context, participantContextId, credentialDefinitionId, CredentialDefinition.class)
                 .compose(u -> credentialDefinitionService.findCredentialDefinitionById(credentialDefinitionId))
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinitionId));
     }
@@ -100,13 +97,12 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Path("/query")
     @Override
     public Collection<CredentialDefinition> queryCredentialDefinitions(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext context) {
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        var spec = querySpec.toBuilder().filter(filterByParticipantContextId(decodedParticipantContextId)).build();
+        var spec = querySpec.toBuilder().filter(filterByParticipantContextId(participantContextId)).build();
         var definitions = credentialDefinitionService.queryCredentialDefinitions(spec)
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, null));
 
         return definitions.stream()
-                .filter(definition -> authorizationService.authorize(context, decodedParticipantContextId, definition.getId(), CredentialDefinition.class).succeeded())
+                .filter(definition -> authorizationService.authorize(context, participantContextId, definition.getId(), CredentialDefinition.class).succeeded())
                 .toList();
     }
 
@@ -116,7 +112,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
     @Path("/{credentialDefinitionId}")
     @Override
     public void deleteCredentialDefinitionById(@PathParam("participantContextId") String participantContextId, @PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
-        authorizationService.authorize(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), credentialDefinitionId, CredentialDefinition.class)
+        authorizationService.authorize(context, participantContextId, credentialDefinitionId, CredentialDefinition.class)
                 .compose(u -> credentialDefinitionService.deleteCredentialDefinition(credentialDefinitionId))
                 .orElseThrow(exceptionMapper(CredentialDefinition.class, credentialDefinitionId));
     }

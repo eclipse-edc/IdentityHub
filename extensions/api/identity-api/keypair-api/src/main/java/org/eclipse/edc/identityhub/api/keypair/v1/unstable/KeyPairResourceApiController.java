@@ -44,7 +44,6 @@ import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler.exceptionMapper;
-import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 @Consumes(APPLICATION_JSON)
@@ -65,10 +64,10 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @GET
     @Path("/{keyPairId}")
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
     @Override
     public KeyPairResource getKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String id, @Context SecurityContext securityContext) {
-        authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), id, KeyPairResource.class).orElseThrow(exceptionMapper(KeyPairResource.class, id));
+        authorizationService.authorize(securityContext, participantContextId, id, KeyPairResource.class).orElseThrow(exceptionMapper(KeyPairResource.class, id));
 
         var result = keyPairService.query(KeyPairResource.queryById(id).build())
                 .orElseThrow(exceptionMapper(KeyPairResource.class, id));
@@ -83,36 +82,33 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     @GET
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
     @Override
     public Collection<KeyPairResource> queryKeyPairByParticipantContextId(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
-        return onEncoded(participantContextId).map(decoded -> {
-            var query = queryByParticipantContextId(decoded).build();
-            return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, decoded)).stream().filter(kpr -> authorizationService.authorize(securityContext, decoded, kpr.getId(), KeyPairResource.class).succeeded()).toList();
-        }).orElseThrow(InvalidRequestException::new);
+
+        var query = queryByParticipantContextId(participantContextId).build();
+        return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, participantContextId)).stream().filter(kpr -> authorizationService.authorize(securityContext, participantContextId, kpr.getId(), KeyPairResource.class).succeeded()).toList();
     }
 
     @PUT
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER })
     @Override
     public void addKeyPair(@PathParam("participantContextId") String participantContextId, KeyDescriptor keyDescriptor, @QueryParam("makeDefault") boolean makeDefault, @Context SecurityContext securityContext) {
         keyDescriptorValidator.validate(keyDescriptor).orElseThrow(ValidationFailureException::new);
-        onEncoded(participantContextId)
-                .onSuccess(decoded ->
-                        authorizationService.authorize(securityContext, decoded, decoded, IdentityHubParticipantContext.class)
-                                .compose(u -> keyPairService.addKeyPair(decoded, keyDescriptor, makeDefault))
-                                .orElseThrow(exceptionMapper(KeyPairResource.class)))
-                .orElseThrow(InvalidRequestException::new);
+
+        authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
+                .compose(u -> keyPairService.addKeyPair(participantContextId, keyDescriptor, makeDefault))
+                .orElseThrow(exceptionMapper(KeyPairResource.class));
     }
 
     @POST
     @Path("/{keyPairId}/activate")
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER })
     @Override
     public void activateKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String keyPairResourceId, @Context SecurityContext context) {
-        authorizationService.authorize(context, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), keyPairResourceId, KeyPairResource.class)
+        authorizationService.authorize(context, participantContextId, keyPairResourceId, KeyPairResource.class)
                 .compose(u -> keyPairService.activate(keyPairResourceId)).orElseThrow(exceptionMapper(KeyPairResource.class, keyPairResourceId));
 
     }
@@ -120,26 +116,26 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     @POST
     @Path("/{keyPairId}/rotate")
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER })
     @Override
     public void rotateKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String keyPairId, @Nullable KeyDescriptor newKey, @QueryParam("duration") long duration, @Context SecurityContext securityContext) {
         if (newKey != null) {
             keyDescriptorValidator.validate(newKey).orElseThrow(ValidationFailureException::new);
         }
-        authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), keyPairId, KeyPairResource.class)
+        authorizationService.authorize(securityContext, participantContextId, keyPairId, KeyPairResource.class)
                 .compose(u -> keyPairService.rotateKeyPair(keyPairId, newKey, duration)).orElseThrow(exceptionMapper(KeyPairResource.class, keyPairId));
     }
 
     @POST
     @Path("/{keyPairId}/revoke")
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER })
     @Override
     public void revokeKeyPair(@PathParam("participantContextId") String participantContextId, @PathParam("keyPairId") String id, KeyDescriptor newKey, @Context SecurityContext securityContext) {
         if (newKey != null) {
             keyDescriptorValidator.validate(newKey).orElseThrow(ValidationFailureException::new);
         }
-        authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), id, KeyPairResource.class)
+        authorizationService.authorize(securityContext, participantContextId, id, KeyPairResource.class)
                 .compose(u -> keyPairService.revokeKey(id, newKey)).orElseThrow(exceptionMapper(KeyPairResource.class, id));
     }
 }

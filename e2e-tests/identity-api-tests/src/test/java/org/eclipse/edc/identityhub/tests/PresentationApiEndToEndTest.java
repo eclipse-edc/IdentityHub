@@ -69,7 +69,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -129,7 +128,6 @@ public class PresentationApiEndToEndTest {
                 }
                 """;
         private static final String TEST_PARTICIPANT_CONTEXT_ID = "consumer";
-        private static final String TEST_PARTICIPANT_CONTEXT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(TEST_PARTICIPANT_CONTEXT_ID.getBytes());
         private static final ObjectMapper OBJECT_MAPPER = JacksonJsonLd.createObjectMapper()
                 .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
                 .enable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT);
@@ -166,7 +164,7 @@ public class PresentationApiEndToEndTest {
 
             identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType("application/json")
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(401)
                     .extract().body().asString();
@@ -188,7 +186,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + generateSiToken())
                     .body(query)
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(400)
                     .extract().body().asString();
@@ -216,7 +214,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + generateSiToken())
                     .body(query)
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(501)
                     .extract().body().asString();
@@ -234,7 +232,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(401)
                     .log().ifValidationFails()
@@ -256,7 +254,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(401)
                     .log().ifValidationFails()
@@ -278,7 +276,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(401)
                     .log().ifValidationFails()
@@ -322,7 +320,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_ADDITIONAL_SCOPE)
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifError()
                     .statusCode(403)
@@ -343,7 +341,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
                     .log().ifValidationFails()
@@ -380,7 +378,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
                     .log().ifValidationFails()
@@ -433,7 +431,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
                     .log().ifValidationFails()
@@ -471,7 +469,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
                     .log().ifValidationFails()
@@ -531,7 +529,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
                     .log().ifError()
@@ -568,7 +566,7 @@ public class PresentationApiEndToEndTest {
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
                     // attempt to request the presentation for a different participant than the one who issued the access token
-                    .post("/v1/participants/%s/presentations/query".formatted(Base64.getUrlEncoder().encodeToString("attacker".getBytes())))
+                    .post("/v1/participants/%s/presentations/query".formatted("attacker"))
                     .then()
                     .statusCode(401)
                     .log().ifValidationFails();
@@ -600,7 +598,7 @@ public class PresentationApiEndToEndTest {
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE)
                     // attempt to request the presentation for a different participant than the one who issued the access token
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(401)
                     .log().ifValidationFails()
@@ -642,7 +640,7 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
-                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID_ENCODED))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
                     .log().ifValidationFails()

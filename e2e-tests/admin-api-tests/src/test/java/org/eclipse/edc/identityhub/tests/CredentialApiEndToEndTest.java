@@ -176,7 +176,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -199,7 +199,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -216,7 +216,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
@@ -239,7 +239,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser("anotherUser", issuer))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -255,7 +255,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
@@ -286,7 +286,7 @@ public class CredentialApiEndToEndTest {
                     .baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
-                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/test-cred/revoke".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
@@ -307,7 +307,7 @@ public class CredentialApiEndToEndTest {
                     .body(QuerySpec.Builder.newInstance()
                             .filter(new Criterion("issuerId", "=", "issuer-id"))
                             .build())
-                    .post("/v1alpha/participants/%s/credentials/query".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/query".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -328,7 +328,7 @@ public class CredentialApiEndToEndTest {
                     .body(QuerySpec.Builder.newInstance()
                             .filter(new Criterion("issuerId", "=", "issuer-id"))
                             .build())
-                    .post("/v1alpha/participants/%s/credentials/query".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/query".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -349,7 +349,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get("/v1alpha/participants/%s/credentials/test-cred/status".formatted(toBase64(USER)))
+                    .get("/v1alpha/participants/%s/credentials/test-cred/status".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -370,7 +370,7 @@ public class CredentialApiEndToEndTest {
             issuer.getAdminEndpoint()
                     .baseRequest()
                     .header(authorizeUser("anotherUser", issuer))
-                    .get("/v1alpha/participants/%s/credentials/test-cred/status".formatted(toBase64(USER)))
+                    .get("/v1alpha/participants/%s/credentials/test-cred/status".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -417,7 +417,7 @@ public class CredentialApiEndToEndTest {
                         .contentType(JSON)
                         .header(authorizeUser(USER, issuer))
                         .body(getOfferRequestBody())
-                        .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                        .post("/v1alpha/participants/%s/credentials/offer".formatted(USER))
                         .then()
                         .log().ifValidationFails()
                         .statusCode(204);
@@ -462,7 +462,7 @@ public class CredentialApiEndToEndTest {
                         .contentType(JSON)
                         .header(authorizeUser(USER, issuer))
                         .body(getOfferRequestBody())
-                        .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                        .post("/v1alpha/participants/%s/credentials/offer".formatted(USER))
                         .then()
                         .log().ifValidationFails()
                         .statusCode(400);
@@ -486,7 +486,7 @@ public class CredentialApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(getOfferRequestBody())
-                    .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/offer".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -501,7 +501,7 @@ public class CredentialApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(getOfferRequestBody())
-                    .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/offer".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
@@ -523,7 +523,7 @@ public class CredentialApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser("another-issuer", issuer))
                     .body(getOfferRequestBody())
-                    .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/offer".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -544,7 +544,7 @@ public class CredentialApiEndToEndTest {
                     .contentType(JSON)
                     .header(authorizeUser("anotherIssuer", issuer))
                     .body(getOfferRequestBody())
-                    .post("/v1alpha/participants/%s/credentials/offer".formatted(toBase64(USER)))
+                    .post("/v1alpha/participants/%s/credentials/offer".formatted(USER))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404);
@@ -563,9 +563,6 @@ public class CredentialApiEndToEndTest {
                     """;
         }
 
-        private String toBase64(String input) {
-            return Base64.getUrlEncoder().encodeToString(input.getBytes());
-        }
     }
 
     @Nested

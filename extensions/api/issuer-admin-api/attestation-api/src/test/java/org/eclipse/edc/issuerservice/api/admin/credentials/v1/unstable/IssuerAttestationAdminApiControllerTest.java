@@ -43,7 +43,6 @@ import static org.mockito.Mockito.when;
 class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
 
     private static final String PARTICIPANT_ID = "test-participant";
-    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
     private final AttestationDefinitionService attestationDefinitionService = mock();
     private final AuthorizationService authorizationService = mock();
 
@@ -158,7 +157,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/attestations".formatted(PARTICIPANT_ID_ENCODED))
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/attestations".formatted(PARTICIPANT_ID))
                 .when();
     }
 

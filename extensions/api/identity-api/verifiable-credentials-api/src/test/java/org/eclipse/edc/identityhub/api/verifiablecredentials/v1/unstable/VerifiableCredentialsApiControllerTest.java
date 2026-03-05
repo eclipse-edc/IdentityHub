@@ -121,7 +121,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/" + Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes()) + "/credentials")
+                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/" + PARTICIPANT_ID + "/credentials")
                 .when();
     }
 

@@ -112,7 +112,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
 
             var su = identityHub.getIdentityEndpoint().baseRequest()
                     .header(apikey)
-                    .get("/v1alpha/participants/" + toBase64(SUPER_USER))
+                    .get("/v1alpha/participants/" + SUPER_USER)
                     .then()
                     .statusCode(200)
                     .extract().body().as(IdentityHubParticipantContext.class);
@@ -142,7 +142,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .header(userAuth)
                     .contentType(ContentType.JSON)
-                    .get("/v1alpha/participants/" + toBase64(user2))
+                    .get("/v1alpha/participants/" + user2)
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -414,7 +414,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
 
             identityHub.getIdentityEndpoint().baseRequest()
                     .header(authorizeUser(SUPER_USER, identityHub)).contentType(ContentType.JSON)
-                    .post("/v1alpha/participants/%s/state?isActive=true".formatted(toBase64(participantId)))
+                    .post("/v1alpha/participants/%s/state?isActive=true".formatted(participantId))
                     .then()
                     .log().ifError()
                     .statusCode(204);
@@ -444,7 +444,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
-                    .post("/v1alpha/participants/%s/state?isActive=false".formatted(toBase64(participantContextId)))
+                    .post("/v1alpha/participants/%s/state?isActive=false".formatted(participantContextId))
                     .then()
                     .log().ifError()
                     .statusCode(204);
@@ -474,7 +474,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
-                    .delete("/v1alpha/participants/%s".formatted(toBase64(participantContextId)))
+                    .delete("/v1alpha/participants/%s".formatted(participantContextId))
                     .then()
                     .log().ifError()
                     .statusCode(204);
@@ -495,7 +495,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .allSatisfy(t -> identityHub.getIdentityEndpoint().baseRequest()
                             .header(t)
                             .contentType(ContentType.JSON)
-                            .post("/v1alpha/participants/%s/token".formatted(toBase64(participantContextId)))
+                            .post("/v1alpha/participants/%s/token".formatted(participantContextId))
                             .then()
                             .log().ifError()
                             .statusCode(200)
@@ -511,7 +511,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(List.of("role1", "role2", "admin"))
-                    .put("/v1alpha/participants/%s/roles".formatted(toBase64(participantContextId)))
+                    .put("/v1alpha/participants/%s/roles".formatted(participantContextId))
                     .then()
                     .log().ifError()
                     .statusCode(204);
@@ -529,7 +529,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(userAuth)
                     .contentType(ContentType.JSON)
                     .body(List.of(role))
-                    .put("/v1alpha/participants/%s/roles".formatted(toBase64(participantContextId)))
+                    .put("/v1alpha/participants/%s/roles".formatted(participantContextId))
                     .then()
                     .log().ifError()
                     .statusCode(403);
@@ -609,9 +609,6 @@ public class IdentityHubParticipantContextApiEndToEndTest {
 
         protected abstract Header authorizeUser(String participantContextId, IdentityHub identityHub);
 
-        private String toBase64(String s) {
-            return Base64.getUrlEncoder().encodeToString(s.getBytes());
-        }
     }
 
     @Nested

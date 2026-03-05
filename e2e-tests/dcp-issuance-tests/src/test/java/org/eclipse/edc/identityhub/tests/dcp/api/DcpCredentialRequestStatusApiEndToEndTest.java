@@ -74,7 +74,6 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         public static final ECKey PARTICIPANT_KEY = generateEcKey(DID_WEB_PARTICIPANT_KEY_1);
         protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
         protected static final String ISSUER_ID = "issuer";
-        private static final String ISSUER_ID_ENCODED = Base64.getUrlEncoder().encodeToString(ISSUER_ID.getBytes());
 
 
         @BeforeAll
@@ -87,7 +86,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         private static @NotNull String issuanceStatusUrl(String id) {
-            return "/v1alpha/participants/%s/requests/%s".formatted(ISSUER_ID_ENCODED, id);
+            return "/v1alpha/participants/%s/requests/%s".formatted(ISSUER_ID, id);
         }
 
 

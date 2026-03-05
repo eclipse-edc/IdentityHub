@@ -63,7 +63,6 @@ public class DcpIssuerMetadataApiEndToEndTest {
         public static final String DID_WEB_PARTICIPANT_KEY_1 = "did:web:participant#key1";
         public static final ECKey PARTICIPANT_KEY = generateEcKey(DID_WEB_PARTICIPANT_KEY_1);
         protected static final String ISSUER_ID = "issuer";
-        private static final String ISSUER_ID_ENCODED = Base64.getUrlEncoder().encodeToString(ISSUER_ID.getBytes());
 
 
         @BeforeAll
@@ -72,7 +71,7 @@ public class DcpIssuerMetadataApiEndToEndTest {
         }
 
         private static @NotNull String issuanceMetadataUrl() {
-            return "/v1alpha/participants/%s/metadata".formatted(ISSUER_ID_ENCODED);
+            return "/v1alpha/participants/%s/metadata".formatted(ISSUER_ID);
         }
 
 

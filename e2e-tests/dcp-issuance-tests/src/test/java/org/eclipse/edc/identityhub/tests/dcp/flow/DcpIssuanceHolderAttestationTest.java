@@ -48,7 +48,6 @@ import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_NAME;
-import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 
 public class DcpIssuanceHolderAttestationTest {
 
@@ -122,13 +121,13 @@ public class DcpIssuanceHolderAttestationTest {
         default void shouldIssueCredentialUsingHolderAttestation(IssuerService issuer, IdentityHub identityHub) {
             var issuerId = UUID.randomUUID().toString();
             var issuerDid = issuer.didFor(issuerId);
-            issuer.createParticipant(issuerId, issuerDid, issuerDid + "#key");
+            var issuerParticipant= issuer.createParticipant(issuerId, issuerDid, issuerDid + "#key");
 
             var participantId = UUID.randomUUID().toString();
             var participantDid = identityHub.didFor(participantId);
             var participantToken = identityHub.createParticipant(participantId, participantDid, participantDid + "#key").apiKey();
 
-            var issuerToken = issuer.createParticipant(issuerDid).apiKey();
+            var issuerToken = issuerParticipant.apiKey();
             issuer.getAdminEndpoint().baseRequest()
                     .header("x-api-key", issuerToken)
                     .contentType(ContentType.JSON)
@@ -137,7 +136,7 @@ public class DcpIssuanceHolderAttestationTest {
                             "attestationType", "holder",
                             "configuration", emptyMap()
                     ))
-                    .post("/v1alpha/participants/{participantContextId}/attestations", base64Encode(issuerDid))
+                    .post("/v1alpha/participants/{participantContextId}/attestations", issuerId)
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -154,7 +153,7 @@ public class DcpIssuanceHolderAttestationTest {
                                     "participant", Map.of("name", "Bob")
                             )
                     ))
-                    .post("/v1alpha/participants/{participantContextId}/holders", base64Encode(issuerDid))
+                    .post("/v1alpha/participants/{participantContextId}/holders", issuerId)
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -191,7 +190,7 @@ public class DcpIssuanceHolderAttestationTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(participantId)))
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(participantId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
