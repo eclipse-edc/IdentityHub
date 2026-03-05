@@ -76,7 +76,6 @@ import java.util.Set;
 import static io.restassured.http.ContentType.JSON;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DCP_CONTEXT_URL;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_DID;
@@ -113,12 +112,12 @@ public class PresentationApiEndToEndTest {
                   ]
                 }
                 """;
-        private static final String VALID_QUERY_WITH_SCOPE = VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted("https://w3id.org/tractusx-trust/v0.8");
+        private static final String VALID_QUERY_WITH_SCOPE = VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted("https://w3id.org/dspace-dcp/v1.0/dcp.jsonld");
         private static final String VALID_QUERY_WITH_ADDITIONAL_SCOPE = """
                 {
                   "@context": [
                     "https://identity.foundation/presentation-exchange/submission/v1",
-                    "https://w3id.org/tractusx-trust/v0.8"
+                    "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                   ],
                   "@type": "PresentationQueryMessage",
                   "scope":[
@@ -177,7 +176,7 @@ public class PresentationApiEndToEndTest {
                     {
                       "@context": [
                         "https://identity.foundation/participants/test-participant/presentation-exchange/submission/v1",
-                        "https://w3id.org/tractusx-trust/v0.8"
+                        "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                       ],
                       "@type": "PresentationQueryMessage"
                     }
@@ -200,7 +199,7 @@ public class PresentationApiEndToEndTest {
                     {
                       "@context": [
                         "https://identity.foundation/presentation-exchange/submission/v1",
-                        "https://w3id.org/tractusx-trust/v0.8"
+                        "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                       ],
                       "@type": "PresentationQueryMessage",
                       "presentationDefinition":{
@@ -328,9 +327,8 @@ public class PresentationApiEndToEndTest {
                     .body("[0].message", equalTo("Invalid query: requested Credentials outside of scope."));
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = {DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT})
-        void query_success_noCredentials(String dcpContext, IdentityHub identityHub) throws JOSEException {
+        @Test
+        void query_success_noCredentials(IdentityHub identityHub) throws JOSEException {
 
             var token = generateSiToken();
 
@@ -340,7 +338,7 @@ public class PresentationApiEndToEndTest {
             var response = identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
-                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
+                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
@@ -355,9 +353,8 @@ public class PresentationApiEndToEndTest {
             assertThat(vpTokensExtractor(response)).hasSize(0);
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = {DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT})
-        void query_success_containsCredential(String dcpContext, IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
+        @Test
+        void query_success_containsCredential(IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
@@ -377,7 +374,7 @@ public class PresentationApiEndToEndTest {
             var response = identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
-                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
+                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
@@ -398,9 +395,8 @@ public class PresentationApiEndToEndTest {
 
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = {DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT})
-        void query_success_containsMultiplePresentations(String dcpContext, IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
+        @Test
+        void query_success_containsMultiplePresentations(IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
@@ -430,7 +426,7 @@ public class PresentationApiEndToEndTest {
             var response = identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
-                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
+                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
@@ -479,14 +475,14 @@ public class PresentationApiEndToEndTest {
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
                     .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
                     .hasEntrySatisfying("presentation", jsonValue -> {
-                        assertThat(jsonValue.getValueType()).isEqualTo(JsonValue.ValueType.STRING);
-                        var vpToken = ((JsonString) jsonValue).getString();
+                        assertThat(jsonValue.getValueType()).isEqualTo(JsonValue.ValueType.ARRAY);
+                        var vpToken = jsonValue.asJsonArray().get(0).toString();
                         assertThat(vpToken).isNotNull();
                     });
         }
 
         @ParameterizedTest(name = "VcState code: {0}")
-        @ValueSource(ints = {600, 700, 800, 900})
+        @ValueSource(ints = { 600, 700, 800, 900 })
         void query_shouldFilterOutInvalidCreds(int vcStateCode, IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             // modify VC content, so that it becomes either not-yet-valid or expired
@@ -605,9 +601,8 @@ public class PresentationApiEndToEndTest {
                     .body(Matchers.containsString("The DID associated with the Participant Context ID of this request ('did:web:consumer') must match 'aud' claim in 'access_token' ([did:web:someone_else])."));
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = {DCP_CONTEXT_URL, DSPACE_DCP_V_1_0_CONTEXT})
-        void query_filterCredentialWithWrongUsage(String dcpContext, IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+        @Test
+        void query_filterCredentialWithWrongUsage(IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
@@ -639,7 +634,7 @@ public class PresentationApiEndToEndTest {
             var response = identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
-                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(dcpContext))
+                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)

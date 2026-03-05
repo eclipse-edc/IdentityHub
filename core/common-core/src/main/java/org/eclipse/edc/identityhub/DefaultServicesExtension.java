@@ -47,7 +47,6 @@ import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 import java.net.URISyntaxException;
 import java.time.Clock;
 
-import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DCP_CONTEXT_URL;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.DID_CONTEXT_URL;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants.JWS_2020_URL;
@@ -157,7 +156,6 @@ public class DefaultServicesExtension implements ServiceExtension {
     private void cacheContextDocuments(ClassLoader classLoader) {
         try {
             jsonLd.registerCachedDocument(PRESENTATION_EXCHANGE_URL, classLoader.getResource(PRESENTATION_EXCHANGE_V_1_JSON).toURI());
-            jsonLd.registerCachedDocument(DCP_CONTEXT_URL, classLoader.getResource(PRESENTATION_QUERY_V_08_JSON).toURI());
             jsonLd.registerCachedDocument(DSPACE_DCP_V_1_0_CONTEXT, classLoader.getResource(DSPACE_DCP_V_1_0_JSON_LD).toURI());
             jsonLd.registerCachedDocument(DID_CONTEXT_URL, classLoader.getResource(DID_JSON).toURI());
             jsonLd.registerCachedDocument(JWS_2020_URL, classLoader.getResource(JWS_2020_JSON).toURI());

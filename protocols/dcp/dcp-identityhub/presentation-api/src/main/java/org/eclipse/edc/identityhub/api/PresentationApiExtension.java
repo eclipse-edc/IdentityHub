@@ -35,12 +35,9 @@ import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 
-import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DCP_CONTEXT_URL;
-import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_0_8;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TERM;
 import static org.eclipse.edc.identityhub.api.PresentationApiExtension.NAME;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_0_8;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.CREDENTIALS;
 import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
@@ -78,7 +75,6 @@ public class PresentationApiExtension implements ServiceExtension {
     public void initialize(ServiceExtensionContext context) {
         var contextString = CREDENTIALS;
 
-        registerValidator(DSPACE_DCP_NAMESPACE_V_0_8);
         registerValidator(DSPACE_DCP_NAMESPACE_V_1_0);
 
 
@@ -87,9 +83,6 @@ public class PresentationApiExtension implements ServiceExtension {
         webService.registerResource(contextString, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(contextString, controller);
 
-        jsonLd.registerContext(DCP_CONTEXT_URL, DCP_SCOPE_V_0_8);
-
-        registerTransformers(DCP_SCOPE_V_0_8, DSPACE_DCP_NAMESPACE_V_0_8);
         registerTransformers(DCP_SCOPE_V_1_0, DSPACE_DCP_NAMESPACE_V_1_0);
     }
 

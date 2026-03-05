@@ -133,7 +133,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
         var types = (List) additionalData.get(TYPE_ADDITIONAL_DATA);
         var presentationObject = Json.createObjectBuilder()
                 .add(JsonLdKeywords.CONTEXT, stringArray(List.of(VcConstants.W3C_CREDENTIALS_URL, VcConstants.PRESENTATION_EXCHANGE_URL)))
-                .add(ID_PROPERTY, DcpConstants.DCP_CONTEXT_URL + "/id/" + UUID.randomUUID())
+                .add(ID_PROPERTY, DcpConstants.DSPACE_DCP_V_1_0_CONTEXT + "/id/" + UUID.randomUUID())
                 .add(VP_TYPE_PROPERTY, stringArray(types))
                 .add(HOLDER_PROPERTY, issuerId)
                 .add(VERIFIABLE_CREDENTIAL_PROPERTY, toJsonArray(credentials))
