@@ -35,7 +35,6 @@ import org.eclipse.edc.issuerservice.api.admin.credentialdefinition.v1.unstable.
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.net.URI;
 import java.util.Collection;
@@ -60,7 +59,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
 
     @POST
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Override
     public Response createCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto definitionDto, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, participantContextId, IdentityHubParticipantContext.class)
@@ -71,7 +70,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
 
     @PUT
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Override
     public Response updateCredentialDefinition(@PathParam("participantContextId") String participantContextId, CredentialDefinitionDto credentialDefinition, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, credentialDefinition.getId(), CredentialDefinition.class)
@@ -82,7 +81,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
 
     @GET
     @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/{credentialDefinitionId}")
     @Override
     public CredentialDefinition getCredentialDefinitionById(@PathParam("participantContextId") String participantContextId, @PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {
@@ -93,7 +92,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
 
     @POST
     @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/query")
     @Override
     public Collection<CredentialDefinition> queryCredentialDefinitions(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext context) {
@@ -108,7 +107,7 @@ public class IssuerCredentialDefinitionAdminApiController implements IssuerCrede
 
     @DELETE
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/{credentialDefinitionId}")
     @Override
     public void deleteCredentialDefinitionById(@PathParam("participantContextId") String participantContextId, @PathParam("credentialDefinitionId") String credentialDefinitionId, @Context SecurityContext context) {

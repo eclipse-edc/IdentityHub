@@ -35,7 +35,6 @@ import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 import org.jetbrains.annotations.Nullable;
@@ -87,7 +86,8 @@ public class KeyPairResourceApiController implements KeyPairResourceApi {
     public Collection<KeyPairResource> queryKeyPairByParticipantContextId(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
 
         var query = queryByParticipantContextId(participantContextId).build();
-        return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, participantContextId)).stream().filter(kpr -> authorizationService.authorize(securityContext, participantContextId, kpr.getId(), KeyPairResource.class).succeeded()).toList();
+        return keyPairService.query(query).orElseThrow(exceptionMapper(KeyPairResource.class, participantContextId)).stream()
+                .filter(kpr -> authorizationService.authorize(securityContext, participantContextId, kpr.getId(), KeyPairResource.class).succeeded()).toList();
     }
 
     @PUT

@@ -35,7 +35,6 @@ import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDt
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.net.URI;
 import java.util.Collection;

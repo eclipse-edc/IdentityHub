@@ -35,9 +35,7 @@ import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.did.model.DidState;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -142,7 +140,6 @@ public class DidManagementApiController implements DidManagementApi {
                 .compose(v -> autoPublish ? documentService.publish(decodedDid) : ServiceResult.success())
                 .orElseThrow(exceptionMapper(Service.class, decodedDid));
     }
-
 
 
     @Override

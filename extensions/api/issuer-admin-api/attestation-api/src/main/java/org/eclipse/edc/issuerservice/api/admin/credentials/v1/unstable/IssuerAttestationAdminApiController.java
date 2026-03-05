@@ -34,7 +34,6 @@ import org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable.model.Att
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.net.URI;
 import java.util.Collection;
@@ -58,7 +57,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
 
     @POST
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Override
     public Response createAttestationDefinition(@PathParam("participantContextId") String participantContextId, AttestationDefinitionRequest attestationRequest, @Context SecurityContext securityContext) {
 
@@ -71,7 +70,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
 
     @DELETE
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/{attestationDefinitionId}")
     @Override
     public void deleteAttestationDefinition(@PathParam("participantContextId") String participantContextId, @PathParam("attestationDefinitionId") String attestationDefinitionId, @Context SecurityContext context) {
@@ -82,7 +81,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
 
     @POST
     @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/query")
     @Override
     public Collection<AttestationDefinition> queryAttestationDefinitions(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext context) {

@@ -37,7 +37,6 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipan
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
 import java.util.Collection;
@@ -64,7 +63,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @POST
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER })
     public CreateParticipantContextResponse createParticipant(ParticipantManifest manifest) {
         participantManifestValidator.validate(manifest).orElseThrow(ValidationFailureException::new);
         return participantContextService.createParticipantContext(manifest)
@@ -74,7 +73,7 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @GET
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER })
     @Path("/{participantContextId}")
     public IdentityHubParticipantContext getParticipant(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
         return authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
@@ -86,47 +85,47 @@ public class ParticipantContextApiController implements ParticipantContextApi {
     @Override
     @POST
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER })
     @Path("/{participantContextId}/token")
     public String regenerateParticipantToken(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
         return authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
-                        .compose(u -> participantContextService.regenerateApiToken(participantContextId))
-                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
+                .compose(u -> participantContextService.regenerateApiToken(participantContextId))
+                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
     }
 
     @Override
     @POST
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER })
     @Path("/{participantContextId}/state")
     public void activateParticipant(@PathParam("participantContextId") String participantContextId, @QueryParam("isActive") boolean isActive) {
-      participantContextService.updateParticipant(participantContextId, isActive ? IdentityHubParticipantContext::activate : IdentityHubParticipantContext::deactivate)
-                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
+        participantContextService.updateParticipant(participantContextId, isActive ? IdentityHubParticipantContext::activate : IdentityHubParticipantContext::deactivate)
+                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
     }
 
     @Override
     @DELETE
     @Path("/{participantContextId}")
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_PROVISIONER })
     public void deleteParticipant(@PathParam("participantContextId") String participantContextId, @Context SecurityContext securityContext) {
-     participantContextService.deleteParticipantContext(participantContextId)
-                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
+        participantContextService.deleteParticipantContext(participantContextId)
+                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
     }
 
     @Override
     @PUT
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER })
     @Path("/{participantContextId}/roles")
     public void updateParticipantRoles(@PathParam("participantContextId") String participantContextId, List<String> roles) {
-       participantContextService.updateParticipant(participantContextId, participantContext -> participantContext.setRoles(roles))
-                        .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
+        participantContextService.updateParticipant(participantContextId, participantContext -> participantContext.setRoles(roles))
+                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
     }
 
     @GET
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER })
     @Override
     public Collection<IdentityHubParticipantContext> getAllParticipants(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                                                         @DefaultValue("50") @QueryParam("limit") Integer limit) {
