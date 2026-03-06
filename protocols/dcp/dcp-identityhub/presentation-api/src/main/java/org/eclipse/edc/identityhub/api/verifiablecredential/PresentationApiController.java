@@ -52,10 +52,8 @@ import java.util.Optional;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_0_8;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_0_8;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
@@ -74,7 +72,6 @@ public class PresentationApiController implements PresentationApi {
     private final JsonLd jsonLd;
 
     private final Map<JsonLdNamespace, String> protocols = Map.of(
-            DSPACE_DCP_NAMESPACE_V_0_8, DCP_SCOPE_V_0_8,
             DSPACE_DCP_NAMESPACE_V_1_0, DCP_SCOPE_V_1_0
     );
 

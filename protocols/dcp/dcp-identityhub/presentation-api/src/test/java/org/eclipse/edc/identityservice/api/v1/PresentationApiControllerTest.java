@@ -60,10 +60,8 @@ import java.util.stream.Stream;
 import static jakarta.json.Json.createObjectBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_0_8;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_0_8;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.buildSignedJwt;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
@@ -257,8 +255,7 @@ class PresentationApiControllerTest extends RestControllerTestBase {
 
         @Override
         public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception {
-            return Stream.of(Arguments.of(DSPACE_DCP_NAMESPACE_V_0_8, DCP_SCOPE_V_0_8),
-                    Arguments.of(DSPACE_DCP_NAMESPACE_V_1_0, DCP_SCOPE_V_1_0));
+            return Stream.of(Arguments.of(DSPACE_DCP_NAMESPACE_V_1_0, DCP_SCOPE_V_1_0));
         }
     }
 }
