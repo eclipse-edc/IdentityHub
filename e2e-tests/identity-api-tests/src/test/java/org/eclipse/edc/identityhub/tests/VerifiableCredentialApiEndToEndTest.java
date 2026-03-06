@@ -52,7 +52,6 @@ import org.mockserver.integration.ClientAndServer;
 
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 

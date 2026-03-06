@@ -51,7 +51,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
@@ -366,7 +365,7 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "New KeyID {0}")
-        @ValueSource(strings = {"did:web:user1#new-key-id", "new-key-id"})
+        @ValueSource(strings = { "did:web:user1#new-key-id", "new-key-id" })
         void rotate_withUserToken(String keyId, IdentityHub identityHub, EventRouter router, StsAccountStore accountStore) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(KeyPairRotated.class, subscriber);
@@ -567,7 +566,7 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "New Key-ID: {0}")
-        @ValueSource(strings = {"new-keyId", "did:web:user1#new-keyId"})
+        @ValueSource(strings = { "new-keyId", "did:web:user1#new-keyId" })
         @Disabled
         void revoke(String newKeyId, IdentityHub identityHub) {
             var superUserAuth = authorizeUser(SUPER_USER, identityHub);

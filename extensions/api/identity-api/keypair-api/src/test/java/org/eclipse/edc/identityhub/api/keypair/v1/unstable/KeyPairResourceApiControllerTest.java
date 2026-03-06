@@ -33,7 +33,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -162,7 +161,7 @@ class KeyPairResourceApiControllerTest extends RestControllerTestBase {
     }
 
     @ParameterizedTest(name = "Make default: {0}")
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans = { true, false })
     void addKeyPair(boolean makeDefault) {
         var descriptor = createKeyDescriptor()
                 .build();

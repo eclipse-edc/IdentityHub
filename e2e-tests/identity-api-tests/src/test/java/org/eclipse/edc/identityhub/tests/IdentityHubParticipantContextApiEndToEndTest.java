@@ -57,7 +57,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -520,7 +519,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "Expect 403, role = {0}")
-        @ValueSource(strings = {"some-role", "admin"})
+        @ValueSource(strings = { "some-role", "admin" })
         void updateRoles_whenNotSuperuser(String role, IdentityHub identityHub) {
             var participantContextId = "some-user";
             var userAuth = authorizeUser(participantContextId, identityHub);

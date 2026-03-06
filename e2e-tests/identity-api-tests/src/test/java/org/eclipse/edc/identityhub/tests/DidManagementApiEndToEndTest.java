@@ -44,7 +44,6 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
-import java.util.Base64;
 
 import static io.restassured.http.ContentType.JSON;
 import static java.util.stream.IntStream.range;

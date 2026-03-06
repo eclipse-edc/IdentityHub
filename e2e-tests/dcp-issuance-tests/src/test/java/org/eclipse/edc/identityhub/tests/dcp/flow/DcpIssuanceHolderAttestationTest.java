@@ -51,77 +51,13 @@ import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_NAME
 
 public class DcpIssuanceHolderAttestationTest {
 
-    @Nested
-    @EndToEndTest
-    class InMemory implements Tests {
-        @RegisterExtension
-        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
-                .name(IH_RUNTIME_NAME)
-                .modules(DefaultRuntimes.IdentityHub.MODULES)
-                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
-                .configurationProvider(DefaultRuntimes.IdentityHub::config)
-                .paramProvider(IdentityHub.class, IdentityHub::forContext)
-                .build();
-
-        @RegisterExtension
-        static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
-                .name(ISSUER_RUNTIME_NAME)
-                .modules(DefaultRuntimes.Issuer.MODULES)
-                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
-                .configurationProvider(DefaultRuntimes.Issuer::config)
-                .paramProvider(IssuerService.class, IssuerService::forContext)
-                .modules(DefaultRuntimes.Issuer.MODULES)
-                .build();
-    }
-
-    @Nested
-    @PostgresqlIntegrationTest
-    class Postgres implements Tests {
-
-        private static final String ISSUER = "issuer";
-        private static final String IDENTITY_HUB = "identityhub";
-
-        @Order(0)
-        @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-
-        @Order(1)
-        @RegisterExtension
-        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
-            POSTGRESQL_EXTENSION.createDatabase(ISSUER);
-            POSTGRESQL_EXTENSION.createDatabase(IDENTITY_HUB);
-        };
-
-        @Order(2)
-        @RegisterExtension
-        static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
-                .name(ISSUER_RUNTIME_NAME)
-                .modules(DefaultRuntimes.Issuer.SQL_MODULES)
-                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
-                .configurationProvider(DefaultRuntimes.Issuer::config)
-                .paramProvider(IssuerService.class, IssuerService::forContext)
-                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
-                .build();
-
-        @Order(2)
-        @RegisterExtension
-        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
-                .name(IH_RUNTIME_NAME)
-                .modules(DefaultRuntimes.IdentityHub.SQL_MODULES)
-                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
-                .configurationProvider(DefaultRuntimes.IdentityHub::config)
-                .paramProvider(IdentityHub.class, IdentityHub::forContext)
-                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(IDENTITY_HUB))
-                .build();
-    }
-
     @SuppressWarnings("JUnitMalformedDeclaration")
     interface Tests {
         @Test
         default void shouldIssueCredentialUsingHolderAttestation(IssuerService issuer, IdentityHub identityHub) {
             var issuerId = UUID.randomUUID().toString();
             var issuerDid = issuer.didFor(issuerId);
-            var issuerParticipant= issuer.createParticipant(issuerId, issuerDid, issuerDid + "#key");
+            var issuerParticipant = issuer.createParticipant(issuerId, issuerDid, issuerDid + "#key");
 
             var participantId = UUID.randomUUID().toString();
             var participantDid = identityHub.didFor(participantId);
@@ -217,6 +153,66 @@ public class DcpIssuanceHolderAttestationTest {
                     }));
 
         }
+    }
+
+    @Nested
+    @EndToEndTest
+    class InMemory implements Tests {
+        @RegisterExtension
+        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
+                .name(IH_RUNTIME_NAME)
+                .modules(DefaultRuntimes.IdentityHub.MODULES)
+                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .paramProvider(IdentityHub.class, IdentityHub::forContext)
+                .build();
+
+        @RegisterExtension
+        static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(DefaultRuntimes.Issuer.MODULES)
+                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.Issuer::config)
+                .paramProvider(IssuerService.class, IssuerService::forContext)
+                .modules(DefaultRuntimes.Issuer.MODULES)
+                .build();
+    }
+
+    @Nested
+    @PostgresqlIntegrationTest
+    class Postgres implements Tests {
+
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
+        private static final String ISSUER = "issuer";
+        @Order(2)
+        @RegisterExtension
+        static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
+                .name(ISSUER_RUNTIME_NAME)
+                .modules(DefaultRuntimes.Issuer.SQL_MODULES)
+                .endpoints(DefaultRuntimes.Issuer.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.Issuer::config)
+                .paramProvider(IssuerService.class, IssuerService::forContext)
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
+                .build();
+        private static final String IDENTITY_HUB = "identityhub";
+        @Order(1)
+        @RegisterExtension
+        static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
+            POSTGRESQL_EXTENSION.createDatabase(ISSUER);
+            POSTGRESQL_EXTENSION.createDatabase(IDENTITY_HUB);
+        };
+        @Order(2)
+        @RegisterExtension
+        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
+                .name(IH_RUNTIME_NAME)
+                .modules(DefaultRuntimes.IdentityHub.SQL_MODULES)
+                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
+                .configurationProvider(DefaultRuntimes.IdentityHub::config)
+                .paramProvider(IdentityHub.class, IdentityHub::forContext)
+                .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(IDENTITY_HUB))
+                .build();
     }
 
 }
