@@ -152,7 +152,7 @@ class CredentialRequestManagerImplTest {
         private static final Duration MAX_DURATION = Duration.ofSeconds(5);
 
         @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_shouldSendRequest(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
@@ -178,7 +178,7 @@ class CredentialRequestManagerImplTest {
         }
 
         @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenDidNotResolvable_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
 
@@ -187,20 +187,21 @@ class CredentialRequestManagerImplTest {
                     .state(state.code())
                     .build();
             when(store.nextNotLeased(anyInt(), stateIs(state.code())))
-                    .thenReturn(List.of(rq));
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
 
             credentialRequestService.start();
 
             await().atMost(MAX_DURATION).untilAsserted(() -> {
                 var inOrder = inOrder(resolver, store);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
-                inOrder.verify(store, times(2)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("foobar")));
+                inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("foobar")));
                 verifyNoMoreInteractions(resolver, sts, httpClient);
             });
         }
 
         @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenDidDoesNotContainEndpoint_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
 
@@ -213,20 +214,21 @@ class CredentialRequestManagerImplTest {
                     .state(state.code())
                     .build();
             when(store.nextNotLeased(anyInt(), stateIs(state.code())))
-                    .thenReturn(List.of(rq));
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
 
             credentialRequestService.start();
 
             await().atMost(MAX_DURATION).untilAsserted(() -> {
                 var inOrder = inOrder(resolver, store);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
-                inOrder.verify(store, times(2)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("DID Document does not contain any 'IssuerService' endpoint")));
+                inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().contains("DID Document does not contain any 'IssuerService' endpoint")));
                 verifyNoMoreInteractions(resolver, sts, httpClient);
             });
         }
 
         @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenStsFails_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
 
@@ -237,7 +239,8 @@ class CredentialRequestManagerImplTest {
                     .state(state.code())
                     .build();
             when(store.nextNotLeased(anyInt(), stateIs(state.code())))
-                    .thenReturn(List.of(rq));
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
 
             credentialRequestService.start();
 
@@ -245,12 +248,12 @@ class CredentialRequestManagerImplTest {
                 var inOrder = inOrder(resolver, store, httpClient, sts);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
-                inOrder.verify(store, times(2)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("sts-failure")));
+                inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("sts-failure")));
             });
         }
 
         @ParameterizedTest(name = "state = {0}")
-        @ValueSource(strings = {"CREATED", "REQUESTING"})
+        @ValueSource(strings = { "CREATED", "REQUESTING" })
         void processInitial_whenIssuerReturnsError_shouldTransitionToError(String stateString) {
             var state = HolderRequestState.valueOf(stateString);
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
@@ -260,7 +263,8 @@ class CredentialRequestManagerImplTest {
                     .state(state.code())
                     .build();
             when(store.nextNotLeased(anyInt(), stateIs(state.code())))
-                    .thenReturn(List.of(rq));
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
 
             credentialRequestService.start();
 
@@ -269,7 +273,7 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
-                inOrder.verify(store, times(2)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("issuer failure bad request")));
+                inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("issuer failure bad request")));
             });
         }
 
@@ -284,7 +288,7 @@ class CredentialRequestManagerImplTest {
 
 
         private Criterion[] stateIs(int state) {
-            return aryEq(new Criterion[]{hasState(state), isNotPending()});
+            return aryEq(new Criterion[]{ hasState(state), isNotPending() });
         }
 
     }

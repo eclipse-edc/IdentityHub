@@ -35,13 +35,11 @@ import org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable.model.HolderDt
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import java.net.URI;
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
@@ -63,9 +61,8 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER })
     @Override
     public Response addHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.authorize(context, decodedParticipantContextId, decodedParticipantContextId, IdentityHubParticipantContext.class)
-                .compose(u -> holderService.createHolder(holder.toHolder(decodedParticipantContextId)))
+        return authorizationService.authorize(context, participantContextId, participantContextId, IdentityHubParticipantContext.class)
+                .compose(u -> holderService.createHolder(holder.toHolder(participantContextId)))
                 .map(v -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/holders/%s".formatted(participantContextId, holder.id()))).build())
                 .orElseThrow(exceptionMapper(Holder.class, holder.id()));
     }
@@ -76,8 +73,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER })
     @Override
     public Response deleteHolder(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, @Context SecurityContext context) {
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.authorize(context, decodedParticipantContextId, holderId, Holder.class)
+        return authorizationService.authorize(context, participantContextId, holderId, Holder.class)
                 .compose(u -> holderService.deleteHolder(holderId))
                 .map(v -> Response.noContent().build())
                 .orElseThrow(exceptionMapper(Holder.class, holderId));
@@ -88,9 +84,8 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Override
     public Response updateHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        return authorizationService.authorize(context, decodedParticipantContextId, holder.id(), Holder.class)
-                .compose(u -> holderService.updateHolder(holder.toHolder(decodedParticipantContextId)))
+        return authorizationService.authorize(context, participantContextId, holder.id(), Holder.class)
+                .compose(u -> holderService.updateHolder(holder.toHolder(participantContextId)))
                 .map(v -> Response.ok().build())
                 .orElseThrow(exceptionMapper(Holder.class, holder.id()));
     }
@@ -101,9 +96,8 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @Path("/{holderId}")
     @Override
     public Holder getHolderById(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, @Context SecurityContext context) {
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        return authorizationService.authorize(context, decodedParticipantContextId, holderId, Holder.class)
+        return authorizationService.authorize(context, participantContextId, holderId, Holder.class)
                 .compose(u -> holderService.findById(holderId))
                 .orElseThrow(exceptionMapper(Holder.class, holderId));
     }
@@ -114,11 +108,10 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     @Path("/query")
     @Override
     public Collection<Holder> queryHolders(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext context) {
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
-        var spec = querySpec.toBuilder().filter(filterByParticipantContextId(decodedParticipantContextId)).build();
+        var spec = querySpec.toBuilder().filter(filterByParticipantContextId(participantContextId)).build();
         return holderService.queryHolders(spec)
                 .map(collection -> collection.stream()
-                        .filter(holder -> authorizationService.authorize(context, decodedParticipantContextId, holder.getHolderId(), Holder.class).succeeded()).toList())
+                        .filter(holder -> authorizationService.authorize(context, participantContextId, holder.getHolderId(), Holder.class).succeeded()).toList())
                 .orElseThrow(exceptionMapper(Holder.class, null));
     }
 }

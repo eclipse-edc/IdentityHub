@@ -15,7 +15,6 @@
 package org.eclipse.edc.test.e2e.tck.issuance;
 
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.util.Base64;
 import org.assertj.core.api.Assertions;
 import org.eclipse.dataspacetck.core.system.ConsoleMonitor;
 import org.eclipse.dataspacetck.runtime.TckRuntime;
@@ -105,7 +104,7 @@ public class DcpIssuanceFlowTest {
         var stsPath = identityHub.getStsEndpoint().getUrl().getPath();
 
         var baseCallbackUrl = "http://localhost:%s".formatted(CALLBACK_PORT);
-        var baseCredentialServiceUrl = "http://localhost:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
+        var baseCredentialServiceUrl = "http://localhost:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, TEST_PARTICIPANT_CONTEXT_ID);
         var baseCallbackUri = URI.create(baseCallbackUrl);
 
         var response = createParticipant(identityHub, baseCredentialServiceUrl);

@@ -39,7 +39,6 @@ import java.net.URI;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage.CREDENTIAL_REQUEST_MESSAGE_TERM;
-import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
@@ -79,14 +78,13 @@ public class CredentialRequestApiController implements CredentialRequestApi {
             throw new AuthenticationFailedException("Invalid authorization header, must start with 'Bearer'");
         }
         var token = authHeader.replace("Bearer", "").trim();
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
         validatorRegistry.validate(namespace.toIri(CREDENTIAL_REQUEST_MESSAGE_TERM), message).orElseThrow(ValidationFailureException::new);
 
         var credentialMessage = dcpTransformerRegistry.transform(message, CredentialRequestMessage.class).orElseThrow(InvalidRequestException::new);
         var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(token).build();
 
-        var participantContext = participantContextService.getParticipantContext(decodedParticipantContextId)
+        var participantContext = participantContextService.getParticipantContext(participantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
 
         var participant = tokenValidator.verify(participantContext, tokenRepresentation)

@@ -31,14 +31,12 @@ import org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable.model.Issuan
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.spi.query.QuerySpec;
-import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ObjectNotFoundException;
 
 import java.util.Collection;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.util.stream.Collectors.toList;
-import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.filterByParticipantContextId;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
@@ -57,14 +55,14 @@ public class IssuanceProcessAdminApiController implements IssuanceProcessAdminAp
 
     @GET
     @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/{issuanceProcessId}")
     @Override
     public IssuanceProcessDto getIssuanceProcessById(@PathParam("participantContextId") String participantContextId,
                                                      @PathParam("issuanceProcessId") String issuanceProcessId,
                                                      @Context SecurityContext securityContext) {
 
-        authorizationService.authorize(securityContext, onEncoded(participantContextId).orElseThrow(InvalidRequestException::new), issuanceProcessId, IssuanceProcess.class)
+        authorizationService.authorize(securityContext, participantContextId, issuanceProcessId, IssuanceProcess.class)
                 .orElseThrow(exceptionMapper(IssuanceProcess.class, issuanceProcessId));
 
         var issuanceProcess = issuanceProcessService.findById(issuanceProcessId);
@@ -77,19 +75,17 @@ public class IssuanceProcessAdminApiController implements IssuanceProcessAdminAp
 
     @POST
     @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/query")
     @Override
     public Collection<IssuanceProcessDto> queryIssuanceProcesses(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext securityContext) {
-        return onEncoded(participantContextId).map(decoded -> {
-            var spec = querySpec.toBuilder().filter(filterByParticipantContextId(decoded)).build();
-            return issuanceProcessService.search(spec)
-                    .orElseThrow(exceptionMapper(IssuanceProcess.class, null))
-                    .stream()
-                    .filter(issuanceProcess -> authorizationService.authorize(securityContext, decoded, issuanceProcess.getId(), IssuanceProcess.class).succeeded())
-                    .map(IssuanceProcessDto::fromIssuanceProcess)
-                    .collect(toList());
-        }).orElseThrow(InvalidRequestException::new);
+        var spec = querySpec.toBuilder().filter(filterByParticipantContextId(participantContextId)).build();
+        return issuanceProcessService.search(spec)
+                .orElseThrow(exceptionMapper(IssuanceProcess.class, null))
+                .stream()
+                .filter(issuanceProcess -> authorizationService.authorize(securityContext, participantContextId, issuanceProcess.getId(), IssuanceProcess.class).succeeded())
+                .map(IssuanceProcessDto::fromIssuanceProcess)
+                .collect(toList());
 
     }
 

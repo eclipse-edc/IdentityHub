@@ -42,7 +42,6 @@ import static io.restassured.http.ContentType.JSON;
 import static java.lang.String.format;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.ISSUANCE_API;
 import static org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext.ISSUERADMIN;
-import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.query.Criterion.criterion;
 
@@ -110,7 +109,7 @@ public class IssuerService extends AbstractIdentityHub {
                                 Map.of("operandLeft", "usage", "operator", "=", "operandRight", "Holder")
                         )
                 ))
-                .post("/v1alpha/participants/{participantContextId}/credentials/query", base64Encode(participantId))
+                .post("/v1alpha/participants/{participantContextId}/credentials/query", (participantId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -144,7 +143,7 @@ public class IssuerService extends AbstractIdentityHub {
     }
 
     private @NotNull String issuanceBasePath(String participantContextId) {
-        return "v1alpha/participants/%s".formatted(base64Encode(participantContextId));
+        return "v1alpha/participants/%s".formatted((participantContextId));
     }
 
     public static class Builder extends AbstractIdentityHub.Builder<IssuerService, Builder> {

@@ -15,7 +15,6 @@
 package org.eclipse.edc.test.e2e.tck.issuer;
 
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.util.Base64;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
@@ -110,7 +109,7 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
         var holderDid = "did:web:0.0.0.0%%3A%s:holder".formatted(CALLBACK_PORT);
 
         var baseCallbackAddress = "http://0.0.0.0:%s".formatted(CALLBACK_PORT);
-        var baseIssuerServiceUrl = "http://host.docker.internal:%s%s/v1alpha/participants/%s".formatted(issuancePort, issuancePath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
+        var baseIssuerServiceUrl = "http://host.docker.internal:%s%s/v1alpha/participants/%s".formatted(issuancePort, issuancePath, TEST_PARTICIPANT_CONTEXT_ID);
         var baseCallbackUri = URI.create(baseCallbackAddress);
 
         // prepare the issuer service:

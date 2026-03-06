@@ -56,7 +56,6 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -92,7 +91,6 @@ public class CredentialOfferApiEndToEndTest {
         protected static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
         protected static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
         private static final String TEST_PARTICIPANT_CONTEXT_ID = "consumer";
-        private static final String TEST_PARTICIPANT_CONTEXT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(TEST_PARTICIPANT_CONTEXT_ID.getBytes());
 
         @BeforeEach
         void setup(IdentityHub identityHub) {
@@ -138,7 +136,7 @@ public class CredentialOfferApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(offerMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/offers")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/offers")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -148,7 +146,7 @@ public class CredentialOfferApiEndToEndTest {
                     .allSatisfy(co -> assertThat(co.getStateAsEnum()).isEqualTo(CredentialOfferStatus.PROCESSED)));
         }
 
-        @DisplayName("Issuer's DID not resolvable, expect HTTP 401")
+        @DisplayName("Issuer's DID not resolvable, expect HTTP 403")
         @Test
         void storeCredentialOffer_didNotResolved(IdentityHub identityHub) {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.failure("not found"));
@@ -157,7 +155,7 @@ public class CredentialOfferApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/offers")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/offers")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -176,7 +174,7 @@ public class CredentialOfferApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken(CONSUMER_DID, PROVIDER_DID))
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/offers")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/offers")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -200,7 +198,7 @@ public class CredentialOfferApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/offers")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/offers")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)

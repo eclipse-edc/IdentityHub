@@ -15,7 +15,6 @@
 package org.eclipse.edc.test.e2e.tck.issuance;
 
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.util.Base64;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
@@ -118,7 +117,7 @@ public class DcpIssuanceFlowWithDockerTest {
         var stsPath = identityHub.getStsEndpoint().getUrl().getPath();
 
         var baseCallbackAddress = "http://0.0.0.0:%s".formatted(CALLBACK_PORT);
-        var baseCredentialServiceUrl = "http://host.docker.internal:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, Base64.encode(TEST_PARTICIPANT_CONTEXT_ID));
+        var baseCredentialServiceUrl = "http://host.docker.internal:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, TEST_PARTICIPANT_CONTEXT_ID);
         var baseCallbackUri = URI.create(baseCallbackAddress);
 
         var response = createParticipant(identityHub, baseCredentialServiceUrl);

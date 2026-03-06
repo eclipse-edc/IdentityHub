@@ -56,7 +56,6 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,7 +89,6 @@ public class StorageApiEndToEndTest {
         protected static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
         protected static final RevocationServiceRegistry REVOCATION_LIST_REGISTRY = mock();
         private static final String TEST_PARTICIPANT_CONTEXT_ID = "consumer";
-        private static final String TEST_PARTICIPANT_CONTEXT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(TEST_PARTICIPANT_CONTEXT_ID.getBytes());
 
         @BeforeEach
         void setup(IdentityHub identityHub) {
@@ -137,7 +135,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200);
@@ -156,7 +154,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(401)
@@ -175,7 +173,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken(CONSUMER_DID, PROVIDER_DID))
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(401)
@@ -198,7 +196,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
@@ -221,7 +219,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200);
@@ -241,7 +239,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404);
@@ -267,7 +265,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
@@ -294,7 +292,7 @@ public class StorageApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header("Authorization", "Bearer " + generateSiToken())
                     .body(credentialMessage)
-                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID_ENCODED + "/credentials")
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/credentials")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)

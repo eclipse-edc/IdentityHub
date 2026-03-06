@@ -57,7 +57,7 @@ public interface ApiSchema {
         public static final String PRESENTATION_QUERY_EXAMPLE = """
                 {
                   "@context": [
-                    "https://w3id.org/tractusx-trust/v0.8",
+                    "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld",
                     "https://identity.foundation/presentation-exchange/submission/v1"
                   ],
                   "@type": "PresentationQueryMessage",
@@ -75,14 +75,14 @@ public interface ApiSchema {
     record PresentationResponseSchema(
             @Schema(name = CONTEXT, requiredMode = REQUIRED)
             Object context,
-            @Schema(name = "presentation", requiredMode = REQUIRED, anyOf = {String.class, JsonObject.class})
+            @Schema(name = "presentation", requiredMode = REQUIRED, anyOf = { String.class, JsonObject.class })
             List<Object> presentation
     ) {
 
         public static final String RESPONSE_EXAMPLE = """
                 {
                   "@context": [
-                    "https://w3id.org/tractusx-trust/v0.8"
+                    "https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"
                   ],
                   "@type": "PresentationResponseMessage",
                   "presentation": ["dsJdh...UMetV"]

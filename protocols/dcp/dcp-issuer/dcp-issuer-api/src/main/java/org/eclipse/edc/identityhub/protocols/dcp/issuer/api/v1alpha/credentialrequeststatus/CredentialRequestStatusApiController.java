@@ -33,11 +33,9 @@ import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
-import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates.from;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
@@ -70,9 +68,8 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
         }
         var authToken = authHeader.replace("Bearer ", "").trim();
 
-        var decodedParticipantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
 
-        var participantContext = participantContextService.getParticipantContext(decodedParticipantContextId)
+        var participantContext = participantContextService.getParticipantContext(participantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));
 
         var tokenRepresentation = TokenRepresentation.Builder.newInstance().token(authToken).build();
@@ -80,7 +77,7 @@ public class CredentialRequestStatusApiController implements CredentialRequestSt
         var requestContext = tokenValidator.verify(participantContext, tokenRepresentation)
                 .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
-        var status = fetchByParticipant(decodedParticipantContextId, requestContext.holder(), credentialRequestId)
+        var status = fetchByParticipant(participantContextId, requestContext.holder(), credentialRequestId)
                 .map(this::toCredentialStatus)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid credential request %s: %s".formatted(credentialRequestId, f.getFailureDetail())));
 

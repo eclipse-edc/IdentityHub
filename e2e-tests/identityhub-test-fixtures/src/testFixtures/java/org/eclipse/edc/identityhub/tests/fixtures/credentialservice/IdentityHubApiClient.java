@@ -25,7 +25,6 @@ import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
-import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 
 public class IdentityHubApiClient {
 
@@ -54,7 +53,7 @@ public class IdentityHubApiClient {
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
                 .body(request)
-                .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(participantId)))
+                .post("/v1alpha/participants/%s/credentials/request".formatted((participantId)))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(201)

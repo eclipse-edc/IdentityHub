@@ -42,7 +42,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DCP_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.DID_CONTEXT_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.JWS_2020_URL;
 import static org.eclipse.edc.identityhub.spi.model.IdentityHubConstants.PRESENTATION_EXCHANGE_URL;
@@ -173,7 +172,6 @@ class LdpPresentationGeneratorTest extends PresentationGeneratorTest {
         jld.registerCachedDocument(DID_CONTEXT_URL, TestUtils.getResource("did.json"));
         jld.registerCachedDocument(JWS_2020_URL, TestUtils.getResource("jws2020.json"));
         jld.registerCachedDocument(W3C_CREDENTIALS_URL, TestUtils.getResource("credentials.v1.json"));
-        jld.registerCachedDocument(DCP_CONTEXT_URL, TestUtils.getResource("dcp.v08.json"));
         jld.registerCachedDocument(PRESENTATION_EXCHANGE_URL, TestUtils.getResource("presentation-exchange.v1.json"));
         jld.registerCachedDocument("https://www.w3.org/2018/credentials/examples/v1", TestUtils.getResource("examples.v1.json"));
         return jld;

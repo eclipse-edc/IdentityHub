@@ -133,6 +133,17 @@ public class SqlCredentialOfferStore extends AbstractSqlStore implements Credent
     }
 
     @Override
+    public StoreResult<Void> breakLease(CredentialOffer entity) {
+        return transactionContext.execute(() -> {
+            try (var connection = getConnection()) {
+                return leaseContext.withConnection(connection).breakLease(entity.getId());
+            } catch (SQLException e) {
+                throw new EdcPersistenceException(e);
+            }
+        });
+    }
+
+    @Override
     public Collection<CredentialOffer> query(QuerySpec querySpec) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {

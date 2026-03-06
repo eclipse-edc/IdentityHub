@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -61,7 +60,6 @@ import static org.mockito.Mockito.when;
 class IdentityHubParticipantContextApiControllerTest extends RestControllerTestBase {
 
     private static final String PARTICIPANT_ID = "test-participant";
-    private static final String PARTICIPANT_ID_ENCODED = Base64.getUrlEncoder().encodeToString(PARTICIPANT_ID.getBytes());
 
     private final IdentityHubParticipantContextService participantContextServiceMock = mock();
     private final AuthorizationService authService = mock();
@@ -103,7 +101,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     void regenerateToken() {
         when(participantContextServiceMock.regenerateApiToken(any())).thenReturn(ServiceResult.success("new-api-token"));
         baseRequest()
-                .post("/%s/token".formatted(PARTICIPANT_ID_ENCODED))
+                .post("/%s/token".formatted(PARTICIPANT_ID))
                 .then()
                 .statusCode(200)
                 .body(equalTo("new-api-token"));
@@ -114,7 +112,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     void regenerateToken_notFound() {
         when(participantContextServiceMock.regenerateApiToken(any())).thenReturn(ServiceResult.notFound("foo-bar"));
         baseRequest()
-                .post("/%s/token".formatted(PARTICIPANT_ID_ENCODED))
+                .post("/%s/token".formatted(PARTICIPANT_ID))
                 .then()
                 .statusCode(404);
         verify(participantContextServiceMock).regenerateApiToken(PARTICIPANT_ID);
@@ -124,7 +122,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     void activateParticipant() {
         when(participantContextServiceMock.updateParticipant(any(), any())).thenReturn(ServiceResult.success());
         baseRequest()
-                .post("/%s/state?isActive=true".formatted(PARTICIPANT_ID_ENCODED))
+                .post("/%s/state?isActive=true".formatted(PARTICIPANT_ID))
                 .then()
                 .statusCode(204);
         verify(participantContextServiceMock).updateParticipant(eq(PARTICIPANT_ID), any());
@@ -134,7 +132,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     void deactivateParticipant() {
         when(participantContextServiceMock.updateParticipant(any(), any())).thenReturn(ServiceResult.success());
         baseRequest()
-                .post("/%s/state?isActive=false".formatted(PARTICIPANT_ID_ENCODED))
+                .post("/%s/state?isActive=false".formatted(PARTICIPANT_ID))
                 .then()
                 .statusCode(204);
         verify(participantContextServiceMock).updateParticipant(eq(PARTICIPANT_ID), any());
@@ -144,7 +142,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     void delete() {
         when(participantContextServiceMock.deleteParticipantContext(any())).thenReturn(ServiceResult.success());
         baseRequest()
-                .delete("/%s".formatted(PARTICIPANT_ID_ENCODED))
+                .delete("/%s".formatted(PARTICIPANT_ID))
                 .then()
                 .statusCode(204);
         verify(participantContextServiceMock).deleteParticipantContext(PARTICIPANT_ID);
@@ -154,7 +152,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     void delete_notFound() {
         when(participantContextServiceMock.deleteParticipantContext(any())).thenReturn(ServiceResult.notFound("foo bar"));
         baseRequest()
-                .delete("/%s".formatted(PARTICIPANT_ID_ENCODED))
+                .delete("/%s".formatted(PARTICIPANT_ID))
                 .then()
                 .statusCode(404);
         verify(participantContextServiceMock).deleteParticipantContext(PARTICIPANT_ID);

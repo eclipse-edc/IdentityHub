@@ -52,12 +52,9 @@ import java.util.Optional;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_0_8;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage.PRESENTATION_QUERY_MESSAGE_TERM;
-import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_0_8;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
-import static org.eclipse.edc.identityhub.spi.participantcontext.ParticipantContextId.onEncoded;
 import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMapper;
 
 @Consumes(APPLICATION_JSON)
@@ -75,7 +72,6 @@ public class PresentationApiController implements PresentationApi {
     private final JsonLd jsonLd;
 
     private final Map<JsonLdNamespace, String> protocols = Map.of(
-            DSPACE_DCP_NAMESPACE_V_0_8, DCP_SCOPE_V_0_8,
             DSPACE_DCP_NAMESPACE_V_1_0, DCP_SCOPE_V_1_0
     );
 
@@ -114,7 +110,6 @@ public class PresentationApiController implements PresentationApi {
 
         var protocolRegistry = transformerRegistry.forContext(protocol.scope());
 
-        participantContextId = onEncoded(participantContextId).orElseThrow(InvalidRequestException::new);
         var presentationQuery = protocolRegistry.forContext(protocol.scope()).transform(query, PresentationQueryMessage.class).orElseThrow(InvalidRequestException::new);
 
         if (presentationQuery.getPresentationDefinition() != null) {

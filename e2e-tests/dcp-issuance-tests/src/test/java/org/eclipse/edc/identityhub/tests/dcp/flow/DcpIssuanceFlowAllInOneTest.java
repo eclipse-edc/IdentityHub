@@ -87,7 +87,6 @@ import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
-import static org.eclipse.edc.identityhub.tests.fixtures.common.TestFunctions.base64Encode;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.mockito.ArgumentMatchers.any;
@@ -211,7 +210,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -290,7 +289,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -343,7 +342,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -367,7 +366,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .header("x-api-key", participantToken)
                     .contentType(ContentType.JSON)
                     .post("/v1alpha/participants/{participantContextId}/credentials/{credentialId}/revoke",
-                            base64Encode(PARTICIPANT_ID), credentialId)
+                            PARTICIPANT_ID, credentialId)
                     .then()
                     .log().ifValidationFails().statusCode(204);
 
@@ -405,7 +404,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(base64Encode(PARTICIPANT_ID)))
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -441,7 +440,7 @@ public class DcpIssuanceFlowAllInOneTest {
                               ]
                             }
                             """)
-                    .post("/v1/participants/%s/presentations/query".formatted(base64Encode(PARTICIPANT_ID)))
+                    .post("/v1/participants/%s/presentations/query".formatted(PARTICIPANT_ID))
                     .then()
                     .statusCode(200)
                     .log().ifValidationFails()

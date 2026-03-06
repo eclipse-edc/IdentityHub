@@ -51,7 +51,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
@@ -75,7 +74,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 public class KeyPairResourceApiEndToEndTest {
 
     private static final String PARTICIPANT_CONTEXT_ID = "user1";
-    private static final String PARTICIPANT_CONTEXT_ID_BASE64 = Base64.getUrlEncoder().encodeToString(PARTICIPANT_CONTEXT_ID.getBytes());
 
     abstract static class Tests {
 
@@ -109,7 +107,7 @@ public class KeyPairResourceApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authHeader)
-                    .get("/v1alpha/participants/%s/keypairs/%s".formatted(PARTICIPANT_CONTEXT_ID_BASE64, key))
+                    .get("/v1alpha/participants/%s/keypairs/%s".formatted(PARTICIPANT_CONTEXT_ID, key))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -127,7 +125,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .allSatisfy(t -> identityHub.getIdentityEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(t)
-                            .get("/v1alpha/participants/%s/keypairs/%s".formatted(PARTICIPANT_CONTEXT_ID_BASE64, key))
+                            .get("/v1alpha/participants/%s/keypairs/%s".formatted(PARTICIPANT_CONTEXT_ID, key))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(200)
@@ -148,7 +146,7 @@ public class KeyPairResourceApiEndToEndTest {
             var res = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(user2Auth)
-                    .get("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID_BASE64))
+                    .get("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -168,7 +166,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .allSatisfy(authHeader -> identityHub.getIdentityEndpoint().baseRequest()
                             .contentType(JSON)
                             .header(authHeader)
-                            .get("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID_BASE64))
+                            .get("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
                             .then()
                             .log().ifValidationFails()
                             .statusCode(200)
@@ -193,7 +191,7 @@ public class KeyPairResourceApiEndToEndTest {
                                 .contentType(JSON)
                                 .header(authHeader)
                                 .body(keyDesc)
-                                .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID_BASE64))
+                                .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(204)
@@ -226,7 +224,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(header)
                     .body(keyDesc)
-                    .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID_BASE64))
+                    .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -252,7 +250,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(superUserAuth)
                     .body(keyDesc)
-                    .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID_BASE64))
+                    .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404)
@@ -275,7 +273,7 @@ public class KeyPairResourceApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .header(superUserAuth)
                     .contentType(JSON)
-                    .post("/v1alpha/participants/%s/state?isActive=false".formatted(PARTICIPANT_CONTEXT_ID_BASE64))
+                    .post("/v1alpha/participants/%s/state?isActive=false".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -286,7 +284,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(superUserAuth)
                     .body(keyDesc)
-                    .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID_BASE64))
+                    .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
@@ -313,7 +311,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(auth)
                     .body(keyDesc)
-                    .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID_BASE64))
+                    .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -343,7 +341,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(superUserAuth)
                     .body(keyDesc)
-                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPairId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID, keyPairId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -367,7 +365,7 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "New KeyID {0}")
-        @ValueSource(strings = {"did:web:user1#new-key-id", "new-key-id"})
+        @ValueSource(strings = { "did:web:user1#new-key-id", "new-key-id" })
         void rotate_withUserToken(String keyId, IdentityHub identityHub, EventRouter router, StsAccountStore accountStore) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(KeyPairRotated.class, subscriber);
@@ -387,7 +385,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(userAuth)
                     .body(keyDesc)
-                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPairId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID, keyPairId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -427,7 +425,7 @@ public class KeyPairResourceApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(userAuth)
-                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPairId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID, keyPairId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -464,7 +462,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(invalidAuth)
                     .body(keyDesc)
-                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID, keyId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -502,7 +500,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(userAuth)
                     .body(keyDesc)
-                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPair.getId()))
+                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID, keyPair.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -551,7 +549,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(userAuth)
                     .body(keyDesc)
-                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPair.getId()))
+                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID, keyPair.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -568,7 +566,7 @@ public class KeyPairResourceApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "New Key-ID: {0}")
-        @ValueSource(strings = {"new-keyId", "did:web:user1#new-keyId"})
+        @ValueSource(strings = { "new-keyId", "did:web:user1#new-keyId" })
         @Disabled
         void revoke(String newKeyId, IdentityHub identityHub) {
             var superUserAuth = authorizeUser(SUPER_USER, identityHub);
@@ -588,7 +586,7 @@ public class KeyPairResourceApiEndToEndTest {
                                 .contentType(JSON)
                                 .header(header)
                                 .body(keyDesc)
-                                .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyId))
+                                .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(PARTICIPANT_CONTEXT_ID, keyId))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(204)
@@ -615,7 +613,7 @@ public class KeyPairResourceApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(userAuth)
-                    .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPairId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(PARTICIPANT_CONTEXT_ID, keyPairId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -647,7 +645,7 @@ public class KeyPairResourceApiEndToEndTest {
                     .contentType(JSON)
                     .header(invalidAuth)
                     .body(keyDesc)
-                    .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(PARTICIPANT_CONTEXT_ID, keyId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -743,7 +741,7 @@ public class KeyPairResourceApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(superUserAuth)
-                    .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPairId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID, keyPairId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -775,7 +773,7 @@ public class KeyPairResourceApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(userAuth)
-                    .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPairId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID, keyPairId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -812,7 +810,7 @@ public class KeyPairResourceApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(header)
-                    .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPairId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID, keyPairId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -849,7 +847,7 @@ public class KeyPairResourceApiEndToEndTest {
                         identityHub.getIdentityEndpoint().baseRequest()
                                 .contentType(JSON)
                                 .header(auth)
-                                .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPairId))
+                                .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID, keyPairId))
                                 .then()
                                 .log().ifError()
                                 .statusCode(404)
@@ -873,7 +871,7 @@ public class KeyPairResourceApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(attackerToken)
-                    .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID, keyId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -894,7 +892,7 @@ public class KeyPairResourceApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(token)
-                    .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPairId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/revoke".formatted(PARTICIPANT_CONTEXT_ID, keyPairId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -904,7 +902,7 @@ public class KeyPairResourceApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(token)
-                    .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID_BASE64, keyPairId))
+                    .post("/v1alpha/participants/%s/keypairs/%s/activate".formatted(PARTICIPANT_CONTEXT_ID, keyPairId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)

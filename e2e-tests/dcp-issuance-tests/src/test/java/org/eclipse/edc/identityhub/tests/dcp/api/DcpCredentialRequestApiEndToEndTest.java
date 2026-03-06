@@ -58,7 +58,6 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -94,7 +93,6 @@ public class DcpCredentialRequestApiEndToEndTest {
         public static final ECKey PARTICIPANT_KEY = generateEcKey(DID_WEB_PARTICIPANT_KEY_1);
         protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
         protected static final String ISSUER_ID = "issuer";
-        private static final String ISSUER_ID_ENCODED = Base64.getUrlEncoder().encodeToString(ISSUER_ID.getBytes());
         private static final String VALID_CREDENTIAL_REQUEST_MESSAGE = """
                 {
                   "@context": [
@@ -128,7 +126,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         private static @NotNull String issuanceUrl() {
-            return "/v1alpha/participants/%s/credentials".formatted(ISSUER_ID_ENCODED);
+            return "/v1alpha/participants/%s/credentials".formatted(ISSUER_ID);
         }
 
         @NotNull
@@ -236,7 +234,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                         .extract()
                         .header("Location");
 
-                assertThat(location).contains("/v1alpha/participants/%s/requests".formatted(ISSUER_ID_ENCODED));
+                assertThat(location).contains("/v1alpha/participants/%s/requests".formatted(ISSUER_ID));
 
                 var processId = location.substring(location.lastIndexOf('/') + 1);
 

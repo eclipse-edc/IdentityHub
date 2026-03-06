@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -70,7 +69,7 @@ public class IssuanceProcessApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(issuer, issuerService))
-                    .get("/v1alpha/participants/%s/issuanceprocesses/%s".formatted(toBase64(issuer), process.getId()))
+                    .get("/v1alpha/participants/%s/issuanceprocesses/%s".formatted(issuer, process.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -95,7 +94,7 @@ public class IssuanceProcessApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(issuer2, issuerService))
-                    .get("/v1alpha/participants/%s/issuanceprocesses/%s".formatted(toBase64(issuer), process.getId()))
+                    .get("/v1alpha/participants/%s/issuanceprocesses/%s".formatted(issuer, process.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -116,7 +115,7 @@ public class IssuanceProcessApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("holderId", "=", process.getHolderId()))
                             .build())
-                    .post("/v1alpha/participants/%s/issuanceprocesses/query".formatted(toBase64(issuer)))
+                    .post("/v1alpha/participants/%s/issuanceprocesses/query".formatted(issuer))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -148,7 +147,7 @@ public class IssuanceProcessApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("holderId", "=", process.getHolderId()))
                             .build())
-                    .post("/v1alpha/participants/%s/issuanceprocesses/query".formatted(toBase64(issuer)))
+                    .post("/v1alpha/participants/%s/issuanceprocesses/query".formatted(issuer))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -157,10 +156,6 @@ public class IssuanceProcessApiEndToEndTest {
         }
 
         protected abstract Header authorizeUser(String participantContextId, IssuerService issuerService);
-
-        private String toBase64(String s) {
-            return Base64.getUrlEncoder().encodeToString(s.getBytes());
-        }
 
         private IssuanceProcess createIssuanceProcess(String participantContextId) {
             return IssuanceProcess.Builder.newInstance()
@@ -270,7 +265,7 @@ public class IssuanceProcessApiEndToEndTest {
                 .issuer(ISSUER)
                 .signingKeyId("signing-key-id")
                 .build();
-        
+
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
