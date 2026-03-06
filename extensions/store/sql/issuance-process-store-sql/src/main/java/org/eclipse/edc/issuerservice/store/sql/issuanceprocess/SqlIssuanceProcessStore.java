@@ -136,6 +136,17 @@ public class SqlIssuanceProcessStore extends AbstractSqlStore implements Issuanc
     }
 
     @Override
+    public StoreResult<Void> breakLease(IssuanceProcess entity) {
+        return transactionContext.execute(() -> {
+            try (var connection = getConnection()) {
+                return leaseContext.withConnection(connection).breakLease(entity.getId());
+            } catch (SQLException e) {
+                throw new EdcPersistenceException(e);
+            }
+        });
+    }
+
+    @Override
     public Stream<IssuanceProcess> query(QuerySpec querySpec) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {

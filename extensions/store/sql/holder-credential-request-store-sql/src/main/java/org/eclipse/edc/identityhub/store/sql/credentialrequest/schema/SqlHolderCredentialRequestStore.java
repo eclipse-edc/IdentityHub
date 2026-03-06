@@ -129,6 +129,17 @@ public class SqlHolderCredentialRequestStore extends AbstractSqlStore implements
     }
 
     @Override
+    public StoreResult<Void> breakLease(HolderCredentialRequest entity) {
+        return transactionContext.execute(() -> {
+            try (var connection = getConnection()) {
+                return leaseContext.withConnection(connection).breakLease(entity.getId());
+            } catch (SQLException e) {
+                throw new EdcPersistenceException(e);
+            }
+        });
+    }
+
+    @Override
     public Collection<HolderCredentialRequest> query(QuerySpec querySpec) {
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
