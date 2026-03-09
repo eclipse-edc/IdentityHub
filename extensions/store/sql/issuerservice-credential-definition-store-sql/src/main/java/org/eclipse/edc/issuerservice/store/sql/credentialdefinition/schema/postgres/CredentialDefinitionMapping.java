@@ -38,6 +38,7 @@ public class CredentialDefinitionMapping extends TranslationMapping {
     public static final String FIELD_VALIDITY = "validity";
     public static final String FIELD_FORMAT = "format";
     public static final String FIELD_ATTESTATIONS = "attestations";
+    public static final String FIELD_ADDITIONAL_CONTEXT = "additionalContext";
     public static final String FIELD_RULES = "rules";
     public static final String FIELD_MAPPINGS = "mappings";
 
@@ -55,5 +56,7 @@ public class CredentialDefinitionMapping extends TranslationMapping {
         add(FIELD_ATTESTATIONS, new JsonArrayTranslator(statements.getAttestationsColumn()));
         add(FIELD_RULES, new JsonFieldTranslator(RULES_ALIAS));
         add(FIELD_MAPPINGS, new JsonFieldTranslator(MAPPING_ALIAS));
+        add(FIELD_ADDITIONAL_CONTEXT, new JsonArrayTranslator(statements.getAdditionalContextColumn()));
+
     }
 }

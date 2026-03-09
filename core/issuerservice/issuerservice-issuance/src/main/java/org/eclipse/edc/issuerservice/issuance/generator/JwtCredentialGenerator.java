@@ -33,9 +33,11 @@ import org.eclipse.edc.token.spi.TokenGenerationService;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -72,7 +74,7 @@ public class JwtCredentialGenerator implements CredentialGenerator {
 
         var statusResult = createCredentialStatus(claims);
 
-        var credentialBuilder = generateVerifiableCredential(definition.getCredentialType(), definition.getValidity(), issuerId, holderDid, subjectResult.getContent());
+        var credentialBuilder = generateVerifiableCredential(definition.getAdditionalContext(), definition.getCredentialType(), definition.getValidity(), issuerId, holderDid, subjectResult.getContent());
 
         statusResult.onSuccess(credentialBuilder::credentialStatus);
 
@@ -114,9 +116,13 @@ public class JwtCredentialGenerator implements CredentialGenerator {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private VerifiableCredential.Builder generateVerifiableCredential(String type, long validity, String issuer, String holderId, Map<String, Object> credentialSubject) {
+    private VerifiableCredential.Builder generateVerifiableCredential(List<String> additionalContext, String type, long validity, String issuer, String holderId, Map<String, Object> credentialSubject) {
+        var ctx = new LinkedHashSet<>();
+        ctx.add(VcConstants.W3C_CREDENTIALS_URL);
+        ctx.addAll(additionalContext);
         return VerifiableCredential.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
+                .contexts(new ArrayList<>(ctx))
                 .issuer(new Issuer(issuer))
                 .dataModelVersion(DataModelVersion.V_1_1)
                 .issuanceDate(Instant.now(clock))
@@ -149,8 +155,11 @@ public class JwtCredentialGenerator implements CredentialGenerator {
     }
 
     private Map<String, Object> createVcClaim(VerifiableCredential verifiableCredential, String... type) {
+        var ctx = new LinkedHashSet<>();
+        ctx.add(VcConstants.W3C_CREDENTIALS_URL);
+        ctx.addAll(verifiableCredential.getContext());
         var claims = new HashMap<>(
-                Map.of(JsonLdKeywords.CONTEXT, List.of(VcConstants.W3C_CREDENTIALS_URL),
+                Map.of(JsonLdKeywords.CONTEXT, ctx,
                         TYPE_PROPERTY, Arrays.asList(type),
                         "id", verifiableCredential.getId(),
                         "issuanceDate", verifiableCredential.getIssuanceDate().toString(),

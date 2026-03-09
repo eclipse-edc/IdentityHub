@@ -21,6 +21,7 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -35,6 +36,18 @@ public abstract class CredentialDefinitionStoreTestBase {
     @Test
     void create() {
         var credentialDefinition = createCredentialDefinition();
+        var result = getStore().create(credentialDefinition);
+        assertThat(result).isSucceeded();
+        var query = getStore().query(QuerySpec.max());
+        assertThat(query).isSucceeded();
+        assertThat(query.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(credentialDefinition);
+    }
+
+    @Test
+    void create_withAdditionalContext() {
+        var credentialDefinition = createCredentialDefinitionBuilder(UUID.randomUUID().toString(), "Membership")
+                .additionalContext(List.of("https://example.com/context1", "https://example.com/context2"))
+                .build();
         var result = getStore().create(credentialDefinition);
         assertThat(result).isSucceeded();
         var query = getStore().query(QuerySpec.max());
@@ -234,6 +247,32 @@ public abstract class CredentialDefinitionStoreTestBase {
                     .hasSize(2)
                     .usingRecursiveFieldByFieldElementComparator()
                     .containsExactlyInAnyOrder(def1, def2);
+        }
+
+        @Test
+        void byAdditionalContext() {
+            var def1 = createCredentialDefinitionBuilder("id1", "Membership")
+                    .additionalContext(List.of("https://example.com/context1", "https://example.com/context2"))
+                    .build();
+            var def2 = createCredentialDefinitionBuilder("id2", "Iso9001Cert")
+                    .additionalContext(List.of("https://example.com/context2", "https://example.com/context3"))
+
+                    .build();
+
+            var r = getStore().create(def1).compose(v -> getStore().create(def2));
+            assertThat(r).isSucceeded();
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("additionalContext", "contains", "https://example.com/context1"))
+                    .build();
+
+            var result = getStore().query(query);
+            assertThat(result).isSucceeded();
+
+            assertThat(result.getContent())
+                    .hasSize(1)
+                    .usingRecursiveFieldByFieldElementComparator()
+                    .containsExactlyInAnyOrder(def1);
         }
 
         @Test
