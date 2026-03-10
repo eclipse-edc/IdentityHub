@@ -60,6 +60,10 @@ public interface CredentialDefinitionStoreStatements extends SqlStatements {
         return "json_schema_url";
     }
 
+    default String getAdditionalContextColumn() {
+        return "additional_context";
+    }
+
     default String getValidityColumn() {
         return "validity";
     }

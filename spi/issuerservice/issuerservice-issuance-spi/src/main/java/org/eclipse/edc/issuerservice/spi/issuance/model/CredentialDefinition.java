@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 public class CredentialDefinition extends AbstractParticipantResource {
 
     private final List<String> attestations = new ArrayList<>();
+    private final List<String> additionalContext = new ArrayList<>();
     private final List<CredentialRuleDefinition> rules = new ArrayList<>();
     private final List<MappingDefinition> mappings = new ArrayList<>();
     private String format;
@@ -47,7 +48,7 @@ public class CredentialDefinition extends AbstractParticipantResource {
 
     private CredentialDefinition() {
     }
-    
+
     public String getCredentialType() {
         return credentialType;
     }
@@ -75,6 +76,10 @@ public class CredentialDefinition extends AbstractParticipantResource {
 
     public List<String> getAttestations() {
         return attestations;
+    }
+
+    public List<String> getAdditionalContext() {
+        return additionalContext;
     }
 
     public List<CredentialRuleDefinition> getRules() {
@@ -137,6 +142,11 @@ public class CredentialDefinition extends AbstractParticipantResource {
         @JsonIgnore
         public Builder attestation(String attestation) {
             this.entity.attestations.add(attestation);
+            return this;
+        }
+
+        public Builder additionalContext(List<String> additionalContext) {
+            this.entity.additionalContext.addAll(additionalContext);
             return this;
         }
 

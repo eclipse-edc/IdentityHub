@@ -47,7 +47,7 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
  */
 public class SqlCredentialDefinitionStore extends AbstractSqlStore implements CredentialDefinitionStore {
 
-    private static final TypeReference<List<String>> ATTESTATIONS_LIST_REF = new TypeReference<>() {
+    private static final TypeReference<List<String>> STRING_LIST_REF = new TypeReference<>() {
     };
 
     private static final TypeReference<List<CredentialRuleDefinition>> RULES_LIST_REF = new TypeReference<>() {
@@ -109,6 +109,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                         toJson(credentialDefinition.getRules()),
                         toJson(credentialDefinition.getMappings()),
                         toJson(credentialDefinition.getJsonSchema()),
+                        toJson(credentialDefinition.getAdditionalContext()),
                         credentialDefinition.getJsonSchemaUrl(),
                         credentialDefinition.getValidity(),
                         credentialDefinition.getFormat(),
@@ -145,6 +146,7 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                             toJson(credentialDefinition.getRules()),
                             toJson(credentialDefinition.getMappings()),
                             toJson(credentialDefinition.getJsonSchema()),
+                            toJson(credentialDefinition.getAdditionalContext()),
                             credentialDefinition.getJsonSchemaUrl(),
                             credentialDefinition.getValidity(),
                             credentialDefinition.getFormat(),
@@ -209,9 +211,10 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                 .id(resultSet.getString(statements.getIdColumn()))
                 .participantContextId(resultSet.getString(statements.getParticipantContextIdColumn()))
                 .credentialType(resultSet.getString(statements.getCredentialTypeColumn()))
-                .attestations(fromJson(resultSet.getString(statements.getAttestationsColumn()), ATTESTATIONS_LIST_REF))
+                .attestations(fromJson(resultSet.getString(statements.getAttestationsColumn()), STRING_LIST_REF))
                 .rules(fromJson(resultSet.getString(statements.getRulesColumn()), RULES_LIST_REF))
                 .mappings(fromJson(resultSet.getString(statements.getMappingsColumn()), MAPPINGS_LIST_REF))
+                .additionalContext(fromJson(resultSet.getString(statements.getAdditionalContextColumn()), STRING_LIST_REF))
                 .jsonSchema(resultSet.getString(statements.getJsonSchemaColumn()))
                 .jsonSchemaUrl(resultSet.getString(statements.getJsonSchemaUrlColumn()))
                 .validity(resultSet.getLong(statements.getValidityColumn()))

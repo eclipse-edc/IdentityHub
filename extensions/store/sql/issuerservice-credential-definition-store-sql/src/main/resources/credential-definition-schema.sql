@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS credential_definitions
     attestations           JSON    NOT NULL DEFAULT '[]',
     rules                  JSON    NOT NULL DEFAULT '[]',
     mappings               JSON    NOT NULL DEFAULT '[]',
+    additional_context     JSON    NOT NULL DEFAULT '[]',
     json_schema            JSON,
     json_schema_url        VARCHAR,
     validity               BIGINT  NOT NULL,
