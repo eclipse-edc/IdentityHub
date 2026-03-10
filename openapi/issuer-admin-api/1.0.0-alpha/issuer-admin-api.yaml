@@ -1267,6 +1267,10 @@ components:
     VerifiableCredential:
       type: object
       properties:
+        '@context':
+          type: array
+          items:
+            type: object
         credentialSchema:
           type: array
           items:
