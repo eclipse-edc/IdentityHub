@@ -1205,6 +1205,10 @@ components:
     CredentialDefinition:
       type: object
       properties:
+        additionalContext:
+          type: array
+          items:
+            type: string
         attestations:
           type: array
           items:
