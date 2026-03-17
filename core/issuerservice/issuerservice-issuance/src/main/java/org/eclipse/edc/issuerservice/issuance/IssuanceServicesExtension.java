@@ -22,6 +22,7 @@ import org.eclipse.edc.issuerservice.issuance.attestation.AttestationDefinitionV
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationPipelineImpl;
 import org.eclipse.edc.issuerservice.issuance.credentialdefinition.CredentialDefinitionServiceImpl;
 import org.eclipse.edc.issuerservice.issuance.generator.CredentialGeneratorRegistryImpl;
+import org.eclipse.edc.issuerservice.issuance.generator.JoseVcdm20CredentialGenerator;
 import org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator;
 import org.eclipse.edc.issuerservice.issuance.mapping.IssuanceClaimsMapperImpl;
 import org.eclipse.edc.issuerservice.issuance.rule.CredentialRuleDefinitionEvaluatorImpl;
@@ -146,6 +147,7 @@ public class IssuanceServicesExtension implements ServiceExtension {
 
         var jwtGenerationService = new JwtGenerationService(jwsSignerProvider);
         generator.addGenerator(CredentialFormat.VC1_0_JWT, new JwtCredentialGenerator(jwtGenerationService, clock));
+        generator.addGenerator(CredentialFormat.VC2_0_JOSE, new JoseVcdm20CredentialGenerator(jwtGenerationService, clock));
         return generator;
     }
 

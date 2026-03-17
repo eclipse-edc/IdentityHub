@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.tests.dcp.flow;
 
 import io.restassured.http.Header;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
@@ -52,12 +53,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_NAME;
 import static org.mockito.ArgumentMatchers.any;
@@ -106,20 +109,21 @@ public class DcpIssuanceFlowEndToEndTest {
             var attestationDefinition = setupIssuer(issuer, Map.of(
                     "claim", "onboarding.signedDocuments",
                     "operator", "eq",
-                    "value", true), mappingDefinition);
+                    "value", true), mappingDefinition, VC1_0_JWT);
 
             var attestationSource = mock(AttestationSource.class);
             when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
             when(attestationSource.execute(any()))
                     .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice"))));
 
+            var requestId = UUID.randomUUID().toString();
             var request = """
                     {
                       "issuerDid": "%s",
-                      "holderPid": "test-request-id",
+                      "holderPid": "%s",
                       "credentials": [{ "format": "VC1_0_JWT", "id": "membershipCredential-id", "type": "MembershipCredential" }]
                     }
-                    """.formatted(issuerDid);
+                    """.formatted(issuerDid, requestId);
 
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
@@ -129,7 +133,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
-                    .header("Location", Matchers.endsWith("/credentials/request/test-request-id"));
+                    .header("Location", Matchers.endsWith("/credentials/request/" + requestId));
 
             // wait for the request status to be requested on the holder side
             await().pollInterval(INTERVAL)
@@ -137,7 +141,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
                             .allSatisfy(t -> {
                                 assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
-                                assertThat(t.getHolderPid()).isEqualTo("test-request-id");
+                                assertThat(t.getHolderPid()).isEqualTo(requestId);
                             }));
 
             // wait for the issuance process to be delivered on the issuer side
@@ -145,7 +149,99 @@ public class DcpIssuanceFlowEndToEndTest {
                     .atMost(TIMEOUT)
                     .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID)).hasSize(1)
                             .allSatisfy(t -> {
-                                assertThat(t.getHolderPid()).isEqualTo("test-request-id");
+                                assertThat(t.getHolderPid()).isEqualTo(requestId);
+                                assertThat(t.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
+                            }));
+
+            // checks that the credential was issued on the holder side
+            assertThat(identityHub.getCredentialsForParticipant(PARTICIPANT_ID))
+                    .hasSize(1)
+                    .allSatisfy(vc -> {
+                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
+                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                        assertThat(vc.getVerifiableCredential().credential().getCredentialStatus()).isNotEmpty()
+                                .anySatisfy(t -> {
+                                    assertThat(t.getProperty("", "statusPurpose").toString()).isEqualTo("revocation");
+                                });
+                    });
+
+            // checks that the credential was issued on the issuer side
+            assertThat(issuer.getCredentialsForParticipant(ISSUER_ID))
+                    .hasSize(2)
+                    .anySatisfy(vc -> {
+                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
+                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                        assertThat(vc.getVerifiableCredential().credential().getCredentialStatus()).hasSize(1)
+                                .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
+                    });
+
+            // verify that the status credential on the issuer side is accessible
+            assertThat(issuer.getCredentialsForParticipant(ISSUER_ID))
+                    .anySatisfy(vc -> {
+                        assertThat(vc.getMetadata()).isNotNull().isNotEmpty().containsKey("publicUrl");
+
+                        var url = vc.getMetadata().get("publicUrl");
+                        given()
+                                .baseUri(url.toString())
+                                .header("Accept", "application/vc+jwt")
+                                .get()
+                                .then()
+                                .log().ifValidationFails()
+                                .statusCode(200)
+                                .header("Content-Type", "application/vc+jwt")
+                                .body(Matchers.notNullValue());
+                    });
+        }
+
+        @Test
+        void issuanceFlow_vcdm20_jose(IssuerService issuer, IdentityHub identityHub) {
+            var mappingDefinition = new MappingDefinition("participant.name", "credentialSubject.name", true);
+            var attestationDefinition = setupIssuer(issuer, Map.of(
+                    "claim", "onboarding.signedDocuments",
+                    "operator", "eq",
+                    "value", true), mappingDefinition, VC2_0_JOSE);
+
+            var attestationSource = mock(AttestationSource.class);
+            when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
+            when(attestationSource.execute(any()))
+                    .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice"))));
+
+            var requestId = UUID.randomUUID().toString();
+            var request = """
+                    {
+                      "issuerDid": "%s",
+                      "holderPid": "%s",
+                      "credentials": [{ "format": "VC2_0_JOSE", "id": "membershipCredential-id", "type": "MembershipCredential" }]
+                    }
+                    """.formatted(issuerDid, requestId);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(request)
+                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201)
+                    .header("Location", Matchers.endsWith("/credentials/request/" + requestId));
+
+            // wait for the request status to be requested on the holder side
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID)).hasSize(1)
+                            .allSatisfy(t -> {
+                                assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
+                                assertThat(t.getHolderPid()).isEqualTo(requestId);
+                            }));
+
+            // wait for the issuance process to be delivered on the issuer side
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID)).hasSize(1)
+                            .allSatisfy(t -> {
+                                assertThat(t.getHolderPid()).isEqualTo(requestId);
                                 assertThat(t.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
                             }));
 
@@ -198,7 +294,7 @@ public class DcpIssuanceFlowEndToEndTest {
         /**
          * Setup the issuer with an attestation definition and a credential definition
          */
-        private @NotNull AttestationDefinition setupIssuer(IssuerService issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition) {
+        private @NotNull AttestationDefinition setupIssuer(IssuerService issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition, CredentialFormat credentialFormat) {
             var holderService = issuer.getService(HolderService.class);
             var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
             var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
@@ -226,7 +322,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .mapping(mappingDefinition)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
                     .participantContextId(PARTICIPANT_ID)
-                    .formatFrom(VC1_0_JWT)
+                    .formatFrom(credentialFormat)
                     .build();
 
             credentialDefinitionService.createCredentialDefinition(credentialDefinition);

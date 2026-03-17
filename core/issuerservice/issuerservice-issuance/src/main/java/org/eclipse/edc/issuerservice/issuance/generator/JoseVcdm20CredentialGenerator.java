@@ -32,6 +32,7 @@ import org.eclipse.edc.token.spi.TokenGenerationService;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +41,9 @@ import java.util.UUID;
 
 import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.CREDENTIAL_STATUS;
 import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.CREDENTIAL_SUBJECT;
+import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.TYPE_PROPERTY;
 import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.VERIFIABLE_CREDENTIAL;
+import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.VERIFIABLE_CREDENTIAL_CLAIM;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
@@ -85,10 +88,10 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
 
         statusResult.onSuccess(builder::credentialStatus);
 
-        var vc = builder.build();
+        var credential = builder.build();
 
-        return signCredential(participantContextId, vc, privateKeyAlias, publicKeyId)
-                .map(token -> new VerifiableCredentialContainer(token, CredentialFormat.VC2_0_JOSE, vc));
+        return signCredentialInternal(participantContextId, credential, privateKeyAlias, publicKeyId, issuerId, holderDid, VERIFIABLE_CREDENTIAL, definition.getCredentialType())
+                .map(token -> new VerifiableCredentialContainer(token, CredentialFormat.VC2_0_JOSE, credential));
     }
 
     @Override
@@ -96,23 +99,26 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
                                          String publicKeyId) {
 
         var issuerId = credential.getIssuer().id();
+        var type = credential.getType().toArray(new String[0]);
         var holderDid = credential.getCredentialSubject().iterator().next().getId();
 
+        return signCredentialInternal(participantContextId, credential, privateKeyAlias, publicKeyId, issuerId, holderDid, type);
+    }
+
+    private Result<String> signCredentialInternal(String participantContextId, VerifiableCredential credential, String privateKeyAlias, String publicKeyId, String issuerId, String holderDid, String... types) {
         var composedKeyId = publicKeyId.startsWith(issuerId)
                 ? publicKeyId
                 : issuerId + "#" + publicKeyId;
 
         TokenDecorator decorator = tokenBuilder -> {
-
-            var vcClaim = createVcClaim(credential);
-
+            var vcClaim = createVcClaim(credential, types);
             tokenBuilder
                     .claims(ISSUER, issuerId)
                     .claims(SUBJECT, holderDid)
                     .claims(ISSUED_AT, Date.from(clock.instant()))
                     .claims(NOT_BEFORE, Date.from(credential.getIssuanceDate()))
                     .claims(JWT_ID, UUID.randomUUID().toString())
-                    .claims("vc", vcClaim);
+                    .claims(VERIFIABLE_CREDENTIAL_CLAIM, vcClaim);
 
             if (credential.getExpirationDate() != null) {
                 tokenBuilder.claims(EXPIRATION_TIME, Date.from(credential.getExpirationDate()));
@@ -126,16 +132,31 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
                 .map(TokenRepresentation::getToken);
     }
 
-    private Map<String, Object> createVcClaim(VerifiableCredential vc) {
+    private Map<String, Object> createVcClaim(VerifiableCredential credential, String... types) {
 
-        return new HashMap<>(Map.of(
-                JsonLdKeywords.CONTEXT, List.of("https://www.w3.org/ns/credentials/v2"),
-                "id", vc.getId(),
-                "type", vc.getType(),
-                "issuer", vc.getIssuer().id(),
-                "issuanceDate", vc.getIssuanceDate().toString(),
-                "credentialSubject", credentialSubjectClaims(vc)
-        ));
+        var claims = new HashMap<>(
+                Map.of(JsonLdKeywords.CONTEXT, List.of("https://www.w3.org/ns/credentials/v2"),
+                        TYPE_PROPERTY, Arrays.asList(types),
+                        "id", credential.getId(),
+                        "validFrom", credential.getIssuanceDate().toString(),
+                        "issuer", credential.getIssuer().id(),
+                        CREDENTIAL_SUBJECT, credentialSubjectClaims(credential)
+                ));
+        if (credential.getExpirationDate() != null) {
+            claims.put("validUntil", credential.getExpirationDate().toString());
+        }
+        if (credential.getDescription() != null) {
+            claims.put("description", credential.getDescription());
+        }
+        if (credential.getName() != null) {
+            claims.put("name", credential.getName());
+        }
+
+        var status = credentialStatusClaims(credential);
+        if (!status.isEmpty()) {
+            claims.put(CREDENTIAL_STATUS, credentialStatusClaims(credential));
+        }
+        return claims;
     }
 
     private Map<String, Object> credentialSubjectClaims(VerifiableCredential verifiableCredential) {
@@ -152,6 +173,17 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
             return Result.failure("Missing credentialSubject in claims");
         }
         return Result.success((Map<String, Object>) claims.get(CREDENTIAL_SUBJECT));
+    }
+
+    private Map<String, Object> credentialStatusClaims(VerifiableCredential verifiableCredential) {
+        if (verifiableCredential.getCredentialStatus().isEmpty()) {
+            return Map.of();
+        }
+        var status = verifiableCredential.getCredentialStatus().get(0);
+        var statusMap = new HashMap<String, Object>(Map.of("id", status.id(),
+                "type", status.type()));
+        statusMap.putAll(status.additionalProperties());
+        return statusMap;
     }
 
     @SuppressWarnings("unchecked")
