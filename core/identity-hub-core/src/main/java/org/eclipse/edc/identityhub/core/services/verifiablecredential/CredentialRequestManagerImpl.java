@@ -168,15 +168,15 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * @return a CompletableFuture containing the result of processing the request.
      */
     private CompletableFuture<StatusResult<Void>> processInitial(HolderCredentialRequest holderCredentialRequest) {
-        return CompletableFuture.supplyAsync(() -> {
-            monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getHolderPid()));
-            var result = getCredentialRequestEndpoint(holderCredentialRequest)
-                    .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
-                    .compose(issuerPid -> handleCredentialResponse(issuerPid, holderCredentialRequest))
-                    .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
+        monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getHolderPid()));
 
-            return result.succeeded() ? StatusResult.success() : StatusResult.failure(ResponseStatus.FATAL_ERROR, result.getFailureDetail());
-        });
+        var result = getCredentialRequestEndpoint(holderCredentialRequest)
+                .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
+                .compose(issuerPid -> handleCredentialResponse(issuerPid, holderCredentialRequest))
+                .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
+
+        StatusResult<Void> statusResult = result.succeeded() ? StatusResult.success() : StatusResult.failure(ResponseStatus.FATAL_ERROR, result.getFailureDetail());
+        return CompletableFuture.completedFuture(statusResult);
     }
 
     /**
