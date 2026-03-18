@@ -45,14 +45,19 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
@@ -99,15 +104,16 @@ public class DcpIssuanceFlowEndToEndTest {
             participantToken = credentialService.createParticipant(PARTICIPANT_ID, participantDid, participantDid + "#key").apiKey();
         }
 
-        @Test
-        void issuanceFlow(IssuerService issuer, IdentityHub identityHub) {
+        @ParameterizedTest
+        @ArgumentsSource(CredentialFormatProvider.class)
+        void issuanceFlow(CredentialFormat format, String credentialType, IssuerService issuer, IdentityHub identityHub) {
 
             var mappingDefinition = new MappingDefinition("participant.name", "credentialSubject.name", true);
-            var credentialDefinitionId = "membershipCredential11-id";
+            var credentialDefinitionId = UUID.randomUUID().toString();
             var attestationDefinition = setupIssuer(issuer, Map.of(
                     "claim", "onboarding.signedDocuments",
                     "operator", "eq",
-                    "value", true), mappingDefinition, VC1_0_JWT, credentialDefinitionId, "MembershipCredential11");
+                    "value", true), mappingDefinition, format, credentialDefinitionId, credentialType);
 
             var attestationSource = mock(AttestationSource.class);
             when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
@@ -119,9 +125,9 @@ public class DcpIssuanceFlowEndToEndTest {
                     {
                       "issuerDid": "%s",
                       "holderPid": "%s",
-                      "credentials": [{ "format": "VC1_0_JWT", "id": "%s", "type": "MembershipCredential11" }]
+                      "credentials": [{ "format": "%s", "id": "%s", "type": "%s" }]
                     }
-                    """.formatted(issuerDid, requestId, credentialDefinitionId);
+                    """.formatted(issuerDid, requestId, format.name(), credentialDefinitionId, credentialType);
 
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
@@ -194,104 +200,6 @@ public class DcpIssuanceFlowEndToEndTest {
                     });
         }
 
-        @Test
-        void issuanceFlow_vcdm20_jose(IssuerService issuer, IdentityHub identityHub) {
-            var mappingDefinition = new MappingDefinition("participant.name", "credentialSubject.name", true);
-            var credentialDefinitionId = "membershipCredential20-id";
-            var attestationDefinition = setupIssuer(issuer, Map.of(
-                    "claim", "onboarding.signedDocuments",
-                    "operator", "eq",
-                    "value", true), mappingDefinition, VC2_0_JOSE, credentialDefinitionId, "MembershipCredential20");
-
-            var attestationSource = mock(AttestationSource.class);
-            when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
-            when(attestationSource.execute(any()))
-                    .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice"))));
-
-            var requestId = UUID.randomUUID().toString();
-            var request = """
-                    {
-                      "issuerDid": "%s",
-                      "holderPid": "%s",
-                      "credentials": [{ "format": "VC2_0_JOSE", "id": "%s", "type": "MembershipCredential20" }]
-                    }
-                    """.formatted(issuerDid, requestId, credentialDefinitionId);
-
-            identityHub.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(request)
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201)
-                    .header("Location", Matchers.endsWith("/credentials/request/" + requestId));
-
-            // wait for the request status to be requested on the holder side
-            await().pollInterval(INTERVAL)
-                    .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID))
-                            .hasSizeGreaterThanOrEqualTo(1)
-                            .anySatisfy(t -> {
-                                assertThat(t.getState()).isEqualTo(HolderRequestState.ISSUED.code());
-                                assertThat(t.getHolderPid()).isEqualTo(requestId);
-                            }));
-
-            // wait for the issuance process to be delivered on the issuer side
-            await().pollInterval(INTERVAL)
-                    .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID)).hasSize(1)
-                            .allSatisfy(t -> {
-                                assertThat(t.getHolderPid()).isEqualTo(requestId);
-                                assertThat(t.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
-                            }));
-
-            // checks that the credential was issued on the holder side
-            assertThat(identityHub.getCredentialsForParticipant(PARTICIPANT_ID))
-                    .hasSize(1)
-                    .allSatisfy(vc -> {
-                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
-                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
-                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
-                        assertThat(vc.getVerifiableCredential().credential()).satisfies(v -> {
-                            assertThat(v.getCredentialStatus()).isNotEmpty()
-                                    .anySatisfy(t -> assertThat(t.getProperty("", "statusPurpose").toString()).isEqualTo("revocation"));
-                            assertThat(v.getContext()).contains("https://example.com/credentials/membership/v1");
-                        });
-                    });
-
-            // checks that the credential was issued on the issuer side
-            assertThat(issuer.getCredentialsForParticipant(ISSUER_ID))
-                    .hasSize(2)
-                    .anySatisfy(vc -> {
-                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
-                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
-                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
-                        assertThat(vc.getVerifiableCredential().credential()).satisfies(v -> {
-                            assertThat(v.getCredentialStatus()).hasSize(1)
-                                    .allSatisfy(t -> assertThat(t.type()).isEqualTo("BitstringStatusListEntry"));
-                            assertThat(v.getContext()).contains("https://example.com/credentials/membership/v1");
-                        });
-                    });
-
-            // verify that the status credential on the issuer side is accessible
-            assertThat(issuer.getCredentialsForParticipant(ISSUER_ID))
-                    .anySatisfy(vc -> {
-                        assertThat(vc.getMetadata()).isNotNull().isNotEmpty().containsKey("publicUrl");
-
-                        var url = vc.getMetadata().get("publicUrl");
-                        given()
-                                .baseUri(url.toString())
-                                .header("Accept", "application/vc+jwt")
-                                .get()
-                                .then()
-                                .log().ifValidationFails()
-                                .statusCode(200)
-                                .header("Content-Type", "application/vc+jwt")
-                                .body(Matchers.notNullValue());
-                    });
-        }
-
         /**
          * Setup the issuer with an attestation definition and a credential definition
          */
@@ -332,6 +240,15 @@ public class DcpIssuanceFlowEndToEndTest {
             return attestationDefinition;
         }
 
+        static class CredentialFormatProvider implements ArgumentsProvider {
+            @Override
+            public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
+                return Stream.of(
+                        Arguments.of(VC1_0_JWT, "MembershipCredential_11"),
+                        Arguments.of(VC2_0_JOSE, "MembershipCredential_20")
+                );
+            }
+        }
 
     }
 
