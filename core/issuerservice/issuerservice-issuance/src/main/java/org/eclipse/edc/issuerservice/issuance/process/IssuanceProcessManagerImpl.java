@@ -44,6 +44,7 @@ import org.eclipse.edc.statemachine.StateMachineManager;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static org.eclipse.edc.spi.persistence.StateEntityStore.hasState;
@@ -71,7 +72,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
      * Process APPROVED issuance process
      */
     @WithSpan
-    private boolean processApproved(IssuanceProcess process) {
+    private CompletableFuture<StatusResult<Void>> processApproved(IssuanceProcess process) {
         return entityRetryProcessFactory.retryProcessor(process)
                 .doProcess(result("Generate Credentials", (p, result) -> generateCredential(p)))
                 .doProcess(result("Add Credentials to StatusList", this::addCredentialsToStatusList))
@@ -186,13 +187,13 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         transitionToError(process);
     }
 
-    private Processor processIssuanceInState(IssuanceProcessStates state, Function<IssuanceProcess, Boolean> function) {
-        var filter = new Criterion[]{hasState(state.code()), isNotPending()};
+    private Processor processIssuanceInState(IssuanceProcessStates state, Function<IssuanceProcess, CompletableFuture<StatusResult<Void>>> function) {
+        var filter = new Criterion[]{ hasState(state.code()), isNotPending() };
         return createProcessor(function, filter);
     }
 
-    private ProcessorImpl<IssuanceProcess> createProcessor(Function<IssuanceProcess, Boolean> function, Criterion[] filter) {
-        return ProcessorImpl.Builder.newInstance(() -> store.nextNotLeased(batchSize, filter))
+    private ProcessorImpl<IssuanceProcess> createProcessor(Function<IssuanceProcess, CompletableFuture<StatusResult<Void>>> function, Criterion[] filter) {
+        return ProcessorImpl.Builder.newInstance(() -> store.nextNotLeased(batchSize, filter), entityRetryProcessConfiguration, clock, monitor)
                 .process(telemetry.contextPropagationMiddleware(function))
                 .onNotProcessed(this::breakLease)
                 .build();

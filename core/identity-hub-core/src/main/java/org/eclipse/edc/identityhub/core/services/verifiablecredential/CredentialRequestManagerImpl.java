@@ -35,6 +35,8 @@ import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.response.ResponseStatus;
+import org.eclipse.edc.spi.response.StatusResult;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.statemachine.AbstractStateEntityManager;
@@ -51,6 +53,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -145,13 +148,13 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         transactionContext.execute(() -> update(request));
     }
 
-    private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, Boolean> function) {
-        var filter = new Criterion[]{hasState(state.code()), isNotPending()};
+    private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, CompletableFuture<StatusResult<Void>>> function) {
+        var filter = new Criterion[]{ hasState(state.code()), isNotPending() };
         return createProcessor(function, filter);
     }
 
-    private ProcessorImpl<HolderCredentialRequest> createProcessor(Function<HolderCredentialRequest, Boolean> function, Criterion[] filter) {
-        return ProcessorImpl.Builder.newInstance(() -> store.nextNotLeased(batchSize, filter))
+    private ProcessorImpl<HolderCredentialRequest> createProcessor(Function<HolderCredentialRequest, CompletableFuture<StatusResult<Void>>> function, Criterion[] filter) {
+        return ProcessorImpl.Builder.newInstance(() -> store.nextNotLeased(batchSize, filter), entityRetryProcessConfiguration, clock, monitor)
                 .process(telemetry.contextPropagationMiddleware(function))
                 //.guard(pendingGuard, this::setPending) //todo: needed?
                 .onNotProcessed(this::breakLease)
@@ -162,16 +165,18 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
      * processes all requests that are in {@link HolderRequestState#CREATED} or {@link HolderRequestState#REQUESTING} state. Credential requests that were
      * interrupted before receiving the Issuer's response are in this state.
      *
-     * @return true if the request was processed, false otherwise.
+     * @return a CompletableFuture containing the result of processing the request.
      */
-    private Boolean processInitial(HolderCredentialRequest holderCredentialRequest) {
-        monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getHolderPid()));
-        var result = getCredentialRequestEndpoint(holderCredentialRequest)
-                .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
-                .compose(issuerPid -> handleCredentialResponse(issuerPid, holderCredentialRequest))
-                .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
+    private CompletableFuture<StatusResult<Void>> processInitial(HolderCredentialRequest holderCredentialRequest) {
+        return CompletableFuture.supplyAsync(() -> {
+            monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getHolderPid()));
+            var result = getCredentialRequestEndpoint(holderCredentialRequest)
+                    .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
+                    .compose(issuerPid -> handleCredentialResponse(issuerPid, holderCredentialRequest))
+                    .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
 
-        return result.succeeded();
+            return result.succeeded() ? StatusResult.success() : StatusResult.failure(ResponseStatus.FATAL_ERROR, result.getFailureDetail());
+        });
     }
 
     /**
