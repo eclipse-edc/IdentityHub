@@ -35,7 +35,7 @@ public class TckTransformer implements ScopeToCriterionTransformer {
     private final List<String> allowedOperations = List.of("read", "*", "all", "write");
 
     @Override
-    public Result<Result<List<Criterion>>> transform(String scope) {
+    public Result<Criterion> transform(String scope) {
         var tokens = tokenize(scope);
         if (tokens.failed()) {
             return failure("Scope string cannot be converted: %s".formatted(tokens.getFailureDetail()));

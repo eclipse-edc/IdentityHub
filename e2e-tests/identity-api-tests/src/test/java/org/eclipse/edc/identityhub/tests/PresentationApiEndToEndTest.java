@@ -78,6 +78,8 @@ import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestData.VC_EXAMPLE;
+import static org.eclipse.edc.identityhub.tests.fixtures.TestData.VC_EXAMPLE_2;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_DID;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_KEY;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.PROVIDER_DID;
@@ -108,7 +110,19 @@ public class PresentationApiEndToEndTest {
                   ],
                   "@type": "PresentationQueryMessage",
                   "scope":[
-                    "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read"
+                    "org.eclipse.edc.vc.type:AlumniCredential:read"
+                  ]
+                }
+                """;
+        private static final String VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE = """
+                {
+                  "@context": [
+                    "https://identity.foundation/presentation-exchange/submission/v1",
+                     "%s"
+                  ],
+                  "@type": "PresentationQueryMessage",
+                  "scope":[
+                    "%s"
                   ]
                 }
                 """;
@@ -292,27 +306,10 @@ public class PresentationApiEndToEndTest {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
-            // create the credential in the store
-            var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
-            var res = VerifiableCredentialResource.Builder.newHolder()
-                    .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
-                    .issuerId("https://example.edu/issuers/565049")
-                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .build();
-            store.create(res);
+            storeCredential(VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
 
             // create another credential in the store
-            var cred2 = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE_2, VerifiableCredential.class);
-            var res2 = VerifiableCredentialResource.Builder.newHolder()
-                    .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT, cred2))
-                    .issuerId("https://example.edu/issuers/12345")
-                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .build();
-            store.create(res2);
+            storeCredential(VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT, store);
 
 
             identityHub.getCredentialsEndpoint().baseRequest()
@@ -353,20 +350,14 @@ public class PresentationApiEndToEndTest {
             assertThat(vpTokensExtractor(response)).hasSize(0);
         }
 
-        @Test
-        void query_success_containsCredential(IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
+        // test with both the fully-qualified-credential-type and the compact credential type
+        @ParameterizedTest
+        @ValueSource(strings = { "org.eclipse.edc.vc.type:AlumniCredential:read", "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
+        void query_success_containsCredential(String scope, IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
 
-            var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
-            var res = VerifiableCredentialResource.Builder.newHolder()
-                    .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
-                    .issuerId("https://example.edu/issuers/565049")
-                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .build();
+            storeCredential(VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
 
-            store.create(res);
-            var token = generateSiToken();
+            var token = generateSiToken(scope);
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -543,16 +534,8 @@ public class PresentationApiEndToEndTest {
 
             createParticipant(identityHub, "attacker", generateEcKey("did:web:attacker#key-1"));
 
-            var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
-            var res = VerifiableCredentialResource.Builder.newHolder()
-                    .state(VcStatus.ISSUED)
-                    .credential(new VerifiableCredentialContainer(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, cred))
-                    .issuerId("https://example.edu/issuers/565049")
-                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
-                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
-                    .build();
+            storeCredential(VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
 
-            store.create(res);
             var token = generateSiToken();
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -601,8 +584,10 @@ public class PresentationApiEndToEndTest {
                     .body(Matchers.containsString("The DID associated with the Participant Context ID of this request ('did:web:consumer') must match 'aud' claim in 'access_token' ([did:web:someone_else])."));
         }
 
-        @Test
-        void query_filterCredentialWithWrongUsage(IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+        // test with both the fully-qualified-credential-type and the compact credential type
+        @ParameterizedTest
+        @ValueSource(strings = { "org.eclipse.edc.vc.type:AlumniCredential:read", "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
+        void query_filterCredentialWithWrongUsage(String scope, IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
             var res = VerifiableCredentialResource.Builder.newHolder()
@@ -626,7 +611,7 @@ public class PresentationApiEndToEndTest {
                     .build();
             store.create(resIssuanceTracker);
 
-            var token = generateSiToken();
+            var token = generateSiToken(scope);
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -653,6 +638,112 @@ public class PresentationApiEndToEndTest {
                                 });
                     });
 
+        }
+
+        @Test
+        void query_whenTypeClash(IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+
+            // both these credentials have the same type, but difference namespaces/contexts
+            storeCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
+            storeCredential(TestData.VC_EXAMPLE_OTHER_NAMESPACE, CredentialFormat.VC1_0_JWT, store);
+
+            // providing no specific scope should cause all credentials to be returned -> clash
+            var token = generateSiToken();
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var response = identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
+                    .hasEntrySatisfying("presentation", jsonValue ->
+                            assertThat(vpTokensExtractor(jsonValue)).hasSize(1)
+                                    .first()
+                                    .satisfies(vpToken -> {
+                                        assertThat(vpToken).isNotNull();
+                                        var credentials = extractCredentials(vpToken);
+                                        assertThat(credentials).hasSize(2);
+                                    }));
+        }
+
+        @Test
+        void query_whenUsingFullyQualifiedType(IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+            // both these credentials have the same type, but difference namespaces/contexts
+            storeCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
+            storeCredential(TestData.VC_EXAMPLE_OTHER_NAMESPACE, CredentialFormat.VC1_0_JWT, store);
+
+            // providing no specific scope should cause all credentials to be returned -> clash
+            var token = generateSiToken("org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read");
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var response = identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body(VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT, "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read"))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
+                    .hasEntrySatisfying("presentation", jsonValue ->
+                            assertThat(vpTokensExtractor(jsonValue)).hasSize(1)
+                                    .first()
+                                    .satisfies(vpToken -> {
+                                        assertThat(vpToken).isNotNull();
+                                        var credentials = extractCredentials(vpToken);
+                                        assertThat(credentials).hasSize(1);
+                                    }));
+        }
+
+        // tests that both the fully qualified and the compact credential type work
+        @ValueSource(strings = { "org.eclipse.edc.vc.type:AlumniCredential:read", "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
+        void query_testScopesWithSingleCredential(String scope, IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
+            // both these credentials have the same type, but difference namespaces/contexts
+            storeCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
+
+            // providing no specific scope should cause all credentials to be returned -> clash
+            var token = generateSiToken(scope);
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var response = identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body(VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT, scope))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
+                    .hasEntrySatisfying("presentation", jsonValue ->
+                            assertThat(vpTokensExtractor(jsonValue)).hasSize(1)
+                                    .first()
+                                    .satisfies(vpToken -> {
+                                        assertThat(vpToken).isNotNull();
+                                        var credentials = extractCredentials(vpToken);
+                                        assertThat(credentials).hasSize(1);
+                                    }));
         }
 
         /**
@@ -719,6 +810,21 @@ public class PresentationApiEndToEndTest {
             }
 
         }
+
+        private VerifiableCredentialResource storeCredential(String jsonContent, CredentialFormat format, CredentialStore store) throws JsonProcessingException {
+            var cred = OBJECT_MAPPER.readValue(jsonContent, VerifiableCredential.class);
+            var res = VerifiableCredentialResource.Builder.newHolder()
+                    .state(VcStatus.ISSUED)
+                    .credential(new VerifiableCredentialContainer(jsonContent, format, cred))
+                    .issuerId("https://example.edu/issuers/565049")
+                    .holderId("did:example:ebfeb1f712ebc6f1c276e12ec21")
+                    .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                    .build();
+
+            store.create(res).orElseThrow(f -> new AssertionError("Failed to store credential: " + f.getFailureDetail()));
+            return res;
+        }
+
     }
 
     @Nested

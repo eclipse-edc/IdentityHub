@@ -29,7 +29,7 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Ver
  * Utility class to generate various JWTs
  */
 public class JwtCreationUtil {
-    public static final String TEST_SCOPE = "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read";
+    public static final String TEST_SCOPE = "org.eclipse.edc.vc.type:AlumniCredential:read";
     public static final ECKey CONSUMER_KEY = generateEcKey("did:web:consumer#key1");
     public static final ECKey PROVIDER_KEY = generateEcKey("did:web:provider#key1");
     public static final String CONSUMER_DID = "did:web:consumer";
@@ -54,6 +54,16 @@ public class JwtCreationUtil {
     public static String generateSiToken(String consumerDid, String providerDid) {
         var accessToken = generateJwt(consumerDid, consumerDid, providerDid, Map.of("scope", TEST_SCOPE), CONSUMER_KEY);
         return generateJwt(consumerDid, providerDid, providerDid, Map.of("client_id", providerDid, "token", accessToken), PROVIDER_KEY);
+    }
+
+    /**
+     * Generates a self-issued token with the specified scope.
+     *
+     * @param scopeString the scope string as defined by DCP
+     */
+    public static String generateSiToken(String scopeString) {
+        var accessToken = generateJwt(CONSUMER_DID, CONSUMER_DID, PROVIDER_DID, Map.of("scope", scopeString), CONSUMER_KEY);
+        return generateJwt(CONSUMER_DID, PROVIDER_DID, PROVIDER_DID, Map.of("client_id", PROVIDER_DID, "token", accessToken), PROVIDER_KEY);
     }
 
     /**

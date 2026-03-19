@@ -30,7 +30,7 @@ class EdcScopeToCriterionTransformerTest {
             "org.eclipse.edc.vc.type:foo:all",
     })
     void transform_validScope(String scope) {
-        assertThat(transformer.transform(scope)).isSucceeded();
+        assertThat(transformer.transformScope(scope)).isSucceeded();
     }
 
     @ParameterizedTest
@@ -42,6 +42,6 @@ class EdcScopeToCriterionTransformerTest {
             "org.eclipse.edc:foo",
     })
     void transform_invalidScope(String scope) {
-        assertThat(transformer.transform(scope)).isFailed();
+        assertThat(transformer.transformScope(scope)).isFailed();
     }
 }
