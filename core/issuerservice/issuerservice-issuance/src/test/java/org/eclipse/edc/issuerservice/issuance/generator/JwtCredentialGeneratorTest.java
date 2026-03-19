@@ -46,7 +46,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
-import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.VERIFIABLE_CREDENTIAL_CLAIM;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VERIFIABLE_CREDENTIAL_CLAIM;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -72,7 +72,7 @@ public class JwtCredentialGeneratorTest {
         when(signerProvider.createJwsSigner(anyString())).thenThrow(new AssertionError("This method is deprecated and not to be used anymore"));
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     void generateCredential() {
 
@@ -116,7 +116,7 @@ public class JwtCredentialGeneratorTest {
         });
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     void generateCredential_additionalContext() {
 
@@ -158,7 +158,7 @@ public class JwtCredentialGeneratorTest {
         });
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
     void generateCredential_whenNoStatus() {
 

@@ -39,17 +39,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.CREDENTIAL_STATUS;
-import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.CREDENTIAL_SUBJECT;
-import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.TYPE_PROPERTY;
-import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.VERIFIABLE_CREDENTIAL;
-import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.VERIFIABLE_CREDENTIAL_CLAIM;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_STATUS;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_SUBJECT;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.ID;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.ISSUER;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.TYPE;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VALID_FROM;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VERIFIABLE_CREDENTIAL;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.JWT_ID;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.NOT_BEFORE;
-import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.SUBJECT;
 
 public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
 
@@ -112,13 +109,15 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
 
         TokenDecorator decorator = tokenBuilder -> {
             var vcClaim = createVcClaim(credential, types);
-            tokenBuilder
-                    .claims(ISSUER, issuerId)
-                    .claims(SUBJECT, holderDid)
-                    .claims(ISSUED_AT, Date.from(clock.instant()))
-                    .claims(NOT_BEFORE, Date.from(credential.getIssuanceDate()))
-                    .claims(JWT_ID, UUID.randomUUID().toString())
-                    .claims(VERIFIABLE_CREDENTIAL_CLAIM, vcClaim);
+//            tokenBuilder
+//                    .claims(ISSUER, issuerId)
+//                    .claims(SUBJECT, holderDid)
+//                    .claims(ISSUED_AT, Date.from(clock.instant()))
+//                    .claims(NOT_BEFORE, Date.from(credential.getIssuanceDate()))
+//                    .claims(JWT_ID, UUID.randomUUID().toString())
+//                    .claims(VERIFIABLE_CREDENTIAL_CLAIM, vcClaim);
+
+            vcClaim.forEach(tokenBuilder::claims);
 
             if (credential.getExpirationDate() != null) {
                 tokenBuilder.claims(EXPIRATION_TIME, Date.from(credential.getExpirationDate()));
@@ -136,10 +135,10 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
 
         var claims = new HashMap<>(
                 Map.of(JsonLdKeywords.CONTEXT, List.of("https://www.w3.org/ns/credentials/v2"),
-                        TYPE_PROPERTY, Arrays.asList(types),
-                        "id", credential.getId(),
-                        "validFrom", credential.getIssuanceDate().toString(),
-                        "issuer", credential.getIssuer().id(),
+                        TYPE, Arrays.asList(types),
+                        ID, credential.getId(),
+                        VALID_FROM, credential.getIssuanceDate().toString(),
+                        ISSUER, credential.getIssuer().id(),
                         CREDENTIAL_SUBJECT, credentialSubjectClaims(credential)
                 ));
         if (credential.getExpirationDate() != null) {
@@ -180,7 +179,7 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
             return Map.of();
         }
         var status = verifiableCredential.getCredentialStatus().get(0);
-        var statusMap = new HashMap<String, Object>(Map.of("id", status.id(),
+        var statusMap = new HashMap<String, Object>(Map.of(ID, status.id(),
                 "type", status.type()));
         statusMap.putAll(status.additionalProperties());
         return statusMap;
@@ -193,7 +192,7 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
         }
         var statusClaims = (Map<String, Object>) claims.get(CREDENTIAL_STATUS);
 
-        return Result.success(new CredentialStatus((String) statusClaims.get("id"),
+        return Result.success(new CredentialStatus((String) statusClaims.get(ID),
                 (String) statusClaims.get("type"),
                 statusClaims));
     }

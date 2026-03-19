@@ -108,17 +108,18 @@ public class DcpIssuanceFlowEndToEndTest {
         @ArgumentsSource(CredentialFormatProvider.class)
         void issuanceFlow(CredentialFormat format, String credentialType, IssuerService issuer, IdentityHub identityHub) {
 
-            var mappingDefinition = new MappingDefinition("participant.name", "credentialSubject.name", true);
+            var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);
+            var idMapping = new MappingDefinition("participant.id", "credentialSubject.id", true);
             var credentialDefinitionId = UUID.randomUUID().toString();
             var attestationDefinition = setupIssuer(issuer, Map.of(
                     "claim", "onboarding.signedDocuments",
                     "operator", "eq",
-                    "value", true), mappingDefinition, format, credentialDefinitionId, credentialType);
+                    "value", true), List.of(nameMapping, idMapping), format, credentialDefinitionId, credentialType);
 
             var attestationSource = mock(AttestationSource.class);
             when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
             when(attestationSource.execute(any()))
-                    .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice"))));
+                    .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice", "id", participantDid))));
 
             var requestId = UUID.randomUUID().toString();
             var request = """
@@ -203,7 +204,7 @@ public class DcpIssuanceFlowEndToEndTest {
         /**
          * Setup the issuer with an attestation definition and a credential definition
          */
-        private AttestationDefinition setupIssuer(IssuerService issuer, Map<String, Object> ruleConfiguration, MappingDefinition mappingDefinition, CredentialFormat credentialFormat, String credentialDefinitionId, String credentialType) {
+        private AttestationDefinition setupIssuer(IssuerService issuer, Map<String, Object> ruleConfiguration, List<MappingDefinition> mappingDefinitions, CredentialFormat credentialFormat, String credentialDefinitionId, String credentialType) {
             var holderService = issuer.getService(HolderService.class);
             var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
             var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
@@ -229,7 +230,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .jsonSchema("{}")
                     .attestation(attestationDefinition.getId())
                     .validity(Duration.ofDays(365).toSeconds()) // one year
-                    .mapping(mappingDefinition)
+                    .mappings(mappingDefinitions)
                     .rule(new CredentialRuleDefinition("expression", ruleConfiguration))
                     .participantContextId(PARTICIPANT_ID)
                     .formatFrom(credentialFormat)

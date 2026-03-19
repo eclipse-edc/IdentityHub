@@ -46,7 +46,12 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
-import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator.VERIFIABLE_CREDENTIAL_CLAIM;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_STATUS;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_SUBJECT;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.ID;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.ISSUER;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.TYPE;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VALID_FROM;
 import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGeneratorTest.PRIVATE_KEY_ALIAS;
 import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGeneratorTest.PUBLIC_KEY_ID;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -56,7 +61,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class JoseVcdm20CredentialGeneratorTest {
-    public static final List<String> REQUIRED_CLAIMS = asList("exp", "iss", "nbf", "jti", "sub", VERIFIABLE_CREDENTIAL_CLAIM);
+    public static final List<String> REQUIRED_CLAIMS = asList("@context", CREDENTIAL_SUBJECT, ID, VALID_FROM, ISSUER, TYPE);
     private static final String TEST_PARTICIPANT = "test-participant";
     private final JwsSignerProvider signerProvider = mock();
     private final TokenGenerationService tokenGenerationService = new JwtGenerationService(signerProvider);
@@ -72,14 +77,14 @@ class JoseVcdm20CredentialGeneratorTest {
     }
 
     @Test
-    void generateCredential() {
+    void generateCredential() throws ParseException {
         var subjectClaims = Map.of("name", "Foo Bar");
         var statusClaims = Map.of("id", UUID.randomUUID().toString(),
-                "type", "BitStringStatusListEntry",
+                TYPE, "BitStringStatusListEntry",
                 "statusPurpose", "revocation",
                 "statusListIndex", 42,
                 "statusCredential", "https://foo.bar/baz.json");
-        Map<String, Object> claims = Map.of("credentialSubject", subjectClaims, "credentialStatus", statusClaims);
+        Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims, CREDENTIAL_STATUS, statusClaims);
 
         var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
 
@@ -106,19 +111,22 @@ class JoseVcdm20CredentialGeneratorTest {
 
         REQUIRED_CLAIMS.forEach(claim -> assertThat(extractedClaims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
         assertThat(extractJwtHeader(container.rawVc()).getKeyID()).isEqualTo("did:example:issuer#%s".formatted(PUBLIC_KEY_ID));
-        assertThat(extractedClaims.getClaim(VERIFIABLE_CREDENTIAL_CLAIM)).isInstanceOfSatisfying(Map.class, vcClaim -> {
-            assertThat((List) vcClaim.get("type")).contains("MembershipCredential");
-            assertThat((Map) vcClaim.get("credentialSubject")).containsAllEntriesOf(subjectClaims);
+
+        assertThat(extractedClaims.getStringArrayClaim(TYPE)).contains("MembershipCredential");
+        assertThat(extractedClaims.getClaim(CREDENTIAL_STATUS)).isInstanceOf(Map.class);
+        assertThat(extractedClaims.getClaim(CREDENTIAL_SUBJECT)).isInstanceOfSatisfying(Map.class, subjectClaimsSet -> {
+            //noinspection unchecked
+            assertThat(subjectClaimsSet).containsAllEntriesOf(subjectClaims);
         });
     }
 
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
-    void generateCredential_whenNoStatus() {
+    void generateCredential_whenNoStatus() throws ParseException {
 
         var subjectClaims = Map.of("name", "Foo Bar");
-        Map<String, Object> claims = Map.of("credentialSubject", subjectClaims);
+        Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims);
 
         var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
 
@@ -143,19 +151,17 @@ class JoseVcdm20CredentialGeneratorTest {
 
         var extractedClaims = extractJwtClaims(container.rawVc());
 
+        assertThat(extractJwtHeader(container.rawVc()).getKeyID()).isEqualTo("did:example:issuer#%s".formatted(PUBLIC_KEY_ID));
         REQUIRED_CLAIMS.forEach(claim -> assertThat(extractedClaims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
         assertThat(extractJwtHeader(container.rawVc()).getKeyID()).isEqualTo("did:example:issuer#%s".formatted(PUBLIC_KEY_ID));
-        assertThat(extractedClaims.getClaim(VERIFIABLE_CREDENTIAL_CLAIM)).isInstanceOfSatisfying(Map.class, vcClaim -> {
-            assertThat((List) vcClaim.get("type")).contains("MembershipCredential");
-            assertThat((Map) vcClaim.get("credentialSubject")).containsAllEntriesOf(subjectClaims);
-        });
+        assertThat(extractedClaims.getClaims()).doesNotContainKey(CREDENTIAL_STATUS);
     }
 
     @Test
     void generateCredential_fails_whenPrivateKeyNotFound() {
 
         var subjectClaims = Map.of("name", "Foo Bar");
-        Map<String, Object> claims = Map.of("credentialSubject", subjectClaims);
+        Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims);
 
         var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), "not_found", PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
 

@@ -42,6 +42,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_STATUS;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_SUBJECT;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.TYPE;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VERIFIABLE_CREDENTIAL;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VERIFIABLE_CREDENTIAL_CLAIM;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
@@ -51,11 +56,7 @@ import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.SUBJECT;
 
 public class JwtCredentialGenerator implements CredentialGenerator {
 
-    public static final String VERIFIABLE_CREDENTIAL_CLAIM = "vc";
-    public static final String CREDENTIAL_SUBJECT = "credentialSubject";
-    public static final String CREDENTIAL_STATUS = "credentialStatus";
-    public static final String VERIFIABLE_CREDENTIAL = "VerifiableCredential";
-    public static final String TYPE_PROPERTY = "type";
+
     private final TokenGenerationService tokenGenerationService;
     private final Clock clock;
 
@@ -115,7 +116,7 @@ public class JwtCredentialGenerator implements CredentialGenerator {
                 .map(TokenRepresentation::getToken);
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private VerifiableCredential.Builder generateVerifiableCredential(List<String> additionalContext, String type, long validity, String issuer, String holderId, Map<String, Object> credentialSubject) {
         var ctx = new LinkedHashSet<>();
         ctx.add(VcConstants.W3C_CREDENTIALS_URL);
@@ -160,7 +161,7 @@ public class JwtCredentialGenerator implements CredentialGenerator {
         ctx.addAll(verifiableCredential.getContext());
         var claims = new HashMap<>(
                 Map.of(JsonLdKeywords.CONTEXT, ctx,
-                        TYPE_PROPERTY, Arrays.asList(type),
+                        TYPE, Arrays.asList(type),
                         "id", verifiableCredential.getId(),
                         "issuanceDate", verifiableCredential.getIssuanceDate().toString(),
                         "issuer", verifiableCredential.getIssuer().id(),
