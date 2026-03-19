@@ -144,17 +144,13 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
 
         var status = credentialStatusClaims(credential);
         if (!status.isEmpty()) {
-            claims.put(CREDENTIAL_STATUS, credentialStatusClaims(credential));
+            claims.put(CREDENTIAL_STATUS, status);
         }
         return claims;
     }
 
-    private Map<String, Object> credentialSubjectClaims(VerifiableCredential verifiableCredential) {
-        if (verifiableCredential.getCredentialSubject().size() == 1) {
-            return verifiableCredential.getCredentialSubject().get(0).getClaims();
-        } else {
-            throw new UnsupportedOperationException("Only one credential subject is supported");
-        }
+    private List<Map<String, Object>> credentialSubjectClaims(VerifiableCredential verifiableCredential) {
+        return verifiableCredential.getCredentialSubject().stream().map(CredentialSubject::getClaims).toList();
     }
 
     @SuppressWarnings("unchecked")
