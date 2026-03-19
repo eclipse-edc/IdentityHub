@@ -159,32 +159,23 @@ class JoseVcdm20CredentialGeneratorTest {
 
     @Test
     void generateCredential_fails_whenPrivateKeyNotFound() {
-
         var subjectClaims = Map.of("name", "Foo Bar");
         Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims);
 
         var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), "not_found", PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
-
         assertThat(result).isFailed();
-
-
     }
 
     @Test
     void generateCredential_fails_whenCredentialSubjectNotFoundInClaims() {
-
         Map<String, Object> claims = Map.of();
 
         var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), "not_found", PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
-
         assertThat(result).isFailed().detail().contains("Missing credentialSubject in claims");
-
-
     }
 
     @Test
     void signCredential() {
-
         var now = Instant.now();
         var credential = VerifiableCredential.Builder.newInstance()
                 .type("TestCredential")
@@ -208,7 +199,6 @@ class JoseVcdm20CredentialGeneratorTest {
 
     @Test
     void signCredential_whenNoStatus() {
-
         var now = Instant.now();
         var credential = VerifiableCredential.Builder.newInstance()
                 .type("TestCredential")
@@ -231,7 +221,6 @@ class JoseVcdm20CredentialGeneratorTest {
 
     @Test
     void signCredential_whenPrivateKeyNotFound() {
-
         var now = Instant.now();
         var credential = VerifiableCredential.Builder.newInstance()
                 .type("TestCredential")
@@ -278,7 +267,7 @@ class JoseVcdm20CredentialGeneratorTest {
     private CredentialDefinition createCredentialDefinition() {
         return CredentialDefinition.Builder.newInstance()
                 .credentialType("MembershipCredential")
-                .mapping(new MappingDefinition("input", "outut", true))
+                .mapping(new MappingDefinition("input", "output", true))
                 .jsonSchema("{}")
                 .participantContextId(UUID.randomUUID().toString())
                 .formatFrom(VC2_0_JOSE)
