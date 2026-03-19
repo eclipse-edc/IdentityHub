@@ -29,7 +29,7 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Ver
  * Utility class to generate various JWTs
  */
 public class JwtCreationUtil {
-    public static final String TEST_SCOPE = "org.eclipse.edc.vc.type:AlumniCredential:read";
+    public static final String TEST_SCOPE = "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read";
     public static final ECKey CONSUMER_KEY = generateEcKey("did:web:consumer#key1");
     public static final ECKey PROVIDER_KEY = generateEcKey("did:web:provider#key1");
     public static final String CONSUMER_DID = "did:web:consumer";

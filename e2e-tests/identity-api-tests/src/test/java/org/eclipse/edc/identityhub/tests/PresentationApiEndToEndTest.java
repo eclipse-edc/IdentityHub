@@ -108,7 +108,7 @@ public class PresentationApiEndToEndTest {
                   ],
                   "@type": "PresentationQueryMessage",
                   "scope":[
-                    "org.eclipse.edc.vc.type:AlumniCredential:read"
+                    "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read"
                   ]
                 }
                 """;

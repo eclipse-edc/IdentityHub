@@ -1,7 +1,8 @@
 {
   "@context": [
     "https://www.w3.org/2018/credentials/v1",
-    "https://www.w3.org/2018/credentials/examples/v1"
+    "https://www.w3.org/2018/credentials/examples/v1",
+    "https://example.org/2026/foo/bar"
   ],
   "id": "http://example.edu/credentials/1872",
   "type": [

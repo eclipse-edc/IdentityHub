@@ -148,9 +148,9 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
      * @param scopes The list of scope strings to parse and convert.
      * @return A {@link Result} containing the list of converted {@link Criterion} objects.
      */
-    private Result<List<Criterion>> parseScopes(List<String> scopes) {
+    private Result<List<List<Criterion>>> parseScopes(List<String> scopes) {
         var transformResult = scopes.stream()
-                .map(scopeTransformer::transform)
+                .map(scopeTransformer::transformScope)
                 .toList();
 
         if (transformResult.stream().anyMatch(AbstractResult::failed)) {
@@ -159,7 +159,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
         return success(transformResult.stream().map(AbstractResult::getContent).toList());
     }
 
-    private Result<Collection<VerifiableCredentialResource>> queryCredentials(List<Criterion> criteria, String participantContextId) {
+    private Result<Collection<VerifiableCredentialResource>> queryCredentials(List<List<Criterion>> criteria, String participantContextId) {
         var results = criteria.stream()
                 .map(criterion -> convertToQuerySpec(criterion, participantContextId))
                 .map(credentialStore::query)
@@ -173,13 +173,17 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
                 .collect(Collectors.toList()));
     }
 
-    private QuerySpec convertToQuerySpec(Criterion criteria, String participantContextId) {
+    private QuerySpec convertToQuerySpec(List<Criterion> criteria, String participantContextId) {
         var filterByParticipant = new Criterion("participantContextId", "=", participantContextId);
         var filterNotRevoked = new Criterion("state", "!=", VcStatus.REVOKED.code());
         var filterNotExpired = new Criterion("state", "!=", VcStatus.EXPIRED.code());
         var filterUsageHolder = new Criterion("usage", "=", CredentialUsage.Holder.toString());
+
+        var allCriteria = Stream.concat(criteria.stream(),
+                Stream.of(filterByParticipant, filterNotRevoked, filterNotExpired, filterUsageHolder)).toList();
+
         return QuerySpec.Builder.newInstance()
-                .filter(List.of(criteria, filterByParticipant, filterNotRevoked, filterNotExpired, filterUsageHolder))
+                .filter(allCriteria)
                 .build();
     }
 
