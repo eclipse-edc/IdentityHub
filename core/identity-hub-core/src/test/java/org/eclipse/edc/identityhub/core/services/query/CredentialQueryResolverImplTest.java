@@ -60,7 +60,7 @@ class CredentialQueryResolverImplTest {
     private final CredentialStore storeMock = mock();
     private final RevocationServiceRegistry revocationServiceRegistry = mock();
     private final Monitor monitor = mock();
-    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(), revocationServiceRegistry, monitor);
+    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(mock()), revocationServiceRegistry, monitor);
 
     @BeforeEach
     void setUp() {

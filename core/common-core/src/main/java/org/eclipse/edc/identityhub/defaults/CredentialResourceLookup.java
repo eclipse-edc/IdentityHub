@@ -33,9 +33,6 @@ import java.util.stream.Collectors;
 public class CredentialResourceLookup extends ReflectionPropertyLookup {
     @Override
     public Object getProperty(String key, Object object) {
-        if (key.endsWith("@context")) {
-            key = key.replace("@context", "context");
-        }
         var fieldValue = super.getProperty(key, object);
         if (fieldValue instanceof Instant) {
             fieldValue = fieldValue.toString();

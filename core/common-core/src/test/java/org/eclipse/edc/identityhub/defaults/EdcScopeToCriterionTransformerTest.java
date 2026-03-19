@@ -18,9 +18,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.mockito.Mockito.mock;
 
 class EdcScopeToCriterionTransformerTest {
-    private final EdcScopeToCriterionTransformer transformer = new EdcScopeToCriterionTransformer();
+    private final EdcScopeToCriterionTransformer transformer = new EdcScopeToCriterionTransformer(mock());
 
     @ParameterizedTest
     @ValueSource(strings = {

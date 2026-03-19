@@ -712,6 +712,7 @@ public class PresentationApiEndToEndTest {
         }
 
         // tests that both the fully qualified and the compact credential type work
+        @ParameterizedTest
         @ValueSource(strings = { "org.eclipse.edc.vc.type:AlumniCredential:read", "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
         void query_testScopesWithSingleCredential(String scope, IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
             // both these credentials have the same type, but difference namespaces/contexts

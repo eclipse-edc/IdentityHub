@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.defaults;
 
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
+import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 
@@ -39,16 +40,22 @@ import static org.eclipse.edc.spi.result.Result.success;
  */
 public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransformer {
     public static final String TYPE_OPERAND = "verifiableCredential.credential.type";
-    public static final String CONTEXT_OPERAND = "verifiableCredential.credential.@context";
+    public static final String CONTEXT_OPERAND = "verifiableCredential.credential.context";
     public static final String ALIAS_LITERAL = "org.eclipse.edc.vc.type";
     public static final String LIKE_OPERATOR = "like";
     public static final String CONTAINS_OPERATOR = "contains";
     private static final String SCOPE_SEPARATOR = ":";
     private final List<String> allowedOperations = List.of("read", "*", "all");
+    private final Monitor monitor;
+
+    public EdcScopeToCriterionTransformer(Monitor monitor) {
+        this.monitor = monitor;
+    }
 
     @Override
     public Result<Criterion> transform(String scope) {
-        throw new UnsupportedOperationException("Not supported by this implementation.");
+        monitor.warning("the transform() method is deprecated. Please use transformScope() instead.");
+        return transformScope(scope).map(list -> list.get(0));
     }
 
     @Override
