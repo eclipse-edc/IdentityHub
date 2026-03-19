@@ -87,7 +87,7 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
 
         var credential = builder.build();
 
-        return signCredentialInternal(participantContextId, credential, privateKeyAlias, publicKeyId, issuerId, holderDid, VERIFIABLE_CREDENTIAL, definition.getCredentialType())
+        return signCredentialInternal(participantContextId, credential, privateKeyAlias, publicKeyId, issuerId, VERIFIABLE_CREDENTIAL, definition.getCredentialType())
                 .map(token -> new VerifiableCredentialContainer(token, CredentialFormat.VC2_0_JOSE, credential));
     }
 
@@ -97,26 +97,17 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
 
         var issuerId = credential.getIssuer().id();
         var type = credential.getType().toArray(new String[0]);
-        var holderDid = credential.getCredentialSubject().iterator().next().getId();
 
-        return signCredentialInternal(participantContextId, credential, privateKeyAlias, publicKeyId, issuerId, holderDid, type);
+        return signCredentialInternal(participantContextId, credential, privateKeyAlias, publicKeyId, issuerId, type);
     }
 
-    private Result<String> signCredentialInternal(String participantContextId, VerifiableCredential credential, String privateKeyAlias, String publicKeyId, String issuerId, String holderDid, String... types) {
+    private Result<String> signCredentialInternal(String participantContextId, VerifiableCredential credential, String privateKeyAlias, String publicKeyId, String issuerId, String... types) {
         var composedKeyId = publicKeyId.startsWith(issuerId)
                 ? publicKeyId
                 : issuerId + "#" + publicKeyId;
 
         TokenDecorator decorator = tokenBuilder -> {
             var vcClaim = createVcClaim(credential, types);
-//            tokenBuilder
-//                    .claims(ISSUER, issuerId)
-//                    .claims(SUBJECT, holderDid)
-//                    .claims(ISSUED_AT, Date.from(clock.instant()))
-//                    .claims(NOT_BEFORE, Date.from(credential.getIssuanceDate()))
-//                    .claims(JWT_ID, UUID.randomUUID().toString())
-//                    .claims(VERIFIABLE_CREDENTIAL_CLAIM, vcClaim);
-
             vcClaim.forEach(tokenBuilder::claims);
 
             if (credential.getExpirationDate() != null) {
