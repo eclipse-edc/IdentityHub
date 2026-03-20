@@ -52,6 +52,7 @@ import static org.eclipse.edc.issuerservice.issuance.generator.Constants.ID;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.ISSUER;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.TYPE;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VALID_FROM;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.W3C_CREDENTIALS_URL_V2;
 import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGeneratorTest.PRIVATE_KEY_ALIAS;
 import static org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGeneratorTest.PUBLIC_KEY_ID;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -94,6 +95,7 @@ class JoseVcdm20CredentialGeneratorTest {
         assertThat(container.rawVc()).isNotNull();
         assertThat(container.format()).isEqualTo(VC2_0_JOSE);
         assertThat(container.credential()).satisfies(verifiableCredential -> {
+            assertThat(verifiableCredential.getContext()).contains(W3C_CREDENTIALS_URL_V2);
             assertThat(verifiableCredential.getType()).contains("MembershipCredential");
             assertThat(verifiableCredential.getIssuer().id()).isEqualTo("did:example:issuer");
             assertThat(verifiableCredential.getCredentialSubject()).hasSize(1);
@@ -121,6 +123,31 @@ class JoseVcdm20CredentialGeneratorTest {
         });
     }
 
+    @Test
+    void generateCredential_additionalContext() throws ParseException {
+        var subjectClaims = Map.of("name", "Foo Bar");
+        var statusClaims = Map.of("id", UUID.randomUUID().toString(),
+                TYPE, "BitStringStatusListEntry",
+                "statusPurpose", "revocation",
+                "statusListIndex", 42,
+                "statusCredential", "https://foo.bar/baz.json");
+        Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims, CREDENTIAL_STATUS, statusClaims);
+
+        var cdBuilder = createCredentialDefinitionBuilder()
+                .additionalContext(List.of("http://exapmle.com/foo/bar"));
+
+        var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, cdBuilder.build(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
+
+        assertThat(result).isSucceeded();
+
+        var container = result.getContent();
+        assertThat(container.rawVc()).isNotNull();
+        assertThat(container.format()).isEqualTo(VC2_0_JOSE);
+        assertThat(container.credential()).satisfies(verifiableCredential -> {
+            assertThat(verifiableCredential.getContext()).contains(W3C_CREDENTIALS_URL_V2, "http://exapmle.com/foo/bar");
+        });
+
+    }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
@@ -266,12 +293,15 @@ class JoseVcdm20CredentialGeneratorTest {
     }
 
     private CredentialDefinition createCredentialDefinition() {
+        return createCredentialDefinitionBuilder().build();
+    }
+
+    private CredentialDefinition.Builder createCredentialDefinitionBuilder() {
         return CredentialDefinition.Builder.newInstance()
                 .credentialType("MembershipCredential")
                 .mapping(new MappingDefinition("input", "output", true))
                 .jsonSchema("{}")
                 .participantContextId(UUID.randomUUID().toString())
-                .formatFrom(VC2_0_JOSE)
-                .build();
+                .formatFrom(VC2_0_JOSE);
     }
 }

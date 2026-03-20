@@ -32,6 +32,7 @@ import org.eclipse.edc.token.spi.TokenGenerationService;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ import static org.eclipse.edc.issuerservice.issuance.generator.Constants.ISSUER;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.TYPE;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VALID_FROM;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VERIFIABLE_CREDENTIAL;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.W3C_CREDENTIALS_URL_V2;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 
 public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
@@ -70,10 +72,14 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
 
         var statusResult = createCredentialStatus(claims);
 
+        var ctx = new ArrayList<>();
+        ctx.add(W3C_CREDENTIALS_URL_V2);
+        ctx.addAll(definition.getAdditionalContext());
         //noinspection unchecked
         var builder = VerifiableCredential.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .issuer(new Issuer(issuerId))
+                .contexts(ctx)
                 .dataModelVersion(DataModelVersion.V_2_0)
                 .issuanceDate(Instant.now(clock))
                 .expirationDate(Instant.now(clock).plusSeconds(definition.getValidity()))
