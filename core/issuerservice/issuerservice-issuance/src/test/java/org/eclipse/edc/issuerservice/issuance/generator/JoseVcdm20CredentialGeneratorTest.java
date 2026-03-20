@@ -114,9 +114,10 @@ class JoseVcdm20CredentialGeneratorTest {
 
         assertThat(extractedClaims.getStringArrayClaim(TYPE)).contains("MembershipCredential");
         assertThat(extractedClaims.getClaim(CREDENTIAL_STATUS)).isInstanceOf(Map.class);
-        assertThat(extractedClaims.getClaim(CREDENTIAL_SUBJECT)).isInstanceOfSatisfying(Map.class, subjectClaimsSet -> {
+        assertThat(extractedClaims.getListClaim(CREDENTIAL_SUBJECT)).allSatisfy(claim -> {
+            assertThat(claim).isInstanceOf(Map.class);
             //noinspection unchecked
-            assertThat(subjectClaimsSet).containsAllEntriesOf(subjectClaims);
+            assertThat((Map) claim).containsAllEntriesOf(subjectClaims);
         });
     }
 
