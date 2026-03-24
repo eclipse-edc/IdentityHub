@@ -57,6 +57,16 @@ public class JwtCreationUtil {
     }
 
     /**
+     * Generates a self-issued token with the specified scope.
+     *
+     * @param scopeString the scope string as defined by DCP
+     */
+    public static String generateSiToken(String scopeString) {
+        var accessToken = generateJwt(CONSUMER_DID, CONSUMER_DID, PROVIDER_DID, Map.of("scope", scopeString), CONSUMER_KEY);
+        return generateJwt(CONSUMER_DID, PROVIDER_DID, PROVIDER_DID, Map.of("client_id", PROVIDER_DID, "token", accessToken), PROVIDER_KEY);
+    }
+
+    /**
      * Generates a JSON Web Token (JWT) with the specified claims and signs it using the provided ECKey.
      *
      * @param aud         The audience claim, which identifies the intended recipients of the JWT.

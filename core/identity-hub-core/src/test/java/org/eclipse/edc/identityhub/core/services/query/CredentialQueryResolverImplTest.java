@@ -134,6 +134,18 @@ class CredentialQueryResolverImplTest {
     }
 
     @Test
+    void query_scopeStringWithFqct() {
+        var cred = createCredential("TestCredential").context("https://example.com/contexts/v1").build();
+        var resource = createCredentialResource(cred).build();
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
+
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.edc.vc.type:https://example.com/contexts/v1#TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+        assertThat(res).isSucceeded();
+        assertThat(res.getContent()).containsExactly(resource.getVerifiableCredential());
+    }
+
+    @Test
     void query_singleScopeString() {
         var credential = createCredentialResource("TestCredential");
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential)));

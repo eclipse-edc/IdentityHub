@@ -33,6 +33,9 @@ import java.util.stream.Collectors;
 public class CredentialResourceLookup extends ReflectionPropertyLookup {
     @Override
     public Object getProperty(String key, Object object) {
+        if (key.endsWith("@context")) {
+            key = key.replace("@context", "context");
+        }
         var fieldValue = super.getProperty(key, object);
         if (fieldValue instanceof Instant) {
             fieldValue = fieldValue.toString();
@@ -42,6 +45,7 @@ public class CredentialResourceLookup extends ReflectionPropertyLookup {
         if (key.contains("rawVc")) {
             return fieldValue.toString().replace("\n", "");
         }
+
 
         // the VerifiableCredential has some dynamic types, such as the CredentialSubject
         if (fieldValue == null && key.contains("credentialSubject") && object instanceof VerifiableCredentialResource credentialResource) {

@@ -19,6 +19,7 @@ import org.eclipse.edc.junit.testfixtures.TestUtils;
 public interface TestData {
     // taken from https://www.w3.org/TR/vc-data-model/#example-a-simple-example-of-a-verifiable-credential
     String VC_EXAMPLE = TestUtils.getResourceFileContentAsString("vc_example_1.json");
+    String VC_EXAMPLE_OTHER_NAMESPACE = TestUtils.getResourceFileContentAsString("vc_example_1_other_ns.json");
 
     // this VC is
     String VC_EXAMPLE_2 = TestUtils.getResourceFileContentAsString("vc_example_2.json");
@@ -41,6 +42,6 @@ public interface TestData {
     String IH_RUNTIME_NAME = "identity-hub";
     String IH_RUNTIME_ID = "identity-hub";
 
-    String[] IH_RUNTIME_SQL_MODULES = new String[]{":dist:bom:identityhub-bom", ":dist:bom:identityhub-feature-sql-bom"};
-    String[] IH_RUNTIME_MEM_MODULES = new String[]{":dist:bom:identityhub-bom"};
+    String[] IH_RUNTIME_SQL_MODULES = new String[]{ ":dist:bom:identityhub-bom", ":dist:bom:identityhub-feature-sql-bom" };
+    String[] IH_RUNTIME_MEM_MODULES = new String[]{ ":dist:bom:identityhub-bom" };
 }

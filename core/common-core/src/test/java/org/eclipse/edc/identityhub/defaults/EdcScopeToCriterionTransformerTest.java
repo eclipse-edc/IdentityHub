@@ -28,9 +28,11 @@ class EdcScopeToCriterionTransformerTest {
             "org.eclipse.edc.vc.type:TestCredential:*",
             "org.eclipse.edc.vc.type:TestCredential:all",
             "org.eclipse.edc.vc.type:foo:all",
+            "org.eclipse.edc.vc.type:https://example.com/contexts/v1#TestCredential:read",
+            "org.eclipse.edc.vc.type:https://example.com/contexts/v1/#TestCredential:read",
     })
     void transform_validScope(String scope) {
-        assertThat(transformer.transform(scope)).isSucceeded();
+        assertThat(transformer.transformScope(scope)).isSucceeded();
     }
 
     @ParameterizedTest
@@ -40,8 +42,9 @@ class EdcScopeToCriterionTransformerTest {
             "org.eclipse.edc.vc.type:TestCredential:foo",
             "org.eclipse.edc::foo",
             "org.eclipse.edc:foo",
+            "org.eclipse.edc:https://example.com/contexts/v1#:foo",
     })
     void transform_invalidScope(String scope) {
-        assertThat(transformer.transform(scope)).isFailed();
+        assertThat(transformer.transformScope(scope)).isFailed();
     }
 }

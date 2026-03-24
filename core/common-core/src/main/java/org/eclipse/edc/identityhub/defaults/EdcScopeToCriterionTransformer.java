@@ -18,6 +18,7 @@ import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransforme
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.eclipse.edc.spi.result.Result.failure;
@@ -39,29 +40,39 @@ import static org.eclipse.edc.spi.result.Result.success;
  */
 public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransformer {
     public static final String TYPE_OPERAND = "verifiableCredential.credential.type";
+    // this has to include the "@" for Postgres queries to work because they operate on JSON
+    public static final String CONTEXT_OPERAND = "verifiableCredential.credential.@context";
     public static final String ALIAS_LITERAL = "org.eclipse.edc.vc.type";
-    public static final String LIKE_OPERATOR = "like";
     public static final String CONTAINS_OPERATOR = "contains";
     private static final String SCOPE_SEPARATOR = ":";
     private final List<String> allowedOperations = List.of("read", "*", "all");
 
     @Override
-    public Result<Criterion> transform(String scope) {
+    public Result<List<Criterion>> transformScope(String scope) {
         var tokens = tokenize(scope);
         if (tokens.failed()) {
             return failure("Scope string cannot be converted: %s".formatted(tokens.getFailureDetail()));
         }
-        var credentialType = tokens.getContent()[1];
-        return success(new Criterion(TYPE_OPERAND, CONTAINS_OPERATOR, credentialType));
+        var discriminator = tokens.getContent()[1];
+
+        return convertDiscriminator(discriminator);
     }
 
     protected Result<String[]> tokenize(String scope) {
         if (scope == null) return failure("Scope was null");
 
-        var tokens = scope.split(SCOPE_SEPARATOR);
-        if (tokens.length != 3) {
+        var firstSeparatorIndex = scope.indexOf(SCOPE_SEPARATOR);
+        var lastSeparatorIndex = scope.lastIndexOf(SCOPE_SEPARATOR);
+
+        if (firstSeparatorIndex == -1 || lastSeparatorIndex == -1 || firstSeparatorIndex == lastSeparatorIndex) {
             return failure("Scope string has invalid format.");
         }
+
+        var tokens = new String[3];
+        tokens[0] = scope.substring(0, firstSeparatorIndex);
+        tokens[1] = scope.substring(firstSeparatorIndex + 1, lastSeparatorIndex);
+        tokens[2] = scope.substring(lastSeparatorIndex + 1);
+
         if (!ALIAS_LITERAL.equalsIgnoreCase(tokens[0])) {
             return failure("Scope alias MUST be %s but was %s".formatted(ALIAS_LITERAL, tokens[0]));
         }
@@ -70,5 +81,34 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
         }
 
         return success(tokens);
+    }
+
+    private Result<List<Criterion>> convertDiscriminator(String discriminator) {
+        if (discriminator == null) {
+            return failure("discriminator was null");
+        }
+
+        var lastHashIndex = discriminator.lastIndexOf("#");
+
+        if (lastHashIndex == -1) {
+            // No hash found, treat entire string as type
+            var typeCriterion = new Criterion(TYPE_OPERAND, CONTAINS_OPERATOR, discriminator);
+            return success(List.of(typeCriterion));
+        }
+
+        var list = new ArrayList<Criterion>();
+        var contextPart = discriminator.substring(0, lastHashIndex);
+        if (!contextPart.isEmpty()) {
+            var contextCriterion = new Criterion(CONTEXT_OPERAND, CONTAINS_OPERATOR, contextPart);
+            list.add(contextCriterion);
+        }
+
+        var typePart = discriminator.substring(lastHashIndex + 1);
+        if (!typePart.isEmpty()) {
+            var typeCriterion = new Criterion(TYPE_OPERAND, CONTAINS_OPERATOR, typePart);
+            list.add(typeCriterion);
+        }
+
+        return success(list);
     }
 }

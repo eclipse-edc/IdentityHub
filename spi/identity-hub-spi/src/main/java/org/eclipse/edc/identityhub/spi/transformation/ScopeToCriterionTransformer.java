@@ -17,6 +17,8 @@ package org.eclipse.edc.identityhub.spi.transformation;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.List;
+
 /**
  * Converts a scope string to a {@link Criterion} object. Implementations must be able to parse the shape of the
  * scope string and convert it into a {@link Criterion}.
@@ -25,13 +27,14 @@ import org.eclipse.edc.spi.result.Result;
  */
 @FunctionalInterface
 public interface ScopeToCriterionTransformer {
+
     /**
      * Converts a scope string to a {@link Criterion} object. If the scope string is invalid, a failure result is returned.
-     * This can happen, for example if the shape of the string is not correct, or if a wrong operator is used in a specific
+     * This can happen, for example, if the shape of the string is not correct, or if a wrong operator is used in a specific
      * context.
      *
      * @param scope The scope string to convert.
-     * @return A {@link Result} with the converted {@link Criterion}.
+     * @return A list of {@link Result} with the converted {@link Criterion}.
      */
-    Result<Criterion> transform(String scope);
+    Result<List<Criterion>> transformScope(String scope);
 }
