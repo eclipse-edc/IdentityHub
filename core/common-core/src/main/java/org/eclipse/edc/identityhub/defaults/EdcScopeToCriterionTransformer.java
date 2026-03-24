@@ -15,10 +15,10 @@
 package org.eclipse.edc.identityhub.defaults;
 
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
-import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.eclipse.edc.spi.result.Result.failure;
@@ -42,21 +42,9 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
     public static final String TYPE_OPERAND = "verifiableCredential.credential.type";
     public static final String CONTEXT_OPERAND = "verifiableCredential.credential.context";
     public static final String ALIAS_LITERAL = "org.eclipse.edc.vc.type";
-    public static final String LIKE_OPERATOR = "like";
     public static final String CONTAINS_OPERATOR = "contains";
     private static final String SCOPE_SEPARATOR = ":";
     private final List<String> allowedOperations = List.of("read", "*", "all");
-    private final Monitor monitor;
-
-    public EdcScopeToCriterionTransformer(Monitor monitor) {
-        this.monitor = monitor;
-    }
-
-    @Override
-    public Result<Criterion> transform(String scope) {
-        monitor.warning("the transform() method is deprecated. Please use transformScope() instead.");
-        return transformScope(scope).map(list -> list.get(0));
-    }
 
     @Override
     public Result<List<Criterion>> transformScope(String scope) {
@@ -107,12 +95,19 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
             return success(List.of(typeCriterion));
         }
 
+        var list = new ArrayList<Criterion>();
         var contextPart = discriminator.substring(0, lastHashIndex);
+        if (!contextPart.isEmpty()) {
+            var contextCriterion = new Criterion(CONTEXT_OPERAND, CONTAINS_OPERATOR, contextPart);
+            list.add(contextCriterion);
+        }
+
         var typePart = discriminator.substring(lastHashIndex + 1);
+        if (!typePart.isEmpty()) {
+            var typeCriterion = new Criterion(TYPE_OPERAND, CONTAINS_OPERATOR, typePart);
+            list.add(typeCriterion);
+        }
 
-        var contextCriterion = new Criterion(CONTEXT_OPERAND, CONTAINS_OPERATOR, contextPart);
-        var typeCriterion = new Criterion(TYPE_OPERAND, CONTAINS_OPERATOR, typePart);
-
-        return success(List.of(contextCriterion, typeCriterion));
+        return success(list);
     }
 }

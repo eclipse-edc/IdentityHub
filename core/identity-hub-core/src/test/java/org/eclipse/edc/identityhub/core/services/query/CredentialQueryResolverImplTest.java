@@ -60,7 +60,7 @@ class CredentialQueryResolverImplTest {
     private final CredentialStore storeMock = mock();
     private final RevocationServiceRegistry revocationServiceRegistry = mock();
     private final Monitor monitor = mock();
-    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(mock()), revocationServiceRegistry, monitor);
+    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(), revocationServiceRegistry, monitor);
 
     @BeforeEach
     void setUp() {
@@ -131,6 +131,18 @@ class CredentialQueryResolverImplTest {
         assertThat(res.failed()).isTrue();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
         assertThat(res.getFailureDetail()).contains("Scope string cannot be converted: Scope string has invalid format.");
+    }
+
+    @Test
+    void query_scopeStringWithFqct() {
+        var cred = createCredential("TestCredential").context("https://example.com/contexts/v1").build();
+        var resource = createCredentialResource(cred).build();
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
+
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.edc.vc.type:https://example.com/contexts/v1#TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+        assertThat(res).isSucceeded();
+        assertThat(res.getContent()).containsExactly(resource.getVerifiableCredential());
     }
 
     @Test

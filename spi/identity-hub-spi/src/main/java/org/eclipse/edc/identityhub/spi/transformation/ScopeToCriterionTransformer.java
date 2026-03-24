@@ -25,20 +25,16 @@ import java.util.List;
  * <p>
  * The shape of the scope string is specific to the dataspace.
  */
+@FunctionalInterface
 public interface ScopeToCriterionTransformer {
+
     /**
      * Converts a scope string to a {@link Criterion} object. If the scope string is invalid, a failure result is returned.
-     * This can happen, for example if the shape of the string is not correct, or if a wrong operator is used in a specific
+     * This can happen, for example, if the shape of the string is not correct, or if a wrong operator is used in a specific
      * context.
      *
      * @param scope The scope string to convert.
-     * @return A {@link Result} with the converted {@link Criterion}.
-     * @deprecated Use {@link #transformScope(String)} instead.
+     * @return A list of {@link Result} with the converted {@link Criterion}.
      */
-    @Deprecated
-    Result<Criterion> transform(String scope);
-
-    default Result<List<Criterion>> transformScope(String scope) {
-        return transform(scope).map(List::of);
-    }
+    Result<List<Criterion>> transformScope(String scope);
 }

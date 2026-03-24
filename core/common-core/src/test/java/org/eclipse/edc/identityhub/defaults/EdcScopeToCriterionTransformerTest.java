@@ -18,10 +18,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
-import static org.mockito.Mockito.mock;
 
 class EdcScopeToCriterionTransformerTest {
-    private final EdcScopeToCriterionTransformer transformer = new EdcScopeToCriterionTransformer(mock());
+    private final EdcScopeToCriterionTransformer transformer = new EdcScopeToCriterionTransformer();
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -29,6 +28,8 @@ class EdcScopeToCriterionTransformerTest {
             "org.eclipse.edc.vc.type:TestCredential:*",
             "org.eclipse.edc.vc.type:TestCredential:all",
             "org.eclipse.edc.vc.type:foo:all",
+            "org.eclipse.edc.vc.type:https://example.com/contexts/v1#TestCredential:read",
+            "org.eclipse.edc.vc.type:https://example.com/contexts/v1/#TestCredential:read",
     })
     void transform_validScope(String scope) {
         assertThat(transformer.transformScope(scope)).isSucceeded();
@@ -41,6 +42,7 @@ class EdcScopeToCriterionTransformerTest {
             "org.eclipse.edc.vc.type:TestCredential:foo",
             "org.eclipse.edc::foo",
             "org.eclipse.edc:foo",
+            "org.eclipse.edc:https://example.com/contexts/v1#:foo",
     })
     void transform_invalidScope(String scope) {
         assertThat(transformer.transformScope(scope)).isFailed();

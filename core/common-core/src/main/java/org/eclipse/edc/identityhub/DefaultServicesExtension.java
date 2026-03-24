@@ -130,7 +130,7 @@ public class DefaultServicesExtension implements ServiceExtension {
     public ScopeToCriterionTransformer createScopeTransformer(ServiceExtensionContext context) {
         context.getMonitor().warning("Using the default EdcScopeToCriterionTransformer. This is not intended for production use and should be replaced " +
                 "with a specialized implementation for your dataspace");
-        return new EdcScopeToCriterionTransformer(context.getMonitor());
+        return new EdcScopeToCriterionTransformer();
     }
 
     @Provider(isDefault = true)
