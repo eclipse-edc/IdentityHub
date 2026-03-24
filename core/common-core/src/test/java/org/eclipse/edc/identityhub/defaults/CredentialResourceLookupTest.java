@@ -74,6 +74,15 @@ class CredentialResourceLookupTest {
     }
 
     @Test
+    void getProperty_whenContextFieldRequested_shouldReplaceAtSymbol() {
+        var resource = createTestResource();
+
+        var result = lookup.getProperty("verifiableCredential.credential.@context", resource);
+
+        assertThat(result).isNotNull();
+    }
+
+    @Test
     void getProperty_whenInstantField_shouldReturnString() {
         var timestamp = Instant.parse("2024-01-01T10:00:00Z");
         var resource = VerifiableCredentialResource.Builder.newHolder()

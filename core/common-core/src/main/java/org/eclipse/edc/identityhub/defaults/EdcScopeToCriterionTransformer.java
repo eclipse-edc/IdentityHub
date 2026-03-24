@@ -40,7 +40,7 @@ import static org.eclipse.edc.spi.result.Result.success;
  */
 public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransformer {
     public static final String TYPE_OPERAND = "verifiableCredential.credential.type";
-    public static final String CONTEXT_OPERAND = "verifiableCredential.credential.context";
+    public static final String CONTEXT_OPERAND = "verifiableCredential.credential.@context";
     public static final String ALIAS_LITERAL = "org.eclipse.edc.vc.type";
     public static final String CONTAINS_OPERATOR = "contains";
     private static final String SCOPE_SEPARATOR = ":";

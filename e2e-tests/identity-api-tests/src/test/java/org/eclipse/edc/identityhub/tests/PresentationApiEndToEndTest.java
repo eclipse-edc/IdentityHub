@@ -365,7 +365,7 @@ public class PresentationApiEndToEndTest {
             var response = identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
-                    .body(VALID_QUERY_WITH_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT))
+                    .body(VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT, scope))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
