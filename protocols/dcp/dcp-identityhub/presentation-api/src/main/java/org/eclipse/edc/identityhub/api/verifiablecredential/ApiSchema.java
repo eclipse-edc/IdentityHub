@@ -63,9 +63,9 @@ public interface ApiSchema {
                   "@type": "PresentationQueryMessage",
                   "presentationDefinition": null,
                   "scope": [
-                    "org.eclipse.edc.vc.type:SomeCredential_0.3.5:write",
-                    "org.eclipse.edc.vc.type:SomeOtherCredential:read",
-                    "org.eclipse.edc.vc.type:ThirdCredential:*"
+                    "org.eclipse.dspace.dcp.vc.type:SomeCredential_0.3.5:write",
+                    "org.eclipse.dspace.dcp.vc.type:SomeOtherCredential:read",
+                    "org.eclipse.dspace.dcp.vc.type:ThirdCredential:*"
                   ]
                 }
                 """;

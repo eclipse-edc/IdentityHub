@@ -49,7 +49,7 @@ class SelfIssuedTokenVerifierImplTest {
     private final PublicKeyResolver pkResolver = mock();
     private final ClaimToken idToken = ClaimToken.Builder.newInstance()
             .claim("token", "test-at")
-            .claim("scope", "org.eclipse.edc.vc.type:AlumniCredential:read")
+            .claim("scope", "org.eclipse.dspace.dcp.vc.type:AlumniCredential:read")
             .build();
     private final KeyPairResourcePublicKeyResolver localPublicKeyResolver = mock();
     private final IdentityHubParticipantContextService participantContextService = mock();

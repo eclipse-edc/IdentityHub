@@ -28,7 +28,7 @@ import static org.eclipse.edc.spi.result.Result.success;
  * Implementation of the {@link ScopeToCriterionTransformer} interface that converts a scope string to a {@link Criterion} object.
  * This is a default/example implementation, that assumes scope strings adhere to the following format:
  * <pre>
- *  org.eclipse.edc.vc.type:SomeCredential:[read|all|*]
+ *  org.eclipse.dspace.dcp.vc.type:SomeCredential:[read|all|*]
  * </pre>
  * This scope string will get translated into a {@link Criterion} like:
  * <pre>
@@ -42,7 +42,7 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
     public static final String TYPE_OPERAND = "verifiableCredential.credential.type";
     // this has to include the "@" for Postgres queries to work because they operate on JSON
     public static final String CONTEXT_OPERAND = "verifiableCredential.credential.@context";
-    public static final String ALIAS_LITERAL = "org.eclipse.edc.vc.type";
+    public static final String ALIAS_LITERAL = "org.eclipse.dspace.dcp.vc.type";
     public static final String CONTAINS_OPERATOR = "contains";
     private static final String SCOPE_SEPARATOR = ":";
     private final List<String> allowedOperations = List.of("read", "*", "all");
