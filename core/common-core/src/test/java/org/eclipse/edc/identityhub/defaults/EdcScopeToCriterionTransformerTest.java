@@ -24,12 +24,12 @@ class EdcScopeToCriterionTransformerTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "org.eclipse.edc.vc.type:TestCredential:read",
-            "org.eclipse.edc.vc.type:TestCredential:*",
-            "org.eclipse.edc.vc.type:TestCredential:all",
-            "org.eclipse.edc.vc.type:foo:all",
-            "org.eclipse.edc.vc.type:https://example.com/contexts/v1#TestCredential:read",
-            "org.eclipse.edc.vc.type:https://example.com/contexts/v1/#TestCredential:read",
+            "org.eclipse.dspace.dcp.vc.type:TestCredential:read",
+            "org.eclipse.dspace.dcp.vc.type:TestCredential:*",
+            "org.eclipse.dspace.dcp.vc.type:TestCredential:all",
+            "org.eclipse.dspace.dcp.vc.type:foo:all",
+            "org.eclipse.dspace.dcp.vc.type:https://example.com/contexts/v1#TestCredential:read",
+            "org.eclipse.dspace.dcp.vc.type:https://example.com/contexts/v1/#TestCredential:read",
     })
     void transform_validScope(String scope) {
         assertThat(transformer.transformScope(scope)).isSucceeded();
@@ -38,8 +38,8 @@ class EdcScopeToCriterionTransformerTest {
     @ParameterizedTest
     @ValueSource(strings = {
             "invalidAlias:TestCredential:read",
-            "org.eclipse.edc.vc.type:TestCredential:write",
-            "org.eclipse.edc.vc.type:TestCredential:foo",
+            "org.eclipse.dspace.dcp.vc.type:TestCredential:write",
+            "org.eclipse.dspace.dcp.vc.type:TestCredential:foo",
             "org.eclipse.edc::foo",
             "org.eclipse.edc:foo",
             "org.eclipse.edc:https://example.com/contexts/v1#:foo",

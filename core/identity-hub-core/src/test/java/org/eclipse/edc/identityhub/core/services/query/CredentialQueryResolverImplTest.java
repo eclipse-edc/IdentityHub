@@ -71,7 +71,7 @@ class CredentialQueryResolverImplTest {
     void query_noResult() {
         when(storeMock.query(any())).thenAnswer(i -> success(List.of()));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"));
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
     }
@@ -98,7 +98,7 @@ class CredentialQueryResolverImplTest {
         var credential = createCredentialResource("AnotherCredential");
         when(storeMock.query(any())).thenReturn(success(List.of(credential)));
 
-        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery(/*empty scopes*/), List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery(/*empty scopes*/), List.of("org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"));
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(credential.getVerifiableCredential());
     }
@@ -109,7 +109,7 @@ class CredentialQueryResolverImplTest {
         when(storeMock.query(any()))
                 .thenReturn(success(List.of(credential)));
 
-        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery("org.eclipse.edc.vc.type:AnotherCredential:read"), List.of());
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery("org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"), List.of());
         assertThat(res).isFailed();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
         verify(monitor).warning("Permission was not granted on any credentials (empty access token scope list), but 1 were requested.");
@@ -119,7 +119,7 @@ class CredentialQueryResolverImplTest {
     void query_accessTokenScopeStringInvalid_shouldReturnFailure() {
         when(storeMock.query(any())).thenReturn(success(Collections.emptyList()));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("invalid"), List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
+                createPresentationQuery("invalid"), List.of("org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"));
         assertThat(res.failed()).isTrue();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
         assertThat(res.getFailureDetail()).contains("Scope string has invalid format.");
@@ -127,7 +127,7 @@ class CredentialQueryResolverImplTest {
 
     @Test
     void query_scopeStringHasWrongOperator_shouldReturnFailure() {
-        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:write"), List.of("ignored"));
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:write"), List.of("ignored"));
         assertThat(res.failed()).isTrue();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.INVALID_SCOPE);
         assertThat(res.getFailureDetail()).contains("Scope string cannot be converted: Scope string has invalid format.");
@@ -140,7 +140,7 @@ class CredentialQueryResolverImplTest {
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:https://example.com/contexts/v1#TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:https://example.com/contexts/v1#TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).containsExactly(resource.getVerifiableCredential());
     }
@@ -150,7 +150,7 @@ class CredentialQueryResolverImplTest {
         var credential = createCredentialResource("TestCredential");
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential)));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).containsExactly(credential.getVerifiableCredential());
     }
@@ -165,7 +165,7 @@ class CredentialQueryResolverImplTest {
                 .thenReturn(success(List.of(credential2)));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
 
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).usingRecursiveFieldByFieldElementComparator().containsExactly(credential2.getVerifiableCredential());
@@ -176,7 +176,7 @@ class CredentialQueryResolverImplTest {
         when(storeMock.query(any())).thenAnswer(i -> success(List.of()));
 
         var res = resolver.query("another_participant_context_id",
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
     }
@@ -193,8 +193,8 @@ class CredentialQueryResolverImplTest {
         });
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read",
-                        "org.eclipse.edc.vc.type:AnotherCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read", "org.eclipse.edc.vc.type:AnotherCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read",
+                        "org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read", "org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"));
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).containsExactlyInAnyOrder(credential1.getVerifiableCredential(), credential2.getVerifiableCredential());
     }
@@ -202,7 +202,7 @@ class CredentialQueryResolverImplTest {
     @Test
     void query_presentationDefinition_unsupported() {
         var q = PresentationQueryMessage.Builder.newinstance().presentationDefinition(PresentationDefinition.Builder.newInstance().id("test-pd").build()).build();
-        assertThatThrownBy(() -> resolver.query(TEST_PARTICIPANT_CONTEXT_ID, q, List.of("org.eclipse.edc.vc.type:SomeCredential:read")))
+        assertThatThrownBy(() -> resolver.query(TEST_PARTICIPANT_CONTEXT_ID, q, List.of("org.eclipse.dspace.dcp.vc.type:SomeCredential:read")))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Querying with a DIF Presentation Exchange definition is not yet supported.");
     }
@@ -217,8 +217,8 @@ class CredentialQueryResolverImplTest {
                 .thenReturn(success(List.of(credential1)));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read",
-                        "org.eclipse.edc.vc.type:AnotherCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read",
+                        "org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
 
         assertThat(res).isFailed();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
@@ -231,7 +231,7 @@ class CredentialQueryResolverImplTest {
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential1)));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read", "org.eclipse.edc.vc.type:AnotherCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read", "org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"));
 
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).containsOnly(credential1.getVerifiableCredential());
@@ -243,7 +243,7 @@ class CredentialQueryResolverImplTest {
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(credential1)));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
 
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).containsOnly(credential1.getVerifiableCredential());
@@ -257,7 +257,7 @@ class CredentialQueryResolverImplTest {
                 .thenAnswer(i -> success(List.of(credential2)));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"));
 
         assertThat(res.failed()).isTrue();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
@@ -277,8 +277,8 @@ class CredentialQueryResolverImplTest {
                 .thenReturn(success(List.of(credential4)));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read", "org.eclipse.edc.vc.type:AnotherCredential:read"),
-                List.of("org.eclipse.edc.vc.type:FooCredential:read", "org.eclipse.edc.vc.type:BarCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read", "org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"),
+                List.of("org.eclipse.dspace.dcp.vc.type:FooCredential:read", "org.eclipse.dspace.dcp.vc.type:BarCredential:read"));
 
         assertThat(res).isFailed();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
@@ -291,7 +291,7 @@ class CredentialQueryResolverImplTest {
         when(storeMock.query(any())).thenReturn(StoreResult.notFound("test-failure"));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:AnotherCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"));
 
         assertThat(res.failed()).isTrue();
         assertThat(res.reason()).isEqualTo(QueryFailure.Reason.STORAGE_FAILURE);
@@ -307,7 +307,7 @@ class CredentialQueryResolverImplTest {
 
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
 
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
@@ -323,7 +323,7 @@ class CredentialQueryResolverImplTest {
 
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
 
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
@@ -342,7 +342,7 @@ class CredentialQueryResolverImplTest {
         var resource = createCredentialResource(credential).build();
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.edc.vc.type:TestCredential:read"), List.of("org.eclipse.edc.vc.type:TestCredential:read"));
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
 
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();

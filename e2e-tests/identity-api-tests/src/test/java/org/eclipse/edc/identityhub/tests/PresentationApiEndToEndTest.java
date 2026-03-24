@@ -110,7 +110,7 @@ public class PresentationApiEndToEndTest {
                   ],
                   "@type": "PresentationQueryMessage",
                   "scope":[
-                    "org.eclipse.edc.vc.type:AlumniCredential:read"
+                    "org.eclipse.dspace.dcp.vc.type:AlumniCredential:read"
                   ]
                 }
                 """;
@@ -135,8 +135,8 @@ public class PresentationApiEndToEndTest {
                   ],
                   "@type": "PresentationQueryMessage",
                   "scope":[
-                    "org.eclipse.edc.vc.type:AlumniCredential:read",
-                    "org.eclipse.edc.vc.type:SuperSecretCredential:*"
+                    "org.eclipse.dspace.dcp.vc.type:AlumniCredential:read",
+                    "org.eclipse.dspace.dcp.vc.type:SuperSecretCredential:*"
                   ]
                 }
                 """;
@@ -352,7 +352,7 @@ public class PresentationApiEndToEndTest {
 
         // test with both the fully-qualified-credential-type and the compact credential type
         @ParameterizedTest
-        @ValueSource(strings = { "org.eclipse.edc.vc.type:AlumniCredential:read", "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
+        @ValueSource(strings = { "org.eclipse.dspace.dcp.vc.type:AlumniCredential:read", "org.eclipse.dspace.dcp.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
         void query_success_containsCredential(String scope, IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             storeCredential(VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
@@ -586,7 +586,7 @@ public class PresentationApiEndToEndTest {
 
         // test with both the fully-qualified-credential-type and the compact credential type
         @ParameterizedTest
-        @ValueSource(strings = { "org.eclipse.edc.vc.type:AlumniCredential:read", "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
+        @ValueSource(strings = { "org.eclipse.dspace.dcp.vc.type:AlumniCredential:read", "org.eclipse.dspace.dcp.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
         void query_filterCredentialWithWrongUsage(String scope, IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
 
             var cred = OBJECT_MAPPER.readValue(TestData.VC_EXAMPLE, VerifiableCredential.class);
@@ -683,7 +683,7 @@ public class PresentationApiEndToEndTest {
             storeCredential(TestData.VC_EXAMPLE_OTHER_NAMESPACE, CredentialFormat.VC1_0_JWT, store);
 
             // providing no specific scope should cause all credentials to be returned -> clash
-            var token = generateSiToken("org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read");
+            var token = generateSiToken("org.eclipse.dspace.dcp.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read");
 
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
@@ -691,7 +691,7 @@ public class PresentationApiEndToEndTest {
             var response = identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
-                    .body(VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT, "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read"))
+                    .body(VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT, "org.eclipse.dspace.dcp.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read"))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)
@@ -713,7 +713,7 @@ public class PresentationApiEndToEndTest {
 
         // tests that both the fully qualified and the compact credential type work
         @ParameterizedTest
-        @ValueSource(strings = { "org.eclipse.edc.vc.type:AlumniCredential:read", "org.eclipse.edc.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
+        @ValueSource(strings = { "org.eclipse.dspace.dcp.vc.type:AlumniCredential:read", "org.eclipse.dspace.dcp.vc.type:https://example.org/2026/foo/bar#AlumniCredential:read" })
         void query_testScopesWithSingleCredential(String scope, IdentityHub identityHub, CredentialStore store) throws JsonProcessingException, JOSEException {
             // both these credentials have the same type, but difference namespaces/contexts
             storeCredential(TestData.VC_EXAMPLE, CredentialFormat.VC1_0_JWT, store);
