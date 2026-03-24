@@ -13,3 +13,4 @@
 #
 
 org.eclipse.edc.identityhub.DefaultServicesExtension
+org.eclipse.edc.identityhub.DiscriminatorMappingExtension

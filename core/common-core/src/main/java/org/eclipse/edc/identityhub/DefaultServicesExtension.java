@@ -24,6 +24,7 @@ import org.eclipse.edc.identityhub.defaults.store.InMemoryKeyPairResourceStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemorySignatureSuiteRegistry;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -89,6 +90,8 @@ public class DefaultServicesExtension implements ServiceExtension {
     private JsonLd jsonLd;
     @Inject
     private JtiValidationStore jtiValidationStore;
+    @Inject
+    private DiscriminatorMappingRegistry discriminatorMappingRegistry;
 
     @Override
     public String name() {
@@ -128,9 +131,7 @@ public class DefaultServicesExtension implements ServiceExtension {
 
     @Provider(isDefault = true)
     public ScopeToCriterionTransformer createScopeTransformer(ServiceExtensionContext context) {
-        context.getMonitor().warning("Using the default EdcScopeToCriterionTransformer. This is not intended for production use and should be replaced " +
-                "with a specialized implementation for your dataspace");
-        return new EdcScopeToCriterionTransformer();
+        return new EdcScopeToCriterionTransformer(discriminatorMappingRegistry);
     }
 
     @Provider(isDefault = true)

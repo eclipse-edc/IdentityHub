@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
+import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.result.Result;
@@ -47,6 +48,12 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
     private static final String SCOPE_SEPARATOR = ":";
     private final List<String> allowedOperations = List.of("read", "*", "all");
 
+    private final DiscriminatorMappingRegistry discriminatorMappingRegistry;
+
+    public EdcScopeToCriterionTransformer(DiscriminatorMappingRegistry discriminatorMappingRegistry) {
+        this.discriminatorMappingRegistry = discriminatorMappingRegistry;
+    }
+
     @Override
     public Result<List<Criterion>> transformScope(String scope) {
         var tokens = tokenize(scope);
@@ -55,7 +62,10 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
         }
         var discriminator = tokens.getContent()[1];
 
-        return convertDiscriminator(discriminator);
+        // see if there's a mapping for the discriminator
+        var mappedDiscriminator = discriminatorMappingRegistry.getMapping(discriminator);
+
+        return convertDiscriminator(mappedDiscriminator);
     }
 
     protected Result<String[]> tokenize(String scope) {
