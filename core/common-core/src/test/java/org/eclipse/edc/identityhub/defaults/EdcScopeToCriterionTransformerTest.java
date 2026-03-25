@@ -44,8 +44,8 @@ class EdcScopeToCriterionTransformerTest {
         assertThat(transformer.transformScope("org.eclipse.dspace.dcp.vc.type:SomeFancyCredential:read")).isSucceeded()
                 .satisfies(criteria -> {
                     assertThat(criteria).hasSize(2);
-                    assertThat(criteria.stream().anyMatch(c -> c.getOperandRight().equals("https://example.com/contexts/v1")));
-                    assertThat(criteria.stream().anyMatch(c -> c.getOperandRight().equals("TestCredential")));
+                    assertThat(criteria).anyMatch(c -> c.getOperandRight().equals("https://example.com/contexts/v1"));
+                    assertThat(criteria).anyMatch(c -> c.getOperandRight().equals("TestCredential"));
                 });
     }
 

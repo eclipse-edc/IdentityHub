@@ -22,7 +22,8 @@ import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 
-import static org.eclipse.edc.identityhub.DefaultServicesExtension.NAME;
+import static org.eclipse.edc.identityhub.DiscriminatorMappingExtension.NAME;
+
 
 @Extension(NAME)
 public class DiscriminatorMappingExtension implements ServiceExtension {
