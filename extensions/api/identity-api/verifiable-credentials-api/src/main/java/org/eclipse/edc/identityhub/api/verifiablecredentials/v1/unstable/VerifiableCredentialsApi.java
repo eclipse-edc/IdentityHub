@@ -33,6 +33,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCre
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
+import java.util.Map;
 
 @OpenAPIDefinition(info = @Info(description = "This is the Identity API for manipulating VerifiableCredentials", title = "VerifiableCredentials Identity API", version = "1"))
 @Tag(name = "Verifiable Credentials")
@@ -104,7 +105,7 @@ public interface VerifiableCredentialsApi {
     @Operation(description = "Delete a VerifiableCredential.",
             operationId = "deleteCredential",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "The VerifiableCredential was deleted successfully", content = {@Content(schema = @Schema(implementation = String.class))}),
+                    @ApiResponse(responseCode = "200", description = "The VerifiableCredential was deleted successfully", content = { @Content(schema = @Schema(implementation = String.class)) }),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "403", description = "The request could not be completed, because either the authentication was missing or was not valid.",
@@ -144,4 +145,14 @@ public interface VerifiableCredentialsApi {
             }
     )
     HolderCredentialRequestDto getCredentialRequest(String participantContextId, String holderPid, SecurityContext securityContext);
+
+    @Operation(description = "Define a scope discriminator mapping (=short-hand) for the fully-qualified credential type",
+            operationId = "addDiscriminatorMapping",
+            requestBody = @RequestBody(description = "Mapping between alias (short-hand) and discriminator (fully-qualified credential type)", required = true),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Discriminator mapping added successfully"),
+                    @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+            })
+    void addDiscriminatorMapping(String participantContextId, Map<String, String> mappings, SecurityContext securityContext);
 }

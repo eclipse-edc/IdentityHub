@@ -19,6 +19,7 @@ import org.eclipse.edc.identityhub.api.verifiablecredential.validation.Verifiabl
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.GetAllCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.VerifiableCredentialsApiController;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.transformer.VerifiableCredentialManifestToVerifiableCredentialResourceTransformer;
+import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -49,6 +50,8 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
     private AuthorizationService authorizationService;
     @Inject
     private CredentialRequestManager credentialRequestManager;
+    @Inject
+    private DiscriminatorMappingRegistry discriminatorMappingRegistry;
 
     @Override
     public String name() {
@@ -60,7 +63,7 @@ public class VerifiableCredentialApiExtension implements ServiceExtension {
         authorizationService.addLookupFunction(VerifiableCredentialResource.class, this::queryById);
         var registry = typeTransformerRegistry.forContext("identity-api");
         registry.register(new VerifiableCredentialManifestToVerifiableCredentialResourceTransformer());
-        var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService, new VerifiableCredentialManifestValidator(), registry, credentialRequestManager);
+        var controller = new VerifiableCredentialsApiController(credentialStore, authorizationService, new VerifiableCredentialManifestValidator(), registry, credentialRequestManager, discriminatorMappingRegistry);
         var getAllController = new GetAllCredentialsApiController(credentialStore);
         webService.registerResource(IdentityHubApiContext.IDENTITY, controller);
         webService.registerResource(IdentityHubApiContext.IDENTITY, getAllController);

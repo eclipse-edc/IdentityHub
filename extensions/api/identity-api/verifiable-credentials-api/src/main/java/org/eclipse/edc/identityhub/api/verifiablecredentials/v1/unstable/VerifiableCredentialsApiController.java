@@ -38,6 +38,7 @@ import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.H
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredential;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -54,6 +55,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -71,23 +73,26 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     private final VerifiableCredentialManifestValidator validator;
     private final TypeTransformerRegistry typeTransformerRegistry;
     private final CredentialRequestManager credentialRequestService;
+    private final DiscriminatorMappingRegistry discriminatorMappingRegistry;
 
     public VerifiableCredentialsApiController(CredentialStore credentialStore,
                                               AuthorizationService authorizationService,
                                               VerifiableCredentialManifestValidator validator,
                                               TypeTransformerRegistry typeTransformerRegistry,
-                                              CredentialRequestManager credentialRequestService) {
+                                              CredentialRequestManager credentialRequestService,
+                                              DiscriminatorMappingRegistry discriminatorMappingRegistry) {
         this.credentialStore = credentialStore;
         this.authorizationService = authorizationService;
         this.validator = validator;
         this.typeTransformerRegistry = typeTransformerRegistry;
         this.credentialRequestService = credentialRequestService;
+        this.discriminatorMappingRegistry = discriminatorMappingRegistry;
     }
 
     @GET
     @Path("/{credentialId}")
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
     @Override
     public VerifiableCredentialResource getCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String id, @Context SecurityContext securityContext) {
         authorizationService.authorize(securityContext, participantContextId, id, VerifiableCredentialResource.class)
@@ -100,7 +105,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
     @POST
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
     @Override
     public void addCredential(@PathParam("participantContextId") String participantContextId, VerifiableCredentialManifest manifest, @Context SecurityContext securityContext) {
         validator.validate(manifest).orElseThrow(ValidationFailureException::new);
@@ -115,7 +120,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
     @PUT
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
     @Override
     public void updateCredential(@PathParam("participantContextId") String participantContextId, VerifiableCredentialManifest manifest, @Context SecurityContext securityContext) {
         validator.validate(manifest).orElseThrow(ValidationFailureException::new);
@@ -130,7 +135,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
 
     @GET
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
     @Override
     public Collection<VerifiableCredentialResource> queryCredentialsByType(@PathParam("participantContextId") String participantContextId, @Nullable @QueryParam("type") String type, @Context SecurityContext securityContext) {
         var query = QuerySpec.Builder.newInstance();
@@ -149,7 +154,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @DELETE
     @Path("/{credentialId}")
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
     @Override
     public void deleteCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String id, @Context SecurityContext securityContext) {
         authorizationService.authorize(securityContext, participantContextId, id, VerifiableCredentialResource.class)
@@ -163,7 +168,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @POST
     @Path("/request")
     @RequiredScope("identity-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
     @Override
     public Response requestCredential(@PathParam("participantContextId") String participantContextId, CredentialRequestDto credentialRequestDto, @Context SecurityContext securityContext) {
         authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
@@ -180,7 +185,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
     @GET
     @Path("/request/{holderPid}")
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
     @Override
     public HolderCredentialRequestDto getCredentialRequest(@PathParam("participantContextId") String participantContextId,
                                                            @PathParam("holderPid") String holderPid,
@@ -192,6 +197,21 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         return ofNullable(credentialRequestService.findById(holderPid))
                 .map(req -> new HolderCredentialRequestDto(req.getIssuerDid(), req.getHolderPid(), req.getIssuerPid(), req.stateAsString(), req.getIdsAndFormats()))
                 .orElseThrow(() -> new ObjectNotFoundException(HolderCredentialRequest.class, holderPid));
+    }
+
+    @PUT
+    @Path("/discriminator")
+    @RequiredScope("identity-api:write")
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
+    @Override
+    public void addDiscriminatorMapping(@PathParam("participantContextId") String participantContextId,
+                                        Map<String, String> discriminatorMappings,
+                                        @Context SecurityContext securityContext) {
+
+        authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
+                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
+
+        discriminatorMappings.forEach(discriminatorMappingRegistry::addMapping);
     }
 
 }
