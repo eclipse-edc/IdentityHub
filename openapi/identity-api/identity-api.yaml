@@ -1544,6 +1544,36 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/participants/{participantContextId}/credentials/discriminator:
+    post:
+      tags:
+      - Verifiable Credentials
+      description: Define a scope discriminator mapping (=short-hand) for the fully-qualified
+        credential type
+      operationId: addDiscriminatorMapping
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: Mapping between alias (short-hand) and discriminator (fully-qualified
+          credential type)
+        required: true
+      responses:
+        "204":
+          description: Discriminator mapping added successfully
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
 components:
   schemas:
     VerifiableCredentialResource:
