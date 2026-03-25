@@ -14,13 +14,16 @@
 
 package org.eclipse.edc.identityhub.defaults;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 class EdcScopeToCriterionTransformerTest {
-    private final EdcScopeToCriterionTransformer transformer = new EdcScopeToCriterionTransformer();
+    private final DiscriminatorMappingRegistryImpl discriminatorMappingRegistry = new DiscriminatorMappingRegistryImpl();
+    private final EdcScopeToCriterionTransformer transformer = new EdcScopeToCriterionTransformer(discriminatorMappingRegistry);
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -33,6 +36,17 @@ class EdcScopeToCriterionTransformerTest {
     })
     void transform_validScope(String scope) {
         assertThat(transformer.transformScope(scope)).isSucceeded();
+    }
+
+    @Test
+    void transform_withAlias() {
+        discriminatorMappingRegistry.addMapping("SomeFancyCredential", "https://example.com/contexts/v1#TestCredential");
+        assertThat(transformer.transformScope("org.eclipse.dspace.dcp.vc.type:SomeFancyCredential:read")).isSucceeded()
+                .satisfies(criteria -> {
+                    assertThat(criteria).hasSize(2);
+                    assertThat(criteria).anyMatch(c -> c.getOperandRight().equals("https://example.com/contexts/v1"));
+                    assertThat(criteria).anyMatch(c -> c.getOperandRight().equals("TestCredential"));
+                });
     }
 
     @ParameterizedTest

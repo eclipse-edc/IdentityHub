@@ -23,6 +23,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegi
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.presentationdefinition.PresentationDefinition;
+import org.eclipse.edc.identityhub.defaults.DiscriminatorMappingRegistryImpl;
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.resolution.QueryFailure;
@@ -60,7 +61,7 @@ class CredentialQueryResolverImplTest {
     private final CredentialStore storeMock = mock();
     private final RevocationServiceRegistry revocationServiceRegistry = mock();
     private final Monitor monitor = mock();
-    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(), revocationServiceRegistry, monitor);
+    private final CredentialQueryResolverImpl resolver = new CredentialQueryResolverImpl(storeMock, new EdcScopeToCriterionTransformer(new DiscriminatorMappingRegistryImpl()), revocationServiceRegistry, monitor);
 
     @BeforeEach
     void setUp() {
@@ -134,7 +135,7 @@ class CredentialQueryResolverImplTest {
     }
 
     @Test
-    void query_scopeStringWithFqct() {
+    void query_scopeStringWithFullyQualifiedCredentialType() {
         var cred = createCredential("TestCredential").context("https://example.com/contexts/v1").build();
         var resource = createCredentialResource(cred).build();
         when(storeMock.query(any())).thenAnswer(i -> success(List.of(resource)));
