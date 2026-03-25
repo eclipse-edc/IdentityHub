@@ -87,6 +87,7 @@ public class TestFunctions {
                 .type("test-type")
                 .issuanceDate(Instant.now())
                 .issuer(new Issuer("did:web:issuer"))
+                .context("https://example.com/contexts/v1")
                 .credentialSubject(CredentialSubject.Builder.newInstance().id("id").claim("foo", "bar").build())
                 .build();
     }

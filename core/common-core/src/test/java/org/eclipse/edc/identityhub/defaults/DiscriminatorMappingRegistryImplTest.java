@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.defaults;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class DiscriminatorMappingRegistryImplTest {
 
@@ -60,4 +61,10 @@ class DiscriminatorMappingRegistryImplTest {
         assertThat(registry.getMapping("alias3")).isEqualTo("discriminator3");
     }
 
+    @Test
+    void addMapping_duplicateDiscriminator_shouldThrowException() {
+        registry.addMapping("alias1", "discriminator1");
+        assertThatThrownBy(() -> registry.addMapping("alias2", "discriminator1"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

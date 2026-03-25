@@ -33,6 +33,11 @@ public class DiscriminatorMappingRegistryImpl implements DiscriminatorMappingReg
 
     @Override
     public void addMapping(String alias, String discriminator) {
+
+        if (mappings.containsValue(discriminator)) {
+            throw new IllegalArgumentException("An alias for this discriminator already exists: '%s' -> '%s'".formatted(alias, discriminator));
+        }
+
         mappings.put(alias, discriminator);
     }
 

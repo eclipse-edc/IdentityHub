@@ -27,6 +27,7 @@ import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.C
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
@@ -63,6 +64,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -79,6 +81,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
     private final VerifiableCredentialManifestValidator validator = mock();
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final CredentialRequestManager credentialRequestService = mock();
+    private final DiscriminatorMappingRegistry mappingRegistry = mock();
 
     @BeforeEach
     void setUp() {
@@ -87,7 +90,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
     @Override
     protected Object controller() {
-        return new VerifiableCredentialsApiController(credentialStore, authorizationService, validator, typeTransformerRegistry, credentialRequestService);
+        return new VerifiableCredentialsApiController(credentialStore, authorizationService, validator, typeTransformerRegistry, credentialRequestService, mappingRegistry);
     }
 
     private VerifiableCredential createCredential(String... types) {
@@ -549,6 +552,68 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404);
+        }
+    }
+
+    @Nested
+    class DiscriminatorMapping {
+
+        @Test
+        void success() {
+            var mappings = Map.of("MyTestCredential", "https://example.com/contexts/v1/#TestCredential", "AnotherCredential", "https://example.com/contexts/v1/#GoldMembershipCredential");
+
+            baseRequest()
+                    .contentType(JSON)
+                    .body(mappings)
+                    .post("/discriminator")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204);
+
+            verify(mappingRegistry).addMapping("MyTestCredential", "https://example.com/contexts/v1/#TestCredential");
+            verify(mappingRegistry).addMapping("AnotherCredential", "https://example.com/contexts/v1/#GoldMembershipCredential");
+        }
+
+        @Test
+        void emptyBody_shouldSucceedWithNoInteractions() {
+            baseRequest()
+                    .contentType(JSON)
+                    .body(Map.of())
+                    .post("/discriminator")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204);
+
+            verifyNoInteractions(mappingRegistry);
+        }
+
+        @Test
+        void duplicateDiscriminator_expect400() {
+            doThrow(new IllegalArgumentException("Duplicate discriminator"))
+                    .when(mappingRegistry).addMapping(anyString(), anyString());
+
+            baseRequest()
+                    .contentType(JSON)
+                    .body(Map.of("alias1", "discriminator1"))
+                    .post("/discriminator")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+        }
+
+        @Test
+        void whenNotAuthorized_expect403() {
+            when(authorizationService.authorize(any(), anyString(), anyString(), any())).thenReturn(unauthorized("test-message"));
+
+            baseRequest()
+                    .contentType(JSON)
+                    .body(Map.of("MyTestCredential", "https://example.com/contexts/v1/#TestCredential"))
+                    .post("/discriminator")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+
+            verifyNoInteractions(mappingRegistry);
         }
     }
 }

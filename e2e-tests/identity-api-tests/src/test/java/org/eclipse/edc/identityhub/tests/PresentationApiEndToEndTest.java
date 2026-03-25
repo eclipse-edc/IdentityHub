@@ -40,6 +40,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipant
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
+import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -728,6 +729,49 @@ public class PresentationApiEndToEndTest {
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT, scope))
+                    .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
+                    .then()
+                    .statusCode(200)
+                    .log().ifValidationFails()
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
+                    .hasEntrySatisfying("presentation", jsonValue ->
+                            assertThat(vpTokensExtractor(jsonValue)).hasSize(1)
+                                    .first()
+                                    .satisfies(vpToken -> {
+                                        assertThat(vpToken).isNotNull();
+                                        var credentials = extractCredentials(vpToken);
+                                        assertThat(credentials).hasSize(1);
+                                    }));
+        }
+
+        @Test
+        void query_withDiscriminatorAlias(IdentityHub identityHub, CredentialStore store, DiscriminatorMappingRegistry mappingRegistry) throws JsonProcessingException, JOSEException {
+            // both these credentials have the same type, but difference namespaces/contexts
+            var credResource = storeCredential(TestData.VC_EXAMPLE_OTHER_NAMESPACE, CredentialFormat.VC1_0_JWT, store);
+
+            // providing no specific scope should cause all credentials to be returned -> clash
+
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:consumer#key1"))).thenReturn(Result.success(CONSUMER_KEY.toPublicKey()));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq("did:web:provider#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            var credential = credResource.getVerifiableCredential().credential();
+            var context = credential.getContext().get(0);
+            var type = credential.getType().get(0);
+            var fqct = context + "#" + type;
+            var alias = "MyCred";
+
+            mappingRegistry.addMapping(alias, fqct);
+            var token = generateSiToken("org.eclipse.dspace.dcp.vc.type:%s:read".formatted(alias));
+
+
+            var response = identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, "Bearer " + token)
+                    .body(VALID_QUERY_WITH_FQCT_SCOPE_TEMPLATE.formatted(DSPACE_DCP_V_1_0_CONTEXT, "org.eclipse.dspace.dcp.vc.type:%s:read".formatted(alias)))
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .statusCode(200)

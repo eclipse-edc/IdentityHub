@@ -17,6 +17,12 @@ package org.eclipse.edc.identityhub.spi.transformation;
 import org.jetbrains.annotations.NotNull;
 
 public interface DiscriminatorMappingRegistry {
+    /**
+     * Registers a mapping between a specified alias and a discriminator value.
+     *
+     * @param alias         The alias ("short-hand") for the fully qualified credential type, for example, {@code MyMembershipCredential}
+     * @param discriminator The full discriminator. In most cases this will be the fully-qualified credential type, such as {@code https://example.com/membership-credentials/v1#MembershipCredential}
+     */
     void addMapping(String alias, String discriminator);
 
     @NotNull String getMapping(String alias);
