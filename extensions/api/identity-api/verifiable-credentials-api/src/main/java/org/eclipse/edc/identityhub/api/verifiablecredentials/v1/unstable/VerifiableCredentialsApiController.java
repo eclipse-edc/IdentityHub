@@ -199,7 +199,7 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .orElseThrow(() -> new ObjectNotFoundException(HolderCredentialRequest.class, holderPid));
     }
 
-    @PUT
+    @POST
     @Path("/discriminator")
     @RequiredScope("identity-api:write")
     @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })

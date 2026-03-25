@@ -64,7 +64,7 @@ class DiscriminatorMappingRegistryImplTest {
     @Test
     void addMapping_duplicateDiscriminator_shouldThrowException() {
         registry.addMapping("alias1", "discriminator1");
-        assertThatThrownBy(() -> registry.addMapping("alias1", "discriminator1"))
+        assertThatThrownBy(() -> registry.addMapping("alias2", "discriminator1"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

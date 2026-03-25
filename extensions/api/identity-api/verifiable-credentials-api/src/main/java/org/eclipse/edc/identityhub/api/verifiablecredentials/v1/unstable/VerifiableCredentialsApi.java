@@ -150,7 +150,7 @@ public interface VerifiableCredentialsApi {
             operationId = "addDiscriminatorMapping",
             requestBody = @RequestBody(description = "Mapping between alias (short-hand) and discriminator (fully-qualified credential type)", required = true),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Discriminator mapping added successfully"),
+                    @ApiResponse(responseCode = "204", description = "Discriminator mapping added successfully"),
                     @ApiResponse(responseCode = "400", description = "Request body was malformed, or the request could not be processed",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             })

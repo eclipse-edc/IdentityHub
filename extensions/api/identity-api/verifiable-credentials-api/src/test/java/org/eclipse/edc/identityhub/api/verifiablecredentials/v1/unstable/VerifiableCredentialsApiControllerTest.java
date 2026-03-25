@@ -565,7 +565,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
             baseRequest()
                     .contentType(JSON)
                     .body(mappings)
-                    .put("/discriminator")
+                    .post("/discriminator")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -579,7 +579,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
             baseRequest()
                     .contentType(JSON)
                     .body(Map.of())
-                    .put("/discriminator")
+                    .post("/discriminator")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204);
@@ -595,7 +595,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
             baseRequest()
                     .contentType(JSON)
                     .body(Map.of("alias1", "discriminator1"))
-                    .put("/discriminator")
+                    .post("/discriminator")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
@@ -608,7 +608,7 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
             baseRequest()
                     .contentType(JSON)
                     .body(Map.of("MyTestCredential", "https://example.com/contexts/v1/#TestCredential"))
-                    .put("/discriminator")
+                    .post("/discriminator")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
