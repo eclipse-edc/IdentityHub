@@ -43,7 +43,6 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestMa
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
-import org.eclipse.edc.participantcontext.spi.types.ParticipantResource;
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -213,29 +212,6 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
 
         discriminatorMappings.forEach(discriminatorMappingRegistry::addMapping);
-    }
-
-    @POST
-    @Path("/query")
-    @RequiredScope("identity-api:read")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT })
-    @Override
-    public Collection<VerifiableCredentialResource> queryCredentials(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext securityContext) {
-
-        authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
-                .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
-
-        // add filter for participant context ID to only fetch credentials for the specified participant context
-        var participantFilter = ParticipantResource.filterByParticipantContextId(participantContextId);
-
-        if (query.getFilterExpression().stream().noneMatch(c -> c.equals(participantFilter))) {
-            query = query.toBuilder().filter(participantFilter).build();
-        }
-        return credentialStore.query(query)
-                .orElseThrow(InvalidRequestException::new)
-                .stream()
-                .filter(vcr -> authorizationService.authorize(securityContext, participantContextId, vcr.getId(), VerifiableCredentialResource.class).succeeded())
-                .toList();
     }
 
 }
