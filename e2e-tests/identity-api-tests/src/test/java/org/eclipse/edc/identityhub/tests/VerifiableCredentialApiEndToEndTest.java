@@ -38,6 +38,7 @@ import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
 import org.eclipse.edc.policy.model.Policy;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
@@ -66,6 +67,7 @@ import static org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentity
 import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -430,6 +432,184 @@ public class VerifiableCredentialApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404);
+        }
+
+        @Test
+        void getAll_whenAdmin(IdentityHub identityHub) {
+            var superUserAuth = authorizeUser(SUPER_USER, identityHub);
+            var user1 = "user1";
+            var user2 = "user2";
+            identityHub.createParticipant(user1);
+            identityHub.createParticipant(user2);
+
+            var credential1 = createCredential();
+            var credential2 = createCredential();
+            identityHub.storeCredential(credential1, user1);
+            identityHub.storeCredential(credential2, user2);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(superUserAuth)
+                    .get("/v1alpha/credentials")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body(notNullValue());
+        }
+
+        @Test
+        void getAll_whenNotAdmin_expect403(IdentityHub identityHub) {
+            var user = "user1";
+            var userAuth = authorizeUser(user, identityHub);
+
+            var credential = createCredential();
+            identityHub.storeCredential(credential, user);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
+                    .get("/v1alpha/credentials")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+        }
+
+        @Test
+        void queryCredentials(IdentityHub identityHub) {
+            var superUserAuth = authorizeUser(SUPER_USER, identityHub);
+            var user = "user1";
+            var userAuth = authorizeUser(user, identityHub);
+
+            var vc1 = createCredential();
+            identityHub.storeCredential(vc1, user);
+            var vc2 = createCredential();
+            identityHub.storeCredential(vc2, user);
+
+            assertThat(Arrays.asList(userAuth, superUserAuth))
+                    .allSatisfy(auth -> identityHub.getIdentityEndpoint().baseRequest()
+                            .contentType(JSON)
+                            .header(auth)
+                            .body(QuerySpec.max())
+                            .post("/v1alpha/participants/%s/credentials/query".formatted(user))
+                            .then()
+                            .log().ifValidationFails()
+                            .statusCode(200)
+                            .body("verifiableCredential.credential.id", hasItem(vc1.getId()))
+                            .body("verifiableCredential.credential.id", hasItem(vc2.getId())));
+        }
+
+        @Test
+        void queryCredentials_withTypeFilter_returnsOnlyMatching(IdentityHub identityHub) {
+            var user = "user1";
+            var userAuth = authorizeUser(user, identityHub);
+
+            var credential = createCredential();
+            identityHub.storeCredential(credential, user);
+            identityHub.storeCredential(createCredential(), user);
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("verifiableCredential.credential.type", "contains", credential.getType().get(0)))
+                    .build();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
+                    .body(query)
+                    .post("/v1alpha/participants/%s/credentials/query".formatted(user))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("verifiableCredential.credential.id", hasItem(credential.getId()));
+        }
+
+        @Test
+        void queryCredentials_withFilter_returnsEmptyWhenNoMatch(IdentityHub identityHub) {
+            var user = "user1";
+            var userAuth = authorizeUser(user, identityHub);
+
+            identityHub.storeCredential(createCredential(), user);
+
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(new Criterion("verifiableCredential.credential.type", "contains", "non-existent-type-" + UUID.randomUUID()))
+                    .build();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
+                    .body(query)
+                    .post("/v1alpha/participants/%s/credentials/query".formatted(user))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("size()", equalTo(0));
+        }
+
+        @Test
+        void queryCredentials_whenCalledByDifferentParticipant_returns403(IdentityHub identityHub) {
+            var user1 = "user1";
+            var user2 = "user2";
+            identityHub.createParticipant(user1);
+            var user2Auth = authorizeUser(user2, identityHub);
+
+            identityHub.storeCredential(createCredential(), user1);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(user2Auth)
+                    .body(QuerySpec.max())
+                    .post("/v1alpha/participants/%s/credentials/query".formatted(user1))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+        }
+
+        @Test
+        void queryCredentials_withPagination(IdentityHub identityHub) {
+            var user = "user1";
+            var userAuth = authorizeUser(user, identityHub);
+
+            identityHub.storeCredential(createCredential(), user);
+            identityHub.storeCredential(createCredential(), user);
+            identityHub.storeCredential(createCredential(), user);
+            var query = QuerySpec.Builder.newInstance()
+                    .limit(2)
+                    .offset(0)
+                    .build();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
+                    .body(query)
+                    .post("/v1alpha/participants/%s/credentials/query".formatted(user))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("size()", equalTo(2));
+        }
+
+        @Test
+        void queryCredentials_withPagination_whenAdmin(IdentityHub identityHub) {
+            var user = "user1";
+            authorizeUser(user, identityHub);
+            var superUserAuth = authorizeUser(SUPER_USER, identityHub);
+
+            identityHub.storeCredential(createCredential(), user);
+            identityHub.storeCredential(createCredential(), user);
+            identityHub.storeCredential(createCredential(), user);
+            var query = QuerySpec.Builder.newInstance()
+                    .limit(2)
+                    .offset(0)
+                    .build();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(superUserAuth)
+                    .body(query)
+                    .post("/v1alpha/participants/%s/credentials/query".formatted(user))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("size()", equalTo(2));
         }
 
         protected abstract Header authorizeUser(String participantContextId, IdentityHub identityHub);

@@ -46,8 +46,9 @@ public class GetAllKeyPairsApiController implements GetAllKeyPairsApi {
 
     @GET
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN })
     @Override
+    @Deprecated(forRemoval = true, since = "0.17.0")
     public Collection<KeyPairResource> getAllKeyPairs(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                                       @DefaultValue("50") @QueryParam("limit") Integer limit) {
         return keyPairService.query(QuerySpec.Builder.newInstance().offset(offset).limit(limit).build())

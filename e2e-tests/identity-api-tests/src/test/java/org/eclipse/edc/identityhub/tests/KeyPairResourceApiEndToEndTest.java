@@ -711,7 +711,6 @@ public class KeyPairResourceApiEndToEndTest {
 
         @Test
         void getAll_notAuthorized(IdentityHub identityHub) {
-            var attackerToken = authorizeUser("attacker", identityHub);
 
             range(0, 10)
                     .forEach(i -> {
@@ -720,7 +719,19 @@ public class KeyPairResourceApiEndToEndTest {
                     });
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(attackerToken)
+                    .get("/v1alpha/keypairs")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(401);
+        }
+
+        @Test
+        void getAll_notAdmin(IdentityHub identityHub) {
+            var userAuth = authorizeUser(PARTICIPANT_CONTEXT_ID, identityHub);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
                     .get("/v1alpha/keypairs")
                     .then()
                     .log().ifValidationFails()

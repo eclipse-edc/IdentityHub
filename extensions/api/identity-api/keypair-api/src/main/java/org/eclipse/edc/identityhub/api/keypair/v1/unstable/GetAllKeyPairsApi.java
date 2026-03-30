@@ -46,7 +46,8 @@ public interface GetAllKeyPairsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "The query was malformed or was not understood by the server.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-            }
+            },
+            deprecated = true
     )
     Collection<KeyPairResource> getAllKeyPairs(Integer offset, Integer limit);
 }

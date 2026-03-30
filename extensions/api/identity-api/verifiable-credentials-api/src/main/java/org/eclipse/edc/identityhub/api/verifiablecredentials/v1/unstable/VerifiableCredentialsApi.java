@@ -24,12 +24,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.CredentialRequestDto;
 import org.eclipse.edc.identityhub.api.verifiablecredentials.v1.unstable.model.HolderCredentialRequestDto;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialManifest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.web.spi.ApiErrorDetail;
 
 import java.util.Collection;
@@ -155,4 +158,18 @@ public interface VerifiableCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
             })
     void addDiscriminatorMapping(String participantContextId, Map<String, String> mappings, SecurityContext securityContext);
+
+    @Operation(description = "Query VerifiableCredentials.",
+            operationId = "queryCredentials",
+            requestBody = @RequestBody(content = @Content(schema = @Schema(implementation = QuerySpec.class))),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "The list of VerifiableCredentials.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = VerifiableCredentialResource.class)))),
+                    @ApiResponse(responseCode = "403", description = "The request could not be completed, because either the authentication was missing or was not valid.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+                    @ApiResponse(responseCode = "400", description = "The query was malformed or was not understood by the server.",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
+            }
+    )
+    Collection<VerifiableCredentialResource> queryCredentials(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext securityContext);
 }
