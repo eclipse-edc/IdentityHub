@@ -432,6 +432,46 @@ public class VerifiableCredentialApiEndToEndTest {
                     .statusCode(404);
         }
 
+        @Test
+        void getAll_whenAdmin(IdentityHub identityHub) {
+            var superUserAuth = authorizeUser(SUPER_USER, identityHub);
+            var user1 = "user1";
+            var user2 = "user2";
+            identityHub.createParticipant(user1);
+            identityHub.createParticipant(user2);
+
+            var credential1 = createCredential();
+            var credential2 = createCredential();
+            identityHub.storeCredential(credential1, user1);
+            identityHub.storeCredential(credential2, user2);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(superUserAuth)
+                    .get("/v1alpha/credentials")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body(notNullValue());
+        }
+
+        @Test
+        void getAll_whenNotAdmin_expect403(IdentityHub identityHub) {
+            var user = "user1";
+            var userAuth = authorizeUser(user, identityHub);
+
+            var credential = createCredential();
+            identityHub.storeCredential(credential, user);
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
+                    .get("/v1alpha/credentials")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(403);
+        }
+
         protected abstract Header authorizeUser(String participantContextId, IdentityHub identityHub);
 
         private VerifiableCredentialManifest.Builder createManifest(String participantContextId, VerifiableCredential vc) {

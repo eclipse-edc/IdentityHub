@@ -37,7 +37,7 @@ public interface GetAllCredentialsApi {
             operationId = "getAllCredentials",
             parameters = {
                     @Parameter(name = "offset", description = "the paging offset. defaults to 0"),
-                    @Parameter(name = "limit", description = "the page size. defaults to 50")},
+                    @Parameter(name = "limit", description = "the page size. defaults to 50") },
             responses = {
                     @ApiResponse(responseCode = "200", description = "The list of VerifiableCredential resources.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = VerifiableCredentialResource.class)))),
@@ -45,7 +45,8 @@ public interface GetAllCredentialsApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
                     @ApiResponse(responseCode = "400", description = "The query was malformed or was not understood by the server.",
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json")),
-            }
+            },
+            deprecated = true
     )
     Collection<VerifiableCredentialResource> getAllCredentials(Integer offset, Integer limit);
 }

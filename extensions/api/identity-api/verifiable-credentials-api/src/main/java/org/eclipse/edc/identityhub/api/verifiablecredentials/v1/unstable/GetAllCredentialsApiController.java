@@ -46,8 +46,9 @@ public class GetAllCredentialsApiController implements GetAllCredentialsApi {
 
     @GET
     @RequiredScope("identity-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PARTICIPANT})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN })
     @Override
+    @Deprecated(forRemoval = true, since = "0.17.0")
     public Collection<VerifiableCredentialResource> getAllCredentials(@DefaultValue("0") @QueryParam("offset") Integer offset,
                                                                       @DefaultValue("50") @QueryParam("limit") Integer limit) {
         var res = credentialStore.query(QuerySpec.Builder.newInstance().limit(limit).offset(offset).build());
