@@ -1,0 +1,46 @@
+name: Sync from Upstream
+
+on:
+  schedule:
+    # Run every day at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main-upstream
+          fetch-depth: 0
+
+      - name: Sync from upstream
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Remove upstream remote if exists and add it
+          git remote remove upstream 2>/dev/null || true
+          git remote add upstream https://github.com/eclipse-edc/IdentityHub.git
+
+          # Fetch upstream changes with prune
+          git fetch upstream --prune
+
+          # Check if there are new commits
+          UPSTREAM=$(git rev-parse upstream/main)
+          LOCAL=$(git rev-parse HEAD)
+
+          if [ "$UPSTREAM" != "$LOCAL" ]; then
+            echo "New commits found, syncing..."
+            # Hard reset to match upstream exactly
+            git reset --hard upstream/main
+            # Force push to origin
+            git push origin main-upstream --force
+          else
+            echo "Already up to date, no sync needed"
+          fi
