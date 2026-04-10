@@ -62,51 +62,6 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
       deprecated: true
-  /v1alpha/participants/{participantContextId}/dids/query:
-    post:
-      tags:
-      - DID
-      description: Query for DID documents.
-      operationId: queryDids
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/QuerySpec"
-      responses:
-        "200":
-          description: The list of DID Documents.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DidDocument"
-        "400":
-          description: The query was malformed or was not understood by the server.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantContextId}/roles:
     put:
       tags:
@@ -204,6 +159,51 @@ paths:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A ParticipantContext with the given ID does not exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/participants/{participantContextId}/dids/query:
+    post:
+      tags:
+      - DID
+      description: Query for DID documents.
+      operationId: queryDids
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuerySpec"
+      responses:
+        "200":
+          description: The list of DID Documents.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DidDocument"
+        "400":
+          description: The query was malformed or was not understood by the server.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
           content:
             application/json:
               schema:
@@ -984,6 +984,61 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1alpha/participants/{participantContextId}/state:
+    post:
+      tags:
+      - Participant Context
+      description: "Activates a ParticipantContext. This operation is idempotent,\
+        \ i.e. activating an already active ParticipantContext is a NOOP."
+      operationId: activateParticipant
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: isActive
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantManifest"
+      responses:
+        "204":
+          description: The ParticipantContext was activated/deactivated successfully
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: A ParticipantContext with the given ID does not exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1alpha/participants/{participantContextId}/dids/{did}/endpoints:
     post:
       tags:
@@ -1167,61 +1222,6 @@ paths:
         "404":
           description: The service endpoint could not be replaced because the DID
             does not exist.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantContextId}/state:
-    post:
-      tags:
-      - Participant Context
-      description: "Activates a ParticipantContext. This operation is idempotent,\
-        \ i.e. activating an already active ParticipantContext is a NOOP."
-      operationId: activateParticipant
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: isActive
-        in: query
-        required: false
-        style: form
-        explode: true
-        schema:
-          type: boolean
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ParticipantManifest"
-      responses:
-        "204":
-          description: The ParticipantContext was activated/deactivated successfully
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: A ParticipantContext with the given ID does not exist.
           content:
             application/json:
               schema:
@@ -1830,80 +1830,6 @@ components:
           type: string
         type:
           type: string
-    DidDocument:
-      type: object
-      properties:
-        '@context':
-          type: array
-          items:
-            type: object
-        authentication:
-          type: array
-          items:
-            type: string
-        id:
-          type: string
-        service:
-          type: array
-          items:
-            $ref: "#/components/schemas/Service"
-        verificationMethod:
-          type: array
-          items:
-            $ref: "#/components/schemas/VerificationMethod"
-    Service:
-      type: object
-      properties:
-        id:
-          type: string
-        serviceEndpoint:
-          type: string
-        type:
-          type: string
-    VerificationMethod:
-      type: object
-      properties:
-        controller:
-          type: string
-        id:
-          type: string
-        publicKeyJwk:
-          type: object
-          additionalProperties:
-            type: object
-        publicKeyMultibase:
-          type: string
-        type:
-          type: string
-    QuerySpec:
-      type: object
-      properties:
-        filterExpression:
-          type: array
-          items:
-            $ref: "#/components/schemas/Criterion"
-        limit:
-          type: integer
-          format: int32
-        offset:
-          type: integer
-          format: int32
-        sortField:
-          type: string
-        sortOrder:
-          type: string
-          enum:
-          - ASC
-          - DESC
-    Criterion:
-      type: object
-      properties:
-        operandLeft:
-          type: object
-        operandRight:
-          type: object
-        operator:
-          type: string
     ParticipantManifest:
       type: object
       properties:
@@ -1965,6 +1891,80 @@ components:
             - sign_credentials
             - sign_presentation
             - sign_token
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+        serviceEndpoint:
+          type: string
+        type:
+          type: string
+    DidDocument:
+      type: object
+      properties:
+        '@context':
+          type: array
+          items:
+            type: object
+        authentication:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+        service:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+        verificationMethod:
+          type: array
+          items:
+            $ref: "#/components/schemas/VerificationMethod"
+    VerificationMethod:
+      type: object
+      properties:
+        controller:
+          type: string
+        id:
+          type: string
+        publicKeyJwk:
+          type: object
+          additionalProperties:
+            type: object
+        publicKeyMultibase:
+          type: string
+        type:
+          type: string
+    QuerySpec:
+      type: object
+      properties:
+        filterExpression:
+          type: array
+          items:
+            $ref: "#/components/schemas/Criterion"
+        limit:
+          type: integer
+          format: int32
+        offset:
+          type: integer
+          format: int32
+        sortField:
+          type: string
+        sortOrder:
+          type: string
+          enum:
+          - ASC
+          - DESC
+    Criterion:
+      type: object
+      properties:
+        operandLeft:
+          type: object
+        operandRight:
+          type: object
+        operator:
+          type: string
     IdentityHubParticipantContext:
       type: object
       properties:
