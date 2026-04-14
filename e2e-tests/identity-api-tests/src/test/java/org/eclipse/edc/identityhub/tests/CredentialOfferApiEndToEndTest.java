@@ -178,7 +178,7 @@ public class CredentialOfferApiEndToEndTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
-                    .body(containsString("Token verification failed"));
+                    .body(containsString("ID token verification failed: JWT signature not valid"));
         }
 
         @DisplayName("CredentialMessage contains an illegal format, expect HTTP 400")

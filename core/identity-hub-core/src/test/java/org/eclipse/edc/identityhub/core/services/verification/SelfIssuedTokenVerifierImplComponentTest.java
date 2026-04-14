@@ -107,7 +107,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
 
         var selfIssuedIdToken = createSignedJwt(spoofedKey, new JWTClaimsSet.Builder().claim("foo", "bar").jwtID(UUID.randomUUID().toString()).build());
         assertThat(verifier.verify(selfIssuedIdToken, PARTICIPANT_CONTEXT_ID)).isFailed()
-                .detail().isEqualTo("Token verification failed");
+                .detail().isEqualTo("JWT signature not valid");
 
     }
 
@@ -246,7 +246,7 @@ class SelfIssuedTokenVerifierImplComponentTest {
                 .build());
 
         assertThat(verifier.verify(siToken, PARTICIPANT_CONTEXT_ID)).isFailed()
-                .detail().isEqualTo("Token verification failed");
+                .detail().isEqualTo("JWT signature not valid");
     }
 
     @Test

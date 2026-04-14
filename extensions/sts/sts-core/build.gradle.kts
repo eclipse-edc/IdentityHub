@@ -7,7 +7,7 @@ dependencies {
     api(libs.edc.spi.transaction)
     api(libs.edc.spi.dcp)
     api(project(":spi:sts-spi"))
-    api(libs.edc.spi.jwt.signer)
+    api(libs.edc.spi.jwt)
 
     implementation(libs.edc.spi.keys)
     implementation(project(":extensions:sts:sts-account-service-local"))
