@@ -251,7 +251,7 @@ public class PresentationApiEndToEndTest {
                     .statusCode(401)
                     .log().ifValidationFails()
                     .body("[0].type", equalTo("AuthenticationFailed"))
-                    .body("[0].message", equalTo("ID token verification failed: Token verification failed"));
+                    .body("[0].message", equalTo("ID token verification failed: JWT signature not valid"));
         }
 
         @Test
