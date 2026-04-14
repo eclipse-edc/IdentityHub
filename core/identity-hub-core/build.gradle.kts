@@ -14,7 +14,7 @@ dependencies {
     implementation(project(":core:lib:common-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
     implementation(libs.edc.spi.transaction)
-    implementation(libs.edc.spi.jwt.signer)
+    implementation(libs.edc.spi.jwt)
     implementation(libs.edc.verifiablecredentials)
     implementation(libs.edc.jsonld) // for the JSON-LD mapper
     implementation(libs.edc.lib.util)
