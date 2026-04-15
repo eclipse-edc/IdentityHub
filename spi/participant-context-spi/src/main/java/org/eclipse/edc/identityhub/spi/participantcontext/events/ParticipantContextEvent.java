@@ -34,6 +34,7 @@ public abstract class ParticipantContextEvent extends Event implements TraceCarr
         return participantContextId;
     }
 
+    @Override
     public Map<String, String> getTraceContext() {
         return traceContext;
     }

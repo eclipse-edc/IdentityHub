@@ -104,7 +104,7 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
                                 .orElse(success()))
                         .onFailure(f -> monitor.warning("Removing key pairs from a deleted ParticipantContext failed: %s".formatted(f.getFailureDetail())));
                 return null;
-            }, deletionEvent);
+            }, deletionEvent).get();
         } else {
             monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }
