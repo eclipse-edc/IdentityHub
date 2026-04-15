@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext.events;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.spi.event.Event;
 
@@ -24,9 +26,14 @@ import java.util.Objects;
  */
 public abstract class ParticipantContextEvent extends Event {
     protected String participantContextId;
+    protected SpanContext spanContext;
 
     public String getParticipantContextId() {
         return participantContextId;
+    }
+
+    public SpanContext getSpanContext() {
+        return spanContext;
     }
 
     public abstract static class Builder<T extends ParticipantContextEvent, B extends ParticipantContextEvent.Builder<T, B>> {
@@ -46,6 +53,7 @@ public abstract class ParticipantContextEvent extends Event {
 
         public T build() {
             Objects.requireNonNull((event.participantContextId));
+            event.spanContext = Span.current().getSpanContext();
             return event;
         }
     }

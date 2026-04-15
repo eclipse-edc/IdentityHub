@@ -24,5 +24,6 @@ dependencies {
     implementation(project(":spi:participant-context-spi"))
     implementation(project(":spi:keypair-spi"))
     implementation(project(":spi:did-spi"))
+    implementation(libs.opentelemetry.api)
     testImplementation(libs.edc.junit)
 }

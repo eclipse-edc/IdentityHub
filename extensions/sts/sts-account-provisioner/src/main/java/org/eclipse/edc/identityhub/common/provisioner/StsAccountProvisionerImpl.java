@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.common.provisioner;
 
+import io.opentelemetry.api.trace.Span;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.model.StsAccount;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientSecretGenerator;
@@ -28,6 +29,8 @@ import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * AccountProvisioner, that synchronizes the {@link IdentityHubParticipantContext} object
@@ -57,7 +60,10 @@ public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountPro
         var payload = event.getPayload();
         ServiceResult<Void> result;
         if (payload instanceof ParticipantContextDeleted deletedEvent) {
-            result = stsAccountService.deleteAccount(deletedEvent.getParticipantContextId());
+            var spanCtx = ofNullable(deletedEvent.getSpanContext()).orElse(Span.current().getSpanContext());
+            try (var scope = Span.wrap(spanCtx).makeCurrent()) {
+                result = stsAccountService.deleteAccount(deletedEvent.getParticipantContextId());
+            }
         } else {
             result = ServiceResult.badRequest("Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }

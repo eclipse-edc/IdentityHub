@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Scope;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -30,6 +32,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.stream.Stream;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
@@ -64,24 +67,30 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
         var payload = event.getPayload();
         if (payload instanceof ParticipantContextCreated createdEvent) {
             var manifest = createdEvent.getManifest();
-            var doc = DidDocument.Builder.newInstance()
-                    .id(manifest.getDid())
-                    .service(manifest.getServiceEndpoints().stream().toList())
-                    // updating and adding a verification method happens as a result of the KeyPairAddedEvent
-                    .build();
+            var spanCtx = ofNullable(createdEvent.getSpanContext()).orElse(Span.current().getSpanContext());
 
-            if (manifest.isActive() && manifest.getKeys().stream().noneMatch(KeyDescriptor::isActive)) {
-                monitor.warning("The ParticipantContext is 'active', but its (only) KeyPair is 'inActive'. " +
-                        "This will result in a DID Document without Verification Methods, and thus, an unusable ParticipantContext.");
+            try (Scope scope = Span.wrap(spanCtx).makeCurrent()) {
+                // spanContext is now current
+                var doc = DidDocument.Builder.newInstance()
+                        .id(manifest.getDid())
+                        .service(manifest.getServiceEndpoints().stream().toList())
+                        // updating and adding a verification method happens as a result of the KeyPairAddedEvent
+                        .build();
+
+                if (manifest.isActive() && manifest.getKeys().stream().noneMatch(KeyDescriptor::isActive)) {
+                    monitor.warning("The ParticipantContext is 'active', but its (only) KeyPair is 'inActive'. " +
+                            "This will result in a DID Document without Verification Methods, and thus, an unusable ParticipantContext.");
+                }
+
+                didDocumentService.store(doc, manifest.getParticipantContextId())
+                        // adding the keypair event will cause the DidDocumentService to update the DID
+                        .compose(u -> storeKeyPairs(createdEvent))
+                        .compose(u -> manifest.isActive()
+                                ? participantContextService.updateParticipant(manifest.getParticipantContextId(), IdentityHubParticipantContext::activate) //implicitly publishes the did document
+                                : success())
+                        .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
             }
 
-            didDocumentService.store(doc, manifest.getParticipantContextId())
-                    // adding the keypair event will cause the DidDocumentService to update the DID
-                    .compose(u -> storeKeyPairs(createdEvent))
-                    .compose(u -> manifest.isActive()
-                            ? participantContextService.updateParticipant(manifest.getParticipantContextId(), IdentityHubParticipantContext::activate) //implicitly publishes the did document
-                            : success())
-                    .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
 
         } else if (payload instanceof ParticipantContextDeleting deletionEvent) {
             var participantContext = deletionEvent.getParticipantContext();

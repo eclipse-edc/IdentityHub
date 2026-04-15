@@ -16,6 +16,8 @@ package org.eclipse.edc.identityhub.core.services.verifiablepresentation.generat
 
 import com.apicatalog.vc.suite.SignatureSuite;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonArrayBuilder;
@@ -108,6 +110,7 @@ public class LdpPresentationGenerator implements PresentationGenerator<JsonObjec
      *                                  or if one or more VerifiableCredentials cannot be represented in the JSON-LD format.
      */
     @Override
+    @WithSpan(value = "presentation.create", kind = SpanKind.INTERNAL)
     public JsonObject generatePresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, String issuerId, Map<String, Object> additionalData) {
         if (!additionalData.containsKey(TYPE_ADDITIONAL_DATA)) {
             throw new IllegalArgumentException("Must provide additional data: '%s'".formatted(TYPE_ADDITIONAL_DATA));

@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpProfileRegistry;
@@ -30,6 +32,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionE
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.util.Collection;
@@ -60,6 +63,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         this.profileRegistry = profileRegistry;
     }
 
+    @WithSpan(value = "issuance.initiate")
     @Override
     public ServiceResult<CredentialRequestMessage.Response> initiateCredentialsIssuance(String participantContextId, CredentialRequestMessage message, DcpRequestContext context) {
         if (message.getCredentials().isEmpty()) {
@@ -143,6 +147,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
 
     private ServiceResult<IssuanceProcess> createIssuanceProcess(String participantContextId, String holderPid, Map<String, CredentialFormat> credentialFormats, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
 
+
         var credentialDefinitionIds = evaluationResponse.credentialDefinitions().stream()
                 .map(CredentialDefinition::getId)
                 .collect(Collectors.toSet());
@@ -153,6 +158,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 .claims(evaluationResponse.claims())
                 .participantContextId(participantContextId)
                 .holderPid(holderPid)
+                .traceContext(new Telemetry(GlobalOpenTelemetry.get()).getCurrentTraceContext())
                 .credentialFormats(credentialFormats)
                 .build();
 

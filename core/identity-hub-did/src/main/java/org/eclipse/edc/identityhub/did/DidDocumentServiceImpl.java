@@ -14,6 +14,9 @@
 
 package org.eclipse.edc.identityhub.did;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
@@ -24,6 +27,7 @@ import org.eclipse.edc.identityhub.spi.did.model.DidState;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextEvent;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
@@ -72,6 +76,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     }
 
     @Override
+    @WithSpan(value = "did-document.store", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> store(DidDocument document, String participantContextId) {
         return transactionContext.execute(() -> {
             var res = DidResource.Builder.newInstance()
@@ -244,17 +249,25 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public <E extends Event> void on(EventEnvelope<E> eventEnvelope) {
         var payload = eventEnvelope.getPayload();
-        if (payload instanceof ParticipantContextUpdated event) {
-            updated(event);
-        } else if (payload instanceof KeyPairRevoked event) {
-            keypairRevoked(event);
-        } else if (payload instanceof KeyPairActivated event) {
-            keyPairActivated(event);
-        } else {
-            monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
+        var spanCtx = Span.current().getSpanContext();
+        if (payload instanceof ParticipantContextEvent event) {
+            spanCtx = event.getSpanContext();
+        }
+
+        try (var scope = Span.wrap(spanCtx).makeCurrent()) {
+            if (payload instanceof ParticipantContextUpdated event) {
+                updated(event);
+            } else if (payload instanceof KeyPairRevoked event) {
+                keypairRevoked(event);
+            } else if (payload instanceof KeyPairActivated event) {
+                keyPairActivated(event);
+            } else {
+                monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
+            }
         }
     }
 
+    @WithSpan(value = "did-document.keypair-activated", kind = SpanKind.INTERNAL)
     private void keyPairActivated(KeyPairActivated event) {
         transactionContext.execute(() -> {
             var didResources = findByParticipantContextId(event.getParticipantContextId());
@@ -294,6 +307,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         });
     }
 
+    @WithSpan(value = "did-document.keypair-revoked", kind = SpanKind.INTERNAL)
     private void keypairRevoked(KeyPairRevoked event) {
         var didResources = findByParticipantContextId(event.getParticipantContextId());
         var keyId = event.getKeyId();
@@ -310,6 +324,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         }
     }
 
+    @WithSpan(value = "did-document.updated", kind = SpanKind.INTERNAL)
     private void updated(ParticipantContextUpdated event) {
         var newState = event.getNewState();
         var forParticipant = findByParticipantContextId(event.getParticipantContextId());

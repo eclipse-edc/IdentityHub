@@ -16,6 +16,8 @@ package org.eclipse.edc.identityhub.participantcontext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
@@ -84,6 +86,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
         this.tokenGenerator = new ApiTokenGenerator();
     }
 
+    @WithSpan(value = "participant-context.create", kind = SpanKind.INTERNAL)
     @Override
     public ServiceResult<CreateParticipantContextResponse> createParticipantContext(ParticipantManifest manifest) {
         return transactionContext.execute(() -> {
@@ -148,6 +151,7 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
     }
 
     @Override
+    @WithSpan(value = "participant-context.update", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> updateParticipant(String participantContextId, Consumer<IdentityHubParticipantContext> modificationFunction) {
         return transactionContext.execute(() -> {
             var participant = findByIdInternal(participantContextId);

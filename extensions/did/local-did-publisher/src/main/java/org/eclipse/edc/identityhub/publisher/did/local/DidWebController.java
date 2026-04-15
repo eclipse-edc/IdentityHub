@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.publisher.did.local;
 
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -53,6 +55,7 @@ public class DidWebController {
         this.didWebParser = didWebParser;
     }
 
+    @WithSpan(value = "did-document.resolve", kind = SpanKind.SERVER)
     @GET
     public DidDocument getDidDocument(@Context ContainerRequestContext context) {
 

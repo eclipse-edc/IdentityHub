@@ -29,7 +29,7 @@ dependencies {
     implementation(libs.edc.spi.identity.did)
     implementation(libs.edc.vc.ldp)
     implementation(libs.edc.vc.jwt) // JtiValidationRule
-
+    implementation(libs.opentelemetry.instrumentation.annotations)
 
     testImplementation(project(":core:common-core"))
     testImplementation(libs.junit.jupiter.api)

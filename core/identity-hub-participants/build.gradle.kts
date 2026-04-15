@@ -10,6 +10,7 @@ dependencies {
     api(libs.edc.spi.transaction)
     runtimeOnly(libs.bouncyCastle.bcprovJdk18on)
     implementation(libs.edc.spi.participantcontext.config)
+    implementation(libs.opentelemetry.instrumentation.annotations)
 
     testImplementation(libs.edc.lib.keys)
     testImplementation(libs.edc.junit)

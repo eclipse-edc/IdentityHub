@@ -71,7 +71,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     /**
      * Process APPROVED issuance process
      */
-    @WithSpan
+    @WithSpan(value = "issuance.approved")
     private CompletableFuture<StatusResult<Void>> processApproved(IssuanceProcess process) {
         return entityRetryProcessFactory.retryProcessor(process)
                 .doProcess(result("Generate Credentials", (p, result) -> generateCredential(p)))
@@ -84,6 +84,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
                 .execute();
     }
 
+    @WithSpan(value = "issuance.add-credentials-to-status-list")
     private StatusResult<Collection<VerifiableCredentialContainer>> addCredentialsToStatusList(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> newCredentials) {
 
         var updatedCredentials = new ArrayList<VerifiableCredentialContainer>();
@@ -155,6 +156,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
         return credential.getCredentialSubject().stream().findFirst().map(CredentialSubject::getId).orElse(null);
     }
 
+    @WithSpan(value = "issuance.deliver-credential")
     private StatusResult<Collection<VerifiableCredentialContainer>> deliverCredentials(IssuanceProcess process, Collection<VerifiableCredentialContainer> credentials) {
         var result = credentialStorageClient.deliverCredentials(process, credentials);
         if (result.succeeded()) {

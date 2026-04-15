@@ -14,6 +14,9 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.json.JsonObject;
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -39,6 +42,7 @@ import org.eclipse.edc.spi.response.ResponseStatus;
 import org.eclipse.edc.spi.response.StatusResult;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.statemachine.AbstractStateEntityManager;
 import org.eclipse.edc.statemachine.Processor;
 import org.eclipse.edc.statemachine.ProcessorImpl;
@@ -83,8 +87,11 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
 
     }
 
+    @WithSpan(value = "credential-request.initiate", kind = SpanKind.INTERNAL)
     @Override
     public ServiceResult<String> initiateRequest(String participantContextId, String issuerDid, String holderPid, List<RequestedCredential> requestedCredentials) {
+
+        var traceContext = new Telemetry(GlobalOpenTelemetry.get()).getCurrentTraceContext();
 
         var newRequest = HolderCredentialRequest.Builder.newInstance()
                 .id(holderPid)
@@ -92,6 +99,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 .requestedCredentials(requestedCredentials)
                 .participantContextId(participantContextId)
                 .state(CREATED.code())
+                .traceContext(traceContext)
                 .build();
 
         try {
@@ -170,13 +178,16 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private CompletableFuture<StatusResult<Void>> processInitial(HolderCredentialRequest holderCredentialRequest) {
         monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getHolderPid()));
 
-        var result = getCredentialRequestEndpoint(holderCredentialRequest)
-                .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
-                .compose(issuerPid -> handleCredentialResponse(issuerPid, holderCredentialRequest))
-                .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
+        return new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(() -> {
+            var result = getCredentialRequestEndpoint(holderCredentialRequest)
+                    .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
+                    .compose(issuerPid -> handleCredentialResponse(issuerPid, holderCredentialRequest))
+                    .onFailure(failure -> transactionContext.execute(() -> transitionError(holderCredentialRequest, failure.getFailureDetail())));
 
-        StatusResult<Void> statusResult = result.succeeded() ? StatusResult.success() : StatusResult.failure(ResponseStatus.FATAL_ERROR, result.getFailureDetail());
-        return CompletableFuture.completedFuture(statusResult);
+            StatusResult<Void> statusResult = result.succeeded() ? StatusResult.success() : StatusResult.failure(ResponseStatus.FATAL_ERROR, result.getFailureDetail());
+            return CompletableFuture.completedFuture(statusResult);
+        }, holderCredentialRequest).get();
+
     }
 
     /**
