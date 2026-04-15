@@ -14,8 +14,7 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Scope;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -29,10 +28,10 @@ import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 
 import java.util.stream.Stream;
 
-import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
@@ -67,10 +66,8 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
         var payload = event.getPayload();
         if (payload instanceof ParticipantContextCreated createdEvent) {
             var manifest = createdEvent.getManifest();
-            var spanCtx = ofNullable(createdEvent.getSpanContext()).orElse(Span.current().getSpanContext());
 
-            try (Scope scope = Span.wrap(spanCtx).makeCurrent()) {
-                // spanContext is now current
+            new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(() -> {
                 var doc = DidDocument.Builder.newInstance()
                         .id(manifest.getDid())
                         .service(manifest.getServiceEndpoints().stream().toList())
@@ -89,21 +86,25 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
                                 ? participantContextService.updateParticipant(manifest.getParticipantContextId(), IdentityHubParticipantContext::activate) //implicitly publishes the did document
                                 : success())
                         .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
-            }
+                return null;
+            }, createdEvent).get();
 
 
         } else if (payload instanceof ParticipantContextDeleting deletionEvent) {
             var participantContext = deletionEvent.getParticipantContext();
 
             // unpublish and delete did document, remove keypairs
-            didDocumentService.unpublish(participantContext.getDid())
-                    .compose(u -> didDocumentService.deleteById(participantContext.getDid()))
-                    .compose(u -> keyPairService.query(queryByParticipantContextId(participantContext.getParticipantContextId()).build()))
-                    .compose(keyPairs -> keyPairs.stream()
-                            .map(r -> keyPairService.revokeKey(r.getId(), null))
-                            .reduce(this::merge)
-                            .orElse(success()))
-                    .onFailure(f -> monitor.warning("Removing key pairs from a deleted ParticipantContext failed: %s".formatted(f.getFailureDetail())));
+            new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(() -> {
+                didDocumentService.unpublish(participantContext.getDid())
+                        .compose(u -> didDocumentService.deleteById(participantContext.getDid()))
+                        .compose(u -> keyPairService.query(queryByParticipantContextId(participantContext.getParticipantContextId()).build()))
+                        .compose(keyPairs -> keyPairs.stream()
+                                .map(r -> keyPairService.revokeKey(r.getId(), null))
+                                .reduce(this::merge)
+                                .orElse(success()))
+                        .onFailure(f -> monitor.warning("Removing key pairs from a deleted ParticipantContext failed: %s".formatted(f.getFailureDetail())));
+                return null;
+            }, deletionEvent);
         } else {
             monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }

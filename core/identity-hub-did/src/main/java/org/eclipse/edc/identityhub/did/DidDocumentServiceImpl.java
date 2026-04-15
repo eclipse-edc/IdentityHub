@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.did;
 
-import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
@@ -27,7 +27,6 @@ import org.eclipse.edc.identityhub.spi.did.model.DidState;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairActivated;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairRevoked;
-import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextEvent;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextUpdated;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
@@ -42,11 +41,14 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
+import org.eclipse.edc.spi.telemetry.Telemetry;
+import org.eclipse.edc.spi.telemetry.TraceCarrier;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
@@ -249,12 +251,9 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     @Override
     public <E extends Event> void on(EventEnvelope<E> eventEnvelope) {
         var payload = eventEnvelope.getPayload();
-        var spanCtx = Span.current().getSpanContext();
-        if (payload instanceof ParticipantContextEvent event) {
-            spanCtx = event.getSpanContext();
-        }
 
-        try (var scope = Span.wrap(spanCtx).makeCurrent()) {
+
+        var s = (Supplier<Void>) () -> {
             if (payload instanceof ParticipantContextUpdated event) {
                 updated(event);
             } else if (payload instanceof KeyPairRevoked event) {
@@ -264,7 +263,15 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
             } else {
                 monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
             }
+            return null;
+        };
+
+        if (payload instanceof TraceCarrier carrier) {
+            new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(s, carrier).get();
+        } else {
+            s.get();
         }
+
     }
 
     @WithSpan(value = "did-document.keypair-activated", kind = SpanKind.INTERNAL)
