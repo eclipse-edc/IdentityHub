@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -27,6 +28,7 @@ import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 
 import java.util.stream.Stream;
 
@@ -64,37 +66,45 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
         var payload = event.getPayload();
         if (payload instanceof ParticipantContextCreated createdEvent) {
             var manifest = createdEvent.getManifest();
-            var doc = DidDocument.Builder.newInstance()
-                    .id(manifest.getDid())
-                    .service(manifest.getServiceEndpoints().stream().toList())
-                    // updating and adding a verification method happens as a result of the KeyPairAddedEvent
-                    .build();
 
-            if (manifest.isActive() && manifest.getKeys().stream().noneMatch(KeyDescriptor::isActive)) {
-                monitor.warning("The ParticipantContext is 'active', but its (only) KeyPair is 'inActive'. " +
-                        "This will result in a DID Document without Verification Methods, and thus, an unusable ParticipantContext.");
-            }
+            new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(() -> {
+                var doc = DidDocument.Builder.newInstance()
+                        .id(manifest.getDid())
+                        .service(manifest.getServiceEndpoints().stream().toList())
+                        // updating and adding a verification method happens as a result of the KeyPairAddedEvent
+                        .build();
 
-            didDocumentService.store(doc, manifest.getParticipantContextId())
-                    // adding the keypair event will cause the DidDocumentService to update the DID
-                    .compose(u -> storeKeyPairs(createdEvent))
-                    .compose(u -> manifest.isActive()
-                            ? participantContextService.updateParticipant(manifest.getParticipantContextId(), IdentityHubParticipantContext::activate) //implicitly publishes the did document
-                            : success())
-                    .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
+                if (manifest.isActive() && manifest.getKeys().stream().noneMatch(KeyDescriptor::isActive)) {
+                    monitor.warning("The ParticipantContext is 'active', but its (only) KeyPair is 'inActive'. " +
+                            "This will result in a DID Document without Verification Methods, and thus, an unusable ParticipantContext.");
+                }
+
+                didDocumentService.store(doc, manifest.getParticipantContextId())
+                        // adding the keypair event will cause the DidDocumentService to update the DID
+                        .compose(u -> storeKeyPairs(createdEvent))
+                        .compose(u -> manifest.isActive()
+                                ? participantContextService.updateParticipant(manifest.getParticipantContextId(), IdentityHubParticipantContext::activate) //implicitly publishes the did document
+                                : success())
+                        .onFailure(f -> monitor.warning("%s".formatted(f.getFailureDetail())));
+                return null;
+            }, createdEvent).get();
+
 
         } else if (payload instanceof ParticipantContextDeleting deletionEvent) {
             var participantContext = deletionEvent.getParticipantContext();
 
             // unpublish and delete did document, remove keypairs
-            didDocumentService.unpublish(participantContext.getDid())
-                    .compose(u -> didDocumentService.deleteById(participantContext.getDid()))
-                    .compose(u -> keyPairService.query(queryByParticipantContextId(participantContext.getParticipantContextId()).build()))
-                    .compose(keyPairs -> keyPairs.stream()
-                            .map(r -> keyPairService.revokeKey(r.getId(), null))
-                            .reduce(this::merge)
-                            .orElse(success()))
-                    .onFailure(f -> monitor.warning("Removing key pairs from a deleted ParticipantContext failed: %s".formatted(f.getFailureDetail())));
+            new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(() -> {
+                didDocumentService.unpublish(participantContext.getDid())
+                        .compose(u -> didDocumentService.deleteById(participantContext.getDid()))
+                        .compose(u -> keyPairService.query(queryByParticipantContextId(participantContext.getParticipantContextId()).build()))
+                        .compose(keyPairs -> keyPairs.stream()
+                                .map(r -> keyPairService.revokeKey(r.getId(), null))
+                                .reduce(this::merge)
+                                .orElse(success()))
+                        .onFailure(f -> monitor.warning("Removing key pairs from a deleted ParticipantContext failed: %s".formatted(f.getFailureDetail())));
+                return null;
+            }, deletionEvent).get();
         } else {
             monitor.warning("Received event with unexpected payload type: %s".formatted(payload.getClass()));
         }

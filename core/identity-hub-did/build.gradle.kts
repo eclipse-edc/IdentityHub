@@ -10,6 +10,8 @@ dependencies {
     implementation(libs.edc.spi.transaction)
     implementation(libs.edc.lib.common.crypto)
     implementation(libs.edc.lib.store)
+    implementation(libs.opentelemetry.api)
+    implementation(libs.opentelemetry.instrumentation.annotations)
 
     testImplementation(libs.edc.lib.query)
     testImplementation(libs.edc.junit)

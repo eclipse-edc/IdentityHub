@@ -31,6 +31,8 @@ dependencies {
     implementation(libs.edc.vc.jwt)
     implementation(libs.edc.lib.token)
     implementation(libs.nimbus.jwt)
+    implementation(libs.opentelemetry.instrumentation.annotations)
+    implementation(libs.opentelemetry.api)
     testImplementation(libs.edc.junit)
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
 }

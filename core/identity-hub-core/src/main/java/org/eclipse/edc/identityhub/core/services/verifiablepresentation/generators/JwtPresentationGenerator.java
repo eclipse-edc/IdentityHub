@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablepresentation.generators;
 
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.iam.verifiablecredentials.spi.VcConstants;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.PresentationGenerator;
@@ -81,6 +83,7 @@ public class JwtPresentationGenerator implements PresentationGenerator<String> {
      * @throws EdcException                  If signing the JWT fails.
      */
     @Override
+    @WithSpan(value = "presentation.create", kind = SpanKind.INTERNAL)
     public String generatePresentation(String participantContextId, List<VerifiableCredentialContainer> credentials, String privateKeyAlias, String publicKeyId, String issuerId, Map<String, Object> additionalData) {
 
         // check if expected data is there

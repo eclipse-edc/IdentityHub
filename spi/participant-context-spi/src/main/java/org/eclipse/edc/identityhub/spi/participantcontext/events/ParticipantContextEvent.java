@@ -14,19 +14,29 @@
 
 package org.eclipse.edc.identityhub.spi.participantcontext.events;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.spi.event.Event;
+import org.eclipse.edc.spi.telemetry.Telemetry;
+import org.eclipse.edc.spi.telemetry.TraceCarrier;
 
+import java.util.Map;
 import java.util.Objects;
 
 /**
  * Base class for all events related to state changes and actions of {@link IdentityHubParticipantContext}s
  */
-public abstract class ParticipantContextEvent extends Event {
+public abstract class ParticipantContextEvent extends Event implements TraceCarrier {
     protected String participantContextId;
+    protected Map<String, String> traceContext;
 
     public String getParticipantContextId() {
         return participantContextId;
+    }
+
+    @Override
+    public Map<String, String> getTraceContext() {
+        return traceContext;
     }
 
     public abstract static class Builder<T extends ParticipantContextEvent, B extends ParticipantContextEvent.Builder<T, B>> {
@@ -46,6 +56,7 @@ public abstract class ParticipantContextEvent extends Event {
 
         public T build() {
             Objects.requireNonNull((event.participantContextId));
+            event.traceContext = new Telemetry(GlobalOpenTelemetry.get()).getCurrentTraceContext();
             return event;
         }
     }

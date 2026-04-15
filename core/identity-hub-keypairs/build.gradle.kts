@@ -21,6 +21,8 @@ dependencies {
     api(libs.edc.spi.transaction)
     implementation(project(":core:lib:keypair-lib"))
     implementation(libs.edc.lib.common.crypto)
+    implementation(libs.opentelemetry.api)
+    implementation(libs.opentelemetry.instrumentation.annotations)
     runtimeOnly(libs.edc.core.connector)
     testImplementation(libs.edc.junit)
 }

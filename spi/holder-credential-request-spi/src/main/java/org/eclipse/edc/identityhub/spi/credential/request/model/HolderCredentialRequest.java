@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.spi.credential.request.model;
 
 import org.eclipse.edc.spi.entity.Entity;
 import org.eclipse.edc.spi.entity.StatefulEntity;
+import org.eclipse.edc.spi.telemetry.TraceCarrier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +37,7 @@ import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderReq
  * <p>
  * Note: This is the holder-side equivalent of the issuer's {@code IssuanceProcess}
  */
-public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequest> {
+public class HolderCredentialRequest extends StatefulEntity<HolderCredentialRequest> implements TraceCarrier {
 
     private String participantContextId;
     private String issuerDid;

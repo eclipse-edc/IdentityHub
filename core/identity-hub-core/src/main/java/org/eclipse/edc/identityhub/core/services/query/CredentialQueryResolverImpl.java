@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.core.services.query;
 
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.iam.decentralizedclaims.spi.model.PresentationQueryMessage;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.RevocationServiceRegistry;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
@@ -55,6 +57,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
     }
 
     @Override
+    @WithSpan(value = "presentation.credential-query", kind = SpanKind.INTERNAL)
     public QueryResult query(String participantContextId, PresentationQueryMessage query, List<String> accessTokenScopes) {
         if (query.getPresentationDefinition() != null) {
             throw new UnsupportedOperationException("Querying with a DIF Presentation Exchange definition is not yet supported.");

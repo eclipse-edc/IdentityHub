@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.keypairs;
 
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
@@ -72,6 +74,7 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
     }
 
     @Override
+    @WithSpan(value = "keypairs.add", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> addKeyPair(String participantContextId, KeyDescriptor keyDescriptor, boolean makeDefault) {
 
         return transactionContext.execute(() -> {
