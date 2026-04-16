@@ -49,7 +49,7 @@ class IdentityHubParticipantContextEventCoordinatorTest {
     private final DidDocumentService didDocumentService = mock();
     private final KeyPairService keyPairService = mock();
     private final IdentityHubParticipantContextService participantContextService = mock();
-    private final ParticipantContextEventCoordinator coordinator = new ParticipantContextEventCoordinator(monitor, didDocumentService, keyPairService, participantContextService);
+    private final ParticipantContextEventCoordinator coordinator = new ParticipantContextEventCoordinator(monitor, didDocumentService, keyPairService, participantContextService, mock());
 
     @BeforeEach
     void setup() {

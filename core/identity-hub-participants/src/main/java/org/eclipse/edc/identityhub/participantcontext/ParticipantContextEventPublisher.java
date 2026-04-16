@@ -24,16 +24,19 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParti
 import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventRouter;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 
 import java.time.Clock;
 
 public class ParticipantContextEventPublisher implements ParticipantContextListener {
     private final Clock clock;
     private final EventRouter eventRouter;
+    private final Telemetry telemetry;
 
-    public ParticipantContextEventPublisher(Clock clock, EventRouter eventRouter) {
+    public ParticipantContextEventPublisher(Clock clock, EventRouter eventRouter, Telemetry telemetry) {
         this.clock = clock;
         this.eventRouter = eventRouter;
+        this.telemetry = telemetry;
     }
 
     @Override
@@ -73,7 +76,7 @@ public class ParticipantContextEventPublisher implements ParticipantContextListe
 
     private void publish(ParticipantContextEvent event) {
         var envelope = EventEnvelope.Builder.newInstance()
-                .payload(event)
+                .payload(event.withTraceContext(telemetry.getCurrentTraceContext()))
                 .at(clock.millis())
                 .build();
         eventRouter.publish(envelope);

@@ -59,7 +59,7 @@ class StsAccountProvisionerImplTest {
     private final Monitor monitor = mock();
     private final StsClientSecretGenerator stsClientSecretGenerator = parameters -> UUID.randomUUID().toString();
     private final StsAccountService accountServiceMock = mock();
-    private final StsAccountProvisionerImpl accountProvisioner = new StsAccountProvisionerImpl(monitor, vault, stsClientSecretGenerator, accountServiceMock);
+    private final StsAccountProvisionerImpl accountProvisioner = new StsAccountProvisionerImpl(monitor, vault, stsClientSecretGenerator, accountServiceMock, mock());
 
     @Test
     void create() {

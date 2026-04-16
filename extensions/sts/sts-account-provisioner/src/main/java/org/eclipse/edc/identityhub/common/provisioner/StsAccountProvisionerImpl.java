@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.common.provisioner;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.model.StsAccount;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientSecretGenerator;
@@ -43,15 +42,17 @@ public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountPro
     private final Vault vault;
     private final StsClientSecretGenerator stsClientSecretGenerator;
     private final StsAccountService stsAccountService;
+    private final Telemetry telemetry;
 
     public StsAccountProvisionerImpl(Monitor monitor,
                                      Vault vault,
                                      StsClientSecretGenerator stsClientSecretGenerator,
-                                     StsAccountService stsAccountService) {
+                                     StsAccountService stsAccountService, Telemetry telemetry) {
         this.monitor = monitor;
         this.vault = vault;
         this.stsClientSecretGenerator = stsClientSecretGenerator;
         this.stsAccountService = stsAccountService;
+        this.telemetry = telemetry;
     }
 
     @Override
@@ -59,7 +60,7 @@ public class StsAccountProvisionerImpl implements EventSubscriber, StsAccountPro
         var payload = event.getPayload();
         ServiceResult<Void> result;
         if (payload instanceof ParticipantContextDeleted deletedEvent) {
-            result = new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(() -> {
+            result = telemetry.contextPropagationMiddleware(() -> {
                 return stsAccountService.deleteAccount(deletedEvent.getParticipantContextId());
             }, deletedEvent).get();
         } else {

@@ -82,7 +82,7 @@ class DidDocumentServiceImplTest {
         registry.register(new JwkParser(new ObjectMapper(), mock()));
         registry.register(new PemParser(mock()));
         monitorMock = mock();
-        service = new DidDocumentServiceImpl(trx, didResourceStoreMock, publisherRegistry, participantContextServiceMock, monitorMock, registry);
+        service = new DidDocumentServiceImpl(trx, didResourceStoreMock, publisherRegistry, participantContextServiceMock, monitorMock, registry, mock());
 
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)

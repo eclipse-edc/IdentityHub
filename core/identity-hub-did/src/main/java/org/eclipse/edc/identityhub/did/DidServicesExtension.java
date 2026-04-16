@@ -28,6 +28,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import static org.eclipse.edc.identityhub.did.DidServicesExtension.NAME;
@@ -46,6 +47,8 @@ public class DidServicesExtension implements ServiceExtension {
     @Inject
     private ParticipantContextStore participantContextStore;
     private DidDocumentPublisherRegistry didPublisherRegistry;
+    @Inject
+    private Telemetry telemetry;
 
     @Override
     public String name() {
@@ -63,7 +66,7 @@ public class DidServicesExtension implements ServiceExtension {
     @Provider
     public DidDocumentService createDidDocumentService(ServiceExtensionContext context) {
         var service = new DidDocumentServiceImpl(transactionContext, didResourceStore,
-                getDidPublisherRegistry(), participantContextStore, context.getMonitor().withPrefix("DidDocumentService"), keyParserRegistry);
+                getDidPublisherRegistry(), participantContextStore, context.getMonitor().withPrefix("DidDocumentService"), keyParserRegistry, telemetry);
         eventRouter.registerSync(ParticipantContextUpdated.class, service);
         eventRouter.registerSync(KeyPairRevoked.class, service);
         eventRouter.registerSync(KeyPairActivated.class, service);
