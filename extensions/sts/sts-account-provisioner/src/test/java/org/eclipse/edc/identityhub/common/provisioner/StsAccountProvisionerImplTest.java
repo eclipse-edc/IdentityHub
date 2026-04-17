@@ -30,6 +30,7 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -59,7 +60,7 @@ class StsAccountProvisionerImplTest {
     private final Monitor monitor = mock();
     private final StsClientSecretGenerator stsClientSecretGenerator = parameters -> UUID.randomUUID().toString();
     private final StsAccountService accountServiceMock = mock();
-    private final StsAccountProvisionerImpl accountProvisioner = new StsAccountProvisionerImpl(monitor, vault, stsClientSecretGenerator, accountServiceMock, mock());
+    private final StsAccountProvisionerImpl accountProvisioner = new StsAccountProvisionerImpl(monitor, vault, stsClientSecretGenerator, accountServiceMock, new Telemetry());
 
     @Test
     void create() {
