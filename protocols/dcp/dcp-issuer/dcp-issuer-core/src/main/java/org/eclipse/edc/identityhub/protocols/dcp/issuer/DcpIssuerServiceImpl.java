@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
@@ -48,19 +47,21 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
     private final AttestationPipeline attestationPipeline;
     private final CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator;
     private final DcpProfileRegistry profileRegistry;
+    private final Telemetry telemetry;
 
     public DcpIssuerServiceImpl(TransactionContext transactionContext,
                                 CredentialDefinitionService credentialDefinitionService,
                                 IssuanceProcessStore issuanceProcessStore,
                                 AttestationPipeline attestationPipeline,
                                 CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator,
-                                DcpProfileRegistry profileRegistry) {
+                                DcpProfileRegistry profileRegistry, Telemetry telemetry) {
         this.transactionContext = transactionContext;
         this.credentialDefinitionService = credentialDefinitionService;
         this.issuanceProcessStore = issuanceProcessStore;
         this.attestationPipeline = attestationPipeline;
         this.credentialRuleDefinitionEvaluator = credentialRuleDefinitionEvaluator;
         this.profileRegistry = profileRegistry;
+        this.telemetry = telemetry;
     }
 
     @WithSpan(value = "issuance.initiate")
@@ -158,7 +159,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 .claims(evaluationResponse.claims())
                 .participantContextId(participantContextId)
                 .holderPid(holderPid)
-                .traceContext(new Telemetry(GlobalOpenTelemetry.get()).getCurrentTraceContext())
+                .traceContext(telemetry.getCurrentTraceContext())
                 .credentialFormats(credentialFormats)
                 .build();
 

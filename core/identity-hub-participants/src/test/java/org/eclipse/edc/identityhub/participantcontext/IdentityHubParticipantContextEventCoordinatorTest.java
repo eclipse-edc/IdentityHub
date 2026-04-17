@@ -25,6 +25,7 @@ import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,7 @@ class IdentityHubParticipantContextEventCoordinatorTest {
     private final DidDocumentService didDocumentService = mock();
     private final KeyPairService keyPairService = mock();
     private final IdentityHubParticipantContextService participantContextService = mock();
-    private final ParticipantContextEventCoordinator coordinator = new ParticipantContextEventCoordinator(monitor, didDocumentService, keyPairService, participantContextService);
+    private final ParticipantContextEventCoordinator coordinator = new ParticipantContextEventCoordinator(monitor, didDocumentService, keyPairService, participantContextService, new Telemetry());
 
     @BeforeEach
     void setup() {

@@ -26,6 +26,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.time.Clock;
@@ -55,6 +56,8 @@ public class ParticipantContextExtension implements ServiceExtension {
     private ParticipantContextObservable participantContextObservable;
     @Inject
     private ParticipantContextConfigService configService;
+    @Inject
+    private Telemetry telemetry;
 
     @Override
     public String name() {
@@ -70,7 +73,7 @@ public class ParticipantContextExtension implements ServiceExtension {
     public ParticipantContextObservable participantContextObservable() {
         if (participantContextObservable == null) {
             participantContextObservable = new ParticipantContextObservableImpl();
-            participantContextObservable.registerListener(new ParticipantContextEventPublisher(clock, eventRouter));
+            participantContextObservable.registerListener(new ParticipantContextEventPublisher(clock, eventRouter, telemetry));
         }
         return participantContextObservable;
     }

@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.participantcontext;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -53,12 +52,14 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
     private final DidDocumentService didDocumentService;
     private final KeyPairService keyPairService;
     private final IdentityHubParticipantContextService participantContextService;
+    private final Telemetry telemetry;
 
-    ParticipantContextEventCoordinator(Monitor monitor, DidDocumentService didDocumentService, KeyPairService keyPairService, IdentityHubParticipantContextService participantContextService) {
+    ParticipantContextEventCoordinator(Monitor monitor, DidDocumentService didDocumentService, KeyPairService keyPairService, IdentityHubParticipantContextService participantContextService, Telemetry telemetry) {
         this.monitor = monitor;
         this.didDocumentService = didDocumentService;
         this.keyPairService = keyPairService;
         this.participantContextService = participantContextService;
+        this.telemetry = telemetry;
     }
 
     @Override
@@ -67,7 +68,7 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
         if (payload instanceof ParticipantContextCreated createdEvent) {
             var manifest = createdEvent.getManifest();
 
-            new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(() -> {
+            telemetry.contextPropagationMiddleware(() -> {
                 var doc = DidDocument.Builder.newInstance()
                         .id(manifest.getDid())
                         .service(manifest.getServiceEndpoints().stream().toList())
@@ -94,7 +95,7 @@ class ParticipantContextEventCoordinator implements EventSubscriber {
             var participantContext = deletionEvent.getParticipantContext();
 
             // unpublish and delete did document, remove keypairs
-            new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(() -> {
+            telemetry.contextPropagationMiddleware(() -> {
                 didDocumentService.unpublish(participantContext.getDid())
                         .compose(u -> didDocumentService.deleteById(participantContext.getDid()))
                         .compose(u -> keyPairService.query(queryByParticipantContextId(participantContext.getParticipantContextId()).build()))

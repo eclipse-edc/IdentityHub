@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.did;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
@@ -66,15 +65,17 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
     private final ParticipantContextStore participantContextStore;
     private final Monitor monitor;
     private final KeyParserRegistry keyParserRegistry;
+    private final Telemetry telemetry;
 
     public DidDocumentServiceImpl(TransactionContext transactionContext, DidResourceStore didResourceStore, DidDocumentPublisherRegistry registry,
-                                  ParticipantContextStore participantContextStore, Monitor monitor, KeyParserRegistry keyParserRegistry) {
+                                  ParticipantContextStore participantContextStore, Monitor monitor, KeyParserRegistry keyParserRegistry, Telemetry telemetry) {
         this.transactionContext = transactionContext;
         this.didResourceStore = didResourceStore;
         this.registry = registry;
         this.participantContextStore = participantContextStore;
         this.monitor = monitor;
         this.keyParserRegistry = keyParserRegistry;
+        this.telemetry = telemetry;
     }
 
     @Override
@@ -267,7 +268,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         };
 
         if (payload instanceof TraceCarrier carrier) {
-            new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(s, carrier).get();
+            telemetry.contextPropagationMiddleware(s, carrier).get();
         } else {
             s.get();
         }

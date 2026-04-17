@@ -27,6 +27,7 @@ import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.identityhub.common.provisioner.StsAccountProvisionerExtension.NAME;
@@ -43,7 +44,8 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
     private StsClientSecretGenerator stsClientSecretGenerator;
     @Inject
     private StsAccountService accountService;
-
+    @Inject
+    private Telemetry telemetry;
 
     private StsAccountProvisionerImpl provisioner;
 
@@ -62,7 +64,7 @@ public class StsAccountProvisionerExtension implements ServiceExtension {
     public StsAccountProvisioner createProvisioner(ServiceExtensionContext context) {
         if (provisioner == null) {
             var monitor = context.getMonitor().withPrefix("STS-Account");
-            provisioner = new StsAccountProvisionerImpl(monitor, vault, stsClientSecretGenerator(), accountService);
+            provisioner = new StsAccountProvisionerImpl(monitor, vault, stsClientSecretGenerator(), accountService, telemetry);
             eventRouter.registerSync(ParticipantContextDeleted.class, provisioner);
             eventRouter.registerSync(KeyPairRevoked.class, provisioner);
             eventRouter.registerSync(KeyPairRotated.class, provisioner);

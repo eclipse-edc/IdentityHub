@@ -42,6 +42,7 @@ import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,7 @@ class DidDocumentServiceImplTest {
         registry.register(new JwkParser(new ObjectMapper(), mock()));
         registry.register(new PemParser(mock()));
         monitorMock = mock();
-        service = new DidDocumentServiceImpl(trx, didResourceStoreMock, publisherRegistry, participantContextServiceMock, monitorMock, registry);
+        service = new DidDocumentServiceImpl(trx, didResourceStoreMock, publisherRegistry, participantContextServiceMock, monitorMock, registry, new Telemetry());
 
         when(participantContextServiceMock.findById(any())).thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_ID)

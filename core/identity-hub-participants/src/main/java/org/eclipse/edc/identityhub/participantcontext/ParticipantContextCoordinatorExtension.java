@@ -24,6 +24,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
+import org.eclipse.edc.spi.telemetry.Telemetry;
 
 import java.time.Clock;
 
@@ -43,6 +44,8 @@ public class ParticipantContextCoordinatorExtension implements ServiceExtension 
     private EventRouter eventRouter;
     @Inject
     private IdentityHubParticipantContextService participantContextService;
+    @Inject
+    private Telemetry telemetry;
 
     @Override
     public String name() {
@@ -52,7 +55,7 @@ public class ParticipantContextCoordinatorExtension implements ServiceExtension 
     @Override
     public void initialize(ServiceExtensionContext context) {
         var coordinator = new ParticipantContextEventCoordinator(context.getMonitor().withPrefix("ParticipantContextEventCoordinator"),
-                didDocumentService, keyPairService, participantContextService);
+                didDocumentService, keyPairService, participantContextService, telemetry);
 
         eventRouter.registerSync(ParticipantContextCreated.class, coordinator);
         eventRouter.registerSync(ParticipantContextDeleting.class, coordinator);

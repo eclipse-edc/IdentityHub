@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.json.JsonObject;
@@ -42,7 +41,6 @@ import org.eclipse.edc.spi.response.ResponseStatus;
 import org.eclipse.edc.spi.response.StatusResult;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
-import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.statemachine.AbstractStateEntityManager;
 import org.eclipse.edc.statemachine.Processor;
 import org.eclipse.edc.statemachine.ProcessorImpl;
@@ -91,7 +89,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     @Override
     public ServiceResult<String> initiateRequest(String participantContextId, String issuerDid, String holderPid, List<RequestedCredential> requestedCredentials) {
 
-        var traceContext = new Telemetry(GlobalOpenTelemetry.get()).getCurrentTraceContext();
+        var traceContext = telemetry.getCurrentTraceContext();
 
         var newRequest = HolderCredentialRequest.Builder.newInstance()
                 .id(holderPid)
@@ -178,7 +176,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     private CompletableFuture<StatusResult<Void>> processInitial(HolderCredentialRequest holderCredentialRequest) {
         monitor.debug("Processing '%s' request '%s'".formatted(holderCredentialRequest.stateAsString(), holderCredentialRequest.getHolderPid()));
 
-        return new Telemetry(GlobalOpenTelemetry.get()).contextPropagationMiddleware(() -> {
+        return telemetry.contextPropagationMiddleware(() -> {
             var result = getCredentialRequestEndpoint(holderCredentialRequest)
                     .compose(endpoint -> sendCredentialRequest(holderCredentialRequest, endpoint))
                     .compose(issuerPid -> handleCredentialResponse(issuerPid, holderCredentialRequest))
