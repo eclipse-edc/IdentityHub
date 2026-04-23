@@ -45,6 +45,7 @@ dependencies {
     runtimeOnly(libs.edc.identity.did.web)
     runtimeOnly(libs.bundles.connector)
     runtimeOnly(libs.edc.encryption.aes)
+    runtimeOnly(libs.edc.lib.token)
 }
 
 edcBuild {

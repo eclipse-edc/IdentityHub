@@ -33,7 +33,7 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.token.TokenValidationRulesRegistryImpl;
 import org.eclipse.edc.token.TokenValidationServiceImpl;
-import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
+import org.eclipse.edc.token.rules.JtiValidationRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

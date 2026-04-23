@@ -27,7 +27,8 @@ dependencies {
     implementation(libs.edc.spi.token)
     implementation(libs.edc.spi.identity.did)
     implementation(libs.edc.vc.ldp)
-    implementation(libs.edc.vc.jwt) // JtiValidationRule
+    implementation(libs.edc.vc.jwt)
+    implementation(libs.edc.lib.token) // JtiValidationRule
 
 
     testImplementation(libs.edc.junit)

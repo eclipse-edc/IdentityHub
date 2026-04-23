@@ -41,9 +41,9 @@ import org.eclipse.edc.spi.query.CriterionOperatorRegistry;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.rules.ExpirationIssuedAtValidationRule;
+import org.eclipse.edc.token.rules.JtiValidationRule;
 import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
-import org.eclipse.edc.verifiablecredentials.jwt.rules.JtiValidationRule;
 
 import java.net.URISyntaxException;
 import java.time.Clock;
