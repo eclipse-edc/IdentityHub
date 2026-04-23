@@ -74,7 +74,6 @@ maven/mavencentral/com.github.jknack/handlebars/4.3.1, MIT AND Apache-2.0, appro
 maven/mavencentral/com.google.code.findbugs/jsr305/2.0.1, BSD-3-Clause AND CC-BY-2.5 AND LGPL-2.1+, approved, CQ13390
 maven/mavencentral/com.google.code.findbugs/jsr305/3.0.2, Apache-2.0 and CC-BY-2.5, approved, #15220
 maven/mavencentral/com.google.code.gson/gson/2.13.2, Apache-2.0, approved, #20656
-maven/mavencentral/com.google.crypto.tink/tink/1.20.0, , restricted, clearlydefined
 maven/mavencentral/com.google.crypto.tink/tink/1.21.0, , restricted, clearlydefined
 maven/mavencentral/com.google.errorprone/error_prone_annotations/2.11.0, Apache-2.0, approved, #25948
 maven/mavencentral/com.google.errorprone/error_prone_annotations/2.41.0, Apache-2.0, approved, #22631
