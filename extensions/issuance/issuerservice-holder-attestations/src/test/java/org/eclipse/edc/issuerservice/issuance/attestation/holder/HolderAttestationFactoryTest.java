@@ -41,7 +41,22 @@ class HolderAttestationFactoryTest {
 
         var result = source.execute(new TestHolderAttestationContext(holder));
 
-        assertThat(result).isSucceeded().isSameAs(properties);
+        assertThat(result).isSucceeded().isEqualTo(properties);
+    }
+
+    @Test
+    void shouldReturnEmptyMapWhenHolderPropertiesAreNull() {
+        var factory = new HolderAttestationFactory();
+        var participantContextId = UUID.randomUUID().toString();
+        var attestationDefinition = AttestationDefinition.Builder.newInstance().id(UUID.randomUUID().toString())
+                .attestationType("holder").participantContextId(participantContextId).build();
+        var source = factory.createSource(attestationDefinition);
+        var holder = Holder.Builder.newInstance().holderId(UUID.randomUUID().toString()).did(UUID.randomUUID().toString())
+                .participantContextId(participantContextId).properties(null).build();
+
+        var result = source.execute(new TestHolderAttestationContext(holder));
+
+        assertThat(result).isSucceeded().isEqualTo(Map.of());
     }
 
     private record TestHolderAttestationContext(Holder holder) implements AttestationContext {
