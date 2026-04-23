@@ -98,7 +98,9 @@ public class Holder extends AbstractParticipantResource {
         }
 
         public Builder properties(Map<String, Object> properties) {
-            entity.properties = properties;
+            if (properties != null) {
+                entity.properties = new HashMap<>(properties);
+            }
             return this;
         }
 
