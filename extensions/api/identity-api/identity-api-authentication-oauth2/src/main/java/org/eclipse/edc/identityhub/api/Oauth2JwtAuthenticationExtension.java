@@ -14,10 +14,10 @@
 
 package org.eclipse.edc.identityhub.api;
 
-import org.eclipse.edc.api.authentication.JwksResolver;
 import org.eclipse.edc.api.authentication.filter.JwtValidatorFilter;
 import org.eclipse.edc.api.authentication.filter.ServicePrincipalAuthenticationFilter;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
+import org.eclipse.edc.keys.resolver.JwksPublicKeyResolver;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
 import org.eclipse.edc.participantcontext.spi.service.ParticipantContextService;
 import org.eclipse.edc.runtime.metamodel.annotation.Configuration;
@@ -86,7 +86,8 @@ public class Oauth2JwtAuthenticationExtension implements ServiceExtension {
         } catch (MalformedURLException e) {
             throw new EdcException(e);
         }
-        webService.registerResource(alias, new JwtValidatorFilter(tokenValidationService, new JwksResolver(url, keyParserRegistry, oauthConfiguration.cacheValidityInMillis), getRules()));
+        var resolver = JwksPublicKeyResolver.create(keyParserRegistry, oauthConfiguration.jwksUrl(), monitor, oauthConfiguration.cacheValidityInMillis());
+        webService.registerResource(alias, new JwtValidatorFilter(tokenValidationService, resolver, getRules()));
     }
 
     private void validateConfig(OauthConfiguration oauthConfiguration) {
