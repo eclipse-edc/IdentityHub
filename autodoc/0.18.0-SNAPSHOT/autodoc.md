@@ -34,6 +34,25 @@ Module `common-core`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.identityhub.DiscriminatorMappingExtension`
+**Name:** "Discriminator Mapping Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                           | Required | Type     | Default | Pattern | Min | Max | Description                          |
+| --------------------------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------ |
+| `edc.identityhub.discriminator.<alias>.value` | `*`      | `string` | ``      |         |     |     | the full value for the discriminator |
+| `edc.identityhub.discriminator.<alias>.alias` | `*`      | `string` | ``      |         |     |     | the discriminator alias              |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry`
+
+#### Referenced (injected) services
+_None_
+
 #### Class: `org.eclipse.edc.identityhub.DefaultServicesExtension`
 **Name:** "IdentityHub Default Services Extension"
 
@@ -64,25 +83,6 @@ _None_
 - `org.eclipse.edc.jsonld.spi.JsonLd` (required)
 - `org.eclipse.edc.jwt.validation.jti.JtiValidationStore` (required)
 - `org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry` (required)
-
-#### Class: `org.eclipse.edc.identityhub.DiscriminatorMappingExtension`
-**Name:** "Discriminator Mapping Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration
-
-| Key                                           | Required | Type     | Default | Pattern | Min | Max | Description                          |
-| --------------------------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------ |
-| `edc.identityhub.discriminator.<alias>.value` | `*`      | `string` | ``      |         |     |     | the full value for the discriminator |
-| `edc.identityhub.discriminator.<alias>.alias` | `*`      | `string` | ``      |         |     |     | the discriminator alias              |
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry`
-
-#### Referenced (injected) services
-_None_
 
 Module `credential-definition-api`
 ----------------------------------
@@ -1842,20 +1842,6 @@ Module `sts-core`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.iam.decentralizedclaims.sts.defaults.StsDefaultServicesExtension`
-**Name:** "Secure Token Service Default Services"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
-
 #### Class: `org.eclipse.edc.iam.decentralizedclaims.sts.EmbeddedStsServiceExtension`
 **Name:** "Local (embedded) STS Account Service Extension"
 
@@ -1878,6 +1864,20 @@ _None_
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService` (required)
 - `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
+
+#### Class: `org.eclipse.edc.iam.decentralizedclaims.sts.defaults.StsDefaultServicesExtension`
+**Name:** "Secure Token Service Default Services"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `test-attestations`
 --------------------------
