@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.Result;
@@ -43,20 +44,11 @@ public class TransitEngineImpl implements TransitEngine {
 
     @Override
     public Result<TransitKeyDescriptor> generateKey(String keyName, String keyType) {
-        var payload = Map.of("type", keyType, "exportable", false);
         var request = vaultRequest()
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName)
-                .post(jsonBody(payload))
+                .post(jsonBody(Map.of("type", keyType, "exportable", false)))
                 .build();
-        try (var response = edcHttpClient.execute(request)) {
-            if (!response.isSuccessful()) {
-                return response.body() == null ? Result.failure("Creating a key returned empty body") : Result.failure("Failed to create key: code %d, message:  %s".formatted(response.code(), response.body().string()));
-            }
-            var responseBody = response.body().string();
-            return Result.success(objectMapper.readValue(responseBody, TransitKeyDescriptor.class));
-        } catch (IOException e) {
-            return Result.failure("Failed to generate key with reason: %s".formatted(e.getMessage()));
-        }
+        return execute(request, TransitKeyDescriptor.class);
     }
 
     @Override
@@ -65,16 +57,7 @@ public class TransitEngineImpl implements TransitEngine {
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName + "/rotate")
                 .post(RequestBody.EMPTY)
                 .build();
-
-        try (var response = edcHttpClient.execute(request)) {
-            if (!response.isSuccessful()) {
-                return response.body() == null ? Result.failure("Rotating a key returned empty body") : Result.failure("Failed to rotate key: code %d, message:  %s".formatted(response.code(), response.body().string()));
-            }
-            return Result.success();
-        } catch (IOException e) {
-            return Result.failure("Failed to rotate key with reason: %s".formatted(e.getMessage()));
-        }
-
+        return execute(request);
     }
 
     @Override
@@ -83,52 +66,29 @@ public class TransitEngineImpl implements TransitEngine {
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName)
                 .get()
                 .build();
-
-        try (var response = edcHttpClient.execute(request)) {
-            if (!response.isSuccessful()) {
-                return response.body() == null ? Result.failure("Getting a key returned empty body") : Result.failure("Failed to get key: code %d, message:  %s".formatted(response.code(), response.body().string()));
-            }
-            return Result.success(objectMapper.readValue(response.body().string(), TransitKeyDescriptor.class));
-        } catch (IOException e) {
-            return Result.failure("Failed to get key with reason: %s".formatted(e.getMessage()));
-        }
+        return execute(request, TransitKeyDescriptor.class);
     }
 
     @Override
     public Result<Void> setMinEncryptionKeyVersion(String keyName, int minVersion) {
-        if (minVersion < 0) {
-            throw new IllegalArgumentException("Min version must be a positive integer");
-        }
+        requireNonNegative(minVersion);
         return postKeyConfig(keyName, TransitKeyConfig.Builder.newInstance().minEncryptionVersion(minVersion).build());
     }
 
     @Override
     public Result<Void> setMinDecryptionKeyVersion(String keyName, int minVersion) {
-        if (minVersion < 0) {
-            throw new IllegalArgumentException("Min version must be a positive integer");
-        }
+        requireNonNegative(minVersion);
         return postKeyConfig(keyName, TransitKeyConfig.Builder.newInstance().minDecryptionVersion(minVersion).build());
     }
 
     @Override
     public Result<Void> setMinAvailableVersion(String keyName, int minVersion) {
-        if (minVersion < 0) {
-            throw new IllegalArgumentException("Min version must be a positive integer");
-        }
-        var body = Map.of("min_available_version", minVersion);
-
+        requireNonNegative(minVersion);
         var request = vaultRequest()
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName + "/trim")
-                .post(jsonBody(body))
+                .post(jsonBody(Map.of("min_available_version", minVersion)))
                 .build();
-        try (var response = edcHttpClient.execute(request)) {
-            if (!response.isSuccessful()) {
-                return response.body() == null ? Result.failure("Trimming a key returned empty body") : Result.failure("Failed to trim key: code %d, message:  %s".formatted(response.code(), response.body().string()));
-            }
-            return Result.success();
-        } catch (IOException e) {
-            return Result.failure("Failed to trim key with reason: %s".formatted(e.getMessage()));
-        }
+        return execute(request);
     }
 
     private Result<Void> postKeyConfig(String keyName, TransitKeyConfig config) {
@@ -136,13 +96,35 @@ public class TransitEngineImpl implements TransitEngine {
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName + "/config")
                 .post(jsonBody(config))
                 .build();
+        return execute(request);
+    }
+
+    private Result<Void> execute(Request request) {
+        try (var response = edcHttpClient.execute(request)) {
+            return response.isSuccessful() ? Result.success() : Result.failure(errorMessage(response));
+        } catch (IOException e) {
+            return Result.failure(e.getMessage());
+        }
+    }
+
+    private <T> Result<T> execute(Request request, Class<T> responseType) {
         try (var response = edcHttpClient.execute(request)) {
             if (!response.isSuccessful()) {
-                return response.body() == null ? Result.failure("Configuring key returned empty body") : Result.failure("Failed to configure key: code %d, message: %s".formatted(response.code(), response.body().string()));
+                return Result.failure(errorMessage(response));
             }
-            return Result.success();
+            return Result.success(objectMapper.readValue(response.body().string(), responseType));
         } catch (IOException e) {
-            return Result.failure("Failed to configure key with reason: %s".formatted(e.getMessage()));
+            return Result.failure(e.getMessage());
+        }
+    }
+
+    private String errorMessage(Response response) throws IOException {
+        return "Vault responded with code %d: %s".formatted(response.code(), response.body().string());
+    }
+
+    private void requireNonNegative(int minVersion) {
+        if (minVersion < 0) {
+            throw new IllegalArgumentException("Min version must be a positive integer");
         }
     }
 
@@ -152,12 +134,10 @@ public class TransitEngineImpl implements TransitEngine {
     }
 
     private RequestBody jsonBody(Object body) {
-        String jsonRepresentation;
         try {
-            jsonRepresentation = objectMapper.writeValueAsString(body);
+            return RequestBody.create(objectMapper.writeValueAsString(body), MediaType.get("application/json"));
         } catch (JsonProcessingException e) {
             throw new EdcException(e);
         }
-        return RequestBody.create(jsonRepresentation, MediaType.get("application/json"));
     }
 }

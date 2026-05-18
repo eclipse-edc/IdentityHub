@@ -297,94 +297,6 @@ class TransitKeyPairServiceTest {
 
     @Nested
     class RevokeKey {
-        @Test
-        void revokeKey_withNewKey() {
-            var oldId = "old-id";
-            var oldKey = createKeyPairResource().id(oldId).build();
-            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(keyPairResourceStore.create(any())).thenReturn(success());
-
-            var newKey = createKey().build();
-            assertThat(keyPairService.revokeKey(oldId, newKey)).isSucceeded();
-
-            verify(keyPairResourceStore).query(any());
-            verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
-            verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
-            verify(keyPairResourceStore).create(argThat(kpr -> !kpr.isDefaultPair()));
-            // new key is set to active - expect an update in the DB
-            verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ACTIVATED.code()));
-            verifyNoMoreInteractions(vault, keyPairResourceStore);
-        }
-
-        @Test
-        void revokeKey_withoutNewKey() {
-            var oldId = "old-id";
-            var oldKey = createKeyPairResource().isDefaultPair(true).id(oldId).build();
-            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-
-            assertThat(keyPairService.revokeKey(oldId, null)).isSucceeded();
-
-            verify(keyPairResourceStore).query(any());
-            verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
-            verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
-            verify(observableMock).invokeForEach(any());
-            verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
-        }
-
-        @Test
-        void revokeKey_oldKeyWasDefault_withNewKey() {
-            var oldId = "old-id";
-            var oldKey = createKeyPairResource().isDefaultPair(true).id(oldId).build();
-            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(keyPairResourceStore.create(any())).thenReturn(success());
-
-            var newKey = createKey().build();
-            assertThat(keyPairService.revokeKey(oldId, newKey)).isSucceeded();
-
-            verify(keyPairResourceStore).query(any());
-            verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
-            verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
-            verify(keyPairResourceStore).create(argThat(KeyPairResource::isDefaultPair));
-            // new key is set to active - expect an update in the DB
-            verify(keyPairResourceStore).update(argThat(kpr -> !kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.ACTIVATED.code()));
-            verify(observableMock, times(3)).invokeForEach(any()); // 1 for revoke, 1 for add
-            verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
-        }
-
-        @Test
-        void revokeKey_oldKeyWasDefault_withNewKeyNotActive() {
-            var oldId = "old-id";
-            var oldKey = createKeyPairResource().isDefaultPair(true).id(oldId).build();
-            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-            when(keyPairResourceStore.create(any())).thenReturn(success());
-
-            var newKey = createKey().active(false).build();
-            assertThat(keyPairService.revokeKey(oldId, newKey)).isSucceeded();
-
-            // queries twice, because the key is not active, tries to determine whether there are other active keys
-            verify(keyPairResourceStore, times(2)).query(any());
-            verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
-            verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
-            verify(keyPairResourceStore).create(argThat(KeyPairResource::isDefaultPair));
-            // new key is set to inactive, do not expect a DB update
-            verify(observableMock, times(2)).invokeForEach(any()); // 1 for revoke, 1 for add
-            verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
-        }
-
-        @Test
-        void revokeKey_oldKeyWasDefault_withoutNewKey() {
-            var oldId = "old-id";
-            var oldKey = createKeyPairResource().isDefaultPair(true).id(oldId).build();
-            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
-
-            assertThat(keyPairService.revokeKey(oldId, null)).isSucceeded();
-
-            verify(keyPairResourceStore).query(any());
-            verify(keyPairResourceStore).update(argThat(kpr -> kpr.getId().equals(oldId) && kpr.getState() == KeyPairState.REVOKED.code()));
-            verify(vault).deleteSecret(anyString(), eq(oldKey.getPrivateKeyAlias()));
-            verify(observableMock).invokeForEach(any());
-            verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
-        }
 
         @Test
         void revokeKey_notfound() {
@@ -397,6 +309,129 @@ class TransitKeyPairServiceTest {
 
             verify(keyPairResourceStore).query(any());
             verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
+        }
+
+        @Test
+        void revokeKey() {
+            var oldKey = createKeyPairResource().build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinAvailableVersion(anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinDecryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
+
+            assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isSucceeded();
+
+            verify(keyPairResourceStore).update(argThat(kpr -> kpr.getState() == KeyPairState.REVOKED.code()));
+            verify(keyPairResourceStore).create(any());
+            verify(transitEngine).rotateKey(anyString());
+            verify(transitEngine).getKey(anyString());
+            verify(transitEngine).setMinAvailableVersion(anyString(), anyInt());
+            verify(transitEngine).setMinEncryptionKeyVersion(anyString(), anyInt());
+            verify(transitEngine).setMinDecryptionKeyVersion(anyString(), anyInt());
+            verify(observableMock).invokeForEach(any());
+            verifyNoMoreInteractions(observableMock, transitEngine);
+        }
+
+        @Test
+        void revokeKey_whenStoreUpdateFails_shouldFail() {
+            var oldKey = createKeyPairResource().build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(keyPairResourceStore.update(any())).thenReturn(StoreResult.generalError("update failed"));
+
+            assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
+
+            verify(keyPairResourceStore).update(any());
+            verifyNoMoreInteractions(observableMock, transitEngine);
+        }
+
+        @Test
+        void revokeKey_whenRotateFails_shouldFail() {
+            var oldKey = createKeyPairResource().build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(transitEngine.rotateKey(anyString())).thenReturn(Result.failure("rotate failed"));
+
+            assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
+
+            verify(transitEngine).rotateKey(anyString());
+            verifyNoMoreInteractions(observableMock);
+        }
+
+        @Test
+        void revokeKey_whenGetKeyFails_shouldFail() {
+            var oldKey = createKeyPairResource().build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(anyString())).thenReturn(Result.failure("getKey failed"));
+
+            assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
+
+            verify(transitEngine).rotateKey(anyString());
+            verify(transitEngine).getKey(anyString());
+            verifyNoMoreInteractions(observableMock);
+        }
+
+        @Test
+        void revokeKey_whenSetMinAvailableVersionFails_shouldFail() {
+            var oldKey = createKeyPairResource().build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinAvailableVersion(anyString(), anyInt())).thenReturn(Result.failure("setMinAvailable failed"));
+
+            assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
+
+            verify(transitEngine).setMinAvailableVersion(anyString(), anyInt());
+            verifyNoMoreInteractions(observableMock);
+        }
+
+        @Test
+        void revokeKey_whenSetMinEncryptionVersionFails_shouldFail() {
+            var oldKey = createKeyPairResource().build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinAvailableVersion(anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.failure("setMinEncryption failed"));
+
+            assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
+
+            verify(transitEngine).setMinEncryptionKeyVersion(anyString(), anyInt());
+            verifyNoMoreInteractions(observableMock);
+        }
+
+        @Test
+        void revokeKey_whenSetMinDecryptionVersionFails_shouldFail() {
+            var oldKey = createKeyPairResource().build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinAvailableVersion(anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinDecryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.failure("setMinDecryption failed"));
+
+            assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
+
+            verify(transitEngine).setMinDecryptionKeyVersion(anyString(), anyInt());
+            verifyNoMoreInteractions(observableMock);
+        }
+
+        @Test
+        void revokeKey_whenStoreCreateFails_shouldFail() {
+            var oldKey = createKeyPairResource().build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(keyPairResourceStore.create(any())).thenReturn(StoreResult.generalError("create failed"));
+            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinAvailableVersion(anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinDecryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
+
+            assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
+
+            verify(keyPairResourceStore).create(any());
+            verifyNoMoreInteractions(observableMock);
         }
     }
 
@@ -446,6 +481,62 @@ class TransitKeyPairServiceTest {
 
             verify(keyPairResourceStore).query(any());
             verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
+        }
+
+        @Test
+        void rotateKeyPair_whenStoreUpdateFails_shouldFail() {
+            var oldId = "old-id";
+            var oldKey = createKeyPairResource().id(oldId).build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(keyPairResourceStore.update(any())).thenReturn(StoreResult.generalError("update failed"));
+
+            assertThat(keyPairService.rotateKeyPair(oldId, null, Duration.ofDays(100).toMillis())).isFailed();
+
+            verify(keyPairResourceStore).update(any());
+            verifyNoMoreInteractions(observableMock, transitEngine);
+        }
+
+        @Test
+        void rotateKeyPair_whenRotateFails_shouldFail() {
+            var oldId = "old-id";
+            var oldKey = createKeyPairResource().id(oldId).build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(transitEngine.rotateKey(anyString())).thenReturn(Result.failure("rotate failed"));
+
+            assertThat(keyPairService.rotateKeyPair(oldId, null, Duration.ofDays(100).toMillis())).isFailed();
+
+            verify(transitEngine).rotateKey(anyString());
+            verifyNoMoreInteractions(observableMock);
+        }
+
+        @Test
+        void rotateKeyPair_whenGetKeyFails_shouldFail() {
+            var oldId = "old-id";
+            var oldKey = createKeyPairResource().id(oldId).build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(anyString())).thenReturn(Result.failure("getKey failed"));
+
+            assertThat(keyPairService.rotateKeyPair(oldId, null, Duration.ofDays(100).toMillis())).isFailed();
+
+            verify(transitEngine).rotateKey(anyString());
+            verify(transitEngine).getKey(anyString());
+            verifyNoMoreInteractions(observableMock);
+        }
+
+        @Test
+        void rotateKeyPair_whenSetMinEncryptionVersionFails_shouldFail() {
+            var oldId = "old-id";
+            var oldKey = createKeyPairResource().id(oldId).build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
+            when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
+            when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.failure("setMinEncryption failed"));
+
+            assertThat(keyPairService.rotateKeyPair(oldId, null, Duration.ofDays(100).toMillis())).isFailed();
+
+            verify(transitEngine).setMinEncryptionKeyVersion(anyString(), anyInt());
+            verifyNoMoreInteractions(observableMock);
         }
     }
 

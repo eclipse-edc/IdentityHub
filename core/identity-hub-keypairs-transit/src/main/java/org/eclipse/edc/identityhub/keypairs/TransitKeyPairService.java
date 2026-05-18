@@ -29,7 +29,6 @@ import org.eclipse.edc.identityhub.transit.TransitEngine;
 import org.eclipse.edc.identityhub.transit.TransitKeyDescriptor;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
-import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
@@ -347,24 +346,5 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
         var q = QuerySpec.Builder.newInstance()
                 .filter(new Criterion("id", "=", oldId)).build();
         return keyPairResourceStore.query(q).map(list -> list.stream().findFirst().orElse(null)).orElse(f -> null);
-    }
-
-    private Result<String> generateOrGetKey(String participantContextId, KeyDescriptor keyDescriptor) {
-        String publicKeySerialized;
-        if (keyDescriptor.getKeyGeneratorParams() != null) {
-            var keyPair = KeyPairGenerator.generateKeyPair(keyDescriptor.getKeyGeneratorParams());
-            if (keyPair.failed()) {
-                return keyPair.mapFailure();
-            }
-            var privateJwk = CryptoConverter.createJwk(keyPair.getContent(), keyDescriptor.getKeyId());
-            publicKeySerialized = privateJwk.toPublicJWK().toJSONString();
-//            vault.storeSecret(participantContextId, keyDescriptor.getPrivateKeyAlias(), privateJwk.toJSONString());
-        } else {
-            // either take the public key from the JWK structure or the PEM field
-            publicKeySerialized = ofNullable(keyDescriptor.getPublicKeyJwk())
-                    .map(m -> CryptoConverter.create(m).toJSONString())
-                    .orElseGet(() -> keyDescriptor.getPublicKeyPem().replace("\\n", "\n"));
-        }
-        return Result.success(publicKeySerialized);
     }
 }
