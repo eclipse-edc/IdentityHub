@@ -29,7 +29,6 @@ maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.19.2, Apache-2.
 maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.20.1, Apache-2.0, approved, #23060
 maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.21, Apache-2.0, approved, #25591
 maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.21.1, Apache-2.0, approved, #25591
-maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.21.2, Apache-2.0, approved, #25591
 maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.21.3, Apache-2.0, approved, #25591
 maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.14.0, Apache-2.0, approved, #5933
 maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.18.3, Apache-2.0, approved, #16370
@@ -37,12 +36,10 @@ maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.19
 maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.21.1, Apache-2.0, approved, #25589
 maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.21.3, Apache-2.0, approved, #25589
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jakarta-jsonp/2.20.1, Apache-2.0, approved, clearlydefined
-maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jakarta-jsonp/2.21.2, Apache-2.0, approved, #26448
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jakarta-jsonp/2.21.3, Apache-2.0, approved, #26448
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.14.0, Apache-2.0, approved, #4699
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.19.2, Apache-2.0, approved, #23299
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.21.1, Apache-2.0, approved, #26441
-maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.21.2, Apache-2.0, approved, #26441
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.21.3, Apache-2.0, approved, #26441
 maven/mavencentral/com.fasterxml.jackson.jakarta.rs/jackson-jakarta-rs-base/2.21.3, Apache-2.0, approved, #26442
 maven/mavencentral/com.fasterxml.jackson.jakarta.rs/jackson-jakarta-rs-json-provider/2.19.2, Apache-2.0, approved, #20839
@@ -101,7 +98,7 @@ maven/mavencentral/com.networknt/json-schema-validator/2.0.0, Apache-2.0 AND Uni
 maven/mavencentral/com.networknt/json-schema-validator/2.0.1, Apache-2.0 AND Unicode-TOU, approved, #25988
 maven/mavencentral/com.nimbusds/nimbus-jose-jwt/10.7, Apache-2.0, approved, clearlydefined
 maven/mavencentral/com.nimbusds/nimbus-jose-jwt/10.8, Apache-2.0, approved, #26455
-maven/mavencentral/com.nimbusds/nimbus-jose-jwt/10.9, , restricted, clearlydefined
+maven/mavencentral/com.nimbusds/nimbus-jose-jwt/10.9, Apache-2.0, approved, #28183
 maven/mavencentral/com.nimbusds/nimbus-jose-jwt/9.28, Apache-2.0, approved, clearlydefined
 maven/mavencentral/com.puppycrawl.tools/checkstyle/12.3.0, LGPL-2.1-or-later, approved, #26456
 maven/mavencentral/com.samskivert/jmustache/1.15, BSD-2-Clause AND BSD-3-Clause, approved, clearlydefined
@@ -280,7 +277,6 @@ maven/mavencentral/org.bouncycastle/bcutil-jdk18on/1.72, MIT, approved, #3790
 maven/mavencentral/org.bouncycastle/bcutil-jdk18on/1.84, MIT, approved, #27144
 maven/mavencentral/org.ccil.cowan.tagsoup/tagsoup/1.2.1, Apache-2.0, approved, clearlydefined
 maven/mavencentral/org.checkerframework/checker-qual/3.12.0, MIT, approved, clearlydefined
-maven/mavencentral/org.checkerframework/checker-qual/3.52.0, MIT, approved, #26057
 maven/mavencentral/org.checkerframework/checker-qual/3.52.1, MIT, approved, #26057
 maven/mavencentral/org.codehaus.plexus/plexus-classworlds/2.6.0, Apache-2.0 AND Plexus, approved, CQ22821
 maven/mavencentral/org.codehaus.plexus/plexus-component-annotations/2.1.0, Apache-2.0, approved, #809
@@ -392,13 +388,13 @@ maven/mavencentral/org.eclipse.edc/version-api/0.18.0-SNAPSHOT, Apache-2.0, appr
 maven/mavencentral/org.eclipse.edc/web-spi/0.18.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.jetty.ee10/jetty-ee10-bom/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty.ee10/jetty-ee10-servlet/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
-maven/mavencentral/org.eclipse.jetty.ee10/jetty-ee10-servlet/12.1.8, EPL-2.0 OR Apache-2.0, approved, rt.jetty
+maven/mavencentral/org.eclipse.jetty.ee10/jetty-ee10-servlet/12.1.9, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty.ee10/jetty-ee10-servlets/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty.ee10/jetty-ee10-webapp/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty.http2/jetty-http2-common/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty.http2/jetty-http2-hpack/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty.http2/jetty-http2-server/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
-maven/mavencentral/org.eclipse.jetty.websocket/jetty-websocket/12.1.8, EPL-2.0 OR Apache-2.0, approved, rt.jetty
+maven/mavencentral/org.eclipse.jetty.websocket/jetty-websocket/12.1.9, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-alpn-client/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-alpn-java-client/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-alpn-java-server/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
@@ -407,18 +403,18 @@ maven/mavencentral/org.eclipse.jetty/jetty-bom/12.0.30, EPL-2.0 OR Apache-2.0, a
 maven/mavencentral/org.eclipse.jetty/jetty-client/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-ee/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-http/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
-maven/mavencentral/org.eclipse.jetty/jetty-http/12.1.8, EPL-2.0 OR Apache-2.0, approved, rt.jetty
+maven/mavencentral/org.eclipse.jetty/jetty-http/12.1.9, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-io/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
-maven/mavencentral/org.eclipse.jetty/jetty-io/12.1.8, EPL-2.0 OR Apache-2.0, approved, rt.jetty
+maven/mavencentral/org.eclipse.jetty/jetty-io/12.1.9, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-proxy/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-security/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
-maven/mavencentral/org.eclipse.jetty/jetty-security/12.1.8, EPL-2.0 OR Apache-2.0, approved, rt.jetty
+maven/mavencentral/org.eclipse.jetty/jetty-security/12.1.9, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-server/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
-maven/mavencentral/org.eclipse.jetty/jetty-server/12.1.8, EPL-2.0 OR Apache-2.0, approved, rt.jetty
+maven/mavencentral/org.eclipse.jetty/jetty-server/12.1.9, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-session/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
-maven/mavencentral/org.eclipse.jetty/jetty-session/12.1.8, EPL-2.0 OR Apache-2.0, approved, rt.jetty
+maven/mavencentral/org.eclipse.jetty/jetty-session/12.1.9, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-util/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
-maven/mavencentral/org.eclipse.jetty/jetty-util/12.1.8, EPL-2.0 OR Apache-2.0, approved, rt.jetty
+maven/mavencentral/org.eclipse.jetty/jetty-util/12.1.9, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-xml/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.parsson/parsson/1.1.7, EPL-2.0, approved, ee4j.parsson
 maven/mavencentral/org.glassfish.hk2.external/aopalliance-repackaged/4.0.0-M3, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.glassfish
@@ -475,7 +471,6 @@ maven/mavencentral/org.objenesis/objenesis/3.3, Apache-2.0, approved, #19727
 maven/mavencentral/org.opentest4j/opentest4j/1.3.0, Apache-2.0, approved, #9713
 maven/mavencentral/org.ow2.asm/asm/9.1, BSD-3-Clause, approved, CQ23029
 maven/mavencentral/org.ow2.asm/asm/9.7.1, BSD-3-Clause, approved, #16464
-maven/mavencentral/org.postgresql/postgresql/42.7.10, BSD-2-Clause AND Apache-2.0, approved, #11681
 maven/mavencentral/org.postgresql/postgresql/42.7.11, BSD-2-Clause AND Apache-2.0, approved, #11681
 maven/mavencentral/org.reflections/reflections/0.10.2, Apache-2.0 AND WTFPL, approved, clearlydefined
 maven/mavencentral/org.rnorth.duct-tape/duct-tape/1.0.8, MIT, approved, clearlydefined
