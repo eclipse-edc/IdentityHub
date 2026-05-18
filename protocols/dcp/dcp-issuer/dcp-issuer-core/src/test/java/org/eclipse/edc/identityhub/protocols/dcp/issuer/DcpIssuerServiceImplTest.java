@@ -65,7 +65,8 @@ public class DcpIssuerServiceImplTest {
     private final DcpProfileRegistry dcpProfileRegistry = mock();
     private final IssuanceObservable issuanceObservable = mock();
 
-    private final DcpIssuerService dcpIssuerService = new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService, issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, dcpProfileRegistry, mock(), issuanceObservable);
+    private final DcpIssuerService dcpIssuerService = new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService,
+            issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, dcpProfileRegistry, mock(), issuanceObservable);
 
 
     @Test

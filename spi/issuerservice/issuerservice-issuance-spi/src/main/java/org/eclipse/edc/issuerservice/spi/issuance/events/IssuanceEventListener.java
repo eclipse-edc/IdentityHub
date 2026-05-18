@@ -26,26 +26,46 @@ import java.util.Collection;
  */
 public interface IssuanceEventListener {
 
+    /**
+     * A credential issuance request was successfully received and will be processed further by the Issuer service.
+     * An {@link IssuanceApproved} has been created to represent the request internally.
+     */
     default void received(IssuanceProcess ip) {
 
     }
 
+    /**
+     * A credential issuance request was received but rejected by the Issuer service. No {@link IssuanceRejected} has been created.
+     */
     default void rejected(String holderPid, String issuerParticipantContextId, String failureDetail) {
 
     }
 
+    /**
+     * The Issuer service approved a credential issuance request.
+     */
     default void approved(IssuanceProcess process) {
 
     }
 
+    /**
+     * The credentials requested in the issuance request have been generated (signed).
+     */
     default void generated(IssuanceProcess process, Collection<VerifiableCredentialContainer> creds) {
 
     }
 
+    /**
+     * The credentials requested in the issuance request have been delivered successfully to the holder.
+     */
     default void delivered(IssuanceProcess process, Collection<VerifiableCredentialContainer> credentials) {
 
     }
 
+    /**
+     * A credential issuance request failed. The associated {@link IssuanceProcess} is in the {@link org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates#ERRORED}
+     * state.
+     */
     default void errored(IssuanceProcess process, Throwable throwable) {
 
     }
