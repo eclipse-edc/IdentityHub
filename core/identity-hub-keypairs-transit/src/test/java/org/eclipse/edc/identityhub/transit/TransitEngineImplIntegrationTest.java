@@ -1,0 +1,244 @@
+/*
+ *  Copyright (c) 2026 Metaform Systems, Inc.
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Metaform Systems, Inc. - initial API and implementation
+ *
+ */
+
+package org.eclipse.edc.identityhub.transit;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.failsafe.RetryPolicy;
+import okhttp3.OkHttpClient;
+import org.eclipse.edc.http.client.EdcHttpClientImpl;
+import org.eclipse.edc.http.spi.EdcHttpClient;
+import org.eclipse.edc.junit.annotations.ComponentTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.vault.VaultContainer;
+
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.mockito.Mockito.mock;
+
+@ComponentTest
+@Testcontainers
+class TransitEngineImplIntegrationTest {
+
+    static final String VAULT_TOKEN = "root";
+
+    @Container
+    static final VaultContainer<?> VAULT = new VaultContainer<>("hashicorp/vault")
+            .withVaultToken(VAULT_TOKEN)
+            .withEnv("SKIP_SETCAP", "true")
+            .withEnv("VAULT_DEV_ROOT_TOKEN_ID", VAULT_TOKEN)
+            .withExposedPorts(8200);
+//            .waitingFor(Wait.forLogMessage("WARNING! dev mode is enabled!", 10));
+
+
+    private final EdcHttpClient client = new EdcHttpClientImpl(new OkHttpClient.Builder().build(), RetryPolicy.ofDefaults(), mock());
+    private TransitEngineImpl transitEngine;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        VAULT.execInContainer("vault", "secrets", "enable", "transit");
+        var vaultBaseUrl = "http://%s:%d".formatted(VAULT.getHost(), VAULT.getMappedPort(8200));
+        transitEngine = new TransitEngineImpl(() -> VAULT_TOKEN, new ObjectMapper(), client, vaultBaseUrl);
+    }
+
+    @Test
+    void generateKey() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        var result = transitEngine.generateKey(keyName);
+        assertThat(result).isSucceeded().satisfies(desc -> {
+            assertThat(desc.getData().getKeys()).hasSize(1);
+            assertThat(desc.getData().getLatestVersion()).isEqualTo(1);
+            assertThat(desc.getData().isExportable()).isFalse();
+        });
+    }
+
+    @Test
+    void rotateKey() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        var result = transitEngine.rotateKey(keyName);
+        assertThat(result).isSucceeded();
+    }
+
+    @Test
+    void rotateKey_notExist() {
+        var keyName = "not-exist";
+        var result = transitEngine.rotateKey(keyName);
+        assertThat(result).isFailed().detail().contains("not found");
+    }
+
+    @Test
+    void rotateKey_severalTimes() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+    }
+
+    @Test
+    void getKey() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+
+        var result = transitEngine.getKey(keyName);
+        assertThat(result).isSucceeded()
+                .satisfies(desc -> {
+                    assertThat(desc.getData().getKeys()).hasSize(1);
+                    assertThat(desc.getData().getName()).isEqualTo(keyName);
+                });
+    }
+
+    @Test
+    void getKey_notExist() {
+        assertThat(transitEngine.getKey("not-exist")).isFailed().detail().contains("404");
+    }
+
+    @Test
+    void generateKey_whenAlreadyExists_shouldOverwrite() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+    }
+
+    @Test
+    void getKey_afterRotation_hasMultipleVersions() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+
+        var result = transitEngine.getKey(keyName);
+        assertThat(result).isSucceeded().satisfies(desc -> {
+            assertThat(desc.getData().getKeys()).hasSize(3);
+            assertThat(desc.getData().getLatestVersion()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void generateKey_whenInvalidToken_shouldFail() {
+        var vaultBaseUrl = "http://%s:%d".formatted(VAULT.getHost(), VAULT.getMappedPort(8200));
+        var engineWithBadToken = new TransitEngineImpl(() -> "wrong-token", new ObjectMapper(), client, vaultBaseUrl);
+        assertThat(engineWithBadToken.generateKey("test-key-" + UUID.randomUUID())).isFailed();
+    }
+
+    @Test
+    void rotateKey_severalTimes_incrementsLatestVersion() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+
+        var result = transitEngine.getKey(keyName);
+        assertThat(result).isSucceeded().satisfies(desc ->
+                assertThat(desc.getData().getLatestVersion()).isEqualTo(3));
+    }
+
+    @Test
+    void setMinEncryptionKeyVersion() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+
+        assertThat(transitEngine.setMinEncryptionKeyVersion(keyName, 2)).isSucceeded();
+    }
+
+    @Test
+    void setMinEncryptionKeyVersion_whenKeyNotExist() {
+        assertThat(transitEngine.setMinEncryptionKeyVersion("not-exist", 1)).isFailed();
+    }
+
+    @Test
+    void setMinEncryptionKeyVersion_whenVersionHigherThanLatest_shouldFail() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+
+        assertThat(transitEngine.setMinEncryptionKeyVersion(keyName, 99)).isFailed();
+    }
+
+    @Test
+    void setMinEncryptionKeyVersion_whenNegativeVersion_shouldThrow() {
+        assertThatThrownBy(() -> transitEngine.setMinEncryptionKeyVersion("any-key", -1))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void setMinDecryptionKeyVersion() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+
+        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
+    }
+
+    @Test
+    void setMinDecryptionKeyVersion_whenKeyNotExist() {
+        assertThat(transitEngine.setMinDecryptionKeyVersion("not-exist", 1)).isFailed();
+    }
+
+    @Test
+    void setMinDecryptionKeyVersion_whenVersionHigherThanLatest_shouldFail() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+
+        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 99)).isFailed();
+    }
+
+    @Test
+    void setMinDecryptionKeyVersion_whenNegativeVersion_shouldThrow() {
+        assertThatThrownBy(() -> transitEngine.setMinDecryptionKeyVersion("any-key", -1))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void setMinAvailableVersion_whenMinEncVersionNotSet() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        // min_available_version must be <= min_decryption_version, so raise that first
+        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinAvailableVersion(keyName, 2)).isFailed();
+    }
+
+    @Test
+    void setMinAvailableVersion() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        // min_available_version must be <= min_decryption_version, so raise that first
+        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinEncryptionKeyVersion(keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinAvailableVersion(keyName, 2)).isSucceeded();
+    }
+
+    @Test
+    void setMinAvailableVersion_whenKeyNotExist() {
+        assertThat(transitEngine.setMinAvailableVersion("not-exist", 1)).isFailed();
+    }
+
+    @Test
+    void setMinAvailableVersion_whenNegativeVersion_shouldThrow() {
+        assertThatThrownBy(() -> transitEngine.setMinAvailableVersion("any-key", -1))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+}
