@@ -64,15 +64,14 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
     @POST
     @Path("/query")
     @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Override
     public Collection<VerifiableCredentialResourceDto> queryCredentials(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext context) {
-        var decodedParticipantContextId = participantContextId;
-        var spec = query.toBuilder().filter(filterByParticipantContextId(decodedParticipantContextId)).build();
+        var spec = query.toBuilder().filter(filterByParticipantContextId(participantContextId)).build();
         return credentialStatusService.queryCredentials(spec)
                 .map(resources -> resources.stream()
                         .filter(resource -> authorizationService
-                                .authorize(context, decodedParticipantContextId, resource.getId(), VerifiableCredentialResource.class)
+                                .authorize(context, participantContextId, resource.getId(), VerifiableCredentialResource.class)
                                 .succeeded())
                         .map(this::toDto)
                         .toList())
@@ -81,7 +80,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
 
     @POST
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/{credentialId}/revoke")
     @Override
     public void revokeCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
@@ -92,7 +91,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
 
     @POST
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/{credentialId}/suspend")
     @Override
     public Response suspendCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId) {
@@ -101,7 +100,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
 
     @POST
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/{credentialId}/resume")
     @Override
     public Response resumeCredential(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId) {
@@ -110,7 +109,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
 
     @GET
     @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER })
     @Path("/{credentialId}/status")
     @Override
     public CredentialStatusResponse checkRevocationStatus(@PathParam("participantContextId") String participantContextId, @PathParam("credentialId") String credentialId, @Context SecurityContext context) {
@@ -122,7 +121,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
 
     @POST
     @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN})
+    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
     @Path("/offer")
     @Override
     public void sendCredentialOffer(@PathParam("participantContextId") String participantContextId, CredentialOfferDto credentialOffer, @Context SecurityContext context) {

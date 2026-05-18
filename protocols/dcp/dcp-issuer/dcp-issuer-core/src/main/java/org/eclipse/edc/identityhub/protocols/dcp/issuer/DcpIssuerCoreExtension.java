@@ -27,6 +27,7 @@ import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceObservable;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
@@ -120,6 +121,8 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     private boolean allowAnonymousCredentialRequest;
     @Inject
     private Telemetry telemetry;
+    @Inject
+    private IssuanceObservable issuanceObservable;
 
     @Override
     public void initialize(ServiceExtensionContext context) {
@@ -138,7 +141,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     @Provider
     public DcpIssuerService createIssuerService() {
-        return new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService, issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, profileRegistry, telemetry);
+        return new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService, issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, profileRegistry, telemetry, issuanceObservable);
     }
 
     @Provider

@@ -108,6 +108,7 @@ public class CredentialApiEndToEndTest {
                 .issuanceDate(Instant.now())
                 .id(credentialId)
                 .type("VerifiableCredential")
+                .type("TestCredential")
                 .credentialSubject(CredentialSubject.Builder.newInstance().id(UUID.randomUUID().toString()).claim("foo", "bar").build())
                 .credentialStatus(new CredentialStatus(credentialId + "#status", "BitstringStatusListEntry", Map.of(
                         "statusListIndex", STATUS_LIST_INDEX,
@@ -305,6 +306,34 @@ public class CredentialApiEndToEndTest {
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance()
                             .filter(new Criterion("issuerId", "=", "issuer-id"))
+                            .build())
+                    .post("/v1alpha/participants/%s/credentials/query".formatted(USER))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("size()", equalTo(1));
+
+        }
+
+        @Test
+        void queryCredentials_byTypeAndParticipant(IssuerService issuer, CredentialStore credentialStore) {
+
+            var credential1 = createCredential("test-cred");
+            var credential2 = createCredential("test-cred-1", "another-user");
+            var participantContextId = credential1.getHolderId();
+            var type = "TestCredential";
+
+            credentialStore.create(credential1);
+            credentialStore.create(credential2);
+
+
+            issuer.getAdminEndpoint()
+                    .baseRequest()
+                    .contentType(JSON)
+                    .header(authorizeUser(USER, issuer))
+                    .body(QuerySpec.Builder.newInstance()
+                            .filter(new Criterion("holderId", "=", participantContextId))
+                            .filter(new Criterion("verifiableCredential.credential.type", "contains", type))
                             .build())
                     .post("/v1alpha/participants/%s/credentials/query".formatted(USER))
                     .then()

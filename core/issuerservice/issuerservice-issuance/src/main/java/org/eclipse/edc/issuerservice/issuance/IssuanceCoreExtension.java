@@ -15,11 +15,14 @@
 package org.eclipse.edc.issuerservice.issuance;
 
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.issuerservice.issuance.events.IssuanceEventPublisher;
+import org.eclipse.edc.issuerservice.issuance.events.IssuanceObservableImpl;
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessManagerImpl;
 import org.eclipse.edc.issuerservice.issuance.process.IssuanceProcessServiceImpl;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceObservable;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessManager;
 import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
@@ -30,6 +33,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.SettingContext;
+import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -84,8 +88,14 @@ public class IssuanceCoreExtension implements ServiceExtension {
 
     @Inject
     private TransactionContext transactionContext;
+
     @Inject
     private CredentialStatusService credentialStatusService;
+
+    @Inject
+    private EventRouter eventRouter;
+
+    private IssuanceObservable issuanceObservable;
 
     @Provider
     public IssuanceProcessManager createIssuanceProcessManager() {
@@ -106,9 +116,19 @@ public class IssuanceCoreExtension implements ServiceExtension {
                     .credentialStorageClient(credentialStorageClient)
                     .credentialStatusService(credentialStatusService)
                     .entityRetryProcessConfiguration(stateMachineConfiguration.entityRetryProcessConfiguration())
+                    .observable(issuanceObservable())
                     .build();
         }
         return issuanceProcessManager;
+    }
+
+    @Provider
+    public IssuanceObservable issuanceObservable() {
+        if (issuanceObservable == null) {
+            issuanceObservable = new IssuanceObservableImpl();
+            issuanceObservable().registerListener(new IssuanceEventPublisher(clock, eventRouter));
+        }
+        return issuanceObservable;
     }
 
     @Provider
