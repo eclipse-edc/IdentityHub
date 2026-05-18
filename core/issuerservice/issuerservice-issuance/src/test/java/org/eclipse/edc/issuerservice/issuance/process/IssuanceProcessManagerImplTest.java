@@ -21,9 +21,12 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VerifiableCredentialResource;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
+import org.eclipse.edc.issuerservice.issuance.events.IssuanceObservableImpl;
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceEventListener;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceObservable;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerationRequest;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
@@ -59,6 +62,7 @@ import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,10 +77,13 @@ public class IssuanceProcessManagerImplTest {
     private final CredentialStore credentialStore = mock();
     private final CredentialStorageClient credentialStorageClient = mock();
     private final CredentialStatusService credentialStatusService = mock();
+    private final IssuanceObservable issuanceObservable = new IssuanceObservableImpl();
+    private final IssuanceEventListener listener = mock();
     private IssuanceProcessManager issuanceProcessManager;
 
     @BeforeEach
     void setup() {
+        issuanceObservable.registerListener(listener);
         var entityRetryProcessConfiguration = new EntityRetryProcessConfiguration(1, () -> new ExponentialWaitStrategy(0L));
         issuanceProcessManager = IssuanceProcessManagerImpl.Builder.newInstance()
                 .entityRetryProcessConfiguration(entityRetryProcessConfiguration)
@@ -87,6 +94,7 @@ public class IssuanceProcessManagerImplTest {
                 .credentialStore(credentialStore)
                 .credentialStorageClient(credentialStorageClient)
                 .credentialStatusService(credentialStatusService)
+                .observable(issuanceObservable)
                 .monitor(monitor)
                 .clock(clock)
                 .build();
@@ -128,6 +136,7 @@ public class IssuanceProcessManagerImplTest {
         when(credentialDefinitionStore.query(any())).thenReturn(StoreResult.success(List.of(credentialDefinition)));
         when(credentialGenerator.generateCredentials("participantContextId", "holderId", List.of(generationRequests), process.getClaims())).thenReturn(Result.success(List.of(credential)));
         when(credentialStore.create(any())).thenReturn(StoreResult.success());
+        when(issuanceProcessStore.save(any())).thenReturn(StoreResult.success());
         when(credentialStorageClient.deliverCredentials(process, List.of(credential))).thenReturn(Result.success());
         when(credentialStatusService.addCredential(any(), any())).thenReturn(ServiceResult.success(credential.credential()));
         when(credentialGenerator.signCredential(any(), any(), any())).thenReturn(Result.success(credential));
@@ -149,6 +158,10 @@ public class IssuanceProcessManagerImplTest {
             assertThat(cred.getVerifiableCredential().credential()).isEqualTo(credential.credential());
 
             verify(issuanceProcessStore).save(argThat(p -> p.getState() == DELIVERED.code()));
+
+            verify(listener).approved(process);
+            verify(listener).generated(eq(process), any());
+            verify(listener).delivered(eq(process), any());
         });
     }
 
@@ -180,10 +193,11 @@ public class IssuanceProcessManagerImplTest {
 
         await().untilAsserted(() -> {
             verify(issuanceProcessStore).save(argThat(p -> p.getState() == ERRORED.code()));
+            verify(listener).approved(process);
         });
     }
 
     private Criterion[] stateIs(int state) {
-        return aryEq(new Criterion[]{hasState(state), isNotPending()});
+        return aryEq(new Criterion[]{ hasState(state), isNotPending() });
     }
 }

@@ -23,6 +23,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpec
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceObservable;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
@@ -48,13 +49,14 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
     private final CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator;
     private final DcpProfileRegistry profileRegistry;
     private final Telemetry telemetry;
+    private final IssuanceObservable observable;
 
     public DcpIssuerServiceImpl(TransactionContext transactionContext,
                                 CredentialDefinitionService credentialDefinitionService,
                                 IssuanceProcessStore issuanceProcessStore,
                                 AttestationPipeline attestationPipeline,
                                 CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator,
-                                DcpProfileRegistry profileRegistry, Telemetry telemetry) {
+                                DcpProfileRegistry profileRegistry, Telemetry telemetry, IssuanceObservable observable) {
         this.transactionContext = transactionContext;
         this.credentialDefinitionService = credentialDefinitionService;
         this.issuanceProcessStore = issuanceProcessStore;
@@ -62,6 +64,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         this.credentialRuleDefinitionEvaluator = credentialRuleDefinitionEvaluator;
         this.profileRegistry = profileRegistry;
         this.telemetry = telemetry;
+        this.observable = observable;
     }
 
     @WithSpan(value = "issuance.initiate")
@@ -80,6 +83,12 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
                 .compose(this::evaluateRules)
                 .compose(evaluation -> createIssuanceProcess(participantContextId, message.getHolderPid(), credentialFormats.getContent(), context, evaluation))
+                .onSuccess(ip -> {
+                    observable.invokeForEach(l -> l.received(ip));
+                })
+                .onFailure(f -> {
+                    observable.invokeForEach(l -> l.rejected(message.getHolderPid(), participantContextId, f.getFailureDetail()));
+                })
                 .map(issuanceProcess -> new CredentialRequestMessage.Response(issuanceProcess.getId())));
 
     }

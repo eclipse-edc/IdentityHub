@@ -24,6 +24,7 @@ import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialSto
 import org.eclipse.edc.issuerservice.spi.credentials.CredentialStatusService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceObservable;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGenerationRequest;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
@@ -53,6 +54,7 @@ import static org.eclipse.edc.statemachine.retry.processor.Process.result;
 
 public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<IssuanceProcess, IssuanceProcessStore> implements IssuanceProcessManager {
 
+    private IssuanceObservable observable;
     private CredentialGeneratorRegistry credentialGenerator;
     private CredentialDefinitionStore credentialDefinitionStore;
     private CredentialStore credentialStore;
@@ -73,12 +75,16 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
      */
     @WithSpan(value = "issuance.approved")
     private CompletableFuture<StatusResult<Void>> processApproved(IssuanceProcess process) {
+        observable.invokeForEach(l -> l.approved(process));
         return entityRetryProcessFactory.retryProcessor(process)
                 .doProcess(result("Generate Credentials", (p, result) -> generateCredential(p)))
                 .doProcess(result("Add Credentials to StatusList", this::addCredentialsToStatusList))
                 .doProcess(result("Deliver Credentials", this::deliverCredentials))
                 .doProcess(result("Store Credentials", this::storeCredential))
-                .onSuccess((t, response) -> transitionToDelivered(t))
+                .onSuccess((t, credentials) -> {
+                    transitionToDelivered(t);
+                    observable.invokeForEach(l -> l.delivered(process, credentials));
+                })
                 .onFailure((t, throwable) -> transitionToApproved(t))
                 .onFinalFailure(this::transitionToError)
                 .execute();
@@ -108,7 +114,8 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
 
     private StatusResult<Collection<VerifiableCredentialContainer>> generateCredential(IssuanceProcess process) {
         return StatusResult.from(fetchCredentialDefinitions(process))
-                .compose(credentialDefinitions -> generateCredential(process, credentialDefinitions));
+                .compose(credentialDefinitions -> generateCredential(process, credentialDefinitions))
+                .onSuccess(creds -> observable.invokeForEach(l -> l.generated(process, creds)));
     }
 
     private StatusResult<Collection<VerifiableCredentialContainer>> generateCredential(IssuanceProcess process, Collection<CredentialDefinition> credentialDefinitions) {
@@ -181,6 +188,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
 
     private void transitionToError(IssuanceProcess process, Throwable throwable) {
         transitionToError(process, throwable.getMessage());
+        observable.invokeForEach(l -> l.errored(process, throwable));
     }
 
     private void transitionToError(IssuanceProcess process, String message) {
@@ -238,6 +246,11 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
             return this;
         }
 
+        public Builder observable(IssuanceObservable observable) {
+            manager.observable = observable;
+            return this;
+        }
+
         @Override
         public Builder self() {
             return this;
@@ -251,6 +264,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
             Objects.requireNonNull(this.manager.credentialStore, "Credential store");
             Objects.requireNonNull(this.manager.credentialStorageClient, "Credential service client");
             Objects.requireNonNull(this.manager.credentialStatusService, "Credential status service");
+            Objects.requireNonNull(this.manager.observable, "IssuanceObservable");
             return manager;
         }
     }
