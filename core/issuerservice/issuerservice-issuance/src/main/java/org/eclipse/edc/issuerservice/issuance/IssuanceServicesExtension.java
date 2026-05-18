@@ -21,6 +21,8 @@ import org.eclipse.edc.issuerservice.issuance.attestation.AttestationDefinitionS
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationDefinitionValidatorRegistryImpl;
 import org.eclipse.edc.issuerservice.issuance.attestation.AttestationPipelineImpl;
 import org.eclipse.edc.issuerservice.issuance.credentialdefinition.CredentialDefinitionServiceImpl;
+import org.eclipse.edc.issuerservice.issuance.events.IssuanceEventPublisher;
+import org.eclipse.edc.issuerservice.issuance.events.IssuanceObservableImpl;
 import org.eclipse.edc.issuerservice.issuance.generator.CredentialGeneratorRegistryImpl;
 import org.eclipse.edc.issuerservice.issuance.generator.JoseVcdm20CredentialGenerator;
 import org.eclipse.edc.issuerservice.issuance.generator.JwtCredentialGenerator;
@@ -36,6 +38,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipelin
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceObservable;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.mapping.IssuanceClaimsMapper;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
@@ -45,6 +48,7 @@ import org.eclipse.edc.jwt.spi.signer.JwsSignerProvider;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -80,6 +84,9 @@ public class IssuanceServicesExtension implements ServiceExtension {
     @Inject
     private IdentityHubParticipantContextService participantContextService;
 
+    @Inject
+    private EventRouter eventRouter;
+
     private AttestationPipelineImpl attestationPipeline;
 
     private CredentialRuleFactoryRegistry ruleFactoryRegistry;
@@ -89,6 +96,7 @@ public class IssuanceServicesExtension implements ServiceExtension {
     private AttestationDefinitionValidatorRegistry attestationDefinitionValidatorRegistry;
 
     private IssuanceClaimsMapper issuanceClaimsMapper;
+    private IssuanceObservable issuanceObservable;
 
     @Provider
     public CredentialDefinitionService createParticipantService() {
@@ -157,6 +165,16 @@ public class IssuanceServicesExtension implements ServiceExtension {
             attestationDefinitionValidatorRegistry = new AttestationDefinitionValidatorRegistryImpl();
         }
         return attestationDefinitionValidatorRegistry;
+    }
+
+
+    @Provider
+    public IssuanceObservable issuanceObservable() {
+        if (issuanceObservable == null) {
+            issuanceObservable = new IssuanceObservableImpl();
+            issuanceObservable().registerListener(new IssuanceEventPublisher(clock, eventRouter));
+        }
+        return issuanceObservable;
     }
 
     private AttestationPipelineImpl createAttestationPipelineImpl() {

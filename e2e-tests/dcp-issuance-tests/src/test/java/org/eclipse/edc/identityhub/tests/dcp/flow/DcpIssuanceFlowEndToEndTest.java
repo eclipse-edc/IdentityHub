@@ -29,6 +29,11 @@ import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
+import org.eclipse.edc.issuerservice.spi.issuance.events.CredentialDelivered;
+import org.eclipse.edc.issuerservice.spi.issuance.events.CredentialGenerated;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceApproved;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceEvent;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceRequested;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
@@ -38,6 +43,7 @@ import org.eclipse.edc.junit.annotations.EndToEndTest;
 import org.eclipse.edc.junit.annotations.PostgresqlIntegrationTest;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.validator.spi.ValidationResult;
@@ -68,7 +74,9 @@ import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialForm
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.IH_RUNTIME_NAME;
 import static org.eclipse.edc.identityhub.tests.dcp.TestData.ISSUER_RUNTIME_NAME;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.refEq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -107,6 +115,9 @@ public class DcpIssuanceFlowEndToEndTest {
         @ParameterizedTest
         @ArgumentsSource(CredentialFormatProvider.class)
         void issuanceFlow(CredentialFormat format, String credentialType, IssuerService issuer, IdentityHub identityHub) {
+
+            var subscriber = mock(EventSubscriber.class);
+            issuer.registerListener(IssuanceEvent.class, subscriber);
 
             var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);
             var idMapping = new MappingDefinition("participant.id", "credentialSubject.id", true);
@@ -199,6 +210,13 @@ public class DcpIssuanceFlowEndToEndTest {
                                 .header("Content-Type", "application/vc+jwt")
                                 .body(Matchers.notNullValue());
                     });
+
+
+            var inOrder = inOrder(subscriber);
+            inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof IssuanceRequested));
+            inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof IssuanceApproved));
+            inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof CredentialGenerated));
+            inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof CredentialDelivered));
         }
 
         /**

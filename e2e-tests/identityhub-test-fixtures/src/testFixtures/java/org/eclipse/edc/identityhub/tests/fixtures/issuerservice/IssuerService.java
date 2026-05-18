@@ -24,12 +24,15 @@ import org.eclipse.edc.issuerservice.spi.holder.HolderService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceEvent;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeContext;
 import org.eclipse.edc.junit.utils.LazySupplier;
+import org.eclipse.edc.spi.event.EventRouter;
+import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.jetbrains.annotations.NotNull;
 
@@ -142,6 +145,11 @@ public class IssuerService extends AbstractIdentityHub {
                 .iterator().next();
     }
 
+    public void registerListener(Class<IssuanceEvent> issuanceEventClass, EventSubscriber listener) {
+        var eventRouter = getService(EventRouter.class);
+        eventRouter.registerSync(issuanceEventClass, listener);
+    }
+
     private @NotNull String issuanceBasePath(String participantContextId) {
         return "v1alpha/participants/%s".formatted((participantContextId));
     }
@@ -163,6 +171,13 @@ public class IssuerService extends AbstractIdentityHub {
                     .credentialDefinitionService(ctx.getService(CredentialDefinitionService.class))
                     .issuerAdminEndpoint(ctx.getEndpoint(ISSUERADMIN))
                     .issuerApiEndpoint(ctx.getEndpoint(ISSUANCE_API));
+        }
+
+        @Override
+        public IssuerService build() {
+            Objects.requireNonNull(instance.issuerApiEndpoint, "issuerApiEndpoint must be set");
+            Objects.requireNonNull(instance.holderService, "holderService must be set");
+            return super.build();
         }
 
         public Builder issuerApiEndpoint(LazySupplier<URI> issuerApiEndpoint) {
@@ -188,13 +203,6 @@ public class IssuerService extends AbstractIdentityHub {
         public Builder credentialDefinitionService(CredentialDefinitionService service) {
             instance.credentialDefinitionService = service;
             return this;
-        }
-
-        @Override
-        public IssuerService build() {
-            Objects.requireNonNull(instance.issuerApiEndpoint, "issuerApiEndpoint must be set");
-            Objects.requireNonNull(instance.holderService, "holderService must be set");
-            return super.build();
         }
     }
 }
