@@ -69,7 +69,7 @@ public class IssuanceEventPublisher implements IssuanceEventListener {
     @Override
     public void generated(IssuanceProcess process, Collection<VerifiableCredentialContainer> creds) {
         var event = baseBuilder(CredentialGenerated.Builder.newInstance(), process)
-                .credentials(creds)
+                .credentials(creds.stream().map(VerifiableCredentialContainer::credential).toList())
                 .build();
         publishEvent(event);
     }
@@ -77,7 +77,7 @@ public class IssuanceEventPublisher implements IssuanceEventListener {
     @Override
     public void delivered(IssuanceProcess process, Collection<VerifiableCredentialContainer> credentials) {
         var event = baseBuilder(CredentialDelivered.Builder.newInstance(), process)
-                .credentials(credentials)
+                .credentials(credentials.stream().map(VerifiableCredentialContainer::credential).toList())
                 .build();
         publishEvent(event);
     }

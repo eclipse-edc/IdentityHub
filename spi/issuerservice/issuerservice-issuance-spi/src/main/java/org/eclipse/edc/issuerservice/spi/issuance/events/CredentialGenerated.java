@@ -16,14 +16,15 @@ package org.eclipse.edc.issuerservice.spi.issuance.events;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 
 import java.util.Collection;
+import java.util.List;
 
 public class CredentialGenerated extends IssuanceEvent {
-    private Collection<VerifiableCredentialContainer> credentials;
+    private Collection<VerifiableCredential> credentials;
 
-    public Collection<VerifiableCredentialContainer> getCredentials() {
+    public Collection<VerifiableCredential> getCredentials() {
         return credentials;
     }
 
@@ -44,7 +45,7 @@ public class CredentialGenerated extends IssuanceEvent {
             return new Builder();
         }
 
-        public Builder credentials(Collection<VerifiableCredentialContainer> credentials) {
+        public Builder credentials(List<VerifiableCredential> credentials) {
             event.credentials = credentials;
             return self();
         }
