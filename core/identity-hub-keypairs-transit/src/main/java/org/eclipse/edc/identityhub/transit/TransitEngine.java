@@ -21,9 +21,10 @@ public interface TransitEngine {
      * Generates a new key with the given name.
      *
      * @param keyName The name of the key. Should not contain spaces or special characters.
+     * @param keyType The type of key, i.e., the key algorithm and curve etc. Supported types are <a href="https://developer.hashicorp.com/vault/api-docs/secret/transit#type">here</a>
      * @return ServiceResult containing the generated TransitKeyDescriptor or error details.
      */
-    Result<TransitKeyDescriptor> generateKey(String keyName);
+    Result<TransitKeyDescriptor> generateKey(String keyName, String keyType);
 
     /**
      * Rotates the key with the given name by adding a new "version" of the key. Note that previous versions of the key are not deleted,
@@ -72,4 +73,6 @@ public interface TransitEngine {
      * @return ServiceResult indicating success or failure.
      */
     Result<Void> setMinAvailableVersion(String keyName, int minVersion);
+
+    //todo: add methods to sign and verify
 }

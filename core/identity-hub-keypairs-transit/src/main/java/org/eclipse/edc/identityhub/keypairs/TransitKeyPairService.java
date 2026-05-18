@@ -26,6 +26,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParti
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.transit.TransitEngine;
+import org.eclipse.edc.identityhub.transit.TransitKeyDescriptor;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.security.token.jwt.CryptoConverter;
@@ -47,9 +48,10 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.Optional.ofNullable;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantContextState.ACTIVATED;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantContextState.CREATED;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
@@ -72,9 +74,17 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
         this.transitEngine = transitEngine;
     }
 
+    private static @NotNull String generateKeyName(String participantContextId, String keyId) {
+        return "participant_" + participantContextId + "_" + keyId;
+    }
+
     @Override
     @WithSpan(value = "keypairs.add", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> addKeyPair(String participantContextId, KeyDescriptor keyDescriptor, boolean makeDefault) {
+
+        if ((keyDescriptor.getPublicKeyJwk() != null && !keyDescriptor.getPublicKeyJwk().isEmpty()) || keyDescriptor.getPublicKeyPem() != null) {
+            return ServiceResult.badRequest("Importing externally generated keys into the KeyPairService is not supported.");
+        }
 
         return transactionContext.execute(() -> {
 
@@ -85,32 +95,46 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             }
             // generate key using Hashicorp Transit
 
+            var type = ofNullable(keyDescriptor.getKeyGeneratorParams())
+                    .orElse(Map.of())
+                    .getOrDefault("type", "ed25519").toString();
+
+            var keyName = generateKeyName(participantContextId, keyDescriptor.getKeyId());
+            var keyResult = transitEngine.generateKey(keyName, type);
+            if (keyResult.failed()) {
+                return ServiceResult.from(keyResult.mapEmpty());
+            }
+
+            var publicKey = keyResult.getContent().getLatestVersion();
+            if (publicKey.failed()) {
+                return ServiceResult.from(publicKey.mapEmpty());
+            }
+
             var newResource = KeyPairResource.Builder.newInstance()
                     .usage(keyDescriptor.getUsage())
                     .id(keyDescriptor.getResourceId())
                     .keyId(keyDescriptor.getKeyId())
-                    .state(keyDescriptor.isActive() ? KeyPairState.ACTIVATED : KeyPairState.CREATED)
+                    .state(KeyPairState.ACTIVATED)
                     .isDefaultPair(makeDefault)
-                    .privateKeyAlias(keyDescriptor.getPrivateKeyAlias())
-//                    .serializedPublicKey(key.getContent())
+                    .privateKeyAlias(keyName)
+                    .serializedPublicKey(publicKey.getContent().getPublicKey())
                     .timestamp(Instant.now().toEpochMilli())
                     .participantContextId(participantContextId)
                     .keyContext(keyDescriptor.getType())
                     .build();
 
             return ServiceResult.from(keyPairResourceStore.create(newResource))
-                    .onSuccess(v -> observable.invokeForEach(l -> l.added(newResource, keyDescriptor.getType())))
-                    .compose(v -> {
-                        if (keyDescriptor.isActive()) {
-                            return activateKeyPair(newResource);
-                        }
-                        return success();
-                    });
+                    .onSuccess(v -> observable.invokeForEach(l -> l.added(newResource, keyDescriptor.getType())));
         });
     }
 
     @Override
     public ServiceResult<Void> rotateKeyPair(String oldId, @Nullable KeyDescriptor newKeyDesc, long duration) {
+
+        if (newKeyDesc != null) {
+            monitor.warning("Supplying new parameters is not supported when rotating keys using the Transit Engine.");
+        }
+
         return transactionContext.execute(() -> {
             var oldKey = findById(oldId);
             if (oldKey == null) {
@@ -118,46 +142,91 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             }
 
             var participantContextId = oldKey.getParticipantContextId();
-            boolean wasDefault = oldKey.isDefaultPair();
 
             // deactivate the old key
-            var oldAlias = oldKey.getPrivateKeyAlias();
-//            vault.deleteSecret(oldKey.getParticipantContextId(), oldAlias);
             oldKey.rotate(duration);
-            var updateResult = ServiceResult.from(keyPairResourceStore.update(oldKey))
-                    .onSuccess(v -> observable.invokeForEach(l -> l.rotated(oldKey, newKeyDesc)));
 
-            if (newKeyDesc != null) {
-                return updateResult.compose(v -> addKeyPair(participantContextId, newKeyDesc, wasDefault));
+            var res = keyPairResourceStore.update(oldKey);
+            if (res.failed()) {
+                return ServiceResult.from(res);
             }
-            monitor.warning("Rotating keys without a successor key may leave the participant without an active keypair.");
-            return updateResult;
+
+            // have Transit rotate the key, and create a copy of the keypairResource
+
+            var keyName = generateKeyName(participantContextId, oldKey.getKeyId());
+            var rotateResult = transitEngine.rotateKey(keyName)
+                    .compose(u -> transitEngine.getKey(keyName))
+                    .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion()).compose(u -> Result.success(tkd)))
+                    .compose(TransitKeyDescriptor::getLatestVersion)
+                    .map(keyVersion -> KeyPairResource.Builder.newInstance()
+                            .usage(oldKey.getUsage())
+                            .id(oldKey.getId())
+                            .keyId(oldKey.getKeyId())
+                            .state(KeyPairState.ACTIVATED)
+                            .isDefaultPair(true)
+                            .privateKeyAlias(keyName)
+                            .serializedPublicKey(keyVersion.getPublicKey())
+                            .timestamp(Instant.now().toEpochMilli())
+                            .participantContextId(participantContextId)
+                            .keyContext(oldKey.getKeyContext())
+                            .build())
+                    .map(keyPairResourceStore::create)
+                    .onSuccess(v -> observable.invokeForEach(l -> l.rotated(oldKey, newKeyDesc)));
+            return rotateResult.succeeded() ? ServiceResult.success() : ServiceResult.badRequest(rotateResult.getFailureDetail());
         });
     }
 
     @Override
     public ServiceResult<Void> revokeKey(String id, @Nullable KeyDescriptor newKeyDesc) {
         return transactionContext.execute(() -> {
+            if (newKeyDesc != null) {
+                monitor.warning("Supplying new parameters is not supported when rotating keys using the Transit Engine.");
+            }
+
             var oldKey = findById(id);
             if (oldKey == null) {
                 return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(id));
             }
 
             var participantContextId = oldKey.getParticipantContextId();
-            boolean wasDefault = oldKey.isDefaultPair();
 
-            // deactivate the old key
-            var oldAlias = oldKey.getPrivateKeyAlias();
-//            vault.deleteSecret(oldKey.getParticipantContextId(), oldAlias);
+            // mark the old key as "revoked"
             oldKey.revoke();
-            var updateResult = ServiceResult.from(keyPairResourceStore.update(oldKey))
-                    .onSuccess(v -> observable.invokeForEach(l -> l.revoked(oldKey, newKeyDesc)));
-
-            if (newKeyDesc != null) {
-                return updateResult.compose(v -> addKeyPair(participantContextId, newKeyDesc, wasDefault));
+            var res = keyPairResourceStore.update(oldKey);
+            if (res.failed()) {
+                return ServiceResult.from(res);
             }
-            monitor.warning("Revoking keys without a successor key may leave the participant without an active keypair.");
-            return updateResult;
+
+            // there is no "revoke" action in Transit, so we rotate the key and trim to the latest version
+            var keyName = generateKeyName(participantContextId, oldKey.getKeyId());
+            var transitResult = transitEngine.rotateKey(keyName)
+                    .compose(u -> transitEngine.getKey(keyName))
+                    .compose(tkd -> transitEngine.setMinAvailableVersion(keyName, tkd.getData().getLatestVersion())
+                            .compose(u -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion()))
+                            .compose(u -> transitEngine.setMinDecryptionKeyVersion(keyName, tkd.getData().getLatestVersion()))
+                            .compose(u -> Result.success(tkd)))
+                    .compose(TransitKeyDescriptor::getLatestVersion)
+                    .map(latestVersion ->
+                            KeyPairResource.Builder.newInstance()
+                                    .usage(oldKey.getUsage())
+                                    .id(oldKey.getId())
+                                    .keyId(oldKey.getKeyId())
+                                    .state(KeyPairState.ACTIVATED)
+                                    .isDefaultPair(true)
+                                    .privateKeyAlias(keyName)
+                                    .serializedPublicKey(latestVersion.getPublicKey())
+                                    .timestamp(Instant.now().toEpochMilli())
+                                    .participantContextId(participantContextId)
+                                    .keyContext(oldKey.getKeyContext())
+                                    .build());
+
+            // ... and finally create the new keypair resource
+            if (transitResult.succeeded()) {
+                return ServiceResult.from(keyPairResourceStore.create(transitResult.getContent()))
+                        .onSuccess(v -> observable.invokeForEach(l -> l.revoked(oldKey, newKeyDesc)));
+            }
+            return ServiceResult.from(transitResult.mapFailure());
+
         });
     }
 
@@ -292,7 +361,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
 //            vault.storeSecret(participantContextId, keyDescriptor.getPrivateKeyAlias(), privateJwk.toJSONString());
         } else {
             // either take the public key from the JWK structure or the PEM field
-            publicKeySerialized = Optional.ofNullable(keyDescriptor.getPublicKeyJwk())
+            publicKeySerialized = ofNullable(keyDescriptor.getPublicKeyJwk())
                     .map(m -> CryptoConverter.create(m).toJSONString())
                     .orElseGet(() -> keyDescriptor.getPublicKeyPem().replace("\\n", "\n"));
         }

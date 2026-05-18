@@ -61,7 +61,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void generateKey() {
         var keyName = "test-key-" + UUID.randomUUID();
-        var result = transitEngine.generateKey(keyName);
+        var result = transitEngine.generateKey(keyName, "ed25519");
         assertThat(result).isSucceeded().satisfies(desc -> {
             assertThat(desc.getData().getKeys()).hasSize(1);
             assertThat(desc.getData().getLatestVersion()).isEqualTo(1);
@@ -72,7 +72,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void rotateKey() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
         var result = transitEngine.rotateKey(keyName);
         assertThat(result).isSucceeded();
     }
@@ -87,7 +87,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void rotateKey_severalTimes() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
@@ -96,7 +96,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void getKey() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
 
         var result = transitEngine.getKey(keyName);
         assertThat(result).isSucceeded()
@@ -114,14 +114,14 @@ class TransitEngineImplIntegrationTest {
     @Test
     void generateKey_whenAlreadyExists_shouldOverwrite() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
     }
 
     @Test
     void getKey_afterRotation_hasMultipleVersions() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
 
@@ -136,13 +136,13 @@ class TransitEngineImplIntegrationTest {
     void generateKey_whenInvalidToken_shouldFail() {
         var vaultBaseUrl = "http://%s:%d".formatted(VAULT.getHost(), VAULT.getMappedPort(8200));
         var engineWithBadToken = new TransitEngineImpl(() -> "wrong-token", new ObjectMapper(), client, vaultBaseUrl);
-        assertThat(engineWithBadToken.generateKey("test-key-" + UUID.randomUUID())).isFailed();
+        assertThat(engineWithBadToken.generateKey("test-key-" + UUID.randomUUID(), "ed25519")).isFailed();
     }
 
     @Test
     void rotateKey_severalTimes_incrementsLatestVersion() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
 
@@ -154,7 +154,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void setMinEncryptionKeyVersion() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
 
         assertThat(transitEngine.setMinEncryptionKeyVersion(keyName, 2)).isSucceeded();
@@ -168,7 +168,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void setMinEncryptionKeyVersion_whenVersionHigherThanLatest_shouldFail() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
 
         assertThat(transitEngine.setMinEncryptionKeyVersion(keyName, 99)).isFailed();
     }
@@ -182,7 +182,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void setMinDecryptionKeyVersion() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
 
         assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
@@ -196,7 +196,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void setMinDecryptionKeyVersion_whenVersionHigherThanLatest_shouldFail() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
 
         assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 99)).isFailed();
     }
@@ -210,7 +210,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void setMinAvailableVersion_whenMinEncVersionNotSet() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
         // min_available_version must be <= min_decryption_version, so raise that first
@@ -221,7 +221,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void setMinAvailableVersion() {
         var keyName = "test-key-" + UUID.randomUUID();
-        assertThat(transitEngine.generateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
         assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
         // min_available_version must be <= min_decryption_version, so raise that first

@@ -42,8 +42,8 @@ public class TransitEngineImpl implements TransitEngine {
     }
 
     @Override
-    public Result<TransitKeyDescriptor> generateKey(String keyName) {
-        var payload = Map.of("type", "ed25519", "exportable", false);
+    public Result<TransitKeyDescriptor> generateKey(String keyName, String keyType) {
+        var payload = Map.of("type", keyType, "exportable", false);
         var request = vaultRequest()
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName)
                 .post(jsonBody(payload))

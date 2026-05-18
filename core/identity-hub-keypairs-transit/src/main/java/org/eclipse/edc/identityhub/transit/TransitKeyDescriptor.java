@@ -16,7 +16,9 @@ package org.eclipse.edc.identityhub.transit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.eclipse.edc.spi.result.Result;
 
+import java.util.Comparator;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -41,6 +43,27 @@ public class TransitKeyDescriptor {
 
     public String getMountType() {
         return mountType;
+    }
+
+    public Result<KeyVersion> getLatestVersion() {
+        var data = getData();
+        if (data == null) {
+            return Result.failure("no data returned from transit engine");
+        }
+        var keys = data.getKeys();
+        if (keys.isEmpty()) {
+            return Result.failure("no keys returned from transit engine");
+        }
+        var highestVersion = keys.keySet().stream().max(Comparator.comparing(Integer::valueOf)).orElse("1");
+        var publicKey = keys.get(highestVersion);
+        if (publicKey == null) {
+            return Result.failure("no public key with version '%s' returned from transit engine".formatted(highestVersion));
+        }
+        return Result.success(publicKey);
+    }
+
+    private Map.Entry<String, KeyVersion> getHighestVersion() {
+        return getData().getKeys().entrySet().stream().max(Comparator.comparing(Map.Entry::getKey)).orElse(null);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
