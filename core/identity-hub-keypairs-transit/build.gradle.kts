@@ -21,6 +21,7 @@ dependencies {
     api(libs.edc.spi.transaction)
     api(libs.edc.spi.hashicorp.vault)
     api(libs.edc.spi.http)
+    api(libs.edc.spi.jwt)
     implementation(project(":core:lib:keypair-lib"))
     implementation(libs.edc.lib.common.crypto)
     implementation(libs.opentelemetry.api)

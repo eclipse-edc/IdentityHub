@@ -59,6 +59,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
+import static org.eclipse.edc.identityhub.transit.TransitEngine.SUPPORTED_KEY_TYPES;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantContextState.ACTIVATED;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantContextState.CREATED;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
@@ -66,9 +67,6 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     public static final String DEFAULT_KEY_TYPE = "ed25519";
-    private static final List<String> SUPPORTED_KEY_TYPES = List.of(
-            "ed25519", "rsa-2048", "rsa-3072", "rsa-4096", "ecdsa-p256", "ecdsa-p384", "ecdsa-p521"
-    );
     private final KeyPairResourceStore keyPairResourceStore;
     private final Monitor monitor;
     private final KeyPairObservable observable;

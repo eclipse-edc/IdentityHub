@@ -16,7 +16,17 @@ package org.eclipse.edc.identityhub.transit;
 
 import org.eclipse.edc.spi.result.Result;
 
+import java.util.List;
+
 public interface TransitEngine {
+    /**
+     * List of key types supported by the Transit secret engine for creating asymmetric keys.
+     * A complete list can be found <a href="https://developer.hashicorp.com/vault/api-docs/secret/transit#type">here</a>.
+     */
+    List<String> SUPPORTED_KEY_TYPES = List.of(
+            "ed25519", "rsa-2048", "rsa-3072", "rsa-4096", "ecdsa-p256", "ecdsa-p384", "ecdsa-p521"
+    );
+
     /**
      * Generates a new key with the given name. Note that keys are created with the {@code deletion_allowed} flag set to {@code true}.
      *

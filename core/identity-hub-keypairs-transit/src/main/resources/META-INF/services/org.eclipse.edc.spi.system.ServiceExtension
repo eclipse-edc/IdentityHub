@@ -12,3 +12,4 @@
 #
 #
 org.eclipse.edc.identityhub.keypairs.TransitKeyPairServiceExtension
+org.eclipse.edc.identityhub.TransitSecurityExtension

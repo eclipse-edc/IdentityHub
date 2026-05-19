@@ -20,12 +20,14 @@ import okhttp3.OkHttpClient;
 import org.eclipse.edc.http.client.EdcHttpClientImpl;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.junit.annotations.ComponentTest;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.vault.VaultContainer;
 
+import java.io.IOException;
 import java.util.Base64;
 import java.util.UUID;
 
@@ -51,9 +53,13 @@ class TransitEngineImplIntegrationTest {
     private final EdcHttpClient client = new EdcHttpClientImpl(new OkHttpClient.Builder().build(), RetryPolicy.ofDefaults(), mock());
     private TransitEngineImpl transitEngine;
 
+    @BeforeAll
+    static void prepare() throws IOException, InterruptedException {
+        VAULT.execInContainer("vault", "secrets", "enable", "transit");
+    }
+
     @BeforeEach
     void setUp() throws Exception {
-        VAULT.execInContainer("vault", "secrets", "enable", "transit");
         var vaultBaseUrl = "http://%s:%d".formatted(VAULT.getHost(), VAULT.getMappedPort(8200));
         transitEngine = new TransitEngineImpl(() -> VAULT_TOKEN, new ObjectMapper(), client, vaultBaseUrl);
     }
