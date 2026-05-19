@@ -203,9 +203,9 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             var keyName = generateKeyName(participantContextId, oldKey.getKeyId());
             var transitResult = transitEngine.rotateKey(keyName)
                     .compose(u -> transitEngine.getKey(keyName))
-                    .compose(tkd -> transitEngine.setMinAvailableVersion(keyName, tkd.getData().getLatestVersion())
-                            .compose(u -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion()))
+                    .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion())
                             .compose(u -> transitEngine.setMinDecryptionKeyVersion(keyName, tkd.getData().getLatestVersion()))
+                            .compose(u -> transitEngine.setMinAvailableVersion(keyName, tkd.getData().getLatestVersion()))
                             .compose(u -> Result.success(tkd)))
                     .compose(TransitKeyDescriptor::getLatestVersion)
                     .map(latestVersion ->
@@ -332,7 +332,9 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             keyPairResourceStore.query(query)
                     .compose(list -> {
                         var errors = list.stream()
-                                .map(r -> keyPairResourceStore.deleteById(r.getId()))
+                                .map(r -> keyPairResourceStore.deleteById(r.getId())
+                                        .onSuccess(v -> transitEngine.deleteKey(r.getPrivateKeyAlias())
+                                                .onFailure(f -> monitor.warning("Failed to delete key '%s' from Vault Transit engine: %s".formatted(r.getPrivateKeyAlias(), f.getFailureDetail())))))
                                 .filter(StoreResult::failed)
                                 .map(AbstractResult::getFailureDetail)
                                 .collect(Collectors.joining(","));

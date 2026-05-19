@@ -18,16 +18,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
+import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairAdded;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextDeleted;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.transit.TransitEngine;
 import org.eclipse.edc.identityhub.transit.TransitKeyDescriptor;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
+import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -63,6 +66,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -599,6 +603,92 @@ class TransitKeyPairServiceTest {
                     .isFailed()
                     .detail()
                     .isEqualTo("To add a key pair, the ParticipantContext with ID '%s' must be in state ACTIVATED or CREATED but was DEACTIVATED.".formatted(PARTICIPANT_ID));
+        }
+    }
+
+    @Nested
+    class OnEvent {
+
+        @Test
+        void onParticipantContextDeleted_deletesAllKeyPairsAndTransitKeys() {
+            var kp1 = createKeyPairResource().id("kp-1").privateKeyAlias("alias-1").build();
+            var kp2 = createKeyPairResource().id("kp-2").privateKeyAlias("alias-2").build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(kp1, kp2)));
+            when(transitEngine.deleteKey(anyString())).thenReturn(Result.success());
+
+            keyPairService.on(deletedEvent());
+
+            verify(keyPairResourceStore).deleteById("kp-1");
+            verify(keyPairResourceStore).deleteById("kp-2");
+            verify(transitEngine).deleteKey("alias-1");
+            verify(transitEngine).deleteKey("alias-2");
+        }
+
+        @Test
+        void onParticipantContextDeleted_whenStoreQueryFails_doesNothing() {
+            when(keyPairResourceStore.query(any())).thenReturn(StoreResult.generalError("query failed"));
+
+            keyPairService.on(deletedEvent());
+
+            verify(keyPairResourceStore).query(any());
+            verifyNoMoreInteractions(keyPairResourceStore, transitEngine);
+        }
+
+        @Test
+        void onParticipantContextDeleted_whenStoreDeleteFails_logsWarning() {
+            var kp1 = createKeyPairResource().id("kp-1").privateKeyAlias("alias-1").build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(kp1)));
+            when(keyPairResourceStore.deleteById(anyString())).thenReturn(StoreResult.generalError("delete failed"));
+
+            keyPairService.on(deletedEvent());
+
+            verify(keyPairResourceStore).deleteById("kp-1");
+            verifyNoMoreInteractions(transitEngine);
+        }
+
+        @Test
+        void onParticipantContextDeleted_whenTransitDeleteFails_continuesAndLogs() {
+            var kp1 = createKeyPairResource().id("kp-1").privateKeyAlias("alias-1").build();
+            var kp2 = createKeyPairResource().id("kp-2").privateKeyAlias("alias-2").build();
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of(kp1, kp2)));
+            when(transitEngine.deleteKey("alias-1")).thenReturn(Result.failure("vault error"));
+            when(transitEngine.deleteKey("alias-2")).thenReturn(Result.success());
+
+            keyPairService.on(deletedEvent());
+
+            verify(keyPairResourceStore).deleteById("kp-1");
+            verify(keyPairResourceStore).deleteById("kp-2");
+            verify(transitEngine).deleteKey("alias-1");
+            verify(transitEngine).deleteKey("alias-2");
+            verifyNoMoreInteractions(transitEngine);
+        }
+
+        @Test
+        void onParticipantContextDeleted_whenNoKeyPairs_doesNothing() {
+            when(keyPairResourceStore.query(any())).thenReturn(success(List.of()));
+
+            keyPairService.on(deletedEvent());
+
+            verify(keyPairResourceStore).query(any());
+            verifyNoMoreInteractions(keyPairResourceStore, transitEngine);
+        }
+
+        @Test
+        void onOtherEvent_shouldDoNothing() {
+            //noinspection unchecked
+            keyPairService.on(EventEnvelope.Builder.newInstance().at(System.currentTimeMillis()).payload(KeyPairAdded.Builder.newInstance().participantContextId(PARTICIPANT_ID).build()).build());
+            verifyNoInteractions(keyPairResourceStore, transitEngine);
+        }
+
+        @SuppressWarnings("unchecked")
+        private EventEnvelope<ParticipantContextDeleted> deletedEvent() {
+            return EventEnvelope.Builder.newInstance()
+                    .payload(ParticipantContextDeleted.Builder.newInstance()
+                            .participantContextId(TransitKeyPairServiceTest.PARTICIPANT_ID)
+                            .build())
+                    .at(System.currentTimeMillis())
+                    .id(UUID.randomUUID().toString())
+                    .build();
         }
     }
 }
