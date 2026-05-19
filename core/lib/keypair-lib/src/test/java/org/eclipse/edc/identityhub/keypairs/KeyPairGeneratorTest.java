@@ -30,6 +30,7 @@ import java.security.spec.ECGenParameterSpec;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 class KeyPairGeneratorTest {
@@ -42,7 +43,7 @@ class KeyPairGeneratorTest {
                 .isInstanceOf(RSAPrivateKey.class);
 
         var key = (RSAPrivateKey) rsaResult.getContent().getPrivate();
-        Assertions.assertThat(key.getModulus().bitLength()).isEqualTo(2048); //could theoretically be less if key has 8 leading zeros, but we control the key generation.
+        assertThat(key.getModulus().bitLength()).isEqualTo(2048); //could theoretically be less if key has 8 leading zeros, but we control the key generation.
     }
 
     @Test
@@ -53,7 +54,7 @@ class KeyPairGeneratorTest {
                 .isInstanceOf(RSAPrivateKey.class);
 
         var key = (RSAPrivateKey) rsaResult.getContent().getPrivate();
-        Assertions.assertThat(key.getModulus().bitLength()).isEqualTo(4096); //could theoretically be less if key has 8 leading zeros, but we control the key generation.
+        assertThat(key.getModulus().bitLength()).isEqualTo(4096); //could theoretically be less if key has 8 leading zeros, but we control the key generation.
     }
 
     @ParameterizedTest
@@ -73,7 +74,7 @@ class KeyPairGeneratorTest {
         var algorithmParameters = AlgorithmParameters.getInstance("EC");
         algorithmParameters.init(key.getParams());
         var oid = algorithmParameters.getParameterSpec(ECGenParameterSpec.class).getName();
-        Assertions.assertThat(oid).isEqualTo("1.2.840.10045.3.1.7"); // no easy way to get the std name, only the OID
+        assertThat(oid).isEqualTo("secp256r1");
     }
 
     @ParameterizedTest()
@@ -100,7 +101,7 @@ class KeyPairGeneratorTest {
         var edDsaResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EdDSA"));
         assertThat(edDsaResult).isSucceeded()
                 .extracting(KeyPair::getPrivate)
-                .satisfies(k -> Assertions.assertThat(k.getClass().getName()).isEqualTo("sun.security.ec.ed.EdDSAPrivateKeyImpl")); // not available at compile time
+                .satisfies(k -> assertThat(k.getClass().getName()).isEqualTo("sun.security.ec.ed.EdDSAPrivateKeyImpl")); // not available at compile time
     }
 
     @ParameterizedTest
@@ -109,7 +110,7 @@ class KeyPairGeneratorTest {
         var edDsaResult = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "EdDSA", "curve", curve));
         assertThat(edDsaResult).isSucceeded()
                 .extracting(KeyPair::getPrivate)
-                .satisfies(k -> Assertions.assertThat(k.getClass().getName()).startsWith("sun.security.ec.")); // not available at compile time
+                .satisfies(k -> assertThat(k.getClass().getName()).startsWith("sun.security.ec.")); // not available at compile time
     }
 
     @ParameterizedTest
@@ -125,7 +126,7 @@ class KeyPairGeneratorTest {
         var result = KeyPairGenerator.generateKeyPair(Map.of("algorithm", "", "foo", "bar"));
         assertThat(result).isSucceeded()
                 .extracting(KeyPair::getPrivate)
-                .satisfies(k -> Assertions.assertThat(k.getClass().getName()).isEqualTo("sun.security.ec.ed.EdDSAPrivateKeyImpl")); // not available at compile time
+                .satisfies(k -> assertThat(k.getClass().getName()).isEqualTo("sun.security.ec.ed.EdDSAPrivateKeyImpl")); // not available at compile time
     }
 
     @Test
