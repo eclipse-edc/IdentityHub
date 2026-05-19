@@ -1059,6 +1059,80 @@ public class KeyPairResourceApiEndToEndTest {
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
             return authorizeTokenBased(participantContextId, identityHub);
         }
+
+        @ParameterizedTest(name = "with algorithm {0}")
+        @ValueSource(strings = { "ed25519", "rsa-2048", "rsa-3072", "rsa-4096", "ecdsa-p256", "ecdsa-p384", "ecdsa-p521" })
+        void addKeyPair_withSupportedType(String keyType, IdentityHub identityHub, EventRouter router) {
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(KeyPairAdded.class, subscriber);
+
+            var superUserKey = authorizeUser(SUPER_USER, identityHub);
+            var token = authorizeUser(PARTICIPANT_CONTEXT_ID, identityHub);
+
+            assertThat(Arrays.asList(token, superUserKey))
+                    .allSatisfy(authHeader -> {
+                        var keyDesc = identityHub.createKeyDescriptor(PARTICIPANT_CONTEXT_ID)
+                                .keyId(UUID.randomUUID().toString())
+                                .keyGeneratorParams(Map.of("type", keyType))
+                                .build();
+                        identityHub.getIdentityEndpoint().baseRequest()
+                                .contentType(JSON)
+                                .header(authHeader)
+                                .body(keyDesc)
+                                .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
+                                .then()
+                                .log().ifValidationFails()
+                                .statusCode(204)
+                                .body(notNullValue());
+
+                        assertThat(identityHub.getKeyPairsForParticipant(PARTICIPANT_CONTEXT_ID))
+                                .hasSizeGreaterThanOrEqualTo(2)
+                                .anyMatch(kpr -> kpr.getKeyId().equals(keyDesc.getKeyId()));
+                        verify(subscriber).on(argThat(env -> {
+                            var evt = (KeyPairAdded) env.getPayload();
+                            return evt.getParticipantContextId().equals(PARTICIPANT_CONTEXT_ID) &&
+                                    evt.getKeyPairResource().getId().equals(keyDesc.getResourceId()) &&
+                                    evt.getKeyId().equals(keyDesc.getKeyId());
+                        }));
+                    });
+        }
+
+        @ParameterizedTest(name = "with algorithm {0}")
+        @ValueSource(strings = { "aes128-gcm96", "aes256-gcm96", "chacha20-poly1305", "hmac" })
+        void addKeyPair_withUnsupportedType(String keyType, IdentityHub identityHub, EventRouter router) {
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(KeyPairAdded.class, subscriber);
+
+            var superUserKey = authorizeUser(SUPER_USER, identityHub);
+            var token = authorizeUser(PARTICIPANT_CONTEXT_ID, identityHub);
+
+            assertThat(Arrays.asList(token, superUserKey))
+                    .allSatisfy(authHeader -> {
+                        var keyDesc = identityHub.createKeyDescriptor(PARTICIPANT_CONTEXT_ID)
+                                .keyId(UUID.randomUUID().toString())
+                                .keyGeneratorParams(Map.of("type", keyType))
+                                .build();
+                        identityHub.getIdentityEndpoint().baseRequest()
+                                .contentType(JSON)
+                                .header(authHeader)
+                                .body(keyDesc)
+                                .put("/v1alpha/participants/%s/keypairs".formatted(PARTICIPANT_CONTEXT_ID))
+                                .then()
+                                .log().ifValidationFails()
+                                .statusCode(400)
+                                .body(notNullValue());
+
+                        assertThat(identityHub.getKeyPairsForParticipant(PARTICIPANT_CONTEXT_ID))
+                                .hasSize(1)
+                                .noneMatch(kpr -> kpr.getKeyId().equals(keyDesc.getKeyId()));
+                        verify(subscriber, never()).on(argThat(env -> {
+                            var evt = (KeyPairAdded) env.getPayload();
+                            return evt.getParticipantContextId().equals(PARTICIPANT_CONTEXT_ID) &&
+                                    evt.getKeyPairResource().getId().equals(keyDesc.getResourceId()) &&
+                                    evt.getKeyId().equals(keyDesc.getKeyId());
+                        }));
+                    });
+        }
     }
 
     @Nested

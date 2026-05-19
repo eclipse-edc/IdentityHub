@@ -66,7 +66,7 @@ public class TransitKeyDescriptor {
 
     @JsonIgnore
     private Map.Entry<String, KeyVersion> getHighestVersion() {
-        return getData().getKeys().entrySet().stream().max(Comparator.comparing(Map.Entry::getKey)).orElse(null);
+        return getData().getKeys().entrySet().stream().max(Map.Entry.comparingByKey()).orElse(null);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

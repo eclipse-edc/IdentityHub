@@ -21,8 +21,6 @@ import com.nimbusds.jose.jwk.OctetKeyPair;
 import com.nimbusds.jose.util.Base64URL;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
@@ -36,7 +34,7 @@ import org.eclipse.edc.identityhub.transit.TransitEngine;
 import org.eclipse.edc.identityhub.transit.TransitKeyDescriptor;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
-import org.eclipse.edc.security.token.jwt.CryptoConverter;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
 import org.eclipse.edc.spi.event.EventSubscriber;
@@ -51,12 +49,6 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
@@ -74,6 +66,9 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     public static final String DEFAULT_KEY_TYPE = "ed25519";
+    private static final List<String> SUPPORTED_KEY_TYPES = List.of(
+            "ed25519", "rsa-2048", "rsa-3072", "rsa-4096", "ecdsa-p256", "ecdsa-p384", "ecdsa-p521"
+    );
     private final KeyPairResourceStore keyPairResourceStore;
     private final Monitor monitor;
     private final KeyPairObservable observable;
@@ -114,6 +109,10 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             var type = ofNullable(keyDescriptor.getKeyGeneratorParams())
                     .orElse(Map.of())
                     .getOrDefault("type", DEFAULT_KEY_TYPE).toString();
+
+            if (!SUPPORTED_KEY_TYPES.contains(type)) {
+                return ServiceResult.badRequest("Unsupported key type '%s'. Only the following types are supported: %s".formatted(type, SUPPORTED_KEY_TYPES));
+            }
 
             var keyName = generateKeyName(participantContextId, keyDescriptor.getKeyId());
             var keyResult = transitEngine.generateKey(keyName, type);
@@ -330,30 +329,13 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             }
         }
 
+        // if not PEM Encoded, it's an ED25519 key
         var rawBytes = Base64.getDecoder().decode(publicKey);
         try {
-            // Try to interpret the bytes as DER-encoded SubjectPublicKeyInfo (ECDSA, RSA, or SPKI-wrapped Ed25519)
-            var spki = SubjectPublicKeyInfo.getInstance(ASN1Primitive.fromByteArray(rawBytes));
-            var jcaName = switch (spki.getAlgorithm().getAlgorithm().getId()) {
-                case "1.3.101.112" -> "Ed25519";   // id-EdDSA / Ed25519
-                case "1.2.840.10045.2.1" -> "EC";  // id-ecPublicKey
-                case "1.2.840.113549.1.1.1" -> "RSA"; // rsaEncryption
-                default ->
-                        throw new RuntimeException("Unsupported key OID from Vault Transit: " + spki.getAlgorithm().getAlgorithm().getId());
-            };
-            var javaKey = KeyFactory.getInstance(jcaName).generatePublic(new X509EncodedKeySpec(spki.getEncoded()));
-            return CryptoConverter.createJwk(new KeyPair(javaKey, null)).toJSONString();
-        } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException |
-                 IllegalArgumentException | IllegalStateException e) {
-            // Vault returns raw 32-byte Ed25519 keys (not SPKI-wrapped) — convert directly to OKP JWK.
-            // IllegalArgumentException/IllegalStateException can occur when raw bytes accidentally parse
-            // as some ASN.1 primitive but are not a valid SubjectPublicKeyInfo.
-            if (rawBytes.length == 32) {
-                return new OctetKeyPair.Builder(Curve.Ed25519, Base64URL.encode(rawBytes)).build().toJSONString();
-            }
-            throw new RuntimeException("Failed to parse public key '%s' from Vault Transit".formatted(publicKey), e);
+            return new OctetKeyPair.Builder(Curve.Ed25519, Base64URL.encode(rawBytes)).build().toJSONString();
+        } catch (Exception e) {
+            throw new EdcException("Unsupported key format from Vault Transit: %s".formatted(publicKey), e);
         }
-
     }
 
     /**
