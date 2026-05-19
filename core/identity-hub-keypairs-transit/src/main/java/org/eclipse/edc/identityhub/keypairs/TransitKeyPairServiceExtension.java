@@ -62,8 +62,8 @@ public class TransitKeyPairServiceExtension implements ServiceExtension {
         return NAME;
     }
 
-    @Provider(isDefault = true)
-    public KeyPairService createParticipantService(ServiceExtensionContext context) {
+    @Provider
+    public KeyPairService createKeyPairService(ServiceExtensionContext context) {
         var transitEngine = new TransitEngineImpl(tokenProvider, new ObjectMapper(), edcHttpClient, vaultUrl);
         var service = new TransitKeyPairService(keyPairResourceStore, context.getMonitor().withPrefix("KeyPairService"), keyPairObservable, transactionContext, participantContextService, transitEngine);
         eventRouter.registerSync(ParticipantContextDeleted.class, service);

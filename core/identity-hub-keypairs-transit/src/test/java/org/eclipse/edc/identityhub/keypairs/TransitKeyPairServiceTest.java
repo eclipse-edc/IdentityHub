@@ -91,6 +91,10 @@ class TransitKeyPairServiceTest {
     }
 
     private TransitKeyDescriptor transitKeyDescriptor() {
+        return transitKeyDescriptorWith("buwAsKUFAcRYbw5jXaR7Ay2NFidpJiTv3r9thttvgVc=");
+    }
+
+    private TransitKeyDescriptor transitKeyDescriptorWith(String publicKey) {
         try {
             return new ObjectMapper().readValue("""
                     {
@@ -102,7 +106,7 @@ class TransitKeyPairServiceTest {
                             "keys": {
                                 "1": {
                                     "name": "ed25519",
-                                    "public_key": "buwAsKUFAcRYbw5jXaR7Ay2NFidpJiTv3r9thttvgVc=",
+                                    "public_key": "%s",
                                     "creation_time": "2026-05-18T10:00:00Z"
                                 }
                             },
@@ -118,7 +122,7 @@ class TransitKeyPairServiceTest {
                             "supports_derivation": true
                         }
                     }
-                    """, TransitKeyDescriptor.class);
+                    """.formatted(publicKey), TransitKeyDescriptor.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -580,6 +584,21 @@ class TransitKeyPairServiceTest {
             verify(transitEngine).generateKey(anyString(), eq(keyType));
             verify(observableMock, times(1)).invokeForEach(any());
             verifyNoMoreInteractions(keyPairResourceStore, vault, observableMock);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = { "lR5RKw+t/Y9Cv8qa05LPzxfD+gOtQ++ztOGLF8QC220=", "buwAsKUFAcRYbw5jXaR7Ay2NFidpJiTv3r9thttvgVc=" })
+        void addKeyPair_differentKeyLengths_shouldSucceed(String publicKey) {
+            // "lR5RKw+..." decodes to 32 bytes whose first two bytes look like a valid ASN.1 tag+length,
+            // causing SubjectPublicKeyInfo.getInstance() to throw an exception. We still need to handle this properly
+            when(keyPairResourceStore.create(any())).thenReturn(success());
+            when(transitEngine.generateKey(any(), any())).thenReturn(Result.success(transitKeyDescriptorWith(publicKey)));
+
+            var key = createKey().publicKeyJwk(null).publicKeyPem(null).build();
+
+            assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, key, true)).isSucceeded();
+
+            verify(keyPairResourceStore).create(argThat(kpr -> kpr.getSerializedPublicKey().contains("OKP")));
         }
 
         @Test

@@ -65,6 +65,7 @@ edc-testfixtures-managementapi = { module = "org.eclipse.edc:management-api-test
 edc-api-version = { module = "org.eclipse.edc:version-api", version.ref = "edc" }
 edc-oauth2-client = { module = "org.eclipse.edc:oauth2-client", version.ref = "edc" }
 edc-encryption-aes = { module = "org.eclipse.edc:aes-encryption", version.ref = "edc" }
+edc-vault-hashicorp = { module = "org.eclipse.edc:vault-hashicorp", version.ref = "edc" }
 
 # EDC libs
 edc-lib-boot = { module = "org.eclipse.edc:boot-lib", version.ref = "edc" }

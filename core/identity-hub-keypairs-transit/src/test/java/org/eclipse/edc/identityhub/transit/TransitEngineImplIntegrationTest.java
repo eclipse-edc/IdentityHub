@@ -46,7 +46,6 @@ class TransitEngineImplIntegrationTest {
             .withEnv("SKIP_SETCAP", "true")
             .withEnv("VAULT_DEV_ROOT_TOKEN_ID", VAULT_TOKEN)
             .withExposedPorts(8200);
-//            .waitingFor(Wait.forLogMessage("WARNING! dev mode is enabled!", 10));
 
 
     private final EdcHttpClient client = new EdcHttpClientImpl(new OkHttpClient.Builder().build(), RetryPolicy.ofDefaults(), mock());

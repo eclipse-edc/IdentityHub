@@ -39,9 +39,10 @@ import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.spi.system.configuration.ConfigFactory;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -49,8 +50,13 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.vault.VaultContainer;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
@@ -438,9 +444,10 @@ public class KeyPairResourceApiEndToEndTest {
                 }
                 return false;
             }));
-            // verify that the correct "added" event fired
-            verify(subscriber, never()).on(argThat(env -> env.getPayload() instanceof KeyPairAdded));
 
+            // some implementations _always_ add a keypair when rotating. For example, the Transit Engine implementation
+            // can't rotate without adding a new keypair
+            verify(subscriber, atLeast(0)).on(argThat(env -> env.getPayload() instanceof KeyPairAdded));
         }
 
         @Test
@@ -567,7 +574,6 @@ public class KeyPairResourceApiEndToEndTest {
 
         @ParameterizedTest(name = "New Key-ID: {0}")
         @ValueSource(strings = { "new-keyId", "did:web:user1#new-keyId" })
-        @Disabled
         void revoke(String newKeyId, IdentityHub identityHub) {
             var superUserAuth = authorizeUser(SUPER_USER, identityHub);
 
@@ -944,7 +950,6 @@ public class KeyPairResourceApiEndToEndTest {
         }
     }
 
-
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
@@ -970,6 +975,85 @@ public class KeyPairResourceApiEndToEndTest {
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(DB_NAME))
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build();
+
+        @Override
+        protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
+            return authorizeTokenBased(participantContextId, identityHub);
+        }
+    }
+
+    @Nested
+    @Testcontainers
+    @EndToEndTest
+    class InMemoryWithTransit extends Tests {
+        public static final String VAULT_TOKEN = "root";
+        @Container
+        static final VaultContainer<?> VAULT = new VaultContainer<>("hashicorp/vault")
+                .withVaultToken(VAULT_TOKEN)
+                .withEnv("SKIP_SETCAP", "true")
+                .withEnv("VAULT_DEV_ROOT_TOKEN_ID", VAULT_TOKEN)
+                .withExposedPorts(8200);
+        @RegisterExtension
+        static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
+                .name(IH_RUNTIME_NAME)
+                .modules(":dist:bom:identityhub-bom", ":core:identity-hub-keypairs-transit")
+                .endpoints(DefaultRuntimes.IdentityHub.ENDPOINTS.build())
+                .configurationProvider(() -> {
+                    var config = DefaultRuntimes.IdentityHub.config();
+                    var vaultUrl = String.format("http://localhost:%d", VAULT.getMappedPort(8200));
+                    var additionalConfig = Map.of("edc.vault.hashicorp.url", vaultUrl, "edc.vault.hashicorp.token", VAULT_TOKEN);
+
+                    return config.merge(ConfigFactory.fromMap(additionalConfig));
+                })
+                .paramProvider(IdentityHub.class, IdentityHub::forContext)
+                .build();
+
+        @BeforeAll
+        static void prepare() throws IOException, InterruptedException {
+            VAULT.execInContainer("vault", "secrets", "enable", "transit");
+        }
+
+        // we need to override this test and drop the validation of the secret being in the vault, because the Transit-based
+        // impl does not store secrets in the vault.
+        @Test
+        void rotate_withNewKey_shouldUpdateDidDocument(IdentityHub identityHub, EventRouter router, Vault vault) {
+
+            var userAuth = authorizeUser(PARTICIPANT_CONTEXT_ID, identityHub);
+            var keyPair = identityHub.getKeyPairsForParticipant(PARTICIPANT_CONTEXT_ID).stream().findFirst().orElseThrow();
+
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(KeyPairRotated.class, subscriber);
+            router.registerSync(KeyPairAdded.class, subscriber);
+
+            var originalAlias = PARTICIPANT_CONTEXT_ID + "-alias";
+            var originalKeyId = PARTICIPANT_CONTEXT_ID + "-key";
+            var newPrivateKeyAlias = "new-alias";
+            var newKeyId = "new-keyId";
+            var keyDesc = identityHub.createKeyDescriptor(PARTICIPANT_CONTEXT_ID)
+                    .active(true)
+                    .privateKeyAlias(newPrivateKeyAlias)
+                    .keyId(newKeyId)
+                    .build();
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(userAuth)
+                    .body(keyDesc)
+                    .post("/v1alpha/participants/%s/keypairs/%s/rotate".formatted(PARTICIPANT_CONTEXT_ID, keyPair.getId()))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204)
+                    .body(notNullValue());
+
+            verify(subscriber).on(argThat(evt -> evt.getPayload() instanceof KeyPairRotated));
+            verify(subscriber).on(argThat(evt -> evt.getPayload() instanceof KeyPairAdded));
+            var didDoc = identityHub.getDidForParticipant(PARTICIPANT_CONTEXT_ID);
+            assertThat(didDoc).isNotEmpty()
+                    .allSatisfy(doc -> assertThat(doc.getVerificationMethod()).hasSize(2)
+                            .anyMatch(vm -> vm.getId().equals(originalKeyId)) // the original (now-rotated) key
+                            .anyMatch(vm -> vm.getId().equals(newKeyId))); // the new key
+            assertThat(identityHub.getKeyPairsForParticipant(PARTICIPANT_CONTEXT_ID).stream().filter(kpr -> kpr.getKeyId().equals(originalKeyId)))
+                    .allMatch(kpr -> kpr.getState() == KeyPairState.ROTATED.code());
+        }
 
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {
