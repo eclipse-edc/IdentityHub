@@ -367,4 +367,18 @@ class TransitEngineImplIntegrationTest {
 
         assertThat(transitEngine.verify(keyName, payload, signature)).isFailed().detail().contains("ciphertext or signature version is disallowed by policy (too old)");
     }
+
+    @Test
+    void deleteKey() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+
+        assertThat(transitEngine.deleteKey(keyName)).isSucceeded();
+        assertThat(transitEngine.getKey(keyName)).isFailed().detail().contains("404");
+    }
+
+    @Test
+    void deleteKey_whenKeyNotExist_shouldFail() {
+        assertThat(transitEngine.deleteKey("not-exist")).isFailed();
+    }
 }

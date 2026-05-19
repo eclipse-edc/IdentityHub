@@ -18,7 +18,7 @@ import org.eclipse.edc.spi.result.Result;
 
 public interface TransitEngine {
     /**
-     * Generates a new key with the given name.
+     * Generates a new key with the given name. Note that keys are created with the {@code deletion_allowed} flag set to {@code true}.
      *
      * @param keyName The name of the key. Should not contain spaces or special characters.
      * @param keyType The type of key, i.e., the key algorithm and curve etc. Supported types are <a href="https://developer.hashicorp.com/vault/api-docs/secret/transit#type">here</a>
@@ -92,4 +92,12 @@ public interface TransitEngine {
      * @return ServiceResult indicating success or failure.
      */
     Result<Void> verify(String keyName, String payload, String signature);
+
+    /**
+     * Deletes the key with the given name.
+     *
+     * @param keyName the name of the key to delete
+     * @return ServiceResult indicating success or failure.
+     */
+    Result<Void> deleteKey(String keyName);
 }

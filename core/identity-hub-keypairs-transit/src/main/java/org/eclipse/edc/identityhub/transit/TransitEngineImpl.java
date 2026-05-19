@@ -47,9 +47,12 @@ public class TransitEngineImpl implements TransitEngine {
     public Result<TransitKeyDescriptor> generateKey(String keyName, String keyType) {
         var request = vaultRequest()
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName)
-                .post(jsonBody(Map.of("type", keyType, "exportable", false)))
+                .post(jsonBody(Map.of("type", keyType,
+                        "exportable", false)))
                 .build();
-        return execute(request, TransitKeyDescriptor.class);
+        // by default, keys are not deletable, so it needs to be configured explicitly
+        return execute(request, TransitKeyDescriptor.class)
+                .compose(tkd -> postKeyConfig(keyName, TransitKeyConfig.Builder.newInstance().deletionAllowed(true).build()).map(u -> tkd));
     }
 
     @Override
@@ -112,6 +115,15 @@ public class TransitEngineImpl implements TransitEngine {
                 .build();
         return execute(request, VerifyResult.class)
                 .compose(r -> r.isValid() ? Result.success() : Result.failure("Signature is invalid"));
+    }
+
+    @Override
+    public Result<Void> deleteKey(String keyName) {
+        var request = vaultRequest()
+                .url(vaultBaseUrl + "/v1/transit/keys/" + keyName)
+                .delete()
+                .build();
+        return execute(request);
     }
 
     private Result<Void> postKeyConfig(String keyName, TransitKeyConfig config) {

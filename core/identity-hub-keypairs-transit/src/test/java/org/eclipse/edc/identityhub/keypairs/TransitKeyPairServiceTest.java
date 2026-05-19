@@ -378,6 +378,8 @@ class TransitKeyPairServiceTest {
             when(keyPairResourceStore.query(any())).thenReturn(success(List.of(oldKey)));
             when(transitEngine.rotateKey(anyString())).thenReturn(Result.success());
             when(transitEngine.getKey(anyString())).thenReturn(Result.success(transitKeyDescriptor()));
+            when(transitEngine.setMinEncryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
+            when(transitEngine.setMinDecryptionKeyVersion(anyString(), anyInt())).thenReturn(Result.success());
             when(transitEngine.setMinAvailableVersion(anyString(), anyInt())).thenReturn(Result.failure("setMinAvailable failed"));
 
             assertThat(keyPairService.revokeKey(oldKey.getId(), null)).isFailed();
