@@ -57,6 +57,7 @@ import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.q
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 public class TransitKeyPairService implements KeyPairService, EventSubscriber {
+    public static final String DEFAULT_KEY_TYPE = "ed25519";
     private final KeyPairResourceStore keyPairResourceStore;
     private final Monitor monitor;
     private final KeyPairObservable observable;
@@ -92,11 +93,11 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             if (result.failed()) {
                 return result.mapEmpty();
             }
-            // generate key using Hashicorp Transit
 
+            // generate key using Hashicorp Transit
             var type = ofNullable(keyDescriptor.getKeyGeneratorParams())
                     .orElse(Map.of())
-                    .getOrDefault("type", "ed25519").toString();
+                    .getOrDefault("type", DEFAULT_KEY_TYPE).toString();
 
             var keyName = generateKeyName(participantContextId, keyDescriptor.getKeyId());
             var keyResult = transitEngine.generateKey(keyName, type);
@@ -128,10 +129,11 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     }
 
     @Override
+    @WithSpan(value = "keypairs.rotate", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> rotateKeyPair(String oldId, @Nullable KeyDescriptor newKeyDesc, long duration) {
-
         if (newKeyDesc != null) {
-            monitor.warning("Supplying new parameters is not supported when rotating keys using the Transit Engine.");
+            monitor.warning("Supplying new key parameters is not supported when rotating keys managed the Transit Engine. " +
+                    "Parameters will be ignored.");
         }
 
         return transactionContext.execute(() -> {
@@ -176,6 +178,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     }
 
     @Override
+    @WithSpan(value = "keypairs.revoke", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> revokeKey(String id, @Nullable KeyDescriptor newKeyDesc) {
         return transactionContext.execute(() -> {
             if (newKeyDesc != null) {
@@ -236,12 +239,13 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
 
     @Override
     public ServiceResult<Void> activate(String keyPairResourceId) {
+        monitor.warning("This implementation uses the Vault Transit Engine, which does not support activation." +
+                "Performing this action will have no effect on the key material, only on the resource stored in the database.");
         return transactionContext.execute(() -> {
             var existingKeyPair = findById(keyPairResourceId);
             if (existingKeyPair == null) {
                 return ServiceResult.notFound("A KeyPairResource with ID '%s' does not exist.".formatted(keyPairResourceId));
             }
-
             return activateKeyPair(existingKeyPair);
         });
     }
