@@ -26,6 +26,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.vault.hashicorp.spi.auth.HashicorpVaultTokenProvider;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Map;
 
 public class TransitEngineImpl implements TransitEngine {
@@ -89,6 +90,28 @@ public class TransitEngineImpl implements TransitEngine {
                 .post(jsonBody(Map.of("min_available_version", minVersion)))
                 .build();
         return execute(request);
+    }
+
+    @Override
+    public Result<String> sign(String keyName, String payload) {
+        var encoded = Base64.getEncoder().encodeToString(payload.getBytes());
+        var request = vaultRequest()
+                .url(vaultBaseUrl + "/v1/transit/sign/" + keyName)
+                .post(jsonBody(Map.of("input", encoded)))
+                .build();
+        var result = execute(request, SignResult.class);
+        return result.map(SignResult::getSignature);
+    }
+
+    @Override
+    public Result<Void> verify(String keyName, String payload, String signature) {
+        var encoded = Base64.getEncoder().encodeToString(payload.getBytes());
+        var request = vaultRequest()
+                .url(vaultBaseUrl + "/v1/transit/verify/" + keyName)
+                .post(jsonBody(Map.of("input", encoded, "signature", signature)))
+                .build();
+        return execute(request, VerifyResult.class)
+                .compose(r -> r.isValid() ? Result.success() : Result.failure("Signature is invalid"));
     }
 
     private Result<Void> postKeyConfig(String keyName, TransitKeyConfig config) {

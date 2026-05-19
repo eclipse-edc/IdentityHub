@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.transit;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.eclipse.edc.spi.result.Result;
@@ -45,6 +46,7 @@ public class TransitKeyDescriptor {
         return mountType;
     }
 
+    @JsonIgnore
     public Result<KeyVersion> getLatestVersion() {
         var data = getData();
         if (data == null) {
@@ -62,6 +64,7 @@ public class TransitKeyDescriptor {
         return Result.success(publicKey);
     }
 
+    @JsonIgnore
     private Map.Entry<String, KeyVersion> getHighestVersion() {
         return getData().getKeys().entrySet().stream().max(Comparator.comparing(Map.Entry::getKey)).orElse(null);
     }

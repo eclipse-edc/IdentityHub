@@ -74,5 +74,22 @@ public interface TransitEngine {
      */
     Result<Void> setMinAvailableVersion(String keyName, int minVersion);
 
-    //todo: add methods to sign and verify
+    /**
+     * Signs the given payload using the specified key.
+     *
+     * @param keyName The name of the key to use for signing.
+     * @param payload The payload to be signed. The implementation will base64-encode the payload before sending it to Vault.
+     * @return ServiceResult indicating success or failure, carrying the signature in the result.
+     */
+    Result<String> sign(String keyName, String payload);
+
+    /**
+     * Verifies the given signature against the given payload using the specified key.
+     *
+     * @param keyName   The name of the key to use for verification.
+     * @param payload   The payload to be verified. The implementation will base64-encode the payload before sending it to Vault.
+     * @param signature The signature to be verified.
+     * @return ServiceResult indicating success or failure.
+     */
+    Result<Void> verify(String keyName, String payload, String signature);
 }

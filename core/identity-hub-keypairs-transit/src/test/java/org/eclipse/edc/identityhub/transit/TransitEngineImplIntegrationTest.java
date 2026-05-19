@@ -26,6 +26,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.vault.VaultContainer;
 
+import java.util.Base64;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -241,4 +242,129 @@ class TransitEngineImplIntegrationTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void sign() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+
+        var payload = """
+                {
+                    "testkey": "test-value",
+                    "testkey2": 42
+                }
+                """;
+        var result = transitEngine.sign(keyName, payload);
+        assertThat(result).isSucceeded().satisfies(sig -> {
+            assertThat(sig).isNotBlank().startsWith("vault:v1:");
+        });
+    }
+
+    @Test
+    void sign_whenPayloadB64_shouldDoubleEncode() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+
+        var payload = """
+                {
+                    "testkey": "test-value",
+                    "testkey2": 42
+                }
+                """;
+        var encoded = Base64.getEncoder().encodeToString(payload.getBytes());
+        var result = transitEngine.sign(keyName, encoded);
+        assertThat(result).isSucceeded().satisfies(sig -> {
+            assertThat(sig).isNotBlank().startsWith("vault:v1:");
+        });
+    }
+
+    @Test
+    void sign_afterRotation_usesLatestKeyVersion() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+
+        var payload = Base64.getEncoder().encodeToString("test-payload".getBytes());
+        var result = transitEngine.sign(keyName, payload);
+        assertThat(result).isSucceeded().satisfies(sig -> {
+            assertThat(sig).isNotBlank().startsWith("vault:v2:");
+        });
+    }
+
+    @Test
+    void sign_whenKeyNotExist_shouldFail() {
+        var payload = Base64.getEncoder().encodeToString("test-payload".getBytes());
+        assertThat(transitEngine.sign("not-exist", payload)).isFailed();
+    }
+
+    @Test
+    void verify() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+
+        var payload = "test-payload";
+        var signature = transitEngine.sign(keyName, payload).getContent();
+        assertThat(transitEngine.verify(keyName, payload, signature)).isSucceeded();
+    }
+
+    @Test
+    void verify_afterRotation_oldSignatureStillValid() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+
+        var payload = "test-payload";
+        var signature = transitEngine.sign(keyName, payload).getContent();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+
+        assertThat(transitEngine.verify(keyName, payload, signature)).isSucceeded();
+    }
+
+    @Test
+    void verify_whenSignatureInvalid_shouldFail() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+
+        assertThat(transitEngine.verify(keyName, "test-payload", "vault:v1:invalidsignature")).isFailed();
+    }
+
+    @Test
+    void verify_whenKeyNotExist_shouldFail() {
+        assertThat(transitEngine.verify("not-exist", "test-payload", "vault:v1:invalidsignature")).isFailed();
+    }
+
+    @Test
+    void verify_whenPayloadTampered_shouldFail() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+
+        var signature = transitEngine.sign(keyName, "original-payload").getContent();
+        assertThat(transitEngine.verify(keyName, "tampered-payload", signature)).isFailed();
+    }
+
+    @Test
+    void signAndVerify_failsOnOldSignature() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+
+        var payload = "test-payload";
+        var signature = transitEngine.sign(keyName, payload).getContent();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded(); // latest version is now 2
+        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
+
+        assertThat(transitEngine.verify(keyName, payload, signature)).isFailed().detail().contains("ciphertext or signature version is disallowed by policy (too old)");
+    }
+
+    @Test
+    void signAndVerify_failsOnOldKey() {
+        var keyName = "test-key-" + UUID.randomUUID();
+        assertThat(transitEngine.generateKey(keyName, "ed25519")).isSucceeded();
+
+        var payload = "test-payload";
+        var signature = transitEngine.sign(keyName, payload).getContent();
+        assertThat(transitEngine.rotateKey(keyName)).isSucceeded();
+        assertThat(transitEngine.setMinEncryptionKeyVersion(keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinDecryptionKeyVersion(keyName, 2)).isSucceeded();
+        assertThat(transitEngine.setMinAvailableVersion(keyName, 2)).isSucceeded();
+
+        assertThat(transitEngine.verify(keyName, payload, signature)).isFailed().detail().contains("ciphertext or signature version is disallowed by policy (too old)");
+    }
 }
