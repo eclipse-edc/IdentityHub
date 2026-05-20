@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -111,9 +112,8 @@ class CredentialQueryResolverImplTest {
                 .thenReturn(success(List.of(credential)));
 
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery("org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"), List.of());
-        assertThat(res).isFailed();
-        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
-        verify(monitor).warning("Permission was not granted on any credentials (empty access token scope list), but 1 were requested.");
+        assertThat(res).isSucceeded();
+        assertThat(res.getContent()).isEmpty();
     }
 
     @Test
@@ -210,20 +210,27 @@ class CredentialQueryResolverImplTest {
 
     @Test
     void query_requestsTooManyCredentials_shouldReturnFailure() {
-        var credential1 = createCredentialResource("TestCredential");
-        var credential2 = createCredentialResource("AnotherCredential");
-        when(storeMock.query(any()))
-                .thenReturn(success(List.of(credential1)))
-                .thenReturn(success(List.of(credential2)))
+        var credential1 = createCredentialResource("TestCredential_1");
+        var credential2 = createCredentialResource("TestCredential_2");
+        var credential3 = createCredentialResource("TestCredential_3");
+        when(storeMock.query(argThat(q -> q != null && q.getFilterExpression().stream().anyMatch(c -> c.getOperandRight().toString().contains("TestCredential_1")))))
                 .thenReturn(success(List.of(credential1)));
 
-        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
-                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read",
-                        "org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
+        when(storeMock.query(argThat(q -> q != null && q.getFilterExpression().stream().anyMatch(c -> c.getOperandRight().toString().contains("TestCredential_2")))))
+                .thenReturn(success(List.of(credential2)));
 
-        assertThat(res).isFailed();
-        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
-        assertThat(res.getFailureDetail()).isEqualTo("Invalid query: requested Credentials outside of scope.");
+        when(storeMock.query(argThat(q -> q != null && q.getFilterExpression().stream().anyMatch(c -> c.getOperandRight().toString().contains("TestCredential_3")))))
+                .thenReturn(success(List.of(credential3)));
+
+
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential_1:read", "org.eclipse.dspace.dcp.vc.type:TestCredential_2:read", "org.eclipse.dspace.dcp.vc.type:TestCredential_3:read"),
+                List.of("org.eclipse.dspace.dcp.vc.type:TestCredential_1:read", "org.eclipse.dspace.dcp.vc.type:TestCredential_2:read"));
+
+        assertThat(res).isSucceeded();
+        var credentials = res.getContent().toList();
+        assertThat(credentials).hasSize(2)
+                .containsExactlyInAnyOrder(credential1.getVerifiableCredential(), credential2.getVerifiableCredential());
     }
 
     @Test
@@ -260,9 +267,7 @@ class CredentialQueryResolverImplTest {
         var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
                 createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"), List.of("org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"));
 
-        assertThat(res.failed()).isTrue();
-        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
-        assertThat(res.getFailureDetail()).isEqualTo("Invalid query: requested Credentials outside of scope.");
+        assertThat(res).isSucceeded().satisfies(creds -> assertThat(creds).isEmpty());
     }
 
     @Test
@@ -281,9 +286,8 @@ class CredentialQueryResolverImplTest {
                 createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read", "org.eclipse.dspace.dcp.vc.type:AnotherCredential:read"),
                 List.of("org.eclipse.dspace.dcp.vc.type:FooCredential:read", "org.eclipse.dspace.dcp.vc.type:BarCredential:read"));
 
-        assertThat(res).isFailed();
-        assertThat(res.reason()).isEqualTo(QueryFailure.Reason.UNAUTHORIZED_SCOPE);
-        assertThat(res.getFailureDetail()).isEqualTo("Invalid query: requested Credentials outside of scope.");
+        assertThat(res).isSucceeded()
+                .satisfies(creds -> assertThat(creds).isEmpty());
     }
 
     @Test
@@ -348,6 +352,10 @@ class CredentialQueryResolverImplTest {
         assertThat(res).isSucceeded();
         assertThat(res.getContent()).isEmpty();
         verify(monitor).warning(eq("Credential '%s' not valid: revoked".formatted(credential.getId())));
+    }
+
+    private QuerySpec queryingFor(String slug) {
+        return argThat(q -> q.getFilterExpression().stream().anyMatch(c -> c.getOperandRight().toString().contains(slug)));
     }
 
     private VerifiableCredentialResource.Builder createCredentialResource(VerifiableCredential cred) {
