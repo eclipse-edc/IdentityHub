@@ -29,13 +29,11 @@ import static org.eclipse.edc.spi.result.ServiceResult.success;
  * <p>
  * It defines constant values for supported DCP credential profiles and includes methods
  * for format/profile conversions and validation logic for expected inputs.
- * <p>
  * All currently defined DCP profiles are listed below:
  * <ul>
  *     <li>{@code vc11-sl2021/jwt}</li>
  *     <li>{@code vc20-bssl/jwt}</li>
  * </ul>
- * </p>
  * <p>
  * For ore information refer to the <a href="https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol/v1.0.1/#dcp-profile-definitions">DCP Specification</a>
  */
