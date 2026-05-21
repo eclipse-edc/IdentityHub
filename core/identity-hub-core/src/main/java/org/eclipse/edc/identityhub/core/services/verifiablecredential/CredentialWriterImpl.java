@@ -98,8 +98,7 @@ public class CredentialWriterImpl implements CredentialWriter {
                 // check if the list of originally requested credentials contains the received credential
                 var requestedCredential = holderRequest.getIdsAndFormats().stream()
                         .filter(rqc -> receivedTypes.contains(rqc.credentialType()))
-                        // rqc.format() may be a profile string, but receivedFormat is a CredentialFormat, so we need to compare
-                        // raw values
+                        // for compatibility, we need to convert both to a CredentialFormat and compare that:
                         .filter(rqc -> {
                             var requestedFormat = CredentialProfile.formatForProfile(rqc.format());
                             if (requestedFormat.failed()) {
