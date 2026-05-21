@@ -117,7 +117,7 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
         var response = createParticipantContext(issuer, baseIssuerServiceUrl);
         createDefinitions(issuer);
 
-        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:1.0.0-RC3")
+        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:1.0.0-RC7")
                 .withExtraHost("host.docker.internal", "host-gateway")
                 .withExposedPorts(CALLBACK_PORT)
                 .withEnv(Map.of(

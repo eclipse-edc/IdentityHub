@@ -106,16 +106,18 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
             }
             var requestedCredentials = requestedCredentialResult.getContent();
 
-            // clients can never request more credentials than they are permitted to, i.e. their scope list can not exceed the scopes taken
-            // from the access token
-            var isValidQuery = new HashSet<>(allowedCredentials.stream().map(VerifiableCredentialResource::getId).toList())
-                    .containsAll(requestedCredentials.stream().map(VerifiableCredentialResource::getId).toList());
+            // the DCP spec requires that only those credentials are returned that the client is eligible for. This check
+            // checks whether the client has requested credentials outside their permitted scopes
+            var allowedIds = new HashSet<>(allowedCredentials.stream().map(VerifiableCredentialResource::getId).toList());
+            var hasRequestedMore = !allowedIds.containsAll(requestedCredentials.stream().map(VerifiableCredentialResource::getId).toList());
 
-            if (!isValidQuery) {
-                return QueryResult.unauthorized("Invalid query: requested Credentials outside of scope.");
+            if (hasRequestedMore) {
+                var allowedTypes = allowedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential).map(vc -> vc.credential().getType()).flatMap(List::stream).distinct().toList();
+                var requestedTypes = requestedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential).map(vc -> vc.credential().getType()).flatMap(List::stream).distinct().toList();
+                monitor.debug("Client has requested more credentials than allowed. Allowed credentials: %s. Requested credentials: %s".formatted(allowedTypes, requestedTypes));
             }
 
-            credentialResult = requestedCredentials.stream();
+            credentialResult = requestedCredentials.stream().filter(c -> allowedIds.contains(c.getId()));
         }
         // filter out any expired, revoked or suspended credentials
         return QueryResult.success(credentialResult

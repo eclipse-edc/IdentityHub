@@ -21,9 +21,9 @@ dependencies {
     testImplementation(libs.restAssured)
     testImplementation(libs.junit.jupiter.api)
 
-    testImplementation(libs.dcp.tck.runtime)
+    testImplementation(libs.tck.runtime)
     testImplementation(libs.dcp.system)
-    testImplementation(libs.dsp.core)
+    testImplementation(libs.tck.core)
     testImplementation(testFixtures(project(":e2e-tests:identityhub-test-fixtures")))
     testImplementation(libs.junit.platform.launcher)
 

@@ -23,6 +23,7 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.delivery.CredentialStorageClient;
@@ -147,7 +148,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
     private JsonObject toJson(VerifiableCredentialContainer credential) {
         return Json.createObjectBuilder()
                 .add("credentialType", credential.credential().getType().stream().filter("VerifiableCredential"::equals).findFirst().orElseThrow())
-                .add("format", credential.format().name())
+                .add("format", CredentialProfile.profileForFormat(credential.format()).orElseThrow(f -> new IllegalArgumentException("Invalid credential format: " + credential.format())))
                 .add("payload", credential.rawVc())
                 .build();
     }

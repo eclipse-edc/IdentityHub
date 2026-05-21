@@ -300,7 +300,7 @@ public class PresentationApiEndToEndTest {
         }
 
         @Test
-        void query_credentialQueryResolverFails_shouldReturn403(IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
+        void query_moreScopesThanAccessToken_shouldOnlyReturnPermittedCreds(IdentityHub identityHub, CredentialStore store) throws JOSEException, JsonProcessingException {
 
             var token = generateSiToken();
 
@@ -313,16 +313,27 @@ public class PresentationApiEndToEndTest {
             storeCredential(VC_EXAMPLE_2, CredentialFormat.VC1_0_JWT, store);
 
 
-            identityHub.getCredentialsEndpoint().baseRequest()
+            var response = identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body(VALID_QUERY_WITH_ADDITIONAL_SCOPE)
                     .post("/v1/participants/%s/presentations/query".formatted(TEST_PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifError()
-                    .statusCode(403)
-                    .body("[0].type", equalTo("NotAuthorized"))
-                    .body("[0].message", equalTo("Invalid query: requested Credentials outside of scope."));
+                    .statusCode(200)
+                    .extract().body().as(JsonObject.class);
+
+            assertThat(response)
+                    .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
+                    .hasEntrySatisfying("@context", jsonValue -> assertThat(jsonValue.asJsonArray()).hasSize(1))
+                    .hasEntrySatisfying("presentation", jsonValue -> {
+                        assertThat(vpTokensExtractor(jsonValue)).hasSize(1)
+                                .first()
+                                .satisfies(vpToken -> {
+                                    assertThat(vpToken).isNotNull();
+                                    assertThat(extractCredentials(vpToken)).hasSize(1).allSatisfy(vc -> assertThat(vc.getType()).contains("VerifiableCredential", "AlumniCredential"));
+                                });
+                    });
         }
 
         @Test
@@ -803,7 +814,19 @@ public class PresentationApiEndToEndTest {
 
                 Map<String, Object> map = (Map<String, Object>) OBJECT_MAPPER.convertValue(vpClaim, Map.class);
 
-                return (List<VerifiableCredential>) map.get("verifiableCredential");
+                var credentials = (List<Object>) map.get("verifiableCredential");
+                return credentials.stream().map(s -> {
+                    if (s instanceof String json) {
+
+                        try {
+                            return OBJECT_MAPPER.readValue(json, VerifiableCredential.class);
+                        } catch (JsonProcessingException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        return OBJECT_MAPPER.convertValue(s, VerifiableCredential.class);
+                    }
+                }).toList();
 
             } catch (ParseException e) {
                 throw new RuntimeException(e);
