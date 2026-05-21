@@ -114,7 +114,7 @@ public class CredentialQueryResolverImpl implements CredentialQueryResolver {
             if (hasRequestedMore) {
                 var allowedTypes = allowedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential).map(vc -> vc.credential().getType()).flatMap(List::stream).distinct().toList();
                 var requestedTypes = requestedCredentials.stream().map(VerifiableCredentialResource::getVerifiableCredential).map(vc -> vc.credential().getType()).flatMap(List::stream).distinct().toList();
-                monitor.warning("Client has requested more credentials than allowed. Allowed credentials: %s. Requested credentials: %s".formatted(allowedTypes, requestedTypes));
+                monitor.debug("Client has requested more credentials than allowed. Allowed credentials: %s. Requested credentials: %s".formatted(allowedTypes, requestedTypes));
             }
 
             credentialResult = requestedCredentials.stream().filter(c -> allowedIds.contains(c.getId()));
