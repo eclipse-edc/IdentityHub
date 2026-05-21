@@ -88,15 +88,29 @@ public class CredentialWriterImpl implements CredentialWriter {
                 // verify that the received credentials correspond to the credential request that was made prior
                 var receivedCredential = resource.getVerifiableCredential();
                 var receivedTypes = receivedCredential.credential().getType();
-                var receivedFormat = receivedCredential.format().toString();
+
+                // convert received format to a CredentialFormat
+                var receivedFormat = CredentialProfile.formatForProfile(writeRequest.credentialFormat());
+                if (receivedFormat.failed()) {
+                    return receivedFormat.mapFailure();
+                }
 
                 // check if the list of originally requested credentials contains the received credential
                 var requestedCredential = holderRequest.getIdsAndFormats().stream()
-                        .filter(rqc -> receivedTypes.contains(rqc.credentialType()) && receivedFormat.equalsIgnoreCase(rqc.format()))
+                        .filter(rqc -> receivedTypes.contains(rqc.credentialType()))
+                        // rqc.format() may be a profile string, but receivedFormat is a CredentialFormat, so we need to compare
+                        // raw values
+                        .filter(rqc -> {
+                            var requestedFormat = CredentialProfile.formatForProfile(rqc.format());
+                            if (requestedFormat.failed()) {
+                                return false;
+                            }
+                            return requestedFormat.getContent().equals(receivedFormat.getContent());
+                        })
                         .findFirst();
 
                 if (requestedCredential.isEmpty()) {
-                    return ServiceResult.unauthorized("No credential request was made for Credentials of type '%s' serialized as '%s'".formatted(receivedTypes, receivedFormat));
+                    return ServiceResult.unauthorized("No credential request was made for Credentials of type '%s' serialized as '%s'".formatted(receivedTypes, receivedFormat.getContent()));
                 }
 
                 // store the credential object ID for later use, e.g. automatic re-issuance

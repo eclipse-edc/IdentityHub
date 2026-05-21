@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
@@ -92,7 +92,7 @@ public class CredentialDefinitionDto {
                 .jsonSchema(jsonSchema)
                 .jsonSchemaUrl(jsonSchemaUrl)
                 .validity(validity)
-                .formatFrom(CredentialFormat.valueOf(format.toUpperCase()))
+                .formatFrom(CredentialProfile.formatForProfile(format).orElseThrow(f -> new IllegalArgumentException(f.getFailureDetail())))
                 .attestations(attestations)
                 .rules(rules)
                 .mappings(mappings)
