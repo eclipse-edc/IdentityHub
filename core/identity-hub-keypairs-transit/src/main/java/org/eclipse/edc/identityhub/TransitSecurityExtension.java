@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.identityhub;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.identityhub.transit.TransitEngine;
 import org.eclipse.edc.identityhub.transit.TransitEngineImpl;
@@ -24,6 +23,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
+import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.vault.hashicorp.spi.auth.HashicorpVaultTokenProvider;
 
 @Extension(value = TransitSecurityExtension.NAME)
@@ -35,6 +35,9 @@ public class TransitSecurityExtension implements ServiceExtension {
     private HashicorpVaultTokenProvider tokenProvider;
     @Inject
     private EdcHttpClient edcHttpClient;
+
+    @Inject
+    private TypeManager typeManager;
 
     @Setting(description = "The URL of the Hashicorp Vault", key = "edc.vault.hashicorp.url")
     private String vaultUrl;
@@ -49,7 +52,7 @@ public class TransitSecurityExtension implements ServiceExtension {
     @Provider
     public TransitEngine transitEngine() {
         if (transitEngine == null) {
-            transitEngine = new TransitEngineImpl(tokenProvider, new ObjectMapper(), edcHttpClient, vaultUrl);
+            transitEngine = new TransitEngineImpl(tokenProvider, typeManager.getMapper(), edcHttpClient, vaultUrl);
         }
 
         return transitEngine;
