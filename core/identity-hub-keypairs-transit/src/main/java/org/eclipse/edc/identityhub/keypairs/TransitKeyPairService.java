@@ -33,7 +33,6 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.transit.TransitEngine;
 import org.eclipse.edc.identityhub.transit.TransitKeyDescriptor;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
-import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.event.Event;
 import org.eclipse.edc.spi.event.EventEnvelope;
@@ -50,7 +49,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
@@ -205,9 +203,6 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     @WithSpan(value = "keypairs.revoke", kind = SpanKind.INTERNAL)
     public ServiceResult<Void> revokeKey(String id, @Nullable KeyDescriptor newKeyDesc) {
         return transactionContext.execute(() -> {
-            if (newKeyDesc != null) {
-                monitor.warning("Supplying new parameters is not supported when rotating keys using the Transit Engine.");
-            }
 
             var oldKey = findById(id);
             if (oldKey == null) {
@@ -234,9 +229,9 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                     .compose(TransitKeyDescriptor::getLatestVersion)
                     .map(latestVersion ->
                             KeyPairResource.Builder.newInstance()
-                                    .id(UUID.randomUUID().toString())
                                     .usage(oldKey.getUsage())
-                                    .keyId(oldKey.getKeyId())
+                                    .id(ofNullable(newKeyDesc).map(KeyDescriptor::getResourceId).orElse(UUID.randomUUID().toString()))
+                                    .keyId(ofNullable(newKeyDesc).map(KeyDescriptor::getKeyId).orElse(oldKey.getKeyId()))
                                     .state(KeyPairState.ACTIVATED)
                                     .isDefaultPair(true)
                                     .privateKeyAlias(keyName)
@@ -347,7 +342,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                 .compose(list -> list.stream().findFirst()
                         .map(pc -> {
                             var state = pc.getStateAsEnum();
-                            if (!Arrays.asList(new ParticipantContextState[]{ ParticipantContextState.ACTIVATED, ParticipantContextState.CREATED }).contains(state)) {
+                            if (!List.of(ACTIVATED, CREATED).contains(state)) {
                                 return ServiceResult.badRequest("To add a key pair, the ParticipantContext with ID '%s' must be in state %s or %s but was %s."
                                         .formatted(participantContextId, ACTIVATED, CREATED, state));
                             }

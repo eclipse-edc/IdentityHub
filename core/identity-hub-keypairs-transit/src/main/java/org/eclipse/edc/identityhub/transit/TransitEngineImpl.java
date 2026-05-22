@@ -159,7 +159,7 @@ public class TransitEngineImpl implements TransitEngine {
 
     private void requireNonNegative(int minVersion) {
         if (minVersion < 0) {
-            throw new IllegalArgumentException("Min version must be a positive integer");
+            throw new IllegalArgumentException("Min version must be 0 or a positive integer");
         }
     }
 

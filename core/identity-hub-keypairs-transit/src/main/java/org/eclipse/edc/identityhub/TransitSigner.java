@@ -23,6 +23,7 @@ import com.nimbusds.jose.jca.JCAContext;
 import com.nimbusds.jose.util.Base64URL;
 import org.eclipse.edc.identityhub.transit.TransitEngine;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
@@ -51,7 +52,7 @@ public class TransitSigner implements JWSSigner {
     @Override
     public Base64URL sign(JWSHeader header, byte[] signingInput) throws JOSEException {
         // signingInput is ASCII(BASE64URL(header) || '.' || BASE64URL(payload))
-        var payload = new String(signingInput);
+        var payload = new String(signingInput, StandardCharsets.US_ASCII);
         var result = transitEngine.sign(keyName, payload);
         if (result.failed()) {
             throw new JOSEException("Transit signing failed: " + result.getFailureDetail());

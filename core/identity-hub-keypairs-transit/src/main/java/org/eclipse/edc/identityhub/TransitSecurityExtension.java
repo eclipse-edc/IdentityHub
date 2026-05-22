@@ -19,7 +19,6 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.identityhub.transit.TransitEngine;
 import org.eclipse.edc.identityhub.transit.TransitEngineImpl;
 import org.eclipse.edc.jwt.spi.signer.JwsSignerProvider;
-import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -54,10 +53,5 @@ public class TransitSecurityExtension implements ServiceExtension {
         }
 
         return transitEngine;
-    }
-
-    @Provider
-    public LocalPublicKeyService transitLocalPublicKeyService() {
-        return new TransitLocalPublicKeyResolver();
     }
 }
