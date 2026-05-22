@@ -14,18 +14,101 @@
 
 package org.eclipse.edc.identityhub;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.edc.identityhub.transit.TransitEngine;
 import org.eclipse.edc.keys.spi.PublicKeyResolver;
+import org.eclipse.edc.security.token.jwt.CryptoConverter;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
+import org.eclipse.edc.spi.result.AbstractResult;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationService;
 
+import java.text.ParseException;
 import java.util.List;
 
 public class TransitValidationService implements TokenValidationService {
+    private final TransitEngine transitEngine;
+
+    public TransitValidationService(TransitEngine transitEngine) {
+        this.transitEngine = transitEngine;
+    }
+
     @Override
     public Result<ClaimToken> validate(TokenRepresentation tokenRepresentation, PublicKeyResolver publicKeyResolver, List<TokenValidationRule> rules) {
-        return Result.failure("not implemented");
+        var token = tokenRepresentation.getToken();
+        var additional = tokenRepresentation.getAdditional();
+        try {
+            var signedJwt = SignedJWT.parse(token);
+
+            Result<Void> signatureVerification;
+            if (publicKeyResolver instanceof TransitLocalPublicKeyResolver) {
+                var signingInput = signedJwt.getParsedParts()[0] + "." + signedJwt.getParsedParts()[1];
+                // TransitSigner encodes the full vault signature string as Base64URL; decode it back
+                var signature = new String(signedJwt.getSignature().decode());
+                var keyId = signedJwt.getHeader().getKeyID();
+                if (keyId == null) {
+                    return Result.failure("A Key-ID header is required when validating tokens using the Transit Engine.");
+                }
+                signatureVerification = transitEngine.verify(keyId, signingInput, signature);
+            } else {
+                signatureVerification = verifySignature(signedJwt, publicKeyResolver);
+            }
+            if (signatureVerification.failed()) {
+                return signatureVerification.mapFailure();
+            }
+
+            var tokenBuilder = ClaimToken.Builder.newInstance();
+            signedJwt.getJWTClaimsSet().getClaims().entrySet().stream()
+                    .filter(entry -> entry.getValue() != null)
+                    .forEach(entry -> tokenBuilder.claim(entry.getKey(), entry.getValue()));
+
+            var claimToken = tokenBuilder.build();
+
+            var errors = rules.stream()
+                    .map(r -> r.checkRule(claimToken, additional))
+                    .reduce(Result::merge)
+                    .stream()
+                    .filter(AbstractResult::failed)
+                    .flatMap(r -> r.getFailureMessages().stream())
+                    .toList();
+
+
+            if (!errors.isEmpty()) {
+                return Result.failure(errors);
+            }
+
+            return Result.success(claimToken);
+        } catch (ParseException e) {
+            return Result.failure("Failed to decode token");
+        }
+    }
+
+    private Result<Void> verifySignature(SignedJWT jwt, PublicKeyResolver publicKeyResolver) {
+        var publicKeyId = jwt.getHeader().getKeyID();
+        var publicKeyResolutionResult = publicKeyResolver.resolveKey(publicKeyId);
+
+        if (publicKeyResolutionResult.failed()) {
+            return publicKeyResolutionResult.mapFailure();
+        }
+
+        var publicKey = publicKeyResolutionResult.getContent();
+        if (publicKey == null) {
+            return Result.success();
+        }
+
+        var verifierCreationResult = CryptoConverter.createVerifierFor(publicKey);
+
+        try {
+            var result = jwt.verify(verifierCreationResult);
+            if (result) {
+                return Result.success();
+            }
+            return Result.failure("JWT signature not valid");
+        } catch (JOSEException e) {
+            return Result.failure("Cannot verify JWT signature: " + e.getMessage());
+        }
     }
 }

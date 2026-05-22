@@ -84,7 +84,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     }
 
     private static @NotNull String generateKeyName(String participantContextId, String keyId) {
-        return "participant_" + participantContextId + "_" + keyId;
+        return "participant_" + participantContextId + "_" + Base64.getUrlEncoder().encodeToString(keyId.getBytes());
     }
 
     @Override
@@ -130,7 +130,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                     .state(keyDescriptor.isActive() ? KeyPairState.ACTIVATED : KeyPairState.CREATED)
                     .isDefaultPair(makeDefault)
                     .privateKeyAlias(keyName)
-                    .serializedPublicKey(decodePublicKey(publicKey.getContent().getPublicKey()))
+                    .serializedPublicKey(decodePublicKeyToJwk(publicKey.getContent().getPublicKey()))
                     .timestamp(Instant.now().toEpochMilli())
                     .participantContextId(participantContextId)
                     .keyContext(keyDescriptor.getType())
@@ -185,7 +185,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                     .state(KeyPairState.ACTIVATED)
                     .isDefaultPair(true)
                     .privateKeyAlias(keyName)
-                    .serializedPublicKey(decodePublicKey(keyVersion.getPublicKey()))
+                    .serializedPublicKey(decodePublicKeyToJwk(keyVersion.getPublicKey()))
                     .timestamp(Instant.now().toEpochMilli())
                     .participantContextId(participantContextId)
                     .keyContext(oldKey.getKeyContext())
@@ -240,7 +240,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                                     .state(KeyPairState.ACTIVATED)
                                     .isDefaultPair(true)
                                     .privateKeyAlias(keyName)
-                                    .serializedPublicKey(decodePublicKey(latestVersion.getPublicKey()))
+                                    .serializedPublicKey(decodePublicKeyToJwk(latestVersion.getPublicKey()))
                                     .timestamp(Instant.now().toEpochMilli())
                                     .participantContextId(participantContextId)
                                     .keyContext(oldKey.getKeyContext())
@@ -317,7 +317,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
         }
     }
 
-    private String decodePublicKey(String publicKey) {
+    private String decodePublicKeyToJwk(String publicKey) {
         // PEM-encoded SPKI (Vault returns PEM for RSA and ECDSA keys)
         if (publicKey.contains("BEGIN PUBLIC KEY")) {
             try {

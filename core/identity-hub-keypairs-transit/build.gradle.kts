@@ -25,6 +25,7 @@ dependencies {
     api(libs.edc.spi.token)
     implementation(project(":core:lib:keypair-lib"))
     implementation(libs.edc.lib.common.crypto)
+    implementation(libs.edc.lib.token)
     implementation(libs.opentelemetry.api)
     implementation(libs.opentelemetry.instrumentation.annotations)
     implementation(libs.bouncyCastle.bcprovJdk18on)

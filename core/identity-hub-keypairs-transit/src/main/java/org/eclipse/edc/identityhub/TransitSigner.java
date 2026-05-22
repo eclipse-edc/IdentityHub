@@ -18,12 +18,14 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.Requirement;
 import com.nimbusds.jose.jca.JCAContext;
 import com.nimbusds.jose.util.Base64URL;
 import org.eclipse.edc.identityhub.transit.TransitEngine;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 
@@ -49,7 +51,7 @@ public class TransitSigner implements JWSSigner {
     @Override
     public Base64URL sign(JWSHeader header, byte[] signingInput) throws JOSEException {
         // signingInput is ASCII(BASE64URL(header) || '.' || BASE64URL(payload))
-        var payload = new String(signingInput, StandardCharsets.US_ASCII);
+        var payload = new String(signingInput);
         var result = transitEngine.sign(keyName, payload);
         if (result.failed()) {
             throw new JOSEException("Transit signing failed: " + result.getFailureDetail());
@@ -66,8 +68,13 @@ public class TransitSigner implements JWSSigner {
     @Override
     public Set<JWSAlgorithm> supportedJWSAlgorithms() {
         // these are the algorithms supported by the Transit engine: EdDSA, EC and RSA
-        var algorithms = JWSAlgorithm.Family.SIGNATURE.toArray(new JWSAlgorithm[]{});
-        return Set.of(algorithms);
+        var supportedAlgorithms = new HashSet<JWSAlgorithm>();
+        supportedAlgorithms.addAll(JWSAlgorithm.Family.EC.stream().toList());
+        supportedAlgorithms.addAll(JWSAlgorithm.Family.RSA.stream().toList());
+        supportedAlgorithms.add(new JWSAlgorithm("Ed25519", Requirement.REQUIRED));
+        supportedAlgorithms.add(new JWSAlgorithm("EdDSA", Requirement.REQUIRED));
+
+        return Collections.unmodifiableSet(supportedAlgorithms);
     }
 
     @Override

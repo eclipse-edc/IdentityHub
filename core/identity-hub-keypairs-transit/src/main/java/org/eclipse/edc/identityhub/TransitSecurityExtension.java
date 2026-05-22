@@ -19,12 +19,12 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.identityhub.transit.TransitEngine;
 import org.eclipse.edc.identityhub.transit.TransitEngineImpl;
 import org.eclipse.edc.jwt.spi.signer.JwsSignerProvider;
+import org.eclipse.edc.keys.spi.LocalPublicKeyService;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
-import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.vault.hashicorp.spi.auth.HashicorpVaultTokenProvider;
 
 @Extension(value = TransitSecurityExtension.NAME)
@@ -57,7 +57,7 @@ public class TransitSecurityExtension implements ServiceExtension {
     }
 
     @Provider
-    public TokenValidationService tokenValidationService() {
-        return new TransitValidationService();
+    public LocalPublicKeyService transitLocalPublicKeyService() {
+        return new TransitLocalPublicKeyResolver();
     }
 }
