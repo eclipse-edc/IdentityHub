@@ -84,7 +84,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     }
 
     private static @NotNull String generateKeyName(String participantContextId, String keyId) {
-        return "participant_" + participantContextId + "_" + Base64.getUrlEncoder().encodeToString(keyId.getBytes());
+        return "participant_" + participantContextId + "_" + keyId;
     }
 
     @Override
@@ -112,7 +112,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
                 return ServiceResult.badRequest("Unsupported key type '%s'. Only the following types are supported: %s".formatted(type, SUPPORTED_KEY_TYPES));
             }
 
-            var keyName = generateKeyName(participantContextId, keyDescriptor.getKeyId());
+            var keyName = generateKeyName(participantContextId, keyDescriptor.getPrivateKeyAlias());
             var keyResult = transitEngine.generateKey(keyName, type);
             if (keyResult.failed()) {
                 return ServiceResult.from(keyResult.mapEmpty());
@@ -168,7 +168,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
 
             // have Transit rotate the key, and create a copy of the keypairResource
 
-            var keyName = generateKeyName(participantContextId, oldKey.getKeyId());
+            var keyName = oldKey.getPrivateKeyAlias();
             var transitRotateResult = transitEngine.rotateKey(keyName)
                     .compose(u -> transitEngine.getKey(keyName))
                     .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion()).compose(u -> Result.success(tkd)))
@@ -224,7 +224,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
             }
 
             // there is no "revoke" action in Transit, so we rotate the key and trim to the latest version
-            var keyName = generateKeyName(participantContextId, oldKey.getKeyId());
+            var keyName = oldKey.getPrivateKeyAlias();
             var transitResult = transitEngine.rotateKey(keyName)
                     .compose(u -> transitEngine.getKey(keyName))
                     .compose(tkd -> transitEngine.setMinEncryptionKeyVersion(keyName, tkd.getData().getLatestVersion())
