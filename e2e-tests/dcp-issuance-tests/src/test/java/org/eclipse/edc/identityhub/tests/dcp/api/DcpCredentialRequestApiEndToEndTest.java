@@ -126,7 +126,7 @@ public class DcpCredentialRequestApiEndToEndTest {
         }
 
         private static @NotNull String issuanceUrl() {
-            return "/v1alpha/participants/%s/credentials".formatted(ISSUER_ID);
+            return "/v1beta/participants/%s/credentials".formatted(ISSUER_ID);
         }
 
         @NotNull
@@ -234,7 +234,7 @@ public class DcpCredentialRequestApiEndToEndTest {
                         .extract()
                         .header("Location");
 
-                assertThat(location).contains("/v1alpha/participants/%s/requests".formatted(ISSUER_ID));
+                assertThat(location).contains("/v1beta/participants/%s/requests".formatted(ISSUER_ID));
 
                 var processId = location.substring(location.lastIndexOf('/') + 1);
 

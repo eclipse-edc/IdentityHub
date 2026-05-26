@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.credentialrequest;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,11 +28,11 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.ApiSchema;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.ApiSchema;
 
 @OpenAPIDefinition(
         info = @Info(description = "This represents the Credential Request API as per DCP specification. It serves endpoints to request the issuance of Verifiable Credentials from an issuer.", title = "Credential Request API",
-                version = "v1alpha"))
+                version = "v1beta"))
 @SecurityScheme(name = "Authentication",
         description = "Self-Issued ID token containing an access_token",
         type = SecuritySchemeType.HTTP,

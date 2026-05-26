@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

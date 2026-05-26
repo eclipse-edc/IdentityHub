@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.issuermetadata;
 
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.Consumes;
@@ -32,7 +32,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1alpha/participants/{participantContextId}/metadata")
+@Path("/v1beta/participants/{participantContextId}/metadata")
 public class IssuerMetadataApiController implements IssuerMetadataApi {
 
     private final IdentityHubParticipantContextService participantContextService;

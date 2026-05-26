@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequeststatus;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.credentialrequeststatus;
 
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.Consumes;
@@ -41,7 +41,7 @@ import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.q
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1alpha/participants/{participantContextId}/requests")
+@Path("/v1beta/participants/{participantContextId}/requests")
 public class CredentialRequestStatusApiController implements CredentialRequestStatusApi {
 
     private final TypeTransformerRegistry dcpRegistry;

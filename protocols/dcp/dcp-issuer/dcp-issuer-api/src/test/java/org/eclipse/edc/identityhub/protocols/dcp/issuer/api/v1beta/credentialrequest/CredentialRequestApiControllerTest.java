@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.credentialrequest;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.JsonObject;
@@ -175,7 +175,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(201);
-        assertThat(response.getHeaderString("Location")).contains("/v1alpha/participants/%s/requests/%s".formatted(participantContextId, responseMessage.requestId()));
+        assertThat(response.getHeaderString("Location")).contains("/v1beta/participants/%s/requests/%s".formatted(participantContextId, responseMessage.requestId()));
 
         verify(dcpIssuerTokenVerifier).verify(any(), argThat(tr -> tr.getToken().equals(token)));
         verify(dcpIssuerService).initiateCredentialsIssuance(participantContextId, requestMessage, ctx);

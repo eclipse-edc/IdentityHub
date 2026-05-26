@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequeststatus;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.credentialrequeststatus;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.Json;

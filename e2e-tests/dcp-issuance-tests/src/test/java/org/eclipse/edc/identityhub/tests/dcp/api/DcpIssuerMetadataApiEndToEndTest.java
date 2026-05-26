@@ -70,7 +70,7 @@ public class DcpIssuerMetadataApiEndToEndTest {
         }
 
         private static @NotNull String issuanceMetadataUrl() {
-            return "/v1alpha/participants/%s/metadata".formatted(ISSUER_ID);
+            return "/v1beta/participants/%s/metadata".formatted(ISSUER_ID);
         }
 
 
