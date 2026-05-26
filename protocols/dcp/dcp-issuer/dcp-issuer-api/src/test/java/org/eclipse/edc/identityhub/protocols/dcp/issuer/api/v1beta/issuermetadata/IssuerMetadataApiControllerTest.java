@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.issuermetadata;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.Json;

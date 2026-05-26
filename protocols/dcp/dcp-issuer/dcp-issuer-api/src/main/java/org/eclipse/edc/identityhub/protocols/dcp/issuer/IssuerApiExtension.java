@@ -16,9 +16,9 @@ package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import jakarta.json.Json;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest.CredentialRequestApiController;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequeststatus.CredentialRequestStatusApiController;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.issuermetadata.IssuerMetadataApiController;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.credentialrequest.CredentialRequestApiController;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.credentialrequeststatus.CredentialRequestStatusApiController;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.issuermetadata.IssuerMetadataApiController;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
 import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;

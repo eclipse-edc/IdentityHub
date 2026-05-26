@@ -85,7 +85,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         private static @NotNull String issuanceStatusUrl(String id) {
-            return "/v1alpha/participants/%s/requests/%s".formatted(ISSUER_ID, id);
+            return "/v1beta/participants/%s/requests/%s".formatted(ISSUER_ID, id);
         }
 
 

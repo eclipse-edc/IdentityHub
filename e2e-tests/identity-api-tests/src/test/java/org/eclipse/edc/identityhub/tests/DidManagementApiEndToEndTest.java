@@ -110,7 +110,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:user1"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
+                    .post("/v1beta/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -139,7 +139,7 @@ public class DidManagementApiEndToEndTest {
                                            "did": "%s"
                                         }
                                         """.formatted(did))
-                                .post("/v1alpha/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
+                                .post("/v1beta/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(204)
@@ -180,7 +180,7 @@ public class DidManagementApiEndToEndTest {
                                            "did": "%s"
                                         }
                                         """.formatted(did))
-                                .post("/v1alpha/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
+                                .post("/v1beta/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(400)
@@ -214,7 +214,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "%s"
                             }
                             """.formatted(did))
-                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(PARTICIPANT_CONTEXT_ID))
+                    .post("/v1beta/participants/%s/dids/unpublish".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -242,7 +242,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:%s"
                             }
                             """.formatted(PARTICIPANT_CONTEXT_ID))
-                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(PARTICIPANT_CONTEXT_ID))
+                    .post("/v1beta/participants/%s/dids/unpublish".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -271,7 +271,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:%s"
                             }
                             """.formatted(PARTICIPANT_CONTEXT_ID))
-                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
+                    .post("/v1beta/participants/%s/dids/unpublish".formatted(user))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -299,7 +299,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "%s"
                             }
                             """.formatted(did))
-                    .post("/v1alpha/participants/%s/dids/unpublish".formatted(user))
+                    .post("/v1beta/participants/%s/dids/unpublish".formatted(user))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
@@ -326,7 +326,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:%s"
                             }
                             """.formatted(user1))
-                    .post("/v1alpha/participants/%s/dids/state".formatted(user1))
+                    .post("/v1beta/participants/%s/dids/state".formatted(user1))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -340,7 +340,7 @@ public class DidManagementApiEndToEndTest {
             var docs = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(superUserAuth)
-                    .get("/v1alpha/dids")
+                    .get("/v1beta/dids")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -357,7 +357,7 @@ public class DidManagementApiEndToEndTest {
             var docs = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(superUserKey)
-                    .get("/v1alpha/dids")
+                    .get("/v1beta/dids")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -374,7 +374,7 @@ public class DidManagementApiEndToEndTest {
             var docs = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(superUserAuth)
-                    .get("/v1alpha/dids?offset=5&limit=10")
+                    .get("/v1beta/dids?offset=5&limit=10")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -391,7 +391,7 @@ public class DidManagementApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(attackerToken)
-                    .get("/v1alpha/dids")
+                    .get("/v1beta/dids")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);

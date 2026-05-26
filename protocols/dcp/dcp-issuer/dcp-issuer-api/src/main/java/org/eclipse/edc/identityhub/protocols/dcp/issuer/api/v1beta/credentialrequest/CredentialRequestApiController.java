@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequest;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.credentialrequest;
 
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.Consumes;
@@ -43,7 +43,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path("/v1alpha/participants/{participantContextId}/credentials")
+@Path("/v1beta/participants/{participantContextId}/credentials")
 public class CredentialRequestApiController implements CredentialRequestApi {
 
     private final IdentityHubParticipantContextService participantContextService;
@@ -91,7 +91,7 @@ public class CredentialRequestApiController implements CredentialRequestApi {
                 .orElseThrow((f) -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
         return dcpIssuerService.initiateCredentialsIssuance(participantContext.getParticipantContextId(), credentialMessage, participant)
-                .map(response -> Response.created(URI.create("/v1alpha/participants/%s/requests/%s".formatted(participantContextId, response.requestId()))).build())
+                .map(response -> Response.created(URI.create("/v1beta/participants/%s/requests/%s".formatted(participantContextId, response.requestId()))).build())
                 .orElseThrow(exceptionMapper(CredentialRequestMessage.class, null));
 
     }

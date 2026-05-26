@@ -72,7 +72,7 @@ public class DcpIssuanceHolderAttestationTest {
                             "attestationType", "holder",
                             "configuration", emptyMap()
                     ))
-                    .post("/v1alpha/participants/{participantContextId}/attestations", issuerId)
+                    .post("/v1beta/participants/{participantContextId}/attestations", issuerId)
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -89,7 +89,7 @@ public class DcpIssuanceHolderAttestationTest {
                                     "participant", Map.of("name", "Bob")
                             )
                     ))
-                    .post("/v1alpha/participants/{participantContextId}/holders", issuerId)
+                    .post("/v1beta/participants/{participantContextId}/holders", issuerId)
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -126,7 +126,7 @@ public class DcpIssuanceHolderAttestationTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(participantId))
+                    .post("/v1beta/participants/%s/credentials/request".formatted(participantId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)

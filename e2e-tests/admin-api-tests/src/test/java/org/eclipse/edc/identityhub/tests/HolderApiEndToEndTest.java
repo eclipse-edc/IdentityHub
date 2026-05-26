@@ -72,7 +72,7 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post("/v1alpha/participants/%s/holders".formatted(USER))
+                    .post("/v1beta/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(201)
                     .header("Location", Matchers.endsWith("/holders/test-participant-id"));
@@ -92,7 +92,7 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post("/v1alpha/participants/%s/holders".formatted(USER))
+                    .post("/v1beta/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(409);
         }
@@ -111,7 +111,7 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post("/v1alpha/participants/%s/holders".formatted(USER))
+                    .post("/v1beta/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(403);
         }
@@ -127,7 +127,7 @@ public class HolderApiEndToEndTest {
                             "holderId": "test-participant-id"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/holders".formatted(USER))
+                    .post("/v1beta/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(400);
         }
@@ -147,7 +147,7 @@ public class HolderApiEndToEndTest {
                               "name": "Foo"
                             }
                             """)
-                    .put("/v1alpha/participants/%s/holders".formatted(USER))
+                    .put("/v1beta/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(200);
 
@@ -172,7 +172,7 @@ public class HolderApiEndToEndTest {
                               "name": "Foo"
                             }
                             """)
-                    .put("/v1alpha/participants/%s/holders".formatted(USER))
+                    .put("/v1beta/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(403);
 
@@ -190,7 +190,7 @@ public class HolderApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderName", "=", "foobar")).build())
-                    .post("/v1alpha/participants/%s/holders/query".formatted(USER))
+                    .post("/v1beta/participants/%s/holders/query".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -205,7 +205,7 @@ public class HolderApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderId", "=", "test-participant-id")).build())
-                    .post("/v1alpha/participants/%s/holders/query".formatted(USER))
+                    .post("/v1beta/participants/%s/holders/query".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -221,7 +221,7 @@ public class HolderApiEndToEndTest {
 
             var res = issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get("/v1alpha/participants/%s/holders/test-participant-id".formatted(USER))
+                    .get("/v1beta/participants/%s/holders/test-participant-id".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -239,7 +239,7 @@ public class HolderApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser("anotherUser", issuer))
-                    .get("/v1alpha/participants/%s/holders/test-participant-id".formatted(USER))
+                    .get("/v1beta/participants/%s/holders/test-participant-id".formatted(USER))
                     .then()
                     .statusCode(403);
 
@@ -253,7 +253,7 @@ public class HolderApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuerService))
-                    .delete("/v1alpha/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .delete("/v1beta/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(204);
         }
@@ -264,7 +264,7 @@ public class HolderApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuerService))
-                    .delete("/v1alpha/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .delete("/v1beta/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(404);
         }
@@ -278,7 +278,7 @@ public class HolderApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(authorizeUser("anotherUser", issuerService))
-                    .delete("/v1alpha/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .delete("/v1beta/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(403);
         }

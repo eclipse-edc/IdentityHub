@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.credentialrequeststatus;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.credentialrequeststatus;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,13 +25,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1alpha.ApiSchema;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.ApiSchema;
 
 @OpenAPIDefinition(
         info = @Info(description = "This represents the Credential Request Status API as per DCP specification. " +
                 "It serves endpoints to query the status of a credential issuance request from an issuer.",
                 title = "Credential Request Status API",
-                version = "v1alpha"))
+                version = "v1beta"))
 @SecurityScheme(name = "Authentication",
         description = "Self-Issued ID token containing an access_token",
         type = SecuritySchemeType.HTTP,

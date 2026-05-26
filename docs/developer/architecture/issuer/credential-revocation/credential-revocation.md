@@ -53,7 +53,7 @@ credential:
 Requests to revoke a holder credential are sent via the IssuerService's REST API:
 
 ```http request
-POST /v1alpha/credentials/{credentialId}/revoke
+POST /v1beta/credentials/{credentialId}/revoke
 ```
 
 This request is processed by
@@ -177,7 +177,7 @@ IssuerService.
 Execute the following REST request against the IssuerService's Admin API:
 
 ```http request
-GET /v1alpha/credentials/{credentialId}/status
+GET /v1beta/credentials/{credentialId}/status
 ```
 
 the response will be `HTTP 200` if the status information has been obtained. An empty response body indicates that the

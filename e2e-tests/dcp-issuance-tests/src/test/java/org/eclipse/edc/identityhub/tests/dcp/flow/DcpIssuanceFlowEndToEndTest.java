@@ -145,7 +145,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
