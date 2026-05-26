@@ -46,7 +46,7 @@ public class TransitSecurityExtension implements ServiceExtension {
 
     @Provider
     public JwsSignerProvider jwsSignerProvider() {
-        return new TransitJwsSignerProvider(transitEngine);
+        return new TransitJwsSignerProvider(transitEngine());
     }
 
     @Provider
