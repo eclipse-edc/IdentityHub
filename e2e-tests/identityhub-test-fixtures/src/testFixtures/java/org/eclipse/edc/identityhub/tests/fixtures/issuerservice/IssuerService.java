@@ -112,7 +112,7 @@ public class IssuerService extends AbstractIdentityHub {
                                 Map.of("operandLeft", "usage", "operator", "=", "operandRight", "Holder")
                         )
                 ))
-                .post("/v1alpha/participants/{participantContextId}/credentials/query", (participantId))
+                .post("/v1beta/participants/{participantContextId}/credentials/query", (participantId))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -151,7 +151,7 @@ public class IssuerService extends AbstractIdentityHub {
     }
 
     private @NotNull String issuanceBasePath(String participantContextId) {
-        return "v1alpha/participants/%s".formatted((participantContextId));
+        return "v1beta/participants/%s".formatted((participantContextId));
     }
 
     public static class Builder extends AbstractIdentityHub.Builder<IssuerService, Builder> {

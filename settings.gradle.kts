@@ -30,6 +30,7 @@ include(":core:common-core")
 include(":core:identity-hub-core")
 include(":core:identity-hub-participants")
 include(":core:identity-hub-keypairs")
+include(":core:identity-hub-keypairs-transit")
 include(":core:identity-hub-did")
 
 // IssuerService core modules

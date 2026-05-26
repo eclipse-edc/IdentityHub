@@ -9,9 +9,9 @@ dcp-tck = "1.0.0-RC7"
 jackson = "2.21"
 jakarta-annotation = "3.0.0"
 jersey = "4.0.2"
-jupiter = "6.0.3"
 junit = "6.1.0"
-mockserver = "5.15.0"
+jupiter = "6.1.0"
+mockserver = "6.0.0"
 nimbus = "10.9"
 postgres = "42.7.11"
 restAssured = "6.0.0"
@@ -43,6 +43,7 @@ edc-spi-vc = { module = "org.eclipse.edc:verifiable-credentials-spi", version.re
 edc-spi-auth = { module = "org.eclipse.edc:auth-spi", version.ref = "edc" }
 edc-spi-did = { module = "org.eclipse.edc:identity-did-spi", version.ref = "edc" }
 edc-spi-participantcontext = { module = "org.eclipse.edc:connector-participant-context-spi", version.ref = "edc" }
+edc-spi-hashicorp-vault = { module = "org.eclipse.edc:vault-hashicorp-spi", version.ref = "edc" }
 edc-core-connector = { module = "org.eclipse.edc:connector-core", version.ref = "edc" }
 edc-core-token = { module = "org.eclipse.edc:token-core", version.ref = "edc" }
 edc-core-jersey = { module = "org.eclipse.edc:jersey-core", version.ref = "edc" }
@@ -64,6 +65,7 @@ edc-testfixtures-managementapi = { module = "org.eclipse.edc:management-api-test
 edc-api-version = { module = "org.eclipse.edc:version-api", version.ref = "edc" }
 edc-oauth2-client = { module = "org.eclipse.edc:oauth2-client", version.ref = "edc" }
 edc-encryption-aes = { module = "org.eclipse.edc:aes-encryption", version.ref = "edc" }
+edc-vault-hashicorp = { module = "org.eclipse.edc:vault-hashicorp", version.ref = "edc" }
 
 # EDC libs
 edc-lib-boot = { module = "org.eclipse.edc:boot-lib", version.ref = "edc" }
@@ -113,6 +115,7 @@ restAssured = { module = "io.rest-assured:rest-assured", version.ref = "restAssu
 swagger-jaxrs = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-postgres = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+testcontainers-vault = { module = "org.testcontainers:vault", version.ref = "testcontainers" }
 jakarta-annotation = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
 jersey-common = { module = "org.glassfish.jersey.core:jersey-common", version.ref = "jersey" }
 tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }

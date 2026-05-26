@@ -93,7 +93,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .post("/v1alpha/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(201)
                     .header("Location", Matchers.endsWith("/credentialdefinitions/test-definition-id"));
@@ -127,7 +127,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .post("/v1alpha/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(400);
 
@@ -160,7 +160,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "format": "VC1_0_JWT"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .log().all()
                     .statusCode(409);
@@ -193,7 +193,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "format": "VC1_0_JWT"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .log().all()
                     .statusCode(409);
@@ -211,7 +211,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "id": "test-definition-id"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(400);
         }
@@ -233,7 +233,7 @@ public class CredentialDefinitionApiEndToEndTest {
                               "format": "VC1_0_JWT"
                             }
                             """)
-                    .post("/v1alpha/participants/%s/credentialdefinitions".formatted(USER))
+                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(400)
                     .body("[0].message", containsString("notfound"));
@@ -259,7 +259,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("credentialType", "=", "MembershipCredential")).build())
-                    .post("/v1alpha/participants/%s/credentialdefinitions/query".formatted(USER))
+                    .post("/v1beta/participants/%s/credentialdefinitions/query".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -287,7 +287,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", definition.getId())).build())
-                    .post("/v1alpha/participants/%s/credentialdefinitions/query".formatted(USER))
+                    .post("/v1beta/participants/%s/credentialdefinitions/query".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -304,7 +304,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("id", "=", "test-credential-definition-id")).build())
-                    .post("/v1alpha/participants/%s/credentialdefinitions/query".formatted(USER))
+                    .post("/v1beta/participants/%s/credentialdefinitions/query".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -330,7 +330,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             var res = issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .get("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -356,7 +356,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .get("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(404);
 
@@ -379,7 +379,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser("anotherUser", issuer))
-                    .get("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .get("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(403);
 
@@ -392,7 +392,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .get("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(404);
         }
@@ -426,7 +426,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .put("/v1alpha/participants/%s/credentialdefinitions".formatted(USER))
+                    .put("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(200);
 
@@ -455,7 +455,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .put("/v1alpha/participants/%s/credentialdefinitions".formatted(USER))
+                    .put("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(404);
 
@@ -489,7 +489,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(definition)
-                    .put("/v1alpha/participants/%s/credentialdefinitions".formatted(USER))
+                    .put("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(404);
 
@@ -524,7 +524,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser("anotherUser", issuer))
                     .body(definition)
-                    .put("/v1alpha/participants/%s/credentialdefinitions".formatted(USER))
+                    .put("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
                     .then()
                     .statusCode(403);
 
@@ -547,7 +547,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .delete("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .delete("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(204);
 
@@ -562,7 +562,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .delete("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .delete("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(404);
 
@@ -585,7 +585,7 @@ public class CredentialDefinitionApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser("another-user", issuer))
-                    .delete("/v1alpha/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
+                    .delete("/v1beta/participants/%s/credentialdefinitions/test-credential-definition-id".formatted(USER))
                     .then()
                     .statusCode(403);
 

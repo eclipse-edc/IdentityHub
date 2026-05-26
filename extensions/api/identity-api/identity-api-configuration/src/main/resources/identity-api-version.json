@@ -1,7 +1,7 @@
 [
   {
     "version": "1.0.0-alpha",
-    "urlPath": "/v1alpha",
+    "urlPath": "/v1beta",
     "lastUpdated": "2026-05-18T11:00:00Z",
     "maturity": null
   }

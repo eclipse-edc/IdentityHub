@@ -210,7 +210,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -289,7 +289,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -342,7 +342,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -365,7 +365,7 @@ public class DcpIssuanceFlowAllInOneTest {
             issuer.getAdminEndpoint().baseRequest()
                     .header("x-api-key", participantToken)
                     .contentType(ContentType.JSON)
-                    .post("/v1alpha/participants/{participantContextId}/credentials/{credentialId}/revoke",
+                    .post("/v1beta/participants/{participantContextId}/credentials/{credentialId}/revoke",
                             PARTICIPANT_ID, credentialId)
                     .then()
                     .log().ifValidationFails().statusCode(204);
@@ -404,7 +404,7 @@ public class DcpIssuanceFlowAllInOneTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(createIssuanceRequest(holderRequestId))
-                    .post("/v1alpha/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)

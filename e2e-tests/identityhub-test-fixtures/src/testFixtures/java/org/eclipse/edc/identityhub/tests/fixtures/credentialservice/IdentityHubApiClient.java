@@ -53,7 +53,7 @@ public class IdentityHubApiClient {
                 .contentType(JSON)
                 .header(new Header("x-api-key", token))
                 .body(request)
-                .post("/v1alpha/participants/%s/credentials/request".formatted((participantId)))
+                .post("/v1beta/participants/%s/credentials/request".formatted((participantId)))
                 .then()
                 .log().ifValidationFails()
                 .statusCode(201)

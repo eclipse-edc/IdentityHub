@@ -15,7 +15,7 @@
 package org.eclipse.edc.identityhub.api;
 
 public interface Versions {
-    String UNSTABLE = "/v1alpha";
+    String UNSTABLE = "/v1beta";
     // Once /v1 has become stable, there will be a String STABLE = "/v1"
     // Once /v2 has become stable, there will be a String DEPRECATED = "/v1", and STABLE = "/v2"
 }
