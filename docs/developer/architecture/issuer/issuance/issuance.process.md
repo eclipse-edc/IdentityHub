@@ -109,7 +109,7 @@ credential type and requirements for issuance:
 ```json
 {
   "credentialType": "MembershipCredential",
-  "format": "JWT_VC",
+  "format": "vc20-bssl/jwt",
   "jsonSchema": "",
   "validity": 1000000,
   "attestations": [
@@ -159,7 +159,8 @@ public class CredentialDefinition {
 The following properties are defined:
 
 - `credentialType`: The credential type, e.g. `MembershipCredential`
-- `format`: The credential format, e.g. `JWT_VC` or `SD_JWT_VC`.
+- `format`: The credential format, e.g. `vc20-bssl/jwt` or `vc11-sl2021/jwt`. This should correspond to
+  the [DCP profile](https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol/v1.0.1/#profiles-of-the-decentralized-claims-protocol).
 - `jsonSchema`: The unparsed credential JSON Schema (mutually exclusive with `jsonSchemaUrl`).
 - `jsonSchemaUrl`: A URL pointing to the credential JSON Schema (mutually exclusive with `jsonSchema`).
 - `validity`: An optional validity defining the length of time the credential should be valid for in milliseconds.
