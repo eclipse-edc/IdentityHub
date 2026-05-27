@@ -9,71 +9,7 @@ info:
 servers:
 - url: /
 paths:
-  /v1alpha/participants/{participantContextId}/credentials:
-    post:
-      tags:
-      - Credential Request API
-      description: Requests the issuance of one or several verifiable credentials
-        from an issuer
-      operationId: requestCredentials
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: Authorization
-        in: header
-        required: false
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CredentialRequestMessage"
-      responses:
-        "201":
-          description: The request was successfully received and is being processed.
-          headers:
-            Location:
-              description: contains the relative URL where the status of the request
-                can be queried (Credential Request Status API)
-              style: simple
-              explode: false
-              schema:
-                type: string
-        "400":
-          description: "Request body was malformed, e.g. required parameter or properties\
-            \ were missing"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: No Authorization header was provided.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "403":
-          description: The given authentication token could not be validated or the
-            client is not authorized to call this endpoint.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1alpha/participants/{participantContextId}/metadata:
+  /v1beta/participants/{participantContextId}/metadata:
     get:
       tags:
       - Issuer Metadata API
@@ -101,7 +37,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IssuerMetadata"
-  /v1alpha/participants/{participantContextId}/requests/{credentialRequestId}:
+  /v1beta/participants/{participantContextId}/requests/{credentialRequestId}:
     get:
       tags:
       - Credential Request Status API
@@ -170,60 +106,72 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1beta/participants/{participantContextId}/credentials:
+    post:
+      tags:
+      - Credential Request API
+      description: Requests the issuance of one or several verifiable credentials
+        from an issuer
+      operationId: requestCredentials
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: false
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialRequestMessage"
+      responses:
+        "201":
+          description: The request was successfully received and is being processed.
+          headers:
+            Location:
+              description: contains the relative URL where the status of the request
+                can be queried (Credential Request Status API)
+              style: simple
+              explode: false
+              schema:
+                type: string
+        "400":
+          description: "Request body was malformed, e.g. required parameter or properties\
+            \ were missing"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: No Authorization header was provided.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "403":
+          description: The given authentication token could not be validated or the
+            client is not authorized to call this endpoint.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
 components:
   schemas:
-    ApiErrorDetail:
-      type: object
-      properties:
-        invalidValue:
-          type: string
-        message:
-          type: string
-        path:
-          type: string
-        type:
-          type: string
-      example:
-        message: error message
-        type: ErrorType
-        path: object.error.path
-        invalidValue: this value is not valid
-    CredentialRequestMessage:
-      required:
-      - '@context'
-      - credentials
-      type: object
-      properties:
-        '@context':
-          type: object
-        credentials:
-          type: array
-          items:
-            $ref: "#/components/schemas/CredentialRequest"
-      example:
-        '@context':
-        - https://w3id.org/dspace-dcp/v1.0/dcp.jsonld
-        type: CredentialRequestMessage
-        credentials:
-        - credentialType: MembershipCredential
-          format: vcdm11_jwt
-        - credentialType: OrganizationCredential
-          format: vcdm11_ld
-        - credentialType: Iso9001Credential
-          format: vcdm20_jose
-    CredentialRequest:
-      required:
-      - credentialType
-      - format
-      type: object
-      properties:
-        credentialType:
-          type: string
-        format:
-          type: string
-      example:
-        credentialType: MembershipCredential
-        format: vcdm11_jwt
     IssuerMetadata:
       required:
       - '@context'
@@ -285,3 +233,55 @@ components:
         type: CredentialStatus
         requestId: requestId
         status: RECEIVED
+    ApiErrorDetail:
+      type: object
+      properties:
+        invalidValue:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        type:
+          type: string
+      example:
+        message: error message
+        type: ErrorType
+        path: object.error.path
+        invalidValue: this value is not valid
+    CredentialRequestMessage:
+      required:
+      - '@context'
+      - credentials
+      type: object
+      properties:
+        '@context':
+          type: object
+        credentials:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialRequest"
+      example:
+        '@context':
+        - https://w3id.org/dspace-dcp/v1.0/dcp.jsonld
+        type: CredentialRequestMessage
+        credentials:
+        - credentialType: MembershipCredential
+          format: vcdm11_jwt
+        - credentialType: OrganizationCredential
+          format: vcdm11_ld
+        - credentialType: Iso9001Credential
+          format: vcdm20_jose
+    CredentialRequest:
+      required:
+      - credentialType
+      - format
+      type: object
+      properties:
+        credentialType:
+          type: string
+        format:
+          type: string
+      example:
+        credentialType: MembershipCredential
+        format: vcdm11_jwt
