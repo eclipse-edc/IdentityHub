@@ -32,6 +32,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
 import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionEvaluator;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
@@ -43,6 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
@@ -101,6 +103,7 @@ public class DcpIssuerServiceImplTest {
         when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(claims));
         when(credentialRuleDefinitionEvaluator.evaluate(eq(List.of(credentialRuleDefinition)), any())).thenReturn(Result.success());
         when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));
+        when(issuanceProcessStore.query(any())).thenReturn(Stream.of());
 
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
@@ -127,6 +130,44 @@ public class DcpIssuerServiceImplTest {
         //noinspection unchecked
         listenerCaptor.getValue().accept(listener);
         verify(listener).received(issuanceProcess);
+    }
+
+    @Test
+    void initiateCredentialsIssuance_whenDuplicateHolderPid_returnsConflict() {
+
+        var holderPid = UUID.randomUUID().toString();
+        var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(holderPid)
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
+                .build();
+
+        var attestations = Set.of("attestation1");
+        var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                .id("credentialDefinitionId1")
+                .credentialType("MembershipCredential")
+                .jsonSchema("jsonSchema")
+                .jsonSchemaUrl("jsonSchemaUrl")
+                .attestations(attestations)
+                .participantContextId("participantContextId")
+                .formatFrom(VC1_0_JWT)
+                .build();
+
+        var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
+        var participant = new DcpRequestContext(holder, Map.of());
+
+        var existingProcess = IssuanceProcess.Builder.newInstance().holderPid(holderPid).holderId("holderId").participantContextId("participantContextId").state(IssuanceProcessStates.APPROVED.code()).build();
+
+        when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
+        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
+        when(attestationPipeline.evaluate(eq(attestations), any())).thenReturn(Result.success(Map.of()));
+        when(credentialRuleDefinitionEvaluator.evaluate(any(), any())).thenReturn(Result.success());
+        when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));
+        when(issuanceProcessStore.query(any())).thenReturn(Stream.of(existingProcess));
+
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
+
+        assertThat(result).isFailed().satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.CONFLICT));
+        verify(issuanceProcessStore, never()).save(any());
     }
 
     @Test

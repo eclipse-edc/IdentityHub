@@ -77,7 +77,6 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
 
         if (credentialFormats.failed()) {
             return ServiceResult.badRequest(credentialFormats.getFailureMessages());
-
         }
         return transactionContext.execute(() -> getCredentialsDefinitions(message, credentialFormats.getContent())
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
@@ -157,6 +156,15 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
 
     private ServiceResult<IssuanceProcess> createIssuanceProcess(String participantContextId, String holderPid, Map<String, CredentialFormat> credentialFormats, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
 
+        var query = QuerySpec.Builder.newInstance()
+                .filter(Criterion.criterion("holderPid", "=", holderPid))
+                .filter(Criterion.criterion("participantContextId", "=", participantContextId))
+                .build();
+
+        var existing = issuanceProcessStore.query(query).findAny();
+        if (existing.isPresent()) {
+            return ServiceResult.conflict("An issuance process with holderPid '%s' already exists for this participant.".formatted(holderPid));
+        }
 
         var credentialDefinitionIds = evaluationResponse.credentialDefinitions().stream()
                 .map(CredentialDefinition::getId)

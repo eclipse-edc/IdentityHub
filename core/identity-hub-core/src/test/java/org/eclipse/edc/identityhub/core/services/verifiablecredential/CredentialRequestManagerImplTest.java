@@ -69,6 +69,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -142,6 +143,23 @@ class CredentialRequestManagerImplTest {
                     .detail().isEqualTo("foo");
 
             verify(store).save(any());
+            verifyNoMoreInteractions(store, resolver, transformerRegistry, httpClient);
+        }
+
+        @Test
+        void initiateRequest_whenAlreadyExists_expectConflict() {
+            var holderPid = "test-holder-request-id";
+            when(store.findById(anyString())).thenReturn(HolderCredentialRequest.Builder.newInstance()
+                    .issuerDid(ISSUER_DID)
+                    .participantContextId("test-participant")
+                    .requestedCredential("test-id", "TestCredential", CredentialFormat.VC1_0_JWT.toString())
+                    .build());
+            var result = credentialRequestService.initiateRequest("test-participant", ISSUER_DID, holderPid, List.of(new RequestedCredential("test-id", "TestCredential", CredentialFormat.VC1_0_JWT.toString())));
+            assertThat(result)
+                    .isFailed();
+
+            verify(store, never()).save(any());
+            verify(store).findById(eq(holderPid));
             verifyNoMoreInteractions(store, resolver, transformerRegistry, httpClient);
         }
 

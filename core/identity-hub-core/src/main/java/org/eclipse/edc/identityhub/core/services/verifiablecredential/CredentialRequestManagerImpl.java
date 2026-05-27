@@ -101,6 +101,9 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 .build();
 
         try {
+            if (findById(holderPid) != null) {
+                return ServiceResult.conflict("Holder Credential Request with holderPid '%s' already exists".formatted(holderPid));
+            }
             updateRequest(newRequest);
         } catch (EdcPersistenceException e) {
             return ServiceResult.badRequest(e.getMessage());
