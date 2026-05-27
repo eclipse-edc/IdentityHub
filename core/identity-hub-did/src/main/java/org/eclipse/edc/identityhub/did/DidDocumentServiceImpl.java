@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.did;
 
+import com.nimbusds.jose.jwk.JWK;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
@@ -38,6 +39,7 @@ import org.eclipse.edc.spi.event.EventSubscriber;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.AbstractResult;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.telemetry.Telemetry;
@@ -46,11 +48,13 @@ import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.text.ParseException;
 import java.util.Collection;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
+import static org.eclipse.edc.spi.result.Result.failure;
 import static org.eclipse.edc.spi.result.ServiceResult.success;
 
 /**
@@ -285,20 +289,23 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
 
             // add the public key as verification method to all did resources
             var serialized = event.getPublicKeySerialized();
-            var publicKey = keyParserRegistry.parse(serialized);
+            
+            // only convert if not already in JWK format
+            var jwkResult = tryParseJwk(serialized)
+                    .onFailure(f -> monitor.debug("Serialized key is not JWK (message: %s), attempting to convert".formatted(f.getFailureDetail())))
+                    .recover(f -> keyParserRegistry.parse(serialized)
+                            .map(pk -> CryptoConverter.createJwk(new KeyPair((PublicKey) pk, null))));
 
-            if (publicKey.failed()) {
-                monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyPairResource().getId(), event.getParticipantContextId(), publicKey.getFailureDetail()));
+            if (jwkResult.failed()) {
+                monitor.warning("Error adding KeyPair '%s' to DID Document of participant '%s': %s".formatted(event.getKeyPairResource().getId(), event.getParticipantContextId(), jwkResult.getFailureDetail()));
                 return;
             }
-
-            var jwk = CryptoConverter.createJwk(new KeyPair((PublicKey) publicKey.getContent(), null));
 
             var errors = didResources.stream()
                     .map(dd -> {
                         dd.getDocument().getVerificationMethod().add(VerificationMethod.Builder.newInstance()
                                 .id(event.getKeyId())
-                                .publicKeyJwk(jwk.toJSONObject())
+                                .publicKeyJwk(jwkResult.getContent().toJSONObject())
                                 .controller(dd.getDocument().getId())
                                 .type(event.getKeyType())
                                 .build());
@@ -313,6 +320,14 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                 monitor.warning("Updating DID documents after activating a KeyPair failed: %s".formatted(errors));
             }
         });
+    }
+
+    private Result<JWK> tryParseJwk(String serialized) {
+        try {
+            return Result.success(JWK.parse(serialized));
+        } catch (ParseException e) {
+            return failure("Failed to parse JWK from string: %s".formatted(e));
+        }
     }
 
     @WithSpan(value = "did-document.keypair-revoked", kind = SpanKind.INTERNAL)

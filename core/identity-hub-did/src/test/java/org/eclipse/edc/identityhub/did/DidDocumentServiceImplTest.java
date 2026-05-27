@@ -16,7 +16,9 @@ package org.eclipse.edc.identityhub.did;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
@@ -47,6 +49,12 @@ import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -568,6 +576,117 @@ class DidDocumentServiceImplTest {
         verify(didResourceStoreMock).findById(did); // happens during the publishing
         verifyNoMoreInteractions(didResourceStoreMock);
         verify(publisherMock).publish(eq(did));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void onKeyPairActivated_withRsaKey() throws NoSuchAlgorithmException {
+        var keyId = "key-id";
+        var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(2048);
+        var keyPair = keyPairGenerator.generateKeyPair();
+        var key = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
+                .privateKey((RSAPrivateKey) keyPair.getPrivate())
+                .keyID(keyId)
+                .algorithm(JWSAlgorithm.RS256)
+                .x509CertURL(URI.create("https://example.com/cert"))
+                .build();
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
+
+        when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
+        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(publisherMock.publish(did)).thenReturn(Result.success());
+
+        var event = EventEnvelope.Builder.newInstance()
+                .at(System.currentTimeMillis())
+                .id(UUID.randomUUID().toString())
+                .payload(KeyPairActivated.Builder.newInstance()
+                        .keyId(keyId)
+                        .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
+                        .participantContextId("test-participant")
+                        .publicKey(key.toPublicJWK().toJSONString(), JSON_WEB_KEY_2020)
+                        .build())
+                .build();
+
+        service.on(event);
+
+        verify(didResourceStoreMock).query(any(QuerySpec.class));
+        verify(didResourceStoreMock).update(argThat(dr ->
+                dr.getDocument().getVerificationMethod().stream().anyMatch(vm -> vm.getId().equals(keyId) &&
+                        vm.getPublicKeyJwk().containsKey("x5u") &&
+                        vm.getPublicKeyJwk().containsKey("alg"))));
+        verify(didResourceStoreMock).findById(did); // happens during the publishing
+        verifyNoMoreInteractions(didResourceStoreMock);
+        verify(publisherMock).publish(eq(did));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void onKeyPairActivated_withPemKey() throws JOSEException {
+        var keyId = "key-id";
+        var key = new ECKeyGenerator(Curve.P_256).keyID(keyId).generate();
+        var encoded = Base64.getMimeEncoder(64, new byte[]{ '\n' }).encodeToString(key.toPublicJWK().toECPublicKey().getEncoded());
+        var pem = "-----BEGIN PUBLIC KEY-----\n" + encoded + "\n-----END PUBLIC KEY-----";
+
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
+
+        when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
+        when(didResourceStoreMock.update(any())).thenReturn(StoreResult.success());
+        when(didResourceStoreMock.findById(eq(did))).thenReturn(didResource);
+        when(publisherMock.publish(did)).thenReturn(Result.success());
+
+        var event = EventEnvelope.Builder.newInstance()
+                .at(System.currentTimeMillis())
+                .id(UUID.randomUUID().toString())
+                .payload(KeyPairActivated.Builder.newInstance()
+                        .keyId(keyId)
+                        .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
+                        .participantContextId("test-participant")
+                        .publicKey(pem, JSON_WEB_KEY_2020)
+                        .build())
+                .build();
+
+        service.on(event);
+
+        verify(didResourceStoreMock).query(any(QuerySpec.class));
+        verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().anyMatch(vm -> vm.getId().equals(keyId))));
+        verify(didResourceStoreMock).findById(did);
+        verifyNoMoreInteractions(didResourceStoreMock);
+        verify(publisherMock).publish(eq(did));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void onKeyPairActivated_withInvalidKey_shouldLogWarning() {
+        var keyId = "key-id";
+        var doc = createDidDocument().build();
+        var did = doc.getId();
+        var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
+
+        when(didResourceStoreMock.query(any(QuerySpec.class))).thenReturn(List.of(didResource));
+
+        var event = EventEnvelope.Builder.newInstance()
+                .at(System.currentTimeMillis())
+                .id(UUID.randomUUID().toString())
+                .payload(KeyPairActivated.Builder.newInstance()
+                        .keyId(keyId)
+                        .keyPairResource(KeyPairResource.Builder.newPresentationSigning().id(UUID.randomUUID().toString()).build())
+                        .participantContextId("test-participant")
+                        .publicKey("not-a-valid-key", JSON_WEB_KEY_2020)
+                        .build())
+                .build();
+
+        service.on(event);
+
+        verify(monitorMock).warning(anyString());
+        verify(didResourceStoreMock).query(any(QuerySpec.class));
+        verifyNoMoreInteractions(didResourceStoreMock);
+        verifyNoInteractions(publisherMock);
     }
 
     @SuppressWarnings("unchecked")
