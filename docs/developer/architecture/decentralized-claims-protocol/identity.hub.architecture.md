@@ -60,7 +60,7 @@ A `VerifiableCredentialResource` (VCR) is a type of `identity resource` and will
 class VerifiableCredentialResource implements IdentityResource {
     String id;
     long timestamp;
-    VcState state;
+    VcStatus state;
     String issuerId;
     String holderId;
     Policy issuancePolicy;
@@ -81,8 +81,8 @@ the resource was requested.
 Credential states are defined as follows:
 
 ```java
-enum VcState {
-    INITIAL, REQUESTING, REQUESTED, ISSUING, ISSUED, REISSUE_REQUESTING, REISSUE_REQUESTED, TERMINATED, ERROR
+enum VcStatus {
+    INITIAL, REQUESTING, REQUESTED, ISSUING, ISSUED, REVOKED, SUSPENDED, EXPIRED, NOT_YET_VALID, ERROR
 }
 ```
 
@@ -146,7 +146,7 @@ KeyPair states are defined as follows:
 
 ```java
 enum KeyPairState {
-    INITIAL, ACTIVATED, ROTATED, REVOKED, ERROR
+    CREATED, ACTIVATED, ROTATED, REVOKED
 }
 ```
 

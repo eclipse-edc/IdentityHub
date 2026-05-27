@@ -109,10 +109,9 @@ credential type and requirements for issuance:
 ```json
 {
   "credentialType": "MembershipCredential",
-  "dataModel": "1.1",
-  "schema": "",
-  "validityPeriod": 1000000,
-  "format": "",
+  "format": "vc20-bssl/jwt",
+  "jsonSchema": "",
+  "validity": 1000000,
   "attestations": [
     "onboarding"
   ],
@@ -145,13 +144,13 @@ This is deserialized to:
 ```java
 public class CredentialDefinition {
     private String credentialType;
-    private String schema;
     private String format;
+    private String jsonSchema;
+    private String jsonSchemaUrl;
     private long validity;
 
-    private DataModelVersion dataModel = DataModelVersion.V_1_1;
-
     private List<String> attestations = new ArrayList<>();
+    private List<String> additionalContext = new ArrayList<>();
     private List<CredentialRuleDefinition> rules = new ArrayList<>();
     private final List<MappingDefinition> mappings = new ArrayList<>();
 }
@@ -160,12 +159,15 @@ public class CredentialDefinition {
 The following properties are defined:
 
 - `credentialType`: The credential type, e.g. `MembershipCredential`
-- `schema`: The unparsed credential Json Schema
+- `format`: The credential format, e.g. `vc20-bssl/jwt` or `vc11-sl2021/jwt`. This should correspond to
+  the [DCP profile](https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol/v1.0.1/#profiles-of-the-decentralized-claims-protocol).
+- `jsonSchema`: The unparsed credential JSON Schema (mutually exclusive with `jsonSchemaUrl`).
+- `jsonSchemaUrl`: A URL pointing to the credential JSON Schema (mutually exclusive with `jsonSchema`).
 - `validity`: An optional validity defining the length of time the credential should be valid for in milliseconds.
-- `dataModel`: The VC Data Model to use.
 - `attestations`: The attestation sources that will be executed for an issuance request.
+- `additionalContext`: Additional JSON-LD context entries to include in the credential.
 - `rules`: The rules that will be evaluated to determine if a credential should be issued.
-- `mappingDefinitions`: How data is mapped into the issued credential.
+- `mappings`: How data is mapped into the issued credential.
 
 ### Request Processing
 
