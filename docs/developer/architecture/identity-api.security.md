@@ -173,7 +173,7 @@ public class DidManagementApiExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        authorizationService.addLoookupFunction(DidResource.class, did -> didDocumentService.findById(did));
+        authorizationService.addLookupFunction(DidResource.class, (owner, id) -> didDocumentService.findById(id));
         // other initialization
     }
 }
@@ -186,22 +186,31 @@ the `ServicePrincipal` who made the request (see [3. Authentication](#3-authenti
 
 ```java
 public class AuthorizationServiceImpl implements AuthorizationService {
-    private final Map<Class<?>, Function<String, ParticipantResource>> resourceLookupFunctions = new HashMap<>();
+    private final Map<Class<?>, BiFunction<String, String, ParticipantResource>> resourceLookupFunctions = new HashMap<>();
 
     @Override
-    public ServiceResult<Void> isAuthorized(Principal principal, String resourceId, Class<?> resourceClass) {
+    public ServiceResult<Void> authorize(SecurityContext securityContext, String resourceOwnerId, String resourceId, Class<? extends ParticipantResource> resourceClass) {
 
         var function = resourceLookupFunctions.get(resourceClass);
         if (function == null) {
             return ServiceResult.unauthorized(/* error message */);
         }
 
-        var isAuthorized = ofNullable(function.apply(resourceId))
-                .map(pr -> Objects.equals(pr.getParticipantId(), principal.getName()))
-                .orElse(false);
+        var resource = function.apply(resourceOwnerId, resourceId);
+        if (resource == null) {
+            return ServiceResult.notFound(/* error message */);
+        }
 
-        return isAuthorized ? ServiceResult.success() : ServiceResult.unauthorized(/* error message */);
+        if (securityContext.isUserInRole(ServicePrincipal.ROLE_ADMIN)) {
+            return ServiceResult.success();
+        }
 
+        var securityPrincipalName = securityContext.getUserPrincipal().getName();
+        if (!Objects.equals(securityPrincipalName, resourceOwnerId) || !Objects.equals(resource.getParticipantContextId(), resourceOwnerId)) {
+            return ServiceResult.unauthorized(/* error message */);
+        }
+
+        return ServiceResult.success();
     }
 }
 ```
