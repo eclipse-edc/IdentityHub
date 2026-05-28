@@ -80,7 +80,7 @@ public abstract class IssuanceEvent extends Event {
 
         public T build() {
             Objects.requireNonNull(event.issuerParticipantContextId);
-            Objects.requireNonNull(event.holderId);
+            Objects.requireNonNull(event.holderProcessId);
             return event;
         }
     }

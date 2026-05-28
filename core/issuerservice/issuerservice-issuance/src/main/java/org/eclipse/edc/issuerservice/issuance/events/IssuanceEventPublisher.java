@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.issuerservice.issuance.events;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.issuerservice.spi.issuance.events.CredentialDelivered;
 import org.eclipse.edc.issuerservice.spi.issuance.events.CredentialGenerated;
@@ -21,6 +22,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceApproved;
 import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceEvent;
 import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceEventListener;
 import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceProcessErrored;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceReceived;
 import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceRejected;
 import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceRequested;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
@@ -29,6 +31,7 @@ import org.eclipse.edc.spi.event.EventRouter;
 
 import java.time.Clock;
 import java.util.Collection;
+import java.util.Map;
 
 public class IssuanceEventPublisher implements IssuanceEventListener {
     private final Clock clock;
@@ -40,7 +43,17 @@ public class IssuanceEventPublisher implements IssuanceEventListener {
     }
 
     @Override
-    public void received(IssuanceProcess ip) {
+    public void received(String holderPid, String issuerParticipantContextId, Map<String, CredentialFormat> formats) {
+        var event = IssuanceReceived.Builder.newInstance()
+                .issuerParticipantContextId(issuerParticipantContextId)
+                .holderProcessId(holderPid)
+                .requestedFormats(formats)
+                .build();
+        publishEvent(event);
+    }
+
+    @Override
+    public void requested(IssuanceProcess ip) {
         var event = baseBuilder(IssuanceRequested.Builder.newInstance(), ip)
                 .credentialDefinitionIds(ip.getCredentialDefinitions())
                 .credentialFormats(ip.getCredentialFormats())
@@ -52,7 +65,7 @@ public class IssuanceEventPublisher implements IssuanceEventListener {
     @Override
     public void rejected(String holderPid, String issuerParticipantContextId, String failureDetail) {
         var event = IssuanceRejected.Builder.newInstance()
-                .holderId(holderPid)
+                .holderProcessId(holderPid)
                 .issuerParticipantContextId(issuerParticipantContextId)
                 .reason(failureDetail)
                 .build();

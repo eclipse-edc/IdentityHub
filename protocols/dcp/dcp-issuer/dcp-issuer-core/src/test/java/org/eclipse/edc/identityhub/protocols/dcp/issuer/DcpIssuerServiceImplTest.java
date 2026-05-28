@@ -54,6 +54,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -125,11 +126,11 @@ public class DcpIssuerServiceImplTest {
 
         var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
         //noinspection unchecked
-        verify(issuanceObservable).invokeForEach(listenerCaptor.capture());
+        verify(issuanceObservable, times(2)).invokeForEach(listenerCaptor.capture());
         var listener = mock(IssuanceEventListener.class);
         //noinspection unchecked
         listenerCaptor.getValue().accept(listener);
-        verify(listener).received(issuanceProcess);
+        verify(listener).requested(issuanceProcess);
     }
 
     @Test
@@ -207,7 +208,7 @@ public class DcpIssuerServiceImplTest {
 
         var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
         //noinspection unchecked
-        verify(issuanceObservable).invokeForEach(listenerCaptor.capture());
+        verify(issuanceObservable, times(2)).invokeForEach(listenerCaptor.capture());
         var listener = mock(IssuanceEventListener.class);
         //noinspection unchecked
         listenerCaptor.getValue().accept(listener);

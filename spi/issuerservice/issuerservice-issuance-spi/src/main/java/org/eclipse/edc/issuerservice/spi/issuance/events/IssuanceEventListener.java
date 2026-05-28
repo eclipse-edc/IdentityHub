@@ -14,11 +14,13 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.events;
 
+import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.spi.observe.Observable;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * Interface implemented by listeners registered to observe credential issuance changes via {@link Observable#registerListener}.
@@ -27,10 +29,18 @@ import java.util.Collection;
 public interface IssuanceEventListener {
 
     /**
+     * A credential issuance request was received. A decision whether it is rejected or will be processed further is not
+     * made yet.
+     */
+    default void received(String holderPid, String participantContextId, Map<String, CredentialFormat> content) {
+
+    }
+
+    /**
      * A credential issuance request was successfully received and will be processed further by the Issuer service.
      * An {@link IssuanceApproved} has been created to represent the request internally.
      */
-    default void received(IssuanceProcess ip) {
+    default void requested(IssuanceProcess ip) {
 
     }
 

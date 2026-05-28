@@ -103,6 +103,7 @@ class CredentialRequestManagerImplTest {
                 .thenReturn(success(Json.createObjectBuilder().build()));
         when(sts.createToken(anyString(), anyMap(), ArgumentMatchers.isNull())).thenReturn(success(TokenRepresentation.Builder.newInstance().build()));
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
+        when(store.findById(anyString())).thenReturn(null);
         when(store.save(any())).thenReturn(StoreResult.success());
     }
 
@@ -130,6 +131,7 @@ class CredentialRequestManagerImplTest {
                     .isSucceeded()
                     .isEqualTo("test-holder-request-id");
 
+            verify(store).findById(anyString());
             verify(store).save(any());
             verifyNoMoreInteractions(store, resolver, transformerRegistry, httpClient);
         }
@@ -142,6 +144,7 @@ class CredentialRequestManagerImplTest {
                     .isFailed()
                     .detail().isEqualTo("foo");
 
+            verify(store).findById(anyString());
             verify(store).save(any());
             verifyNoMoreInteractions(store, resolver, transformerRegistry, httpClient);
         }

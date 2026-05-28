@@ -71,19 +71,23 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
     @Override
     public ServiceResult<CredentialRequestMessage.Response> initiateCredentialsIssuance(String participantContextId, CredentialRequestMessage message, DcpRequestContext context) {
         if (message.getCredentials().isEmpty()) {
+            observable.invokeForEach(l -> l.rejected(message.getHolderPid(), participantContextId, "No credentials requested"));
             return ServiceResult.badRequest("No credentials requested");
         }
         var credentialFormats = parseCredentialFormats(message);
 
         if (credentialFormats.failed()) {
+            observable.invokeForEach(l -> l.rejected(message.getHolderPid(), participantContextId, credentialFormats.getFailureDetail()));
             return ServiceResult.badRequest(credentialFormats.getFailureMessages());
         }
+
+        observable.invokeForEach(l -> l.received(message.getHolderPid(), participantContextId, credentialFormats.getContent()));
         return transactionContext.execute(() -> getCredentialsDefinitions(message, credentialFormats.getContent())
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
                 .compose(this::evaluateRules)
                 .compose(evaluation -> createIssuanceProcess(participantContextId, message.getHolderPid(), credentialFormats.getContent(), context, evaluation))
                 .onSuccess(ip -> {
-                    observable.invokeForEach(l -> l.received(ip));
+                    observable.invokeForEach(l -> l.requested(ip));
                 })
                 .onFailure(f -> {
                     observable.invokeForEach(l -> l.rejected(message.getHolderPid(), participantContextId, f.getFailureDetail()));

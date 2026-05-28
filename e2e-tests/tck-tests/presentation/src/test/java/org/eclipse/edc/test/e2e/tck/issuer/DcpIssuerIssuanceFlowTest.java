@@ -30,12 +30,21 @@ import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionService;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.CredentialDefinitionService;
+import org.eclipse.edc.issuerservice.spi.issuance.events.IssuanceReceived;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.MappingDefinition;
+import org.eclipse.edc.issuerservice.spi.issuance.process.store.IssuanceProcessStore;
 import org.eclipse.edc.junit.extensions.ComponentRuntimeExtension;
 import org.eclipse.edc.junit.extensions.RuntimeExtension;
+import org.eclipse.edc.spi.event.Event;
+import org.eclipse.edc.spi.event.EventEnvelope;
+import org.eclipse.edc.spi.event.EventRouter;
+import org.eclipse.edc.spi.event.EventSubscriber;
+import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.store.InMemoryStatefulEntityStore;
 import org.eclipse.edc.test.e2e.tck.TckTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -101,6 +110,21 @@ public class DcpIssuerIssuanceFlowTest {
         createHolder(issuer, holderDid);
         var response = createParticipantContext(issuer, baseIssuerServiceUrl);
         createDefinitions(issuer);
+
+        var issuanceProcessStore = issuer.getService(IssuanceProcessStore.class);
+
+        // this block deletes all potentially existing issuance processes with the same holderPID for the holder to avoid unintended 409 errors
+        //noinspection rawtypes
+        if (issuanceProcessStore instanceof InMemoryStatefulEntityStore memStore) {
+            issuer.getService(EventRouter.class).registerSync(IssuanceReceived.class, new EventSubscriber() {
+                @Override
+                public <E extends Event> void on(EventEnvelope<E> event) {
+                    var holderPid = ((IssuanceReceived) event.getPayload()).getHolderProcessId();
+                    var query = QuerySpec.Builder.newInstance().filter(new Criterion("holderPid", "=", holderPid)).build();
+                    issuanceProcessStore.query(query).forEach(ip -> memStore.delete(ip.getId()));
+                }
+            });
+        }
 
         var result = TckRuntime.Builder.newInstance()
                 .properties(Map.of(
