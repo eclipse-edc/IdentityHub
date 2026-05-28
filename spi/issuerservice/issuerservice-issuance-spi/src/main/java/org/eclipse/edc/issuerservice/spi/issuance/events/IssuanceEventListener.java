@@ -31,6 +31,7 @@ public interface IssuanceEventListener {
     /**
      * A credential issuance request was received. A decision whether it is rejected or will be processed further is not
      * made yet.
+     * An {@link IssuanceReceived} has been created to represent the request internally.
      */
     default void received(String holderPid, String participantContextId, Map<String, CredentialFormat> content) {
 
@@ -38,7 +39,7 @@ public interface IssuanceEventListener {
 
     /**
      * A credential issuance request was successfully received and will be processed further by the Issuer service.
-     * An {@link IssuanceApproved} has been created to represent the request internally.
+     * An {@link IssuanceRequested} has been created to represent the request internally.
      */
     default void requested(IssuanceProcess ip) {
 
