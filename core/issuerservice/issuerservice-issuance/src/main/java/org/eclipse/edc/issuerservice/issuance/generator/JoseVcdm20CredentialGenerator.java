@@ -42,8 +42,10 @@ import java.util.UUID;
 
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_STATUS;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.CREDENTIAL_SUBJECT;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.DESCRIPTION;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.ID;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.ISSUER;
+import static org.eclipse.edc.issuerservice.issuance.generator.Constants.NAME;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.TYPE;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VALID_FROM;
 import static org.eclipse.edc.issuerservice.issuance.generator.Constants.VERIFIABLE_CREDENTIAL;
@@ -90,6 +92,13 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
                         .build());
 
         statusResult.onSuccess(builder::credentialStatus);
+
+        if (claims.containsKey(NAME)) {
+            builder.name((String) claims.get(NAME));
+        }
+        if (claims.containsKey(DESCRIPTION)) {
+            builder.description((String) claims.get(DESCRIPTION));
+        }
 
         var credential = builder.build();
 
@@ -142,10 +151,10 @@ public class JoseVcdm20CredentialGenerator implements CredentialGenerator {
             claims.put("validUntil", credential.getExpirationDate().toString());
         }
         if (credential.getDescription() != null) {
-            claims.put("description", credential.getDescription());
+            claims.put(DESCRIPTION, credential.getDescription());
         }
         if (credential.getName() != null) {
-            claims.put("name", credential.getName());
+            claims.put(NAME, credential.getName());
         }
 
         var status = credentialStatusClaims(credential);

@@ -124,7 +124,7 @@ class JoseVcdm20CredentialGeneratorTest {
     }
 
     @Test
-    void generateCredential_additionalContext() throws ParseException {
+    void generateCredential_additionalContext() {
         var subjectClaims = Map.of("name", "Foo Bar");
         var statusClaims = Map.of("id", UUID.randomUUID().toString(),
                 TYPE, "BitStringStatusListEntry",
@@ -149,9 +149,8 @@ class JoseVcdm20CredentialGeneratorTest {
 
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Test
-    void generateCredential_whenNoStatus() throws ParseException {
+    void generateCredential_whenNoStatus() {
 
         var subjectClaims = Map.of("name", "Foo Bar");
         Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims);
@@ -183,6 +182,23 @@ class JoseVcdm20CredentialGeneratorTest {
         REQUIRED_CLAIMS.forEach(claim -> assertThat(extractedClaims.getClaim(claim)).describedAs("Claim '%s' cannot be null", claim).isNotNull());
         assertThat(extractJwtHeader(container.rawVc()).getKeyID()).isEqualTo("did:example:issuer#%s".formatted(PUBLIC_KEY_ID));
         assertThat(extractedClaims.getClaims()).doesNotContainKey(CREDENTIAL_STATUS);
+    }
+
+    @Test
+    void generateCredential_withNameAndDescription() {
+        var subjectClaims = Map.of("foo", "bar");
+        Map<String, Object> claims = Map.of(CREDENTIAL_SUBJECT, subjectClaims, "name", "Test Credential", "description", "A test credential");
+
+        var result = jwtCredentialGenerator.generateCredential(TEST_PARTICIPANT, createCredentialDefinition(), PRIVATE_KEY_ALIAS, PUBLIC_KEY_ID, "did:example:issuer", "did:example:participant", claims);
+
+        assertThat(result).isSucceeded();
+        assertThat(result.getContent().credential()).satisfies(vc -> {
+            assertThat(vc.getName()).isEqualTo("Test Credential");
+            assertThat(vc.getDescription()).isEqualTo("A test credential");
+        });
+        var extractedClaims = extractJwtClaims(result.getContent().rawVc());
+        assertThat(extractedClaims.getClaim("name")).isEqualTo("Test Credential");
+        assertThat(extractedClaims.getClaim("description")).isEqualTo("A test credential");
     }
 
     @Test

@@ -122,16 +122,22 @@ public class DcpIssuanceFlowEndToEndTest {
 
             var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);
             var idMapping = new MappingDefinition("participant.id", "credentialSubject.id", true);
+            var credentialNameMapping = new MappingDefinition("participant.credentialName", "name", true);
+            var credentialDescMapping = new MappingDefinition("participant.credentialDescription", "description", true);
             var credentialDefinitionId = UUID.randomUUID().toString();
             var attestationDefinition = setupIssuer(issuer, Map.of(
                     "claim", "onboarding.signedDocuments",
                     "operator", "eq",
-                    "value", true), List.of(nameMapping, idMapping), format, credentialDefinitionId, credentialType);
+                    "value", true), List.of(nameMapping, idMapping, credentialNameMapping, credentialDescMapping), format, credentialDefinitionId, credentialType);
 
             var attestationSource = mock(AttestationSource.class);
             when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
             when(attestationSource.execute(any()))
-                    .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice", "id", participantDid))));
+                    .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true),
+                            "participant", Map.of("name", "Alice",
+                                    "id", participantDid,
+                                    "credentialName", "test-credential-name",
+                                    "credentialDescription", "test-credential-description"))));
 
             var requestId = UUID.randomUUID().toString();
             var request = """
@@ -178,6 +184,10 @@ public class DcpIssuanceFlowEndToEndTest {
                         assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
                         assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
                         assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                        if (format == VC2_0_JOSE) {
+                            assertThat(vc.getVerifiableCredential().credential().getName()).isEqualTo("test-credential-name");
+                            assertThat(vc.getVerifiableCredential().credential().getDescription()).isEqualTo("test-credential-description");
+                        }
                         assertThat(vc.getVerifiableCredential().credential().getCredentialStatus()).isNotEmpty()
                                 .anySatisfy(t -> {
                                     assertThat(t.getProperty("", "statusPurpose").toString()).isEqualTo("revocation");

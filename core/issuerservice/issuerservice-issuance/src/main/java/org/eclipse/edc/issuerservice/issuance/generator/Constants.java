@@ -23,5 +23,7 @@ public interface Constants {
     String VALID_FROM = "validFrom";
     String ID = "id";
     String ISSUER = "issuer";
+    String NAME = "name";
+    String DESCRIPTION = "description";
     String W3C_CREDENTIALS_URL_V2 = "https://www.w3.org/ns/credentials/v2";
 }
