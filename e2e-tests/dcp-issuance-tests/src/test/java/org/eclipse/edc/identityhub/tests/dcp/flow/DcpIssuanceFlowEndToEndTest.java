@@ -51,6 +51,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -217,6 +218,66 @@ public class DcpIssuanceFlowEndToEndTest {
             inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof IssuanceApproved));
             inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof CredentialGenerated));
             inOrder.verify(subscriber).on(argThat(env -> env.getPayload() instanceof CredentialDelivered));
+        }
+
+        @Test
+        void issuanceFlow_rejectExistingProcessByHolderPid(IssuerService issuer, IdentityHub identityHub) {
+            var subscriber = mock(EventSubscriber.class);
+            issuer.registerListener(IssuanceEvent.class, subscriber);
+
+            var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);
+            var idMapping = new MappingDefinition("participant.id", "credentialSubject.id", true);
+            var credentialDefinitionId = UUID.randomUUID().toString();
+            var format = VC2_0_JOSE;
+            var credentialType = "MembershipCredential_20_" + UUID.randomUUID();
+
+            var attestationDefinition = setupIssuer(issuer, Map.of(
+                    "claim", "onboarding.signedDocuments",
+                    "operator", "eq",
+                    "value", true), List.of(nameMapping, idMapping), format, credentialDefinitionId, credentialType);
+
+            var attestationSource = mock(AttestationSource.class);
+            when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
+            when(attestationSource.execute(any()))
+                    .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true), "participant", Map.of("name", "Alice", "id", participantDid))));
+
+            var requestId = UUID.randomUUID().toString();
+            var request = """
+                    {
+                      "issuerDid": "%s",
+                      "holderPid": "%s",
+                      "credentials": [{ "format": "%s", "id": "%s", "type": "%s" }]
+                    }
+                    """.formatted(issuerDid, requestId, format.name(), credentialDefinitionId, credentialType);
+
+            // make first request - expect it to succeed
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(request)
+                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .then()
+                    .log().all()
+                    .statusCode(201);
+
+            // wait for the issuance process to be approved on the issuer side
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID)).hasSizeGreaterThanOrEqualTo(1)
+                            .anySatisfy(t -> {
+                                assertThat(t.getHolderPid()).isEqualTo(requestId);
+                                assertThat(t.getState()).isGreaterThanOrEqualTo(IssuanceProcessStates.APPROVED.code());
+                            }));
+
+            // make another request with the same holder-PID, expect a 409
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", participantToken))
+                    .body(request)
+                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(409);
         }
 
         /**

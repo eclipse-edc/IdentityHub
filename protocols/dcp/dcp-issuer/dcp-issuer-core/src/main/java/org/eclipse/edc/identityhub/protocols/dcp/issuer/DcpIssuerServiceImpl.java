@@ -71,20 +71,23 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
     @Override
     public ServiceResult<CredentialRequestMessage.Response> initiateCredentialsIssuance(String participantContextId, CredentialRequestMessage message, DcpRequestContext context) {
         if (message.getCredentials().isEmpty()) {
+            observable.invokeForEach(l -> l.rejected(message.getHolderPid(), participantContextId, "No credentials requested"));
             return ServiceResult.badRequest("No credentials requested");
         }
         var credentialFormats = parseCredentialFormats(message);
 
         if (credentialFormats.failed()) {
+            observable.invokeForEach(l -> l.rejected(message.getHolderPid(), participantContextId, credentialFormats.getFailureDetail()));
             return ServiceResult.badRequest(credentialFormats.getFailureMessages());
-
         }
+
+        observable.invokeForEach(l -> l.received(message.getHolderPid(), participantContextId, credentialFormats.getContent()));
         return transactionContext.execute(() -> getCredentialsDefinitions(message, credentialFormats.getContent())
                 .compose(credentialDefinitions -> evaluateAttestations(context, credentialDefinitions))
                 .compose(this::evaluateRules)
                 .compose(evaluation -> createIssuanceProcess(participantContextId, message.getHolderPid(), credentialFormats.getContent(), context, evaluation))
                 .onSuccess(ip -> {
-                    observable.invokeForEach(l -> l.received(ip));
+                    observable.invokeForEach(l -> l.requested(ip));
                 })
                 .onFailure(f -> {
                     observable.invokeForEach(l -> l.rejected(message.getHolderPid(), participantContextId, f.getFailureDetail()));
@@ -157,6 +160,15 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
 
     private ServiceResult<IssuanceProcess> createIssuanceProcess(String participantContextId, String holderPid, Map<String, CredentialFormat> credentialFormats, DcpRequestContext context, AttestationEvaluationResponse evaluationResponse) {
 
+        var query = QuerySpec.Builder.newInstance()
+                .filter(Criterion.criterion("holderPid", "=", holderPid))
+                .filter(Criterion.criterion("participantContextId", "=", participantContextId))
+                .build();
+
+        var existing = issuanceProcessStore.query(query).findAny();
+        if (existing.isPresent()) {
+            return ServiceResult.conflict("An issuance process with holderPid '%s' already exists for this participant.".formatted(holderPid));
+        }
 
         var credentialDefinitionIds = evaluationResponse.credentialDefinitions().stream()
                 .map(CredentialDefinition::getId)

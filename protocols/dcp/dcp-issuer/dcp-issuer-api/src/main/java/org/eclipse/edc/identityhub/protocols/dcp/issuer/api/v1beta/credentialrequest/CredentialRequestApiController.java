@@ -92,7 +92,7 @@ public class CredentialRequestApiController implements CredentialRequestApi {
 
         return dcpIssuerService.initiateCredentialsIssuance(participantContext.getParticipantContextId(), credentialMessage, participant)
                 .map(response -> Response.created(URI.create("/v1beta/participants/%s/requests/%s".formatted(participantContextId, response.requestId()))).build())
-                .orElseThrow(exceptionMapper(CredentialRequestMessage.class, null));
+                .orElseThrow(exceptionMapper(CredentialRequestMessage.class));
 
     }
 }

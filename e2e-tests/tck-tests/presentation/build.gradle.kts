@@ -20,6 +20,7 @@ dependencies {
     testRuntimeOnly(libs.dcp.testcases)
     testImplementation(libs.restAssured)
     testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.edc.lib.store)
 
     testImplementation(libs.tck.runtime)
     testImplementation(libs.dcp.system)

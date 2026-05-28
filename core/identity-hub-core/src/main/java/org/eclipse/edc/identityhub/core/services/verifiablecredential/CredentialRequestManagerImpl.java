@@ -41,6 +41,7 @@ import org.eclipse.edc.spi.response.ResponseStatus;
 import org.eclipse.edc.spi.response.StatusResult;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.statemachine.AbstractStateEntityManager;
 import org.eclipse.edc.statemachine.Processor;
 import org.eclipse.edc.statemachine.ProcessorImpl;
@@ -100,12 +101,16 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 .traceContext(traceContext)
                 .build();
 
-        try {
-            updateRequest(newRequest);
-        } catch (EdcPersistenceException e) {
-            return ServiceResult.badRequest(e.getMessage());
-        }
-        return ServiceResult.success(holderPid);
+        return transactionContext.execute(() -> {
+            if (findById(holderPid) != null) {
+                return ServiceResult.conflict("Holder Credential Request with holderPid '%s' already exists".formatted(holderPid));
+            }
+            try {
+                return ServiceResult.from(updateRequest(newRequest)).map(u -> holderPid);
+            } catch (EdcPersistenceException e) {
+                return ServiceResult.badRequest(e.getMessage());
+            }
+        });
     }
 
     @Override
@@ -150,8 +155,8 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         monitor.warning("A Holder Credential Request has been transitioned to '%s': %s".formatted(ERROR, failureDetail));
     }
 
-    private void updateRequest(HolderCredentialRequest request) {
-        transactionContext.execute(() -> update(request));
+    private StoreResult<?> updateRequest(HolderCredentialRequest request) {
+        return transactionContext.execute(() -> update(request));
     }
 
     private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, CompletableFuture<StatusResult<Void>>> function) {
