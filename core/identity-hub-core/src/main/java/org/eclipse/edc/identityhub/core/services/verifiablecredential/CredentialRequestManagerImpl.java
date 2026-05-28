@@ -101,9 +101,6 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 .build();
 
         try {
-            if (findById(holderPid) != null) {
-                return ServiceResult.conflict("Holder Credential Request with holderPid '%s' already exists".formatted(holderPid));
-            }
             updateRequest(newRequest);
         } catch (EdcPersistenceException e) {
             return ServiceResult.badRequest(e.getMessage());
@@ -154,7 +151,12 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     private void updateRequest(HolderCredentialRequest request) {
-        transactionContext.execute(() -> update(request));
+        transactionContext.execute(() -> {
+            if (findById(request.getHolderPid()) != null) {
+                return ServiceResult.conflict("Holder Credential Request with holderPid '%s' already exists".formatted(request.getHolderPid()));
+            }
+            return update(request);
+        });
     }
 
     private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, CompletableFuture<StatusResult<Void>>> function) {

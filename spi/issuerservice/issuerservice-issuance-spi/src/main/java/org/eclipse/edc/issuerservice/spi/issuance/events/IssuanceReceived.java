@@ -22,15 +22,19 @@ import java.util.Map;
 
 public class IssuanceReceived extends IssuanceEvent {
 
+    private Map<String, CredentialFormat> requestedFormats;
+
     @Override
     public String name() {
         return "issuance.received";
     }
 
+    public Map<String, CredentialFormat> getRequestedFormats() {
+        return requestedFormats;
+    }
+
     @JsonPOJOBuilder(withPrefix = "")
     public static class Builder extends IssuanceEvent.Builder<IssuanceReceived, IssuanceReceived.Builder> {
-
-        private Map<String, CredentialFormat> requestedFormats;
 
         protected Builder() {
             super(new IssuanceReceived());
@@ -47,13 +51,14 @@ public class IssuanceReceived extends IssuanceEvent {
             return this;
         }
 
-        public Builder requestedFormats(Map<String, CredentialFormat> formats) {
-            this.requestedFormats = formats;
-            return self();
+        @Override
+        public IssuanceReceived build() {
+            return super.build();
         }
 
-        public Map<String, CredentialFormat> getRequestedFormats() {
-            return requestedFormats;
+        public Builder requestedFormats(Map<String, CredentialFormat> formats) {
+            this.event.requestedFormats = formats;
+            return self();
         }
     }
 }

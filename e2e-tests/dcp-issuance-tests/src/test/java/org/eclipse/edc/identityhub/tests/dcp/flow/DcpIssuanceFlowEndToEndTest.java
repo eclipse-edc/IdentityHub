@@ -250,7 +250,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     }
                     """.formatted(issuerDid, requestId, format.name(), credentialDefinitionId, credentialType);
 
-            // make first request - expect it to fail
+            // make first request - expect it to succeed
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
