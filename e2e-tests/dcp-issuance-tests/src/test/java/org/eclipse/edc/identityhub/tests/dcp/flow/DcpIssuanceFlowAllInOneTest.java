@@ -23,6 +23,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
+import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
@@ -425,7 +426,7 @@ public class DcpIssuanceFlowAllInOneTest {
             var accessToken = generateJwt(participantDid, participantDid, consumerDid, Map.of("scope", "org.eclipse.dspace.dcp.vc.type:MembershipCredential:read"), ECKey.parse(providerJwk));
             var token = generateJwt(participantDid, consumerDid, consumerDid, Map.of("client_id", consumerDid, "token", accessToken), consumerKey);
 
-            var response = identityHub.getCredentialsEndpoint().baseRequest()
+            var responseBody = identityHub.getCredentialsEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + token)
                     .body("""
@@ -444,7 +445,9 @@ public class DcpIssuanceFlowAllInOneTest {
                     .then()
                     .statusCode(200)
                     .log().ifValidationFails()
-                    .extract().body().as(JsonObject.class);
+                    .extract().body().asString();
+
+            var response = Json.createReader(new java.io.StringReader(responseBody)).readObject();
 
             assertThat(response)
                     .hasEntrySatisfying("type", jsonValue -> assertThat(jsonValue.toString()).contains("PresentationResponseMessage"))
