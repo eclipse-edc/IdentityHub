@@ -265,7 +265,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .body(Matchers.notNullValue())
                     .extract().body().as(CredentialDefinition[].class);
 
-            assertThat(res).hasSize(1).allSatisfy(d -> assertThat(definition).usingRecursiveComparison().isEqualTo(d));
+            assertThat(res).hasSize(1).allSatisfy(d -> assertThat(definition).usingRecursiveComparison().ignoringFields("clock").isEqualTo(d));
         }
 
         @Test
@@ -336,7 +336,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .body(Matchers.notNullValue())
                     .extract().body().as(CredentialDefinition.class);
 
-            assertThat(res).usingRecursiveComparison().isEqualTo(definition);
+            assertThat(res).usingRecursiveComparison().ignoringFields("clock").isEqualTo(definition);
         }
 
         @Test

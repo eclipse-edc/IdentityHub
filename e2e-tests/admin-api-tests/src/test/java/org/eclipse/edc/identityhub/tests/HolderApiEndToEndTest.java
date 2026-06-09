@@ -196,7 +196,7 @@ public class HolderApiEndToEndTest {
                     .body(Matchers.notNullValue())
                     .extract().body().as(Holder[].class);
 
-            assertThat(res).hasSize(1).allSatisfy(p -> assertThat(holder1).usingRecursiveComparison().isEqualTo(p));
+            assertThat(res).hasSize(1).allSatisfy(p -> assertThat(holder1).usingRecursiveComparison().ignoringFields("clock").isEqualTo(p));
         }
 
         @Test
@@ -227,7 +227,7 @@ public class HolderApiEndToEndTest {
                     .body(Matchers.notNullValue())
                     .extract().body().as(Holder.class);
 
-            assertThat(res).usingRecursiveComparison().isEqualTo(expectedParticipant);
+            assertThat(res).usingRecursiveComparison().ignoringFields("clock").isEqualTo(expectedParticipant);
         }
 
         @Test
