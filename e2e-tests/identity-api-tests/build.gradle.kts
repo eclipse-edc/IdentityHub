@@ -28,6 +28,7 @@ dependencies {
 
     testImplementation(libs.testcontainers.junit)
     testImplementation(libs.testcontainers.vault)
+    testRuntimeOnly(libs.bouncyCastle.bcpkixJdk18on)
 }
 
 edcBuild {
