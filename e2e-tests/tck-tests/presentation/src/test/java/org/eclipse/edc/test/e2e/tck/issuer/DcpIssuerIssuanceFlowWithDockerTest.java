@@ -141,7 +141,7 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
             });
         }
 
-        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:1.0.0-RC7")
+        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:1.0.0")
                 .withExtraHost("host.docker.internal", "host-gateway")
                 .withExposedPorts(CALLBACK_PORT)
                 .withEnv(Map.of(
