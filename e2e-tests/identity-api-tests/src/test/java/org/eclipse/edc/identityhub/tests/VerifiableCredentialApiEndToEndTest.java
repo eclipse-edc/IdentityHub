@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.tests;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
 import io.restassured.http.Header;
 import org.eclipse.edc.api.authentication.OauthServerEndToEndExtension;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore;
@@ -48,13 +49,16 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockserver.integration.ClientAndServer;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -70,8 +74,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
 
 public class VerifiableCredentialApiEndToEndTest {
 
@@ -292,21 +294,19 @@ public class VerifiableCredentialApiEndToEndTest {
         @Test
         void createCredentialRequest(IdentityHub identityHub, HolderCredentialRequestStore store) {
             var port = getFreePort();
-            try (var mockedIssuer = ClientAndServer.startClientAndServer(port)) {
+            var mockedIssuer = new WireMockServer(port);
+            mockedIssuer.start();
+            try {
                 var issuerPid = "dummy-issuance-id";
                 // prepare DCP credential requests
-                mockedIssuer.when(request()
-                                .withMethod("POST")
-                                .withPath("/api/issuance/credentials"))
-                        .respond(response()
+                mockedIssuer.stubFor(post(urlPathEqualTo("/api/issuance/credentials"))
+                        .willReturn(aResponse()
                                 .withBody(issuerPid)
-                                .withStatusCode(201));
+                                .withStatus(201)));
 
                 // prepare DCP credential status requests. The state machine is so fast that it may tick over
-                mockedIssuer.when(request()
-                                .withMethod("GET")
-                                .withPath("/api/issuance/request/" + issuerPid))
-                        .respond(response()
+                mockedIssuer.stubFor(get(urlPathEqualTo("/api/issuance/request/" + issuerPid))
+                        .willReturn(aResponse()
                                 .withBody("""
                                         {
                                           "@context": [
@@ -317,7 +317,7 @@ public class VerifiableCredentialApiEndToEndTest {
                                           "status": "RECEIVED"
                                         }
                                         """)
-                                .withStatusCode(200));
+                                .withStatus(200)));
 
 
                 when(DID_RESOLVER_REGISTRY.resolve(eq("did:web:issuer")))
@@ -357,6 +357,8 @@ public class VerifiableCredentialApiEndToEndTest {
                             assertThat(result.getIssuerPid()).isEqualTo(issuerPid);
                             assertThat(result.getHolderPid()).isEqualTo(holderPid);
                         });
+            } finally {
+                mockedIssuer.stop();
             }
         }
 

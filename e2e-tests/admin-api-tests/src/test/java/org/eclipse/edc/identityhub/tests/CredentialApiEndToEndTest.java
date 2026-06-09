@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.tests;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
@@ -60,13 +61,18 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockserver.integration.ClientAndServer;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static io.restassured.http.ContentType.JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.tests.TestData.EXAMPLE_REVOCATION_CREDENTIAL_JWT;
@@ -82,10 +88,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
-import static org.mockserver.model.StringBody.subString;
-import static org.mockserver.verify.VerificationTimes.exactly;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 public class CredentialApiEndToEndTest {
@@ -418,14 +420,14 @@ public class CredentialApiEndToEndTest {
 
 
             var port = getFreePort();
-            try (var mockedHolderEndpoint = ClientAndServer.startClientAndServer(port)) {
+            var mockedHolderEndpoint = new WireMockServer(port);
+            mockedHolderEndpoint.start();
+            try {
 
-                mockedHolderEndpoint.when(request()
-                                .withPath("/api/holder/offers")
-                                .withMethod("POST"))
-                        .respond(response()
+                mockedHolderEndpoint.stubFor(post(urlPathEqualTo("/api/holder/offers"))
+                        .willReturn(aResponse()
                                 .withBody("foobar")
-                                .withStatusCode(200));
+                                .withStatus(200)));
 
 
                 holderStore.create(Holder.Builder.newInstance()
@@ -450,12 +452,12 @@ public class CredentialApiEndToEndTest {
                         .log().ifValidationFails()
                         .statusCode(204);
 
-                mockedHolderEndpoint.verify(request()
-                        .withMethod("POST")
-                        .withPath("/api/holder/offers")
-                        .withBody(subString("credentialIssuer"))
-                        .withBody(subString("credentials"))
-                        .withBody(subString("TestCredential")), exactly(1));
+                mockedHolderEndpoint.verify(exactly(1), postRequestedFor(urlPathEqualTo("/api/holder/offers"))
+                        .withRequestBody(containing("issuer"))
+                        .withRequestBody(containing("credentials"))
+                        .withRequestBody(containing("TestCredential")));
+            } finally {
+                mockedHolderEndpoint.stop();
             }
         }
 
@@ -463,14 +465,14 @@ public class CredentialApiEndToEndTest {
         void sendCredentialOffer_offerMessageFailure(IssuerService issuer, HolderStore holderStore) {
 
             var port = getFreePort();
-            try (var mockedHolderDidServer = ClientAndServer.startClientAndServer(port)) {
+            var mockedHolderDidServer = new WireMockServer(port);
+            mockedHolderDidServer.start();
+            try {
 
-                mockedHolderDidServer.when(request()
-                                .withPath("/api/holder/offers")
-                                .withMethod("POST"))
-                        .respond(response()
+                mockedHolderDidServer.stubFor(post(urlPathEqualTo("/api/holder/offers"))
+                        .willReturn(aResponse()
                                 .withBody("foobar")
-                                .withStatusCode(404));
+                                .withStatus(404)));
 
 
                 holderStore.create(Holder.Builder.newInstance()
@@ -494,6 +496,8 @@ public class CredentialApiEndToEndTest {
                         .then()
                         .log().ifValidationFails()
                         .statusCode(400);
+            } finally {
+                mockedHolderDidServer.stop();
             }
         }
 

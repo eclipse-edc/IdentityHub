@@ -10,7 +10,7 @@ dependencies {
     testImplementation(libs.edc.junit)
     testImplementation(libs.restAssured)
     testImplementation(libs.awaitility)
-    testImplementation(libs.mockserver.netty)
+    testImplementation(libs.wiremock)
 
     // needed for the Participant
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
