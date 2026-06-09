@@ -16,7 +16,7 @@ package org.eclipse.edc.identityhub.tests.dcp.flow;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
-import jakarta.json.Json;
+import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
@@ -37,11 +37,11 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static io.restassured.http.ContentType.JSON;
-import static jakarta.json.Json.createObjectBuilder;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -110,17 +110,15 @@ public class DcpIssuanceHolderAttestationTest {
                     .formatFrom(VC1_0_JWT)
                     .build());
 
-            var request = createObjectBuilder()
-                    .add("issuerDid", issuerDid)
-                    .add("holderPid", "test-request-id")
-                    .add("credentials", Json.createArrayBuilder()
-                            .add(createObjectBuilder()
-                                    .add("format", "VC1_0_JWT")
-                                    .add("id", "membershipCredential-id")
-                                    .add("type", "MembershipCredential")
-                            )
-                    )
-                    .build();
+            var request = Map.of(
+                    "issuerDid", issuerDid,
+                    "holderPid", "test-request-id",
+                    "credentials", List.of(Map.of(
+                            "format", CredentialProfile.DCP_PROFILE_VC11,
+                            "id", "membershipCredential-id",
+                            "type", "MembershipCredential"
+                    ))
+            );
 
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
