@@ -30,7 +30,7 @@ dependencies {
     testImplementation(libs.restAssured)
     testImplementation(libs.awaitility)
     testImplementation(testFixtures(project(":e2e-tests:identityhub-test-fixtures")))
-    testImplementation(libs.mockserver.netty)
+    testImplementation(libs.wiremock)
 
     testCompileOnly(project(":dist:bom:identityhub-bom"))
     testCompileOnly(project(":dist:bom:issuerservice-bom"))

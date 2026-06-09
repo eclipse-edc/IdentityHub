@@ -29,6 +29,7 @@ dependencies {
     implementation(libs.opentelemetry.api)
     implementation(libs.opentelemetry.instrumentation.annotations)
     implementation(libs.bouncyCastle.bcprovJdk18on)
+    implementation(libs.bouncyCastle.bcpkixJdk18on)
     runtimeOnly(libs.edc.core.connector)
     runtimeOnly(libs.edc.vault.hashicorp)
     testImplementation(libs.edc.junit)

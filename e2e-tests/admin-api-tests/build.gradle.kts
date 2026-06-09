@@ -28,7 +28,7 @@ dependencies {
     testImplementation(libs.awaitility)
     testImplementation(libs.testcontainers.junit)
     testImplementation(libs.testcontainers.postgres)
-    testImplementation(libs.mockserver.netty)
+    testImplementation(libs.wiremock)
 
     // needed for the Participant
     testImplementation(libs.edc.transaction.local)
