@@ -53,15 +53,18 @@ credential:
 Requests to revoke a holder credential are sent via the IssuerService's REST API:
 
 ```http request
-POST /v1beta/credentials/{credentialId}/revoke
+POST /v1beta/participants/{participantContextId}/credentials/{credentialResourceId}/revoke
 ```
 
 This request is processed by
 the [IssuerCredentialsAdminApiController](../../../../../extensions/api/issuer-admin-api/credentials-api/src/main/java/org/eclipse/edc/issuerservice/api/admin/credentials/v1/unstable/IssuerCredentialsAdminApiController.java)
 and delegated to the `CredentialServiceImpl`.
 
-The `credentialId` is the only information that is required to perform the necessary actions. The
-`CredentialServiceImpl` performs the following steps:
+Next to the `participantContextId`, the `credentialResourceId` is the only information that is required to perform the
+necessary actions. Note, that this is the ID of the `VerifiableCredentialResource` that represents the holder
+credential, and not the ID of the credential itself.
+
+The `CredentialServiceImpl` performs the following steps:
 
 #### 1. obtain holder credential
 
@@ -177,7 +180,7 @@ IssuerService.
 Execute the following REST request against the IssuerService's Admin API:
 
 ```http request
-GET /v1beta/credentials/{credentialId}/status
+GET /v1beta/participants/{participantContextId}/credentials/{credentialResourceId}/status
 ```
 
 the response will be `HTTP 200` if the status information has been obtained. An empty response body indicates that the
