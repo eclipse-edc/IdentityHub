@@ -107,56 +107,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1beta/participants/{participantContextId}/credentials/{credentialId}/status:
-    get:
-      tags:
-      - Issuer Service Credentials Admin API
-      description: Checks the revocation status of a credential with the given ID
-        for the given participant.
-      operationId: checkCredentialStatus
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: The credential status.
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The credential or the participant was not found.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1beta/participants/{participantContextId}/credentialdefinitions/{credentialDefinitionId}:
     get:
       tags:
@@ -256,6 +206,56 @@ paths:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: The credential definition was not found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1beta/participants/{participantContextId}/credentials/{credentialId}/status:
+    get:
+      tags:
+      - Issuer Service Credentials Admin API
+      description: Checks the revocation status of a credential with the given ID
+        for the given participant.
+      operationId: checkCredentialStatus
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: credentialId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The credential status.
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The credential or the participant was not found.
           content:
             application/json:
               schema:
