@@ -15,7 +15,7 @@
 -- only intended for and tested with Postgres!
 CREATE TABLE IF NOT EXISTS credential_resource
 (
-    id                     VARCHAR PRIMARY KEY NOT NULL, -- ID of the VC, duplicated here for indexing purposes
+    id                     VARCHAR PRIMARY KEY NOT NULL,
     create_timestamp       BIGINT              NOT NULL, -- POSIX timestamp of the creation of the VC
     issuer_id              VARCHAR             NOT NULL,
     holder_id              VARCHAR             NOT NULL,
