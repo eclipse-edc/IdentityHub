@@ -62,6 +62,57 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1beta/participants/{participantContextId}/scopes:
+    put:
+      tags:
+      - Participant Context
+      description: "Updates a ParticipantContext's scopes. Note that this is an absolute\
+        \ update, that means all scopes that the Participant should have must be submitted\
+        \ in the body. Requires elevated privileges."
+      operationId: updateParticipantScopes
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        "204":
+          description: The ParticipantContext was updated successfully
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: A ParticipantContext with the given ID does not exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1beta/participants/{participantContextId}/token:
     post:
       tags:
@@ -147,6 +198,46 @@ paths:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: The DID does not exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1beta/participants/{participantContextId}/dids/publish:
+    post:
+      tags:
+      - DID
+      description: Publish an (existing) DID document. The DID is expected to exist
+        in the database.
+      operationId: publishDid
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DidRequestPayload"
+      responses:
+        "204":
+          description: The DID document was successfully published.
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The DID could not be published because it does not exist.
           content:
             application/json:
               schema:
@@ -253,46 +344,6 @@ paths:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A KeyPairResource with the given ID does not exist.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1beta/participants/{participantContextId}/dids/publish:
-    post:
-      tags:
-      - DID
-      description: Publish an (existing) DID document. The DID is expected to exist
-        in the database.
-      operationId: publishDid
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DidRequestPayload"
-      responses:
-        "204":
-          description: The DID document was successfully published.
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The DID could not be published because it does not exist.
           content:
             application/json:
               schema:
@@ -1236,57 +1287,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1beta/participants/{participantContextId}/roles:
-    put:
-      tags:
-      - Participant Context
-      description: "Updates a ParticipantContext's roles. Note that this is an absolute\
-        \ update, that means all roles that the Participant should have must be submitted\
-        \ in the body. Requires elevated privileges."
-      operationId: updateParticipantRoles
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                type: string
-      responses:
-        "204":
-          description: The ParticipantContext was updated successfully
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: A ParticipantContext with the given ID does not exist.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1beta/participants/{participantContextId}/credentials:
     get:
       tags:
@@ -1850,7 +1850,7 @@ components:
             $ref: "#/components/schemas/KeyDescriptor"
         participantContextId:
           type: string
-        roles:
+        scopes:
           type: array
           items:
             type: string
@@ -1969,7 +1969,7 @@ components:
           type: object
           additionalProperties:
             type: object
-        roles:
+        scopes:
           type: array
           items:
             type: string
