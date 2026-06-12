@@ -18,9 +18,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
-import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.identityhub.spi.did.store.DidResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityApiScopes;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IssuerAdminApiScopes;
 import org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner;
 import org.eclipse.edc.identityhub.spi.participantcontext.events.ParticipantContextObservable;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
@@ -216,13 +217,13 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
         var apiKeyAlias = ofNullable(manifest.getApiKeyAlias()).orElse("%s-%s".formatted(manifest.getParticipantContextId(), API_KEY_ALIAS_SUFFIX));
         var context = IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(manifest.getParticipantContextId())
-                .roles(manifest.getRoles())
+                .scopes(manifest.getScopes())
                 .did(manifest.getDid())
                 .apiTokenAlias(apiKeyAlias)
                 .state(ParticipantContextState.CREATED)
                 .properties(manifest.getAdditionalProperties());
-        if (manifest.getRoles().isEmpty()) {
-            context.roles(List.of(ParticipantPrincipal.ROLE_PARTICIPANT));
+        if (manifest.getScopes().isEmpty()) {
+            context.scopes(List.of(IdentityApiScopes.READ, IdentityApiScopes.WRITE, IssuerAdminApiScopes.READ, IssuerAdminApiScopes.WRITE));
         }
 
         return context.build();

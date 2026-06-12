@@ -15,14 +15,11 @@
 package org.eclipse.edc.identityhub.spi.authentication;
 
 import java.security.Principal;
-import java.util.List;
 
 /**
  * A user is a representation of the security principal that executes a request against an HTTP API. It must be resolvable during request pre-matching.
  */
 public interface ServicePrincipal extends Principal {
-
-    String ROLE_ADMIN = "admin";
 
     /**
      * The "principal", e.g. the user ID, or a unique service identifier.
@@ -35,9 +32,9 @@ public interface ServicePrincipal extends Principal {
     String getCredential();
 
     /**
-     * The roles that this user possesses. May be empty, never null.
+     * The (space-delimited) set of granted scopes that determine what the principal may do. May be empty, never null.
      */
-    List<String> getRoles();
+    String getScope();
 
     @Override
     default String getName() {

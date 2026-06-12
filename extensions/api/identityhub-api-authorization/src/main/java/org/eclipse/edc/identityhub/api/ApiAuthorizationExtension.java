@@ -15,7 +15,9 @@
 package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
-import org.eclipse.edc.identityhub.api.authorization.AuthorizationServiceImpl;
+import org.eclipse.edc.api.authorization.service.AuthorizationServiceImpl;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityApiScopes;
+import org.eclipse.edc.identityhub.spi.participantcontext.IssuerAdminApiScopes;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.spi.system.ServiceExtension;
@@ -34,6 +36,6 @@ public class ApiAuthorizationExtension implements ServiceExtension {
 
     @Provider
     public AuthorizationService createAuthService() {
-        return new AuthorizationServiceImpl();
+        return new AuthorizationServiceImpl(IdentityApiScopes.ADMIN, IssuerAdminApiScopes.ADMIN);
     }
 }

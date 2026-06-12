@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable;
 
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -24,7 +23,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
-import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.issuerservice.api.admin.issuance.v1.unstable.model.IssuanceProcessDto;
@@ -54,8 +52,7 @@ public class IssuanceProcessAdminApiController implements IssuanceProcessAdminAp
     }
 
     @GET
-    @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
+    @RequiredScope("issuer-admin-api:issuanceprocesses:read")
     @Path("/{issuanceProcessId}")
     @Override
     public IssuanceProcessDto getIssuanceProcessById(@PathParam("participantContextId") String participantContextId,
@@ -74,8 +71,7 @@ public class IssuanceProcessAdminApiController implements IssuanceProcessAdminAp
     }
 
     @POST
-    @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
+    @RequiredScope("issuer-admin-api:issuanceprocesses:read")
     @Path("/query")
     @Override
     public Collection<IssuanceProcessDto> queryIssuanceProcesses(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext securityContext) {

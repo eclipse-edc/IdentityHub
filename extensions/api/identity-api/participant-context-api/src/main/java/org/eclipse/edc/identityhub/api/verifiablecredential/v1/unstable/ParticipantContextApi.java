@@ -113,8 +113,8 @@ public interface ParticipantContextApi {
     )
     void deleteParticipant(String participantContextId, SecurityContext securityContext);
 
-    @Operation(description = "Updates a ParticipantContext's roles. Note that this is an absolute update, that means all roles that the Participant should have must be submitted in the body. Requires elevated privileges.",
-            operationId = "updateParticipantRoles",
+    @Operation(description = "Updates a ParticipantContext's scopes. Note that this is an absolute update, that means all scopes that the Participant should have must be submitted in the body. Requires elevated privileges.",
+            operationId = "updateParticipantScopes",
             requestBody = @RequestBody(content = @Content(array = @ArraySchema(schema = @Schema(implementation = List.class)))),
             responses = {
                     @ApiResponse(responseCode = "204", description = "The ParticipantContext was updated successfully"),
@@ -126,7 +126,7 @@ public interface ParticipantContextApi {
                             content = @Content(array = @ArraySchema(schema = @Schema(implementation = ApiErrorDetail.class)), mediaType = "application/json"))
             }
     )
-    void updateParticipantRoles(String participantContextId, List<String> roles);
+    void updateParticipantScopes(String participantContextId, List<String> scopes);
 
     @Operation(description = "Get all DID documents across all Participant Contexts. Requires elevated access.",
             operationId = "getAllParticipants",

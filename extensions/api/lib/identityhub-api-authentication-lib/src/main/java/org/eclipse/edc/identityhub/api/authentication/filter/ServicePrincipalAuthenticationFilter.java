@@ -21,6 +21,7 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.PreMatching;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
 
@@ -63,15 +64,16 @@ public class ServicePrincipalAuthenticationFilter implements ContainerRequestFil
             var apiKey = apiKeyHeader.get(0);
 
             var servicePrincipal = servicePrincipalResolver.findByCredential(apiKey);
+            var principal = new ParticipantPrincipal(servicePrincipal.getName(), servicePrincipal.getScope());
             containerRequestContext.setSecurityContext(new SecurityContext() {
                 @Override
                 public Principal getUserPrincipal() {
-                    return servicePrincipal;
+                    return principal;
                 }
 
                 @Override
                 public boolean isUserInRole(String s) {
-                    return servicePrincipal.getRoles().contains(s);
+                    return false;
                 }
 
                 @Override

@@ -15,9 +15,9 @@
 package org.eclipse.edc.identityhub.api;
 
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
-import org.eclipse.edc.api.authorization.filter.RoleBasedAccessFeature;
 import org.eclipse.edc.api.authorization.filter.ScopeBasedAccessFeature;
 import org.eclipse.edc.api.authorization.service.AuthorizationServiceImpl;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityApiScopes;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
@@ -43,13 +43,12 @@ public class Oauth2AuthorizationExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         var alias = IdentityHubApiContext.IDENTITY;
-        webService.registerResource(alias, new RoleBasedAccessFeature());
         webService.registerResource(alias, new ScopeBasedAccessFeature());
     }
 
     @Provider
     public AuthorizationService authorizationService() {
-        return new AuthorizationServiceImpl();
+        return new AuthorizationServiceImpl(IdentityApiScopes.ADMIN);
     }
 
 }

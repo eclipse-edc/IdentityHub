@@ -502,7 +502,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
         }
 
         @Test
-        void updateRoles(IdentityHub identityHub) {
+        void updateScopes(IdentityHub identityHub) {
             var participantContextId = "some-user";
             identityHub.createParticipant(participantContextId);
 
@@ -510,17 +510,17 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(authorizeUser(SUPER_USER, identityHub))
                     .contentType(ContentType.JSON)
                     .body(List.of("role1", "role2", "admin"))
-                    .put("/v1beta/participants/%s/roles".formatted(participantContextId))
+                    .put("/v1beta/participants/%s/scopes".formatted(participantContextId))
                     .then()
                     .log().ifError()
                     .statusCode(204);
 
-            assertThat(identityHub.getParticipant(participantContextId).getRoles()).containsExactlyInAnyOrder("role1", "role2", "admin");
+            assertThat(identityHub.getParticipant(participantContextId).getScopes()).containsExactlyInAnyOrder("role1", "role2", "admin");
         }
 
         @ParameterizedTest(name = "Expect 403, role = {0}")
         @ValueSource(strings = { "some-role", "admin" })
-        void updateRoles_whenNotSuperuser(String role, IdentityHub identityHub) {
+        void updateScopes_whenNotSuperuser(String role, IdentityHub identityHub) {
             var participantContextId = "some-user";
             var userAuth = authorizeUser(participantContextId, identityHub);
 
@@ -528,7 +528,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
                     .header(userAuth)
                     .contentType(ContentType.JSON)
                     .body(List.of(role))
-                    .put("/v1beta/participants/%s/roles".formatted(participantContextId))
+                    .put("/v1beta/participants/%s/scopes".formatted(participantContextId))
                     .then()
                     .log().ifError()
                     .statusCode(403);

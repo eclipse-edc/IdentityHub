@@ -41,7 +41,7 @@ import static org.eclipse.edc.participantcontext.spi.types.ParticipantContextSta
 public class IdentityHubParticipantContext extends ParticipantContext {
 
     public static final String API_TOKEN_ALIAS = "apiTokenAlias";
-    public static final String ROLES = "roles";
+    public static final String SCOPES = "scopes";
 
     private IdentityHubParticipantContext() {
     }
@@ -71,14 +71,14 @@ public class IdentityHubParticipantContext extends ParticipantContext {
     }
 
     @SuppressWarnings("unchecked")
-    public List<String> getRoles() {
-        return Optional.ofNullable(properties.get(ROLES)).map(item -> (List<String>) item)
+    public List<String> getScopes() {
+        return Optional.ofNullable(properties.get(SCOPES)).map(item -> (List<String>) item)
                 .map(Collections::unmodifiableList)
                 .orElse(Collections.emptyList());
     }
 
-    public void setRoles(List<String> roles) {
-        properties.put(ROLES, roles);
+    public void setScopes(List<String> scopes) {
+        properties.put(SCOPES, scopes);
     }
 
     @JsonPOJOBuilder(withPrefix = "")
@@ -146,8 +146,8 @@ public class IdentityHubParticipantContext extends ParticipantContext {
         }
 
 
-        public Builder roles(List<String> roles) {
-            this.entity.properties.put(ROLES, roles);
+        public Builder scopes(List<String> scopes) {
+            this.entity.properties.put(SCOPES, scopes);
             return this;
         }
 

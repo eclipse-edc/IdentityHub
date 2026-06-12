@@ -21,6 +21,7 @@ dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
 
+    implementation(libs.edc.lib.oauth2.authz)
 
     testImplementation(libs.edc.junit)
     testRuntimeOnly(libs.jersey.common) // needs the RuntimeDelegate

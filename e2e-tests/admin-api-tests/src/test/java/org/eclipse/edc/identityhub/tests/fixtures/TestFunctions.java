@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.tests.fixtures;
 
 import io.restassured.http.Header;
-import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.api.authentication.OauthServer;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 
@@ -38,16 +37,15 @@ public class TestFunctions {
      * does not yet exist.
      */
     public static Header authorizeOauth2(String participantContextId, IssuerService issuerService, OauthServer server) {
-        var role = ParticipantPrincipal.ROLE_PARTICIPANT;
+        String scopes;
         if (SUPER_USER.equals(participantContextId)) {
             issuerService.createSuperUser();
-            role = ParticipantPrincipal.ROLE_ADMIN;
+            scopes = "identity-api:admin issuer-admin-api:admin";
         } else {
             issuerService.createParticipant(participantContextId);
+            scopes = "identity-api:read identity-api:write issuer-admin-api:read issuer-admin-api:write";
         }
-        var scopes = "management-api:read management-api:write identity-api:read identity-api:write issuer-admin-api:read issuer-admin-api:write";
 
-        return new Header("Authorization", "Bearer " + server.createToken(participantContextId, scopes, role));
-
+        return new Header("Authorization", "Bearer " + server.createToken(participantContextId, scopes));
     }
 }

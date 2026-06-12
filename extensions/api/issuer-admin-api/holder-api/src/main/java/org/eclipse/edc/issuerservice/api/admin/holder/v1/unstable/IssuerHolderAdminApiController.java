@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.issuerservice.api.admin.holder.v1.unstable;
 
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -27,7 +26,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
-import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
@@ -57,8 +55,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     }
 
     @POST
-    @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER })
+    @RequiredScope("issuer-admin-api:holders:write")
     @Override
     public Response addHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, participantContextId, IdentityHubParticipantContext.class)
@@ -69,8 +66,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
 
     @DELETE
     @Path("/{holderId}")
-    @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN, ParticipantPrincipal.ROLE_PROVISIONER })
+    @RequiredScope("issuer-admin-api:holders:write")
     @Override
     public Response deleteHolder(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, holderId, Holder.class)
@@ -80,8 +76,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     }
 
     @PUT
-    @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
+    @RequiredScope("issuer-admin-api:holders:write")
     @Override
     public Response updateHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, holder.id(), Holder.class)
@@ -91,8 +86,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     }
 
     @GET
-    @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
+    @RequiredScope("issuer-admin-api:holders:read")
     @Path("/{holderId}")
     @Override
     public Holder getHolderById(@PathParam("participantContextId") String participantContextId, @PathParam("holderId") String holderId, @Context SecurityContext context) {
@@ -103,8 +97,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     }
 
     @POST
-    @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
+    @RequiredScope("issuer-admin-api:holders:read")
     @Path("/query")
     @Override
     public Collection<Holder> queryHolders(@PathParam("participantContextId") String participantContextId, QuerySpec querySpec, @Context SecurityContext context) {

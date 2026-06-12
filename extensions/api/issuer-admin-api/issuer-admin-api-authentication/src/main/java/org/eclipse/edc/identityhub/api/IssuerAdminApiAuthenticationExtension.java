@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.identityhub.api;
 
-import org.eclipse.edc.identityhub.api.authentication.filter.RoleBasedAccessFeature;
+import org.eclipse.edc.api.authorization.filter.ScopeBasedAccessFeature;
 import org.eclipse.edc.identityhub.api.authentication.filter.ServicePrincipalAuthenticationFilter;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
@@ -46,7 +46,7 @@ public class IssuerAdminApiAuthenticationExtension implements ServiceExtension {
     @Override
     public void initialize(ServiceExtensionContext context) {
         var alias = IdentityHubApiContext.ISSUERADMIN;
-        webService.registerResource(alias, new RoleBasedAccessFeature());
+        webService.registerResource(alias, new ScopeBasedAccessFeature());
         webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(new ParticipantServicePrincipalResolver(participantContextService, vault)));
     }
 }

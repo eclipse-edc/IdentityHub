@@ -20,13 +20,14 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialContainer;
-import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.did.DidDocumentService;
 import org.eclipse.edc.identityhub.spi.did.model.DidResource;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
+import org.eclipse.edc.identityhub.spi.participantcontext.IdentityApiScopes;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
+import org.eclipse.edc.identityhub.spi.participantcontext.IssuerAdminApiScopes;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.CreateParticipantContextResponse;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
@@ -105,7 +106,7 @@ public abstract class AbstractIdentityHub {
     }
 
     public CreateParticipantContextResponse createSuperUser() {
-        return createParticipant(SUPER_USER, List.of(ServicePrincipal.ROLE_ADMIN));
+        return createParticipant(SUPER_USER, List.of(IdentityApiScopes.ADMIN, IssuerAdminApiScopes.ADMIN));
     }
 
     public CreateParticipantContextResponse createParticipant(String participantContextId) {
@@ -124,23 +125,23 @@ public abstract class AbstractIdentityHub {
         return createParticipant(participantContextId, did, keyId, List.of(), true, services);
     }
 
-    public CreateParticipantContextResponse createParticipant(String participantContextId, List<String> roles) {
-        return createParticipant(participantContextId, roles, true);
+    public CreateParticipantContextResponse createParticipant(String participantContextId, List<String> scopes) {
+        return createParticipant(participantContextId, scopes, true);
     }
 
-    public CreateParticipantContextResponse createParticipant(String participantContextId, List<String> roles, boolean isActive) {
-        return createParticipant(participantContextId, "did:web:" + participantContextId, participantContextId + "-key", roles, isActive, createServiceEndpoint(participantContextId));
+    public CreateParticipantContextResponse createParticipant(String participantContextId, List<String> scopes, boolean isActive) {
+        return createParticipant(participantContextId, "did:web:" + participantContextId, participantContextId + "-key", scopes, isActive, createServiceEndpoint(participantContextId));
     }
 
     public CreateParticipantContextResponse createParticipant(String participantContextId, String did, Service service) {
         return createParticipant(participantContextId, did, participantContextId + "-key", List.of(), true, service);
     }
 
-    public CreateParticipantContextResponse createParticipant(String participantContextId, String did, String keyId, List<String> roles, boolean isActive, Service service) {
-        return createParticipant(participantContextId, did, keyId, roles, isActive, List.of(service));
+    public CreateParticipantContextResponse createParticipant(String participantContextId, String did, String keyId, List<String> scopes, boolean isActive, Service service) {
+        return createParticipant(participantContextId, did, keyId, scopes, isActive, List.of(service));
     }
 
-    public CreateParticipantContextResponse createParticipant(String participantContextId, String did, String keyId, List<String> roles, boolean isActive, List<Service> services) {
+    public CreateParticipantContextResponse createParticipant(String participantContextId, String did, String keyId, List<String> scopes, boolean isActive, List<Service> services) {
         var exists = participantContextService.getParticipantContext(participantContextId);
         // don't create if exists
         if (exists.succeeded() && exists.getContent() != null) {
@@ -151,7 +152,7 @@ public abstract class AbstractIdentityHub {
 
         var manifest = buildParticipantManifest(participantContextId, keyId)
                 .active(isActive)
-                .roles(roles)
+                .scopes(scopes)
                 .serviceEndpoints(new HashSet<>(services))
                 .did(did)
                 .build();
