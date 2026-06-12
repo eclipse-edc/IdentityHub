@@ -37,7 +37,7 @@ import static java.util.Optional.ofNullable;
 public class ParticipantManifest {
     private Set<KeyDescriptor> keys = new HashSet<>();
     private Map<String, Object> additionalProperties = new HashMap<>();
-    private List<String> roles = new ArrayList<>();
+    private List<String> scopes = new ArrayList<>();
     private Set<Service> serviceEndpoints = new HashSet<>();
     private boolean isActive;
     private String participantContextId;
@@ -92,8 +92,8 @@ public class ParticipantManifest {
         return did;
     }
 
-    public List<String> getRoles() {
-        return roles;
+    public List<String> getScopes() {
+        return scopes;
     }
 
     public Object getProperty(String key) {
@@ -149,8 +149,8 @@ public class ParticipantManifest {
             return this;
         }
 
-        public Builder roles(List<String> roles) {
-            manifest.roles = roles;
+        public Builder scopes(List<String> scopes) {
+            manifest.scopes = scopes;
             return this;
         }
 

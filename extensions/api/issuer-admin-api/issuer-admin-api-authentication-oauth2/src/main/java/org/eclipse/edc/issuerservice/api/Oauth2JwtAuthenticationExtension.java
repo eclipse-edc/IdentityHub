@@ -16,6 +16,7 @@ package org.eclipse.edc.issuerservice.api;
 
 import org.eclipse.edc.api.authentication.filter.JwtValidatorFilter;
 import org.eclipse.edc.api.authentication.filter.ServicePrincipalAuthenticationFilter;
+import org.eclipse.edc.identityhub.spi.participantcontext.IssuerAdminApiScopes;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
 import org.eclipse.edc.keys.resolver.JwksPublicKeyResolver;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
@@ -78,7 +79,7 @@ public class Oauth2JwtAuthenticationExtension implements ServiceExtension {
 
         validateConfig(oauthConfiguration);
 
-        webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(participantContextService));
+        webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(participantContextService, IssuerAdminApiScopes.ADMIN));
 
         var resolver = JwksPublicKeyResolver.create(keyParserRegistry, oauthConfiguration.jwksUrl(), monitor, oauthConfiguration.cacheValidityInMillis());
         webService.registerResource(alias, new JwtValidatorFilter(tokenValidationService, resolver,

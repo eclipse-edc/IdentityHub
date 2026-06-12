@@ -23,7 +23,6 @@ import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 
 import java.util.Base64;
-import java.util.List;
 
 /**
  * For the Identity API of the IdentityHub, a {@link ServicePrincipal} is represented by a {@link IdentityHubParticipantContext}.
@@ -84,8 +83,8 @@ class ParticipantServicePrincipalResolver implements ServicePrincipalResolver {
             }
 
             @Override
-            public List<String> getRoles() {
-                return participantContext.getRoles();
+            public String getScope() {
+                return String.join(" ", participantContext.getScopes());
             }
         };
     }

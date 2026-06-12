@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.issuerservice.api.admin.credentials.v1.unstable;
 
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.POST;
@@ -25,7 +24,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.edc.api.auth.spi.AuthorizationService;
-import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultHandler;
@@ -56,8 +54,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     }
 
     @POST
-    @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
+    @RequiredScope("issuer-admin-api:attestations:write")
     @Override
     public Response createAttestationDefinition(@PathParam("participantContextId") String participantContextId, AttestationDefinitionRequest attestationRequest, @Context SecurityContext securityContext) {
 
@@ -69,8 +66,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     }
 
     @DELETE
-    @RequiredScope("issuer-admin-api:write")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
+    @RequiredScope("issuer-admin-api:attestations:write")
     @Path("/{attestationDefinitionId}")
     @Override
     public void deleteAttestationDefinition(@PathParam("participantContextId") String participantContextId, @PathParam("attestationDefinitionId") String attestationDefinitionId, @Context SecurityContext context) {
@@ -80,8 +76,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
     }
 
     @POST
-    @RequiredScope("issuer-admin-api:read")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_PARTICIPANT, ParticipantPrincipal.ROLE_ADMIN })
+    @RequiredScope("issuer-admin-api:attestations:read")
     @Path("/query")
     @Override
     public Collection<AttestationDefinition> queryAttestationDefinitions(@PathParam("participantContextId") String participantContextId, QuerySpec query, @Context SecurityContext context) {

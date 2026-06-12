@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.api.authentication.filter;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
+import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipal;
 import org.eclipse.edc.identityhub.spi.authentication.ServicePrincipalResolver;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
@@ -46,7 +47,7 @@ class ServicePrincipalAuthenticationFilterTest {
 
         filter.filter(request);
 
-        verify(request).setSecurityContext(argThat(sc -> sc.getUserPrincipal() instanceof ServicePrincipal));
+        verify(request).setSecurityContext(argThat(sc -> sc.getUserPrincipal() instanceof ParticipantPrincipal));
     }
 
     @Test

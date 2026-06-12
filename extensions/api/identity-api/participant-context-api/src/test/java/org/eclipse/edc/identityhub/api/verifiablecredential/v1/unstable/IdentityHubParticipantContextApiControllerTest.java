@@ -159,12 +159,12 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     }
 
     @Test
-    void updateRoles() {
+    void updateScopes() {
         when(participantContextServiceMock.updateParticipant(anyString(), any())).thenReturn(ServiceResult.success());
 
         baseRequest()
                 .body(List.of("role1", "role2"))
-                .put("/test-participant/roles")
+                .put("/test-participant/scopes")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(204);
@@ -172,18 +172,18 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
         verify(participantContextServiceMock).updateParticipant(anyString(), argThat(con -> {
             var pc = createParticipantContext().build();
             con.accept(pc);
-            return pc.getRoles().containsAll(List.of("role1", "role2"));
+            return pc.getScopes().containsAll(List.of("role1", "role2"));
         }));
 
     }
 
     @Test
-    void updateRoles_notFound() {
+    void updateScopes_notFound() {
         when(participantContextServiceMock.updateParticipant(anyString(), any())).thenReturn(ServiceResult.notFound("foobar"));
 
         baseRequest()
                 .body(List.of("role1", "role2"))
-                .put("/test-participant/roles")
+                .put("/test-participant/scopes")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(404);
@@ -218,7 +218,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
                 .did("did:web:test-id")
                 .createdAt(Instant.now().toEpochMilli())
                 .state(ParticipantContextState.ACTIVATED)
-                .roles(List.of())
+                .scopes(List.of())
                 .apiTokenAlias("test-alias");
     }
 

@@ -56,7 +56,7 @@ class ParticipantManifestTest {
     void verify_deserialize_singleValueAsArray() throws JsonProcessingException {
         var json = """
                 {
-                    "roles":[],
+                    "scopes":[],
                     "serviceEndpoints":[
                         {
                             "type": "CredentialService",
@@ -91,7 +91,7 @@ class ParticipantManifestTest {
     void verify_deserialize_array() throws JsonProcessingException {
         var json = """
                 {
-                    "roles":[],
+                    "scopes":[],
                     "serviceEndpoints":[
                         {
                             "type": "CredentialService",

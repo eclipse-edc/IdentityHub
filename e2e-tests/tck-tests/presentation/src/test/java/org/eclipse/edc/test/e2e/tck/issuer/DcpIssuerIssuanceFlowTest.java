@@ -194,7 +194,7 @@ public class DcpIssuerIssuanceFlowTest {
         var manifest = ParticipantManifest.Builder.newInstance()
                 .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(issuerDid)
-                .roles(List.of("admin"))
+                .scopes(List.of("identity-api:admin", "issuer-admin-api:admin"))
                 .active(true)
                 .serviceEndpoint(new Service(UUID.randomUUID().toString(), "IssuerService", issuerServiceUrl))
                 .key(KeyDescriptor.Builder.newInstance()

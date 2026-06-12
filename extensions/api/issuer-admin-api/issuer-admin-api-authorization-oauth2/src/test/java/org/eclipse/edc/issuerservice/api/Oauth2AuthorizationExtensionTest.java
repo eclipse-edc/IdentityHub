@@ -14,7 +14,6 @@
 
 package org.eclipse.edc.issuerservice.api;
 
-import org.eclipse.edc.api.authorization.filter.RoleBasedAccessFeature;
 import org.eclipse.edc.api.authorization.filter.ScopeBasedAccessFeature;
 import org.eclipse.edc.boot.system.injection.ObjectFactory;
 import org.eclipse.edc.identityhub.spi.webcontext.IdentityHubApiContext;
@@ -40,7 +39,6 @@ class Oauth2AuthorizationExtensionTest {
         var ext = factory.constructInstance(Oauth2AuthorizationExtension.class);
         ext.initialize(context);
 
-        verify(webService).registerResource(eq(IdentityHubApiContext.ISSUERADMIN), isA(RoleBasedAccessFeature.class));
         verify(webService).registerResource(eq(IdentityHubApiContext.ISSUERADMIN), isA(ScopeBasedAccessFeature.class));
     }
 }

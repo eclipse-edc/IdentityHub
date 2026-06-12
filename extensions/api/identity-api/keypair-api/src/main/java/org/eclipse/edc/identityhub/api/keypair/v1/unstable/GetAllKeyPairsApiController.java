@@ -14,14 +14,12 @@
 
 package org.eclipse.edc.identityhub.api.keypair.v1.unstable;
 
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import org.eclipse.edc.api.auth.spi.ParticipantPrincipal;
 import org.eclipse.edc.api.auth.spi.RequiredScope;
 import org.eclipse.edc.identityhub.api.Versions;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -45,8 +43,7 @@ public class GetAllKeyPairsApiController implements GetAllKeyPairsApi {
     }
 
     @GET
-    @RequiredScope("identity-api:read")
-    @RolesAllowed({ ParticipantPrincipal.ROLE_ADMIN })
+    @RequiredScope("identity-api:admin")
     @Override
     @Deprecated(forRemoval = true, since = "0.17.0")
     public Collection<KeyPairResource> getAllKeyPairs(@DefaultValue("0") @QueryParam("offset") Integer offset,
