@@ -61,7 +61,7 @@ class TransitEngineImplIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
         var vaultBaseUrl = "http://%s:%d".formatted(VAULT.getHost(), VAULT.getMappedPort(8200));
-        transitEngine = new TransitEngineImpl(() -> VAULT_TOKEN, new ObjectMapper(), client, vaultBaseUrl);
+        transitEngine = new TransitEngineImpl(resource -> () -> VAULT_TOKEN, new ObjectMapper(), client, vaultBaseUrl);
     }
 
     @Test
@@ -141,7 +141,7 @@ class TransitEngineImplIntegrationTest {
     @Test
     void generateKey_whenInvalidToken_shouldFail() {
         var vaultBaseUrl = "http://%s:%d".formatted(VAULT.getHost(), VAULT.getMappedPort(8200));
-        var engineWithBadToken = new TransitEngineImpl(() -> "wrong-token", new ObjectMapper(), client, vaultBaseUrl);
+        var engineWithBadToken = new TransitEngineImpl(resource -> () -> "wrong-token", new ObjectMapper(), client, vaultBaseUrl);
         assertThat(engineWithBadToken.generateKey("test-key-" + UUID.randomUUID(), "ed25519")).isFailed();
     }
 

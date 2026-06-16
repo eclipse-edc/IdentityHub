@@ -23,7 +23,7 @@ import okhttp3.Response;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.vault.hashicorp.spi.auth.HashicorpVaultTokenProvider;
+import org.eclipse.edc.vault.hashicorp.spi.auth.HashicorpVaultTokenProviderFactory;
 
 import java.io.IOException;
 import java.util.Base64;
@@ -31,13 +31,13 @@ import java.util.Map;
 
 public class TransitEngineImpl implements TransitEngine {
     private static final String VAULT_TOKEN_HEADER = "X-Vault-Token";
-    private final HashicorpVaultTokenProvider tokenProvider;
+    private final HashicorpVaultTokenProviderFactory tokenProviderFactory;
     private final ObjectMapper objectMapper;
     private final EdcHttpClient edcHttpClient;
     private final String vaultBaseUrl;
 
-    public TransitEngineImpl(HashicorpVaultTokenProvider tokenProvider, ObjectMapper objectMapper, EdcHttpClient edcHttpClient, String vaultBaseUrl) {
-        this.tokenProvider = tokenProvider;
+    public TransitEngineImpl(HashicorpVaultTokenProviderFactory tokenProviderFactory, ObjectMapper objectMapper, EdcHttpClient edcHttpClient, String vaultBaseUrl) {
+        this.tokenProviderFactory = tokenProviderFactory;
         this.objectMapper = objectMapper;
         this.edcHttpClient = edcHttpClient;
         this.vaultBaseUrl = vaultBaseUrl;
@@ -45,7 +45,7 @@ public class TransitEngineImpl implements TransitEngine {
 
     @Override
     public Result<TransitKeyDescriptor> generateKey(String keyName, String keyType) {
-        var request = vaultRequest()
+        var request = vaultRequest(keyName)
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName)
                 .post(jsonBody(Map.of("type", keyType,
                         "exportable", false)))
@@ -57,7 +57,7 @@ public class TransitEngineImpl implements TransitEngine {
 
     @Override
     public Result<Void> rotateKey(String keyName) {
-        var request = vaultRequest()
+        var request = vaultRequest(keyName)
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName + "/rotate")
                 .post(RequestBody.EMPTY)
                 .build();
@@ -66,7 +66,7 @@ public class TransitEngineImpl implements TransitEngine {
 
     @Override
     public Result<TransitKeyDescriptor> getKey(String keyName) {
-        var request = vaultRequest()
+        var request = vaultRequest(keyName)
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName)
                 .get()
                 .build();
@@ -88,7 +88,7 @@ public class TransitEngineImpl implements TransitEngine {
     @Override
     public Result<Void> setMinAvailableVersion(String keyName, int minVersion) {
         requireNonNegative(minVersion);
-        var request = vaultRequest()
+        var request = vaultRequest(keyName)
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName + "/trim")
                 .post(jsonBody(Map.of("min_available_version", minVersion)))
                 .build();
@@ -98,7 +98,7 @@ public class TransitEngineImpl implements TransitEngine {
     @Override
     public Result<String> sign(String keyName, String payload) {
         var encoded = Base64.getEncoder().encodeToString(payload.getBytes());
-        var request = vaultRequest()
+        var request = vaultRequest(keyName)
                 .url(vaultBaseUrl + "/v1/transit/sign/" + keyName)
                 .post(jsonBody(Map.of("input", encoded)))
                 .build();
@@ -109,7 +109,7 @@ public class TransitEngineImpl implements TransitEngine {
     @Override
     public Result<Void> verify(String keyName, String payload, String signature) {
         var encoded = Base64.getEncoder().encodeToString(payload.getBytes());
-        var request = vaultRequest()
+        var request = vaultRequest(keyName)
                 .url(vaultBaseUrl + "/v1/transit/verify/" + keyName)
                 .post(jsonBody(Map.of("input", encoded, "signature", signature)))
                 .build();
@@ -119,7 +119,7 @@ public class TransitEngineImpl implements TransitEngine {
 
     @Override
     public Result<Void> deleteKey(String keyName) {
-        var request = vaultRequest()
+        var request = vaultRequest(keyName)
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName)
                 .delete()
                 .build();
@@ -127,7 +127,7 @@ public class TransitEngineImpl implements TransitEngine {
     }
 
     private Result<Void> postKeyConfig(String keyName, TransitKeyConfig config) {
-        var request = vaultRequest()
+        var request = vaultRequest(keyName)
                 .url(vaultBaseUrl + "/v1/transit/keys/" + keyName + "/config")
                 .post(jsonBody(config))
                 .build();
@@ -163,9 +163,15 @@ public class TransitEngineImpl implements TransitEngine {
         }
     }
 
-    private Request.Builder vaultRequest() {
+    /**
+     * Builds a vault request authenticated with a token scoped to the participant that owns the given key.
+     * The participant context id is derived from the key name (see {@link TransitEngine#keyName(String, String)})
+     * and used as the token-exchange resource; a {@code null} resource falls back to the default partition.
+     */
+    private Request.Builder vaultRequest(String keyName) {
+        var resource = TransitEngine.participantContextIdFromKeyName(keyName);
         return new Request.Builder()
-                .header(VAULT_TOKEN_HEADER, tokenProvider.vaultToken());
+                .header(VAULT_TOKEN_HEADER, tokenProviderFactory.create(resource).vaultToken());
     }
 
     private RequestBody jsonBody(Object body) {

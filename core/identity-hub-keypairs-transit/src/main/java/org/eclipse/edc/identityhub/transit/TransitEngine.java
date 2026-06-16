@@ -28,6 +28,38 @@ public interface TransitEngine {
     );
 
     /**
+     * Prefix for Transit key names. Key names follow the convention {@code participant_<participantContextId>_<keyId>}.
+     * The {@code participantContextId} segment is also the token-exchange {@code resource} used to obtain a vault token
+     * scoped (via the {@code participant} Vault role) to that participant's transit keys.
+     */
+    String KEY_NAME_PREFIX = "participant_";
+
+    /**
+     * Builds the Transit key name for a participant key: {@code participant_<participantContextId>_<keyId>}.
+     *
+     * @param participantContextId the participant context id (must not contain underscores)
+     * @param keyId                the key id / alias (must not contain underscores)
+     */
+    static String keyName(String participantContextId, String keyId) {
+        return KEY_NAME_PREFIX + participantContextId + "_" + keyId;
+    }
+
+    /**
+     * Extracts the participant context id from a key name produced by {@link #keyName(String, String)}, or
+     * {@code null} if the name does not follow the convention. The participant context id is everything between
+     * the {@link #KEY_NAME_PREFIX} and the last underscore (key ids must not contain underscores).
+     */
+    static String participantContextIdFromKeyName(String keyName) {
+        if (keyName != null && keyName.startsWith(KEY_NAME_PREFIX)) {
+            var lastSeparator = keyName.lastIndexOf('_');
+            if (lastSeparator > KEY_NAME_PREFIX.length()) {
+                return keyName.substring(KEY_NAME_PREFIX.length(), lastSeparator);
+            }
+        }
+        return null;
+    }
+
+    /**
      * Generates a new key with the given name. Note that keys are created with the {@code deletion_allowed} flag set to {@code true}.
      *
      * @param keyName The name of the key. Should not contain spaces or special characters.

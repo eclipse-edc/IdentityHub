@@ -82,7 +82,7 @@ public class TransitKeyPairService implements KeyPairService, EventSubscriber {
     }
 
     private static @NotNull String generateKeyName(String participantContextId, String keyId) {
-        return "participant_" + participantContextId + "_" + keyId;
+        return TransitEngine.keyName(participantContextId, keyId);
     }
 
     @Override
