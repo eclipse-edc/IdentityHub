@@ -64,7 +64,7 @@ class TransitSignerIntegrationTest {
     @BeforeEach
     void setUp() {
         var vaultBaseUrl = "http://%s:%d".formatted(VAULT.getHost(), VAULT.getMappedPort(8200));
-        transitEngine = new TransitEngineImpl(() -> VAULT_TOKEN, new ObjectMapper(), client, vaultBaseUrl);
+        transitEngine = new TransitEngineImpl(resource -> () -> VAULT_TOKEN, new ObjectMapper(), client, vaultBaseUrl);
     }
 
     @Test

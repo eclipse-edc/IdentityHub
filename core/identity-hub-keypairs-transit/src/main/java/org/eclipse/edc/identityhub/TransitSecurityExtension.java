@@ -24,7 +24,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.vault.hashicorp.spi.auth.HashicorpVaultTokenProvider;
+import org.eclipse.edc.vault.hashicorp.spi.auth.HashicorpVaultTokenProviderFactory;
 
 @Extension(value = TransitSecurityExtension.NAME)
 public class TransitSecurityExtension implements ServiceExtension {
@@ -32,7 +32,7 @@ public class TransitSecurityExtension implements ServiceExtension {
     public static final String NAME = "Hashicorp Transit Security Extension";
 
     @Inject
-    private HashicorpVaultTokenProvider tokenProvider;
+    private HashicorpVaultTokenProviderFactory tokenProviderFactory;
     @Inject
     private EdcHttpClient edcHttpClient;
 
@@ -52,7 +52,9 @@ public class TransitSecurityExtension implements ServiceExtension {
     @Provider
     public TransitEngine transitEngine() {
         if (transitEngine == null) {
-            transitEngine = new TransitEngineImpl(tokenProvider, typeManager.getMapper(), edcHttpClient, vaultUrl);
+            // the engine mints a participant-scoped vault token per key (resource derived from the key name),
+            // so it needs the factory rather than a single provider.
+            transitEngine = new TransitEngineImpl(tokenProviderFactory, typeManager.getMapper(), edcHttpClient, vaultUrl);
         }
 
         return transitEngine;
