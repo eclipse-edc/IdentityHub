@@ -6,7 +6,8 @@ awaitility = "4.3.0"
 bouncyCastle-jdk18on = "1.84"
 edc = "0.18.0-SNAPSHOT"
 dcp-tck = "1.0.0"
-jackson = "2.22"
+jackson = "2.22.0"
+jackson-annotations = "2.22"
 jakarta-annotation = "3.0.0"
 jersey = "4.0.2"
 junit = "6.1.0"
@@ -104,7 +105,7 @@ bouncyCastle-bcprovJdk18on = { module = "org.bouncycastle:bcprov-jdk18on", versi
 bouncyCastle-bcpkixJdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncyCastle-jdk18on" }
 
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
-jackson-annotation = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
+jackson-annotation = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson-annotations" }
 jakarta-rsApi = { module = "jakarta.ws.rs:jakarta.ws.rs-api", version.ref = "rsApi" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "jupiter" }
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "jupiter" }
