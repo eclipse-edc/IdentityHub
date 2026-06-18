@@ -72,7 +72,8 @@ public class TransitSigner implements JWSSigner {
         var supportedAlgorithms = new HashSet<JWSAlgorithm>();
         supportedAlgorithms.addAll(JWSAlgorithm.Family.EC.stream().toList());
         supportedAlgorithms.addAll(JWSAlgorithm.Family.RSA.stream().toList());
-        supportedAlgorithms.add(new JWSAlgorithm("Ed25519", Requirement.REQUIRED));
+
+        // do NOT add ED25519, since it is not an accepted alg value (https://www.rfc-editor.org/info/rfc7518/?utm_source=chatgpt.com#section-3.1)
         supportedAlgorithms.add(new JWSAlgorithm("EdDSA", Requirement.REQUIRED));
 
         return Collections.unmodifiableSet(supportedAlgorithms);

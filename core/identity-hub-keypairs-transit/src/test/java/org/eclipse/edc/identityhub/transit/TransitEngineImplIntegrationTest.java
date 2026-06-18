@@ -23,6 +23,8 @@ import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.vault.VaultContainer;
@@ -73,6 +75,14 @@ class TransitEngineImplIntegrationTest {
             assertThat(desc.getData().getLatestVersion()).isEqualTo(1);
             assertThat(desc.getData().isExportable()).isFalse();
         });
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "EdDSA", "eddsa", "EDDSA" })
+    void generateKey_wrongKeyType(String keyType) {
+        var keyName = "test-key-" + UUID.randomUUID();
+        var result = transitEngine.generateKey(keyName, keyType);
+        assertThat(result).isFailed();
     }
 
     @Test
