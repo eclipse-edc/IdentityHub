@@ -119,7 +119,7 @@ jakarta-annotation = { module = "jakarta.annotation:jakarta.annotation-api", ver
 jersey-common = { module = "org.glassfish.jersey.core:jersey-common", version.ref = "jersey" }
 tink = { module = "com.google.crypto.tink:tink", version.ref = "tink" }
 opentelemetry-instrumentation-annotations = { module = "io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations", version.ref = "opentelemetry" }
-opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version = "1.62.0" }
+opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version = "1.63.0" }
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 wiremock = { module = "org.wiremock:wiremock-jetty12", version.ref = "wiremock" }
 
