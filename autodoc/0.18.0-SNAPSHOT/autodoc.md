@@ -741,20 +741,6 @@ Module `identity-hub-did`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
-**Name:** "DID Default Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
-
 #### Class: `org.eclipse.edc.identityhub.did.DidServicesExtension`
 **Name:** "DID Service Extension"
 
@@ -774,6 +760,20 @@ _None_
 - `org.eclipse.edc.keys.spi.KeyParserRegistry` (required)
 - `org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore` (required)
 - `org.eclipse.edc.spi.telemetry.Telemetry` (required)
+
+#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
+**Name:** "DID Default Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `identity-hub-did-store-sql`
 -----------------------------------
@@ -881,25 +881,6 @@ Module `identity-hub-keypairs-transit`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.keypairs.TransitKeyPairServiceExtension`
-**Name:** "Hashicorp Transit KeyPair Service Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore` (required)
-- `org.eclipse.edc.spi.event.EventRouter` (required)
-- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-- `org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore` (required)
-- `org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable` (required)
-- `org.eclipse.edc.identityhub.transit.TransitEngine` (required)
-
 #### Class: `org.eclipse.edc.identityhub.TransitSecurityExtension`
 **Name:** "Hashicorp Transit Security Extension"
 
@@ -920,6 +901,25 @@ _None_
 - `org.eclipse.edc.vault.hashicorp.spi.auth.HashicorpVaultTokenProviderFactory` (required)
 - `org.eclipse.edc.http.spi.EdcHttpClient` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
+
+#### Class: `org.eclipse.edc.identityhub.keypairs.TransitKeyPairServiceExtension`
+**Name:** "Hashicorp Transit KeyPair Service Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore` (required)
+- `org.eclipse.edc.spi.event.EventRouter` (required)
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore` (required)
+- `org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable` (required)
+- `org.eclipse.edc.identityhub.transit.TransitEngine` (required)
 
 Module `identity-hub-participants`
 ----------------------------------
