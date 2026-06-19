@@ -4,7 +4,7 @@ format.version = "1.1"
 [versions]
 awaitility = "4.3.0"
 bouncyCastle-jdk18on = "1.84"
-edc = "0.18.0-SNAPSHOT"
+edc = "0.19.0-SNAPSHOT"
 dcp-tck = "1.0.0"
 jackson = "2.22.0"
 jackson-annotations = "2.22"
