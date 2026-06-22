@@ -31,7 +31,7 @@ public interface ParticipantSecureTokenService {
      *
      * @param participantContextId The ID of the participant context on behalf of whom the token is generated
      * @param claims               a set of claims, that are to be included in the SI token. MUST include {@code iss}, {@code sub} and {@code aud}.
-     * @param bearerAccessScope    if non-null, must be a space-separated list of scopes as per <a href="https://github.com/eclipse-tractusx/identity-trust/blob/main/specifications/M1/verifiable.presentation.protocol.md#31-access-scopes">DCP specification</a>
+     * @param bearerAccessScope    if non-null, must be a space-separated list of scopes as per <a href="https://github.com/eclipse-tractusx/identity-trust/blob/main/specifications/verifiable.presentation.protocol.md#31-access-scopes">DCP specification</a>
      *                             if bearerAccessScope != null -> creates a {@code token} claim, which is another JWT containing the scope as claims.
      *                             if bearerAccessScope == null -> creates a normal JWT using all the claims in the map
      * @return A result containing the token representation, or a failure
