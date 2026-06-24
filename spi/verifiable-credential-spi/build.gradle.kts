@@ -29,6 +29,6 @@ dependencies {
     testFixturesImplementation(libs.junit.jupiter.api)
     testFixturesImplementation(libs.awaitility)
     testFixturesImplementation(libs.nimbus.jwt)
-    testFixturesImplementation(libs.edc.spi.identity.did)
+    testFixturesImplementation(libs.edc.spi.core)
     testFixturesImplementation(libs.edc.lib.common.crypto)
 }

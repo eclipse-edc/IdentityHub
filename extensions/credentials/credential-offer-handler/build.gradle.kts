@@ -23,8 +23,8 @@ dependencies {
     implementation(project(":spi:identity-hub-spi"))
     implementation(project(":spi:verifiable-credential-spi"))
     implementation(project(":protocols:dcp:dcp-spi"))
-    implementation(libs.edc.spi.transaction)
-    
+    implementation(libs.edc.spi.core)
+
     testImplementation(libs.edc.junit)
     testImplementation(libs.restAssured)
 }

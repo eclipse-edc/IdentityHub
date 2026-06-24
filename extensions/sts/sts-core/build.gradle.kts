@@ -4,12 +4,12 @@ plugins {
 }
 
 dependencies {
-    api(libs.edc.spi.transaction)
+    api(libs.edc.spi.core)
     api(libs.edc.spi.dcp)
     api(project(":spi:sts-spi"))
-    api(libs.edc.spi.jwt)
+    api(libs.edc.spi.core)
 
-    implementation(libs.edc.spi.keys)
+    implementation(libs.edc.spi.core)
     implementation(project(":extensions:sts:sts-account-service-local"))
     implementation(libs.edc.lib.token)
     implementation(libs.edc.lib.store)

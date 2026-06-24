@@ -19,7 +19,7 @@ plugins {
 }
 
 dependencies {
-    api(libs.edc.spi.web)
+    api(libs.edc.spi.core)
     api(project(":spi:sts-spi"))
     implementation(project(":spi:identity-hub-spi"))
     implementation(libs.jakarta.rsApi)

@@ -21,8 +21,8 @@ dependencies {
     api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
 
-    implementation(libs.edc.spi.auth)
-    implementation(libs.edc.spi.web)
+    implementation(libs.edc.spi.core)
+    implementation(libs.edc.spi.core)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
 

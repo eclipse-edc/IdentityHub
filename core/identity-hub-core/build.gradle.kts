@@ -13,8 +13,8 @@ dependencies {
     implementation(project(":core:lib:accesstoken-lib"))
     implementation(project(":core:lib:common-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
-    implementation(libs.edc.spi.transaction)
-    implementation(libs.edc.spi.jwt)
+    implementation(libs.edc.spi.core)
+    implementation(libs.edc.spi.core)
     implementation(libs.edc.verifiablecredentials)
     implementation(libs.edc.jsonld) // for the JSON-LD mapper
     implementation(libs.edc.lib.util)
@@ -25,8 +25,8 @@ dependencies {
     implementation(libs.edc.lib.common.crypto)
     implementation(libs.edc.lib.token)
     implementation(libs.edc.lib.statemachine)
-    implementation(libs.edc.spi.token)
-    implementation(libs.edc.spi.identity.did)
+    implementation(libs.edc.spi.core)
+    implementation(libs.edc.spi.core)
     implementation(libs.edc.vc.ldp)
     implementation(libs.edc.vc.jwt) // JtiValidationRule
     implementation(libs.opentelemetry.instrumentation.annotations)

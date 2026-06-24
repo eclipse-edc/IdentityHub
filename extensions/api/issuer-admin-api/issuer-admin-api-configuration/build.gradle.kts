@@ -20,7 +20,7 @@ plugins {
 dependencies {
     api(project(":spi:identity-hub-spi"))
     implementation(libs.edc.spi.core)
-    implementation(libs.edc.spi.web)
+    implementation(libs.edc.spi.core)
     implementation(libs.jakarta.rsApi)
 
     testImplementation(libs.edc.junit)

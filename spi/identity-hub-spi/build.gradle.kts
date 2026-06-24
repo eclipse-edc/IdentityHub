@@ -21,9 +21,9 @@ plugins {
 
 dependencies {
     api(libs.edc.spi.core)
-    api(libs.edc.spi.web) // ServiceResultHandler, etc.
-    api(libs.edc.spi.vc) // VC Constants
-    api(libs.edc.spi.auth)
+    api(libs.edc.spi.core) // ServiceResultHandler, etc.
+    api(libs.edc.spi.core) // VC Constants
+    api(libs.edc.spi.core)
     api(project(":spi:participant-context-spi"))
     implementation(libs.jackson.databind)
 

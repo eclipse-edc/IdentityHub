@@ -7,7 +7,7 @@ dependencies {
     api(project(":spi:participant-context-spi"))
 
     implementation(project(":spi:keypair-spi"))
-    implementation(libs.edc.spi.transaction)
+    implementation(libs.edc.spi.core)
     implementation(libs.edc.lib.common.crypto)
     implementation(libs.edc.lib.store)
     implementation(libs.opentelemetry.api)

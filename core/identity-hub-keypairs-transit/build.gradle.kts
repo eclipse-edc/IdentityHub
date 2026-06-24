@@ -18,11 +18,11 @@ plugins {
 
 dependencies {
     api(project(":spi:keypair-spi"))
-    api(libs.edc.spi.transaction)
-    api(libs.edc.spi.hashicorp.vault)
-    api(libs.edc.spi.http)
-    api(libs.edc.spi.jwt)
-    api(libs.edc.spi.token)
+    api(libs.edc.spi.core)
+    api(libs.edc.spi.core)
+    api(libs.edc.spi.core)
+    api(libs.edc.spi.core)
+    api(libs.edc.spi.core)
     implementation(project(":core:lib:keypair-lib"))
     implementation(libs.edc.lib.common.crypto)
     implementation(libs.edc.lib.token)

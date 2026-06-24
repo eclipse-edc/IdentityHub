@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     api(project(":spi:did-spi"))
-    api(libs.edc.spi.validator)
+    api(libs.edc.spi.core)
     implementation(libs.edc.lib.util)
 
     testImplementation(libs.edc.junit)

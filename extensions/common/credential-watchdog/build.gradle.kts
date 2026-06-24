@@ -20,7 +20,7 @@ plugins {
 dependencies {
 
     api(project(":spi:verifiable-credential-spi"))
-    implementation(libs.edc.spi.transaction)
+    implementation(libs.edc.spi.core)
 
     testImplementation(libs.edc.junit)
 }
