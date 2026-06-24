@@ -75,9 +75,9 @@ all SPIs that are relevant here.
 ## Hub API (`:core:presentation-api`)
 
 This module contains implementations for
-the [Presentation API](https://github.com/eclipse-tractusx/identity-trust/blob/main/specifications/M1/verifiable.presentation.protocol.md#4-resolution-api)
+the [Presentation API](https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol/v1.0.1/#resolution-api)
 and
-the [Storage API](https://github.com/eclipse-tractusx/identity-trust/blob/main/specifications/M1/verifiable.presentation.protocol.md#5-storage-api).
+the [Storage API](https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol/v1.0.1/#storage-api).
 Is
 contains model classes, validators and JSON-LD-transformers.
 
