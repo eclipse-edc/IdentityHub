@@ -20,9 +20,9 @@ plugins {
 dependencies {
     implementation(project(":dist:bom:issuerservice-base-bom"))
     implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-authentication-oauth2"))
-    implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-authorization-oauth2"))
+    implementation(project(":extensions:api:identityhub-api-authorization"))
     implementation(project(":extensions:api:identity-api:identity-api-authentication-oauth2"))
-    implementation(project(":extensions:api:identity-api:identity-api-authorization-oauth2"))
+//    implementation(project(":extensions:api:identity-api:identity-api-authorization-oauth2"))
     // needed for interaction with the embedded STS
     implementation(project(":extensions:sts:sts-core"))
     implementation(project(":extensions:sts:sts-account-service-local"))

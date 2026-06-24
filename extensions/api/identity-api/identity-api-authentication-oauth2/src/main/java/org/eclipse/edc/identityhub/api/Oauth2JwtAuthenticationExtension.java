@@ -81,12 +81,6 @@ public class Oauth2JwtAuthenticationExtension implements ServiceExtension {
 
         webService.registerResource(alias, new ServicePrincipalAuthenticationFilter(participantContextService, IdentityApiScopes.ADMIN));
 
-        URL url;
-        try {
-            url = new URL(oauthConfiguration.jwksUrl());
-        } catch (MalformedURLException e) {
-            throw new EdcException(e);
-        }
         var resolver = JwksPublicKeyResolver.create(keyParserRegistry, oauthConfiguration.jwksUrl(), monitor, oauthConfiguration.cacheValidityInMillis());
         webService.registerResource(alias, new JwtValidatorFilter(tokenValidationService, resolver, getRules()));
     }
