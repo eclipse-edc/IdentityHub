@@ -23,13 +23,8 @@ dependencies {
     api(project(":spi:verifiable-credential-spi"))
     api(project(":protocols:dcp:dcp-spi"))
 
-    api(libs.edc.spi.core)
-    api(libs.edc.spi.core)
-    api(libs.edc.spi.core)
-    api(libs.edc.spi.core)
 
     implementation(project(":protocols:dcp:dcp-transform-lib"))
-    implementation(libs.edc.spi.core)
     implementation(libs.edc.spi.core)
     implementation(libs.edc.spi.dcp)
     implementation(libs.edc.lib.jerseyproviders)

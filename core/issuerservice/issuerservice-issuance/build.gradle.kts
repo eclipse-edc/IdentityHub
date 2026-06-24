@@ -11,8 +11,6 @@ dependencies {
     implementation(project(":core:lib:common-lib"))
     implementation(project(":core:lib:issuerservice-common-lib"))
     implementation(libs.edc.spi.core)
-    implementation(libs.edc.spi.core)
-    implementation(libs.edc.spi.core)
     implementation(libs.edc.lib.token)
     implementation(libs.edc.lib.store)
     implementation(libs.edc.lib.statemachine)

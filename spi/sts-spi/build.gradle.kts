@@ -21,8 +21,6 @@ plugins {
 dependencies {
     api(project(":spi:participant-context-spi"))
     api(libs.edc.spi.core)
-    api(libs.edc.spi.core)
-    api(libs.edc.spi.core)
 
     testFixturesImplementation(libs.junit.jupiter.api)
     testFixturesImplementation(libs.junit.jupiter.params)

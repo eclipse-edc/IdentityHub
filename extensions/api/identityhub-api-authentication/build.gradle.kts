@@ -18,7 +18,6 @@ plugins {
 }
 
 dependencies {
-    api(libs.edc.spi.core)
 
     implementation(project(":extensions:api:lib:identityhub-api-authentication-lib"))
     implementation(libs.edc.lib.oauth2.authz)

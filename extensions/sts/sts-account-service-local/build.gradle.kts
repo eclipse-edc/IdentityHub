@@ -25,6 +25,5 @@ dependencies {
     implementation(libs.edc.lib.token)
     implementation(project(":spi:sts-spi"))
     implementation(libs.edc.spi.core)
-    implementation(libs.edc.spi.core)
     testImplementation(libs.edc.junit)
 }

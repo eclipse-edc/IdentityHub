@@ -22,7 +22,6 @@ dependencies {
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))
     api(libs.edc.spi.core)
 
-    implementation(libs.edc.spi.core)
     implementation(project(":core:lib:issuerservice-common-lib"))
 
     testImplementation(libs.edc.junit)

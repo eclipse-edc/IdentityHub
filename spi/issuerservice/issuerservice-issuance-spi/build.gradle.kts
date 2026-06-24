@@ -20,8 +20,6 @@ plugins {
 
 dependencies {
     api(libs.edc.spi.core)
-    api(libs.edc.spi.core)
-    api(libs.edc.spi.core)
     api(project(":spi:participant-context-spi"))
     api(project(":spi:issuerservice:issuerservice-holder-spi"))
     testFixturesImplementation(libs.edc.junit)
