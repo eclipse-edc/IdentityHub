@@ -21,14 +21,12 @@ dependencies {
     implementation(libs.edc.lib.query)
     implementation(libs.edc.lib.jws2020)
     implementation(libs.edc.lib.common.crypto)
-    implementation(libs.edc.lib.token)
     implementation(libs.edc.vc.ldp)
     implementation(libs.edc.vc.jwt)
     implementation(libs.edc.lib.token) // JtiValidationRule
 
 
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(project(":spi:keypair-spi")))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(testFixtures(project(":spi:holder-credential-request-spi")))
