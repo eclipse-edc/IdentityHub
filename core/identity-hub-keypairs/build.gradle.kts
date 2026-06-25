@@ -20,7 +20,7 @@ dependencies {
     api(project(":spi:keypair-spi"))
     api(libs.edc.spi.core)
     implementation(project(":core:lib:keypair-lib"))
-    implementation(libs.edc.lib.common.crypto)
+    implementation(libs.edc.lib.core)
     implementation(libs.opentelemetry.api)
     implementation(libs.opentelemetry.instrumentation.annotations)
     runtimeOnly(libs.edc.core.connector)

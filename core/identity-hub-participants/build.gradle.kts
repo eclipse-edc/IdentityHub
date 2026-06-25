@@ -11,6 +11,6 @@ dependencies {
     runtimeOnly(libs.bouncyCastle.bcprovJdk18on)
     implementation(libs.opentelemetry.instrumentation.annotations)
 
-    testImplementation(libs.edc.lib.keys)
+    testImplementation(libs.edc.lib.core)
     testImplementation(libs.edc.junit)
 }

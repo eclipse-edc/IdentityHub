@@ -22,7 +22,6 @@ dependencies {
     api(project(":protocols:dcp:dcp-issuer:dcp-issuer-spi"))
 
     testImplementation(libs.edc.lib.jsonld)
-    testImplementation(libs.edc.lib.transform)
 
 }
 

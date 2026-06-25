@@ -25,7 +25,7 @@ dependencies {
     implementation(project(":core:lib:issuerservice-common-lib"))
 
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.lib.json)
+    testImplementation(libs.edc.lib.jsonld)
 
     testFixturesImplementation(libs.edc.spi.core)
     testFixturesImplementation(libs.junit.jupiter.api)

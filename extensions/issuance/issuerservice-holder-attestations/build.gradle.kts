@@ -21,9 +21,9 @@ plugins {
 dependencies {
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))
     implementation(libs.edc.spi.core)
-    implementation(libs.edc.lib.sql)
+    implementation(libs.edc.lib.core)
 
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.lib.json)
+    testImplementation(libs.edc.lib.jsonld)
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
 }

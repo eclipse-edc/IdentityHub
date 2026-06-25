@@ -8,14 +8,12 @@ dependencies {
 
     implementation(project(":spi:keypair-spi"))
     implementation(libs.edc.spi.core)
-    implementation(libs.edc.lib.common.crypto)
-    implementation(libs.edc.lib.store)
+    implementation(libs.edc.lib.core)
+    implementation(libs.edc.lib.controlplane)
     implementation(libs.opentelemetry.api)
     implementation(libs.opentelemetry.instrumentation.annotations)
 
-    testImplementation(libs.edc.lib.query)
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.lib.keys)
     testImplementation(testFixtures(project(":spi:did-spi")))
     testRuntimeOnly(libs.edc.jsonld)
 }

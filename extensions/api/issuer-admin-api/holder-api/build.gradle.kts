@@ -22,7 +22,7 @@ dependencies {
     api(project(":spi:issuerservice:issuerservice-holder-spi"))
     implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-configuration"))
     implementation(libs.edc.spi.core)
-    implementation(libs.edc.lib.util)
+    implementation(libs.edc.lib.core)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
 

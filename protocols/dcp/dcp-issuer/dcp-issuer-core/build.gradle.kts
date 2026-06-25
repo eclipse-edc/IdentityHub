@@ -26,7 +26,7 @@ dependencies {
     api(project(":protocols:dcp:dcp-issuer:dcp-issuer-spi"))
     api(libs.edc.spi.core)
     implementation(libs.edc.vc.jwt)
-    implementation(libs.edc.lib.token)
+    implementation(libs.edc.lib.core)
     implementation(libs.nimbus.jwt)
     implementation(libs.opentelemetry.instrumentation.annotations)
     implementation(libs.opentelemetry.api)

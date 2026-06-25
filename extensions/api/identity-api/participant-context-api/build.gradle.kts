@@ -23,7 +23,7 @@ dependencies {
     api(project(":spi:identity-hub-spi"))
     implementation(project(":extensions:api:identity-api:identity-api-configuration"))
     implementation(project(":extensions:api:identity-api:validators:participant-context-validators"))
-    implementation(libs.edc.lib.util)
+    implementation(libs.edc.lib.core)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
 

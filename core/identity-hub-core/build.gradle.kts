@@ -16,14 +16,10 @@ dependencies {
     implementation(libs.edc.spi.core)
     implementation(libs.edc.verifiablecredentials)
     implementation(libs.edc.jsonld) // for the JSON-LD mapper
-    implementation(libs.edc.lib.util)
-    implementation(libs.edc.lib.store)
+    implementation(libs.edc.lib.core)
+    implementation(libs.edc.lib.controlplane)
     implementation(libs.edc.lib.jsonld)
-    implementation(libs.edc.lib.query)
     implementation(libs.edc.lib.jws2020)
-    implementation(libs.edc.lib.common.crypto)
-    implementation(libs.edc.lib.token)
-    implementation(libs.edc.lib.statemachine)
     implementation(libs.edc.vc.ldp)
     implementation(libs.edc.vc.jwt) // JtiValidationRule
     implementation(libs.opentelemetry.instrumentation.annotations)

@@ -19,7 +19,7 @@ plugins {
 dependencies {
     api(libs.edc.spi.core)
 
-    implementation(libs.edc.lib.sql)
+    implementation(libs.edc.lib.core)
     implementation(libs.edc.sql.bootstrapper)
     implementation(project(":spi:sts-spi"))
     testImplementation(libs.edc.junit)

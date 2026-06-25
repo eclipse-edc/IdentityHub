@@ -33,7 +33,7 @@ dependencies {
     testImplementation(libs.nimbus.jwt)
     testImplementation(libs.bouncyCastle.bcpkixJdk18on)
 
-    testImplementation(testFixtures(libs.edc.lib.http))
+    testImplementation(testFixtures(libs.edc.lib.core))
 }
 
 edcBuild {

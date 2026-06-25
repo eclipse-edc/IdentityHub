@@ -18,8 +18,7 @@ plugins {
 
 dependencies {
     api(project(":spi:verifiable-credential-spi"))
-    implementation(libs.edc.lib.sql)
-    implementation(libs.edc.lib.util)
+    implementation(libs.edc.lib.core)
     implementation(libs.edc.sql.bootstrapper) // for the schema bootstrapper
     implementation(libs.edc.spi.core)
 

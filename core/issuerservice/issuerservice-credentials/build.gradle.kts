@@ -11,7 +11,7 @@ dependencies {
     api(project(":protocols:dcp:dcp-spi")) // CredentialOfferMessage
     api(libs.edc.spi.core) // for the Request
     implementation(project(":protocols:dcp:dcp-issuer:dcp-issuer-spi"))
-    implementation(libs.edc.lib.token)
+    implementation(libs.edc.lib.core)
     implementation(libs.nimbus.jwt)
 
 
