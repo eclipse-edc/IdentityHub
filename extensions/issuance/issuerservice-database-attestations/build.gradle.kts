@@ -21,15 +21,13 @@ plugins {
 dependencies {
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))
     api(libs.edc.spi.core)
-    api(libs.edc.spi.transaction)
-    implementation(libs.edc.spi.validator)
     implementation(libs.edc.lib.sql)
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.lib.json)
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))
 
-    testFixturesImplementation(libs.edc.spi.identity.did)
+    testFixturesImplementation(libs.edc.spi.core)
     testFixturesImplementation(libs.junit.jupiter.api)
     testFixturesImplementation(libs.edc.junit)
 }

@@ -20,8 +20,8 @@ plugins {
 val swagger: String by project
 
 dependencies {
-    api(libs.edc.spi.participantcontext)
-    implementation(libs.edc.spi.identity.did) // ParticipantManifest#serviceEndpoint
+    api(libs.edc.spi.core)
+    implementation(libs.edc.spi.core) // ParticipantManifest#serviceEndpoint
     implementation(libs.opentelemetry.api)
     testImplementation(libs.edc.lib.json)
 }

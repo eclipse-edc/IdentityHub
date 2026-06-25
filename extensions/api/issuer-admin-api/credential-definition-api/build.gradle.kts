@@ -22,8 +22,7 @@ dependencies {
     api(project(":spi:issuerservice:issuerservice-issuance-spi"))
     api(project(":spi:verifiable-credential-spi"))
     implementation(project(":extensions:api:issuer-admin-api:issuer-admin-api-configuration"))
-    implementation(libs.edc.spi.auth)
-    implementation(libs.edc.spi.web)
+    implementation(libs.edc.spi.core)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
 

@@ -13,9 +13,7 @@ dependencies {
     implementation(project(":core:lib:accesstoken-lib"))
     implementation(project(":core:lib:common-lib"))
     implementation(libs.edc.spi.dcp) //SignatureSuiteRegistry
-    implementation(libs.edc.spi.http)
-    implementation(libs.edc.spi.transaction)
-    implementation(libs.edc.spi.jwt)
+    implementation(libs.edc.spi.core)
     implementation(libs.edc.jsonld) // for the JSON-LD mapper
     implementation(libs.edc.lib.util)
     implementation(libs.edc.lib.store)
@@ -23,16 +21,12 @@ dependencies {
     implementation(libs.edc.lib.query)
     implementation(libs.edc.lib.jws2020)
     implementation(libs.edc.lib.common.crypto)
-    implementation(libs.edc.lib.token)
-    implementation(libs.edc.spi.token)
-    implementation(libs.edc.spi.identity.did)
     implementation(libs.edc.vc.ldp)
     implementation(libs.edc.vc.jwt)
     implementation(libs.edc.lib.token) // JtiValidationRule
 
 
     testImplementation(libs.edc.junit)
-    testImplementation(libs.edc.jsonld)
     testImplementation(testFixtures(project(":spi:keypair-spi")))
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
     testImplementation(testFixtures(project(":spi:holder-credential-request-spi")))

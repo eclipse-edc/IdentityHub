@@ -21,7 +21,7 @@ dependencies {
     implementation(libs.edc.lib.sql)
     implementation(libs.edc.sql.bootstrapper)
     implementation(libs.edc.sql.lease)
-    implementation(libs.edc.spi.transaction.datasource)
+    implementation(libs.edc.spi.core)
 
     testImplementation(testFixtures(project(":spi:issuerservice:issuerservice-issuance-spi")))
     testImplementation(testFixtures(libs.edc.sql.test.fixtures))

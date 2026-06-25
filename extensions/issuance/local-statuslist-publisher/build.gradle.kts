@@ -22,9 +22,8 @@ dependencies {
 
     api(project(":spi:issuerservice:issuerservice-credential-spi"))
 
-    implementation(libs.edc.spi.transaction)
+    implementation(libs.edc.spi.core)
     implementation(libs.jakarta.rsApi)
-    implementation(libs.edc.spi.web)
     implementation(libs.edc.lib.jsonld)
 
     testImplementation(libs.edc.junit)

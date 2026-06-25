@@ -23,7 +23,7 @@ dependencies {
     api(project(":spi:did-spi"))
     implementation(project(":spi:identity-hub-spi"))
     implementation(libs.jakarta.rsApi)
-    implementation(libs.edc.spi.web)
+    implementation(libs.edc.spi.core)
     implementation(libs.opentelemetry.instrumentation.annotations)
 
     testImplementation(libs.edc.junit)

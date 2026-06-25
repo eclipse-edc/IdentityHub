@@ -18,12 +18,11 @@ plugins {
 }
 
 dependencies {
-    api(libs.edc.spi.core)
     api(project(":spi:identity-hub-spi"))
 
     implementation(project(":extensions:api:lib:identityhub-api-authentication-lib"))
     implementation(libs.edc.lib.oauth2.authz)
-    implementation(libs.edc.spi.web)
+    implementation(libs.edc.spi.core)
     implementation(libs.jakarta.rsApi)
     implementation(libs.jakarta.annotation)
 

@@ -28,7 +28,7 @@ dependencies {
     testFixturesApi(testFixtures(project(":spi:verifiable-credential-spi")))
     testFixturesApi(libs.junit.jupiter.api)
     testFixturesApi(libs.edc.junit)
-    testFixturesApi(libs.edc.spi.did)
+    testFixturesApi(libs.edc.spi.core)
     testFixturesApi(libs.restAssured)
     testFixturesApi(libs.awaitility)
     testFixturesApi(libs.edc.transaction.local)
