@@ -24,11 +24,11 @@ dependencies {
     api(project(":spi:participant-context-spi"))
     api(libs.edc.spi.dcp)
 
-    testImplementation(libs.edc.lib.json)
+    testImplementation(libs.edc.lib.jsonld)
     testFixturesImplementation(libs.edc.junit)
     testFixturesImplementation(libs.junit.jupiter.api)
     testFixturesImplementation(libs.awaitility)
     testFixturesImplementation(libs.nimbus.jwt)
     testFixturesImplementation(libs.edc.spi.core)
-    testFixturesImplementation(libs.edc.lib.common.crypto)
+    testFixturesImplementation(libs.edc.lib.core)
 }

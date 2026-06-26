@@ -11,9 +11,8 @@ dependencies {
     implementation(project(":core:lib:common-lib"))
     implementation(project(":core:lib:issuerservice-common-lib"))
     implementation(libs.edc.spi.core)
-    implementation(libs.edc.lib.token)
-    implementation(libs.edc.lib.store)
-    implementation(libs.edc.lib.statemachine)
+    implementation(libs.edc.lib.core)
+    implementation(libs.edc.lib.controlplane)
     implementation(libs.opentelemetry.instrumentation.annotations)
 
     testImplementation(libs.edc.junit)

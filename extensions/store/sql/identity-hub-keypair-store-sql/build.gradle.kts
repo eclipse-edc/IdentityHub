@@ -18,7 +18,7 @@ plugins {
 
 dependencies {
     api(project(":spi:keypair-spi"))
-    implementation(libs.edc.lib.sql)
+    implementation(libs.edc.lib.core)
     implementation(libs.edc.sql.bootstrapper)
     implementation(libs.edc.spi.core)
 

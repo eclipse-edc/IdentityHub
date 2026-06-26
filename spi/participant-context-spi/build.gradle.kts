@@ -23,5 +23,5 @@ dependencies {
     api(libs.edc.spi.core)
     implementation(libs.edc.spi.core) // ParticipantManifest#serviceEndpoint
     implementation(libs.opentelemetry.api)
-    testImplementation(libs.edc.lib.json)
+    testImplementation(libs.edc.lib.jsonld)
 }

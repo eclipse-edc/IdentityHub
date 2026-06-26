@@ -22,7 +22,7 @@ dependencies {
     api(project(":protocols:dcp:dcp-spi"))
     api(libs.edc.spi.core)
     implementation(libs.edc.vc.jwt)
-    implementation(libs.edc.lib.token)
+    implementation(libs.edc.lib.core)
     testImplementation(libs.edc.junit)
     testImplementation(testFixtures(project(":spi:verifiable-credential-spi")))
 }
