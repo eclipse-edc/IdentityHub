@@ -40,6 +40,7 @@ public class ParticipantManifest {
     private List<String> scopes = new ArrayList<>();
     private Set<Service> serviceEndpoints = new HashSet<>();
     private boolean isActive;
+    private boolean provisionStsAccount = true;
     private String participantContextId;
     private String did;
     private String apiKeyAlias;
@@ -68,6 +69,14 @@ public class ParticipantManifest {
      */
     public boolean isActive() {
         return isActive;
+    }
+
+    /**
+     * Indicates whether an STS account should be provisioned for this participant during creation. When {@code false}, the STS account provisioning
+     * phase is skipped entirely. Defaults to {@code true}.
+     */
+    public boolean isProvisionStsAccount() {
+        return provisionStsAccount;
     }
 
     /**
@@ -130,6 +139,11 @@ public class ParticipantManifest {
 
         public Builder active(boolean isActive) {
             manifest.isActive = isActive;
+            return this;
+        }
+
+        public Builder provisionStsAccount(boolean provisionStsAccount) {
+            manifest.provisionStsAccount = provisionStsAccount;
             return this;
         }
 

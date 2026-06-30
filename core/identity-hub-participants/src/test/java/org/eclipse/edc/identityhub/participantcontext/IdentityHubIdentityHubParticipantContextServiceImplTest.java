@@ -56,6 +56,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -140,6 +141,25 @@ class IdentityHubIdentityHubParticipantContextServiceImplTest {
             assertThat(response.clientId()).isEqualTo("clientId");
             assertThat(response.clientSecret()).isEqualTo("clientSecret");
         });
+    }
+
+    @Test
+    void shouldSkipStsProvisioning_whenProvisionStsAccountIsFalse() {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+        when(vault.storeSecret(anyString(), anyString(), anyString())).thenReturn(Result.success());
+
+        var ctx = createManifest()
+                .provisionStsAccount(false)
+                .build();
+
+        var result = participantContextService.createParticipantContext(ctx);
+
+        assertThat(result).isSucceeded().satisfies(response -> {
+            assertThat(response.apiKey()).isNotBlank();
+            assertThat(response.clientId()).isNull();
+            assertThat(response.clientSecret()).isNull();
+        });
+        verify(stsAccountProvisioner, never()).create(any());
     }
 
     @ParameterizedTest(name = "isActive: {0}")
