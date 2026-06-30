@@ -30,7 +30,7 @@ The project maintains the following source code repository:
 
 ## Third-party Content (Overarching All Modules)
 
-Please refer to the [DEPENDENCIES](https://eclipse-edc.github.io/IdentityHub/DEPENDENCIES) file for a detailed report.
+Please refer to the [DEPENDENCIES](DEPENDENCIES)
 
 ## Cryptography
 
