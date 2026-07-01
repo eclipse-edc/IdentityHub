@@ -75,6 +75,7 @@ import static org.eclipse.edc.identityhub.tests.fixtures.common.AbstractIdentity
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -172,6 +173,34 @@ public class IdentityHubParticipantContextApiEndToEndTest {
             assertThat(identityHub.getDidForParticipant(manifest.getParticipantContextId())).hasSize(1)
                     .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
         }
+
+
+        @Test
+        void createNewUser_skipStsClientProvisioning(IdentityHub identityHub, EventRouter router) {
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(ParticipantContextCreated.class, subscriber);
+
+            var manifest = createNewParticipant().provisionStsAccount(false).build();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(authorizeUser(SUPER_USER, identityHub))
+                    .contentType(ContentType.JSON)
+                    .body(manifest)
+                    .post("/v1beta/participants/")
+                    .then()
+                    .log().ifError()
+                    .statusCode(anyOf(equalTo(200), equalTo(204)))
+                    .body("clientId", nullValue())
+                    .body("apiKey", notNullValue())
+                    .body("clientSecret", nullValue());
+
+            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantContextId())));
+
+            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantContextId())).hasSize(1);
+            assertThat(identityHub.getDidForParticipant(manifest.getParticipantContextId())).hasSize(1)
+                    .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
+        }
+
 
         @Test
         void createNewUser_whenKeyPairActive(IdentityHub identityHub, EventRouter router) {
@@ -519,7 +548,7 @@ public class IdentityHubParticipantContextApiEndToEndTest {
         }
 
         @ParameterizedTest(name = "Expect 403, role = {0}")
-        @ValueSource(strings = { "some-role", "admin" })
+        @ValueSource(strings = {"some-role", "admin"})
         void updateScopes_whenNotSuperuser(String role, IdentityHub identityHub) {
             var participantContextId = "some-user";
             var userAuth = authorizeUser(participantContextId, identityHub);

@@ -98,14 +98,19 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
 
             return createParticipantContext(context)
                     .compose(this::createTokenAndStoreInVault)
-                    .compose((Function<String, ServiceResult<CreateParticipantContextResponse>>) apiKey -> stsAccountProvisioner.create(manifest)
-                            .map(accountInfo -> {
-                                if (accountInfo == null) {
-                                    return new CreateParticipantContextResponse(apiKey, null, null);
-                                } else {
-                                    return new CreateParticipantContextResponse(apiKey, accountInfo.clientId(), accountInfo.clientSecret());
-                                }
-                            }))
+                    .compose((Function<String, ServiceResult<CreateParticipantContextResponse>>) apiKey -> {
+                        if (!manifest.isProvisionStsAccount()) {
+                            return success(new CreateParticipantContextResponse(apiKey, null, null));
+                        }
+                        return stsAccountProvisioner.create(manifest)
+                                .map(accountInfo -> {
+                                    if (accountInfo == null) {
+                                        return new CreateParticipantContextResponse(apiKey, null, null);
+                                    } else {
+                                        return new CreateParticipantContextResponse(apiKey, accountInfo.clientId(), accountInfo.clientSecret());
+                                    }
+                                });
+                    })
                     .onSuccess(apiToken -> observable.invokeForEach(l -> l.created(context, manifest)));
         });
     }
