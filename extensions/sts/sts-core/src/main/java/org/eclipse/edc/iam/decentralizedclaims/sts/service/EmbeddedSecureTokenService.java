@@ -14,12 +14,9 @@
 
 package org.eclipse.edc.iam.decentralizedclaims.sts.service;
 
-import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
-import org.eclipse.edc.spi.query.Criterion;
-import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
 import org.eclipse.edc.token.spi.TokenGenerationService;
@@ -53,33 +50,23 @@ public class EmbeddedSecureTokenService implements ParticipantSecureTokenService
     private final long tokenValiditySeconds;
     private final TokenGenerationService tokenGenerationService;
     private final Clock clock;
-    private final StsAccountService stsAccountService;
     private final KeyPairService keyPairService;
 
     public EmbeddedSecureTokenService(TransactionContext transactionContext,
                                       long tokenValiditySeconds,
                                       TokenGenerationService tokenGenerationService,
                                       Clock clock,
-                                      StsAccountService stsAccountService,
                                       KeyPairService keyPairService) {
         this.transactionContext = transactionContext;
         this.tokenValiditySeconds = tokenValiditySeconds;
         this.tokenGenerationService = tokenGenerationService;
         this.clock = clock;
-        this.stsAccountService = stsAccountService;
         this.keyPairService = keyPairService;
     }
 
     @Override
     public Result<TokenRepresentation> createToken(String participantContextId, Map<String, String> claims, @Nullable String bearerAccessScope) {
         return transactionContext.execute(() -> {
-            var result = stsAccountService.queryAccounts(QuerySpec.Builder.newInstance()
-                    .filter(new Criterion("participantContextId", "=", participantContextId))
-                    .build());
-            if (result == null || result.isEmpty()) {
-                return Result.failure("No account found for participantContextId '%s'".formatted(participantContextId));
-            }
-
             var tokenSigningKey = keyPairService.getActiveKeyPairForUsage(participantContextId, TOKEN_SIGNING);
             if (tokenSigningKey.failed()) {
                 return Result.failure(tokenSigningKey.getFailureDetail());

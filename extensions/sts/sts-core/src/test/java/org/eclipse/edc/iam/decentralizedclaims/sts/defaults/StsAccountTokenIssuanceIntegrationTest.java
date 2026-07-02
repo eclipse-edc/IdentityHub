@@ -17,16 +17,11 @@ package org.eclipse.edc.iam.decentralizedclaims.sts.defaults;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.boot.vault.InMemoryVault;
-import org.eclipse.edc.iam.decentralizedclaims.sts.defaults.store.InMemoryStsAccountStore;
 import org.eclipse.edc.iam.decentralizedclaims.sts.service.EmbeddedSecureTokenService;
 import org.eclipse.edc.iam.decentralizedclaims.sts.service.StsClientTokenGeneratorServiceImpl;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.model.StsAccountTokenAdditionalParams;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.ParticipantManifest;
-import org.eclipse.edc.identityhub.sts.accountservice.RandomStringGenerator;
-import org.eclipse.edc.identityhub.sts.accountservice.StsAccountServiceImpl;
 import org.eclipse.edc.junit.annotations.ComponentTest;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
 import org.eclipse.edc.keys.KeyParserRegistryImpl;
@@ -34,7 +29,6 @@ import org.eclipse.edc.keys.VaultPrivateKeyResolver;
 import org.eclipse.edc.keys.keyparsers.JwkParser;
 import org.eclipse.edc.keys.keyparsers.PemParser;
 import org.eclipse.edc.keys.spi.KeyParserRegistry;
-import org.eclipse.edc.query.CriterionOperatorRegistryImpl;
 import org.eclipse.edc.security.token.jwt.DefaultJwsSignerProvider;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
@@ -71,17 +65,14 @@ import static org.mockito.Mockito.when;
 @ComponentTest
 public class StsAccountTokenIssuanceIntegrationTest {
 
-    private final InMemoryStsAccountStore clientStore = new InMemoryStsAccountStore(CriterionOperatorRegistryImpl.ofDefaults());
     private final Vault vault = new InMemoryVault(mock(), null);
     private final KeyParserRegistry keyParserRegistry = new KeyParserRegistryImpl();
     private final JtiValidationStore jtiValidationStore = mock();
     private final KeyPairService keyPairService = mock();
-    private StsAccountServiceImpl clientService;
     private StsClientTokenGeneratorServiceImpl tokenGeneratorService;
 
     @BeforeEach
     void setup() throws IOException {
-        clientService = new StsAccountServiceImpl(clientStore, new NoopTransactionContext(), vault, new RandomStringGenerator());
 
         keyParserRegistry.register(new PemParser(mock()));
         keyParserRegistry.register(new JwkParser(new ObjectMapper(), mock()));
@@ -99,7 +90,7 @@ public class StsAccountTokenIssuanceIntegrationTest {
                         .build()));
 
         tokenGeneratorService = new StsClientTokenGeneratorServiceImpl(60 * 5, new EmbeddedSecureTokenService(new NoopTransactionContext(), 60 * 5,
-                new JwtGenerationService(new DefaultJwsSignerProvider(privateKeyResolver)), Clock.systemUTC(), clientService, keyPairService));
+                new JwtGenerationService(new DefaultJwsSignerProvider(privateKeyResolver)), Clock.systemUTC(), keyPairService));
     }
 
     @Test
@@ -120,16 +111,6 @@ public class StsAccountTokenIssuanceIntegrationTest {
         var additional = StsAccountTokenAdditionalParams.Builder.newInstance().audience(audience).build();
 
         vault.storeSecret(participantId, privateKeyAlias, loadResourceFile("ec-privatekey.pem"));
-
-        var createResult = clientService.createAccount(ParticipantManifest.Builder.newInstance()
-                .participantContextId(participantId)
-                .did(did)
-                .key(KeyDescriptor.Builder.newInstance()
-                        .keyId("public-key")
-                        .privateKeyAlias(privateKeyAlias)
-                        .build())
-                .build(), secretAlias);
-        assertThat(createResult.succeeded()).isTrue();
 
         var tokenResult = tokenGeneratorService.tokenFor(client, additional);
 
@@ -166,16 +147,6 @@ public class StsAccountTokenIssuanceIntegrationTest {
 
         vault.storeSecret(participantId, privateKeyAlias, loadResourceFile("ec-privatekey.pem"));
 
-        var createResult = clientService.createAccount(ParticipantManifest.Builder.newInstance()
-                .participantContextId(participantId)
-                .did(did)
-                .key(KeyDescriptor.Builder.newInstance()
-                        .keyId("public-key")
-                        .privateKeyAlias(privateKeyAlias)
-                        .build())
-                .build(), secretAlias);
-        assertThat(createResult.succeeded()).isTrue();
-
         var tokenResult = tokenGeneratorService.tokenFor(client, additional);
         var jwt = SignedJWT.parse(tokenResult.getContent().getToken());
 
@@ -208,16 +179,6 @@ public class StsAccountTokenIssuanceIntegrationTest {
         var additional = StsAccountTokenAdditionalParams.Builder.newInstance().audience(audience).accessToken(accessToken).build();
 
         vault.storeSecret(participantId, privateKeyAlias, loadResourceFile("ec-privatekey.pem"));
-
-        var createResult = clientService.createAccount(ParticipantManifest.Builder.newInstance()
-                .participantContextId(participantId)
-                .did(did)
-                .key(KeyDescriptor.Builder.newInstance()
-                        .keyId("public-key")
-                        .privateKeyAlias(privateKeyAlias)
-                        .build())
-                .build(), secretAlias);
-        assertThat(createResult.succeeded()).isTrue();
 
         var tokenResult = tokenGeneratorService.tokenFor(client, additional);
         var jwt = SignedJWT.parse(tokenResult.getContent().getToken());

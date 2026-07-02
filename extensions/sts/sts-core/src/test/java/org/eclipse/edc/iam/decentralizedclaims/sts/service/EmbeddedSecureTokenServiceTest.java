@@ -14,14 +14,11 @@
 
 package org.eclipse.edc.iam.decentralizedclaims.sts.service;
 
-import org.eclipse.edc.iam.decentralizedclaims.sts.spi.model.StsAccount;
-import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairResource;
 import org.eclipse.edc.identityhub.spi.keypair.model.KeyPairState;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
-import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.token.spi.KeyIdDecorator;
@@ -33,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Clock;
-import java.util.List;
 import java.util.Map;
 
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
@@ -53,22 +49,11 @@ class EmbeddedSecureTokenServiceTest {
     public static final String TEST_PRIVATEKEY_ID = "test-privatekey-id";
     public static final String TEST_PARTICIPANT = "test-participant";
     private final TokenGenerationService tokenGenerationService = mock();
-    private final StsAccountService stsAccountService = mock();
     private final KeyPairService keyPairService = mock();
-    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(), stsAccountService, keyPairService);
+    private final EmbeddedSecureTokenService sts = new EmbeddedSecureTokenService(new NoopTransactionContext(), 10 * 60, tokenGenerationService, Clock.systemUTC(), keyPairService);
 
     @BeforeEach
     void setup() {
-        when(stsAccountService.queryAccounts(any(QuerySpec.class))).thenReturn(
-                List.of(StsAccount.Builder.newInstance()
-                        .id("key-pair-id")
-                        .clientId(TEST_PRIVATEKEY_ID)
-                        .secretAlias(TEST_PARTICIPANT + "-alias")
-                        .name(TEST_PARTICIPANT)
-                        .participantContextId(TEST_PARTICIPANT)
-                        .did("did:web:" + TEST_PARTICIPANT)
-                        .build()));
-
         when(keyPairService.getActiveKeyPairForUsage(eq(TEST_PARTICIPANT), eq(KeyPairUsage.TOKEN_SIGNING)))
                 .thenReturn(success(createKeyPair()));
 
@@ -171,16 +156,6 @@ class EmbeddedSecureTokenServiceTest {
 
         verify(tokenGenerationService, times(2)).generate(eq(TEST_PARTICIPANT), eq(TEST_PRIVATEKEY_ID), any(TokenDecorator[].class));
         verifyNoMoreInteractions(tokenGenerationService);
-    }
-
-    @Test
-    void createToken_whenStsAccountNotfound_expectFailure() {
-        when(stsAccountService.queryAccounts(any(QuerySpec.class))).thenReturn(List.of());
-
-        var result = sts.createToken(TEST_PARTICIPANT, Map.of(), null);
-        assertThat(result).isFailed()
-                .detail()
-                .isEqualTo("No account found for participantContextId 'test-participant'");
     }
 
     @Test
