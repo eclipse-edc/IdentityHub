@@ -881,25 +881,6 @@ Module `identity-hub-keypairs-transit`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.keypairs.TransitKeyPairServiceExtension`
-**Name:** "Hashicorp Transit KeyPair Service Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore` (required)
-- `org.eclipse.edc.spi.event.EventRouter` (required)
-- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-- `org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore` (required)
-- `org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable` (required)
-- `org.eclipse.edc.identityhub.transit.TransitEngine` (required)
-
 #### Class: `org.eclipse.edc.identityhub.TransitSecurityExtension`
 **Name:** "Hashicorp Transit Security Extension"
 
@@ -921,6 +902,25 @@ _None_
 - `org.eclipse.edc.http.spi.EdcHttpClient` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
 
+#### Class: `org.eclipse.edc.identityhub.keypairs.TransitKeyPairServiceExtension`
+**Name:** "Hashicorp Transit KeyPair Service Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore` (required)
+- `org.eclipse.edc.spi.event.EventRouter` (required)
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore` (required)
+- `org.eclipse.edc.identityhub.spi.keypair.events.KeyPairObservable` (required)
+- `org.eclipse.edc.identityhub.transit.TransitEngine` (required)
+
 Module `identity-hub-participants`
 ----------------------------------
 **Artifact:** org.eclipse.edc:identity-hub-participants:0.19.0-SNAPSHOT
@@ -931,6 +931,25 @@ Module `identity-hub-participants`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension`
+**Name:** "ParticipantContext Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.identityhub.spi.did.DidDocumentService` (required)
+- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
+- `java.time.Clock` (required)
+- `org.eclipse.edc.spi.event.EventRouter` (required)
+- `org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService` (required)
+- `org.eclipse.edc.spi.telemetry.Telemetry` (required)
+
 #### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextExtension`
 **Name:** "ParticipantContext Extension"
 
@@ -952,25 +971,6 @@ _None_
 - `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore` (required)
 - `org.eclipse.edc.identityhub.spi.participantcontext.StsAccountProvisioner` (required)
 - `org.eclipse.edc.participantcontext.spi.config.service.ParticipantContextConfigService` (required)
-- `org.eclipse.edc.spi.telemetry.Telemetry` (required)
-
-#### Class: `org.eclipse.edc.identityhub.participantcontext.ParticipantContextCoordinatorExtension`
-**Name:** "ParticipantContext Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-_None_
-
-#### Referenced (injected) services
-- `org.eclipse.edc.identityhub.spi.did.DidDocumentService` (required)
-- `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
-- `java.time.Clock` (required)
-- `org.eclipse.edc.spi.event.EventRouter` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService` (required)
 - `org.eclipse.edc.spi.telemetry.Telemetry` (required)
 
 Module `identityhub-api-authentication`
@@ -1306,25 +1306,6 @@ Module `issuerservice-credentials`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.issuerservice.credentials.CredentialDefaultServiceExtension`
-**Name:** "Issuer Service Credential Default Services"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry`
-- `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher` (required)
-- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-- `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore` (required)
-- `org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry` (required)
-- `org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService` (required)
-
 #### Class: `org.eclipse.edc.issuerservice.credentials.CredentialServiceExtension`
 **Name:** "Issuer Service Credential Service"
 
@@ -1350,6 +1331,25 @@ _None_
 - `org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService` (required)
 - `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry` (required)
 - `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager` (required)
+
+#### Class: `org.eclipse.edc.issuerservice.credentials.CredentialDefaultServiceExtension`
+**Name:** "Issuer Service Credential Default Services"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFactoryRegistry`
+- `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListCredentialPublisher` (required)
+- `org.eclipse.edc.transaction.spi.TransactionContext` (required)
+- `org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore` (required)
+- `org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry` (required)
+- `org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService` (required)
 
 Module `issuerservice-database-attestations`
 --------------------------------------------
@@ -1930,7 +1930,6 @@ _None_
 - `java.time.Clock` (required)
 - `org.eclipse.edc.jwt.spi.signer.JwsSignerProvider` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
-- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService` (required)
 - `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
 
 Module `test-attestations`
