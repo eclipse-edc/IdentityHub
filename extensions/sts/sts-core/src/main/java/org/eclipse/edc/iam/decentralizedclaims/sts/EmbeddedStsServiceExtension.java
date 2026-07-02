@@ -16,7 +16,6 @@ package org.eclipse.edc.iam.decentralizedclaims.sts;
 
 import org.eclipse.edc.iam.decentralizedclaims.sts.service.EmbeddedSecureTokenService;
 import org.eclipse.edc.iam.decentralizedclaims.sts.service.StsClientTokenGeneratorServiceImpl;
-import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService;
 import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientTokenGeneratorService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
@@ -49,8 +48,6 @@ public class EmbeddedStsServiceExtension implements ServiceExtension {
     @Inject
     private TransactionContext transactionContext;
     @Inject
-    private StsAccountService stsAccountService;
-    @Inject
     private KeyPairService keyPairService;
     private EmbeddedSecureTokenService embeddedSts;
 
@@ -62,7 +59,7 @@ public class EmbeddedStsServiceExtension implements ServiceExtension {
     @Provider
     public ParticipantSecureTokenService secureTokenService() {
         if (embeddedSts == null) {
-            embeddedSts = new EmbeddedSecureTokenService(transactionContext, TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin), new JwtGenerationService(externalSigner), clock, stsAccountService, keyPairService);
+            embeddedSts = new EmbeddedSecureTokenService(transactionContext, TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin), new JwtGenerationService(externalSigner), clock, keyPairService);
         }
         return embeddedSts;
     }
