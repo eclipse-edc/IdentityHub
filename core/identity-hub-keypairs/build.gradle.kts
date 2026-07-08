@@ -23,6 +23,6 @@ dependencies {
     implementation(libs.edc.lib.core)
     implementation(libs.opentelemetry.api)
     implementation(libs.opentelemetry.instrumentation.annotations)
-    runtimeOnly(libs.edc.core.connector)
+    runtimeOnly(libs.edc.core.security)
     testImplementation(libs.edc.junit)
 }
