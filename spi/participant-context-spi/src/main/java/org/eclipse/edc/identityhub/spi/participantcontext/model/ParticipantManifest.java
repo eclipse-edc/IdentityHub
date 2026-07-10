@@ -41,6 +41,7 @@ public class ParticipantManifest {
     private Set<Service> serviceEndpoints = new HashSet<>();
     private boolean isActive;
     private boolean provisionStsAccount = true;
+    private boolean provisionApiKey = true;
     private String participantContextId;
     private String did;
     private String apiKeyAlias;
@@ -77,6 +78,14 @@ public class ParticipantManifest {
      */
     public boolean isProvisionStsAccount() {
         return provisionStsAccount;
+    }
+
+    /**
+     * Indicates whether an API key should be provisioned for this participant during creation. When {@code false}, the API key generation and
+     * vault storage phase is skipped entirely, and the API key is {@code null} in the response. Defaults to {@code true}.
+     */
+    public boolean isProvisionApiKey() {
+        return provisionApiKey;
     }
 
     /**
@@ -144,6 +153,11 @@ public class ParticipantManifest {
 
         public Builder provisionStsAccount(boolean provisionStsAccount) {
             manifest.provisionStsAccount = provisionStsAccount;
+            return this;
+        }
+
+        public Builder provisionApiKey(boolean provisionApiKey) {
+            manifest.provisionApiKey = provisionApiKey;
             return this;
         }
 

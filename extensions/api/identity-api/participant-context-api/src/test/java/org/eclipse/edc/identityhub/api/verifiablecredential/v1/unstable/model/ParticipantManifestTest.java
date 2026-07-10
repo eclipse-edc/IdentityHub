@@ -86,6 +86,7 @@ class ParticipantManifestTest {
                 .allSatisfy(kd -> assertThat(kd.getKeyId()).isEqualTo("key-1"));
         assertThat(manifest.getApiKeyAlias()).isEqualTo("test-alias");
         assertThat(manifest.isProvisionStsAccount()).isTrue();
+        assertThat(manifest.isProvisionApiKey()).isTrue();
     }
 
     @Test

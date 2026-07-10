@@ -162,6 +162,22 @@ class IdentityHubIdentityHubParticipantContextServiceImplTest {
         verify(stsAccountProvisioner, never()).create(any());
     }
 
+    @Test
+    void shouldSkipApiKeyProvisioning_whenProvisionApiKeyIsFalse() {
+        when(participantContextStore.create(any())).thenReturn(StoreResult.success());
+
+        var ctx = createManifest()
+                .provisionApiKey(false)
+                .build();
+
+        var result = participantContextService.createParticipantContext(ctx);
+
+        assertThat(result).isSucceeded().satisfies(response -> {
+            assertThat(response.apiKey()).isNull();
+        });
+        verify(vault, never()).storeSecret(anyString(), anyString(), anyString());
+    }
+
     @ParameterizedTest(name = "isActive: {0}")
     @ValueSource(booleans = {true, false})
     void createParticipantContext_withPublicKeyJwk(boolean isActive) {
