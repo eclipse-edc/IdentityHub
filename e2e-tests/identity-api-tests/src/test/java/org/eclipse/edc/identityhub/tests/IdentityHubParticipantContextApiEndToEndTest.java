@@ -203,6 +203,31 @@ public class IdentityHubParticipantContextApiEndToEndTest {
 
 
         @Test
+        void createNewUser_skipApiKeyProvisioning(IdentityHub identityHub, EventRouter router) {
+            var subscriber = mock(EventSubscriber.class);
+            router.registerSync(ParticipantContextCreated.class, subscriber);
+
+            var manifest = createNewParticipant().provisionApiKey(false).build();
+
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .header(authorizeUser(SUPER_USER, identityHub))
+                    .contentType(ContentType.JSON)
+                    .body(manifest)
+                    .post("/v1beta/participants/")
+                    .then()
+                    .log().ifError()
+                    .statusCode(anyOf(equalTo(200), equalTo(204)))
+                    .body("apiKey", nullValue());
+
+            verify(subscriber).on(argThat(env -> ((ParticipantContextCreated) env.getPayload()).getParticipantContextId().equals(manifest.getParticipantContextId())));
+
+            assertThat(identityHub.getKeyPairsForParticipant(manifest.getParticipantContextId())).hasSize(1);
+            assertThat(identityHub.getDidForParticipant(manifest.getParticipantContextId())).hasSize(1)
+                    .allSatisfy(dd -> assertThat(dd.getVerificationMethod()).hasSize(1));
+        }
+
+
+        @Test
         void createNewUser_whenKeyPairActive(IdentityHub identityHub, EventRouter router) {
             var subscriber = mock(EventSubscriber.class);
             router.registerSync(ParticipantContextCreated.class, subscriber);

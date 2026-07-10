@@ -41,7 +41,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
@@ -97,8 +96,10 @@ public class IdentityHubParticipantContextServiceImpl implements IdentityHubPart
             var context = convert(manifest);
 
             return createParticipantContext(context)
-                    .compose(this::createTokenAndStoreInVault)
-                    .compose((Function<String, ServiceResult<CreateParticipantContextResponse>>) apiKey -> {
+                    .compose(ctx -> manifest.isProvisionApiKey()
+                            ? createTokenAndStoreInVault(ctx)
+                            : ServiceResult.success(null))
+                    .compose(apiKey -> {
                         if (!manifest.isProvisionStsAccount()) {
                             return success(new CreateParticipantContextResponse(apiKey, null, null));
                         }
