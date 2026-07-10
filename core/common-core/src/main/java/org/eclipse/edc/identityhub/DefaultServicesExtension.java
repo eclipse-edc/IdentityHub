@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub;
 import org.eclipse.edc.iam.decentralizedclaims.spi.verification.SignatureSuiteRegistry;
 import org.eclipse.edc.identityhub.accesstoken.rules.ClaimIsPresentRule;
 import org.eclipse.edc.identityhub.defaults.EdcScopeToCriterionTransformer;
+import org.eclipse.edc.identityhub.defaults.RegexScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialOfferStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryCredentialStore;
 import org.eclipse.edc.identityhub.defaults.store.InMemoryHolderCredentialRequestStore;
@@ -25,6 +26,7 @@ import org.eclipse.edc.identityhub.defaults.store.InMemorySignatureSuiteRegistry
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.keypair.store.KeyPairResourceStore;
 import org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry;
+import org.eclipse.edc.identityhub.spi.transformation.ScopeMappingRegistry;
 import org.eclipse.edc.identityhub.spi.transformation.ScopeToCriterionTransformer;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialOfferStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -92,6 +94,8 @@ public class DefaultServicesExtension implements ServiceExtension {
     private JtiValidationStore jtiValidationStore;
     @Inject
     private DiscriminatorMappingRegistry discriminatorMappingRegistry;
+    @Inject
+    private ScopeMappingRegistry scopeMappingRegistry;
 
     @Override
     public String name() {
@@ -131,7 +135,9 @@ public class DefaultServicesExtension implements ServiceExtension {
 
     @Provider(isDefault = true)
     public ScopeToCriterionTransformer createScopeTransformer(ServiceExtensionContext context) {
-        return new EdcScopeToCriterionTransformer(discriminatorMappingRegistry);
+        return new RegexScopeToCriterionTransformer(
+                scopeMappingRegistry,
+                new EdcScopeToCriterionTransformer(discriminatorMappingRegistry));
     }
 
     @Provider(isDefault = true)
