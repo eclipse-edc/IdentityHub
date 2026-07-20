@@ -34,25 +34,6 @@ Module `common-core`
 _None_
 
 ### Extensions
-#### Class: `org.eclipse.edc.identityhub.DiscriminatorMappingExtension`
-**Name:** "Discriminator Mapping Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration
-
-| Key                                           | Required | Type     | Default | Pattern | Min | Max | Description                          |
-| --------------------------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------ |
-| `edc.identityhub.discriminator.<alias>.value` | `*`      | `string` | ``      |         |     |     | the full value for the discriminator |
-| `edc.identityhub.discriminator.<alias>.alias` | `*`      | `string` | ``      |         |     |     | the discriminator alias              |
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry`
-
-#### Referenced (injected) services
-_None_
-
 #### Class: `org.eclipse.edc.identityhub.ScopeMappingExtension`
 **Name:** "Scope Mapping Extension"
 
@@ -70,6 +51,25 @@ _None_
 
 #### Provided services
 - `org.eclipse.edc.identityhub.spi.transformation.ScopeMappingRegistry`
+
+#### Referenced (injected) services
+_None_
+
+#### Class: `org.eclipse.edc.identityhub.DiscriminatorMappingExtension`
+**Name:** "Discriminator Mapping Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                           | Required | Type     | Default | Pattern | Min | Max | Description                          |
+| --------------------------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------ |
+| `edc.identityhub.discriminator.<alias>.value` | `*`      | `string` | ``      |         |     |     | the full value for the discriminator |
+| `edc.identityhub.discriminator.<alias>.alias` | `*`      | `string` | ``      |         |     |     | the discriminator alias              |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry`
 
 #### Referenced (injected) services
 _None_
@@ -468,9 +468,9 @@ Module `did-spi`
 **Categories:** _None_
 
 ### Extension points
+  - `org.eclipse.edc.identityhub.spi.did.DidDocumentPublisher`
   - `org.eclipse.edc.identityhub.spi.did.DidWebParser`
   - `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
-  - `org.eclipse.edc.identityhub.spi.did.DidDocumentPublisher`
 
 ### Extensions
 Module `holder-api`
@@ -763,6 +763,20 @@ Module `identity-hub-did`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
+**Name:** "DID Default Services Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
+
 #### Class: `org.eclipse.edc.identityhub.did.DidServicesExtension`
 **Name:** "DID Service Extension"
 
@@ -782,20 +796,6 @@ _None_
 - `org.eclipse.edc.keys.spi.KeyParserRegistry` (required)
 - `org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore` (required)
 - `org.eclipse.edc.spi.telemetry.Telemetry` (required)
-
-#### Class: `org.eclipse.edc.identityhub.did.defaults.DidDefaultServicesExtension`
-**Name:** "DID Default Services Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.did.store.DidResourceStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `identity-hub-did-store-sql`
 -----------------------------------
@@ -1838,6 +1838,22 @@ Module `sts-api`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.api.iam.decentralizedclaims.sts.SecureTokenServiceApiExtension`
+**Name:** "Secure Token Service API"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+_None_
+
+#### Referenced (injected) services
+- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService` (required)
+- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientTokenGeneratorService` (required)
+- `org.eclipse.edc.web.spi.WebService` (required)
+
 #### Class: `org.eclipse.edc.api.iam.decentralizedclaims.sts.StsApiConfigurationExtension`
 **Name:** "Secure Token Service API configuration"
 
@@ -1858,22 +1874,6 @@ _None_
 - `org.eclipse.edc.web.spi.configuration.PortMappingRegistry` (required)
 - `org.eclipse.edc.spi.types.TypeManager` (required)
 - `org.eclipse.edc.spi.system.apiversion.ApiVersionService` (required)
-
-#### Class: `org.eclipse.edc.api.iam.decentralizedclaims.sts.SecureTokenServiceApiExtension`
-**Name:** "Secure Token Service API"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-_None_
-
-#### Referenced (injected) services
-- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsAccountService` (required)
-- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientTokenGeneratorService` (required)
-- `org.eclipse.edc.web.spi.WebService` (required)
 
 Module `sts-client-store-sql`
 -----------------------------
@@ -1918,6 +1918,20 @@ Module `sts-core`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.iam.decentralizedclaims.sts.defaults.StsDefaultServicesExtension`
+**Name:** "Secure Token Service Default Services"
+
+**Overview:** No overview provided.
+
+
+### Configuration_None_
+
+#### Provided services
+- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore`
+
+#### Referenced (injected) services
+- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
+
 #### Class: `org.eclipse.edc.iam.decentralizedclaims.sts.EmbeddedStsServiceExtension`
 **Name:** "Local (embedded) STS Account Service Extension"
 
@@ -1939,20 +1953,6 @@ _None_
 - `org.eclipse.edc.jwt.spi.signer.JwsSignerProvider` (required)
 - `org.eclipse.edc.transaction.spi.TransactionContext` (required)
 - `org.eclipse.edc.identityhub.spi.keypair.KeyPairService` (required)
-
-#### Class: `org.eclipse.edc.iam.decentralizedclaims.sts.defaults.StsDefaultServicesExtension`
-**Name:** "Secure Token Service Default Services"
-
-**Overview:** No overview provided.
-
-
-### Configuration_None_
-
-#### Provided services
-- `org.eclipse.edc.iam.decentralizedclaims.sts.spi.store.StsAccountStore`
-
-#### Referenced (injected) services
-- `org.eclipse.edc.spi.query.CriterionOperatorRegistry` (required)
 
 Module `test-attestations`
 --------------------------
