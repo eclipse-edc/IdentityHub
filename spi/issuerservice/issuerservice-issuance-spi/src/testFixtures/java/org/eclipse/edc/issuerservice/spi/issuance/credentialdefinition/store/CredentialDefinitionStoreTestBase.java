@@ -32,7 +32,6 @@ import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 public abstract class CredentialDefinitionStoreTestBase {
 
-
     @Test
     void create() {
         var credentialDefinition = createCredentialDefinition();
@@ -66,19 +65,6 @@ public abstract class CredentialDefinitionStoreTestBase {
     }
 
     @Test
-    void create_whenTypeExists_shouldReturnFailure() {
-        var credentialDefinition = createCredentialDefinition();
-
-        var result = getStore().create(credentialDefinition);
-
-        var newCredentialDefinition = createCredentialDefinition(UUID.randomUUID().toString(), credentialDefinition.getCredentialType());
-        assertThat(result).isSucceeded();
-        var result2 = getStore().create(newCredentialDefinition);
-
-        assertThat(result2).isFailed().detail().contains("already exists");
-    }
-
-    @Test
     void update() {
         var credentialDefinition = createCredentialDefinition();
         var result = getStore().create(credentialDefinition);
@@ -95,21 +81,6 @@ public abstract class CredentialDefinitionStoreTestBase {
 
         var updateRes = getStore().update(credentialDefinition);
         assertThat(updateRes).isFailed().detail().contains("ID '%s' does not exist.".formatted(credentialDefinition.getId()));
-    }
-
-    @Test
-    void update_whenTypeExists_fails() {
-        var credentialDefinition = createCredentialDefinition();
-        var credentialDefinition1 = createCredentialDefinition(UUID.randomUUID().toString(), "Membership1");
-        var result = getStore().create(credentialDefinition);
-        var result1 = getStore().create(credentialDefinition1);
-        assertThat(result).isSucceeded();
-        assertThat(result1).isSucceeded();
-
-        credentialDefinition = createCredentialDefinition(credentialDefinition.getId(), "Membership1");
-
-        var updateRes = getStore().update(credentialDefinition);
-        assertThat(updateRes).isFailed();
     }
 
     @Test
