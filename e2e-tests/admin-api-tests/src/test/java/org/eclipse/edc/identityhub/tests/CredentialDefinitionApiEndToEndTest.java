@@ -167,39 +167,6 @@ public class CredentialDefinitionApiEndToEndTest {
         }
 
         @Test
-        void createCredentialDefinition_whenCredentialTypeExists(IssuerService issuer, CredentialDefinitionService service) {
-            issuer.createParticipant(USER);
-
-            var definition = CredentialDefinition.Builder.newInstance()
-                    .id("id")
-                    .jsonSchema("{}")
-                    .jsonSchemaUrl("https://example.org/membership-credential-schema.json")
-                    .credentialType("MembershipCredential")
-                    .participantContextId("participantContextId")
-                    .formatFrom(VC1_0_JWT)
-                    .build();
-
-            service.createCredentialDefinition(definition);
-
-            issuer.getAdminEndpoint().baseRequest()
-                    .contentType(ContentType.JSON)
-                    .header(authorizeUser(USER, issuer))
-                    .body("""
-                            {
-                              "id": "test-definition-id",
-                              "credentialType": "MembershipCredential",
-                              "jsonSchema": "{}",
-                              "jsonSchemaUrl": "https://example.org/membership-credential-schema.json",
-                              "format": "VC1_0_JWT"
-                            }
-                            """)
-                    .post("/v1beta/participants/%s/credentialdefinitions".formatted(USER))
-                    .then()
-                    .log().all()
-                    .statusCode(409);
-        }
-
-        @Test
         void createCredentialDefinition_whenMissingFields(IssuerService issuer) {
             issuer.createParticipant(USER);
 

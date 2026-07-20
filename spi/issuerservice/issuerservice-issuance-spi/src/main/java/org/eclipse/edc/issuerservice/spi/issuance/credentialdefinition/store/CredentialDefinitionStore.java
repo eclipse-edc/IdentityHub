@@ -70,10 +70,6 @@ public interface CredentialDefinitionStore {
         return "A Credential definition with ID '%s' already exists.".formatted(id);
     }
 
-    default String alreadyExistsForTypeErrorMessage(String credentialType) {
-        return "A Credential definition with credential type '%s' already exists.".formatted(credentialType);
-    }
-
     default String notFoundErrorMessage(String id) {
         return "A Credential definition ID '%s' does not exist.".formatted(id);
     }

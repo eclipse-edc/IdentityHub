@@ -16,7 +16,6 @@ package org.eclipse.edc.issuerservice.store.sql.credentialdefinition;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.issuerservice.spi.issuance.credentialdefinition.store.CredentialDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialDefinition;
 import org.eclipse.edc.issuerservice.spi.issuance.model.CredentialRuleDefinition;
@@ -56,9 +55,6 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
     private static final TypeReference<List<MappingDefinition>> MAPPINGS_LIST_REF = new TypeReference<>() {
     };
 
-    private static final TypeReference<List<CredentialFormat>> FORMATS_LIST_REF = new TypeReference<>() {
-    };
-
     private final CredentialDefinitionStoreStatements statements;
     private final Clock clock;
 
@@ -96,10 +92,6 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
                     return alreadyExists(alreadyExistsErrorMessage(id));
                 }
 
-                if (findByCredentialType(connection, credentialDefinition.getCredentialType()) != null) {
-                    return alreadyExists(alreadyExistsForTypeErrorMessage(credentialDefinition.getCredentialType()));
-                }
-
                 var stmt = statements.getInsertTemplate();
                 queryExecutor.execute(connection, stmt,
                         credentialDefinition.getId(),
@@ -132,30 +124,26 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
         Objects.requireNonNull(id);
         return transactionContext.execute(() -> {
             try (var connection = getConnection()) {
-                if (findByIdInternal(connection, id) != null) {
-
-
-                    var definitionByCredentialType = findByCredentialType(connection, credentialDefinition.getCredentialType());
-                    if (definitionByCredentialType != null && !definitionByCredentialType.getId().equals(id)) {
-                        return alreadyExists(alreadyExistsForTypeErrorMessage(credentialDefinition.getCredentialType()));
-                    }
-                    queryExecutor.execute(connection,
-                            statements.getUpdateTemplate(),
-                            credentialDefinition.getCredentialType(),
-                            toJson(credentialDefinition.getAttestations()),
-                            toJson(credentialDefinition.getRules()),
-                            toJson(credentialDefinition.getMappings()),
-                            toJson(credentialDefinition.getJsonSchema()),
-                            toJson(credentialDefinition.getAdditionalContext()),
-                            credentialDefinition.getJsonSchemaUrl(),
-                            credentialDefinition.getValidity(),
-                            credentialDefinition.getFormat(),
-                            clock.millis(),
-                            credentialDefinition.getId()
-                    );
-                    return StoreResult.success();
+                if (findByIdInternal(connection, id) == null) {
+                    return StoreResult.notFound(notFoundErrorMessage(id));
                 }
-                return StoreResult.notFound(notFoundErrorMessage(id));
+
+                queryExecutor.execute(connection,
+                        statements.getUpdateTemplate(),
+                        credentialDefinition.getCredentialType(),
+                        toJson(credentialDefinition.getAttestations()),
+                        toJson(credentialDefinition.getRules()),
+                        toJson(credentialDefinition.getMappings()),
+                        toJson(credentialDefinition.getJsonSchema()),
+                        toJson(credentialDefinition.getAdditionalContext()),
+                        credentialDefinition.getJsonSchemaUrl(),
+                        credentialDefinition.getValidity(),
+                        credentialDefinition.getFormat(),
+                        clock.millis(),
+                        credentialDefinition.getId()
+                );
+                return StoreResult.success();
+
             } catch (SQLException e) {
                 throw new EdcPersistenceException(e);
             }
@@ -195,13 +183,6 @@ public class SqlCredentialDefinitionStore extends AbstractSqlStore implements Cr
         return transactionContext.execute(() -> {
             var stmt = statements.getFindByIdTemplate();
             return queryExecutor.single(connection, false, this::mapResultSet, stmt, id);
-        });
-    }
-
-    private CredentialDefinition findByCredentialType(Connection connection, String credentialType) {
-        return transactionContext.execute(() -> {
-            var stmt = statements.getFindCredentialTypeTemplate();
-            return queryExecutor.single(connection, false, this::mapResultSet, stmt, credentialType);
         });
     }
 
