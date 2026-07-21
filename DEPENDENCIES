@@ -31,7 +31,6 @@ maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.22
 maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.22.1, Apache-2.0, approved, #28622
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jakarta-jsonp/2.21.0, Apache-2.0, approved, #26448
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jakarta-jsonp/2.21.2, Apache-2.0, approved, #26448
-maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jakarta-jsonp/2.22.0, Apache-2.0, approved, #29009
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jakarta-jsonp/2.22.1, Apache-2.0, approved, #29009
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.19.2, Apache-2.0, approved, #23299
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.22.0, Apache-2.0, approved, #29010
@@ -58,14 +57,15 @@ maven/mavencentral/com.github.jknack/handlebars-helpers/4.3.1, Apache-2.0, appro
 maven/mavencentral/com.github.jknack/handlebars/4.3.1, MIT AND Apache-2.0, approved, #3064
 maven/mavencentral/com.google.code.findbugs/jsr305/3.0.2, Apache-2.0 and CC-BY-2.5, approved, #15220
 maven/mavencentral/com.google.code.gson/gson/2.13.2, Apache-2.0, approved, #20656
-maven/mavencentral/com.google.crypto.tink/tink/1.21.0, Apache-2.0, approved, #29003
 maven/mavencentral/com.google.crypto.tink/tink/1.22.0, Apache-2.0, approved, #29508
+maven/mavencentral/com.google.crypto.tink/tink/1.23.0, Apache-2.0, approved, #29832
 maven/mavencentral/com.google.errorprone/error_prone_annotations/2.41.0, Apache-2.0, approved, #22631
 maven/mavencentral/com.google.guava/failureaccess/1.0.3, Apache-2.0, approved, CQ22654
 maven/mavencentral/com.google.guava/guava/33.5.0-jre, Apache-2.0 AND CC0-1.0 AND CC-PDDC, approved, #23378
 maven/mavencentral/com.google.guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava, Apache-2.0, approved, CQ22657
 maven/mavencentral/com.google.j2objc/j2objc-annotations/3.1, Apache-2.0, approved, #23379
-maven/mavencentral/com.google.protobuf/protobuf-java/4.33.0, BSD-3-Clause, approved, clearlydefined
+maven/mavencentral/com.google.protobuf/protobuf-java/4.33.0, BSD-3-Clause, approved, #29831
+maven/mavencentral/com.google.protobuf/protobuf-java/4.33.6, BSD-3-Clause, approved, #29831
 maven/mavencentral/com.jayway.jsonpath/json-path/2.10.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/com.networknt/json-schema-validator/1.5.9, Apache-2.0 AND Unicode-TOU, approved, #15630
 maven/mavencentral/com.networknt/json-schema-validator/2.0.0, Apache-2.0 AND Unicode-TOU, approved, #25988
@@ -98,10 +98,13 @@ maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentatio
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.37.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.60.1, Apache-2.0, approved, #29017
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.63.0, Apache-2.0, approved, #29018
+maven/mavencentral/io.opentelemetry/opentelemetry-api/1.64.0, Apache-2.0, approved, #29872
 maven/mavencentral/io.opentelemetry/opentelemetry-common/1.60.1, Apache-2.0, approved, #29022
 maven/mavencentral/io.opentelemetry/opentelemetry-common/1.63.0, Apache-2.0, approved, #29020
+maven/mavencentral/io.opentelemetry/opentelemetry-common/1.64.0, Apache-2.0, approved, #29870
 maven/mavencentral/io.opentelemetry/opentelemetry-context/1.60.1, Apache-2.0, approved, #29016
 maven/mavencentral/io.opentelemetry/opentelemetry-context/1.63.0, Apache-2.0, approved, #29021
+maven/mavencentral/io.opentelemetry/opentelemetry-context/1.64.0, Apache-2.0, approved, #29871
 maven/mavencentral/io.rest-assured/json-path/6.0.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/io.rest-assured/rest-assured-common/6.0.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/io.rest-assured/rest-assured/5.5.5, Apache-2.0, approved, #15676
@@ -277,7 +280,7 @@ maven/mavencentral/org.eclipse.jetty/jetty-session/12.1.10, EPL-2.0 OR Apache-2.
 maven/mavencentral/org.eclipse.jetty/jetty-util/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-util/12.1.10, EPL-2.0 OR Apache-2.0, approved, rt.jetty
 maven/mavencentral/org.eclipse.jetty/jetty-xml/12.0.30, EPL-2.0 OR Apache-2.0, approved, rt.jetty
-maven/mavencentral/org.eclipse.parsson/parsson/1.1.7, EPL-2.0, approved, ee4j.parsson
+maven/mavencentral/org.eclipse.parsson/parsson/1.1.9, EPL-2.0, approved, ee4j.parsson
 maven/mavencentral/org.glassfish.hk2.external/aopalliance-repackaged/4.0.0-M3, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.glassfish
 maven/mavencentral/org.glassfish.hk2/hk2-api/4.0.0-M3, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.glassfish
 maven/mavencentral/org.glassfish.hk2/hk2-locator/4.0.0-M3, EPL-2.0 OR GPL-2.0-only with Classpath-exception-2.0, approved, ee4j.glassfish
