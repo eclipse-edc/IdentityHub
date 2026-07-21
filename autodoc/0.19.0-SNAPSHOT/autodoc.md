@@ -34,6 +34,25 @@ Module `common-core`
 _None_
 
 ### Extensions
+#### Class: `org.eclipse.edc.identityhub.DiscriminatorMappingExtension`
+**Name:** "Discriminator Mapping Extension"
+
+**Overview:** No overview provided.
+
+
+### Configuration
+
+| Key                                           | Required | Type     | Default | Pattern | Min | Max | Description                          |
+| --------------------------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------ |
+| `edc.identityhub.discriminator.<alias>.value` | `*`      | `string` | ``      |         |     |     | the full value for the discriminator |
+| `edc.identityhub.discriminator.<alias>.alias` | `*`      | `string` | ``      |         |     |     | the discriminator alias              |
+
+#### Provided services
+- `org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry`
+
+#### Referenced (injected) services
+_None_
+
 #### Class: `org.eclipse.edc.identityhub.ScopeMappingExtension`
 **Name:** "Scope Mapping Extension"
 
@@ -51,25 +70,6 @@ _None_
 
 #### Provided services
 - `org.eclipse.edc.identityhub.spi.transformation.ScopeMappingRegistry`
-
-#### Referenced (injected) services
-_None_
-
-#### Class: `org.eclipse.edc.identityhub.DiscriminatorMappingExtension`
-**Name:** "Discriminator Mapping Extension"
-
-**Overview:** No overview provided.
-
-
-### Configuration
-
-| Key                                           | Required | Type     | Default | Pattern | Min | Max | Description                          |
-| --------------------------------------------- | -------- | -------- | ------- | ------- | --- | --- | ------------------------------------ |
-| `edc.identityhub.discriminator.<alias>.value` | `*`      | `string` | ``      |         |     |     | the full value for the discriminator |
-| `edc.identityhub.discriminator.<alias>.alias` | `*`      | `string` | ``      |         |     |     | the discriminator alias              |
-
-#### Provided services
-- `org.eclipse.edc.identityhub.spi.transformation.DiscriminatorMappingRegistry`
 
 #### Referenced (injected) services
 _None_
