@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,6 +88,7 @@ public class CredentialDefinitionApiEndToEndTest {
                     .attestation("test-attestation")
                     .participantContextId(USER)
                     .formatFrom(VC1_0_JWT)
+                    .additionalContext(List.of("https://www.w3.org/2018/credentials/examples/v1"))
                     .build();
 
             issuer.getAdminEndpoint().baseRequest()

@@ -39,6 +39,7 @@ public class CredentialDefinitionDto {
     private final List<String> attestations = new ArrayList<>();
     private final List<CredentialRuleDefinition> rules = new ArrayList<>();
     private final List<MappingDefinition> mappings = new ArrayList<>();
+    private final List<String> additionalContext = new ArrayList<>();
     private String format;
     private String credentialType;
     private String jsonSchema;
@@ -77,6 +78,10 @@ public class CredentialDefinitionDto {
         return attestations;
     }
 
+    public List<String> getAdditionalContext() {
+        return additionalContext;
+    }
+
     public List<CredentialRuleDefinition> getRules() {
         return rules;
     }
@@ -96,6 +101,7 @@ public class CredentialDefinitionDto {
                 .attestations(attestations)
                 .rules(rules)
                 .mappings(mappings)
+                .additionalContext(additionalContext)
                 .participantContextId(participantContextId)
                 .build();
     }
@@ -174,6 +180,11 @@ public class CredentialDefinitionDto {
         @JsonIgnore
         public Builder mapping(MappingDefinition mapping) {
             this.entity.mappings.add(mapping);
+            return this;
+        }
+
+        public Builder additionalContext(List<String> additionalContexts) {
+            this.entity.additionalContext.addAll(additionalContexts);
             return this;
         }
 
