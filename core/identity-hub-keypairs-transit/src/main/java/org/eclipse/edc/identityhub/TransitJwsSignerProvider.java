@@ -36,11 +36,6 @@ public class TransitJwsSignerProvider implements JwsSignerProvider {
     }
 
     @Override
-    public Result<JWSSigner> createJwsSigner(String privateKeyId) {
-        return createJwsSigner(null, privateKeyId);
-    }
-
-    @Override
     public Result<JWSSigner> createJwsSigner(String participantContextId, String privateKeyName) {
         return Result.success(new TransitSigner(transitEngine, privateKeyName));
     }

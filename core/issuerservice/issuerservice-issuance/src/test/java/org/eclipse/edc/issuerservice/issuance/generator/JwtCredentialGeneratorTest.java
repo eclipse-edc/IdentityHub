@@ -68,8 +68,6 @@ public class JwtCredentialGeneratorTest {
         var vpSigningKey = createKey(Curve.P_384, "vc-key");
         when(signerProvider.createJwsSigner(eq(TEST_PARTICIPANT), anyString())).thenReturn(Result.failure("not found"));
         when(signerProvider.createJwsSigner(eq(TEST_PARTICIPANT), eq(PRIVATE_KEY_ALIAS))).thenReturn(Result.success(new ECDSASigner(vpSigningKey)));
-
-        when(signerProvider.createJwsSigner(anyString())).thenThrow(new AssertionError("This method is deprecated and not to be used anymore"));
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
