@@ -32,6 +32,6 @@ dependencies {
 
 edcBuild {
     swagger {
-        apiGroup.set("sts-api")
+        apiGroup("sts-api")
     }
 }

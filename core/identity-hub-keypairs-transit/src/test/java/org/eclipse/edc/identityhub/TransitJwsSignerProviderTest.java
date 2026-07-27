@@ -26,7 +26,6 @@ class TransitJwsSignerProviderTest {
 
     @Test
     void createJwsSigner() {
-        assertThat(provider.createJwsSigner("test-key")).isSucceeded().isInstanceOf(TransitSigner.class);
         assertThat(provider.createJwsSigner("test-participant", "test-key")).isSucceeded().isInstanceOf(TransitSigner.class);
     }
 }

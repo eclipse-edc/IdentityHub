@@ -41,6 +41,6 @@ dependencies {
 
 edcBuild {
     swagger {
-        apiGroup.set("issuer-api")
+        apiGroup("issuer-api")
     }
 }

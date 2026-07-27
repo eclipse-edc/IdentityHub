@@ -38,6 +38,6 @@ dependencies {
 
 edcBuild {
     swagger {
-        apiGroup.set("identity-api")
+        apiGroup("identity-api")
     }
 }

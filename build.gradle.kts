@@ -17,28 +17,17 @@ import org.eclipse.edc.plugins.edcbuild.plugins.MergeOpenApiSpecTask
 plugins {
     `java-library`
     alias(libs.plugins.edc.build)
+    alias(libs.plugins.autodoc) apply false
 }
-
-val edcScmConnection: String by project
-val edcScmUrl: String by project
-
-buildscript {
-    dependencies {
-        val version: String by project
-        classpath("org.eclipse.edc.autodoc:org.eclipse.edc.autodoc.gradle.plugin:$version")
-    }
-}
-
-val edcBuildId = libs.plugins.edc.build.get().pluginId
 
 allprojects {
-    apply(plugin = edcBuildId)
-    apply(plugin = "org.eclipse.edc.autodoc")
+    apply(plugin = rootProject.libs.plugins.edc.build.get().pluginId)
+    apply(plugin = rootProject.libs.plugins.autodoc.get().pluginId)
 
     configure<org.eclipse.edc.plugins.edcbuild.extensions.BuildExtension> {
         pom {
-            scmConnection.set(edcScmConnection)
-            scmUrl.set(edcScmUrl)
+            scmConnection.set(rootProject.property("edcScmConnection") as String)
+            scmUrl.set(rootProject.property("edcScmUrl") as String)
         }
     }
 
