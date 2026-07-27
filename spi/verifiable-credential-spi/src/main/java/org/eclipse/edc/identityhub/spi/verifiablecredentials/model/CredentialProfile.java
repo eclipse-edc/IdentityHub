@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Metaform Systems, Inc. - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - fix duplicate String format bug
  *
  */
 
@@ -59,7 +60,7 @@ public class CredentialProfile {
                 try {
                     return success(CredentialFormat.valueOf(profile));
                 } catch (IllegalArgumentException e) {
-                    return ServiceResult.badRequest(String.format("Invalid format: '%s', expected one of '%s, '%s' or  %s".formatted(profile, DCP_PROFILE_VC11, DCP_PROFILE_VC20, VALID_CREDENTIAL_FORMATS)));
+                    return ServiceResult.badRequest("Invalid format: '%s', expected one of '%s, '%s' or  %s".formatted(profile, DCP_PROFILE_VC11, DCP_PROFILE_VC20, VALID_CREDENTIAL_FORMATS));
                 }
         }
     }
@@ -75,7 +76,7 @@ public class CredentialProfile {
             case VC1_0_JWT -> success(DCP_PROFILE_VC11);
             case VC2_0_JOSE -> success(DCP_PROFILE_VC20);
             default ->
-                    ServiceResult.badRequest(String.format("Unsupported format: '%s', expected one of '%s, '%s' or  %s".formatted(format, DCP_PROFILE_VC11, DCP_PROFILE_VC20, VALID_CREDENTIAL_FORMATS)));
+                    ServiceResult.badRequest("Unsupported format: '%s', expected one of '%s, '%s' or  %s".formatted(format, DCP_PROFILE_VC11, DCP_PROFILE_VC20, VALID_CREDENTIAL_FORMATS));
         };
     }
 }
