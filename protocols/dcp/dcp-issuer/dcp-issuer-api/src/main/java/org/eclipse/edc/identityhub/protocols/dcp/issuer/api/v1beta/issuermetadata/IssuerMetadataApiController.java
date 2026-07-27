@@ -49,7 +49,7 @@ public class IssuerMetadataApiController implements IssuerMetadataApi {
     @GET
     @Path("/")
     @Override
-    public JsonObject getIssuerMetadata(@PathParam("participantContextId") String participantContextId, @HeaderParam(AUTHORIZATION) String authHeader) {
+    public JsonObject getIssuerMetadata(@PathParam("participantContextId") String participantContextId) {
 
         var participantContext = participantContextService.getParticipantContext(participantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid issuer"));

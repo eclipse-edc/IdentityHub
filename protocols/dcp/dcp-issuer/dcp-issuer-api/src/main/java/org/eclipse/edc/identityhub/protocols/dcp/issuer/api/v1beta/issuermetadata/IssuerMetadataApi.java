@@ -40,5 +40,5 @@ public interface IssuerMetadataApi {
                             content = @Content(schema = @Schema(implementation = ApiSchema.IssuerMetadataSchema.class)))
             }
     )
-    JsonObject getIssuerMetadata(String participantContextId, String token);
+    JsonObject getIssuerMetadata(String participantContextId);
 }
