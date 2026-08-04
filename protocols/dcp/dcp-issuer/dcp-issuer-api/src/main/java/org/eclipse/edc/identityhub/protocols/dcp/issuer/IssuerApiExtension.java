@@ -46,6 +46,7 @@ import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.jersey.providers.jsonld.JerseyJsonLdInterceptor;
+import org.eclipse.edc.web.jersey.providers.jsonld.JsonObjectMessageBodyReader;
 import org.eclipse.edc.web.jersey.providers.jsonld.ObjectMapperProvider;
 import org.eclipse.edc.web.spi.WebService;
 import org.eclipse.edc.web.spi.configuration.PortMapping;
@@ -113,6 +114,8 @@ public class IssuerApiExtension implements ServiceExtension {
         var dcpRegistry = transformerRegistry.forContext(DCP_SCOPE_V_1_0);
         registerTransformers(dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0);
         registerValidators(DSPACE_DCP_NAMESPACE_V_1_0);
+
+        webService.registerResource(ISSUANCE_API, new JsonObjectMessageBodyReader(jsonLd, typeManager, JSON_LD, null));
 
         webService.registerResource(ISSUANCE_API, new CredentialRequestApiController(participantContextService, dcpIssuerService, dcpHolderTokenVerifier, validatorRegistry, dcpRegistry, DSPACE_DCP_NAMESPACE_V_1_0));
         webService.registerResource(ISSUANCE_API, new CredentialRequestStatusApiController(participantContextService, dcpHolderTokenVerifier, issuanceProcessService, dcpRegistry));
