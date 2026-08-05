@@ -33,6 +33,7 @@ import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredential
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.CredentialRequestManager;
+import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
@@ -60,6 +61,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
@@ -77,6 +79,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         implements CredentialRequestManager {
     private DidResolverRegistry didResolverRegistry;
     private TypeTransformerRegistry dcpTypeTransformerRegistry;
+    private JsonLd jsonLd;
     private EdcHttpClient httpClient;
     private ParticipantSecureTokenService secureTokenService;
     private TransactionContext transactionContext;
@@ -160,7 +163,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, CompletableFuture<StatusResult<Void>>> function) {
-        var filter = new Criterion[]{ hasState(state.code()), isNotPending() };
+        var filter = new Criterion[]{hasState(state.code()), isNotPending()};
         return createProcessor(function, filter);
     }
 
@@ -208,7 +211,8 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
 
         idsAndFormats.forEach((rq) -> rqMessage.credential(new CredentialRequestSpecifier(rq.id())));
 
-        var jsonObj = dcpTypeTransformerRegistry.transform(rqMessage.build(), JsonObject.class);
+        var jsonObj = dcpTypeTransformerRegistry.transform(rqMessage.build(), JsonObject.class)
+                .compose(json -> jsonLd.compact(json, DCP_SCOPE_V_1_0));
 
         return jsonObj.map(JsonObject::toString)
                 .map(json -> new Request.Builder()
@@ -301,6 +305,11 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             return this;
         }
 
+        public Builder jsonLd(JsonLd jsonLd) {
+            manager.jsonLd = jsonLd;
+            return this;
+        }
+
         public Builder httpClient(EdcHttpClient httpClient) {
             manager.httpClient = httpClient;
             return this;
@@ -343,6 +352,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             super.build();
             requireNonNull(manager.didResolverRegistry);
             requireNonNull(manager.dcpTypeTransformerRegistry);
+            requireNonNull(manager.jsonLd);
             requireNonNull(manager.httpClient);
             requireNonNull(manager.secureTokenService);
             requireNonNull(manager.transactionContext);

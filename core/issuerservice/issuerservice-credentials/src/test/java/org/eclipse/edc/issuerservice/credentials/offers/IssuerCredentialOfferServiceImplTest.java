@@ -28,6 +28,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParti
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
+import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.function.Function;
 
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.eclipse.edc.spi.result.Result.success;
 import static org.mockito.ArgumentMatchers.any;
@@ -69,6 +71,7 @@ class IssuerCredentialOfferServiceImplTest {
 
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
     private final DcpIssuerMetadataService issuerMetadataService = mock();
+    private final JsonLd jsonLd = mock();
     private final IssuerCredentialOfferService credentialOfferService = new IssuerCredentialOfferServiceImpl(new NoopTransactionContext(),
             holderStore,
             credentialServiceUrlResolver,
@@ -76,7 +79,8 @@ class IssuerCredentialOfferServiceImplTest {
             participantContextService,
             httpClient, mock(),
             typeTransformerRegistry,
-            issuerMetadataService
+            issuerMetadataService,
+            jsonLd
     );
 
     @BeforeEach
@@ -87,6 +91,7 @@ class IssuerCredentialOfferServiceImplTest {
         when(credentialServiceUrlResolver.resolve(anyString())).thenReturn(success(HOLDER_CS_ENDPOINT));
         when(participantContextService.getParticipantContext(eq(PARTICIPANT_CONTEXT_ID))).thenReturn(ServiceResult.success(issuerParticipant()));
         when(typeTransformerRegistry.transform(any(), eq(JsonObject.class))).thenReturn(success(Json.createObjectBuilder().build()));
+        when(jsonLd.compact(any(), eq(DCP_SCOPE_V_1_0))).thenReturn(success(Json.createObjectBuilder().build()));
         when(issuerMetadataService.getIssuerMetadata(any())).thenReturn(ServiceResult.success(IssuerMetadata.Builder.newInstance()
                 .issuer(ISSUER_DID)
                 .credentialSupported(CredentialObject.Builder.newInstance()
@@ -107,6 +112,7 @@ class IssuerCredentialOfferServiceImplTest {
         verify(participantContextService).getParticipantContext(eq(PARTICIPANT_CONTEXT_ID));
         verify(sts).createToken(anyString(), anyMap(), isNull());
         verify(credentialServiceUrlResolver).resolve(anyString());
+        verify(jsonLd).compact(any(), eq(DCP_SCOPE_V_1_0));
         verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
         verifyNoMoreInteractions(holderStore, participantContextService, sts, httpClient);
     }

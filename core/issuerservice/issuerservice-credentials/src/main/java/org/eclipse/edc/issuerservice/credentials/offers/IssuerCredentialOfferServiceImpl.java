@@ -29,6 +29,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipant
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.credentials.IssuerCredentialOfferService;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
+import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
@@ -44,6 +45,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toSet;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
@@ -61,6 +63,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
     private final EdcHttpClient httpClient;
     private final TypeTransformerRegistry dcpTransformerRegistry;
     private final DcpIssuerMetadataService dcpIssuerMetadataService;
+    private final JsonLd jsonLd;
 
     public IssuerCredentialOfferServiceImpl(TransactionContext transactionContext,
                                             HolderStore holderStore,
@@ -68,7 +71,8 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
                                             ParticipantSecureTokenService secureTokenService,
                                             IdentityHubParticipantContextService participantContextService,
                                             EdcHttpClient httpClient, Monitor monitor,
-                                            TypeTransformerRegistry dcpTransformerRegistry, DcpIssuerMetadataService dcpIssuerMetadataService) {
+                                            TypeTransformerRegistry dcpTransformerRegistry, DcpIssuerMetadataService dcpIssuerMetadataService,
+                                            JsonLd jsonLd) {
         this.transactionContext = transactionContext;
         this.holderStore = holderStore;
         this.credentialServiceUrlResolver = credentialServiceUrlResolver;
@@ -78,6 +82,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
         this.httpClient = httpClient;
         this.dcpTransformerRegistry = dcpTransformerRegistry;
         this.dcpIssuerMetadataService = dcpIssuerMetadataService;
+        this.jsonLd = jsonLd;
     }
 
     @Override
@@ -190,7 +195,8 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
                 .credentials(new ArrayList<>(credentialObjects))
                 .build();
 
-        return dcpTransformerRegistry.transform(credentialOfferMessage, JsonObject.class);
+        return dcpTransformerRegistry.transform(credentialOfferMessage, JsonObject.class)
+                .compose(json -> jsonLd.compact(json, DCP_SCOPE_V_1_0));
 
     }
 
