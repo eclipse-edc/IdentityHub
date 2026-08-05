@@ -28,6 +28,7 @@ import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListInfoFa
 import org.eclipse.edc.issuerservice.spi.credentials.statuslist.StatusListManager;
 import org.eclipse.edc.issuerservice.spi.holder.store.HolderStore;
 import org.eclipse.edc.issuerservice.spi.issuance.generator.CredentialGeneratorRegistry;
+import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
@@ -69,6 +70,8 @@ public class CredentialServiceExtension implements ServiceExtension {
     private StatusListInfoFactoryRegistry statusListInfoFactoryRegistry;
     @Inject
     private StatusListManager statusListManager;
+    @Inject
+    private JsonLd jsonLd;
 
     @Override
     public String name() {
@@ -86,7 +89,7 @@ public class CredentialServiceExtension implements ServiceExtension {
     public IssuerCredentialOfferService credentialOfferService(ServiceExtensionContext context) {
         return new IssuerCredentialOfferServiceImpl(transactionContext, holderStore, credentialServiceUrlResolver, sts, participantContextService, httpClient, context.getMonitor(),
                 transformerRegistry.forContext(DCP_SCOPE_V_1_0),
-                issuerMetadataService);
+                issuerMetadataService, jsonLd);
     }
 
 }

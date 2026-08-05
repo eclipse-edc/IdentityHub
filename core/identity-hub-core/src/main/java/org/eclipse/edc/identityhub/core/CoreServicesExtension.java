@@ -224,6 +224,7 @@ public class CoreServicesExtension implements ServiceExtension {
                     .store(credentialRequestStore)
                     .didResolverRegistry(didResolverRegistry)
                     .typeTransformerRegistry(typeTransformerRegistry.forContext(DCP_SCOPE_V_1_0))
+                    .jsonLd(jsonLd)
                     .httpClient(httpClient)
                     .secureTokenService(secureTokenService)
                     .transactionContext(transactionContext)

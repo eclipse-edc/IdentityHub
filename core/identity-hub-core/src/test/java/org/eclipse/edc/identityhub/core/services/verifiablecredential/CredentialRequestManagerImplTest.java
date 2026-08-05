@@ -30,6 +30,7 @@ import org.eclipse.edc.identityhub.spi.credential.request.model.RequestedCredent
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
+import org.eclipse.edc.jsonld.spi.JsonLd;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
@@ -51,6 +52,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
@@ -85,10 +87,12 @@ class CredentialRequestManagerImplTest {
     private final EdcHttpClient httpClient = mock();
     private final ParticipantSecureTokenService sts = mock();
     private final IdentityHubParticipantContextService participantContextService = mock();
+    private final JsonLd jsonLd = mock();
     private final CredentialRequestManagerImpl credentialRequestService = CredentialRequestManagerImpl.Builder.newInstance()
             .store(store)
             .didResolverRegistry(resolver)
             .typeTransformerRegistry(transformerRegistry)
+            .jsonLd(jsonLd)
             .httpClient(httpClient)
             .secureTokenService(sts)
             .participantContextService(participantContextService)
@@ -101,6 +105,7 @@ class CredentialRequestManagerImplTest {
     void setUp() {
         when(transformerRegistry.transform(any(CredentialRequestMessage.class), eq(JsonObject.class)))
                 .thenReturn(success(Json.createObjectBuilder().build()));
+        when(jsonLd.compact(any(), eq(DCP_SCOPE_V_1_0))).thenReturn(success(Json.createObjectBuilder().build()));
         when(sts.createToken(anyString(), anyMap(), ArgumentMatchers.isNull())).thenReturn(success(TokenRepresentation.Builder.newInstance().build()));
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
         when(store.findById(anyString())).thenReturn(null);
@@ -189,10 +194,11 @@ class CredentialRequestManagerImplTest {
             credentialRequestService.start();
 
             await().atMost(MAX_DURATION).untilAsserted(() -> {
-                var inOrder = inOrder(resolver, store, httpClient, sts);
+                var inOrder = inOrder(resolver, store, httpClient, sts, jsonLd);
                 inOrder.verify(resolver).resolve(eq(ISSUER_DID));
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTING.code()));
                 inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
+                inOrder.verify(jsonLd).compact(any(), eq(DCP_SCOPE_V_1_0));
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
                 inOrder.verify(store).save(argThat(r -> r.getState() == REQUESTED.code() && r.getIssuerPid() != null));
             });
