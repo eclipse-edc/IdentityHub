@@ -99,6 +99,7 @@ public class CredentialOfferApiController implements CredentialOfferApi {
                 .participantContextId(participantContextId)
                 .issuer(offerMessage.getIssuer())
                 .credentialObjects(offerMessage.getCredentials().stream().map(co -> CredentialObject.Builder.newInstance()
+                        .id(co.getId())
                         .bindingMethods(co.getBindingMethods())
                         .credentialType(co.getCredentialType())
                         .issuancePolicy(co.getIssuancePolicy())
