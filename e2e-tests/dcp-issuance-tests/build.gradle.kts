@@ -24,6 +24,7 @@ dependencies {
     testImplementation(project(":spi:issuerservice:issuerservice-issuance-spi"))
     testImplementation(project(":spi:participant-context-spi"))
     testImplementation(project(":spi:sts-spi"))
+    testImplementation(project(":protocols:dcp:dcp-spi"))
 
     testImplementation(libs.edc.junit)
     testImplementation(libs.edc.lib.jsonld)

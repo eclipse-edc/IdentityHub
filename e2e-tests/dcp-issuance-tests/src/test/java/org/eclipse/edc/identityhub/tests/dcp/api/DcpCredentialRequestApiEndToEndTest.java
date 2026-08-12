@@ -19,12 +19,10 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
-import com.nimbusds.jose.jwk.gen.OctetKeyPairGenerator;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
-import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.issuerservice.IssuerService;
 import org.eclipse.edc.issuerservice.spi.holder.HolderService;
@@ -85,6 +83,7 @@ public class DcpCredentialRequestApiEndToEndTest {
 
     protected static final DidPublicKeyResolver DID_PUBLIC_KEY_RESOLVER = mock();
     protected static final DidResolverRegistry DID_RESOLVER_REGISTRY = mock();
+    private static final String ISSUER = "issuer";
 
     abstract static class Tests {
 
@@ -128,25 +127,6 @@ public class DcpCredentialRequestApiEndToEndTest {
 
         private static @NotNull String issuanceUrl() {
             return "/v1beta/participants/%s/credentials".formatted(ISSUER_ID);
-        }
-
-        @NotNull
-        private static KeyDescriptor.Builder createKey() {
-            return KeyDescriptor.Builder.newInstance().keyId("test-key")
-                    .privateKeyAlias("private-alias")
-                    .active(true)
-                    .publicKeyJwk(createJwk());
-        }
-
-
-        private static Map<String, Object> createJwk() {
-            try {
-                return new OctetKeyPairGenerator(Curve.Ed25519)
-                        .generate()
-                        .toJSONObject();
-            } catch (JOSEException e) {
-                throw new RuntimeException(e);
-            }
         }
 
         @AfterEach
@@ -500,15 +480,11 @@ public class DcpCredentialRequestApiEndToEndTest {
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-
-        private static final String ISSUER = "issuer";
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
