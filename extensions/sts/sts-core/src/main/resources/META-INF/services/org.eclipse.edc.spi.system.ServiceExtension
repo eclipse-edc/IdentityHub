@@ -14,3 +14,4 @@
 
 org.eclipse.edc.iam.decentralizedclaims.sts.defaults.StsDefaultServicesExtension
 org.eclipse.edc.iam.decentralizedclaims.sts.EmbeddedStsServiceExtension
+org.eclipse.edc.iam.decentralizedclaims.sts.StsClientTokenGeneratorExtension

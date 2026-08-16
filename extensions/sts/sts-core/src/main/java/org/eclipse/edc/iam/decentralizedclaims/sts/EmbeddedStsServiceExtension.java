@@ -15,8 +15,6 @@
 package org.eclipse.edc.iam.decentralizedclaims.sts;
 
 import org.eclipse.edc.iam.decentralizedclaims.sts.service.EmbeddedSecureTokenService;
-import org.eclipse.edc.iam.decentralizedclaims.sts.service.StsClientTokenGeneratorServiceImpl;
-import org.eclipse.edc.iam.decentralizedclaims.sts.spi.service.StsClientTokenGeneratorService;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
 import org.eclipse.edc.jwt.spi.signer.JwsSignerProvider;
@@ -25,17 +23,14 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.system.ServiceExtension;
-import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.JwtGenerationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 
-import static org.eclipse.edc.identityhub.sts.accountservice.StsAccountServiceExtension.NAME;
 
-
-@Extension(value = NAME)
+@Extension(value = EmbeddedStsServiceExtension.NAME)
 public class EmbeddedStsServiceExtension implements ServiceExtension {
     public static final String NAME = "Local (embedded) STS Account Service Extension";
     private static final int DEFAULT_STS_TOKEN_EXPIRATION_MIN = 5;
@@ -56,18 +51,11 @@ public class EmbeddedStsServiceExtension implements ServiceExtension {
         return NAME;
     }
 
-    @Provider
+    @Provider(isDefault = true)
     public ParticipantSecureTokenService secureTokenService() {
         if (embeddedSts == null) {
             embeddedSts = new EmbeddedSecureTokenService(transactionContext, TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin), new JwtGenerationService(externalSigner), clock, keyPairService);
         }
         return embeddedSts;
-    }
-
-    @Provider
-    public StsClientTokenGeneratorService clientTokenService(ServiceExtensionContext context) {
-        return new StsClientTokenGeneratorServiceImpl(
-                TimeUnit.MINUTES.toSeconds(stsTokenExpirationMin),
-                secureTokenService());
     }
 }
