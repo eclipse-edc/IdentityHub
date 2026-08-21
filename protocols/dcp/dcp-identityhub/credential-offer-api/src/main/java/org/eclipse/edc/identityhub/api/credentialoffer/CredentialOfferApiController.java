@@ -93,7 +93,7 @@ public class CredentialOfferApiController implements CredentialOfferApi {
 
         // validate Issuer's SI token
         issuerTokenVerifier.verify(participantContext, authToken)
-                .orElseThrow(f -> new NotAuthorizedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+                .orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
         var credentialOffer = CredentialOffer.Builder.newInstance()
                 .participantContextId(participantContextId)

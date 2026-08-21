@@ -34,7 +34,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Violation;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -123,17 +123,6 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
-    void offerCredential_invalidAuthToken_expect403() {
-        when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foobar"));
-        baseRequest()
-                .body(createRequestBody())
-                .post()
-                .then()
-                .log().ifValidationFails()
-                .statusCode(403);
-    }
-
-    @Test
     void offerCredential_missingAuthHeader_expect401() {
         given()
                 .contentType("application/json")
@@ -182,8 +171,8 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
 
     // A4.7: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (the Storage API already returns 401; this endpoint currently returns 403)
     @Test
-    @Disabled("documents intended behavior, not yet implemented (catalog A4.7)")
-    void offerCredential_invalidAuthToken_statusCodeConsistentWithStorageApi() {
+    @DisplayName("A4.7: token verification failure returns 401, consistent with the Storage API")
+    void offerCredential_invalidAuthToken_statusCode401() {
         // arrange
         when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foobar"));
 
