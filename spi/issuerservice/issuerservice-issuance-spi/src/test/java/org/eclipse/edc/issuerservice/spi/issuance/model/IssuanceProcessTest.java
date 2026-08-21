@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.issuerservice.spi.issuance.model;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class IssuanceProcessTest {
 
     // B3.6: legal transition APPROVED -> DELIVERED succeeds
-    @Disabled("TODO: implement (catalog B3.6)")
+    @DisplayName("B3.6: APPROVED -> DELIVERED is a legal transition")
     @Test
     void transitionToDelivered_fromApproved_succeeds() {
         var process = createProcess(IssuanceProcessStates.APPROVED);
@@ -34,19 +34,20 @@ class IssuanceProcessTest {
     }
 
     // B3.6: legal transition APPROVED -> APPROVED (retry) succeeds
-    @Disabled("TODO: implement (catalog B3.6)")
+    @DisplayName("B3.6: APPROVED -> APPROVED (retry) is legal and increments the state count")
     @Test
     void transitionToApproved_fromApproved_succeeds() {
         var process = createProcess(IssuanceProcessStates.APPROVED);
+        var stateCountBefore = process.getStateCount();
 
         process.transitionToApproved();
 
         assertThat(process.getState()).isEqualTo(IssuanceProcessStates.APPROVED.code());
-        // TODO: assert the stateCount was incremented (retry bookkeeping)
+        assertThat(process.getStateCount()).isEqualTo(stateCountBefore + 1);
     }
 
     // B3.6: legal transition APPROVED -> ERRORED succeeds
-    @Disabled("TODO: implement (catalog B3.6)")
+    @DisplayName("B3.6: APPROVED -> ERRORED is a legal transition")
     @Test
     void transitionToError_fromApproved_succeeds() {
         var process = createProcess(IssuanceProcessStates.APPROVED);
@@ -57,7 +58,7 @@ class IssuanceProcessTest {
     }
 
     // B3.6: illegal transition DELIVERED -> APPROVED throws IllegalStateException
-    @Disabled("TODO: implement (catalog B3.6)")
+    @DisplayName("B3.6: DELIVERED -> APPROVED throws IllegalStateException")
     @Test
     void transitionToApproved_fromDelivered_throwsIllegalStateException() {
         var process = createProcess(IssuanceProcessStates.DELIVERED);
@@ -66,7 +67,7 @@ class IssuanceProcessTest {
     }
 
     // B3.6: illegal transition ERRORED -> DELIVERED throws IllegalStateException
-    @Disabled("TODO: implement (catalog B3.6)")
+    @DisplayName("B3.6: ERRORED -> DELIVERED throws IllegalStateException")
     @Test
     void transitionToDelivered_fromErrored_throwsIllegalStateException() {
         var process = createProcess(IssuanceProcessStates.ERRORED);
@@ -75,7 +76,7 @@ class IssuanceProcessTest {
     }
 
     // B3.6: illegal transition DELIVERED -> ERRORED throws IllegalStateException
-    @Disabled("TODO: implement (catalog B3.6)")
+    @DisplayName("B3.6: DELIVERED -> ERRORED throws IllegalStateException")
     @Test
     void transitionToError_fromDelivered_throwsIllegalStateException() {
         var process = createProcess(IssuanceProcessStates.DELIVERED);

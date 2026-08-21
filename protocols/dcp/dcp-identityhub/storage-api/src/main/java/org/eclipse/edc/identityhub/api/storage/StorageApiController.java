@@ -36,6 +36,8 @@ import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
+import java.util.Objects;
+
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
@@ -96,6 +98,10 @@ public class StorageApiController implements StorageApi {
         // validate Issuer's SI token
         issuerTokenVerifier.verify(participantContext, authToken)
                 .orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+
+        if (Objects.equals(credentialMessage.getStatus(), CredentialMessage.STATUS_REJECTED)) {
+            return Response.ok().build();
+        }
 
         var holderPid = credentialMessage.getHolderPid();
         var issuerPid = credentialMessage.getIssuerPid();

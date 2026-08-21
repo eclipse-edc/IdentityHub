@@ -36,6 +36,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
@@ -56,6 +57,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -206,9 +209,9 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
     // A3.16: a CredentialMessage with status=REJECTED must not store anything and must not transition the request to ISSUED; the request must end in an error/rejected state
     @Test
-    @Disabled("documents intended behavior, not yet implemented (catalog A3.16)")
+    @DisplayName("A3.16: a REJECTED credential message stores nothing and does not transition the request to ISSUED")
     void storeCredential_statusRejected_shouldNotStoreAndNotTransitionToIssued() {
-        // arrange: message carries status=REJECTED and no credentials
+        // message carries status=REJECTED and no credentials
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
         when(transformerRegistry.transform(isA(JsonObject.class), eq(CredentialMessage.class)))
                 .thenReturn(Result.success(CredentialMessage.Builder.newInstance()
@@ -217,7 +220,6 @@ class StorageApiControllerTest extends RestControllerTestBase {
                         .status("REJECTED")
                         .build()));
 
-        // act
         baseRequest()
                 .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
@@ -226,14 +228,13 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(200);
 
-        // assert: nothing must be written for a REJECTED message
-        verifyNoInteractions(credentialWriter);
-        // TODO: assert the HolderCredentialRequest transitions to an error/rejected state instead of ISSUED (requires the message status to be honored by the controller/writer)
+        // assert: the writer (which stores credentials and transitions the request to ISSUED) must never be invoked for a REJECTED message
+        verify(credentialWriter, never()).write(anyString(), anyString(), anyCollection(), anyString());
     }
 
     // A4.7: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (this endpoint already returns 401; the Credential Offer API currently returns 403 and must be adjusted)
     @Test
-    @Disabled("TODO: implement (catalog A4.7)")
+    @DisplayName("A4.7: token verification failure returns 401, consistent with the Offer API")
     void storeCredential_tokenVerificationFails_statusCodeConsistentWithOfferApi() {
         // arrange
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
