@@ -79,12 +79,20 @@ public class CredentialOfferHandler implements EventSubscriber {
                 return;
             }
 
-            var initiateResult = requestManager.initiateRequest(receivedEvent.getParticipantContextId(), receivedEvent.getIssuer(), getHolderPid(), typesAndFormats);
-            if (initiateResult.failed()) {
-                monitor.warning("Could not initiate credential request after receiving a Credential Offer. Manual Reconciliation is required. Details: %s".formatted(initiateResult.getFailureDetail()));
+            if (storedOffer.getStateAsEnum() == CredentialOfferStatus.PROCESSING || storedOffer.getStateAsEnum() == CredentialOfferStatus.PROCESSED) {
+                monitor.warning("Credential offer with ID = '%s' is already processing. Skipping.".formatted(receivedEvent.getId()));
+                return;
             }
 
-            storedOffer.transition(CredentialOfferStatus.PROCESSED);
+            var initiateResult = requestManager.initiateRequest(receivedEvent.getParticipantContextId(), receivedEvent.getIssuer(), getHolderPid(), typesAndFormats);
+            // failed credential requests transition to REJECTED rather than PROCESSED
+            if (initiateResult.failed()) {
+                monitor.warning("Could not initiate credential request after receiving a Credential Offer. Manual Reconciliation is required. Details: %s".formatted(initiateResult.getFailureDetail()));
+                storedOffer.transition(CredentialOfferStatus.REJECTED);
+            } else {
+                storedOffer.transition(CredentialOfferStatus.PROCESSED);
+            }
+
             try {
                 credentialOfferStore.save(storedOffer);
             } catch (EdcPersistenceException ex) {

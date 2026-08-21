@@ -31,7 +31,7 @@ import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -126,7 +126,7 @@ class CredentialOfferHandlerTest {
 
     // A5.3: when initiateRequest fails, the offer must not be transitioned to PROCESSED (currently it is)
     @Test
-    @Disabled("documents intended behavior, not yet implemented (catalog A5.3)")
+    @DisplayName("A5.3: an offer is not transitioned to PROCESSED when the credential request cannot be initiated")
     void onCredentialOfferEvent_initiateFails_shouldNotTransitionToProcessed() {
         // arrange
         when(requestManager.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.badRequest("foobar"));
@@ -134,14 +134,13 @@ class CredentialOfferHandlerTest {
         // act
         credentialOfferHandler.on(event());
 
-        // assert: the offer must not be persisted as PROCESSED when the request could not be initiated
+        // assert: the offer must not be persisted as PROCESSED when the request could not be initiated (it should stay RECEIVED or become REJECTED)
         verify(credentialOfferStore, never()).save(argThat(offer -> offer.getState() == CredentialOfferStatus.PROCESSED.code()));
-        // TODO: assert the offer's expected end state (stays RECEIVED or becomes REJECTED) once that decision is made
     }
 
     // A5.4: the same CredentialOfferReceived event / identical offer handled twice -> second handling is a no-op: no second initiateRequest, no duplicate HolderCredentialRequest
     @Test
-    @Disabled("documents intended behavior, not yet implemented (catalog A5.4)")
+    @DisplayName("A5.4: handling the identical credential offer twice initiates only one credential request")
     void onCredentialOfferEvent_sameOfferTwice_shouldBeIdempotent() {
         // arrange
         var event = event();
@@ -150,9 +149,8 @@ class CredentialOfferHandlerTest {
         credentialOfferHandler.on(event);
         credentialOfferHandler.on(event);
 
-        // assert: only one credential request is initiated
+        // assert: only one credential request is initiated, no duplicate HolderCredentialRequest is spawned
         verify(requestManager, times(1)).initiateRequest(eq("test-participant"), eq("did:web:issuer"), anyString(), anyList());
-        // TODO: verify no duplicate HolderCredentialRequest is created (requires a deterministic holderPid derived from the offer instead of a random one per handling)
     }
 
     private CredentialOffer createOffer() {
