@@ -17,8 +17,10 @@ package org.eclipse.edc.issuerservice.issuance.attestation;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationContext;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinitionStore;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationPipeline;
+import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactoryRegistry;
+import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
 import org.eclipse.edc.spi.result.Result;
 
 import java.util.HashMap;
@@ -53,10 +55,21 @@ public class AttestationPipelineImpl implements AttestationPipeline, Attestation
     public Result<Map<String, Object>> evaluate(Set<String> attestations, AttestationContext context) {
         var collated = new HashMap<String, Object>();
         for (var attestationId : attestations) {
-            var definition = requireNonNull(store.resolveDefinition(attestationId), "Unknown attestation: " + attestationId);
-            var factory = requireNonNull(factories.get(definition.getAttestationType()), "Unknown attestation type: " + definition.getAttestationType());
+            var definition = store.resolveDefinition(attestationId);
+            if (definition == null) {
+                return Result.failure("Attestation with ID '%s' not found".formatted(attestationId));
+            }
 
-            var result = Objects.requireNonNull(factory.createSource(definition), "Invalid definition for type: " + definition.getAttestationType()).execute(context);
+            var factory = factories.get(definition.getAttestationType());
+            if (factory == null) {
+                return Result.failure("Attestation Type  '%s' not found".formatted(definition.getAttestationType()));
+            }
+
+            var source = factory.createSource(definition);
+            if (source == null) {
+                return Result.failure("Invalid definition for type: " + definition.getAttestationType());
+            }
+            var result = source.execute(context);
             if (result.failed()) {
                 return result;
             }

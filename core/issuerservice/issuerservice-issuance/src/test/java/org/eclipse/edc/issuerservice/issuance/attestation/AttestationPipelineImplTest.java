@@ -19,7 +19,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinit
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;
@@ -101,7 +101,8 @@ class AttestationPipelineImplTest {
     }
 
     // B4.8: evaluation referencing an unknown attestation id must fail gracefully, not with an NPE
-    @Disabled("documents intended behavior, not yet implemented (catalog B4.8)")
+    // NOTE: this documents intended behavior - currently evaluate() throws an NPE from requireNonNull("Unknown attestation: ...")
+    @DisplayName("B4.8: evaluating an unknown attestation id fails gracefully instead of throwing an NPE")
     @Test
     void evaluate_whenUnknownAttestationId_shouldFailGracefully() {
         var store = mock(AttestationDefinitionStore.class);
@@ -111,15 +112,14 @@ class AttestationPipelineImplTest {
 
         var pipeline = new AttestationPipelineImpl(store);
 
-        // NOTE: currently evaluate() throws an NPE from requireNonNull("Unknown attestation: ...")
-        // TODO: define the graceful contract - expected: a failed Result, not an exception
         var result = pipeline.evaluate(Set.of("unknown-id"), attestationContext);
 
         assertThat(result).isFailed();
     }
 
     // B4.8: attestation definition with an unregistered attestation type must fail gracefully, not with an NPE
-    @Disabled("documents intended behavior, not yet implemented (catalog B4.8)")
+    // NOTE: this documents intended behavior - currently evaluate() throws an NPE from requireNonNull("Unknown attestation type: ...")
+    @DisplayName("B4.8: evaluating a definition with an unregistered attestation type fails gracefully instead of throwing an NPE")
     @Test
     void evaluate_whenUnregisteredAttestationType_shouldFailGracefully() {
         var attestationDefinition = createAttestationDefinition("a123", "unregistered-type", Map.of());
@@ -130,8 +130,6 @@ class AttestationPipelineImplTest {
         // no AttestationSourceFactory is registered for "unregistered-type"
         var pipeline = new AttestationPipelineImpl(store);
 
-        // NOTE: currently evaluate() throws an NPE from requireNonNull("Unknown attestation type: ...")
-        // TODO: define the graceful contract - expected: a failed Result, not an exception
         var result = pipeline.evaluate(Set.of("a123"), attestationContext);
 
         assertThat(result).isFailed();
