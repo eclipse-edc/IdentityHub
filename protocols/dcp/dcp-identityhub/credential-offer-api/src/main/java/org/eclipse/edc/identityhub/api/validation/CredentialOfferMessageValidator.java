@@ -48,17 +48,16 @@ public class CredentialOfferMessageValidator extends JsonValidator {
             return failure(violation("Invalid format: must contain a '%s' property.".formatted(CREDENTIAL_ISSUER_TERM), null));
         }
 
-        //sending an empty offer is nonsensical, but strictly speaking, it's allowed
-
+        // the credentials array must be non-empty
         var array = input.get(namespace.toIri(CREDENTIALS_TERM));
-        if (!isNullObject(array) && array.getValueType() == JsonValue.ValueType.ARRAY) {
-            var results = array.asJsonArray().stream().map(jv -> {
-                return credentialObjectValidator.validate(jv.asJsonObject());
-            });
+
+        if (isNullObject(array) || array.getValueType() != JsonValue.ValueType.ARRAY || array.asJsonArray().isEmpty()) {
+            return failure(violation("'credentials' must be a non-empty JSON array", "credentials"));
+        } else {
+            var results = array.asJsonArray().stream().map(jv -> credentialObjectValidator.validate(jv.asJsonObject()));
             return results.reduce(ValidationResult::merge).orElse(success());
         }
 
-        return success();
     }
 
 

@@ -15,12 +15,15 @@
 package org.eclipse.edc.identityhub.api.validation;
 
 import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
@@ -36,15 +39,6 @@ import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 
 class CredentialOfferMessageValidatorTest {
     private final CredentialOfferMessageValidator validator = new CredentialOfferMessageValidator();
-
-    @Test
-    void validate_noCredentials_success() {
-        var msg = Json.createObjectBuilder()
-                .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer")
-                .build();
-
-        assertThat(validator.validate(msg)).isSucceeded();
-    }
 
     @Test
     void validate_missingIssuer() {
@@ -79,7 +73,7 @@ class CredentialOfferMessageValidatorTest {
 
     // A4.8: CredentialOfferMessage with an EMPTY credentials array -> validation failure (spec requires a non-empty array; currently passes)
     @Test
-    @Disabled("documents intended behavior, not yet implemented (catalog A4.8)")
+    @DisplayName("A4.8: a credential offer message with an empty credentials array fails validation")
     void validate_emptyCredentialsArray_shouldFail() {
         // arrange
         var msg = Json.createObjectBuilder()
@@ -87,9 +81,22 @@ class CredentialOfferMessageValidatorTest {
                 .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder())
                 .build();
 
-        // act + assert
+        // act + assert: the spec requires a non-empty credentials array
         assertThat(validator.validate(msg)).isFailed();
-        // TODO: assert the failure detail states that 'credentials' must not be empty
+    }
+
+    @Test
+    @DisplayName("A4.8: a credential offer message with a null credentials array fails validation")
+    void validate_nullCredentialsArray_shouldFail() {
+        // must use map, JsonObject does not allow null values
+        var payload = new HashMap<String, String>();
+        payload.put(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer");
+        payload.put(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), null);
+
+        assertThat(validator.validate(Json.createObjectBuilder(payload).build())).isFailed();
+
+        var payloadNoCredentials = Map.of(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer");
+        assertThat(validator.validate(Json.createObjectBuilder(payloadNoCredentials).build())).isFailed();
     }
 
     private JsonObject createCredentialObject() {
