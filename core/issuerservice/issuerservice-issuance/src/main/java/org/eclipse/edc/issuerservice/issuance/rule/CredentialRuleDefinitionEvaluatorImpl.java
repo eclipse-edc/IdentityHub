@@ -34,6 +34,9 @@ public class CredentialRuleDefinitionEvaluatorImpl implements CredentialRuleDefi
     public Result<Void> evaluate(Collection<CredentialRuleDefinition> definitions, IssuanceContext context) {
         for (var definition : definitions) {
             var factory = credentialRuleFactoryRegistry.resolveFactory(definition.type());
+            if (factory == null) {
+                return Result.failure("No factory found for type " + definition.type());
+            }
             var rule = factory.createRule(definition);
             var result = rule.evaluate(context);
             if (result.failed()) {

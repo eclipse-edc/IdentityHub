@@ -15,7 +15,7 @@
 package org.eclipse.edc.issuerservice.issuance.rule;
 
 import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleFactory;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,13 +33,13 @@ class CredentialRuleFactoryRegistryImplTest {
     }
 
     // B4.7: resolving an unregistered rule type must produce a graceful failure, not an NPE
-    @Disabled("documents intended behavior, not yet implemented (catalog B4.7)")
+    // NOTE: this documents intended behavior - currently resolveFactory() throws an NPE from requireNonNull(),
+    //  the graceful contract being: return null, per the @Nullable annotation on resolveFactory()
+    @DisplayName("B4.7: resolving an unregistered rule type fails gracefully instead of throwing an NPE")
     @Test
     void resolveFactory_whenUnknownType_shouldFailGracefully() {
         var registry = new CredentialRuleFactoryRegistryImpl();
 
-        // NOTE: currently resolveFactory() throws an NPE from requireNonNull() for unknown types
-        // TODO: define the graceful contract - e.g. return null (per the @Nullable annotation on resolveFactory) or a dedicated exception
         assertThatCode(() -> registry.resolveFactory("unknown-type")).doesNotThrowAnyException();
         assertThat(registry.resolveFactory("unknown-type")).isNull();
     }

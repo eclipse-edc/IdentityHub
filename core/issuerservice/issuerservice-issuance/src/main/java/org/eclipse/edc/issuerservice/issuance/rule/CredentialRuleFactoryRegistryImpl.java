@@ -33,6 +33,6 @@ public class CredentialRuleFactoryRegistryImpl implements CredentialRuleFactoryR
 
     @Override
     public @Nullable CredentialRuleFactory resolveFactory(String type) {
-        return requireNonNull(factories.get(type), "Unknown rule type: " + type);
+        return factories.get(type);
     }
 }
