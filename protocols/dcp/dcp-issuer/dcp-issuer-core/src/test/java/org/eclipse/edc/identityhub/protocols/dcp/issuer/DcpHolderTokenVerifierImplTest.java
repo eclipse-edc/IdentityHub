@@ -26,6 +26,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.token.spi.TokenValidationRulesRegistry;
 import org.eclipse.edc.token.spi.TokenValidationService;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -113,6 +114,47 @@ public class DcpHolderTokenVerifierImplTest {
 
         assertThat(result).isFailed();
 
+    }
+
+    // B2.6: token without a 'kid' JOSE header -> unauthorized
+    @Disabled("TODO: implement (catalog B2.6)")
+    @Test
+    void verify_missingKidHeader_returnsUnauthorized() {
+        // TODO: create a signed JWT whose JOSE header does NOT carry a 'kid' (the generateJwt() fixture always sets one,
+        //  so build the token via nimbus directly)
+        var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
+
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
+
+        var result = dcpIssuerTokenVerifier.verify(participantContext, token);
+
+        assertThat(result).isFailed();
+        // TODO: assert the failure detail is "Kid not present" and that tokenValidationService.validate() was never invoked
+    }
+
+    // B2.10: holder exists but is registered under a DIFFERENT participant context than the issuer context being addressed -> must be rejected
+    @Disabled("documents intended behavior, not yet implemented (catalog B2.10)")
+    @Test
+    void verify_holderRegisteredUnderDifferentParticipantContext_shouldBeRejected() {
+        var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
+
+        // holder is registered under a different issuer participant context than participantContext ("holderId")
+        var foreignHolder = Holder.Builder.newInstance()
+                .participantContextId("other-issuer-context")
+                .holderId("foreignHolderId")
+                .did(PARTICIPANT_DID)
+                .holderName("foreign holder")
+                .build();
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(foreignHolder)));
+        when(tokenValidationService.validate(anyString(), any(), anyList())).thenReturn(Result.success(ClaimToken.Builder.newInstance().build()));
+
+        var result = dcpIssuerTokenVerifier.verify(participantContext, token);
+
+        // NOTE: currently this SUCCEEDS - the HolderStore query filters only on 'did', not on participantContextId,
+        //  so a holder of issuer context A can authenticate against issuer context B (cross-tenant authentication).
+        //  Once scoping is implemented, the query must also filter on the addressed issuer's participantContextId.
+        assertThat(result).isFailed();
+        // TODO: additionally verify the holderStore query contains a participantContextId criterion
     }
 
     private Holder createHolder(String id, String did, String name) {

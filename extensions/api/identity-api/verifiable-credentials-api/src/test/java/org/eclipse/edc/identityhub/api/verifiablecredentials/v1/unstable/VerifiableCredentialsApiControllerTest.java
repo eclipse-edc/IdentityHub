@@ -42,6 +42,7 @@ import org.eclipse.edc.validator.spi.Violation;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -521,6 +522,67 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .log().ifValidationFails()
                     .statusCode(403)
                     .body(containsString("test-message"));
+            verifyNoInteractions(credentialRequestService);
+        }
+
+        // A1.5: null issuerDid in the request DTO -> 400 with validation message (currently unvalidated, surfaces as 500 from builder exceptions)
+        @Test
+        @Disabled("documents intended behavior, not yet implemented (catalog A1.5)")
+        void invalidDto_nullIssuerDid_returns400() {
+            // arrange
+            var request = new CredentialRequestDto(null, UUID.randomUUID().toString(), List.of(
+                    new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential", UUID.randomUUID().toString())
+            ));
+
+            // act + assert
+            baseRequest()
+                    .contentType(JSON)
+                    .body(request)
+                    .post("/request")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+            // TODO: assert the response body contains a validation message referencing 'issuerDid'
+            verifyNoInteractions(credentialRequestService);
+        }
+
+        // A1.5: empty credentials array -> 400 with validation message (currently unvalidated, surfaces as 500)
+        @Test
+        @Disabled("documents intended behavior, not yet implemented (catalog A1.5)")
+        void invalidDto_emptyCredentials_returns400() {
+            // arrange
+            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of());
+
+            // act + assert
+            baseRequest()
+                    .contentType(JSON)
+                    .body(request)
+                    .post("/request")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+            // TODO: assert the response body contains a validation message referencing 'credentials'
+            verifyNoInteractions(credentialRequestService);
+        }
+
+        // A1.5: descriptor with null id/format -> 400 with validation message (currently unvalidated, surfaces as 500)
+        @Test
+        @Disabled("documents intended behavior, not yet implemented (catalog A1.5)")
+        void invalidDto_descriptorWithNullIdAndFormat_returns400() {
+            // arrange
+            var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
+                    new CredentialDescriptor((String) null, "FooCredential", null)
+            ));
+
+            // act + assert
+            baseRequest()
+                    .contentType(JSON)
+                    .body(request)
+                    .post("/request")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+            // TODO: assert the response body contains a validation message referencing the descriptor's 'id'/'format'
             verifyNoInteractions(credentialRequestService);
         }
     }

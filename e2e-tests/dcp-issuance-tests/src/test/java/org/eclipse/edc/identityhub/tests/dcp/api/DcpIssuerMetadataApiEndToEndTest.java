@@ -34,6 +34,7 @@ import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -114,6 +115,26 @@ public class DcpIssuerMetadataApiEndToEndTest {
 
         }
 
+
+        // B7.4: participant context with ZERO credential definitions -> 200 with an empty credentialsSupported array
+        @Test
+        @Disabled("TODO: implement (catalog B7.4)")
+        void issuerMetadata_noCredentialDefinitions_returnsEmptyCredentialsSupported(IssuerService issuer) {
+            // arrange: no credential definitions exist for the participant context (@AfterEach removes any leftovers
+            // from other tests; nothing is created here on purpose)
+
+            // act + assert: metadata endpoint responds 200 with the issuer DID and an EMPTY credentialsSupported array
+            issuer.getIssuerApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .get(issuanceMetadataUrl())
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200)
+                    .body("issuer", equalTo(ISSUER_DID))
+                    .body("credentialsSupported.size()", equalTo(0));
+            // TODO: verify test isolation, i.e. that no credential definition created by a concurrently registered
+            //       test is visible here (definitions are cleaned up in @AfterEach)
+        }
 
         private Holder createHolder(String id, String did, String name) {
             return Holder.Builder.newInstance()

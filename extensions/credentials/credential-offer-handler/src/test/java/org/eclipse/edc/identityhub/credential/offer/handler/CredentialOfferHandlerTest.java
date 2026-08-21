@@ -31,6 +31,7 @@ import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -39,12 +40,15 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -118,6 +122,37 @@ class CredentialOfferHandlerTest {
         credentialOfferHandler.on(event());
 
         verify(monitor).warning(contains("Could not persist CredentialOffer in database: foo"));
+    }
+
+    // A5.3: when initiateRequest fails, the offer must not be transitioned to PROCESSED (currently it is)
+    @Test
+    @Disabled("documents intended behavior, not yet implemented (catalog A5.3)")
+    void onCredentialOfferEvent_initiateFails_shouldNotTransitionToProcessed() {
+        // arrange
+        when(requestManager.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.badRequest("foobar"));
+
+        // act
+        credentialOfferHandler.on(event());
+
+        // assert: the offer must not be persisted as PROCESSED when the request could not be initiated
+        verify(credentialOfferStore, never()).save(argThat(offer -> offer.getState() == CredentialOfferStatus.PROCESSED.code()));
+        // TODO: assert the offer's expected end state (stays RECEIVED or becomes REJECTED) once that decision is made
+    }
+
+    // A5.4: the same CredentialOfferReceived event / identical offer handled twice -> second handling is a no-op: no second initiateRequest, no duplicate HolderCredentialRequest
+    @Test
+    @Disabled("documents intended behavior, not yet implemented (catalog A5.4)")
+    void onCredentialOfferEvent_sameOfferTwice_shouldBeIdempotent() {
+        // arrange
+        var event = event();
+
+        // act: handle the identical event twice
+        credentialOfferHandler.on(event);
+        credentialOfferHandler.on(event);
+
+        // assert: only one credential request is initiated
+        verify(requestManager, times(1)).initiateRequest(eq("test-participant"), eq("did:web:issuer"), anyString(), anyList());
+        // TODO: verify no duplicate HolderCredentialRequest is created (requires a deterministic holderPid derived from the offer instead of a random one per handling)
     }
 
     private CredentialOffer createOffer() {

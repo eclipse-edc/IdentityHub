@@ -40,6 +40,7 @@ import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -301,6 +302,33 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(sts).createToken(anyString(), anyMap(), ArgumentMatchers.isNull());
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
                 inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("issuer failure bad request")));
+            });
+        }
+
+        // A2.7: re-processing a request in REQUESTING (after crash/restart) re-sends the DCP request idempotently: same holderPid reused, an issuer 409/duplicate response must not transition the request to ERROR
+        @Test
+        @Disabled("documents intended behavior, not yet implemented (catalog A2.7)")
+        void processRequesting_whenIssuerReportsDuplicate_shouldNotTransitionToError() {
+            // arrange: a request that was already sent once (state REQUESTING); the issuer answers with 409/duplicate
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
+                    .thenReturn(failure("409 Conflict: issuance process already exists"));
+
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            // act
+            credentialRequestService.start();
+
+            // assert: the re-sent request reuses the same holderPid, and the issuer's 409 is treated as "already known", not as an error
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                // TODO: verify the outgoing CredentialRequestMessage carries the original holderPid ("test-request")
+                verify(store, never()).save(argThat(r -> r.getState() == ERROR.code()));
+                // TODO: verify the request transitions to REQUESTED despite the issuer's duplicate response
             });
         }
 

@@ -204,6 +204,51 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .body(containsString("foo"));
     }
 
+    // A3.16: a CredentialMessage with status=REJECTED must not store anything and must not transition the request to ISSUED; the request must end in an error/rejected state
+    @Test
+    @Disabled("documents intended behavior, not yet implemented (catalog A3.16)")
+    void storeCredential_statusRejected_shouldNotStoreAndNotTransitionToIssued() {
+        // arrange: message carries status=REJECTED and no credentials
+        when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        when(transformerRegistry.transform(isA(JsonObject.class), eq(CredentialMessage.class)))
+                .thenReturn(Result.success(CredentialMessage.Builder.newInstance()
+                        .issuerPid(UUID.randomUUID().toString())
+                        .holderPid(UUID.randomUUID().toString())
+                        .status("REJECTED")
+                        .build()));
+
+        // act
+        baseRequest()
+                .header("Authorization", "Bearer " + generateJwt())
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200);
+
+        // assert: nothing must be written for a REJECTED message
+        verifyNoInteractions(credentialWriter);
+        // TODO: assert the HolderCredentialRequest transitions to an error/rejected state instead of ISSUED (requires the message status to be honored by the controller/writer)
+    }
+
+    // A4.7: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (this endpoint already returns 401; the Credential Offer API currently returns 403 and must be adjusted)
+    @Test
+    @Disabled("TODO: implement (catalog A4.7)")
+    void storeCredential_tokenVerificationFails_statusCodeConsistentWithOfferApi() {
+        // arrange
+        when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foo"));
+
+        // act + assert: 401 is the agreed code for token-verification failures on both DCP endpoints
+        baseRequest()
+                .header("Authorization", "Bearer " + generateJwt())
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(401);
+    }
+
     @Override
     protected Object controller() {
         return new StorageApiController(validatorRegistry,

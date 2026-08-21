@@ -34,6 +34,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Violation;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -177,6 +178,22 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(409);
+    }
+
+    // A4.7: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (the Storage API already returns 401; this endpoint currently returns 403)
+    @Test
+    @Disabled("documents intended behavior, not yet implemented (catalog A4.7)")
+    void offerCredential_invalidAuthToken_statusCodeConsistentWithStorageApi() {
+        // arrange
+        when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foobar"));
+
+        // act + assert: 401 is the agreed code for token-verification failures on both DCP endpoints
+        baseRequest()
+                .body(createRequestBody())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(401);
     }
 
     @Override

@@ -17,6 +17,7 @@ package org.eclipse.edc.identityhub.api.validation;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -74,6 +75,21 @@ class CredentialOfferMessageValidatorTest {
                         .add(Json.createObjectBuilder().add("invalid-key", "invalid-value").build()))
                 .build();
         assertThat(validator.validate(msg)).isFailed();
+    }
+
+    // A4.8: CredentialOfferMessage with an EMPTY credentials array -> validation failure (spec requires a non-empty array; currently passes)
+    @Test
+    @Disabled("documents intended behavior, not yet implemented (catalog A4.8)")
+    void validate_emptyCredentialsArray_shouldFail() {
+        // arrange
+        var msg = Json.createObjectBuilder()
+                .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer")
+                .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder())
+                .build();
+
+        // act + assert
+        assertThat(validator.validate(msg)).isFailed();
+        // TODO: assert the failure detail states that 'credentials' must not be empty
     }
 
     private JsonObject createCredentialObject() {

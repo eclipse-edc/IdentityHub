@@ -48,6 +48,7 @@ import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -203,6 +204,38 @@ public class CredentialOfferApiEndToEndTest {
                     .log().ifValidationFails()
                     .statusCode(400)
                     .body(containsString("Invalid format"));
+        }
+
+        // A4.2: SPARSE offer (credentials entries containing only an id) -> the holder must resolve the remaining CredentialObject properties (type, profile) from the issuer's Issuer Metadata endpoint (spec MUST); the stored offer/auto-request must carry the resolved type and format
+        @Disabled("documents intended behavior, not yet implemented (catalog A4.2)")
+        @DisplayName("Sparse CredentialOffer: missing CredentialObject properties are resolved from the issuer's Issuer Metadata")
+        @Test
+        void storeCredentialOffer_sparseOffer_shouldResolveCredentialObjectFromIssuerMetadata(IdentityHub identityHub, CredentialOfferStore credentialOfferStore) throws JOSEException {
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
+
+            // arrange: a sparse credential object, containing ONLY the 'id' property
+            var credentialObjectId = UUID.randomUUID().toString();
+            var sparseCredentialObject = Json.createObjectBuilder()
+                    .add(JsonLdKeywords.ID, credentialObjectId)
+                    .build();
+            var offerMessage = createCredentialOfferMessage(sparseCredentialObject);
+
+            // TODO: arrange - make the issuer's DID resolvable (DidResolverRegistry mock) with an IssuerService endpoint entry
+            // TODO: arrange - stub the issuer's Issuer Metadata endpoint (WireMock) to return a full CredentialObject
+            //       (credentialType, profile) for 'credentialObjectId'
+
+            // act: deliver the sparse offer
+            identityHub.getCredentialsEndpoint().baseRequest()
+                    .contentType(ContentType.JSON)
+                    .header("Authorization", "Bearer " + generateSiToken())
+                    .body(offerMessage)
+                    .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/offers")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(204);
+
+            // TODO: assert - the stored offer (credentialOfferStore) carries the credentialType and profile resolved from Issuer Metadata
+            // TODO: assert - the auto-initiated HolderCredentialRequest references the resolved type and format
         }
 
         private void createParticipant(IdentityHub identityHub) {
