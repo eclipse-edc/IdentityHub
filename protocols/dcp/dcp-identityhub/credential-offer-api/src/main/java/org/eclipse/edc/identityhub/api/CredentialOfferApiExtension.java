@@ -14,11 +14,15 @@
 
 package org.eclipse.edc.identityhub.api;
 
+import org.eclipse.edc.http.spi.EdcHttpClient;
+import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
+import org.eclipse.edc.identityhub.api.credentialoffer.CredentialObjectResolver;
 import org.eclipse.edc.identityhub.api.credentialoffer.CredentialOfferApiController;
 import org.eclipse.edc.identityhub.api.validation.CredentialOfferMessageValidator;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialObjectTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialOfferMessageTransformer;
+import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToIssuerMetadataTransformer;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.offer.CredentialOfferService;
@@ -67,6 +71,10 @@ public class CredentialOfferApiExtension implements ServiceExtension {
     private IdentityHubParticipantContextService participantContextService;
     @Inject
     private CredentialOfferService credentialOfferService;
+    @Inject
+    private DidResolverRegistry didResolverRegistry;
+    @Inject
+    private EdcHttpClient httpClient;
 
     @Override
     public String name() {
@@ -78,7 +86,8 @@ public class CredentialOfferApiExtension implements ServiceExtension {
 
         validatorRegistry.register(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIAL_OFFER_MESSAGE_TERM), new CredentialOfferMessageValidator());
 
-        var controller = new CredentialOfferApiController(validatorRegistry, typeTransformer, issuerTokenVerifier, participantContextService, credentialOfferService, jsonLd);
+        var credentialObjectResolver = new CredentialObjectResolver(didResolverRegistry, httpClient, jsonLd, typeTransformer);
+        var controller = new CredentialOfferApiController(validatorRegistry, typeTransformer, issuerTokenVerifier, participantContextService, credentialOfferService, jsonLd, credentialObjectResolver);
         webService.registerResource(CREDENTIALS, new ObjectMapperProvider(typeManager, JSON_LD));
         webService.registerResource(CREDENTIALS, controller);
 
@@ -91,5 +100,6 @@ public class CredentialOfferApiExtension implements ServiceExtension {
         // inbound
         scopedTransformerRegistry.register(new JsonObjectToCredentialOfferMessageTransformer(DSPACE_DCP_NAMESPACE_V_1_0));
         scopedTransformerRegistry.register(new JsonObjectToCredentialObjectTransformer(typeManager, JSON_LD, DSPACE_DCP_NAMESPACE_V_1_0));
+        scopedTransformerRegistry.register(new JsonObjectToIssuerMetadataTransformer(DSPACE_DCP_NAMESPACE_V_1_0));
     }
 }

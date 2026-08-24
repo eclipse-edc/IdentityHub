@@ -16,7 +16,12 @@ package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import okhttp3.MediaType;
+import okhttp3.Protocol;
+import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
+import org.assertj.core.api.Assertions;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
@@ -40,7 +45,7 @@ import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -125,6 +130,16 @@ class CredentialRequestManagerImplTest {
         return DidDocument.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .service(List.of(new Service(UUID.randomUUID().toString(), "IssuerService", "http://issuer.com/issuance")))
+                .build();
+    }
+
+    private Response response(int code, String message, String body) {
+        return new Response.Builder()
+                .request(new Request.Builder().url("http://issuer.com/issuance/credentials").build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(code)
+                .message(message)
+                .body(ResponseBody.create(body, MediaType.parse("application/json")))
                 .build();
     }
 
@@ -307,12 +322,13 @@ class CredentialRequestManagerImplTest {
 
         // A2.7: re-processing a request in REQUESTING (after crash/restart) re-sends the DCP request idempotently: same holderPid reused, an issuer 409/duplicate response must not transition the request to ERROR
         @Test
-        @Disabled("documents intended behavior, not yet implemented (catalog A2.7)")
+        @DisplayName("A2.7: re-processing a REQUESTING request reuses the holderPid, and an issuer duplicate response does not transition it to ERROR")
         void processRequesting_whenIssuerReportsDuplicate_shouldNotTransitionToError() {
-            // arrange: a request that was already sent once (state REQUESTING); the issuer answers with 409/duplicate
+            // a request that was already sent once (state REQUESTING); the issuer answers with 409/duplicate
             when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
             when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
-                    .thenReturn(failure("409 Conflict: issuance process already exists"));
+                    .thenAnswer(i -> i.getArgument(1, Function.class).apply(response(409, "Conflict",
+                            "[{\"message\":\"An issuance process with holderPid 'test-request' already exists\"}]")));
 
             var rq = createRequest()
                     .state(REQUESTING.code())
@@ -321,14 +337,14 @@ class CredentialRequestManagerImplTest {
                     .thenReturn(List.of(rq))
                     .thenReturn(List.of());
 
-            // act
             credentialRequestService.start();
 
-            // assert: the re-sent request reuses the same holderPid, and the issuer's 409 is treated as "already known", not as an error
+            // the re-sent request reuses the same holderPid, and the issuer's 409 is treated as "already known", not as an error
             await().atMost(MAX_DURATION).untilAsserted(() -> {
-                // TODO: verify the outgoing CredentialRequestMessage carries the original holderPid ("test-request")
+                verify(transformerRegistry).transform(argThat((CredentialRequestMessage m) -> "test-request".equals(m.getHolderPid())), eq(JsonObject.class));
                 verify(store, never()).save(argThat(r -> r.getState() == ERROR.code()));
-                // TODO: verify the request transitions to REQUESTED despite the issuer's duplicate response
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+                Assertions.assertThat(rq.getErrorDetail()).isNull();
             });
         }
 

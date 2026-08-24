@@ -77,6 +77,8 @@ import static org.eclipse.edc.spi.result.Result.success;
 
 public class CredentialRequestManagerImpl extends AbstractStateEntityManager<HolderCredentialRequest, HolderCredentialRequestStore>
         implements CredentialRequestManager {
+    private static final int HTTP_CONFLICT = 409;
+    private static final String UNKNOWN_ISSUER_PID = "";
     private DidResolverRegistry didResolverRegistry;
     private TypeTransformerRegistry dcpTypeTransformerRegistry;
     private JsonLd jsonLd;
@@ -128,11 +130,43 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
                 .processor(processRequestsInState(REQUESTING, this::processInitial));
     }
 
+    /**
+     * Records that the Issuer accepted a credential request by transitioning it to
+     * {@link HolderRequestState#REQUESTED} and storing the Issuer-assigned issuance process ID.
+     * <p>
+     * Issuers might not disclose that ID when acknowledging a request, e.g. when a request for that ID already exists,
+     * in which case {@link #UNKNOWN_ISSUER_PID} is passed here. An ID obtained from the earlier attempt is then retained, since
+     * overwriting it would lose the only correlation the Holder has until the credentials are delivered.
+     *
+     * @param issuerPid  the issuance process ID as reported by the Issuer, or {@link #UNKNOWN_ISSUER_PID} if it did not
+     *                   report one
+     * @param newRequest the request that was sent to the Issuer
+     * @return a Result containing the issuance process ID that was actually recorded on the request
+     */
     private @NotNull Result<String> handleCredentialResponse(String issuerPid, HolderCredentialRequest newRequest) {
-        transitionRequested(newRequest, issuerPid);
-        return success(issuerPid);
+        var effectiveIssuerPid = UNKNOWN_ISSUER_PID.equals(issuerPid) && newRequest.getIssuerPid() != null
+                ? newRequest.getIssuerPid()
+                : issuerPid;
+        transitionRequested(newRequest, effectiveIssuerPid);
+        return success(effectiveIssuerPid);
     }
 
+    /**
+     * Sends a {@code CredentialRequestMessage} for the given request to the Issuer's Credential Request API, authenticated
+     * with a freshly created Self-Issued ID token.
+     * <p>
+     * The request is transitioned to {@link HolderRequestState#REQUESTING} and persisted before the message goes out, so
+     * that an interruption cannot lose the fact that the Issuer may already have received it. Recovery re-enters this
+     * method with the same {@code holderPid}, which lets the Issuer recognize the duplicate - see
+     * {@link #mapResponseAsIssuerPid(Response)} for how that answer is interpreted.
+     *
+     * @param request  the request to send, in state {@link HolderRequestState#CREATED} or
+     *                 {@link HolderRequestState#REQUESTING}
+     * @param endpoint the base URL of the Issuer's Issuer Service, as resolved from its DID document
+     * @return a Result containing the Issuer-assigned issuance process ID, or {@link #UNKNOWN_ISSUER_PID} if the Issuer
+     *         accepted the request without reporting one. This can happen if an issuance request already exists on the
+     *         issuer side and HTTP 409 is returned. Fails if the token, the message or the HTTP exchange failed.
+     */
     private Result<String> sendCredentialRequest(HolderCredentialRequest request, String endpoint) {
         var issuerDid = request.getIssuerDid();
         var holderPid = request.getId();
@@ -143,7 +177,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
             updateRequest(request);
             return getAuthToken(request.getParticipantContextId(), issuerDid)
                     .compose(token -> createCredentialsRequest(token, endpoint, holderPid, requestedCredentials))
-                    .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsString));
+                    .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsIssuerPid));
         });
     }
 
@@ -163,7 +197,7 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     private Processor processRequestsInState(HolderRequestState state, Function<HolderCredentialRequest, CompletableFuture<StatusResult<Void>>> function) {
-        var filter = new Criterion[]{hasState(state.code()), isNotPending()};
+        var filter = new Criterion[]{ hasState(state.code()), isNotPending() };
         return createProcessor(function, filter);
     }
 
@@ -224,11 +258,25 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     /**
-     * maps a {@link Response} to a result containing the response body
+     * Maps a {@link Response} to a result containing the Issuer-assigned issuance process ID. The Issuer conveys it in
+     * the {@code Location} header, which points at the request-status resource, i.e. its last path segment is the ID.
+     * Falls back to the response body for Issuers that return the ID there.
      */
-    private Result<String> mapResponseAsString(Response response) {
+    private Result<String> mapResponseAsIssuerPid(Response response) {
         try (var body = response.body()) {
+            if (response.code() == HTTP_CONFLICT) {
+                // The Issuer already tracks an issuance process for this holderPid, which happens when a request is re-sent
+                // after having been interrupted, e.g. by a restart. It was accepted earlier, so this is not a failure. The
+                // Issuer-assigned ID is not disclosed here, it gets recorded once the credentials are delivered.
+                monitor.debug("Issuer reports an already existing issuance process, treating the re-sent request as accepted");
+                return Result.success(UNKNOWN_ISSUER_PID);
+            }
             if (response.isSuccessful()) {
+                var location = response.header("Location");
+                if (location != null && !location.isBlank()) {
+                    var segments = location.split("/");
+                    return Result.success(segments[segments.length - 1]);
+                }
                 return Result.success(body.string());
             } else {
                 return failure("Error sending DCP Credential Request: code: '%s', message: '%s', body: '%s'"
