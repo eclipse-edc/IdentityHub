@@ -33,6 +33,7 @@ import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -88,13 +89,18 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
     }
 
     private ServiceResult<Holder> getParticipant(String participantContextId, String holderDid) {
-        var query = QuerySpec.Builder.newInstance().filter(Criterion.criterion("did", "=", holderDid)).build();
+        // a Holder belongs to the Issuer it was registered with, so only Holders of the addressed Issuer are eligible
+        var query = QuerySpec.Builder.newInstance().filter(List.of(
+                Criterion.criterion("did", "=", holderDid),
+                Criterion.criterion("participantContextId", "=", participantContextId))).build();
         var holdersResult = store.query(query);
         if (holdersResult.failed()) {
             return ServiceResult.from(holdersResult).mapFailure();
         }
 
-        var holders = holdersResult.getContent();
+        var holders = holdersResult.getContent().stream()
+                .filter(holder -> participantContextId.equals(holder.getParticipantContextId()))
+                .toList();
 
         if (holders.isEmpty() && allowAnonymous) {
             var newHolder = Holder.Builder.newInstance()

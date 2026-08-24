@@ -20,6 +20,7 @@ plugins {
 
 dependencies {
     api(project(":spi:identity-hub-spi"))
+    api(project(":spi:did-spi"))
     api(project(":protocols:dcp:dcp-spi"))
 
     api(libs.edc.spi.core)

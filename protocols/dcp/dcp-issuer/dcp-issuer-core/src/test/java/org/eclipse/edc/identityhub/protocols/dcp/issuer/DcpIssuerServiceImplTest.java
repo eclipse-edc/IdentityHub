@@ -36,7 +36,7 @@ import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -218,29 +218,35 @@ public class DcpIssuerServiceImplTest {
     }
 
     // B1.8: CredentialRequestMessage with an empty credentials list -> badRequest "No credentials requested", nothing persisted, rejected event fired
-    @Disabled("TODO: implement (catalog B1.8)")
+    @DisplayName("B1.8: an empty credentials list is rejected with 400 'No credentials requested', nothing is persisted, a rejected event is fired")
     @Test
     void initiateCredentialsIssuance_whenNoCredentialsRequested_returnsBadRequest() {
-        // arrange: message without any credential specifiers
+        // message without any credential specifiers
         var message = CredentialRequestMessage.Builder.newInstance()
                 .holderPid(UUID.randomUUID().toString())
                 .build();
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
         var participant = new DcpRequestContext(holder, Map.of());
 
-        // act
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
-        // assert
-        assertThat(result).isFailed().satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST));
-        // TODO: assert the failure detail is "No credentials requested"
+        assertThat(result).isFailed().satisfies(f -> {
+            assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+            assertThat(f.getFailureDetail()).isEqualTo("No credentials requested");
+        });
         verify(issuanceProcessStore, never()).save(any());
-        // TODO: capture the observable invocation (see initiateCredentialsIssuance_failure) and assert
-        //  listener.rejected(message.getHolderPid(), "participantContextId", "No credentials requested") is fired
+
+        var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
+        //noinspection unchecked
+        verify(issuanceObservable).invokeForEach(listenerCaptor.capture());
+        var listener = mock(IssuanceEventListener.class);
+        //noinspection unchecked
+        listenerCaptor.getValue().accept(listener);
+        verify(listener).rejected(message.getHolderPid(), "participantContextId", "No credentials requested");
     }
 
     // B1.10: requested format differs from the credential definition's format -> badRequest
-    @Disabled("TODO: implement (catalog B1.10)")
+    @DisplayName("B1.10: a requested format that differs from the credential definition's format is rejected with 400")
     @Test
     void initiateCredentialsIssuance_whenRequestedFormatDiffersFromDefinitionFormat_returnsBadRequest() {
         var message = CredentialRequestMessage.Builder.newInstance()
@@ -277,13 +283,15 @@ public class DcpIssuerServiceImplTest {
 
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
-        assertThat(result).isFailed().satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST));
-        // TODO: assert the failure detail mentions the unsupported format
+        assertThat(result).isFailed().satisfies(f -> {
+            assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+            assertThat(f.getFailureDetail()).contains("not supported for credential type MembershipCredential");
+        });
         verify(issuanceProcessStore, never()).save(any());
     }
 
     // B1.11: no DCP profile registered for the credential definition's format -> badRequest
-    @Disabled("TODO: implement (catalog B1.11)")
+    @DisplayName("B1.11: a credential definition format without a registered DCP profile is rejected with 400")
     @Test
     void initiateCredentialsIssuance_whenNoProfileRegisteredForFormat_returnsBadRequest() {
         var message = CredentialRequestMessage.Builder.newInstance()
@@ -311,14 +319,16 @@ public class DcpIssuerServiceImplTest {
 
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
-        assertThat(result).isFailed().satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST));
-        // TODO: assert the failure detail is "No DCP profiles found for credential format VC1_0_JWT"
+        assertThat(result).isFailed().satisfies(f -> {
+            assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+            assertThat(f.getFailureDetail()).isEqualTo("No DCP profiles found for credential format VC1_0_JWT");
+        });
         verify(issuanceProcessStore, never()).save(any());
     }
 
     // B1.12: credential definition with zero attestations -> badRequest "No attestations found"
     // NOTE: verify this constraint is intended - it implies that EVERY credential definition needs at least one attestation
-    @Disabled("TODO: implement (catalog B1.12)")
+    @DisplayName("B1.12: a credential definition without attestations is rejected with 400 'No attestations found'")
     @Test
     void initiateCredentialsIssuance_whenDefinitionHasNoAttestations_returnsBadRequest() {
         var message = CredentialRequestMessage.Builder.newInstance()
@@ -346,10 +356,20 @@ public class DcpIssuerServiceImplTest {
 
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
-        assertThat(result).isFailed().satisfies(f -> assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST));
-        // TODO: assert the failure detail is "No attestations found for requested credentials"
+        assertThat(result).isFailed().satisfies(f -> {
+            assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+            assertThat(f.getFailureDetail()).isEqualTo("No attestations found for requested credentials");
+        });
         verify(issuanceProcessStore, never()).save(any());
-        // TODO: assert the rejected event is fired
+
+        // the observable is invoked twice: 'received' first, then 'rejected'
+        var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
+        //noinspection unchecked
+        verify(issuanceObservable, times(2)).invokeForEach(listenerCaptor.capture());
+        var listener = mock(IssuanceEventListener.class);
+        //noinspection unchecked
+        listenerCaptor.getValue().accept(listener);
+        verify(listener).rejected(message.getHolderPid(), "participantContextId", "No attestations found for requested credentials");
     }
 
 }

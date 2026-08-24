@@ -290,7 +290,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
 
         private Holder createHolder(String id, String did, String name) {
             return Holder.Builder.newInstance()
-                    .participantContextId(UUID.randomUUID().toString())
+                    .participantContextId(ISSUER_ID)
                     .holderId(id)
                     .did(did)
                     .holderName(name)

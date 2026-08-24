@@ -15,9 +15,11 @@
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.json.Json;
 import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
+import okio.Buffer;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.decentralizedclaims.spi.CredentialServiceUrlResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
@@ -37,21 +39,32 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.STATUS_TERM;
+import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile.DCP_PROFILE_VC11;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUER;
+import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.SUBJECT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -70,6 +83,7 @@ class DcpCredentialStorageClientTest {
     private final HolderStore holderStore = mock();
     private final CredentialServiceUrlResolver credentialServiceUrlResolver = mock();
     private final ParticipantSecureTokenService secureTokenService = mock();
+    private final ObjectMapper objectMapper = mock();
     private final TypeManager typeManager = mock();
 
     private final DcpCredentialStorageClient client = new DcpCredentialStorageClient(httpClient, participantContextStore,
@@ -77,7 +91,9 @@ class DcpCredentialStorageClientTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        when(typeManager.getMapper("test")).thenReturn(new ObjectMapper());
+        // JsonObject.toString() renders the plain JSON text of the credential message
+        when(objectMapper.writeValueAsString(any())).thenAnswer(invocation -> invocation.getArgument(0).toString());
+        when(typeManager.getMapper("test")).thenReturn(objectMapper);
         when(participantContextStore.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(StoreResult.success(participantContext()));
         when(holderStore.findById(HOLDER_ID)).thenReturn(StoreResult.success(holder()));
         when(credentialServiceUrlResolver.resolve(HOLDER_DID)).thenReturn(Result.success(CREDENTIAL_SERVICE_URL));
@@ -86,8 +102,8 @@ class DcpCredentialStorageClientTest {
     }
 
     // B5.5: successful delivery POSTs a CredentialMessage to <credentialService>/credentials with issuerPid = process id,
-    // holderPid, status ISSUED, and an Authorization Bearer header carrying the SI token
-    @Disabled("TODO: implement (catalog B5.5)")
+    // holderPid, status ISSUED and an Authorization Bearer header carrying the SI token
+    @DisplayName("B5.5: successful delivery POSTs a CredentialMessage with issuerPid, holderPid, status ISSUED and a Bearer token")
     @Test
     void deliverCredentials_success() throws IOException {
         var process = issuanceProcess();
@@ -96,20 +112,37 @@ class DcpCredentialStorageClientTest {
 
         assertThat(result).isSucceeded();
 
-        var captor = ArgumentCaptor.forClass(Request.class);
-        verify(httpClient).execute(captor.capture());
-        var request = captor.getValue();
+        var requestCaptor = ArgumentCaptor.forClass(Request.class);
+        verify(httpClient).execute(requestCaptor.capture());
+        var request = requestCaptor.getValue();
         assertThat(request.method()).isEqualTo("POST");
         assertThat(request.url().toString()).isEqualTo(CREDENTIAL_SERVICE_URL + "/credentials");
         assertThat(request.header("Authorization")).isEqualTo("Bearer si-token");
-        // TODO: parse the request body and assert issuerPid == process.getId(), holderPid == process.getHolderPid(),
-        //  status == "ISSUED", and one credential entry with the DCP profile string as 'format' and the raw VC as 'payload'
-        // TODO: capture the claims passed to secureTokenService.createToken() and assert iss == sub == issuer DID,
-        //  aud == holder DID, exp ~ +5min
+
+        var buffer = new Buffer();
+        request.body().writeTo(buffer);
+        var message = Json.createReader(new StringReader(buffer.readUtf8())).readObject();
+        assertThat(message.getString(ISSUER_PID_TERM)).isEqualTo(process.getId());
+        assertThat(message.getString(HOLDER_PID_TERM)).isEqualTo(process.getHolderPid());
+        assertThat(message.getString(STATUS_TERM)).isEqualTo("ISSUED");
+        var credentials = message.getJsonArray(CREDENTIALS_TERM);
+        assertThat(credentials).hasSize(1);
+        var credentialJson = credentials.getJsonObject(0);
+        assertThat(credentialJson.getString("format")).isEqualTo(DCP_PROFILE_VC11);
+        assertThat(credentialJson.getString("payload")).isEqualTo("rawVc");
+
+        var claimsCaptor = ArgumentCaptor.forClass(Map.class);
+        //noinspection unchecked
+        verify(secureTokenService).createToken(eq(PARTICIPANT_CONTEXT_ID), claimsCaptor.capture(), isNull());
+        assertThat(claimsCaptor.getValue())
+                .containsEntry(ISSUER, ISSUER_DID)
+                .containsEntry(SUBJECT, ISSUER_DID)
+                .containsEntry(AUDIENCE, HOLDER_DID)
+                .containsKey(EXPIRATION_TIME);
     }
 
     // B5.5: participant context not found -> failure
-    @Disabled("TODO: implement (catalog B5.5)")
+    @DisplayName("B5.5: delivery fails when the participant context cannot be resolved")
     @Test
     void deliverCredentials_whenParticipantContextNotFound_returnsFailure() {
         when(participantContextStore.findById(PARTICIPANT_CONTEXT_ID)).thenReturn(StoreResult.notFound("not found"));
@@ -120,7 +153,7 @@ class DcpCredentialStorageClientTest {
     }
 
     // B5.5 / B9.2: holder not found (e.g. deleted between request acceptance and delivery) -> failure
-    @Disabled("TODO: implement (catalog B5.5)")
+    @DisplayName("B5.5: delivery fails when the holder does not exist (e.g. deleted after acceptance)")
     @Test
     void deliverCredentials_whenHolderNotFound_returnsFailure() {
         when(holderStore.findById(HOLDER_ID)).thenReturn(StoreResult.notFound("not found"));
@@ -131,7 +164,7 @@ class DcpCredentialStorageClientTest {
     }
 
     // B5.5: holder DID document has no CredentialService endpoint -> failure
-    @Disabled("TODO: implement (catalog B5.5)")
+    @DisplayName("B5.5: delivery fails when the holder's DID document has no CredentialService endpoint")
     @Test
     void deliverCredentials_whenNoCredentialServiceEndpoint_returnsFailure() {
         when(credentialServiceUrlResolver.resolve(HOLDER_DID)).thenReturn(Result.failure("no CredentialService entry"));
@@ -142,7 +175,7 @@ class DcpCredentialStorageClientTest {
     }
 
     // B5.5: STS token creation failure -> failure
-    @Disabled("TODO: implement (catalog B5.5)")
+    @DisplayName("B5.5: delivery fails when the STS cannot create the self-issued token")
     @Test
     void deliverCredentials_whenStsTokenCreationFails_returnsFailure() {
         when(secureTokenService.createToken(anyString(), anyMap(), isNull())).thenReturn(Result.failure("sts failure"));
@@ -153,7 +186,7 @@ class DcpCredentialStorageClientTest {
     }
 
     // B5.5: HTTP non-2xx response from the holder's Storage API -> failure
-    @Disabled("TODO: implement (catalog B5.5)")
+    @DisplayName("B5.5: delivery fails on a non-2xx response from the holder's Storage API")
     @Test
     void deliverCredentials_whenHttpNon2xx_returnsFailure() throws IOException {
         when(httpClient.execute(any(Request.class))).thenReturn(response(500));
@@ -164,7 +197,7 @@ class DcpCredentialStorageClientTest {
     }
 
     // B5.5: IOException while sending the CredentialMessage -> failure
-    @Disabled("TODO: implement (catalog B5.5)")
+    @DisplayName("B5.5: delivery fails on an IOException while sending the CredentialMessage")
     @Test
     void deliverCredentials_whenIoException_returnsFailure() throws IOException {
         when(httpClient.execute(any(Request.class))).thenThrow(new IOException("connection reset"));
@@ -176,17 +209,20 @@ class DcpCredentialStorageClientTest {
 
     // B5.4: when the holder's original request SI token contained a 'token' claim (access token), the delivery SI token
     // MUST carry that same access token in its own 'token' claim (DCP spec requirement)
-    @Disabled("documents intended behavior, not yet implemented (catalog B5.4)")
+    // NOTE: this documents intended behavior - the access token from the holder's original CredentialRequestMessage
+    //  SI token is currently not persisted on the IssuanceProcess, so it cannot be propagated to the delivery token yet
+    @DisplayName("B5.4: the delivery SI token carries the access token from the holder's original request in its 'token' claim")
     @Test
     void deliverCredentials_shouldEchoAccessTokenFromOriginalRequest() {
-        // TODO: the access token from the holder's original CredentialRequestMessage SI token is currently not persisted
-        //  on the IssuanceProcess, so it cannot be propagated here - production code must be extended first
-
         var result = client.deliverCredentials(issuanceProcess(), List.of(credential()));
 
         assertThat(result).isSucceeded();
-        // TODO: capture the claims passed to secureTokenService.createToken() and assert they contain a 'token' claim
-        //  equal to the access token from the holder's original request SI token
+
+        var claimsCaptor = ArgumentCaptor.forClass(Map.class);
+        //noinspection unchecked
+        verify(secureTokenService).createToken(eq(PARTICIPANT_CONTEXT_ID), claimsCaptor.capture(), isNull());
+        // per DCP spec, the SI token used for delivery must echo the holder's access token in the 'token' claim
+        assertThat(claimsCaptor.getValue()).containsKey("token");
     }
 
     private ParticipantContext participantContext() {

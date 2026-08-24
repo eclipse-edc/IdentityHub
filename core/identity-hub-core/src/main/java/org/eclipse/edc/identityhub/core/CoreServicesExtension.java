@@ -209,7 +209,8 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public CredentialWriter createCredentialWriter(ServiceExtensionContext context) {
         var objectMapper = typeManager.getMapper(JSON_LD);
-        return new CredentialWriterImpl(credentialStore, typeTransformerRegistry, transactionContext, objectMapper, holderCredentialRequestStore);
+        return new CredentialWriterImpl(credentialStore, typeTransformerRegistry, transactionContext, objectMapper, holderCredentialRequestStore, tokenValidationService, publicKeyResolver,
+                context.getMonitor());
     }
 
     @Provider

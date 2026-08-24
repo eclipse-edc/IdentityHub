@@ -44,7 +44,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.sql.testfixtures.PostgresqlEndToEndExtension;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -420,14 +420,14 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         // A1.7: credential request referencing a credentialObjectId unknown to the issuer -> API returns 201 (by design), the request then transitions to ERROR with the issuer's error in errorDetail, observable via GET credentials/request/{holderPid}
-        @Disabled("TODO: implement (catalog A1.7)")
+        @DisplayName("A1.7: A request for a credentialObjectId unknown to the issuer is accepted with 201, then transitions to ERROR carrying the issuer's error")
         @Test
         void createCredentialRequest_unknownCredentialObjectId_transitionsToError(IdentityHub identityHub, HolderCredentialRequestStore store) {
             var port = getFreePort();
             var mockedIssuer = new WireMockServer(port);
             mockedIssuer.start();
             try {
-                // arrange: the issuer rejects the request, because the credentialObjectId is unknown
+                // the issuer rejects the request, because the credentialObjectId is unknown
                 mockedIssuer.stubFor(post(urlPathEqualTo("/api/issuance/credentials"))
                         .willReturn(aResponse()
                                 .withBody("Invalid credentialObjectId")
@@ -442,14 +442,47 @@ public class VerifiableCredentialApiEndToEndTest {
                 var user = "user1";
                 var auth = authorizeUser(user, identityHub);
                 var holderPid = UUID.randomUUID().toString();
+                var request =
+                        """
+                                {
+                                  "issuerDid": "did:web:issuer",
+                                  "holderPid": "%s",
+                                  "credentials": [{ "format": "VC1_0_JWT", "id": "unknown-credential-object-id"}]
+                                }
+                                """.formatted(holderPid);
 
-                // act: the API accepts the request with 201 (201 only means "received", validation happens downstream)
-                // TODO: POST /v1beta/participants/{user}/credentials/request referencing a credentialObjectId
-                //       unknown to the issuer, expect 201 + Location header
+                // the API accepts the request with 201 - it only means the request was received, validation happens downstream
+                identityHub.getIdentityEndpoint().baseRequest()
+                        .contentType(JSON)
+                        .header(auth)
+                        .body(request)
+                        .post("/v1beta/participants/%s/credentials/request".formatted(user))
+                        .then()
+                        .log().ifValidationFails()
+                        .statusCode(201)
+                        .header("Location", endsWith("/v1beta/participants/%s/credentials/request/%s".formatted(user, holderPid)));
 
-                // assert: the request transitions to ERROR asynchronously, carrying the issuer's error
-                // TODO: await until GET /v1beta/participants/{user}/credentials/request/{holderPid} reports status ERROR
-                // TODO: assert the errorDetail contains the issuer's 400 error message
+                // the request transitions to ERROR asynchronously, carrying the issuer's error in errorDetail
+                await().pollInterval(Duration.ofSeconds(1))
+                        .atMost(Duration.ofSeconds(15))
+                        .untilAsserted(() -> {
+                            var result = store.findById(holderPid);
+                            assertThat(result).isNotNull();
+                            assertThat(result.getState()).isEqualTo(HolderRequestState.ERROR.code());
+                            assertThat(result.getErrorDetail())
+                                    .contains("400")
+                                    .contains("Invalid credentialObjectId");
+                        });
+
+                // the error state is observable via the request status endpoint
+                identityHub.getIdentityEndpoint().baseRequest()
+                        .contentType(JSON)
+                        .header(auth)
+                        .get("/v1beta/participants/%s/credentials/request/%s".formatted(user, holderPid))
+                        .then()
+                        .log().ifValidationFails()
+                        .statusCode(200)
+                        .body("status", equalTo("ERROR"));
             } finally {
                 mockedIssuer.stop();
             }
@@ -472,7 +505,7 @@ public class VerifiableCredentialApiEndToEndTest {
         }
 
         // A6.4: cross-tenant status read - participant A (authorized for A) requests a holderPid belonging to participant B via A's path -> 404 (currently the lookup is not scoped to the participant context and leaks B's request)
-        @Disabled("documents intended behavior, not yet implemented (catalog A6.4)")
+        @DisplayName("A6.4: A cross-tenant status read of another participant's holderPid returns 404")
         @Test
         void getRequest_crossTenant_shouldReturn404(IdentityHub identityHub, HolderCredentialRequestStore store, TransactionContext trx) {
             var participantA = "user1";
@@ -480,7 +513,7 @@ public class VerifiableCredentialApiEndToEndTest {
             var authA = authorizeUser(participantA, identityHub);
             identityHub.createParticipant(participantB);
 
-            // arrange: a holder request that belongs to participant B
+            // a holder request that belongs to participant B
             var holderPidOfB = UUID.randomUUID().toString();
             var holderRequest = HolderCredentialRequest.Builder.newInstance()
                     .id(holderPidOfB)
@@ -491,7 +524,7 @@ public class VerifiableCredentialApiEndToEndTest {
                     .build();
             trx.execute(() -> store.save(holderRequest));
 
-            // act + assert: participant A reads B's holderPid through A's path -> the lookup must be scoped
+            // participant A reads B's holderPid through A's path -> the lookup must be scoped
             // to participant context A and thus return 404, not leak B's request
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)

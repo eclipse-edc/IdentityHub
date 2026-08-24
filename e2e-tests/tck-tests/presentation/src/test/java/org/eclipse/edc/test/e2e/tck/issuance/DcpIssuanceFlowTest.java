@@ -70,7 +70,9 @@ public class DcpIssuanceFlowTest {
             .registerServiceMock(ScopeToCriterionTransformer.class, TCK_TRANSFORMER)
             .registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
 
-    private static final String ISSUER_DID = "did:web:issuer";
+    // the TCK derives its Issuer DID from the callback address, and it must stay resolvable there. Pinning it explicitly
+    // keeps the DID the TCK signs and delivers with identical to the one the seeded credential request was addressed to.
+    private static final String ISSUER_DID = "did:web:localhost%%3A%s:issuer".formatted(CALLBACK_PORT);
     public String holderDid;
     private ECKey holderKey;
 
@@ -86,7 +88,7 @@ public class DcpIssuanceFlowTest {
                 .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .requestId(ISSUANCE_CORRELATION_ID)
                 .state(HolderRequestState.REQUESTED.code())
-                .issuerPid(UUID.randomUUID().toString())
+                // no issuerPid yet: it is whatever the Issuer reports when it delivers the credentials
                 .requestedCredential("membershipCredential-id", "MembershipCredential", "VC1_0_JWT")
                 .requestedCredential("sensitiveDataCredential-id", "SensitiveDataCredential", "VC1_0_JWT")
                 .build());
@@ -115,6 +117,7 @@ public class DcpIssuanceFlowTest {
                         "dataspacetck.port", String.valueOf(baseCallbackUri.getPort()),
                         "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
                         "dataspacetck.did.holder", holderDid,
+                        "dataspacetck.did.issuer", ISSUER_DID,
                         "dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath),
                         "dataspacetck.sts.client.id", response.clientId(),
                         "dataspacetck.sts.client.secret", response.clientSecret(),

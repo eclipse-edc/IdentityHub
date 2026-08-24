@@ -25,5 +25,13 @@ import java.util.Collection;
  */
 @FunctionalInterface
 public interface CredentialWriter {
-    ServiceResult<Void> write(String holderPid, String issuerPid, Collection<CredentialWriteRequest> credentials, String participantContextId);
+    /**
+     * @param holderPid            identifies the Holder's credential request the credentials were issued for
+     * @param holderDid            the DID of the Holder the credentials must be bound to
+     * @param issuerPid            the issuance process ID as reported by the Issuer
+     * @param issuerDid            the DID of the Issuer that delivered the credentials, as authenticated from its Self-Issued ID token
+     * @param credentials          the credentials to store
+     * @param participantContextId the participant context the credentials belong to
+     */
+    ServiceResult<Void> write(String holderPid, String holderDid, String issuerPid, String issuerDid, Collection<CredentialWriteRequest> credentials, String participantContextId);
 }

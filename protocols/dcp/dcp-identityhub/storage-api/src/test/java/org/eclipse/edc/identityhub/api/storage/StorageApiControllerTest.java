@@ -26,6 +26,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParti
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.junit.annotations.ApiTest;
+import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
@@ -82,7 +83,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
         when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.success(claimToken()));
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
-        when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.success());
+        when(credentialWriter.write(anyString(), anyString(), anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.success());
     }
 
     @Test
@@ -181,7 +182,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     @Test
     void storeCredential_writerFails_shouldReturn400() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
-        when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.badRequest("foo"));
+        when(credentialWriter.write(anyString(), anyString(), anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.badRequest("foo"));
 
         baseRequest()
                 .header("Authorization", "Bearer " + generateJwt())
@@ -196,7 +197,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     @Test
     void storeCredential_writerReturnsNotAuthorized_shouldReturn403() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
-        when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.unauthorized("foo"));
+        when(credentialWriter.write(anyString(), anyString(), anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.unauthorized("foo"));
 
         baseRequest()
                 .header("Authorization", "Bearer " + generateJwt())
@@ -229,19 +230,18 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(200);
 
-        // assert: the writer (which stores credentials and transitions the request to ISSUED) must never be invoked for a REJECTED message
-        verify(credentialWriter, never()).write(anyString(), anyString(), anyCollection(), anyString());
+        // the writer (which stores credentials and transitions the request to ISSUED) must never be invoked for a REJECTED message
+        verify(credentialWriter, never()).write(anyString(), anyString(), anyString(), anyString(), anyCollection(), anyString());
     }
 
     // A4.7: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (this endpoint already returns 401; the Credential Offer API currently returns 403 and must be adjusted)
     @Test
     @DisplayName("A4.7: token verification failure returns 401, consistent with the Offer API")
     void storeCredential_tokenVerificationFails_statusCodeConsistentWithOfferApi() {
-        // arrange
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
         when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foo"));
 
-        // act + assert: 401 is the agreed code for token-verification failures on both DCP endpoints
+        // 401 is the agreed code for token-verification failures on both DCP endpoints
         baseRequest()
                 .header("Authorization", "Bearer " + generateJwt())
                 .body(credentialMessageJson())
@@ -264,7 +264,8 @@ class StorageApiControllerTest extends RestControllerTestBase {
     }
 
     private ClaimToken claimToken() {
-        return ClaimToken.Builder.newInstance().build();
+        // the 'iss' claim identifies the Issuer that delivers the credentials
+        return ClaimToken.Builder.newInstance().claim(JwtRegisteredClaimNames.ISSUER, "did:web:issuer").build();
     }
 
     private IdentityHubParticipantContext participantContext() {

@@ -14,9 +14,14 @@
 
 package org.eclipse.edc.identityhub.tests.dcp.flow;
 
+import com.nimbusds.jwt.SignedJWT;
 import io.restassured.http.Header;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
+import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
+import org.eclipse.edc.identityhub.spi.keypair.KeyPairService;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
+import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.model.VcStatus;
 import org.eclipse.edc.identityhub.tests.fixtures.DefaultRuntimes;
 import org.eclipse.edc.identityhub.tests.fixtures.credentialservice.IdentityHub;
@@ -50,6 +55,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -61,14 +67,17 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import java.text.ParseException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
@@ -80,6 +89,8 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
@@ -88,6 +99,8 @@ public class DcpIssuanceFlowEndToEndTest {
     protected static final AttestationSourceFactory ATTESTATION_SOURCE_FACTORY = mock();
     protected static final Duration TIMEOUT = Duration.ofSeconds(60);
     protected static final Duration INTERVAL = Duration.ofSeconds(1);
+    private static final String ISSUER = "issuer";
+    private static final String IDENTITY_HUB = "identityhub";
 
     abstract static class Tests {
 
@@ -291,11 +304,11 @@ public class DcpIssuanceFlowEndToEndTest {
                     .statusCode(409);
         }
 
-        // A2.6: after a successful issuance round trip, the holder's HolderCredentialRequest.issuerPid must equal the issuer's issuance process id as soon as the request reaches REQUESTED
+        // A2.6: after the request reaches REQUESTED, the holder's HolderCredentialRequest.issuerPid must equal the issuer's issuance process id
         @Test
-        @Disabled("documents intended behavior, not yet implemented (catalog A2.6)")
+        @DisplayName("A2.6: the holder request's issuerPid equals the issuer-side issuance process id once the request is REQUESTED")
         void issuanceFlow_issuerPidCorrelatedAfterRequested(IssuerService issuer, IdentityHub identityHub) {
-            // arrange: same issuer setup as the happy path (fulfilled attestation, one credential definition)
+            // same issuer setup as the happy path (fulfilled attestation, one credential definition)
             var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);
             var idMapping = new MappingDefinition("participant.id", "credentialSubject.id", true);
             var credentialDefinitionId = UUID.randomUUID().toString();
@@ -305,50 +318,59 @@ public class DcpIssuanceFlowEndToEndTest {
                     "operator", "eq",
                     "value", true), List.of(nameMapping, idMapping), VC1_0_JWT, credentialDefinitionId, credentialType);
 
+            // use a dedicated participant context whose DID document has NO CredentialService endpoint: the issuer accepts
+            // the request but can never deliver the CredentialMessage, so the holder request comes to rest in REQUESTED -
+            // the exact moment at which the issuerPid correlation must already exist (the issuer returns the process id in
+            // the 201 Location header)
+            var holderContextId = "user-a26";
+            var holderDid = identityHub.didFor(holderContextId);
+            var holderToken = identityHub.createParticipant(holderContextId, holderDid, holderDid + "#key", List.of()).apiKey();
+            issuer.createHolder(ISSUER_ID, holderContextId, holderDid, "A2.6 Holder");
+
             var attestationSource = mock(AttestationSource.class);
             when(ATTESTATION_SOURCE_FACTORY.createSource(refEq(attestationDefinition))).thenReturn(attestationSource);
             when(attestationSource.execute(any()))
                     .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true),
-                            "participant", Map.of("name", "Alice", "id", participantDid))));
+                            "participant", Map.of("name", "Alice", "id", holderDid))));
 
-            // act: initiate the credential request via the Identity API
+            // initiate the credential request via the Identity API
             var requestId = UUID.randomUUID().toString();
-            var request = """
-                    {
-                      "issuerDid": "%s",
-                      "holderPid": "%s",
-                      "credentials": [{ "format": "%s", "id": "%s", "type": "%s" }]
-                    }
-                    """.formatted(issuerDid, requestId, VC1_0_JWT.name(), credentialDefinitionId, credentialType);
+            sendCredentialRequest(identityHub, holderContextId, holderToken,
+                    credentialRequestBody(requestId, VC1_0_JWT, credentialDefinitionId, credentialType));
 
-            identityHub.getIdentityEndpoint().baseRequest()
-                    .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(request)
-                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
-                    .then()
-                    .log().ifValidationFails()
-                    .statusCode(201);
-
-            // assert: once the holder request reaches REQUESTED, its issuerPid must equal the issuer-side issuance process id.
-            // BUG being documented: the issuer returns the process id only in the 201 Location header, but the holder reads the
-            // response BODY as issuerPid, so issuerPid stays empty until the CredentialMessage arrives.
+            // the issuer accepted the request and created an issuance process
             await().pollInterval(INTERVAL)
                     .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, requestId))
-                            .anySatisfy(r -> assertThat(r.getState()).isGreaterThanOrEqualTo(HolderRequestState.REQUESTED.code())));
-
-            // TODO: pause/intercept delivery so this assertion provably runs BEFORE the CredentialMessage arrives (e.g. slow storage endpoint)
+                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID, requestId))
+                            .as("issuer must create an issuance process for holderPid '%s'", requestId)
+                            .hasSize(1));
             var issuerProcessId = issuer.getIssuanceProcessesForParticipant(ISSUER_ID, requestId).get(0).getId();
-            assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, requestId))
-                    .anySatisfy(r -> assertThat(r.getIssuerPid()).isEqualTo(issuerProcessId));
+
+            // the holder request reached REQUESTED (and remains there, because delivery is not possible)
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(holderContextId))
+                            .as("holder request must reach REQUESTED")
+                            .hasSize(1)
+                            .allSatisfy(r -> assertThat(r.getState()).isEqualTo(HolderRequestState.REQUESTED.code())));
+
+            // the issuer communicates the issuance process id in the 201 Location header, and the holder must store
+            // it as issuerPid. Known gap: the holder currently reads the (empty) response BODY, so issuerPid stays empty
+            // until the CredentialMessage arrives.
+            assertThat(identityHub.getCredentialRequestForParticipant(holderContextId))
+                    .allSatisfy(r -> assertThat(r.getIssuerPid())
+                            .as("HolderCredentialRequest.issuerPid must equal the issuer-side issuance process id as soon as the request is REQUESTED (DCP: the id is returned in the 201 Location header)")
+                            .isEqualTo(issuerProcessId));
         }
 
         // B1.16 / C8: one CredentialRequestMessage with TWO credentialObjectIds -> single issuance process, ONE CredentialMessage containing both credentials, both stored on the holder and individually correct
         @Test
-        @Disabled("TODO: implement (catalog B1.16 / C8)")
+        @DisplayName("B1.16 / C8: a batch request with two credentialObjectIds yields one issuance process and one CredentialMessage containing both credentials")
         void issuanceFlow_batchRequest_allCredentialsDeliveredInOneMessage(IssuerService issuer, IdentityHub identityHub) {
-            // arrange: TWO credential definitions on the issuer, both attestations fulfilled
+            // TWO credential definitions on the issuer, both attestations fulfilled
+            var subscriber = mock(EventSubscriber.class);
+            issuer.registerListener(IssuanceEvent.class, subscriber);
+
             var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);
             var idMapping = new MappingDefinition("participant.id", "credentialSubject.id", true);
             var ruleConfiguration = Map.<String, Object>of(
@@ -369,7 +391,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true),
                             "participant", Map.of("name", "Alice", "id", participantDid))));
 
-            // act: send ONE request referencing BOTH credentialObjectIds
+            // send ONE request referencing BOTH credentialObjectIds
             var requestId = UUID.randomUUID().toString();
             var request = """
                     {
@@ -393,23 +415,62 @@ public class DcpIssuanceFlowEndToEndTest {
                     .log().ifValidationFails()
                     .statusCode(201);
 
-            // assert:
-            // TODO: exactly ONE issuance process exists on the issuer for holderPid == requestId, ending in DELIVERED,
-            //       and it references BOTH credential definitions (process.getCredentialDefinitions())
-            // TODO: the issuer delivers a single CredentialMessage containing both credentials (e.g. verify via a single
-            //       CredentialDelivered event / a single Storage API call)
-            // TODO: holder request ends in ISSUED; identityHub.getCredentialsForParticipant(PARTICIPANT_ID) contains one
-            //       credential per type (credentialType1 as VC1_0_JWT, credentialType2 as VC2_0_JOSE), each individually
-            //       correct (issuer DID, holder DID, status list entry)
+            // exactly ONE issuance process exists for this holderPid, it references BOTH definitions and ends in DELIVERED
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID, requestId))
+                            .as("a batch request must result in exactly ONE issuance process referencing both credential definitions, ending in DELIVERED")
+                            .hasSize(1)
+                            .allSatisfy(p -> {
+                                assertThat(p.getCredentialDefinitions()).containsExactlyInAnyOrder(definitionId1, definitionId2);
+                                assertThat(p.getState()).isEqualTo(IssuanceProcessStates.DELIVERED.code());
+                            }));
+
+            // ONE CredentialMessage was delivered, containing BOTH credentials
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> verify(subscriber, times(1))
+                            .on(argThat(env -> env.getPayload() instanceof CredentialDelivered delivered &&
+                                    delivered.getCredentials().size() == 2 &&
+                                    delivered.getCredentials().stream().anyMatch(c -> c.getType().contains(credentialType1)) &&
+                                    delivered.getCredentials().stream().anyMatch(c -> c.getType().contains(credentialType2)))));
+
+            // the holder request ends in ISSUED
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID))
+                            .as("the holder request of the batch issuance must end in ISSUED")
+                            .anySatisfy(r -> {
+                                assertThat(r.getHolderPid()).isEqualTo(requestId);
+                                assertThat(r.getState()).isEqualTo(HolderRequestState.ISSUED.code());
+                            }));
+
+            // both credentials are stored on the holder and are individually correct
+            assertThat(identityHub.getCredentialsForParticipant(PARTICIPANT_ID))
+                    .as("both credentials of the batch must be stored on the holder, one per type/format")
+                    .anySatisfy(vc -> {
+                        assertThat(vc.getVerifiableCredential().credential().getType()).contains(credentialType1);
+                        assertThat(vc.getVerifiableCredential().format()).isEqualTo(VC1_0_JWT);
+                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
+                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                    })
+                    .anySatisfy(vc -> {
+                        assertThat(vc.getVerifiableCredential().credential().getType()).contains(credentialType2);
+                        assertThat(vc.getVerifiableCredential().format()).isEqualTo(VC2_0_JOSE);
+                        assertThat(vc.getStateAsEnum()).isEqualTo(VcStatus.ISSUED);
+                        assertThat(vc.getIssuerId()).isEqualTo(issuerDid);
+                        assertThat(vc.getHolderId()).isEqualTo(participantDid);
+                    });
         }
 
         // C9 / A2.8 / A6.5: issuance fails AFTER acceptance -> issuer process ERRORED (status API reports REJECTED); the holder must eventually observe the failure and leave REQUESTED
         @Test
-        @Disabled("documents intended behavior, not yet implemented (catalog C9 / A2.8 / A6.5)")
+        @DisplayName("C9 / A2.8 / A6.5: a post-acceptance issuance failure is reported as REJECTED by the issuer and eventually observed by the holder")
         void issuanceFlow_failureAfterAcceptance_holderObservesError(IssuerService issuer, IdentityHub identityHub) {
-            // arrange: credential generation is doomed to fail AFTER acceptance: the rule input is present (request gets
+            // credential generation is doomed to fail AFTER acceptance: the rule input is present (request gets
             // accepted with 201), but the REQUIRED mapping input "participant.name" is missing from the attestation result,
-            // so credential generation fails on the issuer side (alternative arrange: deactivate the signing key)
+            // so credential generation fails on the issuer side
             var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);
             var credentialDefinitionId = UUID.randomUUID().toString();
             var credentialType = "MembershipCredential_C9_" + UUID.randomUUID();
@@ -424,47 +485,56 @@ public class DcpIssuanceFlowEndToEndTest {
             when(attestationSource.execute(any()))
                     .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true))));
 
-            // act: initiate the request; the issuer accepts it before generation fails
+            // initiate the request; the issuer accepts it before generation fails
             var requestId = UUID.randomUUID().toString();
-            var request = """
-                    {
-                      "issuerDid": "%s",
-                      "holderPid": "%s",
-                      "credentials": [{ "format": "%s", "id": "%s", "type": "%s" }]
-                    }
-                    """.formatted(issuerDid, requestId, VC1_0_JWT.name(), credentialDefinitionId, credentialType);
+            sendCredentialRequest(identityHub, PARTICIPANT_ID, participantToken,
+                    credentialRequestBody(requestId, VC1_0_JWT, credentialDefinitionId, credentialType));
 
-            identityHub.getIdentityEndpoint().baseRequest()
+            // (issuer side): the process ends in ERRORED after exhausting retries. With the default state machine
+            // configuration (7 retries, exponential backoff starting at 1s) this can take a bit over 2 minutes.
+            await().pollInterval(INTERVAL)
+                    .atMost(Duration.ofMinutes(4))
+                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID, requestId))
+                            .as("issuer process must end in ERRORED after credential generation failed and retries are exhausted")
+                            .hasSize(1)
+                            .allSatisfy(p -> assertThat(p.getState()).isEqualTo(IssuanceProcessStates.ERRORED.code())));
+            var issuerProcessId = issuer.getIssuanceProcessesForParticipant(ISSUER_ID, requestId).get(0).getId();
+
+            // (issuer status API): ERRORED must be reported to the holder as REJECTED
+            var siToken = identityHub.getService(ParticipantSecureTokenService.class)
+                    .createToken(PARTICIPANT_ID, Map.of("iss", participantDid, "sub", participantDid, "aud", issuerDid), null)
+                    .orElseThrow(f -> new AssertionError("Could not create SI token: " + f.getFailureDetail()))
+                    .getToken();
+
+            issuer.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
-                    .header(new Header("x-api-key", participantToken))
-                    .body(request)
-                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .header(AUTHORIZATION, "Bearer " + siToken)
+                    .get("/v1beta/participants/%s/requests/%s".formatted(ISSUER_ID, issuerProcessId))
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(201);
+                    .statusCode(200)
+                    .body("status", Matchers.equalTo("REJECTED"));
 
-            // assert (issuer side): the process ends in ERRORED after exhausting retries
+            // (holder side): the holder must eventually observe the failure - the request must leave REQUESTED and
+            // end in ERROR. Intended behavior per A6.5: the holder polls the issuer's Credential Request Status API. Known
+            // gap: polling is not implemented (no processor for REQUESTED), so the request stays in REQUESTED forever (A2.8).
             await().pollInterval(INTERVAL)
-                    .atMost(TIMEOUT)
-                    .untilAsserted(() -> assertThat(issuer.getIssuanceProcessesForParticipant(ISSUER_ID, requestId))
-                            .anySatisfy(p -> assertThat(p.getState()).isEqualTo(IssuanceProcessStates.ERRORED.code())));
-
-            // TODO: assert the issuer's Credential Request Status API maps ERRORED -> REJECTED:
-            //       GET /v1beta/participants/{ISSUER_ID}/requests/{issuerPid} with a holder SI token -> status "REJECTED"
-
-            // assert (holder side): the request must leave REQUESTED and end in an error state.
-            // INTENDED behavior: the holder learns of post-acceptance rejection by polling the issuer's status API (A6.5).
-            // Today holder-side status polling is not implemented (no processor for REQUESTED), so the request stays in
-            // REQUESTED forever (A2.8).
-            // TODO: await identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID, requestId) to reach
-            //       HolderRequestState.ERROR (or a dedicated rejected state) with the issuer's error detail
+                    .atMost(Duration.ofSeconds(20))
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID))
+                            .as("the holder must observe the post-acceptance issuance failure: its request must leave REQUESTED and end in ERROR")
+                            .anySatisfy(r -> {
+                                assertThat(r.getHolderPid()).isEqualTo(requestId);
+                                assertThat(r.getState())
+                                        .as("holder request state (expected ERROR=%s, because the issuer rejected the issuance)", HolderRequestState.ERROR.code())
+                                        .isEqualTo(HolderRequestState.ERROR.code());
+                            }));
         }
 
         // C12: issuer rotates its signing key between two issuances -> credential 1 remains verifiable (old verificationMethod retained in DID document), credential 2 is signed with the new key
         @Test
-        @Disabled("TODO: implement (catalog C12)")
+        @DisplayName("C12: after signing key rotation, previously issued credentials remain verifiable and new credentials are signed with the new key")
         void issuanceFlow_keyRotation_previouslyIssuedCredentialsRemainVerifiable(IssuerService issuer, IdentityHub identityHub) {
-            // arrange: issuer with one credential definition and a fulfilled attestation
+            // issuer with one credential definition and a fulfilled attestation
             var nameMapping = new MappingDefinition("participant.name", "credentialSubject.name", true);
             var idMapping = new MappingDefinition("participant.id", "credentialSubject.id", true);
             var credentialDefinitionId = UUID.randomUUID().toString();
@@ -480,20 +550,117 @@ public class DcpIssuanceFlowEndToEndTest {
                     .thenReturn(Result.success(Map.of("onboarding", Map.of("signedDocuments", true),
                             "participant", Map.of("name", "Alice", "id", participantDid))));
 
-            // act 1: full issuance round trip for credential 1
-            // TODO: POST credential request 1, await holder request ISSUED, capture credential 1 (raw VC JWT + its kid header)
+            // 1: full issuance round trip for credential 1
+            var requestId1 = UUID.randomUUID().toString();
+            sendCredentialRequest(identityHub, PARTICIPANT_ID, participantToken,
+                    credentialRequestBody(requestId1, VC1_0_JWT, credentialDefinitionId, credentialType));
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID))
+                            .as("first issuance (before key rotation) must complete")
+                            .anySatisfy(r -> {
+                                assertThat(r.getHolderPid()).isEqualTo(requestId1);
+                                assertThat(r.getState()).isEqualTo(HolderRequestState.ISSUED.code());
+                            }));
 
-            // act 2: rotate the issuer's CREDENTIAL_SIGNING key pair
-            // TODO: rotate via the issuer runtime's KeyPairService (issuer.getService(...)): create a new active signing key
-            //       and rotate the old one WITHOUT revoking it - the old verificationMethod must remain in the DID document
+            var credential1 = identityHub.getCredentialsForParticipant(PARTICIPANT_ID).stream()
+                    .filter(vc -> vc.getVerifiableCredential().credential().getType().contains(credentialType))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("credential 1 was not stored on the holder"));
+            var oldKid = kidOf(credential1.getVerifiableCredential().rawVc());
 
-            // act 3: full issuance round trip for credential 2
-            // TODO: POST credential request 2, await holder request ISSUED, capture credential 2
+            // 2: rotate the issuer's CREDENTIAL_SIGNING key pair: the new key becomes active, the old private key is
+            // removed from the vault, but the old verificationMethod must remain in the DID document
+            var keyPairService = issuer.getService(KeyPairService.class);
+            var oldKeyPair = keyPairService.getActiveKeyPairForUsage(ISSUER_ID, KeyPairUsage.CREDENTIAL_SIGNING)
+                    .orElseThrow(f -> new AssertionError("No active signing key pair found: " + f.getFailureDetail()));
+            assertThat(oldKid)
+                    .as("credential 1 must be signed with the initial signing key")
+                    .isEqualTo(oldKeyPair.getKeyId());
 
-            // assert:
-            // TODO: credential 2's JWT kid references the NEW key and its signature verifies against the new verificationMethod
-            // TODO: credential 1 remains verifiable: its kid still resolves against the issuer's DID document
-            //       (old verificationMethod retained after rotation)
+            var newKeyId = issuerDid + "#key-2";
+            var newKeySpec = KeyDescriptor.Builder.newInstance()
+                    .keyId(newKeyId)
+                    .privateKeyAlias(ISSUER_ID + "-alias-2")
+                    .resourceId(UUID.randomUUID().toString())
+                    .keyGeneratorParams(Map.of("algorithm", "EC"))
+                    .usage(Set.of(KeyPairUsage.values()))
+                    .active(true)
+                    .build();
+            keyPairService.rotateKeyPair(oldKeyPair.getId(), newKeySpec, Duration.ofDays(1).toMillis())
+                    .orElseThrow(f -> new AssertionError("Key rotation failed: " + f.getFailureDetail()));
+
+            // the DID document must now contain the NEW verification method and RETAIN the old one, otherwise
+            // previously issued credentials would no longer be verifiable
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(issuer.getDidForParticipant(ISSUER_ID))
+                            .as("issuer DID document must contain the new verification method and retain the old one after rotation")
+                            .hasSize(1)
+                            .allSatisfy(doc -> {
+                                assertThat(doc.getVerificationMethod()).anySatisfy(vm -> assertThat(vm.getId()).isEqualTo(newKeyId));
+                                assertThat(doc.getVerificationMethod()).anySatisfy(vm -> assertThat(vm.getId()).isEqualTo(oldKid));
+                            }));
+
+            // full issuance round trip for credential 2
+            var requestId2 = UUID.randomUUID().toString();
+            sendCredentialRequest(identityHub, PARTICIPANT_ID, participantToken,
+                    credentialRequestBody(requestId2, VC1_0_JWT, credentialDefinitionId, credentialType));
+            await().pollInterval(INTERVAL)
+                    .atMost(TIMEOUT)
+                    .untilAsserted(() -> assertThat(identityHub.getCredentialRequestForParticipant(PARTICIPANT_ID))
+                            .as("second issuance (after key rotation) must complete")
+                            .anySatisfy(r -> {
+                                assertThat(r.getHolderPid()).isEqualTo(requestId2);
+                                assertThat(r.getState()).isEqualTo(HolderRequestState.ISSUED.code());
+                            }));
+
+            // credential 1 is still signed with the old key (unchanged), credential 2 is signed with the NEW key
+            var kids = identityHub.getCredentialsForParticipant(PARTICIPANT_ID).stream()
+                    .filter(vc -> vc.getVerifiableCredential().credential().getType().contains(credentialType))
+                    .map(vc -> kidOf(vc.getVerifiableCredential().rawVc()))
+                    .toList();
+            assertThat(kids)
+                    .as("credential 1 must remain signed with the old key '%s', credential 2 must be signed with the new key '%s'", oldKid, newKeyId)
+                    .containsExactlyInAnyOrder(oldKid, newKeyId);
+
+            // both kids still resolve against the issuer's DID document
+            assertThat(issuer.getDidForParticipant(ISSUER_ID))
+                    .as("both verification methods must be resolvable from the issuer's DID document")
+                    .hasSize(1)
+                    .allSatisfy(doc -> {
+                        assertThat(doc.getVerificationMethod()).anySatisfy(vm -> assertThat(vm.getId()).isEqualTo(oldKid));
+                        assertThat(doc.getVerificationMethod()).anySatisfy(vm -> assertThat(vm.getId()).isEqualTo(newKeyId));
+                    });
+        }
+
+        private void sendCredentialRequest(IdentityHub identityHub, String participantContextId, String apiToken, String requestBody) {
+            identityHub.getIdentityEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(new Header("x-api-key", apiToken))
+                    .body(requestBody)
+                    .post("/v1beta/participants/%s/credentials/request".formatted(participantContextId))
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(201);
+        }
+
+        private String credentialRequestBody(String requestId, CredentialFormat format, String credentialDefinitionId, String credentialType) {
+            return """
+                    {
+                      "issuerDid": "%s",
+                      "holderPid": "%s",
+                      "credentials": [{ "format": "%s", "id": "%s", "type": "%s" }]
+                    }
+                    """.formatted(issuerDid, requestId, format.name(), credentialDefinitionId, credentialType);
+        }
+
+        private String kidOf(String rawJwt) {
+            try {
+                return SignedJWT.parse(rawJwt).getHeader().getKeyID();
+            } catch (ParseException e) {
+                throw new AssertionError("Cannot parse raw VC as signed JWT to extract the kid header", e);
+            }
         }
 
         /**
@@ -504,7 +671,7 @@ public class DcpIssuanceFlowEndToEndTest {
             var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
             var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
 
-            holderService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId(PARTICIPANT_ID).build());
+            holderService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId(ISSUER_ID).build());
 
 
             var attestationDefinition = AttestationDefinition.Builder.newInstance()
@@ -580,8 +747,6 @@ public class DcpIssuanceFlowEndToEndTest {
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String ISSUER = "issuer";
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -592,15 +757,12 @@ public class DcpIssuanceFlowEndToEndTest {
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .build();
-
-        private static final String IDENTITY_HUB = "identityhub";
         @Order(1) // must be the first extension to be evaluated since it starts the DB server
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
             POSTGRESQL_EXTENSION.createDatabase(IDENTITY_HUB);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()

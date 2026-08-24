@@ -50,6 +50,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.PRESENTATION_SIGNING;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.KeyPairUsage.TOKEN_SIGNING;
@@ -92,7 +93,10 @@ public class DcpPresentationFlowWithDockerTest {
             .build()
             .registerServiceMock(ScopeToCriterionTransformer.class, TCK_TRANSFORMER)
             .registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
-    private static final String ISSUER_DID = "did:web:issuer";
+    // the TCK seeds the credentials through the Storage API, which only accepts them from the Issuer the seeded
+    // request was addressed to. The container binds the callback port 1:1, so the Holder reaches the TCK's DID
+    // document at localhost; pinning the DID keeps both sides on the same value.
+    private static final String ISSUER_DID = "did:web:localhost%%3A%s:issuer".formatted(CALLBACK_PORT);
     public String holderDid;
     private ECKey holderKey;
 
@@ -108,7 +112,7 @@ public class DcpPresentationFlowWithDockerTest {
                 .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .requestId(ISSUANCE_CORRELATION_ID)
                 .state(HolderRequestState.REQUESTED.code())
-                .issuerPid(UUID.randomUUID().toString())
+                // no issuerPid yet: it is whatever the Issuer reports when it delivers the credentials
                 .requestedCredential("membershipCredential-id", "MembershipCredential", "VC1_0_JWT")
                 .requestedCredential("sensitiveDataCredential-id", "SensitiveDataCredential", "VC1_0_JWT")
                 .build());
@@ -134,17 +138,18 @@ public class DcpPresentationFlowWithDockerTest {
         try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:sha-f841a76")
                 .withExtraHost("host.docker.internal", "host-gateway")
                 .withExposedPorts(CALLBACK_PORT)
-                .withEnv(Map.of(
-                        "dataspacetck.callback.address", baseCallbackAddress,
-                        "dataspacetck.host", baseCallbackUri.getHost(),
-                        "dataspacetck.port", String.valueOf(baseCallbackUri.getPort()),
-                        "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
-                        "dataspacetck.did.holder", holderDid,
-                        "dataspacetck.sts.url", "http://host.docker.internal:%s%s".formatted(stsPort, stsPath),
-                        "dataspacetck.sts.client.id", response.clientId(),
-                        "dataspacetck.sts.client.secret", response.clientSecret(),
-                        "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID,
-                        "dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.presentation.cs"
+                .withEnv(Map.ofEntries(
+                        entry("dataspacetck.callback.address", baseCallbackAddress),
+                        entry("dataspacetck.host", baseCallbackUri.getHost()),
+                        entry("dataspacetck.port", String.valueOf(baseCallbackUri.getPort())),
+                        entry("dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher"),
+                        entry("dataspacetck.did.holder", holderDid),
+                        entry("dataspacetck.did.issuer", ISSUER_DID),
+                        entry("dataspacetck.sts.url", "http://host.docker.internal:%s%s".formatted(stsPort, stsPath)),
+                        entry("dataspacetck.sts.client.id", response.clientId()),
+                        entry("dataspacetck.sts.client.secret", response.clientSecret()),
+                        entry("dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID),
+                        entry("dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.presentation.cs")
                 ))
         ) {
             tckContainer.setPortBindings(List.of("%s:%s".formatted(CALLBACK_PORT, CALLBACK_PORT)));

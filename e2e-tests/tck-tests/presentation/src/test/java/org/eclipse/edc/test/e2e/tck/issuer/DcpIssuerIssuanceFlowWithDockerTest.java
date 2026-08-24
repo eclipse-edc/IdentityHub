@@ -207,7 +207,7 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
         var holderStore = issuer.getService(HolderStore.class);
         holderStore.create(Holder.Builder.newInstance()
                 .holderId(holderDid)
-                .participantContextId(holderDid)
+                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(holderDid)
                 .holderName("TCK Holder")
                 .build());
