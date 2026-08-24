@@ -50,7 +50,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -420,27 +420,31 @@ public class DcpCredentialRequestApiEndToEndTest {
 
         }
 
-        // B2.9: with edc.iam.accesstoken.jti.validation=true on the issuer runtime, sending two requests with the SAME jti in the SI token -> second request 401
-        // NOTE: this needs a config variant of the issuer runtime - the shared runtimes used by this class do not enable jti validation,
-        // so a dedicated runtime (or nested class) configured with edc.iam.accesstoken.jti.validation=true is required.
+        // B2.9: with edc.iam.accesstoken.jti.validation=true on the issuer runtime, sending two requests with the SAME jti in the SI token -> second request 401.
+        // NOTE: the issuer runtime used here already enables jti validation (DefaultRuntimes.Issuer.config() sets
+        // edc.iam.accesstoken.jti.validation=true), so no dedicated config-variant runtime is required.
         @Test
-        @Disabled("TODO: implement (catalog B2.9)")
+        @DisplayName("B2.9: replaying an SI token with the same jti is rejected with 401 on the second request")
         void requestCredential_jtiReplay_shouldReturn401(IssuerService issuer, HolderService holderService) throws JOSEException {
-            // arrange: registered holder, resolvable key
+            // registered holder, resolvable key
             holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
 
-            // create ONE SI token and send it twice - same token means same jti claim
+            // create ONE SI token and send it twice - the identical token carries the identical jti claim
             var token = generateSiToken();
 
-            // TODO: run this against an issuer runtime configured with edc.iam.accesstoken.jti.validation=true
+            // the first request passes token validation and records the jti. It then fails with 400 because no
+            // credential definition exists - crucially NOT with 401, which proves the token itself was accepted.
+            issuer.getIssuerApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
+                    .post(issuanceUrl())
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
 
-            // act 1: first request with the token - must NOT be rejected for the token (any non-401 outcome is acceptable,
-            // e.g. 400 because no credential definition exists)
-            // TODO: POST issuanceUrl() with AUTHORIZATION=token, assert statusCode is not 401
-
-            // act 2 + assert: second request replaying the SAME token (same jti) -> 401
-            // TODO: POST issuanceUrl() with the identical token again and assert:
+            // + assert: the second request replaying the SAME token (same jti) must be rejected with 401
             issuer.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, token)
