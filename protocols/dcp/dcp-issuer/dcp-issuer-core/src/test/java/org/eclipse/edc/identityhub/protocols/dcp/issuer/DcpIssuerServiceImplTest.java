@@ -34,6 +34,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionE
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.junit.jupiter.api.DisplayName;
@@ -69,9 +70,10 @@ public class DcpIssuerServiceImplTest {
     private final CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator = mock();
     private final DcpProfileRegistry dcpProfileRegistry = mock();
     private final IssuanceObservable issuanceObservable = mock();
+    private final Vault vault = mock();
 
     private final DcpIssuerService dcpIssuerService = new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService,
-            issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, dcpProfileRegistry, mock(), issuanceObservable);
+            issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, dcpProfileRegistry, mock(), issuanceObservable, vault);
 
 
     @Test
@@ -97,7 +99,7 @@ public class DcpIssuerServiceImplTest {
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
-        var participant = new DcpRequestContext(holder, Map.of());
+        var participant = new DcpRequestContext(holder, Map.of(), "holder-access-token");
 
         Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
 
@@ -125,6 +127,8 @@ public class DcpIssuerServiceImplTest {
         assertThat(issuanceProcess.getClaims()).containsAllEntriesOf(claims);
         assertThat(issuanceProcess.getParticipantContextId()).isEqualTo("participantContextId");
         assertThat(issuanceProcess.getHolderPid()).isEqualTo(message.getHolderPid());
+        // it is needed later, when the credentials are delivered to the Holder
+        verify(vault).storeSecret(issuanceProcess.getId(), "holder-access-token");
 
         var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
         //noinspection unchecked
@@ -156,7 +160,7 @@ public class DcpIssuerServiceImplTest {
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
-        var participant = new DcpRequestContext(holder, Map.of());
+        var participant = new DcpRequestContext(holder, Map.of(), null);
 
         var existingProcess = IssuanceProcess.Builder.newInstance().holderPid(holderPid).holderId("holderId").participantContextId("participantContextId").state(IssuanceProcessStates.APPROVED.code()).build();
 
@@ -196,7 +200,7 @@ public class DcpIssuerServiceImplTest {
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
-        var participant = new DcpRequestContext(holder, Map.of());
+        var participant = new DcpRequestContext(holder, Map.of(), null);
 
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.notFound("test-failure"));
         when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
@@ -226,7 +230,7 @@ public class DcpIssuerServiceImplTest {
                 .holderPid(UUID.randomUUID().toString())
                 .build();
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
-        var participant = new DcpRequestContext(holder, Map.of());
+        var participant = new DcpRequestContext(holder, Map.of(), null);
 
         var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
 
@@ -276,7 +280,7 @@ public class DcpIssuerServiceImplTest {
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
-        var participant = new DcpRequestContext(holder, Map.of());
+        var participant = new DcpRequestContext(holder, Map.of(), null);
 
         when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(jwtDefinition));
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(joseDefinition)));
@@ -310,7 +314,7 @@ public class DcpIssuerServiceImplTest {
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
-        var participant = new DcpRequestContext(holder, Map.of());
+        var participant = new DcpRequestContext(holder, Map.of(), null);
 
         when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
@@ -348,7 +352,7 @@ public class DcpIssuerServiceImplTest {
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
-        var participant = new DcpRequestContext(holder, Map.of());
+        var participant = new DcpRequestContext(holder, Map.of(), null);
 
         when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));

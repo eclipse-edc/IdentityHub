@@ -32,6 +32,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionE
 import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 
@@ -50,13 +51,14 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
     private final DcpProfileRegistry profileRegistry;
     private final Telemetry telemetry;
     private final IssuanceObservable observable;
+    private final Vault vault;
 
     public DcpIssuerServiceImpl(TransactionContext transactionContext,
                                 CredentialDefinitionService credentialDefinitionService,
                                 IssuanceProcessStore issuanceProcessStore,
                                 AttestationPipeline attestationPipeline,
                                 CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator,
-                                DcpProfileRegistry profileRegistry, Telemetry telemetry, IssuanceObservable observable) {
+                                DcpProfileRegistry profileRegistry, Telemetry telemetry, IssuanceObservable observable, Vault vault) {
         this.transactionContext = transactionContext;
         this.credentialDefinitionService = credentialDefinitionService;
         this.issuanceProcessStore = issuanceProcessStore;
@@ -65,6 +67,7 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
         this.profileRegistry = profileRegistry;
         this.telemetry = telemetry;
         this.observable = observable;
+        this.vault = vault;
     }
 
     @WithSpan(value = "issuance.initiate")
@@ -185,6 +188,13 @@ public class DcpIssuerServiceImpl implements DcpIssuerService {
                 .build();
 
         issuanceProcessStore.save(issuanceProcess);
+
+        // the access token is a bearer credential, so it is kept in the vault rather than alongside the process.
+        // It is presented back to the Holder's Credential Service when the credentials are delivered.
+        if (context.accessToken() != null && !context.accessToken().isBlank()) {
+            vault.storeSecret(issuanceProcess.getId(), context.accessToken());
+        }
+
         return ServiceResult.success(issuanceProcess);
 
     }

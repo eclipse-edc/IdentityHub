@@ -39,6 +39,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.retry.ExponentialWaitStrategy;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.statemachine.retry.EntityRetryProcessConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -82,6 +83,7 @@ public class IssuanceProcessManagerImplTest {
     private final CredentialStore credentialStore = mock();
     private final CredentialStorageClient credentialStorageClient = mock();
     private final CredentialStatusService credentialStatusService = mock();
+    private final Vault vault = mock();
     private final IssuanceObservable issuanceObservable = new IssuanceObservableImpl();
     private final IssuanceEventListener listener = mock();
     private IssuanceProcessManager issuanceProcessManager;
@@ -90,6 +92,8 @@ public class IssuanceProcessManagerImplTest {
     void setup() {
         issuanceObservable.registerListener(listener);
         var entityRetryProcessConfiguration = new EntityRetryProcessConfiguration(1, () -> new ExponentialWaitStrategy(0L));
+        when(vault.deleteSecret(any())).thenReturn(Result.success());
+
         issuanceProcessManager = IssuanceProcessManagerImpl.Builder.newInstance()
                 .entityRetryProcessConfiguration(entityRetryProcessConfiguration)
                 .store(issuanceProcessStore)
@@ -100,6 +104,7 @@ public class IssuanceProcessManagerImplTest {
                 .credentialStorageClient(credentialStorageClient)
                 .credentialStatusService(credentialStatusService)
                 .observable(issuanceObservable)
+                .vault(vault)
                 .monitor(monitor)
                 .clock(clock)
                 .build();
@@ -167,6 +172,9 @@ public class IssuanceProcessManagerImplTest {
             verify(listener).approved(process);
             verify(listener).generated(eq(process), any());
             verify(listener).delivered(eq(process), any());
+
+            // the Holder's access token has served its purpose and must not linger in the vault
+            verify(vault).deleteSecret(process.getId());
         });
     }
 
@@ -250,6 +258,9 @@ public class IssuanceProcessManagerImplTest {
             verify(credentialStorageClient, never()).deliverCredentials(any(), any());
             assertThat(process.getErrorDetail()).contains("status list failure");
             verify(listener).errored(eq(process), any());
+
+            // the process is terminal, so the Holder's access token must not linger in the vault
+            verify(vault).deleteSecret(process.getId());
         });
     }
 
@@ -398,6 +409,7 @@ public class IssuanceProcessManagerImplTest {
                 .credentialStorageClient(credentialStorageClient)
                 .credentialStatusService(credentialStatusService)
                 .observable(issuanceObservable)
+                .vault(vault)
                 .monitor(monitor)
                 .clock(clock)
                 .build();

@@ -65,7 +65,7 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
     @EmptySource
     void issuerMetadata_noAuthToken_success(String emptyAuthHeader) {
         var participant = createHolder("id", "did", "name");
-        var ctx = new DcpRequestContext(participant, Map.of());
+        var ctx = new DcpRequestContext(participant, Map.of(), null);
         var object = Json.createObjectBuilder().build();
 
         var metadata = IssuerMetadata.Builder.newInstance().build();
@@ -93,7 +93,7 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
     void issuerMetadata() {
 
         var participant = createHolder("id", "did", "name");
-        var ctx = new DcpRequestContext(participant, Map.of());
+        var ctx = new DcpRequestContext(participant, Map.of(), null);
         var object = Json.createObjectBuilder().build();
 
         var metadata = IssuerMetadata.Builder.newInstance().build();

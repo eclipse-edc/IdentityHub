@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.eclipse.edc.identityhub.protocols.dcp.issuer.DcpIssuerCoreExtension.DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
 
 public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
 
@@ -124,7 +125,10 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
         if (res.failed()) {
             return ServiceResult.unauthorized("Token validation failed: " + res.getFailureDetail());
         }
-        return ServiceResult.success(new DcpRequestContext(holder, Map.of()));
+        // the Holder may grant access to its Credential Service by embedding an access token, which must be presented
+        // back to it when the credentials are delivered
+        var accessToken = res.getContent().getStringClaim(TOKEN_CLAIM);
+        return ServiceResult.success(new DcpRequestContext(holder, Map.of(), accessToken));
     }
 
 }

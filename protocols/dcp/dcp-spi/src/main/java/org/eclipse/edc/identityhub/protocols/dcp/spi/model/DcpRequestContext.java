@@ -16,13 +16,17 @@ package org.eclipse.edc.identityhub.protocols.dcp.spi.model;
 
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
 import org.eclipse.edc.spi.iam.ClaimToken;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
 /**
  * Context for a DCP request. Contains the {@link Holder} and a set of claims
  * that might come from a DCP presentation request.
+ *
+ * @param accessToken the access token the Holder supplied in the {@code token} claim of its Self-Issued ID token. It
+ *                    grants access to the Holder's Credential Service and is {@code null} unless the Holder sent one.
  */
-public record DcpRequestContext(Holder holder, Map<String, ClaimToken> claims) {
+public record DcpRequestContext(Holder holder, Map<String, ClaimToken> claims, @Nullable String accessToken) {
 
 }

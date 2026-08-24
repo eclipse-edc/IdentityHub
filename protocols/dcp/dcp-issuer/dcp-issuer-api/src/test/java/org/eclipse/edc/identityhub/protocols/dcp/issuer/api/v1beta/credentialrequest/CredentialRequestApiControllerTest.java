@@ -142,7 +142,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
         var participant = createHolder("id", "did", "name");
 
-        var ctx = new DcpRequestContext(participant, Map.of());
+        var ctx = new DcpRequestContext(participant, Map.of(), null);
         var token = generateJwt();
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
         when(dcpIssuerService.initiateCredentialsIssuance(eq(participantContextId), any(), any())).thenReturn(ServiceResult.unauthorized("cannot initiate unauthorized"));
@@ -163,7 +163,7 @@ class CredentialRequestApiControllerTest extends RestControllerTestBase {
         var requestMessage = createCredentialRequestMessage();
         when(typeTransformerRegistry.transform(isA(JsonObject.class), eq(CredentialRequestMessage.class))).thenReturn(Result.success(requestMessage));
         var participant = createHolder("id", "did", "name");
-        var ctx = new DcpRequestContext(participant, Map.of());
+        var ctx = new DcpRequestContext(participant, Map.of(), null);
 
         var token = generateJwt();
         var responseMessage = new CredentialRequestMessage.Response(UUID.randomUUID().toString());

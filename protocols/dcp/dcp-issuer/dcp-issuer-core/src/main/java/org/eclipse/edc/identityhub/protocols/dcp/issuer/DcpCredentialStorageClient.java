@@ -35,13 +35,16 @@ import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import static jakarta.json.stream.JsonCollectors.toJsonArray;
@@ -52,6 +55,7 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMess
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.STATUS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.TYPE_TERM;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
@@ -66,18 +70,20 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
     private final HolderStore holderStore;
     private final CredentialServiceUrlResolver credentialServiceUrlResolver;
     private final ParticipantSecureTokenService secureTokenService;
+    private final Vault vault;
     private final Monitor monitor;
     private final TypeManager typeManager;
     private final String typeContext;
 
     public DcpCredentialStorageClient(EdcHttpClient httpClient, ParticipantContextStore participantContextStore,
                                       HolderStore holderStore, CredentialServiceUrlResolver credentialServiceUrlResolver,
-                                      ParticipantSecureTokenService secureTokenService, Monitor monitor, TypeManager typeManager, String typeContext) {
+                                      ParticipantSecureTokenService secureTokenService, Vault vault, Monitor monitor, TypeManager typeManager, String typeContext) {
         this.httpClient = httpClient;
         this.participantContextStore = participantContextStore;
         this.holderStore = holderStore;
         this.credentialServiceUrlResolver = credentialServiceUrlResolver;
         this.secureTokenService = secureTokenService;
+        this.vault = vault;
         this.monitor = monitor;
         this.typeManager = typeManager;
         this.typeContext = typeContext;
@@ -96,7 +102,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
                     .orElseThrow(failure -> new EdcException("Credential service URL not found"));
             var url = credentialServiceBaseUrl + STORAGE_ENDPOINT;
 
-            var selfIssuedTokenJwt = getAuthToken(issuanceProcess.getParticipantContextId(), participantDid, issuerDid)
+            var selfIssuedTokenJwt = getAuthToken(issuanceProcess.getParticipantContextId(), participantDid, issuerDid, vault.resolveSecret(issuanceProcess.getId()))
                     .orElseThrow(failure -> new EdcException("Error creating self-issued token"));
 
             var credentialMessage = createCredentialMessage(issuanceProcess, credentials);
@@ -153,13 +159,18 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
                 .build();
     }
 
-    private Result<TokenRepresentation> getAuthToken(String participantContextId, String audience, String myOwnDid) {
-        var siTokenClaims = Map.of(
+    private Result<TokenRepresentation> getAuthToken(String participantContextId, String audience, String myOwnDid, @Nullable String holderAccessToken) {
+        var siTokenClaims = new HashMap<String, String>(Map.of(
                 ISSUED_AT, Instant.now().toString(),
                 AUDIENCE, audience,
                 ISSUER, myOwnDid,
                 SUBJECT, myOwnDid,
-                EXPIRATION_TIME, Instant.now().plus(5, ChronoUnit.MINUTES).toString());
+                EXPIRATION_TIME, Instant.now().plus(5, ChronoUnit.MINUTES).toString()));
+
+        // if the Holder granted access to its Credential Service, that access token must be presented back to it
+        if (holderAccessToken != null && !holderAccessToken.isBlank()) {
+            siTokenClaims.put(TOKEN_CLAIM, holderAccessToken);
+        }
         return secureTokenService.createToken(participantContextId, siTokenClaims, null);
     }
 }

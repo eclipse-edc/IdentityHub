@@ -37,10 +37,14 @@ import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
 import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
@@ -77,17 +81,20 @@ class DcpCredentialStorageClientTest {
     private static final String HOLDER_ID = "holder-id";
     private static final String HOLDER_DID = "did:web:holder";
     private static final String CREDENTIAL_SERVICE_URL = "https://holder.com/csvc";
+    private static final String HOLDER_ACCESS_TOKEN = "holder-access-token";
+    private static final String ISSUANCE_PROCESS_ID = "issuance-process-id";
 
     private final EdcHttpClient httpClient = mock();
     private final ParticipantContextStore participantContextStore = mock();
     private final HolderStore holderStore = mock();
     private final CredentialServiceUrlResolver credentialServiceUrlResolver = mock();
     private final ParticipantSecureTokenService secureTokenService = mock();
+    private final Vault vault = mock();
     private final ObjectMapper objectMapper = mock();
     private final TypeManager typeManager = mock();
 
     private final DcpCredentialStorageClient client = new DcpCredentialStorageClient(httpClient, participantContextStore,
-            holderStore, credentialServiceUrlResolver, secureTokenService, mock(), typeManager, "test");
+            holderStore, credentialServiceUrlResolver, secureTokenService, vault, mock(), typeManager, "test");
 
     @BeforeEach
     void setUp() throws IOException {
@@ -209,11 +216,11 @@ class DcpCredentialStorageClientTest {
 
     // B5.4: when the holder's original request SI token contained a 'token' claim (access token), the delivery SI token
     // MUST carry that same access token in its own 'token' claim (DCP spec requirement)
-    // NOTE: this documents intended behavior - the access token from the holder's original CredentialRequestMessage
-    //  SI token is currently not persisted on the IssuanceProcess, so it cannot be propagated to the delivery token yet
     @DisplayName("B5.4: the delivery SI token carries the access token from the holder's original request in its 'token' claim")
     @Test
     void deliverCredentials_shouldEchoAccessTokenFromOriginalRequest() {
+        when(vault.resolveSecret(ISSUANCE_PROCESS_ID)).thenReturn(HOLDER_ACCESS_TOKEN);
+
         var result = client.deliverCredentials(issuanceProcess(), List.of(credential()));
 
         assertThat(result).isSucceeded();
@@ -221,8 +228,24 @@ class DcpCredentialStorageClientTest {
         var claimsCaptor = ArgumentCaptor.forClass(Map.class);
         //noinspection unchecked
         verify(secureTokenService).createToken(eq(PARTICIPANT_CONTEXT_ID), claimsCaptor.capture(), isNull());
-        // per DCP spec, the SI token used for delivery must echo the holder's access token in the 'token' claim
-        assertThat(claimsCaptor.getValue()).containsKey("token");
+        assertThat(claimsCaptor.getValue()).containsEntry("token", HOLDER_ACCESS_TOKEN);
+    }
+
+    @DisplayName("B5.4: no 'token' claim is emitted when the holder did not supply an access token")
+    @ParameterizedTest(name = "vault returns \"{0}\"")
+    @NullSource
+    @ValueSource(strings = { "", "  " })
+    void deliverCredentials_whenNoAccessToken_shouldNotEmitTokenClaim(String storedToken) {
+        when(vault.resolveSecret(ISSUANCE_PROCESS_ID)).thenReturn(storedToken);
+
+        var result = client.deliverCredentials(issuanceProcess(), List.of(credential()));
+
+        assertThat(result).isSucceeded();
+
+        var claimsCaptor = ArgumentCaptor.forClass(Map.class);
+        //noinspection unchecked
+        verify(secureTokenService).createToken(eq(PARTICIPANT_CONTEXT_ID), claimsCaptor.capture(), isNull());
+        assertThat(claimsCaptor.getValue()).doesNotContainKey("token");
     }
 
     private ParticipantContext participantContext() {
@@ -243,7 +266,7 @@ class DcpCredentialStorageClientTest {
 
     private IssuanceProcess issuanceProcess() {
         return IssuanceProcess.Builder.newInstance()
-                .id("issuance-process-id")
+                .id(ISSUANCE_PROCESS_ID)
                 .state(IssuanceProcessStates.APPROVED.code())
                 .holderId(HOLDER_ID)
                 .holderPid("holder-pid")

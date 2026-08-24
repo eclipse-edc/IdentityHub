@@ -89,6 +89,35 @@ public class DcpHolderTokenVerifierImplTest {
     }
 
     @Test
+    @DisplayName("B5.4: an access token supplied by the Holder is carried on the request context")
+    void verify_shouldCaptureAccessToken() {
+        var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
+
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
+        when(tokenValidationService.validate(anyString(), any(), anyList()))
+                .thenReturn(Result.success(ClaimToken.Builder.newInstance().claim("token", "holder-access-token").build()));
+
+        var result = dcpIssuerTokenVerifier.verify(participantContext, token);
+
+        assertThat(result).isSucceeded()
+                .satisfies(context -> org.assertj.core.api.Assertions.assertThat(context.accessToken()).isEqualTo("holder-access-token"));
+    }
+
+    @Test
+    @DisplayName("B5.4: the request context carries no access token when the Holder did not supply one")
+    void verify_whenNoAccessToken_shouldBeNull() {
+        var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();
+
+        when(holderStore.query(any())).thenReturn(StoreResult.success(List.of(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, PARTICIPANT_DID))));
+        when(tokenValidationService.validate(anyString(), any(), anyList())).thenReturn(Result.success(ClaimToken.Builder.newInstance().build()));
+
+        var result = dcpIssuerTokenVerifier.verify(participantContext, token);
+
+        assertThat(result).isSucceeded()
+                .satisfies(context -> org.assertj.core.api.Assertions.assertThat(context.accessToken()).isNull());
+    }
+
+    @Test
     void verify_participantNotFound() {
 
         var token = TokenRepresentation.Builder.newInstance().token(generateToken()).build();

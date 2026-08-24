@@ -77,7 +77,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     void credentialStatus_transformationError_shouldReturn400() {
 
         var participant = createHolder("id", "did", "name");
-        var ctx = new DcpRequestContext(participant, Map.of());
+        var ctx = new DcpRequestContext(participant, Map.of(), null);
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
         when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess())));
 
@@ -117,7 +117,7 @@ class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
     void credentialStatus() {
 
         var participant = createHolder("id", "did", "name");
-        var ctx = new DcpRequestContext(participant, Map.of());
+        var ctx = new DcpRequestContext(participant, Map.of(), null);
 
         var token = generateToken();
 

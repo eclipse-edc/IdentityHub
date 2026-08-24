@@ -37,6 +37,7 @@ import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.response.ResponseStatus;
 import org.eclipse.edc.spi.response.StatusResult;
 import org.eclipse.edc.spi.result.StoreResult;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.statemachine.AbstractStateEntityManager;
 import org.eclipse.edc.statemachine.Processor;
 import org.eclipse.edc.statemachine.ProcessorImpl;
@@ -55,6 +56,7 @@ import static org.eclipse.edc.statemachine.retry.processor.Process.result;
 public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<IssuanceProcess, IssuanceProcessStore> implements IssuanceProcessManager {
 
     private IssuanceObservable observable;
+    private Vault vault;
     private CredentialGeneratorRegistry credentialGenerator;
     private CredentialDefinitionStore credentialDefinitionStore;
     private CredentialStore credentialStore;
@@ -174,6 +176,7 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     private void transitionToDelivered(IssuanceProcess process) {
         process.transitionToDelivered();
         update(process);
+        discardHolderAccessToken(process);
     }
 
     private void transitionToApproved(IssuanceProcess process) {
@@ -184,6 +187,17 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     private void transitionToError(IssuanceProcess process) {
         process.transitionToError();
         update(process);
+        discardHolderAccessToken(process);
+    }
+
+    /**
+     * Removes the Holder's access token from the vault. The process is in a terminal state, so the token will not be
+     * used again and must not be kept around.
+     */
+    private void discardHolderAccessToken(IssuanceProcess process) {
+        vault.deleteSecret(process.getId())
+                .onFailure(f -> monitor.debug("Could not remove the access token for issuance process '%s': %s"
+                        .formatted(process.getId(), f.getFailureDetail())));
     }
 
     private void transitionToError(IssuanceProcess process, Throwable throwable) {
@@ -243,6 +257,11 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
 
         public Builder credentialStatusService(CredentialStatusService credentialStatusService) {
             manager.credentialStatusService = credentialStatusService;
+            return this;
+        }
+
+        public Builder vault(Vault vault) {
+            manager.vault = vault;
             return this;
         }
 
