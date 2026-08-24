@@ -94,6 +94,7 @@ public class StorageApiController implements StorageApi {
 
         var participantContext = participantContextService.getParticipantContext(participantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid participant"));
+        var holderDid = participantContext.getDid();
 
         // validate Issuer's SI token
         issuerTokenVerifier.verify(participantContext, authToken)

@@ -128,13 +128,11 @@ class CredentialOfferHandlerTest {
     @Test
     @DisplayName("A5.3: an offer is not transitioned to PROCESSED when the credential request cannot be initiated")
     void onCredentialOfferEvent_initiateFails_shouldNotTransitionToProcessed() {
-        // arrange
         when(requestManager.initiateRequest(anyString(), anyString(), anyString(), anyList())).thenReturn(ServiceResult.badRequest("foobar"));
 
-        // act
         credentialOfferHandler.on(event());
 
-        // assert: the offer must not be persisted as PROCESSED when the request could not be initiated (it should stay RECEIVED or become REJECTED)
+        // the offer must not be persisted as PROCESSED when the request could not be initiated (it should stay RECEIVED or become REJECTED)
         verify(credentialOfferStore, never()).save(argThat(offer -> offer.getState() == CredentialOfferStatus.PROCESSED.code()));
     }
 
@@ -142,14 +140,13 @@ class CredentialOfferHandlerTest {
     @Test
     @DisplayName("A5.4: handling the identical credential offer twice initiates only one credential request")
     void onCredentialOfferEvent_sameOfferTwice_shouldBeIdempotent() {
-        // arrange
         var event = event();
 
-        // act: handle the identical event twice
+        // handle the identical event twice
         credentialOfferHandler.on(event);
         credentialOfferHandler.on(event);
 
-        // assert: only one credential request is initiated, no duplicate HolderCredentialRequest is spawned
+        // only one credential request is initiated, no duplicate HolderCredentialRequest is spawned
         verify(requestManager, times(1)).initiateRequest(eq("test-participant"), eq("did:web:issuer"), anyString(), anyList());
     }
 

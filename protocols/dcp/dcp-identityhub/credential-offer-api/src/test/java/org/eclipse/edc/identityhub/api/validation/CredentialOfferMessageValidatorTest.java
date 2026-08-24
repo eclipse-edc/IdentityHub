@@ -15,7 +15,6 @@
 package org.eclipse.edc.identityhub.api.validation;
 
 import jakarta.json.Json;
-import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.junit.jupiter.api.DisplayName;
@@ -75,13 +74,12 @@ class CredentialOfferMessageValidatorTest {
     @Test
     @DisplayName("A4.8: a credential offer message with an empty credentials array fails validation")
     void validate_emptyCredentialsArray_shouldFail() {
-        // arrange
         var msg = Json.createObjectBuilder()
                 .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), "test-issuer")
                 .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder())
                 .build();
 
-        // act + assert: the spec requires a non-empty credentials array
+        // the spec requires a non-empty credentials array
         assertThat(validator.validate(msg)).isFailed();
     }
 

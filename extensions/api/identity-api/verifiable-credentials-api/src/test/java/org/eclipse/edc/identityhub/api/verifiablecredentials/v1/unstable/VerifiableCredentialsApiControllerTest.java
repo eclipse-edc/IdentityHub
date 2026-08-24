@@ -42,7 +42,7 @@ import org.eclipse.edc.validator.spi.Violation;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -527,14 +527,14 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
 
         // A1.5: null issuerDid in the request DTO -> 400 with validation message (currently unvalidated, surfaces as 500 from builder exceptions)
         @Test
-        @Disabled("documents intended behavior, not yet implemented (catalog A1.5)")
+        @DisplayName("A1.5: a request with a null issuerDid is rejected with 400")
         void invalidDto_nullIssuerDid_returns400() {
-            // arrange
+            // the downstream service would accept anything - validation must reject the DTO before it is reached
+            when(credentialRequestService.initiateRequest(any(), any(), any(), anyList())).thenReturn(ServiceResult.success("request-id"));
             var request = new CredentialRequestDto(null, UUID.randomUUID().toString(), List.of(
                     new CredentialDescriptor(CredentialFormat.VC1_0_JWT, "FooCredential", UUID.randomUUID().toString())
             ));
 
-            // act + assert
             baseRequest()
                     .contentType(JSON)
                     .body(request)
@@ -542,18 +542,17 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
-            // TODO: assert the response body contains a validation message referencing 'issuerDid'
             verifyNoInteractions(credentialRequestService);
         }
 
         // A1.5: empty credentials array -> 400 with validation message (currently unvalidated, surfaces as 500)
         @Test
-        @Disabled("documents intended behavior, not yet implemented (catalog A1.5)")
+        @DisplayName("A1.5: a request with an empty credentials array is rejected with 400")
         void invalidDto_emptyCredentials_returns400() {
-            // arrange
+            // the downstream service would accept anything - validation must reject the DTO before it is reached
+            when(credentialRequestService.initiateRequest(any(), any(), any(), anyList())).thenReturn(ServiceResult.success("request-id"));
             var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of());
 
-            // act + assert
             baseRequest()
                     .contentType(JSON)
                     .body(request)
@@ -561,20 +560,19 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
-            // TODO: assert the response body contains a validation message referencing 'credentials'
             verifyNoInteractions(credentialRequestService);
         }
 
         // A1.5: descriptor with null id/format -> 400 with validation message (currently unvalidated, surfaces as 500)
         @Test
-        @Disabled("documents intended behavior, not yet implemented (catalog A1.5)")
+        @DisplayName("A1.5: a request with a descriptor lacking id and format is rejected with 400")
         void invalidDto_descriptorWithNullIdAndFormat_returns400() {
-            // arrange
+            // the downstream service would accept anything - validation must reject the DTO before it is reached
+            when(credentialRequestService.initiateRequest(any(), any(), any(), anyList())).thenReturn(ServiceResult.success("request-id"));
             var request = new CredentialRequestDto("did:web:issuer", UUID.randomUUID().toString(), List.of(
                     new CredentialDescriptor((String) null, "FooCredential", null)
             ));
 
-            // act + assert
             baseRequest()
                     .contentType(JSON)
                     .body(request)
@@ -582,7 +580,6 @@ class VerifiableCredentialsApiControllerTest extends RestControllerTestBase {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400);
-            // TODO: assert the response body contains a validation message referencing the descriptor's 'id'/'format'
             verifyNoInteractions(credentialRequestService);
         }
     }

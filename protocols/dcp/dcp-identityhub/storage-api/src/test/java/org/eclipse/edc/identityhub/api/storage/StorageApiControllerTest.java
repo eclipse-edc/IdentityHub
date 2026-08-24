@@ -66,6 +66,7 @@ import static org.mockito.Mockito.when;
 @ApiTest
 class StorageApiControllerTest extends RestControllerTestBase {
 
+    private static final String HOLDER_DID = "did:web:holder";
     private final JsonObjectValidatorRegistry validatorRegistry = mock();
     private final TypeTransformerRegistry transformerRegistry = mock();
     private final Monitor monitor = mock();
