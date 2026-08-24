@@ -63,11 +63,14 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     private final DcpIssuerTokenVerifier tokenVerifier = mock();
     private final IdentityHubParticipantContextService participantContextService = mock();
     private final CredentialOfferService offerService = mock();
-    private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, tokenVerifier, participantContextService, offerService, new TitaniumJsonLd(mock()));
+    private final CredentialObjectResolver credentialObjectResolver = mock();
+    private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, tokenVerifier, participantContextService, offerService, new TitaniumJsonLd(mock()), credentialObjectResolver);
 
     @BeforeEach
     void setUp() {
         when(validatorRegistry.validate(anyString(), any())).thenReturn(ValidationResult.success());
+
+        when(credentialObjectResolver.resolve(any(), any())).thenAnswer(i -> Result.success(i.getArgument(1)));
 
         when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.success(
                 ClaimToken.Builder.newInstance()
@@ -173,10 +176,9 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     @Test
     @DisplayName("A4.7: token verification failure returns 401, consistent with the Storage API")
     void offerCredential_invalidAuthToken_statusCode401() {
-        // arrange
         when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foobar"));
 
-        // act + assert: 401 is the agreed code for token-verification failures on both DCP endpoints
+        // 401 is the agreed code for token-verification failures on both DCP endpoints
         baseRequest()
                 .body(createRequestBody())
                 .post()

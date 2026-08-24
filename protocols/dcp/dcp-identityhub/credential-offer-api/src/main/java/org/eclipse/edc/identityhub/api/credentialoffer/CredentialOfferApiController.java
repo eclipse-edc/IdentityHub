@@ -33,7 +33,6 @@ import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
-import org.eclipse.edc.web.spi.exception.NotAuthorizedException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -54,17 +53,20 @@ public class CredentialOfferApiController implements CredentialOfferApi {
     private final IdentityHubParticipantContextService participantContextService;
     private final CredentialOfferService credentialOfferService;
     private final JsonLd jsonLd;
+    private final CredentialObjectResolver credentialObjectResolver;
 
     public CredentialOfferApiController(JsonObjectValidatorRegistry validatorRegistry,
                                         TypeTransformerRegistry transformerRegistry,
                                         DcpIssuerTokenVerifier issuerTokenVerifier,
-                                        IdentityHubParticipantContextService participantContextService, CredentialOfferService credentialOfferService, JsonLd jsonLd) {
+                                        IdentityHubParticipantContextService participantContextService, CredentialOfferService credentialOfferService, JsonLd jsonLd,
+                                        CredentialObjectResolver credentialObjectResolver) {
         this.validatorRegistry = validatorRegistry;
         this.transformerRegistry = transformerRegistry;
         this.issuerTokenVerifier = issuerTokenVerifier;
         this.participantContextService = participantContextService;
         this.credentialOfferService = credentialOfferService;
         this.jsonLd = jsonLd;
+        this.credentialObjectResolver = credentialObjectResolver;
     }
 
 
@@ -95,10 +97,14 @@ public class CredentialOfferApiController implements CredentialOfferApi {
         issuerTokenVerifier.verify(participantContext, authToken)
                 .orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
 
+        // sparse credential objects, i.e. those carrying only an ID, are completed from the Issuer's metadata
+        var credentialObjects = credentialObjectResolver.resolve(offerMessage.getIssuer(), offerMessage.getCredentials())
+                .orElseThrow(f -> new InvalidRequestException(f.getFailureDetail()));
+
         var credentialOffer = CredentialOffer.Builder.newInstance()
                 .participantContextId(participantContextId)
                 .issuer(offerMessage.getIssuer())
-                .credentialObjects(offerMessage.getCredentials().stream().map(co -> CredentialObject.Builder.newInstance()
+                .credentialObjects(credentialObjects.stream().map(co -> CredentialObject.Builder.newInstance()
                         .id(co.getId())
                         .bindingMethods(co.getBindingMethods())
                         .credentialType(co.getCredentialType())
