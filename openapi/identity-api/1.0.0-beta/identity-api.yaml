@@ -113,6 +113,45 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1beta/participants/{participantContextId}/dids/state:
+    post:
+      tags:
+      - DID
+      description: Get state of a DID document
+      operationId: getDidState
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DidRequestPayload"
+      responses:
+        "200":
+          description: The DID state was successfully obtained
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: The DID does not exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1beta/participants/{participantContextId}/token:
     post:
       tags:
@@ -165,12 +204,13 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1beta/participants/{participantContextId}/dids/state:
+  /v1beta/participants/{participantContextId}/dids/publish:
     post:
       tags:
       - DID
-      description: Get state of a DID document
-      operationId: getDidState
+      description: Publish an (existing) DID document. The DID is expected to exist
+        in the database.
+      operationId: publishDid
       parameters:
       - name: participantContextId
         in: path
@@ -185,8 +225,8 @@ paths:
             schema:
               $ref: "#/components/schemas/DidRequestPayload"
       responses:
-        "200":
-          description: The DID state was successfully obtained
+        "204":
+          description: The DID document was successfully published.
         "401":
           description: "The request could not be completed, because either the authentication\
             \ was missing or was not valid."
@@ -197,7 +237,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
-          description: The DID does not exist.
+          description: The DID could not be published because it does not exist.
           content:
             application/json:
               schema:
@@ -304,46 +344,6 @@ paths:
                   $ref: "#/components/schemas/ApiErrorDetail"
         "404":
           description: A KeyPairResource with the given ID does not exist.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1beta/participants/{participantContextId}/dids/publish:
-    post:
-      tags:
-      - DID
-      description: Publish an (existing) DID document. The DID is expected to exist
-        in the database.
-      operationId: publishDid
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DidRequestPayload"
-      responses:
-        "204":
-          description: The DID document was successfully published.
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: The DID could not be published because it does not exist.
           content:
             application/json:
               schema:
@@ -540,111 +540,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1beta/participants/{participantContextId}/credentials/{credentialId}:
-    get:
-      tags:
-      - Verifiable Credentials
-      description: Finds a VerifiableCredential by ID.
-      operationId: getCredential
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: The VerifiableCredential.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/VerifiableCredentialResource"
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "403":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: A VerifiableCredential with the given ID does not exist.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-    delete:
-      tags:
-      - Verifiable Credentials
-      description: Delete a VerifiableCredential.
-      operationId: deleteCredential
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: credentialId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: The VerifiableCredential was deleted successfully
-          content:
-            application/json:
-              schema:
-                type: string
-        "400":
-          description: "Request body was malformed, or the request could not be processed"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "403":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "404":
-          description: A VerifiableCredential with the given ID does not exist.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1beta/participants/{participantContextId}/dids/{did}/endpoints:
     post:
       tags:
@@ -828,6 +723,111 @@ paths:
         "404":
           description: The service endpoint could not be replaced because the DID
             does not exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+  /v1beta/participants/{participantContextId}/credentials/{credentialId}:
+    get:
+      tags:
+      - Verifiable Credentials
+      description: Finds a VerifiableCredential by ID.
+      operationId: getCredential
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: credentialId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The VerifiableCredential.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifiableCredentialResource"
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "403":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: A VerifiableCredential with the given ID does not exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+    delete:
+      tags:
+      - Verifiable Credentials
+      description: Delete a VerifiableCredential.
+      operationId: deleteCredential
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: credentialId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The VerifiableCredential was deleted successfully
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: "Request body was malformed, or the request could not be processed"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "403":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "404":
+          description: A VerifiableCredential with the given ID does not exist.
           content:
             application/json:
               schema:
@@ -1287,6 +1287,51 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
+  /v1beta/participants/{participantContextId}/dids/query:
+    post:
+      tags:
+      - DID
+      description: Query for DID documents.
+      operationId: queryDids
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuerySpec"
+      responses:
+        "200":
+          description: The list of DID Documents.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DidDocument"
+        "400":
+          description: The query was malformed or was not understood by the server.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
+        "401":
+          description: "The request could not be completed, because either the authentication\
+            \ was missing or was not valid."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiErrorDetail"
   /v1beta/participants/{participantContextId}/credentials:
     get:
       tags:
@@ -1422,51 +1467,6 @@ paths:
         "409":
           description: "Could not create VerifiableCredential, because a VerifiableCredential\
             \ with that ID already exists"
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-  /v1beta/participants/{participantContextId}/dids/query:
-    post:
-      tags:
-      - DID
-      description: Query for DID documents.
-      operationId: queryDids
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/QuerySpec"
-      responses:
-        "200":
-          description: The list of DID Documents.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DidDocument"
-        "400":
-          description: The query was malformed or was not understood by the server.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ApiErrorDetail"
-        "401":
-          description: "The request could not be completed, because either the authentication\
-            \ was missing or was not valid."
           content:
             application/json:
               schema:
@@ -1830,6 +1830,11 @@ components:
           type: string
         type:
           type: string
+    DidRequestPayload:
+      type: object
+      properties:
+        did:
+          type: string
     ParticipantManifest:
       type: object
       properties:
@@ -1903,11 +1908,6 @@ components:
         serviceEndpoint:
           type: string
         type:
-          type: string
-    DidRequestPayload:
-      type: object
-      properties:
-        did:
           type: string
     KeyPairResource:
       type: object
@@ -2048,19 +2048,6 @@ components:
           type: string
         type:
           type: string
-    VerifiableCredentialManifest:
-      type: object
-      properties:
-        id:
-          type: string
-        issuancePolicy:
-          $ref: "#/components/schemas/Policy"
-        participantContextId:
-          type: string
-        reissuancePolicy:
-          $ref: "#/components/schemas/Policy"
-        verifiableCredentialContainer:
-          $ref: "#/components/schemas/VerifiableCredentialContainer"
     QuerySpec:
       type: object
       properties:
@@ -2090,3 +2077,16 @@ components:
           type: object
         operator:
           type: string
+    VerifiableCredentialManifest:
+      type: object
+      properties:
+        id:
+          type: string
+        issuancePolicy:
+          $ref: "#/components/schemas/Policy"
+        participantContextId:
+          type: string
+        reissuancePolicy:
+          $ref: "#/components/schemas/Policy"
+        verifiableCredentialContainer:
+          $ref: "#/components/schemas/VerifiableCredentialContainer"
