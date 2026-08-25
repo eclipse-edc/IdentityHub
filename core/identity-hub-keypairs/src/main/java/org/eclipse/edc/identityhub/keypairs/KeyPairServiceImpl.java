@@ -248,18 +248,15 @@ public class KeyPairServiceImpl implements KeyPairService, EventSubscriber {
      * @return {@link ServiceResult#success()} if the participant context exists, and is in one of the allowed states, a failure otherwise.
      */
     private ServiceResult<Void> checkParticipantState(String participantContextId, ParticipantContextState... allowedStates) {
-        var result = ServiceResult.from(participantContextService.query(queryByParticipantContextId(participantContextId).build()))
-                .compose(list -> list.stream().findFirst()
-                        .map(pc -> {
-                            var state = pc.getStateAsEnum();
-                            if (!Arrays.asList(allowedStates).contains(state)) {
-                                return ServiceResult.badRequest("To add a key pair, the ParticipantContext with ID '%s' must be in state %s or %s but was %s."
-                                        .formatted(participantContextId, ACTIVATED, CREATED, state));
-                            }
-                            return success();
-                        })
-                        .orElse(ServiceResult.notFound("No ParticipantContext with ID '%s' was found.".formatted(participantContextId))));
-        return result.mapEmpty();
+        return ServiceResult.from(participantContextService.findById(participantContextId))
+                .compose(participantContext -> {
+                    var state = participantContext.getStateAsEnum();
+                    if (!Arrays.asList(allowedStates).contains(state)) {
+                        return ServiceResult.badRequest("To add a key pair, the ParticipantContext with ID '%s' must be in state %s or %s but was %s."
+                                .formatted(participantContextId, ACTIVATED, CREATED, state));
+                    }
+                    return success();
+                });
     }
 
     private @NotNull ServiceResult<Void> activateKeyPair(KeyPairResource existingKeyPair) {

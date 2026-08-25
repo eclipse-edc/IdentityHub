@@ -19,9 +19,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import org.eclipse.edc.participantcontext.spi.types.AbstractParticipantResource;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
+import org.eclipse.edc.spi.entity.Entity;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -47,7 +47,7 @@ public class IdentityHubParticipantContext extends ParticipantContext {
     }
 
     public String clientSecretAlias() {
-        return ofNullable(properties.get("clientSecret")).map(Object::toString).orElseGet(() -> participantContextId + "-sts-client-secret");
+        return ofNullable(properties.get("clientSecret")).map(Object::toString).orElseGet(() -> getParticipantContextId() + "-sts-client-secret");
     }
 
 
@@ -81,11 +81,25 @@ public class IdentityHubParticipantContext extends ParticipantContext {
         properties.put(SCOPES, scopes);
     }
 
+    /**
+     * Transitions this participant context to the {@link ParticipantContextState#ACTIVATED} state.
+     */
+    public void activate() {
+        this.state = ParticipantContextState.ACTIVATED.code();
+    }
+
+    /**
+     * Transitions this participant context to the {@link ParticipantContextState#DEACTIVATED} state.
+     */
+    public void deactivate() {
+        this.state = ParticipantContextState.DEACTIVATED.code();
+    }
+
     @JsonPOJOBuilder(withPrefix = "")
     // TODO we currently ignore identity during deserialization to maintain backward compatibility with existing did.
     // We might think about removing the did and use only the identity
     @JsonIgnoreProperties(value = {"identity"})
-    public static final class Builder extends AbstractParticipantResource.Builder<IdentityHubParticipantContext, Builder> {
+    public static final class Builder extends Entity.Builder<IdentityHubParticipantContext, Builder> {
 
         private Builder() {
             super(new IdentityHubParticipantContext());
@@ -112,16 +126,15 @@ public class IdentityHubParticipantContext extends ParticipantContext {
             return this;
         }
 
-        @Override
-        public Builder participantContextId(String participantContextId) {
-            this.entity.participantContextId = participantContextId;
-            return this;
+        @Deprecated(since = "0.18.0")
+        public IdentityHubParticipantContext.Builder participantContextId(String participantContextId) {
+            return id(participantContextId);
         }
 
         @Override
         public IdentityHubParticipantContext build() {
             super.build();
-            Objects.requireNonNull(entity.participantContextId, "Participant ID cannot be null");
+            Objects.requireNonNull(entity.id, "Participant ID cannot be null");
             Objects.requireNonNull(entity.getApiTokenAlias(), "API Token Alias cannot be null");
             Objects.requireNonNull(entity.getDid(), "DID cannot be null");
 
