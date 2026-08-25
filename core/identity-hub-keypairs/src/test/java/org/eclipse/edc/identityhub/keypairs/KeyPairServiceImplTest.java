@@ -25,7 +25,6 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.KeyDescriptor;
 import org.eclipse.edc.participantcontext.spi.store.ParticipantContextStore;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContext;
 import org.eclipse.edc.participantcontext.spi.types.ParticipantContextState;
-import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
@@ -72,11 +71,11 @@ class KeyPairServiceImplTest {
 
     @BeforeEach
     void setup() {
-        when(participantContextServiceMock.query(any(QuerySpec.class)))
-                .thenReturn(StoreResult.success(List.of(ParticipantContext.Builder.newInstance()
+        when(participantContextServiceMock.findById(anyString()))
+                .thenReturn(StoreResult.success(ParticipantContext.Builder.newInstance()
                         .participantContextId(PARTICIPANT_ID)
                         .identity("did:example:123")
-                        .property(API_TOKEN_ALIAS, "apitoken-alias").build())));
+                        .property(API_TOKEN_ALIAS, "apitoken-alias").build()));
     }
 
     @ParameterizedTest(name = "make default: {0}")
@@ -167,10 +166,11 @@ class KeyPairServiceImplTest {
 
     @Test
     void addKeyPair_participantNotFound() {
-        when(participantContextServiceMock.query(any(QuerySpec.class))).thenReturn(StoreResult.success(List.of()));
+        when(participantContextServiceMock.findById(anyString()))
+                .thenReturn(StoreResult.notFound("A ParticipantContext with ID '%s' does not exist.".formatted(PARTICIPANT_ID)));
 
         assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, createKey().build(), false)).isFailed()
-                .detail().isEqualTo("No ParticipantContext with ID '%s' was found.".formatted(PARTICIPANT_ID));
+                .detail().isEqualTo("A ParticipantContext with ID '%s' does not exist.".formatted(PARTICIPANT_ID));
     }
 
 
@@ -182,7 +182,7 @@ class KeyPairServiceImplTest {
                 .property(API_TOKEN_ALIAS, "apitoken-alias")
                 .state(ParticipantContextState.DEACTIVATED)
                 .build();
-        when(participantContextServiceMock.query(any(QuerySpec.class))).thenReturn(StoreResult.success(List.of(pc)));
+        when(participantContextServiceMock.findById(anyString())).thenReturn(StoreResult.success(pc));
 
         assertThat(keyPairService.addKeyPair(PARTICIPANT_ID, createKey().build(), false))
                 .isFailed()
