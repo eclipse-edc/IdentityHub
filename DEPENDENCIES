@@ -96,14 +96,14 @@ maven/mavencentral/io.nats/jnats/2.26.2, Apache-2.0, approved, #29938
 maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.26.1, Apache-2.0, approved, #29019
 maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.30.0, Apache-2.0, approved, #30125
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.60.1, Apache-2.0, approved, #29017
-maven/mavencentral/io.opentelemetry/opentelemetry-api/1.63.0, Apache-2.0, approved, #29018
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.64.0, Apache-2.0, approved, #29872
+maven/mavencentral/io.opentelemetry/opentelemetry-api/1.65.0, Apache-2.0, approved, #30119
 maven/mavencentral/io.opentelemetry/opentelemetry-common/1.60.1, Apache-2.0, approved, #29022
-maven/mavencentral/io.opentelemetry/opentelemetry-common/1.63.0, Apache-2.0, approved, #29020
 maven/mavencentral/io.opentelemetry/opentelemetry-common/1.64.0, Apache-2.0, approved, #29870
+maven/mavencentral/io.opentelemetry/opentelemetry-common/1.65.0, Apache-2.0, approved, #30122
 maven/mavencentral/io.opentelemetry/opentelemetry-context/1.60.1, Apache-2.0, approved, #29016
-maven/mavencentral/io.opentelemetry/opentelemetry-context/1.63.0, Apache-2.0, approved, #29021
 maven/mavencentral/io.opentelemetry/opentelemetry-context/1.64.0, Apache-2.0, approved, #29871
+maven/mavencentral/io.opentelemetry/opentelemetry-context/1.65.0, Apache-2.0, approved, #30120
 maven/mavencentral/io.rest-assured/json-path/6.0.0, Apache-2.0, approved, #29909
 maven/mavencentral/io.rest-assured/json-path/6.0.1, Apache-2.0, approved, #29909
 maven/mavencentral/io.rest-assured/rest-assured-common/6.0.0, Apache-2.0, approved, #29910
