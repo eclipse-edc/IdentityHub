@@ -102,7 +102,7 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
                     .orElseThrow(failure -> new EdcException("Credential service URL not found"));
             var url = credentialServiceBaseUrl + STORAGE_ENDPOINT;
 
-            var selfIssuedTokenJwt = getAuthToken(issuanceProcess.getParticipantContextId(), participantDid, issuerDid, vault.resolveSecret(issuanceProcess.getId()))
+            var selfIssuedTokenJwt = getAuthToken(issuanceProcess.getParticipantContextId(), participantDid, issuerDid, resolveHolderAccessToken(issuanceProcess))
                     .orElseThrow(failure -> new EdcException("Error creating self-issued token"));
 
             var credentialMessage = createCredentialMessage(issuanceProcess, credentials);
@@ -157,6 +157,19 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
                 .add("format", CredentialProfile.profileForFormat(credential.format()).orElseThrow(f -> new IllegalArgumentException("Invalid credential format: " + credential.format())))
                 .add("payload", credential.rawVc())
                 .build();
+    }
+
+    /**
+     * Reads the Holder's access token from the vault. Delivery runs on a state machine thread, so a vault that cannot
+     * serve a lookup there must not prevent the credentials from being delivered.
+     */
+    private @Nullable String resolveHolderAccessToken(IssuanceProcess issuanceProcess) {
+        try {
+            return vault.resolveSecret(issuanceProcess.getId());
+        } catch (Exception e) {
+            monitor.debug("Could not read the access token for issuance process '%s': %s".formatted(issuanceProcess.getId(), e.getMessage()));
+            return null;
+        }
     }
 
     private Result<TokenRepresentation> getAuthToken(String participantContextId, String audience, String myOwnDid, @Nullable String holderAccessToken) {

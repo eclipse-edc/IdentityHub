@@ -16,6 +16,7 @@ package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
+import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -25,6 +26,7 @@ import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestSpecifier;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
@@ -38,6 +40,7 @@ import org.eclipse.edc.spi.iam.TokenRepresentation;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.spi.query.Criterion;
+import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.response.ResponseStatus;
 import org.eclipse.edc.spi.response.StatusResult;
 import org.eclipse.edc.spi.result.Result;
@@ -53,17 +56,22 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTING;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
@@ -79,6 +87,8 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
         implements CredentialRequestManager {
     private static final int HTTP_CONFLICT = 409;
     private static final String UNKNOWN_ISSUER_PID = "";
+    private ScheduledExecutorService statusPollScheduler;
+    private long statusPollIntervalMs = 5000;
     private DidResolverRegistry didResolverRegistry;
     private TypeTransformerRegistry dcpTypeTransformerRegistry;
     private JsonLd jsonLd;
@@ -258,6 +268,107 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
     }
 
     /**
+     * Polls the Issuer's Credential Request Status API for requests that were accepted but not yet fulfilled. An
+     * issuance can still fail on the Issuer side after it acknowledged the request, and the Holder would otherwise never
+     * learn about it. A request that the Issuer reports as {@code REJECTED} is transitioned to
+     * {@link HolderRequestState#ERROR}; anything else leaves it untouched so that it is polled again later.
+     */
+    @Override
+    public void start() {
+        super.start();
+        statusPollScheduler = Executors.newSingleThreadScheduledExecutor();
+        statusPollScheduler.scheduleWithFixedDelay(this::pollPendingRequests, statusPollIntervalMs, statusPollIntervalMs, MILLISECONDS);
+    }
+
+    @Override
+    public void stop() {
+        if (statusPollScheduler != null) {
+            statusPollScheduler.shutdownNow();
+        }
+        super.stop();
+    }
+
+    /**
+     * Asks the Issuer about every request that was accepted but not yet fulfilled. An issuance can still fail on the
+     * Issuer side after it acknowledged the request, and the Holder would otherwise wait for credentials that will never
+     * arrive.
+     * <p>
+     * This deliberately runs outside the state machine: leasing a request for the duration of the status call would
+     * block the Issuer from delivering the credentials for that very request. Only a rejection acquires the request.
+     */
+    private void pollPendingRequests() {
+        try {
+            var query = QuerySpec.Builder.newInstance()
+                    .filter(Criterion.criterion("state", "=", REQUESTED.code()))
+                    .build();
+            transactionContext.execute(() -> store.query(query)).stream()
+                    .filter(request -> request.getIssuerPid() != null && !request.getIssuerPid().isBlank())
+                    .forEach(this::pollStatus);
+        } catch (Exception e) {
+            monitor.debug("Error while polling the Issuer for credential request states: %s".formatted(e.getMessage()));
+        }
+    }
+
+    private void pollStatus(HolderCredentialRequest request) {
+        getCredentialRequestEndpoint(request)
+                .compose(endpoint -> requestStatus(request, endpoint))
+                .onSuccess(status -> handleStatusResponse(status, request))
+                .onFailure(f -> monitor.debug("Could not read the status of credential request '%s': %s".formatted(request.getId(), f.getFailureDetail())));
+    }
+
+    /**
+     * Acts on the status the Issuer reports. Only a rejection is terminal and is recorded on the request; any other
+     * status leaves it in {@link HolderRequestState#REQUESTED} to be polled again later.
+     */
+    private void handleStatusResponse(CredentialRequestStatus status, HolderCredentialRequest request) {
+        if (status.getStatus() != CredentialRequestStatus.Status.REJECTED) {
+            return;
+        }
+        transactionContext.execute(() -> {
+            // the request is only acquired now: it may be held by an incoming credential delivery, in which case this
+            // round is skipped and the rejection is picked up later
+            var leased = store.findByIdAndLease(request.getId());
+            if (leased.failed()) {
+                monitor.debug("Could not acquire credential request '%s' to record the Issuer's rejection: %s"
+                        .formatted(request.getId(), leased.getFailureDetail()));
+                return null;
+            }
+            var current = leased.getContent();
+            if (current.stateAsEnum() != HolderRequestState.REQUESTED) {
+                // the credentials arrived in the meantime, so the rejection is stale
+                store.breakLease(current);
+                return null;
+            }
+            transitionError(current, "The Issuer rejected the credential request '%s'".formatted(request.getIssuerPid()));
+            return null;
+        });
+    }
+
+    private Result<CredentialRequestStatus> requestStatus(HolderCredentialRequest request, String endpoint) {
+        return getAuthToken(request.getParticipantContextId(), request.getIssuerDid())
+                .map(token -> new Request.Builder()
+                        .url(endpoint + "/requests/" + request.getIssuerPid())
+                        .get()
+                        .header("Authorization", "Bearer " + token.getToken())
+                        .build())
+                .compose(httpRequest -> httpClient.execute(httpRequest, this::mapResponseAsStatus));
+    }
+
+    private Result<CredentialRequestStatus> mapResponseAsStatus(Response response) {
+        try (var body = response.body()) {
+            if (!response.isSuccessful()) {
+                return failure("Error fetching the credential request status: code: '%s', message: '%s'".formatted(response.code(), response.message()));
+            }
+            try (var reader = Json.createReader(new StringReader(body.string()))) {
+                return jsonLd.expand(reader.readObject())
+                        .compose(expanded -> dcpTypeTransformerRegistry.transform(expanded, CredentialRequestStatus.class));
+            }
+        } catch (IOException e) {
+            return failure("Error fetching the credential request status: %s".formatted(e.getMessage()));
+        }
+    }
+
+    /**
      * Maps a {@link Response} to a result containing the Issuer-assigned issuance process ID. The Issuer conveys it in
      * the {@code Location} header, which points at the request-status resource, i.e. its last path segment is the ID.
      * Falls back to the response body for Issuers that return the ID there.
@@ -355,6 +466,14 @@ public class CredentialRequestManagerImpl extends AbstractStateEntityManager<Hol
 
         public Builder jsonLd(JsonLd jsonLd) {
             manager.jsonLd = jsonLd;
+            return this;
+        }
+
+        /**
+         * How often the Issuer is asked about requests that are still awaiting their credentials.
+         */
+        public Builder statusPollIntervalMs(long statusPollIntervalMs) {
+            manager.statusPollIntervalMs = statusPollIntervalMs;
             return this;
         }
 

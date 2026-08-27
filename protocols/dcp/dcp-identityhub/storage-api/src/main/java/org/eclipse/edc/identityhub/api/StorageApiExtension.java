@@ -22,6 +22,7 @@ import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.from.JsonObjectFromCredentialRequestMessageTransformer;
 import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialMessageTransformer;
+import org.eclipse.edc.identityhub.protocols.dcp.transform.to.JsonObjectToCredentialRequestStatusTransformer;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.spi.JsonLd;
@@ -101,6 +102,8 @@ public class StorageApiExtension implements ServiceExtension {
         //outbound
         scopedTransformerRegistry.register(new JsonObjectFromCredentialMessageTransformer(factory, typeManager, JSON_LD, DSPACE_DCP_NAMESPACE_V_1_0));
         scopedTransformerRegistry.register(new JsonObjectFromCredentialRequestMessageTransformer(factory, typeManager, JSON_LD, DSPACE_DCP_NAMESPACE_V_1_0));
+        // needed to read the Issuer's answer when polling the status of a pending credential request
+        scopedTransformerRegistry.register(new JsonObjectToCredentialRequestStatusTransformer(DSPACE_DCP_NAMESPACE_V_1_0));
 
         typeTransformer.register(new JwtToVerifiableCredentialTransformer(monitor));
 

@@ -28,6 +28,7 @@ import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
@@ -74,12 +75,14 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -105,6 +108,7 @@ class CredentialRequestManagerImplTest {
             .transactionContext(new NoopTransactionContext())
             .monitor(mock())
             .waitStrategy(() -> 500L)
+            .statusPollIntervalMs(50)
             .build();
 
     @BeforeEach
@@ -346,6 +350,70 @@ class CredentialRequestManagerImplTest {
                 Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
                 Assertions.assertThat(rq.getErrorDetail()).isNull();
             });
+        }
+
+
+        // A6.5/C9: a request the Issuer accepted can still fail later, so the Holder polls the Issuer's status endpoint
+        @Test
+        @DisplayName("A6.5: an Issuer that reports REJECTED moves the request to ERROR")
+        void processRequested_whenIssuerReportsRejected_shouldTransitionToError() {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any()))
+                    .thenReturn(success(credentialRequestStatus(CredentialRequestStatus.Status.REJECTED)));
+
+            var rq = createRequest().state(REQUESTED.code()).issuerPid("issuer-pid").build();
+            when(store.query(any())).thenReturn(List.of(rq));
+            // the request is re-acquired before the rejection is recorded
+            when(store.findByIdAndLease(anyString())).thenReturn(StoreResult.success(rq));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                Assertions.assertThat(rq.getState()).isEqualTo(ERROR.code());
+                Assertions.assertThat(rq.getErrorDetail()).contains("issuer-pid");
+            });
+        }
+
+        @Test
+        @DisplayName("A6.5: an Issuer that reports RECEIVED leaves the request pending")
+        void processRequested_whenIssuerReportsReceived_shouldStayRequested() {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any()))
+                    .thenReturn(success(credentialRequestStatus(CredentialRequestStatus.Status.RECEIVED)));
+
+            var rq = createRequest().state(REQUESTED.code()).issuerPid("issuer-pid").build();
+            when(store.query(any())).thenReturn(List.of(rq));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                verify(httpClient, atLeastOnce()).execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any());
+                // the request is left pending, to be polled again on a later iteration
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+            });
+        }
+
+        @Test
+        @DisplayName("A6.5: a request whose Issuer process ID is unknown is not polled")
+        void processRequested_whenIssuerPidUnknown_shouldNotQueryIssuer() {
+            var rq = createRequest().state(REQUESTED.code()).build();
+            when(store.query(any())).thenReturn(List.of(rq));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                verify(store, atLeastOnce()).query(any());
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+                verifyNoInteractions(resolver);
+            });
+        }
+
+        private CredentialRequestStatus credentialRequestStatus(CredentialRequestStatus.Status status) {
+            return CredentialRequestStatus.Builder.newInstance()
+                    .status(status)
+                    .issuerPid("issuer-pid")
+                    .holderPid("test-request")
+                    .build();
         }
 
         private HolderCredentialRequest.Builder createRequest() {

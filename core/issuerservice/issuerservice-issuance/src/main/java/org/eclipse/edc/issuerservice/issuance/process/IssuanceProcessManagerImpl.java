@@ -195,9 +195,14 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
      * used again and must not be kept around.
      */
     private void discardHolderAccessToken(IssuanceProcess process) {
-        vault.deleteSecret(process.getId())
-                .onFailure(f -> monitor.debug("Could not remove the access token for issuance process '%s': %s"
-                        .formatted(process.getId(), f.getFailureDetail())));
+        // housekeeping must never keep the process from reaching its terminal state, so nothing here is allowed to escape
+        try {
+            vault.deleteSecret(process.getId())
+                    .onFailure(f -> monitor.debug("Could not remove the access token for issuance process '%s': %s"
+                            .formatted(process.getId(), f.getFailureDetail())));
+        } catch (Exception e) {
+            monitor.debug("Could not remove the access token for issuance process '%s': %s".formatted(process.getId(), e.getMessage()));
+        }
     }
 
     private void transitionToError(IssuanceProcess process, Throwable throwable) {
