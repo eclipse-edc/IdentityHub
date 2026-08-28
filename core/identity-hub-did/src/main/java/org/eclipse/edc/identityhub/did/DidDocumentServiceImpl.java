@@ -309,6 +309,11 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                                 .controller(dd.getDocument().getId())
                                 .type(event.getKeyType())
                                 .build());
+                        // the key signs this participant's Verifiable Presentations, and a verifier only accepts a VP
+                        // whose signing key the DID document declares for authentication (DCP §5.4.3)
+                        if (!dd.getDocument().getAuthentication().contains(event.getKeyId())) {
+                            dd.getDocument().getAuthentication().add(event.getKeyId());
+                        }
                         return ServiceResult.from(didResourceStore.update(dd))
                                 .compose(v -> publish(dd.getDid()));
                     })
@@ -336,7 +341,11 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
         var keyId = event.getKeyId();
 
         var errors = didResources.stream()
-                .peek(didResource -> didResource.getDocument().getVerificationMethod().removeIf(vm -> vm.getId().equals(keyId)))
+                .peek(didResource -> {
+                    didResource.getDocument().getVerificationMethod().removeIf(vm -> vm.getId().equals(keyId));
+                    // a revoked key must no longer be offered for authentication either
+                    didResource.getDocument().getAuthentication().removeIf(keyId::equals);
+                })
                 .map(didResourceStore::update)
                 .filter(StoreResult::failed)
                 .map(AbstractResult::getFailureDetail)

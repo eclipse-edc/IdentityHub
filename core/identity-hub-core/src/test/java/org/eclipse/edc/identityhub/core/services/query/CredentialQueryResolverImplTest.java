@@ -356,6 +356,34 @@ class CredentialQueryResolverImplTest {
         verify(monitor).warning(eq("Credential '%s' not valid: revoked".formatted(credential.getId())));
     }
 
+    // CS-PRES-12: a mixed set of one type - valid, expired and revoked - must present only the valid credential
+    @Test
+    @DisplayName("CS-PRES-12: only the valid credential of a valid/expired/revoked set is presented")
+    void query_mixedValidity_returnsOnlyValid() {
+        var valid = createCredential("TestCredential").expirationDate(Instant.now().plus(1, ChronoUnit.DAYS)).build();
+        var expired = createCredential("TestCredential").expirationDate(Instant.now().minus(1, ChronoUnit.DAYS)).build();
+        var revoked = createCredential("TestCredential")
+                .credentialStatus(new CredentialStatus("status-id", "StatusList2021Entry",
+                        Map.of("statusListCredential", "https://university.example/credentials/status/3",
+                                "statusPurpose", "revocation",
+                                "statusListIndex", 42)))
+                .build();
+        // only the revoked one carries a status list entry, so only it is checked against the registry
+        when(revocationServiceRegistry.checkValidity(revoked)).thenReturn(Result.failure("revoked"));
+        // built once: the resolver queries the store twice, and the two result sets are correlated by resource id
+        var resources = List.of(createCredentialResource(valid).build(),
+                createCredentialResource(expired).build(),
+                createCredentialResource(revoked).build());
+        when(storeMock.query(any())).thenAnswer(i -> success(resources));
+
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"),
+                List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
+
+        assertThat(res).isSucceeded();
+        assertThat(res.getContent().map(c -> c.credential().getId())).containsExactly(valid.getId());
+    }
+
     // CS-PRES-11: a query for the vc.id alias returns exactly the credential with that id
     @Test
     @DisplayName("CS-PRES-11: a vc.id scope resolves to exactly that credential")

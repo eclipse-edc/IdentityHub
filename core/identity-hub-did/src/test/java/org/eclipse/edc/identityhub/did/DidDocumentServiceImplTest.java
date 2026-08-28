@@ -20,6 +20,7 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import org.assertj.core.api.Assertions;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
@@ -576,6 +577,8 @@ class DidDocumentServiceImplTest {
         verify(didResourceStoreMock).findById(did); // happens during the publishing
         verifyNoMoreInteractions(didResourceStoreMock);
         verify(publisherMock).publish(eq(did));
+        // CS-PRES-13: a verifier only accepts a VP whose signing key the DID document declares for authentication
+        Assertions.assertThat(doc.getAuthentication()).containsExactly(keyId);
     }
 
     @SuppressWarnings("unchecked")
@@ -697,6 +700,7 @@ class DidDocumentServiceImplTest {
                         .id(keyId)
                         .publicKeyJwk(new ECKeyGenerator(Curve.P_256).keyID(keyId).generate().toJSONObject())
                         .build()))
+                .authentication(List.of(keyId))
                 .build();
         var did = doc.getId();
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
@@ -721,6 +725,8 @@ class DidDocumentServiceImplTest {
         verify(didResourceStoreMock).update(argThat(dr -> dr.getDocument().getVerificationMethod().stream().noneMatch(vm -> vm.getId().equals(keyId))));
         verifyNoMoreInteractions(didResourceStoreMock);
         verifyNoInteractions(publisherMock);
+        // a revoked key must not stay behind as an authentication method either
+        Assertions.assertThat(doc.getAuthentication()).doesNotContain(keyId);
     }
 
     @SuppressWarnings("unchecked")
