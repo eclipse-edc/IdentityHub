@@ -15,6 +15,7 @@
 package org.eclipse.edc.identityhub.spi.verifiablecredentials.generator;
 
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -23,7 +24,6 @@ import java.util.Collection;
  * after a <a href="https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol/HEAD/#credential-message">CredentialMessage</a>
  * was received. Credentials can be in several formats, thus the {@link CredentialWriter} uses delegate credential parsers to extract metadata.
  */
-@FunctionalInterface
 public interface CredentialWriter {
     /**
      * Writes a credential object to storage received by an Issuer when issuing credentials
@@ -36,4 +36,16 @@ public interface CredentialWriter {
      * @param participantContextId the participant context the credentials belong to
      */
     ServiceResult<Void> write(String holderPid, String holderDid, String issuerPid, String issuerDid, Collection<CredentialWriteRequest> credentials, String participantContextId);
+
+    /**
+     * Records that an Issuer rejected a credential request. The request is failed, so the Holder stops waiting for
+     * credentials that will never arrive. Nothing is stored.
+     *
+     * @param holderPid            identifies the Holder's credential request that was rejected
+     * @param issuerPid            the issuance process ID as reported by the Issuer
+     * @param issuerDid            the DID of the Issuer that reported the rejection, as authenticated from its Self-Issued ID token
+     * @param rejectionReason      why the Issuer rejected the request, or {@code null} if it did not say
+     * @param participantContextId the participant context the request belongs to
+     */
+    ServiceResult<Void> reject(String holderPid, String issuerPid, String issuerDid, @Nullable String rejectionReason, String participantContextId);
 }

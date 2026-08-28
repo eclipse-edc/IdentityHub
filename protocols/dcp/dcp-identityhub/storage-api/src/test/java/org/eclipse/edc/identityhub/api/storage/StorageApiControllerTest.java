@@ -211,16 +211,20 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
     // A3.16: a CredentialMessage with status=REJECTED must not store anything and must not transition the request to ISSUED; the request must end in an error/rejected state
     @Test
-    @DisplayName("A3.16: a REJECTED credential message stores nothing and does not transition the request to ISSUED")
-    void storeCredential_statusRejected_shouldNotStoreAndNotTransitionToIssued() {
+    @DisplayName("A3.16: a REJECTED credential message stores nothing and fails the request instead")
+    void storeCredential_statusRejected_shouldRejectRequestAndNotStore() {
         // message carries status=REJECTED and no credentials
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        var issuerPid = UUID.randomUUID().toString();
+        var holderPid = UUID.randomUUID().toString();
         when(transformerRegistry.transform(isA(JsonObject.class), eq(CredentialMessage.class)))
                 .thenReturn(Result.success(CredentialMessage.Builder.newInstance()
-                        .issuerPid(UUID.randomUUID().toString())
-                        .holderPid(UUID.randomUUID().toString())
+                        .issuerPid(issuerPid)
+                        .holderPid(holderPid)
                         .status("REJECTED")
+                        .rejectionReason("attestation not satisfied")
                         .build()));
+        when(credentialWriter.reject(anyString(), anyString(), anyString(), any(), anyString())).thenReturn(ServiceResult.success());
 
         baseRequest()
                 .header("Authorization", "Bearer " + generateJwt())
@@ -230,8 +234,31 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(200);
 
-        // the writer (which stores credentials and transitions the request to ISSUED) must never be invoked for a REJECTED message
+        // nothing is stored, but the request is failed so the holder stops waiting for it
         verify(credentialWriter, never()).write(anyString(), anyString(), anyString(), anyString(), anyCollection(), anyString());
+        verify(credentialWriter).reject(eq(holderPid), eq(issuerPid), anyString(), eq("attestation not satisfied"), anyString());
+    }
+
+    @Test
+    @DisplayName("A3.25: a rejection the writer refuses is surfaced as an error, not acknowledged")
+    void storeCredential_statusRejected_whenWriterFails_shouldReturn403() {
+        when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        when(transformerRegistry.transform(isA(JsonObject.class), eq(CredentialMessage.class)))
+                .thenReturn(Result.success(CredentialMessage.Builder.newInstance()
+                        .issuerPid(UUID.randomUUID().toString())
+                        .holderPid(UUID.randomUUID().toString())
+                        .status("REJECTED")
+                        .build()));
+        // e.g. the rejection came from an Issuer the request was never sent to
+        when(credentialWriter.reject(anyString(), anyString(), anyString(), any(), anyString())).thenReturn(ServiceResult.unauthorized("not your request"));
+
+        baseRequest()
+                .header("Authorization", "Bearer " + generateJwt())
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(403);
     }
 
     // A4.7: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (this endpoint already returns 401; the Credential Offer API currently returns 403 and must be adjusted)

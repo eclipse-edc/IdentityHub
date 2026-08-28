@@ -14,6 +14,8 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.spi.model;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,6 +28,7 @@ public class CredentialMessage {
     public static final String ISSUER_PID_TERM = "issuerPid";
     public static final String HOLDER_PID_TERM = "holderPid";
     public static final String STATUS_TERM = "status";
+    public static final String REJECTION_REASON_TERM = "rejectionReason";
     public static final String CREDENTIAL_MESSAGE_TERM = "CredentialMessage";
     public static final String STATUS_ISSUED = "ISSUED";
     public static final String STATUS_REJECTED = "REJECTED";
@@ -35,6 +38,7 @@ public class CredentialMessage {
     private String issuerPid;
     private String holderPid;
     private String status;
+    private String rejectionReason;
 
     public String getStatus() {
         return status;
@@ -50,6 +54,15 @@ public class CredentialMessage {
 
     public String getHolderPid() {
         return holderPid;
+    }
+
+    /**
+     * Why the Issuer rejected the request. Only carried on {@link #STATUS_REJECTED} messages, and {@code null} even
+     * then unless the Issuer supplied one.
+     */
+    @Nullable
+    public String getRejectionReason() {
+        return rejectionReason;
     }
 
     public static final class Builder {
@@ -85,6 +98,11 @@ public class CredentialMessage {
 
         public Builder status(String status) {
             this.credentialMessage.status = status;
+            return this;
+        }
+
+        public Builder rejectionReason(String rejectionReason) {
+            this.credentialMessage.rejectionReason = rejectionReason;
             return this;
         }
 

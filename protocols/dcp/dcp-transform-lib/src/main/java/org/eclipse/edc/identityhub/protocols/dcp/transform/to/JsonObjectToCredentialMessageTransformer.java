@@ -63,6 +63,12 @@ public class JsonObjectToCredentialMessageTransformer extends AbstractNamespaceA
         var status = transformString(jsonObject.get(forNamespace(CredentialMessage.STATUS_TERM)), transformerContext);
         requestMessage.status(status);
 
+        // OPTIONAL, and only meaningful on a rejection
+        var rejectionReason = jsonObject.get(forNamespace(CredentialMessage.REJECTION_REASON_TERM));
+        if (rejectionReason != null) {
+            requestMessage.rejectionReason(transformString(rejectionReason, transformerContext));
+        }
+
         if (credentials != null) {
             ofNullable(readCredentialContainers(credentials, transformerContext))
                     .map(requestMessage::credentials);

@@ -67,8 +67,10 @@ import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DC
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.REJECTION_REASON_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.STATUS_TERM;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.CREATED;
+import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ERROR;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.ISSUED;
 import static org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState.REQUESTED;
 import static org.eclipse.edc.identityhub.tests.fixtures.TestData.IH_RUNTIME_NAME;
@@ -309,15 +311,16 @@ public class StorageApiEndToEndTest {
         }
 
         // A3.16: CredentialMessage with status=REJECTED -> 2xx, nothing stored, holder request ends in an error/rejected state, NOT in ISSUED (currently still transitions to ISSUED)
-        @DisplayName("A3.16: A CredentialMessage with status=REJECTED stores nothing and does not transition the request to ISSUED")
+        @DisplayName("A3.16: A CredentialMessage with status=REJECTED stores nothing and fails the request")
         @Test
-        void storeCredential_whenStatusRejected_shouldNotStoreAndNotTransitionToIssued(IdentityHub identityHub, CredentialStore credentialStore, HolderCredentialRequestStore requestStore) throws JOSEException {
+        void storeCredential_whenStatusRejected_shouldNotStoreAndTransitionToError(IdentityHub identityHub, CredentialStore credentialStore, HolderCredentialRequestStore requestStore) throws JOSEException {
             // valid issuer key + a REJECTED message correlating to the pending request from setup()
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_DID + "#key1"))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             var rejectedMessage = Json.createObjectBuilder()
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(STATUS_TERM), "REJECTED")
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(ISSUER_PID_TERM), "test-request-id")
+                    .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(REJECTION_REASON_TERM), "attestation could not be satisfied")
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(HOLDER_PID_TERM), "test-holder-id")
                     .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CREDENTIALS_TERM), Json.createArrayBuilder()
                             .add(Json.createObjectBuilder()
@@ -338,10 +341,11 @@ public class StorageApiEndToEndTest {
             // nothing was stored
             assertThat(credentialStore.query(QuerySpec.max()).getContent()).isEmpty();
 
-            // the holder request must end in an error/rejected state, NOT in ISSUED
+            // the holder request is failed, so the holder stops waiting for credentials that will never arrive
             var holderRequest = requestStore.findById("test-holder-id");
             assertThat(holderRequest).isNotNull();
-            assertThat(holderRequest.stateAsEnum()).isNotEqualTo(ISSUED);
+            assertThat(holderRequest.stateAsEnum()).isEqualTo(ERROR);
+            assertThat(holderRequest.getErrorDetail()).contains("attestation could not be satisfied");
         }
 
         // A3.18: delivery signed by a DIFFERENT issuer DID than the one the request was addressed to (valid SI token for that other DID, correct aud) -> 4xx, nothing stored (currently accepted when type/format match)

@@ -104,12 +104,16 @@ public class StorageApiController implements StorageApi {
         // the token was verified against the DID document of its issuer, so the 'iss' claim identifies who delivers here
         var issuerDid = issuerClaims.getStringClaim(JwtRegisteredClaimNames.ISSUER);
 
-        if (Objects.equals(credentialMessage.getStatus(), CredentialMessage.STATUS_REJECTED)) {
-            return Response.ok().build();
-        }
-
         var holderPid = credentialMessage.getHolderPid();
         var issuerPid = credentialMessage.getIssuerPid();
+
+        // the Issuer reports that it will not issue the credentials, so the request is failed instead of waiting for a
+        // delivery that is never coming
+        if (Objects.equals(credentialMessage.getStatus(), CredentialMessage.STATUS_REJECTED)) {
+            return credentialWriter.reject(holderPid, issuerPid, issuerDid, credentialMessage.getRejectionReason(), participantContextId)
+                    .map(v -> Response.ok().build())
+                    .orElseThrow(exceptionMapper(CredentialMessage.class, null));
+        }
 
         var writeRequests = credentialMessage.getCredentials().stream().map(c -> new CredentialWriteRequest(c.payload(), c.format())).toList();
         return credentialWriter.write(holderPid, holderDid, issuerPid, issuerDid, writeRequests, participantContextId)
