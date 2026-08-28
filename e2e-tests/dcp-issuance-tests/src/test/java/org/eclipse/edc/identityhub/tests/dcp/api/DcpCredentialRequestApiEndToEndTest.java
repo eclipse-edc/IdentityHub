@@ -50,6 +50,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -58,7 +59,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -419,6 +419,41 @@ public class DcpCredentialRequestApiEndToEndTest {
 
         }
 
+        // B2.9: with edc.iam.accesstoken.jti.validation=true on the issuer runtime, sending two requests with the SAME jti in the SI token -> second request 401.
+        // NOTE: the issuer runtime used here already enables jti validation (DefaultRuntimes.Issuer.config() sets
+        // edc.iam.accesstoken.jti.validation=true), so no dedicated config-variant runtime is required.
+        @Test
+        @DisplayName("B2.9: replaying an SI token with the same jti is rejected with 401 on the second request")
+        void requestCredential_jtiReplay_shouldReturn401(IssuerService issuer, HolderService holderService) throws JOSEException {
+            // registered holder, resolvable key
+            holderService.createHolder(createHolder(PARTICIPANT_DID, PARTICIPANT_DID, "Participant"));
+            when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(DID_WEB_PARTICIPANT_KEY_1))).thenReturn(Result.success(PARTICIPANT_KEY.toPublicKey()));
+
+            // create ONE SI token and send it twice - the identical token carries the identical jti claim
+            var token = generateSiToken();
+
+            // the first request passes token validation and records the jti. It then fails with 400 because no
+            // credential definition exists - crucially NOT with 401, which proves the token itself was accepted.
+            issuer.getIssuerApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
+                    .post(issuanceUrl())
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+
+            // + assert: the second request replaying the SAME token (same jti) must be rejected with 401
+            issuer.getIssuerApiEndpoint().baseRequest()
+                    .contentType(JSON)
+                    .header(AUTHORIZATION, token)
+                    .body(VALID_CREDENTIAL_REQUEST_MESSAGE)
+                    .post(issuanceUrl())
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(401);
+        }
+
         private DidDocument generateDidDocument(String endpoint) {
 
             return DidDocument.Builder.newInstance()
@@ -446,7 +481,7 @@ public class DcpCredentialRequestApiEndToEndTest {
 
         private Holder createHolder(String id, String did, String name) {
             return Holder.Builder.newInstance()
-                    .participantContextId(UUID.randomUUID().toString())
+                    .participantContextId(ISSUER_ID)
                     .holderId(id)
                     .did(did)
                     .holderName(name)

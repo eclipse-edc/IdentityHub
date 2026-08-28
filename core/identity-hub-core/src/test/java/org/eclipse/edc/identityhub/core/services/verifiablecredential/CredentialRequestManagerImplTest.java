@@ -16,13 +16,19 @@ package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import okhttp3.MediaType;
+import okhttp3.Protocol;
+import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
+import org.assertj.core.api.Assertions;
 import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestMessage;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.identityhub.spi.authentication.ParticipantSecureTokenService;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
@@ -40,6 +46,7 @@ import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,12 +75,14 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -99,6 +108,7 @@ class CredentialRequestManagerImplTest {
             .transactionContext(new NoopTransactionContext())
             .monitor(mock())
             .waitStrategy(() -> 500L)
+            .statusPollIntervalMs(50)
             .build();
 
     @BeforeEach
@@ -124,6 +134,16 @@ class CredentialRequestManagerImplTest {
         return DidDocument.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .service(List.of(new Service(UUID.randomUUID().toString(), "IssuerService", "http://issuer.com/issuance")))
+                .build();
+    }
+
+    private Response response(int code, String message, String body) {
+        return new Response.Builder()
+                .request(new Request.Builder().url("http://issuer.com/issuance/credentials").build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(code)
+                .message(message)
+                .body(ResponseBody.create(body, MediaType.parse("application/json")))
                 .build();
     }
 
@@ -302,6 +322,98 @@ class CredentialRequestManagerImplTest {
                 inOrder.verify(httpClient).execute(any(), (Function<Response, Result<String>>) any());
                 inOrder.verify(store, times(1)).save(argThat(r -> r.getState() == ERROR.code() && r.getErrorDetail().equals("issuer failure bad request")));
             });
+        }
+
+        // A2.7: re-processing a request in REQUESTING (after crash/restart) re-sends the DCP request idempotently: same holderPid reused, an issuer 409/duplicate response must not transition the request to ERROR
+        @Test
+        @DisplayName("A2.7: re-processing a REQUESTING request reuses the holderPid, and an issuer duplicate response does not transition it to ERROR")
+        void processRequesting_whenIssuerReportsDuplicate_shouldNotTransitionToError() {
+            // a request that was already sent once (state REQUESTING); the issuer answers with 409/duplicate
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(), (Function<Response, Result<String>>) any()))
+                    .thenAnswer(i -> i.getArgument(1, Function.class).apply(response(409, "Conflict",
+                            "[{\"message\":\"An issuance process with holderPid 'test-request' already exists\"}]")));
+
+            var rq = createRequest()
+                    .state(REQUESTING.code())
+                    .build();
+            when(store.nextNotLeased(anyInt(), stateIs(REQUESTING.code())))
+                    .thenReturn(List.of(rq))
+                    .thenReturn(List.of());
+
+            credentialRequestService.start();
+
+            // the re-sent request reuses the same holderPid, and the issuer's 409 is treated as "already known", not as an error
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                verify(transformerRegistry).transform(argThat((CredentialRequestMessage m) -> "test-request".equals(m.getHolderPid())), eq(JsonObject.class));
+                verify(store, never()).save(argThat(r -> r.getState() == ERROR.code()));
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+                Assertions.assertThat(rq.getErrorDetail()).isNull();
+            });
+        }
+
+
+        // A6.5/C9: a request the Issuer accepted can still fail later, so the Holder polls the Issuer's status endpoint
+        @Test
+        @DisplayName("A6.5: an Issuer that reports REJECTED moves the request to ERROR")
+        void processRequested_whenIssuerReportsRejected_shouldTransitionToError() {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any()))
+                    .thenReturn(success(credentialRequestStatus(CredentialRequestStatus.Status.REJECTED)));
+
+            var rq = createRequest().state(REQUESTED.code()).issuerPid("issuer-pid").build();
+            when(store.query(any())).thenReturn(List.of(rq));
+            // the request is re-acquired before the rejection is recorded
+            when(store.findByIdAndLease(anyString())).thenReturn(StoreResult.success(rq));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                Assertions.assertThat(rq.getState()).isEqualTo(ERROR.code());
+                Assertions.assertThat(rq.getErrorDetail()).contains("issuer-pid");
+            });
+        }
+
+        @Test
+        @DisplayName("A6.5: an Issuer that reports RECEIVED leaves the request pending")
+        void processRequested_whenIssuerReportsReceived_shouldStayRequested() {
+            when(resolver.resolve(eq(ISSUER_DID))).thenReturn(success(didDocument()));
+            when(httpClient.execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any()))
+                    .thenReturn(success(credentialRequestStatus(CredentialRequestStatus.Status.RECEIVED)));
+
+            var rq = createRequest().state(REQUESTED.code()).issuerPid("issuer-pid").build();
+            when(store.query(any())).thenReturn(List.of(rq));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                verify(httpClient, atLeastOnce()).execute(any(), (Function<Response, Result<CredentialRequestStatus>>) any());
+                // the request is left pending, to be polled again on a later iteration
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+            });
+        }
+
+        @Test
+        @DisplayName("A6.5: a request whose Issuer process ID is unknown is not polled")
+        void processRequested_whenIssuerPidUnknown_shouldNotQueryIssuer() {
+            var rq = createRequest().state(REQUESTED.code()).build();
+            when(store.query(any())).thenReturn(List.of(rq));
+
+            credentialRequestService.start();
+
+            await().atMost(MAX_DURATION).untilAsserted(() -> {
+                verify(store, atLeastOnce()).query(any());
+                Assertions.assertThat(rq.getState()).isEqualTo(REQUESTED.code());
+                verifyNoInteractions(resolver);
+            });
+        }
+
+        private CredentialRequestStatus credentialRequestStatus(CredentialRequestStatus.Status status) {
+            return CredentialRequestStatus.Builder.newInstance()
+                    .status(status)
+                    .issuerPid("issuer-pid")
+                    .holderPid("test-request")
+                    .build();
         }
 
         private HolderCredentialRequest.Builder createRequest() {

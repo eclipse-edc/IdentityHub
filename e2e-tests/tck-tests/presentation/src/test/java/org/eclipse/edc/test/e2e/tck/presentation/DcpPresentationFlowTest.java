@@ -77,7 +77,10 @@ public class DcpPresentationFlowTest {
             .build()
             .registerServiceMock(ScopeToCriterionTransformer.class, TCK_TRANSFORMER)
             .registerServiceMock(RevocationServiceRegistry.class, REVOCATION_LIST_REGISTRY);
-    private static final String ISSUER_DID = "did:web:issuer";
+    // the TCK seeds the credentials through the Storage API, which only accepts them from the Issuer the seeded request was
+    // addressed to. The TCK derives its Issuer DID from the callback address and must stay resolvable there, so both sides
+    // are pinned to the same value here.
+    private static final String ISSUER_DID = "did:web:localhost%%3A%s:issuer".formatted(CALLBACK_PORT);
     public String holderDid;
     private ECKey holderKey;
 
@@ -93,7 +96,7 @@ public class DcpPresentationFlowTest {
                 .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .requestId(ISSUANCE_CORRELATION_ID)
                 .state(HolderRequestState.REQUESTED.code())
-                .issuerPid(UUID.randomUUID().toString())
+                // no issuerPid yet: it is whatever the Issuer reports when it delivers the credentials
                 .requestedCredential("membershipCredential-id", "MembershipCredential", "VC1_0_JWT")
                 .requestedCredential("sensitiveDataCredential-id", "SensitiveDataCredential", "VC1_0_JWT")
                 .build());
@@ -122,6 +125,7 @@ public class DcpPresentationFlowTest {
                         "dataspacetck.port", String.valueOf(baseCallbackUri.getPort()),
                         "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
                         "dataspacetck.did.holder", holderDid,
+                        "dataspacetck.did.issuer", ISSUER_DID,
                         "dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath),
                         "dataspacetck.sts.client.id", response.clientId(),
                         "dataspacetck.sts.client.secret", response.clientSecret(),

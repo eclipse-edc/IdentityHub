@@ -176,7 +176,7 @@ public class DcpIssuanceFlowAllInOneTest {
             var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
             var attestationDefinitionService = issuer.getService(AttestationDefinitionService.class);
 
-            participantService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId("participantContextId").build());
+            participantService.createHolder(Holder.Builder.newInstance().holderId(PARTICIPANT_ID).did(participantDid).holderName("Participant").participantContextId(ISSUER_ID).build());
 
             var attestationDefinition = AttestationDefinition.Builder.newInstance().id("attestation-id")
                     .attestationType("Attestation")

@@ -34,6 +34,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.validator.spi.Violation;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -62,11 +63,14 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     private final DcpIssuerTokenVerifier tokenVerifier = mock();
     private final IdentityHubParticipantContextService participantContextService = mock();
     private final CredentialOfferService offerService = mock();
-    private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, tokenVerifier, participantContextService, offerService, new TitaniumJsonLd(mock()));
+    private final CredentialObjectResolver credentialObjectResolver = mock();
+    private final CredentialOfferApiController controller = new CredentialOfferApiController(validatorRegistry, typeTransformerRegistry, tokenVerifier, participantContextService, offerService, new TitaniumJsonLd(mock()), credentialObjectResolver);
 
     @BeforeEach
     void setUp() {
         when(validatorRegistry.validate(anyString(), any())).thenReturn(ValidationResult.success());
+
+        when(credentialObjectResolver.resolve(any(), any())).thenAnswer(i -> Result.success(i.getArgument(1)));
 
         when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.success(
                 ClaimToken.Builder.newInstance()
@@ -122,17 +126,6 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
     }
 
     @Test
-    void offerCredential_invalidAuthToken_expect403() {
-        when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foobar"));
-        baseRequest()
-                .body(createRequestBody())
-                .post()
-                .then()
-                .log().ifValidationFails()
-                .statusCode(403);
-    }
-
-    @Test
     void offerCredential_missingAuthHeader_expect401() {
         given()
                 .contentType("application/json")
@@ -177,6 +170,21 @@ class CredentialOfferApiControllerTest extends RestControllerTestBase {
                 .then()
                 .log().ifValidationFails()
                 .statusCode(409);
+    }
+
+    // A4.7: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (the Storage API already returns 401; this endpoint currently returns 403)
+    @Test
+    @DisplayName("A4.7: token verification failure returns 401, consistent with the Storage API")
+    void offerCredential_invalidAuthToken_statusCode401() {
+        when(tokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foobar"));
+
+        // 401 is the agreed code for token-verification failures on both DCP endpoints
+        baseRequest()
+                .body(createRequestBody())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(401);
     }
 
     @Override

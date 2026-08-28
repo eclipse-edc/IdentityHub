@@ -26,6 +26,7 @@ import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParti
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.TitaniumJsonLd;
 import org.eclipse.edc.junit.annotations.ApiTest;
+import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.spi.iam.ClaimToken;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
@@ -36,6 +37,7 @@ import org.eclipse.edc.validator.spi.ValidationResult;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
@@ -56,6 +58,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -63,6 +67,7 @@ import static org.mockito.Mockito.when;
 @ApiTest
 class StorageApiControllerTest extends RestControllerTestBase {
 
+    private static final String HOLDER_DID = "did:web:holder";
     private final JsonObjectValidatorRegistry validatorRegistry = mock();
     private final TypeTransformerRegistry transformerRegistry = mock();
     private final Monitor monitor = mock();
@@ -78,7 +83,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
 
         when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.success(claimToken()));
         when(participantContextService.getParticipantContext(anyString())).thenReturn(ServiceResult.success(participantContext()));
-        when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.success());
+        when(credentialWriter.write(anyString(), anyString(), anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.success());
     }
 
     @Test
@@ -177,7 +182,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     @Test
     void storeCredential_writerFails_shouldReturn400() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
-        when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.badRequest("foo"));
+        when(credentialWriter.write(anyString(), anyString(), anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.badRequest("foo"));
 
         baseRequest()
                 .header("Authorization", "Bearer " + generateJwt())
@@ -192,7 +197,7 @@ class StorageApiControllerTest extends RestControllerTestBase {
     @Test
     void storeCredential_writerReturnsNotAuthorized_shouldReturn403() {
         when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
-        when(credentialWriter.write(anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.unauthorized("foo"));
+        when(credentialWriter.write(anyString(), anyString(), anyString(), anyString(), anyCollection(), anyString())).thenReturn(ServiceResult.unauthorized("foo"));
 
         baseRequest()
                 .header("Authorization", "Bearer " + generateJwt())
@@ -202,6 +207,48 @@ class StorageApiControllerTest extends RestControllerTestBase {
                 .log().ifValidationFails()
                 .statusCode(403)
                 .body(containsString("foo"));
+    }
+
+    // A3.16: a CredentialMessage with status=REJECTED must not store anything and must not transition the request to ISSUED; the request must end in an error/rejected state
+    @Test
+    @DisplayName("A3.16: a REJECTED credential message stores nothing and does not transition the request to ISSUED")
+    void storeCredential_statusRejected_shouldNotStoreAndNotTransitionToIssued() {
+        // message carries status=REJECTED and no credentials
+        when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        when(transformerRegistry.transform(isA(JsonObject.class), eq(CredentialMessage.class)))
+                .thenReturn(Result.success(CredentialMessage.Builder.newInstance()
+                        .issuerPid(UUID.randomUUID().toString())
+                        .holderPid(UUID.randomUUID().toString())
+                        .status("REJECTED")
+                        .build()));
+
+        baseRequest()
+                .header("Authorization", "Bearer " + generateJwt())
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200);
+
+        // the writer (which stores credentials and transitions the request to ISSUED) must never be invoked for a REJECTED message
+        verify(credentialWriter, never()).write(anyString(), anyString(), anyString(), anyString(), anyCollection(), anyString());
+    }
+
+    // A4.7: token-verification failure must return the same status code on both DCP endpoints — aligned on 401 (this endpoint already returns 401; the Credential Offer API currently returns 403 and must be adjusted)
+    @Test
+    @DisplayName("A4.7: token verification failure returns 401, consistent with the Offer API")
+    void storeCredential_tokenVerificationFails_statusCodeConsistentWithOfferApi() {
+        when(validatorRegistry.validate(any(), any())).thenReturn(ValidationResult.success());
+        when(issuerTokenVerifier.verify(any(), anyString())).thenReturn(Result.failure("foo"));
+
+        // 401 is the agreed code for token-verification failures on both DCP endpoints
+        baseRequest()
+                .header("Authorization", "Bearer " + generateJwt())
+                .body(credentialMessageJson())
+                .post()
+                .then()
+                .log().ifValidationFails()
+                .statusCode(401);
     }
 
     @Override
@@ -217,7 +264,8 @@ class StorageApiControllerTest extends RestControllerTestBase {
     }
 
     private ClaimToken claimToken() {
-        return ClaimToken.Builder.newInstance().build();
+        // the 'iss' claim identifies the Issuer that delivers the credentials
+        return ClaimToken.Builder.newInstance().claim(JwtRegisteredClaimNames.ISSUER, "did:web:issuer").build();
     }
 
     private IdentityHubParticipantContext participantContext() {

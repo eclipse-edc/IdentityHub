@@ -39,8 +39,10 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.eclipse.edc.spi.retry.ExponentialWaitStrategy;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.statemachine.retry.EntityRetryProcessConfiguration;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -48,6 +50,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,7 +66,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,6 +83,7 @@ public class IssuanceProcessManagerImplTest {
     private final CredentialStore credentialStore = mock();
     private final CredentialStorageClient credentialStorageClient = mock();
     private final CredentialStatusService credentialStatusService = mock();
+    private final Vault vault = mock();
     private final IssuanceObservable issuanceObservable = new IssuanceObservableImpl();
     private final IssuanceEventListener listener = mock();
     private IssuanceProcessManager issuanceProcessManager;
@@ -85,6 +92,8 @@ public class IssuanceProcessManagerImplTest {
     void setup() {
         issuanceObservable.registerListener(listener);
         var entityRetryProcessConfiguration = new EntityRetryProcessConfiguration(1, () -> new ExponentialWaitStrategy(0L));
+        when(vault.deleteSecret(any())).thenReturn(Result.success());
+
         issuanceProcessManager = IssuanceProcessManagerImpl.Builder.newInstance()
                 .entityRetryProcessConfiguration(entityRetryProcessConfiguration)
                 .store(issuanceProcessStore)
@@ -95,6 +104,7 @@ public class IssuanceProcessManagerImplTest {
                 .credentialStorageClient(credentialStorageClient)
                 .credentialStatusService(credentialStatusService)
                 .observable(issuanceObservable)
+                .vault(vault)
                 .monitor(monitor)
                 .clock(clock)
                 .build();
@@ -162,6 +172,9 @@ public class IssuanceProcessManagerImplTest {
             verify(listener).approved(process);
             verify(listener).generated(eq(process), any());
             verify(listener).delivered(eq(process), any());
+
+            // the Holder's access token has served its purpose and must not linger in the vault
+            verify(vault).deleteSecret(process.getId());
         });
     }
 
@@ -194,6 +207,251 @@ public class IssuanceProcessManagerImplTest {
         await().untilAsserted(() -> {
             verify(issuanceProcessStore).save(argThat(p -> p.getState() == ERRORED.code()));
             verify(listener).approved(process);
+        });
+    }
+
+    // B3.3: failure in the "add credentials to status list" step is a FATAL_ERROR: the process transitions to ERRORED immediately, without retry
+    @DisplayName("B3.3: status-list failure transitions the process to ERRORED immediately, without retry")
+    @Test
+    void approved_shouldTransitionToErroredImmediately_whenStatusListUpdateFails() {
+        var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                .id("membership-credential-id")
+                .credentialType("MembershipCredential")
+                .jsonSchemaUrl("http://example.org/schema")
+                .jsonSchema("{}")
+                .participantContextId("participantContextId")
+                .formatFrom(VC1_0_JWT)
+                .build();
+
+        var credential = new VerifiableCredentialContainer("", VC1_0_JWT, VerifiableCredential.Builder.newInstance()
+                .type("MembershipCredential")
+                .issuer(new Issuer("did:example:issuer"))
+                .issuanceDate(Instant.now())
+                .credentialSubject(CredentialSubject.Builder.newInstance().id("did:example:holder").claims(Map.of("member", "Alice")).build())
+                .build());
+
+        // stateCount(1): retries would still be available - a FATAL_ERROR must not use them
+        var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
+                .holderId("holderId")
+                .participantContextId("participantContextId")
+                .holderPid("holderPid")
+                .credentialFormats(Map.of(credentialDefinition.getId(), VC1_0_JWT))
+                .stateCount(1)
+                .build();
+
+        var savedStates = new CopyOnWriteArrayList<Integer>();
+        when(issuanceProcessStore.save(any())).thenAnswer(invocation -> {
+            savedStates.add(invocation.getArgument(0, IssuanceProcess.class).getState());
+            return StoreResult.success();
+        });
+        when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(APPROVED.code()))).thenReturn(List.of(process)).thenReturn(emptyList());
+        when(credentialDefinitionStore.query(any())).thenReturn(StoreResult.success(List.of(credentialDefinition)));
+        when(credentialGenerator.generateCredentials(any(), any(), any(), any())).thenReturn(Result.success(List.of(credential)));
+        // the status-list step fails
+        when(credentialStatusService.addCredential(any(), any())).thenReturn(ServiceResult.unexpected("status list failure"));
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> {
+            // a FATAL_ERROR must skip the retry path: the only save is the transition to ERRORED, never back to APPROVED
+            assertThat(savedStates).containsExactly(ERRORED.code());
+            verify(credentialStorageClient, never()).deliverCredentials(any(), any());
+            assertThat(process.getErrorDetail()).contains("status list failure");
+            verify(listener).errored(eq(process), any());
+
+            // the process is terminal, so the Holder's access token must not linger in the vault
+            verify(vault).deleteSecret(process.getId());
+        });
+    }
+
+    // B3.4: delivery failure -> retry (transitionToApproved, stateCount incremented); once the retry limit is exhausted -> ERRORED with error detail, errored event fired
+    @DisplayName("B3.4: delivery failure is retried, then transitions to ERRORED once the retry limit is exhausted")
+    @Test
+    void approved_shouldRetryAndEventuallyError_whenDeliveryFails() {
+        var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                .id("membership-credential-id")
+                .credentialType("MembershipCredential")
+                .jsonSchemaUrl("http://example.org/schema")
+                .jsonSchema("{}")
+                .participantContextId("participantContextId")
+                .formatFrom(VC1_0_JWT)
+                .build();
+
+        var credential = new VerifiableCredentialContainer("", VC1_0_JWT, VerifiableCredential.Builder.newInstance()
+                .type("MembershipCredential")
+                .issuer(new Issuer("did:example:issuer"))
+                .issuanceDate(Instant.now())
+                .credentialSubject(CredentialSubject.Builder.newInstance().id("did:example:holder").claims(Map.of("member", "Alice")).build())
+                .build());
+
+        // stateCount(1) is below the retry limit of 1: first failure -> retry, second failure -> final
+        var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
+                .holderId("holderId")
+                .participantContextId("participantContextId")
+                .holderPid("holderPid")
+                .credentialFormats(Map.of(credentialDefinition.getId(), VC1_0_JWT))
+                .stateCount(1)
+                .build();
+
+        var savedTransitions = new CopyOnWriteArrayList<Map.Entry<Integer, Integer>>();
+        when(issuanceProcessStore.save(any())).thenAnswer(invocation -> {
+            var saved = invocation.getArgument(0, IssuanceProcess.class);
+            savedTransitions.add(Map.entry(saved.getState(), saved.getStateCount()));
+            return StoreResult.success();
+        });
+        when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(APPROVED.code())))
+                .thenReturn(List.of(process))
+                .thenReturn(List.of(process))
+                .thenReturn(emptyList());
+        when(credentialDefinitionStore.query(any())).thenReturn(StoreResult.success(List.of(credentialDefinition)));
+        when(credentialGenerator.generateCredentials(any(), any(), any(), any())).thenReturn(Result.success(List.of(credential)));
+        when(credentialStatusService.addCredential(any(), any())).thenReturn(ServiceResult.success(credential.credential()));
+        when(credentialGenerator.signCredential(any(), any(), any())).thenReturn(Result.success(credential));
+        // holder unreachable / non-2xx from the Storage API
+        when(credentialStorageClient.deliverCredentials(any(), any())).thenReturn(Result.failure("holder unreachable"));
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> {
+            verify(credentialStorageClient, times(2)).deliverCredentials(any(), any());
+            assertThat(savedTransitions).hasSize(2);
+            // first failure: retry via transitionToApproved with incremented stateCount
+            assertThat(savedTransitions.get(0).getKey()).isEqualTo(APPROVED.code());
+            assertThat(savedTransitions.get(0).getValue()).isEqualTo(2);
+            // second failure: retry limit exhausted -> ERRORED, errored event fired
+            assertThat(savedTransitions.get(1).getKey()).isEqualTo(ERRORED.code());
+            // NOTE: deliverCredentials() maps the failure to StatusResult.failure(ERROR_RETRY) WITHOUT the failure
+            //  detail, so 'holder unreachable' is not preserved in the errorDetail today
+            assertThat(process.getErrorDetail()).isNotNull();
+            verify(listener).errored(eq(process), any());
+        });
+    }
+
+    // B3.5: credential store failure AFTER successful delivery -> the process retries and RE-DELIVERS on the next tick (duplicate delivery)
+    @DisplayName("B3.5: a store failure after successful delivery causes the credentials to be re-delivered on the next iteration")
+    @Test
+    void approved_shouldRedeliver_whenStoreFailsAfterSuccessfulDelivery() {
+        // NOTE: the "Deliver Credentials" step runs BEFORE "Store Credentials"; a store failure sends the process back to
+        //  APPROVED, so the next state-machine pass delivers the same credentials to the holder AGAIN. This documents the
+        //  duplicate-delivery behavior caused by the delivery-before-persistence ordering (pairs with catalog A3.24).
+        var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                .id("membership-credential-id")
+                .credentialType("MembershipCredential")
+                .jsonSchemaUrl("http://example.org/schema")
+                .jsonSchema("{}")
+                .participantContextId("participantContextId")
+                .formatFrom(VC1_0_JWT)
+                .build();
+
+        var credential = new VerifiableCredentialContainer("", VC1_0_JWT, VerifiableCredential.Builder.newInstance()
+                .type("MembershipCredential")
+                .issuer(new Issuer("did:example:issuer"))
+                .issuanceDate(Instant.now())
+                .credentialSubject(CredentialSubject.Builder.newInstance().id("did:example:holder").claims(Map.of("member", "Alice")).build())
+                .build());
+
+        var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
+                .holderId("holderId")
+                .participantContextId("participantContextId")
+                .holderPid("holderPid")
+                .credentialFormats(Map.of(credentialDefinition.getId(), VC1_0_JWT))
+                .stateCount(1)
+                .build();
+
+        var savedTransitions = new CopyOnWriteArrayList<Map.Entry<Integer, Integer>>();
+        when(issuanceProcessStore.save(any())).thenAnswer(invocation -> {
+            var saved = invocation.getArgument(0, IssuanceProcess.class);
+            savedTransitions.add(Map.entry(saved.getState(), saved.getStateCount()));
+            return StoreResult.success();
+        });
+        // the process is picked up twice: original pass + retry pass after the store failure
+        when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(APPROVED.code())))
+                .thenReturn(List.of(process))
+                .thenReturn(List.of(process))
+                .thenReturn(emptyList());
+        when(credentialDefinitionStore.query(any())).thenReturn(StoreResult.success(List.of(credentialDefinition)));
+        when(credentialGenerator.generateCredentials(any(), any(), any(), any())).thenReturn(Result.success(List.of(credential)));
+        when(credentialStatusService.addCredential(any(), any())).thenReturn(ServiceResult.success(credential.credential()));
+        when(credentialGenerator.signCredential(any(), any(), any())).thenReturn(Result.success(credential));
+        // delivery succeeds ...
+        when(credentialStorageClient.deliverCredentials(any(), any())).thenReturn(Result.success());
+        // ... but persisting the issuance-tracking resource fails afterwards
+        when(credentialStore.create(any())).thenReturn(StoreResult.generalError("store failure"));
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> {
+            // the holder received the same credentials twice
+            verify(credentialStorageClient, times(2)).deliverCredentials(any(), any());
+            assertThat(savedTransitions).hasSize(2);
+            // the process was sent back to APPROVED with an incremented stateCount between the two deliveries
+            assertThat(savedTransitions.get(0).getKey()).isEqualTo(APPROVED.code());
+            assertThat(savedTransitions.get(0).getValue()).isEqualTo(2);
+            assertThat(savedTransitions.get(1).getKey()).isEqualTo(ERRORED.code());
+        });
+    }
+
+    // B3.7: the state machine honors the retry/backoff configuration from the 'edc.issuer.issuance' settings context (batch size, retry limit)
+    @DisplayName("B3.7: the state machine honors the configured batch size and retry limit")
+    @Test
+    void shouldHonorRetryAndBatchConfiguration() {
+        // an IssuanceProcessManagerImpl configured the way IssuanceCoreExtension does from the 'edc.issuer.issuance.*' settings
+        var batchSize = 5;
+        var retryLimit = 2;
+        var configuredManager = IssuanceProcessManagerImpl.Builder.newInstance()
+                .entityRetryProcessConfiguration(new EntityRetryProcessConfiguration(retryLimit, () -> new ExponentialWaitStrategy(0L)))
+                .batchSize(batchSize)
+                .store(issuanceProcessStore)
+                .waitStrategy(() -> 50L)
+                .credentialGeneratorRegistry(credentialGenerator)
+                .credentialDefinitionStore(credentialDefinitionStore)
+                .credentialStore(credentialStore)
+                .credentialStorageClient(credentialStorageClient)
+                .credentialStatusService(credentialStatusService)
+                .observable(issuanceObservable)
+                .vault(vault)
+                .monitor(monitor)
+                .clock(clock)
+                .build();
+
+        var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                .id("membership-credential-id")
+                .credentialType("MembershipCredential")
+                .jsonSchemaUrl("http://example.org/schema")
+                .jsonSchema("{}")
+                .participantContextId("participantContextId")
+                .formatFrom(VC1_0_JWT)
+                .build();
+
+        var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
+                .holderId("holderId")
+                .participantContextId("participantContextId")
+                .holderPid("holderPid")
+                .credentialFormats(Map.of(credentialDefinition.getId(), VC1_0_JWT))
+                .stateCount(1)
+                .build();
+
+        var savedStates = new CopyOnWriteArrayList<Integer>();
+        when(issuanceProcessStore.save(any())).thenAnswer(invocation -> {
+            savedStates.add(invocation.getArgument(0, IssuanceProcess.class).getState());
+            return StoreResult.success();
+        });
+        // entities must be fetched with the configured batch size
+        when(issuanceProcessStore.nextNotLeased(eq(batchSize), stateIs(APPROVED.code())))
+                .thenReturn(List.of(process))
+                .thenReturn(List.of(process))
+                .thenReturn(List.of(process))
+                .thenReturn(emptyList());
+        when(credentialDefinitionStore.query(any())).thenReturn(StoreResult.success(List.of(credentialDefinition)));
+        // credential generation keeps failing with a retriable error
+        when(credentialGenerator.generateCredentials(any(), any(), any(), any())).thenReturn(Result.failure("generation failure"));
+
+        configuredManager.start();
+
+        await().untilAsserted(() -> {
+            verify(issuanceProcessStore, atLeastOnce()).nextNotLeased(eq(batchSize), stateIs(APPROVED.code()));
+            // the process is retried exactly 'retryLimit' times (saves back to APPROVED) before transitioning to ERRORED
+            assertThat(savedStates).containsExactly(APPROVED.code(), APPROVED.code(), ERRORED.code());
         });
     }
 

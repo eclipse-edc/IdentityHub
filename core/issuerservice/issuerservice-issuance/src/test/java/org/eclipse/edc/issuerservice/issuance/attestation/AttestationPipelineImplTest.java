@@ -19,6 +19,7 @@ import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationDefinit
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSource;
 import org.eclipse.edc.issuerservice.spi.issuance.attestation.AttestationSourceFactory;
 import org.eclipse.edc.issuerservice.spi.issuance.model.AttestationDefinition;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;
@@ -97,6 +98,41 @@ class AttestationPipelineImplTest {
         verify(store).resolveDefinition("a123");
         verify(sourceFactory, times(1)).createSource(isA(AttestationDefinition.class));
         verify(failedSource, times(1)).execute(isA(AttestationContext.class));
+    }
+
+    // B4.8: evaluation referencing an unknown attestation id must fail gracefully, not with an NPE
+    // NOTE: this documents intended behavior - currently evaluate() throws an NPE from requireNonNull("Unknown attestation: ...")
+    @DisplayName("B4.8: evaluating an unknown attestation id fails gracefully instead of throwing an NPE")
+    @Test
+    void evaluate_whenUnknownAttestationId_shouldFailGracefully() {
+        var store = mock(AttestationDefinitionStore.class);
+        var attestationContext = mock(AttestationContext.class);
+        // the store cannot resolve the attestation id
+        when(store.resolveDefinition(eq("unknown-id"))).thenReturn(null);
+
+        var pipeline = new AttestationPipelineImpl(store);
+
+        var result = pipeline.evaluate(Set.of("unknown-id"), attestationContext);
+
+        assertThat(result).isFailed();
+    }
+
+    // B4.8: attestation definition with an unregistered attestation type must fail gracefully, not with an NPE
+    // NOTE: this documents intended behavior - currently evaluate() throws an NPE from requireNonNull("Unknown attestation type: ...")
+    @DisplayName("B4.8: evaluating a definition with an unregistered attestation type fails gracefully instead of throwing an NPE")
+    @Test
+    void evaluate_whenUnregisteredAttestationType_shouldFailGracefully() {
+        var attestationDefinition = createAttestationDefinition("a123", "unregistered-type", Map.of());
+        var store = mock(AttestationDefinitionStore.class);
+        var attestationContext = mock(AttestationContext.class);
+        when(store.resolveDefinition(eq("a123"))).thenReturn(attestationDefinition);
+
+        // no AttestationSourceFactory is registered for "unregistered-type"
+        var pipeline = new AttestationPipelineImpl(store);
+
+        var result = pipeline.evaluate(Set.of("a123"), attestationContext);
+
+        assertThat(result).isFailed();
     }
 
     private AttestationDefinition createAttestationDefinition(String id, String type, Map<String, Object> configuration) {

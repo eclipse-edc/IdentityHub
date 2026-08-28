@@ -166,6 +166,8 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
         authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
                 .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
 
+        validateCredentialRequest(credentialRequestDto);
+
         var holderPid = ofNullable(credentialRequestDto.holderPid()).orElseGet(() -> UUID.randomUUID().toString());
         var requestParameters = credentialRequestDto.credentials().stream().map(cd -> new RequestedCredential(cd.id(), cd.type(), cd.format())).toList();
 
@@ -186,6 +188,8 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
 
         return ofNullable(credentialRequestService.findById(holderPid))
+                // requests of other participant contexts must not be visible here
+                .filter(req -> participantContextId.equals(req.getParticipantContextId()))
                 .map(req -> new HolderCredentialRequestDto(req.getIssuerDid(), req.getHolderPid(), req.getIssuerPid(), req.stateAsString(), req.getIdsAndFormats()))
                 .orElseThrow(() -> new ObjectNotFoundException(HolderCredentialRequest.class, holderPid));
     }
@@ -202,6 +206,29 @@ public class VerifiableCredentialsApiController implements VerifiableCredentials
                 .orElseThrow(exceptionMapper(IdentityHubParticipantContext.class, participantContextId));
 
         discriminatorMappings.forEach(discriminatorMappingRegistry::addMapping);
+    }
+
+    /**
+     * Asserts that a credential request carries everything needed to send a DCP credential request to the Issuer.
+     */
+    private void validateCredentialRequest(@Nullable CredentialRequestDto credentialRequestDto) {
+        if (credentialRequestDto == null) {
+            throw new InvalidRequestException("Request body is missing");
+        }
+        if (StringUtils.isNullOrBlank(credentialRequestDto.issuerDid())) {
+            throw new InvalidRequestException("Property 'issuerDid' is required");
+        }
+        if (credentialRequestDto.credentials() == null || credentialRequestDto.credentials().isEmpty()) {
+            throw new InvalidRequestException("Property 'credentials' must contain at least one entry");
+        }
+        credentialRequestDto.credentials().forEach(credential -> {
+            if (credential == null || StringUtils.isNullOrBlank(credential.id())) {
+                throw new InvalidRequestException("Every entry of 'credentials' must contain a non-empty 'id'");
+            }
+            if (StringUtils.isNullOrBlank(credential.format())) {
+                throw new InvalidRequestException("Every entry of 'credentials' must contain a non-empty 'format'");
+            }
+        });
     }
 
 }

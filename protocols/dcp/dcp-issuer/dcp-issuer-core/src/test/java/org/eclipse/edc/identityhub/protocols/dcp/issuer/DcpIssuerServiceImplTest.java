@@ -34,8 +34,10 @@ import org.eclipse.edc.issuerservice.spi.issuance.rule.CredentialRuleDefinitionE
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceFailure;
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.transaction.spi.NoopTransactionContext;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -48,6 +50,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC1_0_JWT;
+import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat.VC2_0_JOSE;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -67,9 +70,10 @@ public class DcpIssuerServiceImplTest {
     private final CredentialRuleDefinitionEvaluator credentialRuleDefinitionEvaluator = mock();
     private final DcpProfileRegistry dcpProfileRegistry = mock();
     private final IssuanceObservable issuanceObservable = mock();
+    private final Vault vault = mock();
 
     private final DcpIssuerService dcpIssuerService = new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService,
-            issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, dcpProfileRegistry, mock(), issuanceObservable);
+            issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, dcpProfileRegistry, mock(), issuanceObservable, vault);
 
 
     @Test
@@ -95,7 +99,7 @@ public class DcpIssuerServiceImplTest {
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
-        var participant = new DcpRequestContext(holder, Map.of());
+        var participant = new DcpRequestContext(holder, Map.of(), "holder-access-token");
 
         Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
 
@@ -123,6 +127,8 @@ public class DcpIssuerServiceImplTest {
         assertThat(issuanceProcess.getClaims()).containsAllEntriesOf(claims);
         assertThat(issuanceProcess.getParticipantContextId()).isEqualTo("participantContextId");
         assertThat(issuanceProcess.getHolderPid()).isEqualTo(message.getHolderPid());
+        // it is needed later, when the credentials are delivered to the Holder
+        verify(vault).storeSecret(issuanceProcess.getId(), "holder-access-token");
 
         var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
         //noinspection unchecked
@@ -154,7 +160,7 @@ public class DcpIssuerServiceImplTest {
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
-        var participant = new DcpRequestContext(holder, Map.of());
+        var participant = new DcpRequestContext(holder, Map.of(), null);
 
         var existingProcess = IssuanceProcess.Builder.newInstance().holderPid(holderPid).holderId("holderId").participantContextId("participantContextId").state(IssuanceProcessStates.APPROVED.code()).build();
 
@@ -194,7 +200,7 @@ public class DcpIssuerServiceImplTest {
                 .build();
 
         var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
-        var participant = new DcpRequestContext(holder, Map.of());
+        var participant = new DcpRequestContext(holder, Map.of(), null);
 
         when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.notFound("test-failure"));
         when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
@@ -213,6 +219,161 @@ public class DcpIssuerServiceImplTest {
         //noinspection unchecked
         listenerCaptor.getValue().accept(listener);
         verify(listener).rejected(eq(message.getHolderPid()), eq("participantContextId"), eq("test-failure"));
+    }
+
+    // B1.8: CredentialRequestMessage with an empty credentials list -> badRequest "No credentials requested", nothing persisted, rejected event fired
+    @DisplayName("B1.8: an empty credentials list is rejected with 400 'No credentials requested', nothing is persisted, a rejected event is fired")
+    @Test
+    void initiateCredentialsIssuance_whenNoCredentialsRequested_returnsBadRequest() {
+        // message without any credential specifiers
+        var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(UUID.randomUUID().toString())
+                .build();
+        var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
+        var participant = new DcpRequestContext(holder, Map.of(), null);
+
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
+
+        assertThat(result).isFailed().satisfies(f -> {
+            assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+            assertThat(f.getFailureDetail()).isEqualTo("No credentials requested");
+        });
+        verify(issuanceProcessStore, never()).save(any());
+
+        var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
+        //noinspection unchecked
+        verify(issuanceObservable).invokeForEach(listenerCaptor.capture());
+        var listener = mock(IssuanceEventListener.class);
+        //noinspection unchecked
+        listenerCaptor.getValue().accept(listener);
+        verify(listener).rejected(message.getHolderPid(), "participantContextId", "No credentials requested");
+    }
+
+    // B1.10: requested format differs from the credential definition's format -> badRequest
+    @DisplayName("B1.10: a requested format that differs from the credential definition's format is rejected with 400")
+    @Test
+    void initiateCredentialsIssuance_whenRequestedFormatDiffersFromDefinitionFormat_returnsBadRequest() {
+        var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(UUID.randomUUID().toString())
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
+                .build();
+
+        // the definition resolved while parsing the requested formats reports VC1_0_JWT ...
+        var jwtDefinition = CredentialDefinition.Builder.newInstance()
+                .id("credentialDefinitionId1")
+                .credentialType("MembershipCredential")
+                .jsonSchema("jsonSchema")
+                .jsonSchemaUrl("jsonSchemaUrl")
+                .attestations(Set.of("attestation1"))
+                .participantContextId("participantContextId")
+                .formatFrom(VC1_0_JWT)
+                .build();
+        // ... but the definition returned by the query carries a different format
+        var joseDefinition = CredentialDefinition.Builder.newInstance()
+                .id("credentialDefinitionId1")
+                .credentialType("MembershipCredential")
+                .jsonSchema("jsonSchema")
+                .jsonSchemaUrl("jsonSchemaUrl")
+                .attestations(Set.of("attestation1"))
+                .participantContextId("participantContextId")
+                .formatFrom(VC2_0_JOSE)
+                .build();
+
+        var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
+        var participant = new DcpRequestContext(holder, Map.of(), null);
+
+        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(jwtDefinition));
+        when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(joseDefinition)));
+
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
+
+        assertThat(result).isFailed().satisfies(f -> {
+            assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+            assertThat(f.getFailureDetail()).contains("not supported for credential type MembershipCredential");
+        });
+        verify(issuanceProcessStore, never()).save(any());
+    }
+
+    // B1.11: no DCP profile registered for the credential definition's format -> badRequest
+    @DisplayName("B1.11: a credential definition format without a registered DCP profile is rejected with 400")
+    @Test
+    void initiateCredentialsIssuance_whenNoProfileRegisteredForFormat_returnsBadRequest() {
+        var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(UUID.randomUUID().toString())
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
+                .build();
+
+        var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                .id("credentialDefinitionId1")
+                .credentialType("MembershipCredential")
+                .jsonSchema("jsonSchema")
+                .jsonSchemaUrl("jsonSchemaUrl")
+                .attestations(Set.of("attestation1"))
+                .participantContextId("participantContextId")
+                .formatFrom(VC1_0_JWT)
+                .build();
+
+        var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
+        var participant = new DcpRequestContext(holder, Map.of(), null);
+
+        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
+        when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
+        // no DCP profile registered for VC1_0_JWT
+        when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of());
+
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
+
+        assertThat(result).isFailed().satisfies(f -> {
+            assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+            assertThat(f.getFailureDetail()).isEqualTo("No DCP profiles found for credential format VC1_0_JWT");
+        });
+        verify(issuanceProcessStore, never()).save(any());
+    }
+
+    // B1.12: credential definition with zero attestations -> badRequest "No attestations found"
+    // NOTE: verify this constraint is intended - it implies that EVERY credential definition needs at least one attestation
+    @DisplayName("B1.12: a credential definition without attestations is rejected with 400 'No attestations found'")
+    @Test
+    void initiateCredentialsIssuance_whenDefinitionHasNoAttestations_returnsBadRequest() {
+        var message = CredentialRequestMessage.Builder.newInstance()
+                .holderPid(UUID.randomUUID().toString())
+                .credential(new CredentialRequestSpecifier("credentialDefinitionId1"))
+                .build();
+
+        // definition without any attestations
+        var credentialDefinition = CredentialDefinition.Builder.newInstance()
+                .id("credentialDefinitionId1")
+                .credentialType("MembershipCredential")
+                .jsonSchema("jsonSchema")
+                .jsonSchemaUrl("jsonSchemaUrl")
+                .attestations(Set.of())
+                .participantContextId("participantContextId")
+                .formatFrom(VC1_0_JWT)
+                .build();
+
+        var holder = Holder.Builder.newInstance().holderId("holderId").did("participantDid").holderName("name").participantContextId("participantContextId").build();
+        var participant = new DcpRequestContext(holder, Map.of(), null);
+
+        when(credentialDefinitionService.findCredentialDefinitionById(anyString())).thenReturn(ServiceResult.success(credentialDefinition));
+        when(credentialDefinitionService.queryCredentialDefinitions(any())).thenReturn(ServiceResult.success(List.of(credentialDefinition)));
+        when(dcpProfileRegistry.profilesFor(VC1_0_JWT)).thenReturn(List.of(new DcpProfile("profile", VC1_0_JWT, "statusType")));
+
+        var result = dcpIssuerService.initiateCredentialsIssuance("participantContextId", message, participant);
+
+        assertThat(result).isFailed().satisfies(f -> {
+            assertThat(f.getReason()).isEqualTo(ServiceFailure.Reason.BAD_REQUEST);
+            assertThat(f.getFailureDetail()).isEqualTo("No attestations found for requested credentials");
+        });
+        verify(issuanceProcessStore, never()).save(any());
+
+        // the observable is invoked twice: 'received' first, then 'rejected'
+        var listenerCaptor = ArgumentCaptor.forClass(Consumer.class);
+        //noinspection unchecked
+        verify(issuanceObservable, times(2)).invokeForEach(listenerCaptor.capture());
+        var listener = mock(IssuanceEventListener.class);
+        //noinspection unchecked
+        listenerCaptor.getValue().accept(listener);
+        verify(listener).rejected(message.getHolderPid(), "participantContextId", "No attestations found for requested credentials");
     }
 
 }

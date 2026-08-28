@@ -62,6 +62,7 @@ import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
+import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.security.signature.jws2020.Jws2020SignatureSuite;
 import org.eclipse.edc.spi.event.EventRouter;
 import org.eclipse.edc.spi.security.Vault;
@@ -88,6 +89,11 @@ import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 public class CoreServicesExtension implements ServiceExtension {
 
     public static final String NAME = "IdentityHub Core Services Extension";
+    public static final String CREDENTIAL_REQUEST_STATUS_POLL_INTERVAL = "edc.iam.credential.request.status.poll.interval";
+
+    @Setting(description = "Interval in milliseconds at which the Issuer is asked about the status of credential requests that are still awaiting their credentials",
+            defaultValue = 5000 + "", key = CREDENTIAL_REQUEST_STATUS_POLL_INTERVAL)
+    private long credentialRequestStatusPollInterval;
 
     private PresentationCreatorRegistryImpl presentationCreatorRegistry;
 
@@ -209,7 +215,8 @@ public class CoreServicesExtension implements ServiceExtension {
     @Provider
     public CredentialWriter createCredentialWriter(ServiceExtensionContext context) {
         var objectMapper = typeManager.getMapper(JSON_LD);
-        return new CredentialWriterImpl(credentialStore, typeTransformerRegistry, transactionContext, objectMapper, holderCredentialRequestStore);
+        return new CredentialWriterImpl(credentialStore, typeTransformerRegistry, transactionContext, objectMapper, holderCredentialRequestStore, tokenValidationService, publicKeyResolver,
+                context.getMonitor());
     }
 
     @Provider
@@ -230,6 +237,7 @@ public class CoreServicesExtension implements ServiceExtension {
                     .transactionContext(transactionContext)
                     .participantContextService(participantContextService)
                     .monitor(context.getMonitor())
+                    .statusPollIntervalMs(credentialRequestStatusPollInterval)
                     .build();
         }
         return credentialRequestService;

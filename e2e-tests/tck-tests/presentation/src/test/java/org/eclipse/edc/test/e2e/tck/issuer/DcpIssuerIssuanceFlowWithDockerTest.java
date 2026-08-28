@@ -141,7 +141,7 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
             });
         }
 
-        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:1.0.0")
+        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:sha-f841a76")
                 .withExtraHost("host.docker.internal", "host-gateway")
                 .withExposedPorts(CALLBACK_PORT)
                 .withEnv(Map.of(
@@ -207,7 +207,7 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
         var holderStore = issuer.getService(HolderStore.class);
         holderStore.create(Holder.Builder.newInstance()
                 .holderId(holderDid)
-                .participantContextId(holderDid)
+                .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(holderDid)
                 .holderName("TCK Holder")
                 .build());

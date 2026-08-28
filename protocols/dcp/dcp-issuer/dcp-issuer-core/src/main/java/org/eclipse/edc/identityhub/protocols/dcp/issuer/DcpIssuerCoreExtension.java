@@ -38,6 +38,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.telemetry.Telemetry;
@@ -103,6 +104,8 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
     private ParticipantSecureTokenService secureTokenService;
 
     @Inject
+    private Vault vault;
+    @Inject
     private Monitor monitor;
 
     @Inject
@@ -141,7 +144,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     @Provider
     public DcpIssuerService createIssuerService() {
-        return new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService, issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, profileRegistry, telemetry, issuanceObservable);
+        return new DcpIssuerServiceImpl(transactionContext, credentialDefinitionService, issuanceProcessStore, attestationPipeline, credentialRuleDefinitionEvaluator, profileRegistry, telemetry, issuanceObservable, vault);
     }
 
     @Provider
@@ -151,7 +154,7 @@ public class DcpIssuerCoreExtension implements ServiceExtension {
 
     @Provider
     public CredentialStorageClient createCredentialStorageClient() {
-        return new DcpCredentialStorageClient(httpClient, participantContextStore, holderStore, credentialServiceUrlResolver(), secureTokenService, monitor, typeManager, JSON_LD);
+        return new DcpCredentialStorageClient(httpClient, participantContextStore, holderStore, credentialServiceUrlResolver(), secureTokenService, vault, monitor, typeManager, JSON_LD);
     }
 
     @Provider

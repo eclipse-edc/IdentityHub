@@ -15,6 +15,7 @@
 
 package org.eclipse.edc.identityhub.tests;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -57,9 +58,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
@@ -75,7 +80,10 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Jwt
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.CONSUMER_KEY;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.PROVIDER_DID;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.PROVIDER_KEY;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateJwt;
 import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.JwtCreationUtil.generateSiToken;
+import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.VerifiableCredentialTestUtil.generateEcKey;
+import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -84,6 +92,7 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings("JUnitMalformedDeclaration")
 public class CredentialOfferApiEndToEndTest {
 
+    private static final String DB_NAME = "runtime";
 
     @SuppressWarnings("JUnitMalformedDeclaration")
     abstract static class Tests {
@@ -158,7 +167,7 @@ public class CredentialOfferApiEndToEndTest {
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/offers")
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(403)
+                    .statusCode(401)
                     .body(containsString("not found"));
 
         }
@@ -177,7 +186,7 @@ public class CredentialOfferApiEndToEndTest {
                     .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/offers")
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(403)
+                    .statusCode(401)
                     .body(containsString("ID token verification failed: JWT signature not valid"));
         }
 
@@ -203,6 +212,92 @@ public class CredentialOfferApiEndToEndTest {
                     .log().ifValidationFails()
                     .statusCode(400)
                     .body(containsString("Invalid format"));
+        }
+
+        // A4.2: SPARSE offer (credentials entries containing only an id) -> the holder must resolve the remaining CredentialObject properties (type, profile)
+        // from the issuer's Issuer Metadata endpoint (spec MUST); the stored offer/auto-request must carry the resolved type and format
+        @DisplayName("A4.2: A sparse offer is completed by resolving type and profile from the issuer's Issuer Metadata")
+        @Test
+        void storeCredentialOffer_sparseOffer_shouldResolveCredentialObjectFromIssuerMetadata(IdentityHub identityHub, CredentialOfferStore credentialOfferStore) throws JOSEException {
+            var port = getFreePort();
+            // a did:web DID that resolves against the WireMock server below (edc.iam.did.web.use.https=false)
+            var issuerDid = "did:web:localhost%3A" + port;
+            var mockedIssuer = new WireMockServer(port);
+            mockedIssuer.start();
+            try {
+                var credentialObjectId = UUID.randomUUID().toString();
+
+                // the issuer's DID document, resolvable via did:web, with an IssuerService endpoint entry
+                mockedIssuer.stubFor(get(urlPathEqualTo("/.well-known/did.json"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("""
+                                        {
+                                          "id": "%s",
+                                          "service": [{
+                                            "id": "issuer-service",
+                                            "type": "IssuerService",
+                                            "serviceEndpoint": "http://localhost:%s/api/issuance"
+                                          }],
+                                          "verificationMethod": []
+                                        }
+                                        """.formatted(issuerDid, port))));
+
+                // the issuer's Issuer Metadata endpoint carries the full CredentialObject for the sparse entry
+                mockedIssuer.stubFor(get(urlPathEqualTo("/api/issuance/metadata"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("""
+                                        {
+                                          "@context": ["https://w3id.org/dspace-dcp/v1.0/dcp.jsonld"],
+                                          "type": "IssuerMetadata",
+                                          "issuer": "%s",
+                                          "credentialsSupported": [{
+                                            "type": "CredentialObject",
+                                            "id": "%s",
+                                            "credentialType": "MembershipCredential",
+                                            "offerReason": "reissuance",
+                                            "profile": ["vc20-bssl/jwt"],
+                                            "bindingMethods": ["did:web"]
+                                          }]
+                                        }
+                                        """.formatted(issuerDid, credentialObjectId))));
+
+                // a valid SI token from that issuer
+                var issuerKey = generateEcKey(issuerDid + "#key1");
+                when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(issuerDid + "#key1"))).thenReturn(Result.success(issuerKey.toPublicKey()));
+                var siToken = generateJwt(CONSUMER_DID, issuerDid, issuerDid, Map.of(), issuerKey);
+
+                // a sparse offer - the credential entry contains ONLY the id
+                var offerMessage = Json.createObjectBuilder()
+                        .add(CREDENTIALS_NAMESPACE_W3C.toIri(CREDENTIAL_ISSUER_TERM), issuerDid)
+                        .add(DSPACE_DCP_NAMESPACE_V_1_0.toIri(CredentialOfferMessage.CREDENTIALS_TERM), Json.createArrayBuilder()
+                                .add(Json.createObjectBuilder().add(JsonLdKeywords.ID, credentialObjectId)))
+                        .build();
+
+                // sparse offers MUST be accepted (DCP spec)
+                identityHub.getCredentialsEndpoint().baseRequest()
+                        .contentType(ContentType.JSON)
+                        .header("Authorization", "Bearer " + siToken)
+                        .body(offerMessage)
+                        .post("/v1/participants/" + TEST_PARTICIPANT_CONTEXT_ID + "/offers")
+                        .then()
+                        .log().ifValidationFails()
+                        .statusCode(204);
+
+                // the stored offer carries the CredentialObject properties (type, profile) resolved from the
+                // issuer's Issuer Metadata endpoint; the auto-initiated request then references the same values
+                await().untilAsserted(() -> assertThat(credentialOfferStore.query(QuerySpec.max()))
+                        .hasSize(1)
+                        .allSatisfy(offer -> assertThat(offer.getCredentialObjects())
+                                .hasSize(1)
+                                .allSatisfy(credentialObject -> {
+                                    assertThat(credentialObject.getCredentialType()).isEqualTo("MembershipCredential");
+                                    assertThat(credentialObject.getProfile()).isEqualTo("vc20-bssl/jwt");
+                                })));
+            } finally {
+                mockedIssuer.stop();
+            }
         }
 
         private void createParticipant(IdentityHub identityHub) {
@@ -275,13 +370,11 @@ public class CredentialOfferApiEndToEndTest {
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String DB_NAME = "runtime";
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()

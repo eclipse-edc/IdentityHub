@@ -32,6 +32,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.SettingContext;
 import org.eclipse.edc.spi.monitor.Monitor;
+import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.telemetry.Telemetry;
@@ -65,6 +66,8 @@ public class IssuanceCoreExtension implements ServiceExtension {
     @Inject
     private CredentialStore credentialStore;
 
+    @Inject
+    private Vault vault;
     @Inject
     private Monitor monitor;
 
@@ -112,6 +115,7 @@ public class IssuanceCoreExtension implements ServiceExtension {
                     .credentialStatusService(credentialStatusService)
                     .entityRetryProcessConfiguration(stateMachineConfiguration.entityRetryProcessConfiguration())
                     .observable(issuanceObservable)
+                    .vault(vault)
                     .build();
         }
         return issuanceProcessManager;

@@ -21,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.util.Objects.requireNonNull;
 
 public class CredentialRuleFactoryRegistryImpl implements CredentialRuleFactoryRegistry {
     private final Map<String, CredentialRuleFactory> factories = new HashMap<>();
@@ -33,6 +32,6 @@ public class CredentialRuleFactoryRegistryImpl implements CredentialRuleFactoryR
 
     @Override
     public @Nullable CredentialRuleFactory resolveFactory(String type) {
-        return requireNonNull(factories.get(type), "Unknown rule type: " + type);
+        return factories.get(type);
     }
 }

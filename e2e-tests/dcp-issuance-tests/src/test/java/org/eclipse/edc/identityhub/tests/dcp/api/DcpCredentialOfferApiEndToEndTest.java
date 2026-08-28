@@ -306,7 +306,7 @@ public class DcpCredentialOfferApiEndToEndTest {
         }
 
         @Test
-        void offerCredential_tokenVerificationFails_shouldReturn403(IdentityHub identityHub) throws JOSEException {
+        void offerCredential_tokenVerificationFails_shouldReturn401(IdentityHub identityHub) throws JOSEException {
             var spoofedKey = new ECKeyGenerator(Curve.P_256).keyID(PROVIDER_KEY_ID).generate();
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_KEY_ID))).thenReturn(Result.success(spoofedKey.toPublicKey()));
 
@@ -317,11 +317,11 @@ public class DcpCredentialOfferApiEndToEndTest {
                     .post(offerUrl(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(403);
+                    .statusCode(401);
         }
 
         @Test
-        void offerCredential_wrongTokenAudience_shouldReturn403(IdentityHub identityHub) throws JOSEException {
+        void offerCredential_wrongTokenAudience_shouldReturn401(IdentityHub identityHub) throws JOSEException {
             when(DID_PUBLIC_KEY_RESOLVER.resolveKey(eq(PROVIDER_KEY_ID))).thenReturn(Result.success(PROVIDER_KEY.toPublicKey()));
 
             identityHub.getCredentialsEndpoint().baseRequest()
@@ -331,7 +331,7 @@ public class DcpCredentialOfferApiEndToEndTest {
                     .post(offerUrl(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
-                    .statusCode(403);
+                    .statusCode(401);
         }
 
         private String offerUrl(String participantContextId) {

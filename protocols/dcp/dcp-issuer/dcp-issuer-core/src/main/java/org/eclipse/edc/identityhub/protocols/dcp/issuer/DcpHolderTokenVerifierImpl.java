@@ -33,11 +33,13 @@ import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.eclipse.edc.identityhub.protocols.dcp.issuer.DcpIssuerCoreExtension.DCP_ISSUER_SELF_ISSUED_TOKEN_CONTEXT;
+import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
 
 public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
 
@@ -88,13 +90,18 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
     }
 
     private ServiceResult<Holder> getParticipant(String participantContextId, String holderDid) {
-        var query = QuerySpec.Builder.newInstance().filter(Criterion.criterion("did", "=", holderDid)).build();
+        // a Holder belongs to the Issuer it was registered with, so only Holders of the addressed Issuer are eligible
+        var query = QuerySpec.Builder.newInstance().filter(List.of(
+                Criterion.criterion("did", "=", holderDid),
+                Criterion.criterion("participantContextId", "=", participantContextId))).build();
         var holdersResult = store.query(query);
         if (holdersResult.failed()) {
             return ServiceResult.from(holdersResult).mapFailure();
         }
 
-        var holders = holdersResult.getContent();
+        var holders = holdersResult.getContent().stream()
+                .filter(holder -> participantContextId.equals(holder.getParticipantContextId()))
+                .toList();
 
         if (holders.isEmpty() && allowAnonymous) {
             var newHolder = Holder.Builder.newInstance()
@@ -118,7 +125,10 @@ public class DcpHolderTokenVerifierImpl implements DcpHolderTokenVerifier {
         if (res.failed()) {
             return ServiceResult.unauthorized("Token validation failed: " + res.getFailureDetail());
         }
-        return ServiceResult.success(new DcpRequestContext(holder, Map.of()));
+        // the Holder may grant access to its Credential Service by embedding an access token, which must be presented
+        // back to it when the credentials are delivered
+        var accessToken = res.getContent().getStringClaim(TOKEN_CLAIM);
+        return ServiceResult.success(new DcpRequestContext(holder, Map.of(), accessToken));
     }
 
 }

@@ -29,12 +29,15 @@ import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipant
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriter;
 import org.eclipse.edc.jsonld.spi.JsonLd;
+import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.validator.spi.JsonObjectValidatorRegistry;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.eclipse.edc.web.spi.exception.InvalidRequestException;
 import org.eclipse.edc.web.spi.exception.ValidationFailureException;
+
+import java.util.Objects;
 
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -92,16 +95,24 @@ public class StorageApiController implements StorageApi {
 
         var participantContext = participantContextService.getParticipantContext(participantContextId)
                 .orElseThrow((f) -> new AuthenticationFailedException("Invalid participant"));
+        var holderDid = participantContext.getDid();
 
         // validate Issuer's SI token
-        issuerTokenVerifier.verify(participantContext, authToken)
+        var issuerClaims = issuerTokenVerifier.verify(participantContext, authToken)
                 .orElseThrow(f -> new AuthenticationFailedException("ID token verification failed: %s".formatted(f.getFailureDetail())));
+
+        // the token was verified against the DID document of its issuer, so the 'iss' claim identifies who delivers here
+        var issuerDid = issuerClaims.getStringClaim(JwtRegisteredClaimNames.ISSUER);
+
+        if (Objects.equals(credentialMessage.getStatus(), CredentialMessage.STATUS_REJECTED)) {
+            return Response.ok().build();
+        }
 
         var holderPid = credentialMessage.getHolderPid();
         var issuerPid = credentialMessage.getIssuerPid();
 
         var writeRequests = credentialMessage.getCredentials().stream().map(c -> new CredentialWriteRequest(c.payload(), c.format())).toList();
-        return credentialWriter.write(holderPid, issuerPid, writeRequests, participantContextId)
+        return credentialWriter.write(holderPid, holderDid, issuerPid, issuerDid, writeRequests, participantContextId)
                 .onSuccess(v -> monitor.debug("HolderCredentialRequest %s is now in state %s".formatted(holderPid, HolderRequestState.ISSUED)))
                 .map(v -> Response.ok().build())
                 .orElseThrow(exceptionMapper(CredentialMessage.class, null));

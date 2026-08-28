@@ -27,7 +27,9 @@ public class CredentialMessage {
     public static final String HOLDER_PID_TERM = "holderPid";
     public static final String STATUS_TERM = "status";
     public static final String CREDENTIAL_MESSAGE_TERM = "CredentialMessage";
-    private static final List<String> ALLOWED_STATUS = List.of("ISSUED", "REJECTED");
+    public static final String STATUS_ISSUED = "ISSUED";
+    public static final String STATUS_REJECTED = "REJECTED";
+    private static final List<String> ALLOWED_STATUS = List.of(STATUS_ISSUED, STATUS_REJECTED);
 
     private Collection<CredentialContainer> credentials = new ArrayList<>();
     private String issuerPid;
