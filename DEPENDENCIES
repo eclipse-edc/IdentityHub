@@ -21,7 +21,6 @@ maven/mavencentral/com.fasterxml.jackson.core/jackson-core/2.22.2, MIT AND BSD-2
 maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.18.3, Apache-2.0, approved, #16372
 maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.19.1, Apache-2.0, approved, #21909
 maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.19.2, Apache-2.0, approved, #21909
-maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.21.0, Apache-2.0, approved, #25591
 maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.21.1, Apache-2.0, approved, #25591
 maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.22.0, Apache-2.0, approved, #28621
 maven/mavencentral/com.fasterxml.jackson.core/jackson-databind/2.22.2, Apache-2.0, approved, #28621
@@ -29,8 +28,6 @@ maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.18
 maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.19.2, Apache-2.0, approved, #21912
 maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.22.0, Apache-2.0, approved, #28622
 maven/mavencentral/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/2.22.2, Apache-2.0, approved, #28622
-maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jakarta-jsonp/2.21.0, Apache-2.0, approved, #26448
-maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jakarta-jsonp/2.21.2, Apache-2.0, approved, #26448
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jakarta-jsonp/2.22.2, Apache-2.0, approved, #29009
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.19.2, Apache-2.0, approved, #23299
 maven/mavencentral/com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.22.0, Apache-2.0, approved, #29010
@@ -69,13 +66,13 @@ maven/mavencentral/com.google.protobuf/protobuf-java/4.33.6, BSD-3-Clause, appro
 maven/mavencentral/com.jayway.jsonpath/json-path/2.10.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/com.networknt/json-schema-validator/1.5.9, Apache-2.0 AND Unicode-TOU, approved, #15630
 maven/mavencentral/com.networknt/json-schema-validator/2.0.0, Apache-2.0 AND Unicode-TOU, approved, #25988
+maven/mavencentral/com.networknt/json-schema-validator/3.0.7, Apache-2.0 AND Unicode-3.0, approved, #26454
 maven/mavencentral/com.nimbusds/nimbus-jose-jwt/10.9, Apache-2.0, approved, #29000
 maven/mavencentral/com.nimbusds/nimbus-jose-jwt/10.9.1, Apache-2.0, approved, #29000
 maven/mavencentral/com.puppycrawl.tools/checkstyle/12.3.0, LGPL-2.1-or-later, approved, #26456
 maven/mavencentral/com.squareup.okhttp3/okhttp-dnsoverhttps/5.5.0, Apache-2.0, approved, #30480
 maven/mavencentral/com.squareup.okhttp3/okhttp-jvm/5.5.0, Apache-2.0, approved, #30477
 maven/mavencentral/com.squareup.okhttp3/okhttp/4.9.3, Apache-2.0 AND MPL-2.0, approved, #3225
-maven/mavencentral/com.squareup.okhttp3/okhttp/5.3.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/com.squareup.okhttp3/okhttp/5.5.0, Apache-2.0, approved, #30481
 maven/mavencentral/com.squareup.okio/okio-jvm/3.18.1, Apache-2.0, approved, #30479
 maven/mavencentral/com.squareup.okio/okio/3.18.1, Apache-2.0, approved, #30478
@@ -108,7 +105,6 @@ maven/mavencentral/io.rest-assured/json-path/6.0.0, Apache-2.0, approved, #29909
 maven/mavencentral/io.rest-assured/json-path/6.0.1, Apache-2.0, approved, #29909
 maven/mavencentral/io.rest-assured/rest-assured-common/6.0.0, Apache-2.0, approved, #29910
 maven/mavencentral/io.rest-assured/rest-assured-common/6.0.1, Apache-2.0, approved, #29910
-maven/mavencentral/io.rest-assured/rest-assured/5.5.5, Apache-2.0, approved, #15676
 maven/mavencentral/io.rest-assured/rest-assured/6.0.0, Apache-2.0, approved, #29907
 maven/mavencentral/io.rest-assured/rest-assured/6.0.1, Apache-2.0, approved, #29907
 maven/mavencentral/io.rest-assured/xml-path/6.0.0, Apache-2.0, approved, #29908
@@ -190,7 +186,7 @@ maven/mavencentral/org.awaitility/awaitility/4.2.2, Apache-2.0, approved, #14178
 maven/mavencentral/org.awaitility/awaitility/4.3.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/org.bouncycastle/bcpkix-jdk18on/1.84, MIT, approved, #27142
 maven/mavencentral/org.bouncycastle/bcprov-jdk18on/1.84, MIT AND CC0-1.0, approved, #27143
-maven/mavencentral/org.bouncycastle/bcprov-lts8on/2.73.10, MIT, approved, #19041
+maven/mavencentral/org.bouncycastle/bcprov-jdk18on/1.85.2, MIT AND CC0-1.0, approved, #30066
 maven/mavencentral/org.bouncycastle/bcutil-jdk18on/1.84, MIT, approved, #27144
 maven/mavencentral/org.ccil.cowan.tagsoup/tagsoup/1.2.1, Apache-2.0, approved, clearlydefined
 maven/mavencentral/org.checkerframework/checker-qual/3.52.1, MIT, approved, #26057
@@ -200,13 +196,14 @@ maven/mavencentral/org.codehaus.plexus/plexus-component-annotations/2.1.0, Apach
 maven/mavencentral/org.codehaus.plexus/plexus-container-default/2.1.0, Apache-2.0, approved, clearlydefined
 maven/mavencentral/org.codehaus.plexus/plexus-utils/3.1.1, , approved, CQ16492
 maven/mavencentral/org.codehaus.plexus/plexus-utils/3.3.0, , approved, CQ21066
-maven/mavencentral/org.eclipse.dataspacetck.common/boot/1.0.0, Apache-2.0, approved, technology.dataspacetck
-maven/mavencentral/org.eclipse.dataspacetck.common/core-api/1.0.0, Apache-2.0, approved, technology.dataspacetck
-maven/mavencentral/org.eclipse.dataspacetck.common/core/1.0.0, Apache-2.0, approved, technology.dataspacetck
-maven/mavencentral/org.eclipse.dataspacetck.common/tck-runtime/1.0.0, Apache-2.0, approved, technology.dataspacetck
-maven/mavencentral/org.eclipse.dataspacetck.dcp/dcp-api/1.0.0, Apache-2.0, approved, technology.dataspacetck
-maven/mavencentral/org.eclipse.dataspacetck.dcp/dcp-system/1.0.0, Apache-2.0, approved, technology.dataspacetck
-maven/mavencentral/org.eclipse.dataspacetck.dcp/dcp-testcases/1.0.0, Apache-2.0, approved, technology.dataspacetck
+maven/mavencentral/org.eclipse.dataspacetck.common/boot/1.3.1-SNAPSHOT, Apache-2.0, approved, technology.dataspacetck
+maven/mavencentral/org.eclipse.dataspacetck.common/core-api/1.3.0, Apache-2.0, approved, technology.dataspacetck
+maven/mavencentral/org.eclipse.dataspacetck.common/core/1.3.0, Apache-2.0, approved, technology.dataspacetck
+maven/mavencentral/org.eclipse.dataspacetck.common/core/1.3.1-SNAPSHOT, Apache-2.0, approved, technology.dataspacetck
+maven/mavencentral/org.eclipse.dataspacetck.common/tck-runtime/1.3.1-SNAPSHOT, Apache-2.0, approved, technology.dataspacetck
+maven/mavencentral/org.eclipse.dataspacetck.dcp/dcp-api/1.0.3-SNAPSHOT, Apache-2.0, approved, technology.dataspacetck
+maven/mavencentral/org.eclipse.dataspacetck.dcp/dcp-system/1.0.3-SNAPSHOT, Apache-2.0, approved, technology.dataspacetck
+maven/mavencentral/org.eclipse.dataspacetck.dcp/dcp-testcases/1.0.3-SNAPSHOT, Apache-2.0, approved, technology.dataspacetck
 maven/mavencentral/org.eclipse.edc/aes-encryption/0.19.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/api-core/0.19.0-SNAPSHOT, Apache-2.0, approved, technology.edc
 maven/mavencentral/org.eclipse.edc/api-observability/0.19.0-SNAPSHOT, Apache-2.0, approved, technology.edc
@@ -316,17 +313,16 @@ maven/mavencentral/org.junit.jupiter/junit-jupiter-engine/6.0.3, EPL-2.0, approv
 maven/mavencentral/org.junit.jupiter/junit-jupiter-engine/6.1.3, EPL-2.0, approved, #28334
 maven/mavencentral/org.junit.jupiter/junit-jupiter-params/6.0.3, EPL-2.0, approved, #23934
 maven/mavencentral/org.junit.jupiter/junit-jupiter-params/6.1.3, EPL-2.0, approved, #28329
-maven/mavencentral/org.junit.jupiter/junit-jupiter/6.1.0, EPL-2.0, approved, #28999
+maven/mavencentral/org.junit.jupiter/junit-jupiter/6.1.2, EPL-2.0, approved, #28999
 maven/mavencentral/org.junit.jupiter/junit-jupiter/6.1.3, EPL-2.0, approved, #28999
 maven/mavencentral/org.junit.platform/junit-platform-commons/6.0.3, EPL-2.0, approved, #22893
 maven/mavencentral/org.junit.platform/junit-platform-commons/6.1.3, EPL-2.0, approved, #28333
 maven/mavencentral/org.junit.platform/junit-platform-engine/6.0.3, EPL-2.0, approved, #23933
 maven/mavencentral/org.junit.platform/junit-platform-engine/6.1.3, EPL-2.0, approved, #28327
 maven/mavencentral/org.junit.platform/junit-platform-launcher/6.0.3, EPL-2.0, approved, #23935
-maven/mavencentral/org.junit.platform/junit-platform-launcher/6.1.0, EPL-2.0, approved, #28331
 maven/mavencentral/org.junit.platform/junit-platform-launcher/6.1.3, EPL-2.0, approved, #28331
 maven/mavencentral/org.junit.platform/junit-platform-suite-api/6.1.3, EPL-2.0, approved, #28332
-maven/mavencentral/org.junit.platform/junit-platform-suite-engine/6.1.0, EPL-2.0, approved, #28325
+maven/mavencentral/org.junit.platform/junit-platform-suite-engine/6.1.2, EPL-2.0, approved, #28325
 maven/mavencentral/org.junit.platform/junit-platform-suite-engine/6.1.3, EPL-2.0, approved, #28325
 maven/mavencentral/org.junit/junit-bom/6.0.3, EPL-2.0, approved, #26480
 maven/mavencentral/org.junit/junit-bom/6.1.3, EPL-2.0, approved, #28991
@@ -347,6 +343,7 @@ maven/mavencentral/org.slf4j/slf4j-api/2.0.18, MIT, approved, #5915
 maven/mavencentral/org.slf4j/slf4j-api/2.0.9, MIT, approved, #5915
 maven/mavencentral/org.slf4j/slf4j-nop/2.0.18, MIT, approved, #10370
 maven/mavencentral/org.slf4j/slf4j-simple/2.0.17, MIT, approved, #10372
+maven/mavencentral/org.snakeyaml/snakeyaml-engine/3.0.1, Apache-2.0, approved, clearlydefined
 maven/mavencentral/org.testcontainers/database-commons/1.21.4, Apache-2.0, approved, #20875
 maven/mavencentral/org.testcontainers/jdbc/1.21.4, Apache-2.0, approved, #20877
 maven/mavencentral/org.testcontainers/junit-jupiter/1.21.4, MIT, approved, clearlydefined
@@ -368,3 +365,10 @@ maven/mavencentral/org.yaml/snakeyaml/2.3, Apache-2.0 AND (Apache-2.0 OR BSD-3-C
 maven/mavencentral/org.yaml/snakeyaml/2.4, Apache-2.0, approved, #19469
 maven/mavencentral/org.yaml/snakeyaml/2.5, Apache-2.0, approved, #23100
 maven/mavencentral/org.yaml/snakeyaml/2.6, Apache-2.0, approved, #26233
+maven/mavencentral/tools.jackson.core/jackson-core/3.2.2, , restricted, clearlydefined
+maven/mavencentral/tools.jackson.core/jackson-databind/3.2.1, , restricted, clearlydefined
+maven/mavencentral/tools.jackson.core/jackson-databind/3.2.2, , restricted, clearlydefined
+maven/mavencentral/tools.jackson.dataformat/jackson-dataformat-yaml/3.2.1, Apache-2.0, approved, #29717
+maven/mavencentral/tools.jackson.dataformat/jackson-dataformat-yaml/3.2.2, Apache-2.0, approved, #29717
+maven/mavencentral/tools.jackson.datatype/jackson-datatype-jakarta-jsonp/3.2.2, , restricted, clearlydefined
+maven/mavencentral/tools.jackson/jackson-bom/3.2.2, Apache-2.0, approved, #29716
