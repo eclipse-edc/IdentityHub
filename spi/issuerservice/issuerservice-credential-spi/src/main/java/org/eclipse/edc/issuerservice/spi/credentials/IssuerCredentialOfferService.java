@@ -15,6 +15,7 @@
 package org.eclipse.edc.issuerservice.spi.credentials;
 
 import org.eclipse.edc.spi.result.ServiceResult;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -30,7 +31,9 @@ public interface IssuerCredentialOfferService {
      * @param participantContextId the ID of the current issuer participant context
      * @param holderId             the ID of the holder.
      * @param credentialObjectIds  a list of IDs of the {@code CredentialObject} objects that should be offered to the holder.
+     * @param offerReason          why the credential is being offered, e.g. {@code reissue} or {@code proof-key-revocation}.
+     *                             Defaults to {@code reissue} when {@code null}.
      * @return a result to indicate whether the {@code CredentialOfferMessage} was sent successfully.
      */
-    ServiceResult<Void> sendCredentialOffer(String participantContextId, String holderId, Collection<String> credentialObjectIds);
+    ServiceResult<Void> sendCredentialOffer(String participantContextId, String holderId, Collection<String> credentialObjectIds, @Nullable String offerReason);
 }

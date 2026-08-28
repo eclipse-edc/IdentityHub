@@ -27,6 +27,14 @@ public class CredentialObject {
     public static final String CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM = "credentialType";
     public static final String CREDENTIAL_OBJECT_CREDENTIAL_SCHEMA_TERM = "credentialSchema";
     public static final String CREDENTIAL_OBJECT_OFFER_REASON_TERM = "offerReason";
+    /**
+     * The credential is offered again before the one the Holder has expires.
+     */
+    public static final String OFFER_REASON_REISSUE = "reissue";
+    /**
+     * The credential is offered again because the key its proof was made with is no longer valid.
+     */
+    public static final String OFFER_REASON_PROOF_KEY_REVOCATION = "proof-key-revocation";
     public static final String CREDENTIAL_OBJECT_PROFILE_TERM = "profile";
     public static final String CREDENTIAL_OBJECT_BINDING_METHODS_TERM = "bindingMethods";
     public static final String CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM = "issuancePolicy";

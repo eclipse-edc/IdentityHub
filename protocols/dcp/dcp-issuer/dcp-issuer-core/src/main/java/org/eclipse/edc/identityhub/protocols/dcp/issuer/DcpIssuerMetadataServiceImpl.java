@@ -28,13 +28,13 @@ import org.eclipse.edc.spi.result.ServiceResult;
 import java.util.Collection;
 import java.util.List;
 
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.OFFER_REASON_REISSUE;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 
 public class DcpIssuerMetadataServiceImpl implements DcpIssuerMetadataService {
 
     private static final String BINDING_METHOD_DID_WEB = "did:web";
-    private static final String DEFAULT_OFFER_REASON = "reissue";
 
     private final CredentialDefinitionService credentialDefinitionService;
 
@@ -75,7 +75,7 @@ public class DcpIssuerMetadataServiceImpl implements DcpIssuerMetadataService {
                         // §6.7 requires every CredentialObject in credentialsSupported to carry all OPTIONAL properties,
                         // offerReason among them, even though metadata advertises what can be requested rather than
                         // making an offer. Callers of the Credential Offer API supply the reason that actually applies.
-                        .offerReason(DEFAULT_OFFER_REASON)
+                        .offerReason(OFFER_REASON_REISSUE)
                         .profile(profile)
                         // clients cache CredentialObjects by id, so the policy must not change between two fetches. It
                         // is derived from the definition instead of freshly generated.
