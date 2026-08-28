@@ -14,6 +14,7 @@
 
 package org.eclipse.edc.identityhub.protocols.dcp.issuer;
 
+import com.nimbusds.jwt.SignedJWT;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpIssuerTokenVerifier;
 import org.eclipse.edc.jwt.validation.jti.JtiValidationStore;
@@ -22,6 +23,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
 import org.eclipse.edc.spi.EdcException;
+import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.token.rules.AudienceValidationRule;
@@ -31,10 +33,13 @@ import org.eclipse.edc.token.rules.NotBeforeValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationRule;
 import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerEqualsSubjectRule;
+import org.eclipse.edc.verifiablecredentials.jwt.rules.IssuerKeyIdValidationRule;
 
+import java.text.ParseException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Extension("DCP Holder Core Extension")
 public class DcpHolderCoreExtension implements ServiceExtension {
@@ -73,9 +78,28 @@ public class DcpHolderCoreExtension implements ServiceExtension {
     @Provider
     public DcpIssuerTokenVerifier createTokenVerifier() {
         return (participantContext, tokenRepresentation) -> {
+            // the signing key is resolved from the DID named in the 'kid' header, while the sender identifies itself
+            // with the 'iss' claim. Unless the two are tied together, anyone holding a resolvable DID could sign a
+            // message that claims to come from somebody else.
+            var kid = getKid(tokenRepresentation.getToken());
+            if (kid.failed()) {
+                return kid.mapFailure();
+            }
+
             var newRules = new ArrayList<>(rules);
             newRules.add(new AudienceValidationRule(participantContext.getDid()));
+            newRules.add(new IssuerKeyIdValidationRule(kid.getContent()));
             return tokenValidationService.validate(tokenRepresentation.getToken(), didPublicKeyResolver, newRules);
         };
+    }
+
+    private Result<String> getKid(String token) {
+        try {
+            return Optional.ofNullable(SignedJWT.parse(token).getHeader().getKeyID())
+                    .map(Result::success)
+                    .orElseGet(() -> Result.failure("Kid not present"));
+        } catch (ParseException e) {
+            return Result.failure("Failed to decode token");
+        }
     }
 }
