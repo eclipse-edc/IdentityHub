@@ -26,6 +26,8 @@ import java.util.Collection;
 @FunctionalInterface
 public interface CredentialWriter {
     /**
+     * Writes a credential object to storage received by an Issuer when issuing credentials
+     *
      * @param holderPid            identifies the Holder's credential request the credentials were issued for
      * @param holderDid            the DID of the Holder the credentials must be bound to
      * @param issuerPid            the issuance process ID as reported by the Issuer
