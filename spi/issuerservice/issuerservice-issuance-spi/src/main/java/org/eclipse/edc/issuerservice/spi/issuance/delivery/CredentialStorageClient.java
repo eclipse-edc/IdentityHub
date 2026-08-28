@@ -19,6 +19,7 @@ import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredentialC
 import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
 import org.eclipse.edc.spi.result.Result;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -29,4 +30,13 @@ import java.util.Collection;
 public interface CredentialStorageClient {
 
     Result<Void> deliverCredentials(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> credentials);
+
+    /**
+     * Tells the Holder that an issuance it was told had been accepted will not produce any credentials, so it can stop
+     * waiting for them. No credentials are sent.
+     *
+     * @param issuanceProcess the failed issuance process, supplying the pids the Holder correlates on
+     * @param rejectionReason why the request was rejected, or {@code null}. Must not disclose anything confidential.
+     */
+    Result<Void> deliverRejection(IssuanceProcess issuanceProcess, @Nullable String rejectionReason);
 }

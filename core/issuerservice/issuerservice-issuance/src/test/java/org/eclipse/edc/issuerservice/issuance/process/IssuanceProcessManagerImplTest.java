@@ -324,6 +324,41 @@ public class IssuanceProcessManagerImplTest {
             //  detail, so 'holder unreachable' is not preserved in the errorDetail today
             assertThat(process.getErrorDetail()).isNotNull();
             verify(listener).errored(eq(process), any());
+            // RT-03: the holder is told the issuance it was told had been accepted is not coming
+            verify(credentialStorageClient).deliverRejection(eq(process), any());
+        });
+    }
+
+    // RT-03: the rejection notice is best effort - a holder that cannot be reached must not keep the process out of its
+    // terminal state, because the failure is still served by the Credential Request Status API
+    @DisplayName("B3.6: a failing rejection notice does not keep the process out of ERRORED")
+    @Test
+    void error_whenRejectionNoticeFails_stillTransitionsToErrored() {
+        var process = IssuanceProcess.Builder.newInstance().state(APPROVED.code())
+                .holderId("holderId")
+                .participantContextId("participantContextId")
+                .holderPid("holderPid")
+                .credentialFormats(Map.of("membership-credential-id", VC1_0_JWT))
+                .stateCount(1)
+                .build();
+
+        var savedTransitions = new CopyOnWriteArrayList<Integer>();
+        when(issuanceProcessStore.save(any())).thenAnswer(invocation -> {
+            savedTransitions.add(invocation.getArgument(0, IssuanceProcess.class).getState());
+            return StoreResult.success();
+        });
+        when(issuanceProcessStore.nextNotLeased(anyInt(), stateIs(APPROVED.code())))
+                .thenReturn(List.of(process))
+                .thenReturn(emptyList());
+        // no credential definition -> the process fails outright
+        when(credentialDefinitionStore.query(any())).thenReturn(StoreResult.generalError("no definitions"));
+        when(credentialStorageClient.deliverRejection(any(), any())).thenReturn(Result.failure("holder unreachable"));
+
+        issuanceProcessManager.start();
+
+        await().untilAsserted(() -> {
+            verify(credentialStorageClient).deliverRejection(eq(process), any());
+            assertThat(savedTransitions).contains(ERRORED.code());
         });
     }
 
