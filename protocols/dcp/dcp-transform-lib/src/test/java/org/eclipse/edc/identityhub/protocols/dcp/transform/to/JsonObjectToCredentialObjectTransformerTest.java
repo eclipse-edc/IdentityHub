@@ -33,6 +33,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_NAMESPACE_V_1_0;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_BINDING_METHODS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_SCHEMA_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
@@ -73,6 +74,7 @@ public class JsonObjectToCredentialObjectTransformerTest {
                 .add(toIri(CREDENTIAL_OBJECT_PROFILE_TERM), Json.createArrayBuilder(List.of("profile")))
                 .add(toIri(CREDENTIAL_OBJECT_OFFER_REASON_TERM), "offerReason")
                 .add(toIri(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), "MembershipCredential")
+                .add(toIri(CREDENTIAL_OBJECT_CREDENTIAL_SCHEMA_TERM), "https://example.org/schemas/membership.json")
                 .add(toIri(CREDENTIAL_OBJECT_BINDING_METHODS_TERM), Json.createArrayBuilder(List.of("binding")))
                 .build();
 
@@ -82,6 +84,7 @@ public class JsonObjectToCredentialObjectTransformerTest {
         assertThat(credentialObject.getId()).isNotNull();
         assertThat(credentialObject.getOfferReason()).isEqualTo("offerReason");
         assertThat(credentialObject.getCredentialType()).isEqualTo("MembershipCredential");
+        assertThat(credentialObject.getCredentialSchema()).isEqualTo("https://example.org/schemas/membership.json");
         assertThat(credentialObject.getProfile()).isEqualTo("profile");
         assertThat(credentialObject.getBindingMethods()).hasSize(1).contains("binding");
         assertThat(credentialObject.getIssuancePolicy()).isNotNull()

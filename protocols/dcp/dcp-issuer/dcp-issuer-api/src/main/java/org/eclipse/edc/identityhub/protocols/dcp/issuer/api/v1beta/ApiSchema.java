@@ -131,6 +131,7 @@ public interface ApiSchema {
                       {
                         "type": "CredentialObject",
                         "credentialType": "MembershipCredential",
+                        "credentialSchema": "https://example.org/schemas/membership.json",
                         "offerReason": "reissue",
                         "bindingMethods": [
                           "did:web"

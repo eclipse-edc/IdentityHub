@@ -25,6 +25,7 @@ public class CredentialObject {
 
     public static final String CREDENTIAL_OBJECT_TERM = "CredentialObject";
     public static final String CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM = "credentialType";
+    public static final String CREDENTIAL_OBJECT_CREDENTIAL_SCHEMA_TERM = "credentialSchema";
     public static final String CREDENTIAL_OBJECT_OFFER_REASON_TERM = "offerReason";
     public static final String CREDENTIAL_OBJECT_PROFILE_TERM = "profile";
     public static final String CREDENTIAL_OBJECT_BINDING_METHODS_TERM = "bindingMethods";
@@ -32,6 +33,7 @@ public class CredentialObject {
     private String profile;
     private String id;
     private String credentialType;
+    private String credentialSchema;
     private String offerReason;
     private List<String> bindingMethods = new ArrayList<>();
     private PresentationDefinition issuancePolicy;
@@ -42,6 +44,13 @@ public class CredentialObject {
 
     public String getCredentialType() {
         return credentialType;
+    }
+
+    /**
+     * URL of the schema the issued credential's {@code credentialSubject} adheres to.
+     */
+    public String getCredentialSchema() {
+        return credentialSchema;
     }
 
     public List<String> getBindingMethods() {
@@ -78,6 +87,11 @@ public class CredentialObject {
 
         public Builder credentialType(String credentialType) {
             credentialObject.credentialType = credentialType;
+            return this;
+        }
+
+        public Builder credentialSchema(String credentialSchema) {
+            credentialObject.credentialSchema = credentialSchema;
             return this;
         }
 
