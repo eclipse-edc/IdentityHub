@@ -1189,6 +1189,8 @@ components:
             type: string
         holderId:
           type: string
+        offerReason:
+          type: string
     HolderDto:
       required:
       - did
