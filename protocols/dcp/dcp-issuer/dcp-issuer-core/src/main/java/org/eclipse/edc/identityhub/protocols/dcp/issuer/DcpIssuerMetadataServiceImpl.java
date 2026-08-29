@@ -27,12 +27,14 @@ import org.eclipse.edc.spi.result.ServiceResult;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.OFFER_REASON_REISSUE;
 import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.queryByParticipantContextId;
 
 
 public class DcpIssuerMetadataServiceImpl implements DcpIssuerMetadataService {
+
+    private static final String BINDING_METHOD_DID_WEB = "did:web";
 
     private final CredentialDefinitionService credentialDefinitionService;
 
@@ -68,10 +70,16 @@ public class DcpIssuerMetadataServiceImpl implements DcpIssuerMetadataService {
                 .map(profile -> CredentialObject.Builder.newInstance()
                         .id(credentialDefinition.getId())
                         .credentialType(credentialDefinition.getCredentialType())
-                        .bindingMethod("did:web")
-                        .offerReason("reissue") // todo hardcoded?
+                        .credentialSchema(credentialDefinition.getJsonSchemaUrl())
+                        .bindingMethod(BINDING_METHOD_DID_WEB)
+                        // §6.7 requires every CredentialObject in credentialsSupported to carry all OPTIONAL properties,
+                        // offerReason among them, even though metadata advertises what can be requested rather than
+                        // making an offer. Callers of the Credential Offer API supply the reason that actually applies.
+                        .offerReason(OFFER_REASON_REISSUE)
                         .profile(profile)
-                        .issuancePolicy(PresentationDefinition.Builder.newInstance().id(UUID.randomUUID().toString()).build())
+                        // clients cache CredentialObjects by id, so the policy must not change between two fetches. It
+                        // is derived from the definition instead of freshly generated.
+                        .issuancePolicy(PresentationDefinition.Builder.newInstance().id(credentialDefinition.getId()).build())
                         .build())
                 .toList();
 

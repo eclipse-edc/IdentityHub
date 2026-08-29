@@ -36,6 +36,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -46,6 +47,7 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.toSet;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.DcpConstants.DCP_SCOPE_V_1_0;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.OFFER_REASON_REISSUE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.AUDIENCE;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.EXPIRATION_TIME;
 import static org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames.ISSUED_AT;
@@ -86,7 +88,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
     }
 
     @Override
-    public ServiceResult<Void> sendCredentialOffer(String participantContextId, String holderId, Collection<String> credentialObjectIds) {
+    public ServiceResult<Void> sendCredentialOffer(String participantContextId, String holderId, Collection<String> credentialObjectIds, @Nullable String offerReason) {
         return transactionContext.execute(() -> {
             var holder = holderStore.findById(holderId);
             if (holder.failed()) {
@@ -99,6 +101,7 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
                         var requestResult =
                                 // get credential objects based on IDs
                                 getCredentialObjects(participantContext, credentialObjectIds)
+                                        .map(offered -> withOfferReason(offered, offerReason))
                                         .compose(offeredCredentials -> credentialServiceUrlResolver.resolve(holderDid)
                                                 .compose(url -> getAuthToken(participantContextId, holderDid, participantContext.getDid())
                                                         //compose CredentialOfferMessage
@@ -109,6 +112,26 @@ public class IssuerCredentialOfferServiceImpl implements IssuerCredentialOfferSe
                     .compose(this::sendRequest)
                     .mapEmpty();
         });
+    }
+
+    /**
+     * Restates the offered credentials with the reason this particular offer is being made. The objects come from the
+     * Issuer Metadata API, whose {@code offerReason} is a placeholder: metadata advertises what can be requested rather
+     * than making an offer, so the reason only becomes meaningful here.
+     */
+    private Collection<CredentialObject> withOfferReason(Collection<CredentialObject> credentialObjects, @Nullable String offerReason) {
+        var reason = offerReason == null || offerReason.isBlank() ? OFFER_REASON_REISSUE : offerReason;
+        return credentialObjects.stream()
+                .map(co -> CredentialObject.Builder.newInstance()
+                        .id(co.getId())
+                        .credentialType(co.getCredentialType())
+                        .credentialSchema(co.getCredentialSchema())
+                        .bindingMethods(co.getBindingMethods())
+                        .profile(co.getProfile())
+                        .issuancePolicy(co.getIssuancePolicy())
+                        .offerReason(reason)
+                        .build())
+                .toList();
     }
 
     /**

@@ -25,13 +25,23 @@ public class CredentialObject {
 
     public static final String CREDENTIAL_OBJECT_TERM = "CredentialObject";
     public static final String CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM = "credentialType";
+    public static final String CREDENTIAL_OBJECT_CREDENTIAL_SCHEMA_TERM = "credentialSchema";
     public static final String CREDENTIAL_OBJECT_OFFER_REASON_TERM = "offerReason";
+    /**
+     * The credential is offered again before the one the Holder has expires.
+     */
+    public static final String OFFER_REASON_REISSUE = "reissue";
+    /**
+     * The credential is offered again because the key its proof was made with is no longer valid.
+     */
+    public static final String OFFER_REASON_PROOF_KEY_REVOCATION = "proof-key-revocation";
     public static final String CREDENTIAL_OBJECT_PROFILE_TERM = "profile";
     public static final String CREDENTIAL_OBJECT_BINDING_METHODS_TERM = "bindingMethods";
     public static final String CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM = "issuancePolicy";
     private String profile;
     private String id;
     private String credentialType;
+    private String credentialSchema;
     private String offerReason;
     private List<String> bindingMethods = new ArrayList<>();
     private PresentationDefinition issuancePolicy;
@@ -42,6 +52,13 @@ public class CredentialObject {
 
     public String getCredentialType() {
         return credentialType;
+    }
+
+    /**
+     * URL of the schema the issued credential's {@code credentialSubject} adheres to.
+     */
+    public String getCredentialSchema() {
+        return credentialSchema;
     }
 
     public List<String> getBindingMethods() {
@@ -78,6 +95,11 @@ public class CredentialObject {
 
         public Builder credentialType(String credentialType) {
             credentialObject.credentialType = credentialType;
+            return this;
+        }
+
+        public Builder credentialSchema(String credentialSchema) {
+            credentialObject.credentialSchema = credentialSchema;
             return this;
         }
 

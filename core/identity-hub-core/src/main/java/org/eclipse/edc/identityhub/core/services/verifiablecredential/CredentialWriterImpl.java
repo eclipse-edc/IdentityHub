@@ -37,6 +37,7 @@ import org.eclipse.edc.token.spi.TokenValidationService;
 import org.eclipse.edc.transaction.spi.TransactionContext;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -96,18 +97,82 @@ public class CredentialWriterImpl implements CredentialWriter {
         });
     }
 
-    private ServiceResult<Void> writeCredentials(HolderCredentialRequest holderRequest, String holderPid, String holderDid, String issuerPid, String issuerDid,
-                                                 Collection<CredentialWriteRequest> writeRequests, String participantContextId) {
+    @Override
+    public ServiceResult<Void> reject(String holderPid, String issuerPid, String issuerDid, @Nullable String rejectionReason, String participantContextId) {
+        return transactionContext.execute(() -> {
+
+            var holderRequestResult = holderCredentialRequestStore.findByIdAndLease(holderPid);
+            if (holderRequestResult.failed()) {
+                return from(holderRequestResult).mapEmpty();
+            }
+
+            var holderRequest = holderRequestResult.getContent();
+
+            var result = rejectRequest(holderRequest, holderPid, issuerPid, issuerDid, rejectionReason, participantContextId);
+            if (result.failed()) {
+                holderCredentialRequestStore.breakLease(holderRequest);
+            }
+            return result;
+        });
+    }
+
+    private ServiceResult<Void> rejectRequest(HolderCredentialRequest holderRequest, String holderPid, String issuerPid, String issuerDid,
+                                              @Nullable String rejectionReason, String participantContextId) {
+        var origin = checkOrigin(holderRequest, holderPid, issuerDid, participantContextId);
+        if (origin.failed()) {
+            return origin;
+        }
+
+        // once the Issuer's process ID is known it is fixed for this request, so a rejection reporting a different one
+        // belongs to a different issuance and must not fail this request
+        var knownIssuerPid = holderRequest.getIssuerPid();
+        if (knownIssuerPid != null && !knownIssuerPid.isBlank() && !knownIssuerPid.equals(issuerPid)) {
+            return ServiceResult.badRequest("HolderCredentialRequest '%s' is tracked under issuerPid '%s', but the message reported '%s'"
+                    .formatted(holderPid, knownIssuerPid, issuerPid));
+        }
+
+        // the credentials already arrived, so a rejection that trails a completed issuance must not undo it. It is
+        // acknowledged rather than rejected, because there is nothing for the Issuer to retry.
+        if (holderRequest.stateAsEnum() == ISSUED) {
+            holderCredentialRequestStore.breakLease(holderRequest);
+            return success();
+        }
+
+        if (holderRequest.stateAsEnum() != REQUESTED) {
+            return ServiceResult.badRequest("HolderCredentialRequest is expected to be in state '%s' but was '%s'".formatted(REQUESTED, holderRequest.stateAsString()));
+        }
+
+        monitor.debug("Issuer '%s' rejected credential request '%s'".formatted(issuerDid, holderPid));
+        holderRequest.transitionError(rejectionReason == null || rejectionReason.isBlank()
+                ? "The Issuer rejected the credential request '%s'".formatted(issuerPid)
+                : "The Issuer rejected the credential request '%s': %s".formatted(issuerPid, rejectionReason));
+        holderCredentialRequestStore.save(holderRequest);
+        return success();
+    }
+
+    /**
+     * Establishes that an inbound message may act on this request at all: it must belong to the addressed participant
+     * context, and it must come from the Issuer the request was sent to. Asking that Issuer for the credentials is what
+     * makes it trusted for this request.
+     */
+    private ServiceResult<Void> checkOrigin(HolderCredentialRequest holderRequest, String holderPid, String issuerDid, String participantContextId) {
         // requests of other participant contexts are not writable here, and their existence must not be observable either
         if (!holderRequest.getParticipantContextId().equals(participantContextId)) {
             return ServiceResult.notFound("HolderCredentialRequest with ID '%s' does not exist".formatted(holderPid));
         }
 
-        // credentials are only accepted from the Issuer the request was addressed to: having asked that Issuer for them
-        // is what makes it trusted for this request
         if (!holderRequest.getIssuerDid().equals(issuerDid)) {
             return ServiceResult.unauthorized("HolderCredentialRequest '%s' was sent to Issuer '%s', so credentials delivered by '%s' are not accepted"
                     .formatted(holderPid, holderRequest.getIssuerDid(), issuerDid));
+        }
+        return success();
+    }
+
+    private ServiceResult<Void> writeCredentials(HolderCredentialRequest holderRequest, String holderPid, String holderDid, String issuerPid, String issuerDid,
+                                                 Collection<CredentialWriteRequest> writeRequests, String participantContextId) {
+        var origin = checkOrigin(holderRequest, holderPid, issuerDid, participantContextId);
+        if (origin.failed()) {
+            return origin;
         }
 
         if (!ALLOWED_STATES.contains(holderRequest.stateAsEnum())) {

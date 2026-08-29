@@ -47,6 +47,9 @@
         "credentialType": {
           "@id": "dcp:credentialType"
         },
+        "credentialSchema": {
+          "@id": "dcp:credentialSchema"
+        },
         "offerReason": {
           "@id": "dcp:offerReason",
           "@type": "xsd:string"

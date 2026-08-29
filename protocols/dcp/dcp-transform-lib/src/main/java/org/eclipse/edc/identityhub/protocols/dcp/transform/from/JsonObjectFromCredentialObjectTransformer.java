@@ -27,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static jakarta.json.stream.JsonCollectors.toJsonArray;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_BINDING_METHODS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_SCHEMA_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
@@ -65,15 +66,19 @@ public class JsonObjectFromCredentialObjectTransformer extends AbstractNamespace
                 .map(bindingMethod -> createValue(bindingMethod, xsdNamespace.toIri("string")))
                 .collect(toJsonArray());
 
-        return Json.createObjectBuilder()
+        var builder = Json.createObjectBuilder()
                 .add(ID, credentialObject.getId())
                 .add(TYPE, forNamespace(CREDENTIAL_OBJECT_TERM))
                 .add(forNamespace(CREDENTIAL_OBJECT_OFFER_REASON_TERM), createValue(credentialObject.getOfferReason(), xsdNamespace.toIri("string")))
                 .add(forNamespace(CREDENTIAL_OBJECT_PROFILE_TERM), p)
                 .add(forNamespace(CREDENTIAL_OBJECT_BINDING_METHODS_TERM), bindingMethods)
                 .add(forNamespace(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM), credentialObject.getCredentialType())
-                .add(forNamespace(CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM), issuancePolicyJson)
-                .build();
+                .add(forNamespace(CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM), issuancePolicyJson);
+
+        if (credentialObject.getCredentialSchema() != null) {
+            builder.add(forNamespace(CREDENTIAL_OBJECT_CREDENTIAL_SCHEMA_TERM), credentialObject.getCredentialSchema());
+        }
+        return builder.build();
     }
 
 

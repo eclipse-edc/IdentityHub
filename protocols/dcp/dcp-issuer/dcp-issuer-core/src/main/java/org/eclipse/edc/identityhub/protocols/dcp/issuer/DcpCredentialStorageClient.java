@@ -46,6 +46,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static jakarta.json.stream.JsonCollectors.toJsonArray;
 import static org.eclipse.edc.iam.decentralizedclaims.spi.DcpConstants.DSPACE_DCP_V_1_0_CONTEXT;
@@ -53,6 +54,8 @@ import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMess
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIAL_MESSAGE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.REJECTION_REASON_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.STATUS_REJECTED;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.STATUS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.TYPE_TERM;
 import static org.eclipse.edc.identityhub.spi.verification.SelfIssuedTokenConstants.TOKEN_CLAIM;
@@ -91,7 +94,15 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
 
     @Override
     public Result<Void> deliverCredentials(IssuanceProcess issuanceProcess, Collection<VerifiableCredentialContainer> credentials) {
+        return send(issuanceProcess, () -> createCredentialMessage(issuanceProcess, credentials), "Error delivering credentials");
+    }
 
+    @Override
+    public Result<Void> deliverRejection(IssuanceProcess issuanceProcess, @Nullable String rejectionReason) {
+        return send(issuanceProcess, () -> createRejectionMessage(issuanceProcess, rejectionReason), "Error delivering rejection");
+    }
+
+    private Result<Void> send(IssuanceProcess issuanceProcess, Supplier<JsonObject> messageSupplier, String errorMessage) {
         try {
             var issuerDid = participantContextStore.findById(issuanceProcess.getParticipantContextId()).map(ParticipantContext::getIdentity)
                     .orElseThrow(failure -> new EdcException("Participant context not found"));
@@ -105,14 +116,11 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
             var selfIssuedTokenJwt = getAuthToken(issuanceProcess.getParticipantContextId(), participantDid, issuerDid, resolveHolderAccessToken(issuanceProcess))
                     .orElseThrow(failure -> new EdcException("Error creating self-issued token"));
 
-            var credentialMessage = createCredentialMessage(issuanceProcess, credentials);
-
-            return sendRequest(credentialMessage, url, selfIssuedTokenJwt);
+            return sendRequest(messageSupplier.get(), url, selfIssuedTokenJwt);
         } catch (EdcException e) {
-            monitor.warning("Error delivering credentials", e);
-            return failure("Error delivering credentials: %s".formatted(e.getMessage()));
+            monitor.warning(errorMessage, e);
+            return failure("%s: %s".formatted(errorMessage, e.getMessage()));
         }
-
     }
 
     private @NotNull Result<Void> sendRequest(JsonObject credentialMessage, String url, TokenRepresentation selfIssuedTokenJwt) {
@@ -149,6 +157,26 @@ public class DcpCredentialStorageClient implements CredentialStorageClient {
                 .add(CREDENTIALS_TERM, credentials.stream().map(this::toJson).collect(toJsonArray()))
                 .add(STATUS_TERM, "ISSUED")
                 .build();
+    }
+
+    /**
+     * A {@code CredentialMessage} reporting that the request was rejected. It carries the same pids as a successful
+     * delivery would, so the Holder correlates it with the request it is waiting on, and no credentials.
+     */
+    private JsonObject createRejectionMessage(IssuanceProcess issuanceProcess, @Nullable String rejectionReason) {
+        var builder = Json.createObjectBuilder()
+                .add(JsonLdKeywords.CONTEXT, Json.createArrayBuilder()
+                        .add(DSPACE_DCP_V_1_0_CONTEXT))
+                .add(TYPE_TERM, CREDENTIAL_MESSAGE_TERM)
+                .add(ISSUER_PID_TERM, issuanceProcess.getId())
+                .add(HOLDER_PID_TERM, issuanceProcess.getHolderPid())
+                .add(STATUS_TERM, STATUS_REJECTED);
+
+        // the reason is OPTIONAL, and the spec requires that it discloses nothing confidential
+        if (rejectionReason != null && !rejectionReason.isBlank()) {
+            builder.add(REJECTION_REASON_TERM, rejectionReason);
+        }
+        return builder.build();
     }
 
     private JsonObject toJson(VerifiableCredentialContainer credential) {

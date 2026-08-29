@@ -68,7 +68,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
     @BeforeEach
     void setUp() {
         when(authorizationService.authorize(any(), anyString(), anyString(), any())).thenReturn(ServiceResult.success());
-        when(credentialOfferService.sendCredentialOffer(anyString(), anyString(), anyCollection())).thenReturn(ServiceResult.success());
+        when(credentialOfferService.sendCredentialOffer(anyString(), anyString(), anyCollection(), any())).thenReturn(ServiceResult.success());
     }
 
     @Test
@@ -184,13 +184,13 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
     @Test
     void sendCredentialOffer() {
         baseRequest()
-                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
+                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID), null))
                 .post("/offer")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(204);
 
-        verify(credentialOfferService).sendCredentialOffer(anyString(), eq("holder"), anyCollection());
+        verify(credentialOfferService).sendCredentialOffer(anyString(), eq("holder"), anyCollection(), any());
     }
 
     @Test
@@ -198,7 +198,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
         when(authorizationService.authorize(any(), anyString(), anyString(), any()))
                 .thenReturn(ServiceResult.notFound("holder"));
         baseRequest()
-                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
+                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID), null))
                 .post("/offer")
                 .then()
                 .log().ifValidationFails()
@@ -214,7 +214,7 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
         when(authorizationService.authorize(any(), anyString(), anyString(), any()))
                 .thenReturn(ServiceResult.unauthorized("barbaz"));
         baseRequest()
-                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
+                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID), null))
                 .post("/offer")
                 .then()
                 .log().ifValidationFails()
@@ -227,17 +227,17 @@ class IssuerCredentialsAdminApiControllerTest extends RestControllerTestBase {
 
     @Test
     void sendCredentialOffer_whenServiceFails() {
-        when(credentialOfferService.sendCredentialOffer(anyString(), anyString(), anyCollection()))
+        when(credentialOfferService.sendCredentialOffer(anyString(), anyString(), anyCollection(), any()))
                 .thenReturn(ServiceResult.notFound("foo"));
         baseRequest()
-                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID)))
+                .body(new CredentialOfferDto("holder", List.of(CREDENTIAL_OBJECT_ID), null))
                 .post("/offer")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(400)
                 .body(containsString("foo"));
 
-        verify(credentialOfferService).sendCredentialOffer(anyString(), eq("holder"), anyCollection());
+        verify(credentialOfferService).sendCredentialOffer(anyString(), eq("holder"), anyCollection(), any());
     }
 
     @Override

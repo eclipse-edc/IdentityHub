@@ -34,6 +34,7 @@ import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.StoreResult;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -52,6 +53,7 @@ import static org.eclipse.edc.spi.result.StoreResult.success;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -354,8 +356,85 @@ class CredentialQueryResolverImplTest {
         verify(monitor).warning(eq("Credential '%s' not valid: revoked".formatted(credential.getId())));
     }
 
+    // CS-PRES-12: a mixed set of one type - valid, expired and revoked - must present only the valid credential
+    @Test
+    @DisplayName("CS-PRES-12: only the valid credential of a valid/expired/revoked set is presented")
+    void query_mixedValidity_returnsOnlyValid() {
+        var valid = createCredential("TestCredential").expirationDate(Instant.now().plus(1, ChronoUnit.DAYS)).build();
+        var expired = createCredential("TestCredential").expirationDate(Instant.now().minus(1, ChronoUnit.DAYS)).build();
+        var revoked = createCredential("TestCredential")
+                .credentialStatus(new CredentialStatus("status-id", "StatusList2021Entry",
+                        Map.of("statusListCredential", "https://university.example/credentials/status/3",
+                                "statusPurpose", "revocation",
+                                "statusListIndex", 42)))
+                .build();
+        // only the revoked one carries a status list entry, so only it is checked against the registry
+        when(revocationServiceRegistry.checkValidity(revoked)).thenReturn(Result.failure("revoked"));
+        // built once: the resolver queries the store twice, and the two result sets are correlated by resource id
+        var resources = List.of(createCredentialResource(valid).build(),
+                createCredentialResource(expired).build(),
+                createCredentialResource(revoked).build());
+        when(storeMock.query(any())).thenAnswer(i -> success(resources));
+
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.type:TestCredential:read"),
+                List.of("org.eclipse.dspace.dcp.vc.type:TestCredential:read"));
+
+        assertThat(res).isSucceeded();
+        assertThat(res.getContent().map(c -> c.credential().getId())).containsExactly(valid.getId());
+    }
+
+    // CS-PRES-11: a query for the vc.id alias returns exactly the credential with that id
+    @Test
+    @DisplayName("CS-PRES-11: a vc.id scope resolves to exactly that credential")
+    void query_byCredentialId() {
+        var credential = createCredential("TestCredential").build();
+        var resource = createCredentialResource(credential).build();
+        var idScope = "org.eclipse.dspace.dcp.vc.id:" + credential.getId();
+        when(storeMock.query(queryingFor(credential.getId()))).thenReturn(success(List.of(resource)));
+
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery(idScope), List.of(idScope));
+
+        assertThat(res).isSucceeded();
+        assertThat(res.getContent()).containsExactly(resource.getVerifiableCredential());
+        // the credential is selected by id, not by type
+        verify(storeMock, atLeastOnce()).query(argThat(q -> q.getFilterExpression().stream()
+                .anyMatch(c -> c.getOperandLeft().equals("verifiableCredential.credential.id") && c.getOperandRight().equals(credential.getId()))));
+    }
+
+    // negative variant: an id nobody holds yields an empty presentation rather than an error that leaks its absence
+    @Test
+    @DisplayName("CS-PRES-11: an unknown credential id yields an empty result, not an error")
+    void query_byCredentialId_whenUnknown_returnsEmpty() {
+        var idScope = "org.eclipse.dspace.dcp.vc.id:" + UUID.randomUUID();
+        when(storeMock.query(any())).thenAnswer(i -> success(List.of()));
+
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID, createPresentationQuery(idScope), List.of(idScope));
+
+        assertThat(res).isSucceeded();
+        assertThat(res.getContent()).isEmpty();
+    }
+
+    // scope escalation must be caught for the id alias too: an access token for one credential does not unlock another
+    @Test
+    @DisplayName("CS-PRES-11: a vc.id query for a credential the token does not authorize returns nothing")
+    void query_byCredentialId_whenNotAuthorized_returnsEmpty() {
+        var authorized = createCredential("TestCredential").build();
+        var other = createCredential("TestCredential").build();
+        when(storeMock.query(queryingFor(authorized.getId()))).thenReturn(success(List.of(createCredentialResource(authorized).build())));
+        when(storeMock.query(queryingFor(other.getId()))).thenReturn(success(List.of(createCredentialResource(other).build())));
+
+        var res = resolver.query(TEST_PARTICIPANT_CONTEXT_ID,
+                createPresentationQuery("org.eclipse.dspace.dcp.vc.id:" + other.getId()),
+                List.of("org.eclipse.dspace.dcp.vc.id:" + authorized.getId()));
+
+        assertThat(res).isSucceeded();
+        assertThat(res.getContent()).isEmpty();
+    }
+
     private QuerySpec queryingFor(String slug) {
-        return argThat(q -> q.getFilterExpression().stream().anyMatch(c -> c.getOperandRight().toString().contains(slug)));
+        // null-safe: with more than one stubbed matcher, Mockito applies each to the placeholder argument of the others
+        return argThat(q -> q != null && q.getFilterExpression().stream().anyMatch(c -> c.getOperandRight().toString().contains(slug)));
     }
 
     private VerifiableCredentialResource.Builder createCredentialResource(VerifiableCredential cred) {

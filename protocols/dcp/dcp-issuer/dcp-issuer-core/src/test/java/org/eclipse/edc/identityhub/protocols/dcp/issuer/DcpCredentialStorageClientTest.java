@@ -58,6 +58,7 @@ import static org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialForm
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.CREDENTIALS_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.HOLDER_PID_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.ISSUER_PID_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.REJECTION_REASON_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialMessage.STATUS_TERM;
 import static org.eclipse.edc.identityhub.spi.verifiablecredentials.model.CredentialProfile.DCP_PROFILE_VC11;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -262,6 +263,58 @@ class DcpCredentialStorageClientTest {
                 .did(HOLDER_DID)
                 .participantContextId(PARTICIPANT_CONTEXT_ID)
                 .build();
+    }
+
+    // RT-03: an issuance that failed after acceptance is reported to the Holder as a CredentialMessage with status
+    // REJECTED, correlating on the same pids as a delivery would, and carrying no credentials
+    @DisplayName("B5.6: a rejection POSTs a CredentialMessage with status REJECTED, the same pids and no credentials")
+    @Test
+    void deliverRejection_success() throws IOException {
+        var process = issuanceProcess();
+
+        var result = client.deliverRejection(process, "attestation could not be satisfied");
+
+        assertThat(result).isSucceeded();
+
+        var requestCaptor = ArgumentCaptor.forClass(Request.class);
+        verify(httpClient).execute(requestCaptor.capture());
+        var request = requestCaptor.getValue();
+        assertThat(request.method()).isEqualTo("POST");
+        assertThat(request.url().toString()).isEqualTo(CREDENTIAL_SERVICE_URL + "/credentials");
+        assertThat(request.header("Authorization")).isEqualTo("Bearer si-token");
+
+        var buffer = new Buffer();
+        request.body().writeTo(buffer);
+        var message = Json.createReader(new StringReader(buffer.readUtf8())).readObject();
+        assertThat(message.getString(ISSUER_PID_TERM)).isEqualTo(process.getId());
+        assertThat(message.getString(HOLDER_PID_TERM)).isEqualTo(process.getHolderPid());
+        assertThat(message.getString(STATUS_TERM)).isEqualTo("REJECTED");
+        assertThat(message.getString(REJECTION_REASON_TERM)).isEqualTo("attestation could not be satisfied");
+        assertThat(message).doesNotContainKey(CREDENTIALS_TERM);
+    }
+
+    @DisplayName("B5.6: a rejection without a reason omits the rejectionReason property")
+    @Test
+    void deliverRejection_withoutReason_omitsRejectionReason() throws IOException {
+        var result = client.deliverRejection(issuanceProcess(), null);
+
+        assertThat(result).isSucceeded();
+
+        var requestCaptor = ArgumentCaptor.forClass(Request.class);
+        verify(httpClient).execute(requestCaptor.capture());
+        var buffer = new Buffer();
+        requestCaptor.getValue().body().writeTo(buffer);
+        var message = Json.createReader(new StringReader(buffer.readUtf8())).readObject();
+        assertThat(message.getString(STATUS_TERM)).isEqualTo("REJECTED");
+        assertThat(message).doesNotContainKey(REJECTION_REASON_TERM);
+    }
+
+    @DisplayName("B5.6: a rejection fails when the holder's Credential Service rejects it")
+    @Test
+    void deliverRejection_whenNonSuccessfulResponse_returnsFailure() throws IOException {
+        when(httpClient.execute(any(Request.class))).thenReturn(response(400));
+
+        assertThat(client.deliverRejection(issuanceProcess(), "nope")).isFailed();
     }
 
     private IssuanceProcess issuanceProcess() {

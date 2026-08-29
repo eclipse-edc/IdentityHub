@@ -187,7 +187,23 @@ public class IssuanceProcessManagerImpl extends AbstractStateEntityManager<Issua
     private void transitionToError(IssuanceProcess process) {
         process.transitionToError();
         update(process);
+        notifyHolderOfRejection(process);
         discardHolderAccessToken(process);
+    }
+
+    /**
+     * Tells the Holder that the issuance it was told had been accepted has failed, so it stops waiting for credentials
+     * that are never coming. Best effort: the failure is already recorded and is served by the Credential Request Status
+     * API, so a Holder that never receives this still learns about it by polling.
+     */
+    private void notifyHolderOfRejection(IssuanceProcess process) {
+        try {
+            credentialStorageClient.deliverRejection(process, process.getErrorDetail())
+                    .onFailure(f -> monitor.debug("Could not notify the Holder that issuance process '%s' was rejected: %s"
+                            .formatted(process.getId(), f.getFailureDetail())));
+        } catch (Exception e) {
+            monitor.debug("Could not notify the Holder that issuance process '%s' was rejected: %s".formatted(process.getId(), e.getMessage()));
+        }
     }
 
     /**

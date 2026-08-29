@@ -14,12 +14,14 @@
 
 package org.eclipse.edc.identityhub.core.services.verifiablecredential;
 
+import org.assertj.core.api.Assertions;
 import org.eclipse.edc.iam.did.spi.resolution.DidPublicKeyResolver;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialFormat;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.CredentialSubject;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.Issuer;
 import org.eclipse.edc.iam.verifiablecredentials.spi.model.VerifiableCredential;
 import org.eclipse.edc.identityhub.spi.credential.request.model.HolderCredentialRequest;
+import org.eclipse.edc.identityhub.spi.credential.request.model.HolderRequestState;
 import org.eclipse.edc.identityhub.spi.credential.request.store.HolderCredentialRequestStore;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.generator.CredentialWriteRequest;
 import org.eclipse.edc.identityhub.spi.verifiablecredentials.store.CredentialStore;
@@ -274,6 +276,106 @@ class CredentialWriterImplTest {
         verify(credentialStore, never()).create(any());
         // the existing credential request is not modified, no storage interaction
         verify(holderCredentialRequestStore, never()).save(any());
+    }
+
+    // A3.25 / CS-STOR-05: a REJECTED CredentialMessage fails the pending request instead of leaving it waiting forever
+    @Test
+    @DisplayName("A3.25: a rejection from the request's issuer moves the request to ERROR and stores nothing")
+    void reject_pendingRequest_expectTransitionToError() {
+        var request = HolderCredentialRequest.Builder.newInstance()
+                .issuerDid(ISSUER_DID)
+                .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
+                .state(REQUESTED.code())
+                .participantContextId(PARTICIPANT_ID)
+                .issuerPid("issuerPid")
+                .build();
+        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+
+        var result = credentialWriter.reject("holderPid", "issuerPid", ISSUER_DID, "attestation not satisfied", PARTICIPANT_ID);
+
+        assertThat(result).isSucceeded();
+        Assertions.assertThat(request.stateAsEnum()).isEqualTo(HolderRequestState.ERROR);
+        Assertions.assertThat(request.getErrorDetail()).contains("attestation not satisfied");
+        verify(holderCredentialRequestStore).save(request);
+        verifyNoInteractions(credentialStore);
+    }
+
+    @Test
+    @DisplayName("A3.25: a rejection without a reason still fails the request")
+    void reject_withoutReason_expectTransitionToError() {
+        var request = HolderCredentialRequest.Builder.newInstance()
+                .issuerDid(ISSUER_DID)
+                .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
+                .state(REQUESTED.code())
+                .participantContextId(PARTICIPANT_ID)
+                .issuerPid("issuerPid")
+                .build();
+        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+
+        var result = credentialWriter.reject("holderPid", "issuerPid", ISSUER_DID, null, PARTICIPANT_ID);
+
+        assertThat(result).isSucceeded();
+        Assertions.assertThat(request.stateAsEnum()).isEqualTo(HolderRequestState.ERROR);
+        Assertions.assertThat(request.getErrorDetail()).contains("issuerPid");
+    }
+
+    @Test
+    @DisplayName("A3.25: a rejection from an issuer other than the one addressed is not accepted")
+    void reject_fromDifferentIssuer_expectUnauthorized() {
+        var request = HolderCredentialRequest.Builder.newInstance()
+                .issuerDid(ISSUER_DID)
+                .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
+                .state(REQUESTED.code())
+                .participantContextId(PARTICIPANT_ID)
+                .issuerPid("issuerPid")
+                .build();
+        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+
+        var result = credentialWriter.reject("holderPid", "issuerPid", "did:web:someone-else", "nope", PARTICIPANT_ID);
+
+        assertThat(result).isFailed();
+        Assertions.assertThat(request.stateAsEnum()).isEqualTo(REQUESTED);
+        verify(holderCredentialRequestStore, never()).save(any());
+        verify(holderCredentialRequestStore).breakLease(request);
+    }
+
+    @Test
+    @DisplayName("A3.25: a rejection trailing a completed issuance is acknowledged but does not undo it")
+    void reject_afterCredentialsIssued_expectNoOp() {
+        var request = HolderCredentialRequest.Builder.newInstance()
+                .issuerDid(ISSUER_DID)
+                .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
+                .state(ISSUED.code())
+                .participantContextId(PARTICIPANT_ID)
+                .issuerPid("issuerPid")
+                .build();
+        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+
+        var result = credentialWriter.reject("holderPid", "issuerPid", ISSUER_DID, "too late", PARTICIPANT_ID);
+
+        assertThat(result).isSucceeded();
+        Assertions.assertThat(request.stateAsEnum()).isEqualTo(ISSUED);
+        verify(holderCredentialRequestStore, never()).save(any());
+        verify(holderCredentialRequestStore).breakLease(request);
+    }
+
+    @Test
+    @DisplayName("A3.25: a rejection for another participant context's request is not observable")
+    void reject_crossTenant_expectNotFound() {
+        var request = HolderCredentialRequest.Builder.newInstance()
+                .issuerDid(ISSUER_DID)
+                .requestedCredential("test-id", TEST_CREDENTIAL_TYPE, TEST_CREDENTIAL_FORMAT)
+                .state(REQUESTED.code())
+                .participantContextId("another-participant")
+                .issuerPid("issuerPid")
+                .build();
+        when(holderCredentialRequestStore.findByIdAndLease(anyString())).thenReturn(StoreResult.success(request));
+
+        var result = credentialWriter.reject("holderPid", "issuerPid", ISSUER_DID, "nope", PARTICIPANT_ID);
+
+        assertThat(result).isFailed();
+        Assertions.assertThat(request.stateAsEnum()).isEqualTo(REQUESTED);
+        verify(holderCredentialRequestStore).breakLease(request);
     }
 
     private VerifiableCredential.Builder createCredential() {

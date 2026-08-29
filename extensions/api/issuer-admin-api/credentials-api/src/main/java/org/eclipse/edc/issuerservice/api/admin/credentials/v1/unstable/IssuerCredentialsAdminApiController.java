@@ -123,7 +123,7 @@ public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdm
         var result = authorizationService.authorize(context, decodedParticipantContextId, holderId, Holder.class);
         result.orElseThrow(exceptionMapper(Holder.class, holderId));
 
-        credentialOfferService.sendCredentialOffer(decodedParticipantContextId, holderId, credentialOffer.credentials())
+        credentialOfferService.sendCredentialOffer(decodedParticipantContextId, holderId, credentialOffer.credentials(), credentialOffer.offerReason())
                 .orElseThrow(InvalidRequestException::new);
     }
 

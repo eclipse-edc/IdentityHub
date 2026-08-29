@@ -18,6 +18,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Collection;
 
+/**
+ * The credentials an Issuer offers to a Holder.
+ *
+ * @param offerReason why the credential is offered, e.g. {@code reissue} or {@code proof-key-revocation}. Optional;
+ *                    defaults to {@code reissue}.
+ */
 public record CredentialOfferDto(@JsonProperty(required = true) String holderId,
-                                 @JsonProperty(required = true) Collection<String> credentials) {
+                                 @JsonProperty(required = true) Collection<String> credentials,
+                                 String offerReason) {
 }

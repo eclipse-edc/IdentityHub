@@ -44,6 +44,9 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
     // this has to include the "@" for Postgres queries to work because they operate on JSON
     public static final String CONTEXT_OPERAND = "verifiableCredential.credential.@context";
     public static final String ALIAS_LITERAL = "org.eclipse.dspace.dcp.vc.type";
+    public static final String ID_OPERAND = "verifiableCredential.credential.id";
+    public static final String ALIAS_LITERAL_ID = "org.eclipse.dspace.dcp.vc.id";
+    public static final String EQUALS_OPERATOR = "=";
     public static final String CONTAINS_OPERATOR = "contains";
     private static final String SCOPE_SEPARATOR = ":";
     private final List<String> allowedOperations = List.of("read", "*", "all");
@@ -56,6 +59,15 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
 
     @Override
     public Result<List<Criterion>> transformScope(String scope) {
+        if (scope == null) {
+            return failure("Scope was null");
+        }
+
+        var idAliasPrefix = ALIAS_LITERAL_ID + SCOPE_SEPARATOR;
+        if (scope.regionMatches(true, 0, idAliasPrefix, 0, idAliasPrefix.length())) {
+            return convertIdAlias(scope.substring(idAliasPrefix.length()));
+        }
+
         var tokens = tokenize(scope);
         if (tokens.failed()) {
             return failure("Scope string cannot be converted: %s".formatted(tokens.getFailureDetail()));
@@ -91,6 +103,18 @@ public class EdcScopeToCriterionTransformer implements ScopeToCriterionTransform
         }
 
         return success(tokens);
+    }
+
+    /**
+     * Converts the {@code org.eclipse.dspace.dcp.vc.id} alias, which grants read access to one credential by id. Unlike
+     * the type alias it carries no operation part, and everything after the first separator is the id, so ids that
+     * themselves contain separators (URNs, for instance) survive intact.
+     */
+    private Result<List<Criterion>> convertIdAlias(String credentialId) {
+        if (credentialId.isBlank()) {
+            return failure("Scope string cannot be converted: no credential ID given after the '%s' alias".formatted(ALIAS_LITERAL_ID));
+        }
+        return success(List.of(new Criterion(ID_OPERAND, EQUALS_OPERATOR, credentialId)));
     }
 
     private Result<List<Criterion>> convertDiscriminator(String discriminator) {

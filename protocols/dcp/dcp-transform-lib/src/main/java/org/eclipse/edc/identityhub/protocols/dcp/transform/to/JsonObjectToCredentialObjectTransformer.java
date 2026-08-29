@@ -33,6 +33,7 @@ import java.util.Optional;
 
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.Builder;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_BINDING_METHODS_TERM;
+import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_SCHEMA_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_ISSUANCE_POLICY_TERM;
 import static org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialObject.CREDENTIAL_OBJECT_OFFER_REASON_TERM;
@@ -68,6 +69,10 @@ public class JsonObjectToCredentialObjectTransformer extends AbstractNamespaceAw
         Optional.ofNullable(jsonObject.get(forNamespace(CREDENTIAL_OBJECT_CREDENTIAL_TYPE_TERM)))
                 .map(credentialType -> transformString(credentialType, transformerContext))
                 .ifPresent(credentialObject::credentialType);
+
+        Optional.ofNullable(jsonObject.get(forNamespace(CREDENTIAL_OBJECT_CREDENTIAL_SCHEMA_TERM)))
+                .map(credentialSchema -> transformString(credentialSchema, transformerContext))
+                .ifPresent(credentialObject::credentialSchema);
 
         Optional.ofNullable(jsonObject.get(forNamespace(CREDENTIAL_OBJECT_PROFILE_TERM)))
                 .ifPresent(credentialType -> transformArrayOrObject(credentialType, Object.class, (obj) -> credentialObject.profile(obj.toString()), transformerContext));
