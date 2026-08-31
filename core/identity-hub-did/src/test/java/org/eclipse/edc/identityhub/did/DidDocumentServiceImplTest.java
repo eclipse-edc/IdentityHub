@@ -20,7 +20,6 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
-import org.assertj.core.api.Assertions;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.document.Service;
 import org.eclipse.edc.iam.did.spi.document.VerificationMethod;
@@ -59,6 +58,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.iam.did.spi.document.DidConstants.JSON_WEB_KEY_2020;
 import static org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext.API_TOKEN_ALIAS;
 import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
@@ -578,7 +578,9 @@ class DidDocumentServiceImplTest {
         verifyNoMoreInteractions(didResourceStoreMock);
         verify(publisherMock).publish(eq(did));
         // CS-PRES-13: a verifier only accepts a VP whose signing key the DID document declares for authentication
-        Assertions.assertThat(doc.getAuthentication()).containsExactly(keyId);
+        assertThat(doc.getAuthentication()).containsExactly(keyId);
+        // DCP v1.0 §4.1: the signing key MUST have capabilityInvocation verification relationship
+        assertThat(doc.getCapabilityInvocation()).containsExactly(keyId);
     }
 
     @SuppressWarnings("unchecked")
@@ -701,6 +703,7 @@ class DidDocumentServiceImplTest {
                         .publicKeyJwk(new ECKeyGenerator(Curve.P_256).keyID(keyId).generate().toJSONObject())
                         .build()))
                 .authentication(List.of(keyId))
+                .capabilityInvocation(List.of(keyId))
                 .build();
         var did = doc.getId();
         var didResource = DidResource.Builder.newInstance().did(did).state(DidState.GENERATED).document(doc).build();
@@ -726,7 +729,9 @@ class DidDocumentServiceImplTest {
         verifyNoMoreInteractions(didResourceStoreMock);
         verifyNoInteractions(publisherMock);
         // a revoked key must not stay behind as an authentication method either
-        Assertions.assertThat(doc.getAuthentication()).doesNotContain(keyId);
+        assertThat(doc.getAuthentication()).doesNotContain(keyId);
+        // a revoked key must not stay behind as a capabilityInvocation method either
+        assertThat(doc.getCapabilityInvocation()).doesNotContain(keyId);
     }
 
     @SuppressWarnings("unchecked")

@@ -314,6 +314,10 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                         if (!dd.getDocument().getAuthentication().contains(event.getKeyId())) {
                             dd.getDocument().getAuthentication().add(event.getKeyId());
                         }
+                        // DCP v1.0 §4.1: the signing key MUST have capabilityInvocation verification relationship
+                        if (!dd.getDocument().getCapabilityInvocation().contains(event.getKeyId())) {
+                            dd.getDocument().getCapabilityInvocation().add(event.getKeyId());
+                        }
                         return ServiceResult.from(didResourceStore.update(dd))
                                 .compose(v -> publish(dd.getDid()));
                     })
@@ -345,6 +349,7 @@ public class DidDocumentServiceImpl implements DidDocumentService, EventSubscrib
                     didResource.getDocument().getVerificationMethod().removeIf(vm -> vm.getId().equals(keyId));
                     // a revoked key must no longer be offered for authentication either
                     didResource.getDocument().getAuthentication().removeIf(keyId::equals);
+                    didResource.getDocument().getCapabilityInvocation().removeIf(keyId::equals);
                 })
                 .map(didResourceStore::update)
                 .filter(StoreResult::failed)
