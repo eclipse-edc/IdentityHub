@@ -1645,10 +1645,6 @@ components:
           type: string
         assigner:
           type: string
-        extensibleProperties:
-          type: object
-          additionalProperties:
-            type: object
         inheritsFrom:
           type: string
         obligations:
@@ -1988,6 +1984,10 @@ components:
           items:
             type: object
         authentication:
+          type: array
+          items:
+            type: string
+        capabilityInvocation:
           type: array
           items:
             type: string
