@@ -90,7 +90,7 @@ maven/mavencentral/info.picocli/picocli/4.7.7, Apache-2.0, approved, #4365
 maven/mavencentral/io.github.classgraph/classgraph/4.8.184, MIT, approved, CQ22530
 maven/mavencentral/io.nats/jnats/2.26.2, Apache-2.0, approved, #29938
 maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.26.1, Apache-2.0, approved, #29019
-maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.30.0, Apache-2.0, approved, #30125
+maven/mavencentral/io.opentelemetry.instrumentation/opentelemetry-instrumentation-annotations/2.31.1, , restricted, clearlydefined
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.60.1, Apache-2.0, approved, #29017
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.64.0, Apache-2.0, approved, #29872
 maven/mavencentral/io.opentelemetry/opentelemetry-api/1.65.0, Apache-2.0, approved, #30119
@@ -365,9 +365,9 @@ maven/mavencentral/org.yaml/snakeyaml/2.4, Apache-2.0, approved, #19469
 maven/mavencentral/org.yaml/snakeyaml/2.5, Apache-2.0, approved, #23100
 maven/mavencentral/org.yaml/snakeyaml/2.6, Apache-2.0, approved, #26233
 maven/mavencentral/tools.jackson.core/jackson-core/3.2.2, BSD-2-Clause AND MIT AND (BSD-2-Clause AND BSL-1.0 AND MIT) AND Apache-2.0 AND (Apache-2.0 AND LicenseRef-scancode-free-unknown AND MIT) AND MIT AND LicenseRef-scancode-proprietary-license, restricted, #30552
-maven/mavencentral/tools.jackson.core/jackson-databind/3.2.1, , restricted, clearlydefined
-maven/mavencentral/tools.jackson.core/jackson-databind/3.2.2, , restricted, clearlydefined
+maven/mavencentral/tools.jackson.core/jackson-databind/3.2.1, Apache-2.0, approved, #30564
+maven/mavencentral/tools.jackson.core/jackson-databind/3.2.2, Apache-2.0, approved, #30563
 maven/mavencentral/tools.jackson.dataformat/jackson-dataformat-yaml/3.2.1, Apache-2.0, approved, #29717
 maven/mavencentral/tools.jackson.dataformat/jackson-dataformat-yaml/3.2.2, Apache-2.0, approved, #29717
-maven/mavencentral/tools.jackson.datatype/jackson-datatype-jakarta-jsonp/3.2.2, , restricted, clearlydefined
+maven/mavencentral/tools.jackson.datatype/jackson-datatype-jakarta-jsonp/3.2.2, Apache-2.0, approved, #30565
 maven/mavencentral/tools.jackson/jackson-bom/3.2.2, Apache-2.0, approved, #29716
