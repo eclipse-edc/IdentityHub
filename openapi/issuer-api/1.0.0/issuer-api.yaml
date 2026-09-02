@@ -9,35 +9,7 @@ info:
 servers:
 - url: /
 paths:
-  /v1beta/participants/{participantContextId}/metadata:
-    get:
-      tags:
-      - Issuer Metadata API
-      description: Requests information about the capabilities of this issuer.
-      operationId: getIssuerMetadata
-      parameters:
-      - name: participantContextId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: Authorization
-        in: header
-        required: false
-        style: simple
-        explode: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: Gets the issuer metadata.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/IssuerMetadata"
-  /v1beta/participants/{participantContextId}/requests/{credentialRequestId}:
+  /v1/participants/{participantContextId}/requests/{credentialRequestId}:
     get:
       tags:
       - Credential Request Status API
@@ -106,7 +78,35 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ApiErrorDetail"
-  /v1beta/participants/{participantContextId}/credentials:
+  /v1/participants/{participantContextId}/metadata:
+    get:
+      tags:
+      - Issuer Metadata API
+      description: Requests information about the capabilities of this issuer.
+      operationId: getIssuerMetadata
+      parameters:
+      - name: participantContextId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: Authorization
+        in: header
+        required: false
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Gets the issuer metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssuerMetadata"
+  /v1/participants/{participantContextId}/credentials:
     post:
       tags:
       - Credential Request API
@@ -172,6 +172,41 @@ paths:
                   $ref: "#/components/schemas/ApiErrorDetail"
 components:
   schemas:
+    CredentialStatus:
+      required:
+      - '@context'
+      - status
+      - type
+      type: object
+      properties:
+        '@context':
+          type: object
+        status:
+          type: string
+        type:
+          type: string
+      example:
+        '@context':
+        - https://w3id.org/dspace-dcp/v1.0/dcp.jsonld
+        type: CredentialStatus
+        requestId: requestId
+        status: RECEIVED
+    ApiErrorDetail:
+      type: object
+      properties:
+        invalidValue:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        type:
+          type: string
+      example:
+        message: error message
+        type: ErrorType
+        path: object.error.path
+        invalidValue: this value is not valid
     IssuerMetadata:
       required:
       - '@context'
@@ -215,41 +250,6 @@ components:
                   filter:
                     type: string
                     pattern: ^AttestationCredential$
-    CredentialStatus:
-      required:
-      - '@context'
-      - status
-      - type
-      type: object
-      properties:
-        '@context':
-          type: object
-        status:
-          type: string
-        type:
-          type: string
-      example:
-        '@context':
-        - https://w3id.org/dspace-dcp/v1.0/dcp.jsonld
-        type: CredentialStatus
-        requestId: requestId
-        status: RECEIVED
-    ApiErrorDetail:
-      type: object
-      properties:
-        invalidValue:
-          type: string
-        message:
-          type: string
-        path:
-          type: string
-        type:
-          type: string
-      example:
-        message: error message
-        type: ErrorType
-        path: object.error.path
-        invalidValue: this value is not valid
     CredentialRequestMessage:
       required:
       - '@context'
