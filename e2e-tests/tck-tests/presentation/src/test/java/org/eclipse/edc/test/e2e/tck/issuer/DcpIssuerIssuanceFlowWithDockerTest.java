@@ -141,20 +141,20 @@ public class DcpIssuerIssuanceFlowWithDockerTest {
             });
         }
 
-        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:sha-f841a76")
+        try (var tckContainer = new GenericContainer<>("eclipsedataspacetck/dcp-tck-runtime:1.2.1")
                 .withExtraHost("host.docker.internal", "host-gateway")
                 .withExposedPorts(CALLBACK_PORT)
-                .withEnv(Map.of(
-                        "dataspacetck.callback.address", baseCallbackAddress,
-                        "dataspacetck.host", baseCallbackUri.getHost(),
-                        "dataspacetck.port", String.valueOf(baseCallbackUri.getPort()),
-                        "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
-                        "dataspacetck.did.issuer", issuerDid,
-                        "dataspacetck.sts.url", "http://host.docker.internal:%s%s".formatted(stsPort, stsPath),
-                        "dataspacetck.sts.client.id", response.clientId(),
-                        "dataspacetck.sts.client.secret", response.clientSecret(),
-                        "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID,
-                        "dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.issuance.issuer"
+                .withEnv(Map.ofEntries(
+                        Map.entry("dataspacetck.callback.address", baseCallbackAddress),
+                        Map.entry("dataspacetck.host", baseCallbackUri.getHost()),
+                        Map.entry("dataspacetck.port", String.valueOf(baseCallbackUri.getPort())),
+                        Map.entry("dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher"),
+                        Map.entry("dataspacetck.did.issuer", issuerDid),
+                        Map.entry("dataspacetck.sts.url", "http://host.docker.internal:%s%s".formatted(stsPort, stsPath)),
+                        Map.entry("dataspacetck.sts.client.id", response.clientId()),
+                        Map.entry("dataspacetck.sts.client.secret", response.clientSecret()),
+                        Map.entry("dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID),
+                        Map.entry("dataspacetck.test.package", "org.eclipse.dataspacetck.dcp.verification.issuance.issuer")
                 ))
         ) {
             tckContainer.setPortBindings(List.of("%s:%s".formatted(CALLBACK_PORT, CALLBACK_PORT)));

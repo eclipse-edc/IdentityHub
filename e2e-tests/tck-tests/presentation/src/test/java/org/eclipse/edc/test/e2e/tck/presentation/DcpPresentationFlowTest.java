@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URI;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -116,21 +116,25 @@ public class DcpPresentationFlowTest {
         var baseCallbackUrl = "http://localhost:%s".formatted(CALLBACK_PORT);
         var baseCredentialServiceUrl = "http://localhost:%s%s/v1/participants/%s".formatted(credentialsPort, credentialsPath, TEST_PARTICIPANT_CONTEXT_ID);
         var baseCallbackUri = URI.create(baseCallbackUrl);
-
         var response = createParticipant(identityHub, baseCredentialServiceUrl);
+
+        var properties = new HashMap<String, String>();
+        properties.put("dataspacetck.callback.address", baseCallbackUrl);
+        properties.put("dataspacetck.host", baseCallbackUri.getHost());
+        properties.put("dataspacetck.port", String.valueOf(baseCallbackUri.getPort()));
+        properties.put("dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher");
+        properties.put("dataspacetck.did.holder", holderDid);
+        properties.put("dataspacetck.did.issuer", ISSUER_DID);
+        properties.put("dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath));
+        properties.put("dataspacetck.sts.client.id", response.clientId());
+        properties.put("dataspacetck.sts.client.secret", response.clientSecret());
+        properties.put("dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID);
+        properties.put("dataspacetck.vc.scope.membershipcredential", "org.eclipse.dspace.dcp.vc.type:MembershipCredential:read");
+        properties.put("dataspacetck.vc.scope.sensitivedatacredential", "org.eclipse.dspace.dcp.vc.type:SensitiveDataCredential:read");
+        properties.put("dataspacetck.vc.scope.someothercredential", "org.eclipse.dspace.dcp.vc.type:SomeOtherCredential:read");
+        
         var result = TckRuntime.Builder.newInstance()
-                .properties(Map.of(
-                        "dataspacetck.callback.address", baseCallbackUrl,
-                        "dataspacetck.host", baseCallbackUri.getHost(),
-                        "dataspacetck.port", String.valueOf(baseCallbackUri.getPort()),
-                        "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
-                        "dataspacetck.did.holder", holderDid,
-                        "dataspacetck.did.issuer", ISSUER_DID,
-                        "dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath),
-                        "dataspacetck.sts.client.id", response.clientId(),
-                        "dataspacetck.sts.client.secret", response.clientSecret(),
-                        "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID
-                ))
+                .properties(properties)
                 .addPackage("org.eclipse.dataspacetck.dcp.verification.presentation.cs")
                 .monitor(monitor)
                 .build()

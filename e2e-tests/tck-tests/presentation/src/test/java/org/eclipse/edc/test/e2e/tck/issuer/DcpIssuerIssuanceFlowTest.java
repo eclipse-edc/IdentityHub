@@ -52,8 +52,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -126,18 +126,19 @@ public class DcpIssuerIssuanceFlowTest {
             });
         }
 
+        var properties = new HashMap<String, String>();
+        properties.put("dataspacetck.callback.address", baseCallbackUrl);
+        properties.put("dataspacetck.host", baseCallbackUri.getHost());
+        properties.put("dataspacetck.port", String.valueOf(baseCallbackUri.getPort()));
+        properties.put("dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher");
+        properties.put("dataspacetck.did.issuer", issuerDid);
+        properties.put("dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath));
+        properties.put("dataspacetck.sts.client.id", response.clientId());
+        properties.put("dataspacetck.sts.client.secret", response.clientSecret());
+        properties.put("dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID);
+
         var result = TckRuntime.Builder.newInstance()
-                .properties(Map.of(
-                        "dataspacetck.callback.address", baseCallbackUrl,
-                        "dataspacetck.host", baseCallbackUri.getHost(),
-                        "dataspacetck.port", String.valueOf(baseCallbackUri.getPort()),
-                        "dataspacetck.launcher", "org.eclipse.dataspacetck.dcp.system.DcpSystemLauncher",
-                        "dataspacetck.did.issuer", issuerDid,
-                        "dataspacetck.sts.url", "http://localhost:%s%s".formatted(stsPort, stsPath),
-                        "dataspacetck.sts.client.id", response.clientId(),
-                        "dataspacetck.sts.client.secret", response.clientSecret(),
-                        "dataspacetck.credentials.correlation.id", ISSUANCE_CORRELATION_ID
-                ))
+                .properties(properties)
                 .addPackage("org.eclipse.dataspacetck.dcp.verification.issuance.issuer")
                 .monitor(monitor)
                 .build()
@@ -159,6 +160,12 @@ public class DcpIssuerIssuanceFlowTest {
                         .attestationType("tck-test").build())
                 .orElseThrow(f -> new AssertionError(f.getFailureDetail()));
 
+        attestationDefinitionService.createAttestation(AttestationDefinition.Builder.newInstance()
+                        .id("tck-holder-attestation")
+                        .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
+                        .attestationType("holder").build())
+                .orElseThrow(f -> new AssertionError(f.getFailureDetail()));
+
         var credentialDefinitionService = issuer.getService(CredentialDefinitionService.class);
         var count = new AtomicInteger(1);
         Stream.of("MembershipCredential", "SensitiveDataCredential").forEach(type ->
@@ -166,11 +173,13 @@ public class DcpIssuerIssuanceFlowTest {
                                 .credentialType(type)
                                 .id("credential-object-id%d".formatted(count.getAndIncrement()))
                                 .attestation("tck-test-attestation")
+                                .attestation("tck-holder-attestation")
                                 .formatFrom(CredentialFormat.VC1_0_JWT)
                                 .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                                 .jsonSchemaUrl("https://example.com/schema/%s-schema.json".formatted(type.toLowerCase()))
                                 .jsonSchema("{}")
                                 .mapping(new MappingDefinition("participant.name", "credentialSubject.participant_name", true))
+                                .mapping(new MappingDefinition("did", "credentialSubject.id", true))
                                 .build())
                         .orElseThrow(f -> new AssertionError(f.getFailureDetail())));
     }
@@ -182,6 +191,7 @@ public class DcpIssuerIssuanceFlowTest {
                 .participantContextId(TEST_PARTICIPANT_CONTEXT_ID)
                 .did(holderDid)
                 .holderName("TCK Holder")
+                .property("did", holderDid)
                 .build());
     }
 
