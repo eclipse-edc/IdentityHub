@@ -43,7 +43,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants/{participantContextId}/holders")
+@Path(Versions.STABLE + "/participants/{participantContextId}/holders")
 public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
 
     private final AuthorizationService authorizationService;
@@ -60,7 +60,7 @@ public class IssuerHolderAdminApiController implements IssuerHolderAdminApi {
     public Response addHolder(@PathParam("participantContextId") String participantContextId, HolderDto holder, @Context SecurityContext context) {
         return authorizationService.authorize(context, participantContextId, participantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> holderService.createHolder(holder.toHolder(participantContextId)))
-                .map(v -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/holders/%s".formatted(participantContextId, holder.id()))).build())
+                .map(v -> Response.created(URI.create(Versions.STABLE + "/participants/%s/holders/%s".formatted(participantContextId, holder.id()))).build())
                 .orElseThrow(exceptionMapper(Holder.class, holder.id()));
     }
 

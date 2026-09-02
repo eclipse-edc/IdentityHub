@@ -40,7 +40,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants/{participantContextId}/issuanceprocesses")
+@Path(Versions.STABLE + "/participants/{participantContextId}/issuanceprocesses")
 public class IssuanceProcessAdminApiController implements IssuanceProcessAdminApi {
 
     private final IssuanceProcessService issuanceProcessService;

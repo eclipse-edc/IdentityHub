@@ -225,7 +225,7 @@ class IdentityHubParticipantContextApiControllerTest extends RestControllerTestB
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants")
+                .baseUri("http://localhost:" + port + Versions.STABLE + "/participants")
                 .when();
     }
 

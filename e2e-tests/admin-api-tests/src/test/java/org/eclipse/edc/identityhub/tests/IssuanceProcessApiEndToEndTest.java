@@ -69,7 +69,7 @@ public class IssuanceProcessApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(issuer, issuerService))
-                    .get("/v1beta/participants/%s/issuanceprocesses/%s".formatted(issuer, process.getId()))
+                    .get("/v1/participants/%s/issuanceprocesses/%s".formatted(issuer, process.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -94,7 +94,7 @@ public class IssuanceProcessApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(authorizeUser(issuer2, issuerService))
-                    .get("/v1beta/participants/%s/issuanceprocesses/%s".formatted(issuer, process.getId()))
+                    .get("/v1/participants/%s/issuanceprocesses/%s".formatted(issuer, process.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -115,7 +115,7 @@ public class IssuanceProcessApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("holderId", "=", process.getHolderId()))
                             .build())
-                    .post("/v1beta/participants/%s/issuanceprocesses/query".formatted(issuer))
+                    .post("/v1/participants/%s/issuanceprocesses/query".formatted(issuer))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -147,7 +147,7 @@ public class IssuanceProcessApiEndToEndTest {
                             .sortOrder(SortOrder.ASC)
                             .filter(new Criterion("holderId", "=", process.getHolderId()))
                             .build())
-                    .post("/v1beta/participants/%s/issuanceprocesses/query".formatted(issuer))
+                    .post("/v1/participants/%s/issuanceprocesses/query".formatted(issuer))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -193,19 +193,16 @@ public class IssuanceProcessApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
+        static final String ISSUER = "issuer";
 
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-
-        private static final String ISSUER = "issuer";
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -226,7 +223,8 @@ public class IssuanceProcessApiEndToEndTest {
     @Nested
     @EndToEndTest
     class InMemoryOauth2 extends Tests {
-        private static final String ISSUER = "issuer";
+
+        static final String ISSUER = "issuer";
 
         @Order(0)
         @RegisterExtension
@@ -245,6 +243,7 @@ public class IssuanceProcessApiEndToEndTest {
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
 
+
         @Override
         protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
             return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION.getAuthServer());
@@ -254,10 +253,7 @@ public class IssuanceProcessApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class PostgresOauth2 extends Tests {
-        @Order(0)
-        @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String ISSUER = "issuer";
+        static final String ISSUER = "issuer";
 
         @Order(0)
         @RegisterExtension
@@ -266,6 +262,9 @@ public class IssuanceProcessApiEndToEndTest {
                 .signingKeyId("signing-key-id")
                 .build();
 
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -277,12 +276,12 @@ public class IssuanceProcessApiEndToEndTest {
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
+
 
         @Override
         protected Header authorizeUser(String participantContextId, IssuerService issuerService) {

@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.issuermetadata;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1.issuermetadata;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,14 +22,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.ApiSchema;
+import org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1.ApiSchema;
 
 @OpenAPIDefinition(
         info = @Info(description = "This API provides information about the capabilities of this issuer. " +
                 "Specifically, it provides information about supported credentials, profiles and binding methods." +
                 "This API is publicly available without Authentication.",
                 title = "Issuer Metadata API",
-                version = "v1beta"))
+                version = "v1"))
 public interface IssuerMetadataApi {
 
     @Tag(name = "Issuer Metadata API")

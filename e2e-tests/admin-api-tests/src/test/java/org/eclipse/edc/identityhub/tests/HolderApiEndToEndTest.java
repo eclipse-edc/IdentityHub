@@ -72,7 +72,7 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post("/v1beta/participants/%s/holders".formatted(USER))
+                    .post("/v1/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(201)
                     .header("Location", Matchers.endsWith("/holders/test-participant-id"));
@@ -92,7 +92,7 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post("/v1beta/participants/%s/holders".formatted(USER))
+                    .post("/v1/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(409);
         }
@@ -111,7 +111,7 @@ public class HolderApiEndToEndTest {
                               "name": null
                             }
                             """)
-                    .post("/v1beta/participants/%s/holders".formatted(USER))
+                    .post("/v1/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(403);
         }
@@ -127,7 +127,7 @@ public class HolderApiEndToEndTest {
                             "holderId": "test-participant-id"
                             }
                             """)
-                    .post("/v1beta/participants/%s/holders".formatted(USER))
+                    .post("/v1/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(400);
         }
@@ -147,7 +147,7 @@ public class HolderApiEndToEndTest {
                               "name": "Foo"
                             }
                             """)
-                    .put("/v1beta/participants/%s/holders".formatted(USER))
+                    .put("/v1/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(200);
 
@@ -172,7 +172,7 @@ public class HolderApiEndToEndTest {
                               "name": "Foo"
                             }
                             """)
-                    .put("/v1beta/participants/%s/holders".formatted(USER))
+                    .put("/v1/participants/%s/holders".formatted(USER))
                     .then()
                     .statusCode(403);
 
@@ -190,7 +190,7 @@ public class HolderApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderName", "=", "foobar")).build())
-                    .post("/v1beta/participants/%s/holders/query".formatted(USER))
+                    .post("/v1/participants/%s/holders/query".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -205,7 +205,7 @@ public class HolderApiEndToEndTest {
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuer))
                     .body(QuerySpec.Builder.newInstance().filter(new Criterion("holderId", "=", "test-participant-id")).build())
-                    .post("/v1beta/participants/%s/holders/query".formatted(USER))
+                    .post("/v1/participants/%s/holders/query".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -221,7 +221,7 @@ public class HolderApiEndToEndTest {
 
             var res = issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser(USER, issuer))
-                    .get("/v1beta/participants/%s/holders/test-participant-id".formatted(USER))
+                    .get("/v1/participants/%s/holders/test-participant-id".formatted(USER))
                     .then()
                     .statusCode(200)
                     .body(Matchers.notNullValue())
@@ -239,7 +239,7 @@ public class HolderApiEndToEndTest {
 
             issuer.getAdminEndpoint().baseRequest()
                     .header(authorizeUser("anotherUser", issuer))
-                    .get("/v1beta/participants/%s/holders/test-participant-id".formatted(USER))
+                    .get("/v1/participants/%s/holders/test-participant-id".formatted(USER))
                     .then()
                     .statusCode(403);
 
@@ -253,7 +253,7 @@ public class HolderApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuerService))
-                    .delete("/v1beta/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .delete("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(204);
         }
@@ -264,7 +264,7 @@ public class HolderApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(authorizeUser(USER, issuerService))
-                    .delete("/v1beta/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .delete("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(404);
         }
@@ -278,7 +278,7 @@ public class HolderApiEndToEndTest {
             issuerService.getAdminEndpoint().baseRequest()
                     .contentType(ContentType.JSON)
                     .header(authorizeUser("anotherUser", issuerService))
-                    .delete("/v1beta/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
+                    .delete("/v1/participants/%s/holders/%s".formatted(USER, "test-participant-id"))
                     .then()
                     .statusCode(403);
         }
@@ -322,19 +322,16 @@ public class HolderApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
+        static final String ISSUER = "issuer";
 
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-
-        private static final String ISSUER = "issuer";
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -356,8 +353,7 @@ public class HolderApiEndToEndTest {
     @EndToEndTest
     class InMemoryOauth2 extends Tests {
 
-        private static final String ISSUER = "issuer";
-
+        static final String ISSUER = "issuer";
         @Order(0)
         @RegisterExtension
         static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
@@ -375,6 +371,7 @@ public class HolderApiEndToEndTest {
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
 
+
         @Override
         protected Header authorizeUser(String participantContextId, IssuerService issuerService) {
             return authorizeOauth2(participantContextId, issuerService, OAUTH_2_EXTENSION.getAuthServer());
@@ -384,11 +381,7 @@ public class HolderApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class PostgresOauth2 extends Tests {
-        @Order(0)
-        @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String ISSUER = "issuer";
-
+        static final String ISSUER = "issuer";
         @Order(0)
         @RegisterExtension
         static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
@@ -396,6 +389,9 @@ public class HolderApiEndToEndTest {
                 .signingKeyId("signing-key-id")
                 .build();
 
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -407,12 +403,12 @@ public class HolderApiEndToEndTest {
                 .configurationProvider(() -> POSTGRESQL_EXTENSION.configFor(ISSUER))
                 .paramProvider(IssuerService.class, IssuerService::forContext)
                 .build();
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
+
 
         @Override
         protected Header authorizeUser(String participantContextId, IssuerService issuerService) {

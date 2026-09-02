@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2025 Metaform Systems, Inc.
+ *  Copyright (c) 2025 Cofinity-X
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,35 +8,36 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Metaform Systems, Inc. - initial API and implementation
+ *       Cofinity-X - initial API and implementation
  *
  */
 
-package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1beta.issuermetadata;
+package org.eclipse.edc.identityhub.protocols.dcp.issuer.api.v1.credentialrequeststatus;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.identityhub.protocols.dcp.issuer.spi.DcpIssuerMetadataService;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.DcpHolderTokenVerifier;
+import org.eclipse.edc.identityhub.protocols.dcp.spi.model.CredentialRequestStatus;
 import org.eclipse.edc.identityhub.protocols.dcp.spi.model.DcpRequestContext;
-import org.eclipse.edc.identityhub.protocols.dcp.spi.model.IssuerMetadata;
 import org.eclipse.edc.identityhub.spi.participantcontext.IdentityHubParticipantContextService;
 import org.eclipse.edc.identityhub.spi.participantcontext.model.IdentityHubParticipantContext;
 import org.eclipse.edc.issuerservice.spi.holder.model.Holder;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcess;
+import org.eclipse.edc.issuerservice.spi.issuance.model.IssuanceProcessStates;
+import org.eclipse.edc.issuerservice.spi.issuance.process.IssuanceProcessService;
 import org.eclipse.edc.junit.annotations.ApiTest;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.result.ServiceResult;
 import org.eclipse.edc.transform.spi.TypeTransformerRegistry;
 import org.eclipse.edc.web.jersey.testfixtures.RestControllerTestBase;
 import org.eclipse.edc.web.spi.exception.AuthenticationFailedException;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EmptySource;
-import org.junit.jupiter.params.provider.NullSource;
 
 import java.sql.Date;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -47,76 +48,112 @@ import static org.eclipse.edc.identityhub.verifiablecredentials.testfixtures.Ver
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ApiTest
-public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
+class CredentialRequestStatusApiControllerTest extends RestControllerTestBase {
 
-    private final IdentityHubParticipantContextService participantContextService = mock();
     private final TypeTransformerRegistry typeTransformerRegistry = mock();
+    private final IssuanceProcessService issuerService = mock();
     private final DcpHolderTokenVerifier dcpIssuerTokenVerifier = mock();
-    private final DcpIssuerMetadataService issuerMetadataService = mock();
+    private final IdentityHubParticipantContextService participantContextService = mock();
     private final String participantContextId = "participantContextId";
 
-    @ParameterizedTest
-    @NullSource
-    @EmptySource
-    void issuerMetadata_noAuthToken_success(String emptyAuthHeader) {
-        var participant = createHolder("id", "did", "name");
-        var ctx = new DcpRequestContext(participant, Map.of(), null);
-        var object = Json.createObjectBuilder().build();
+    @Test
+    void credentialStatus_tokenNotPresent_shouldReturn401() {
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextId, UUID.randomUUID().toString(), null))
+                .isInstanceOf(AuthenticationFailedException.class)
+                .hasMessage("Authorization header missing");
 
-        var metadata = IssuerMetadata.Builder.newInstance().build();
-        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
-        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
-        when(issuerMetadataService.getIssuerMetadata(argThat(p -> p.getParticipantContextId().equals(participantContextId)))).thenReturn(ServiceResult.success(metadata));
-        when(typeTransformerRegistry.transform(eq(metadata), eq(JsonObject.class))).thenReturn(Result.success(object));
-        var response = controller().getIssuerMetadata(participantContextId, emptyAuthHeader);
+        verifyNoInteractions(issuerService, dcpIssuerTokenVerifier, typeTransformerRegistry);
 
-        assertThat(response).isEqualTo(object);
     }
 
     @Test
-    void issuerMetadata_participantNotFound_shouldReturn401() {
+    void credentialStatus_transformationError_shouldReturn400() {
+
+        var participant = createHolder("id", "did", "name");
+        var ctx = new DcpRequestContext(participant, Map.of(), null);
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
+        when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess())));
+
+        when(typeTransformerRegistry.transform(isA(CredentialRequestStatus.class), eq(JsonObject.class))).thenReturn(Result.failure("cannot transform"));
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextId, UUID.randomUUID().toString(), generateToken()))
+                .isInstanceOf(EdcException.class)
+                .hasMessageContaining("cannot transform");
+
+    }
+
+    @Test
+    void credentialStatus_tokenVerificationFails_shouldReturn401() {
+        when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.unauthorized("unauthorized"));
+        when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
+
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextId, UUID.randomUUID().toString(), generateToken()))
+                .isExactlyInstanceOf(AuthenticationFailedException.class)
+                .hasMessageContaining("unauthorized");
+
+        verifyNoInteractions(issuerService);
+    }
+
+    @Test
+    void credentialStatus_participantNotFound_shouldReturn401() {
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.notFound("not found"));
 
-        assertThatThrownBy(() -> controller().getIssuerMetadata(participantContextId, generateJwt()))
+        assertThatThrownBy(() -> controller().credentialStatus(participantContextId, UUID.randomUUID().toString(), generateToken()))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessageContaining("Invalid issuer");
 
-        verifyNoInteractions(issuerMetadataService, dcpIssuerTokenVerifier);
+        verifyNoInteractions(issuerService);
     }
 
+
     @Test
-    void issuerMetadata() {
+    void credentialStatus() {
 
         var participant = createHolder("id", "did", "name");
         var ctx = new DcpRequestContext(participant, Map.of(), null);
-        var object = Json.createObjectBuilder().build();
 
-        var metadata = IssuerMetadata.Builder.newInstance().build();
+        var token = generateToken();
+
+        when(issuerService.search(any())).thenReturn(ServiceResult.success(List.of(createIssuanceProcess())));
         when(dcpIssuerTokenVerifier.verify(any(), any())).thenReturn(ServiceResult.success(ctx));
         when(participantContextService.getParticipantContext(eq(participantContextId))).thenReturn(ServiceResult.success(createParticipantContext()));
-        when(issuerMetadataService.getIssuerMetadata(argThat(p -> p.getParticipantContextId().equals(participantContextId)))).thenReturn(ServiceResult.success(metadata));
-        when(typeTransformerRegistry.transform(eq(metadata), eq(JsonObject.class))).thenReturn(Result.success(object));
-        var response = controller().getIssuerMetadata(participantContextId, generateJwt());
+        when(typeTransformerRegistry.transform(isA(CredentialRequestStatus.class), eq(JsonObject.class))).thenReturn(Result.success(Json.createObjectBuilder().build()));
 
-        assertThat(response).isEqualTo(object);
+        var response = controller().credentialStatus(participantContextId, UUID.randomUUID().toString(), token);
 
+        assertThat(response).isNotNull();
+
+        verify(dcpIssuerTokenVerifier).verify(any(), argThat(tr -> token.contains(tr.getToken())));
     }
 
     @Override
-    protected IssuerMetadataApiController controller() {
-        return new IssuerMetadataApiController(participantContextService, issuerMetadataService, typeTransformerRegistry);
+    protected CredentialRequestStatusApiController controller() {
+        return new CredentialRequestStatusApiController(participantContextService, dcpIssuerTokenVerifier, issuerService, typeTransformerRegistry);
     }
+
 
     private IdentityHubParticipantContext createParticipantContext() {
         return IdentityHubParticipantContext.Builder.newInstance()
                 .participantContextId(participantContextId)
                 .did("did")
                 .apiTokenAlias("apiTokenAlias")
+                .build();
+    }
+
+    private IssuanceProcess createIssuanceProcess() {
+        return IssuanceProcess.Builder.newInstance()
+                .holderId("holderId")
+                .participantContextId(participantContextId)
+                .holderPid(UUID.randomUUID().toString())
+                .id(UUID.randomUUID().toString())
+                .state(IssuanceProcessStates.DELIVERED.code())
                 .build();
     }
 
@@ -129,7 +166,7 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
                 .build();
     }
 
-    private String generateJwt() {
+    private String generateToken() {
         var ecKey = generateEcKey(null);
         var jwt = buildSignedJwt(new JWTClaimsSet.Builder().audience("test-audience")
                 .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
@@ -139,4 +176,5 @@ public class IssuerMetadataApiControllerTest extends RestControllerTestBase {
 
         return "Bearer " + jwt.serialize();
     }
+
 }

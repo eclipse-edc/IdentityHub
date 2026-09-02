@@ -33,7 +33,7 @@ import static org.eclipse.edc.identityhub.spi.authorization.AuthorizationResultH
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/keypairs")
+@Path(Versions.STABLE + "/keypairs")
 public class GetAllKeyPairsApiController implements GetAllKeyPairsApi {
 
     private final KeyPairService keyPairService;

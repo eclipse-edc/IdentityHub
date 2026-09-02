@@ -219,7 +219,7 @@ class IssuerHolderAdminApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/holders".formatted(PARTICIPANT_ID_ENCODED))
+                .baseUri("http://localhost:" + port + Versions.STABLE + "/participants/%s/holders".formatted(PARTICIPANT_ID_ENCODED))
                 .when();
     }
 }

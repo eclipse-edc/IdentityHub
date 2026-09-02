@@ -169,7 +169,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
-                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201)
@@ -282,7 +282,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
-                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().all()
                     .statusCode(201);
@@ -301,7 +301,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
-                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(409);
@@ -413,7 +413,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", participantToken))
                     .body(request)
-                    .post("/v1beta/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
+                    .post("/v1/participants/%s/credentials/request".formatted(PARTICIPANT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);
@@ -514,7 +514,7 @@ public class DcpIssuanceFlowEndToEndTest {
             issuer.getIssuerApiEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(AUTHORIZATION, "Bearer " + siToken)
-                    .get("/v1beta/participants/%s/requests/%s".formatted(ISSUER_ID, issuerProcess.getId()))
+                    .get("/v1/participants/%s/requests/%s".formatted(ISSUER_ID, issuerProcess.getId()))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -643,7 +643,7 @@ public class DcpIssuanceFlowEndToEndTest {
                     .contentType(JSON)
                     .header(new Header("x-api-key", apiToken))
                     .body(requestBody)
-                    .post("/v1beta/participants/%s/credentials/request".formatted(participantContextId))
+                    .post("/v1/participants/%s/credentials/request".formatted(participantContextId))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(201);

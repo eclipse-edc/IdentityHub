@@ -42,7 +42,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants/{participantContextId}/attestations")
+@Path(Versions.STABLE + "/participants/{participantContextId}/attestations")
 public class IssuerAttestationAdminApiController implements IssuerAttestationAdminApi {
 
     private final AuthorizationService authorizationService;
@@ -61,7 +61,7 @@ public class IssuerAttestationAdminApiController implements IssuerAttestationAdm
 
         return authorizationService.authorize(securityContext, participantContextId, participantContextId, IdentityHubParticipantContext.class)
                 .compose(u -> attestationDefinitionService.createAttestation(createAttestationDefinition(participantContextId, attestationRequest)))
-                .map(u -> Response.created(URI.create(Versions.UNSTABLE + "/participants/%s/attestations/%s".formatted(participantContextId, attestationRequest.id()))).build())
+                .map(u -> Response.created(URI.create(Versions.STABLE + "/participants/%s/attestations/%s".formatted(participantContextId, attestationRequest.id()))).build())
                 .orElseThrow(AuthorizationResultHandler.exceptionMapper(AttestationDefinition.class));
     }
 

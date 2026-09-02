@@ -46,7 +46,7 @@ import static org.eclipse.edc.web.spi.exception.ServiceResultHandler.exceptionMa
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants/{participantContextId}/credentials")
+@Path(Versions.STABLE + "/participants/{participantContextId}/credentials")
 public class IssuerCredentialsAdminApiController implements IssuerCredentialsAdminApi {
 
     private final AuthorizationService authorizationService;

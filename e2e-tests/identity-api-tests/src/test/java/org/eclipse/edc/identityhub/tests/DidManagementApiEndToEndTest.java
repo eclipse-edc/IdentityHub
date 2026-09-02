@@ -110,7 +110,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:user1"
                             }
                             """)
-                    .post("/v1beta/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
+                    .post("/v1/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -139,7 +139,7 @@ public class DidManagementApiEndToEndTest {
                                            "did": "%s"
                                         }
                                         """.formatted(did))
-                                .post("/v1beta/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
+                                .post("/v1/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(204)
@@ -180,7 +180,7 @@ public class DidManagementApiEndToEndTest {
                                            "did": "%s"
                                         }
                                         """.formatted(did))
-                                .post("/v1beta/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
+                                .post("/v1/participants/%s/dids/publish".formatted(PARTICIPANT_CONTEXT_ID))
                                 .then()
                                 .log().ifValidationFails()
                                 .statusCode(400)
@@ -214,7 +214,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "%s"
                             }
                             """.formatted(did))
-                    .post("/v1beta/participants/%s/dids/unpublish".formatted(PARTICIPANT_CONTEXT_ID))
+                    .post("/v1/participants/%s/dids/unpublish".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403)
@@ -242,7 +242,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:%s"
                             }
                             """.formatted(PARTICIPANT_CONTEXT_ID))
-                    .post("/v1beta/participants/%s/dids/unpublish".formatted(PARTICIPANT_CONTEXT_ID))
+                    .post("/v1/participants/%s/dids/unpublish".formatted(PARTICIPANT_CONTEXT_ID))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -271,7 +271,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:%s"
                             }
                             """.formatted(PARTICIPANT_CONTEXT_ID))
-                    .post("/v1beta/participants/%s/dids/unpublish".formatted(user))
+                    .post("/v1/participants/%s/dids/unpublish".formatted(user))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(204)
@@ -299,7 +299,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "%s"
                             }
                             """.formatted(did))
-                    .post("/v1beta/participants/%s/dids/unpublish".formatted(user))
+                    .post("/v1/participants/%s/dids/unpublish".formatted(user))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(400)
@@ -326,7 +326,7 @@ public class DidManagementApiEndToEndTest {
                                "did": "did:web:%s"
                             }
                             """.formatted(user1))
-                    .post("/v1beta/participants/%s/dids/state".formatted(user1))
+                    .post("/v1/participants/%s/dids/state".formatted(user1))
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -340,7 +340,7 @@ public class DidManagementApiEndToEndTest {
             var docs = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(superUserAuth)
-                    .get("/v1beta/dids")
+                    .get("/v1/dids")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -357,7 +357,7 @@ public class DidManagementApiEndToEndTest {
             var docs = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(superUserKey)
-                    .get("/v1beta/dids")
+                    .get("/v1/dids")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -374,7 +374,7 @@ public class DidManagementApiEndToEndTest {
             var docs = identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(superUserAuth)
-                    .get("/v1beta/dids?offset=5&limit=10")
+                    .get("/v1/dids?offset=5&limit=10")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(200)
@@ -391,7 +391,7 @@ public class DidManagementApiEndToEndTest {
             identityHub.getIdentityEndpoint().baseRequest()
                     .contentType(JSON)
                     .header(attackerToken)
-                    .get("/v1beta/dids")
+                    .get("/v1/dids")
                     .then()
                     .log().ifValidationFails()
                     .statusCode(403);
@@ -423,18 +423,16 @@ public class DidManagementApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
+        static final String DB_NAME = "runtime";
 
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-        private static final String DB_NAME = "runtime";
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -455,9 +453,7 @@ public class DidManagementApiEndToEndTest {
     @Nested
     @EndToEndTest
     class InMemoryOauth2 extends Tests {
-
-        private static final String ISSUER = "issuer";
-
+        static final String ISSUER = "issuer";
         @Order(0)
         @RegisterExtension
         static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
@@ -484,25 +480,22 @@ public class DidManagementApiEndToEndTest {
     @Nested
     @EndToEndTest
     class PostgresOauth2 extends Tests {
+        static final String ISSUER = "issuer";
+        static final String DB_NAME = "runtime";
 
-        @Order(0)
-        @RegisterExtension
-        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-
-        private static final String ISSUER = "issuer";
         @Order(0)
         @RegisterExtension
         static final OauthServerEndToEndExtension OAUTH_2_EXTENSION = OauthServerEndToEndExtension.Builder.newInstance()
                 .issuer(ISSUER)
                 .build();
-
-        private static final String DB_NAME = "runtime";
+        @Order(0)
+        @RegisterExtension
+        static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(DB_NAME);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension IDENTITY_HUB_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()
@@ -514,6 +507,7 @@ public class DidManagementApiEndToEndTest {
                 .configurationProvider(OAUTH_2_EXTENSION::getConfig)
                 .paramProvider(IdentityHub.class, IdentityHub::forContext)
                 .build();
+
 
         @Override
         protected Header authorizeUser(String participantContextId, IdentityHub identityHub) {

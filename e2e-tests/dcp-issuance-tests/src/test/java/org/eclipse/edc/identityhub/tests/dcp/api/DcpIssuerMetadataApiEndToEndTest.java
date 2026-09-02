@@ -71,7 +71,7 @@ public class DcpIssuerMetadataApiEndToEndTest {
         }
 
         private static @NotNull String issuanceMetadataUrl() {
-            return "/v1beta/participants/%s/metadata".formatted(ISSUER_ID);
+            return "/v1/participants/%s/metadata".formatted(ISSUER_ID);
         }
 
 
@@ -164,19 +164,16 @@ public class DcpIssuerMetadataApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
+        static final String ISSUER = "issuer";
 
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-
-        private static final String ISSUER = "issuer";
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()

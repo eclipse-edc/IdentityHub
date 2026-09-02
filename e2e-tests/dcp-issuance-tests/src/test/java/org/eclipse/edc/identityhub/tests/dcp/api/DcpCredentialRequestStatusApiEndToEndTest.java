@@ -85,7 +85,7 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
         }
 
         private static @NotNull String issuanceStatusUrl(String id) {
-            return "/v1beta/participants/%s/requests/%s".formatted(ISSUER_ID, id);
+            return "/v1/participants/%s/requests/%s".formatted(ISSUER_ID, id);
         }
 
 
@@ -318,19 +318,16 @@ public class DcpCredentialRequestStatusApiEndToEndTest {
     @Nested
     @PostgresqlIntegrationTest
     class Postgres extends Tests {
+        static final String ISSUER = "issuer";
 
         @Order(0)
         @RegisterExtension
         static final PostgresqlEndToEndExtension POSTGRESQL_EXTENSION = new PostgresqlEndToEndExtension();
-
-        private static final String ISSUER = "issuer";
-
         @Order(1)
         @RegisterExtension
         static final BeforeAllCallback POSTGRES_CONTAINER_STARTER = context -> {
             POSTGRESQL_EXTENSION.createDatabase(ISSUER);
         };
-
         @Order(2)
         @RegisterExtension
         static final RuntimeExtension ISSUER_EXTENSION = ComponentRuntimeExtension.Builder.newInstance()

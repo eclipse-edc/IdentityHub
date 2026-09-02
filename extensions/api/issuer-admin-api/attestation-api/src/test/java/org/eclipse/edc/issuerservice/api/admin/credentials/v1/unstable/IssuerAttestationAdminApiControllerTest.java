@@ -156,7 +156,7 @@ class IssuerAttestationAdminApiControllerTest extends RestControllerTestBase {
     private RequestSpecification baseRequest() {
         return given()
                 .contentType("application/json")
-                .baseUri("http://localhost:" + port + Versions.UNSTABLE + "/participants/%s/attestations".formatted(PARTICIPANT_ID))
+                .baseUri("http://localhost:" + port + Versions.STABLE + "/participants/%s/attestations".formatted(PARTICIPANT_ID))
                 .when();
     }
 

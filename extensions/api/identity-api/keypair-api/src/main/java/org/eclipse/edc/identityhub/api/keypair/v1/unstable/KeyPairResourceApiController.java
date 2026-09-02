@@ -45,7 +45,7 @@ import static org.eclipse.edc.participantcontext.spi.types.ParticipantResource.q
 
 @Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
-@Path(Versions.UNSTABLE + "/participants/{participantContextId}/keypairs")
+@Path(Versions.STABLE + "/participants/{participantContextId}/keypairs")
 public class KeyPairResourceApiController implements KeyPairResourceApi {
 
     private final AuthorizationService authorizationService;
